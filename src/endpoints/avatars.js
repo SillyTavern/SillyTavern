@@ -28,7 +28,7 @@ router.post('/delete', getFileNameValidationFunction('avatar'), function (reques
     const fileName = path.join(request.user.directories.avatars, sanitize(request.body.avatar));
 
     if (fs.existsSync(fileName)) {
-        fs.rmSync(fileName);
+        fs.unlinkSync(fileName);
         return response.send({ result: 'ok' });
     }
 
@@ -53,7 +53,7 @@ router.post('/upload', async (request, response) => {
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
-        fs.rmSync(pathToUpload);
+        fs.unlinkSync(pathToUpload);
         return response.send({ path: filename });
     } catch (err) {
         return response.status(400).send('Is not a valid image');

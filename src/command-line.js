@@ -2,9 +2,11 @@ import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 import ipRegex from 'ip-regex';
 import { canResolve, color, getConfigValue, stringToBool } from './util.js';
+import { initConfig } from './config-init.js';
 
 /**
  * @typedef {object} CommandLineArguments Parsed command line arguments
+ * @property {string} configPath Path to the config file
  * @property {string} dataRoot Data root directory
  * @property {number} port Port number
  * @property {boolean} listen If SillyTavern is listening on all network interfaces
@@ -40,6 +42,7 @@ export class CommandLineParser {
     constructor() {
         /** @type {CommandLineArguments} */
         this.default = Object.freeze({
+            configPath: './config.yaml',
             dataRoot: './data',
             port: 8000,
             listen: false,
@@ -88,6 +91,11 @@ export class CommandLineParser {
     parse(args) {
         const cliArguments = yargs(hideBin(args))
             .usage('Usage: <your-start-script> [options]\nOptions that are not provided will be filled with config values.')
+            .option('configPath', {
+                type: 'string',
+                default: null,
+                describe: 'Path to the config file',
+            })
             .option('enableIPv6', {
                 type: 'string',
                 default: null,
@@ -177,8 +185,11 @@ export class CommandLineParser {
                 describe: 'Request proxy bypass list (space separated list of hosts)',
             }).parseSync();
 
+        const configPath = cliArguments.configPath ?? this.default.configPath;
+        initConfig(configPath);
         /** @type {CommandLineArguments} */
         const result = {
+            configPath: configPath,
             dataRoot: cliArguments.dataRoot ?? getConfigValue('dataRoot', this.default.dataRoot),
             port: cliArguments.port ?? getConfigValue('port', this.default.port, 'number'),
             listen: cliArguments.listen ?? getConfigValue('listen', this.default.listen, 'boolean'),

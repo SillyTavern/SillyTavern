@@ -1,9 +1,8 @@
 {
-    "story_string": "{{system}}\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{char}}'s description:{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality:{{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{user}}'s persona: {{persona}}\n{{/if}}",
-    "example_separator": "Example of an interaction:",
-    "chat_start": "This is the history of the roleplay:",
+    "story_string": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{{system}}\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{char}}'s description:{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality:{{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{user}}'s persona: {{persona}}\n{{/if}}\n\n",
+    "example_separator": "Example of an interaction:\n",
+    "chat_start": "This is the history of the roleplay:\n",
     "use_stop_strings": false,
-    "allow_jailbreak": false,
     "always_force_name2": true,
     "trim_sentences": false,
     "single_line": false,

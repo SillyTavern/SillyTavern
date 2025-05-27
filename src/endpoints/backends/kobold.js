@@ -204,7 +204,7 @@ router.post('/transcribe-audio', async function (request, response) {
         console.debug('Transcribing audio with KoboldCpp', server);
 
         const fileBase64 = fs.readFileSync(request.file.path).toString('base64');
-        fs.rmSync(request.file.path);
+        fs.unlinkSync(request.file.path);
 
         const headers = {};
         setAdditionalHeadersByType(headers, TEXTGEN_TYPES.KOBOLDCPP, server, request.user.directories);

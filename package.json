@@ -8,6 +8,7 @@
         "@jimp/js-bmp": "^1.6.0",
         "@jimp/js-gif": "^1.6.0",
         "@jimp/js-tiff": "^1.6.0",
+        "@jimp/plugin-blit": "^1.6.0",
         "@jimp/plugin-circle": "^1.6.0",
         "@jimp/plugin-color": "^1.6.0",
         "@jimp/plugin-contain": "^1.6.0",
@@ -18,6 +19,7 @@
         "@jimp/plugin-flip": "^1.6.0",
         "@jimp/plugin-mask": "^1.6.0",
         "@jimp/plugin-quantize": "^1.6.0",
+        "@jimp/plugin-resize": "^1.6.0",
         "@jimp/plugin-rotate": "^1.6.0",
         "@jimp/plugin-threshold": "^1.6.0",
         "@jimp/wasm-avif": "^1.6.0",
@@ -62,7 +64,7 @@
         "mime-types": "^2.1.35",
         "moment": "^2.30.1",
         "morphdom": "^2.7.4",
-        "multer": "^1.4.5-lts.1",
+        "multer": "^2.0.0",
         "node-fetch": "^3.3.2",
         "node-persist": "^4.0.4",
         "open": "^8.4.2",
@@ -109,7 +111,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.12.14",
+    "version": "1.13.0",
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",

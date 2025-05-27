@@ -10,6 +10,7 @@
 @import url(css/accounts.css);
 @import url(css/tags.css);
 @import url(css/scrollable-button.css);
+@import url(css/welcome.css);
 
 :root {
     --doc-height: 100%;
@@ -116,6 +117,7 @@
     --avatar-base-width: 50px;
     --avatar-base-border-radius: 2px;
     --avatar-base-border-radius-round: 50%;
+    --avatar-base-border-radius-rounded: 10px;
     --inline-avatar-small-factor: 0.6;
 
     --animation-duration: 125ms;
@@ -157,9 +159,25 @@ body {
 }
 
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 0.7rem;
     scrollbar-gutter: stable;
+}
+
+::-webkit-scrollbar-track {
+    cursor: default;
+}
+
+::-webkit-scrollbar-track:hover {
+    /* Adaptive, but won't contrast with neutral-gray. */
+    background-color: rgba(126, 126, 126, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    cursor: grab;
+}
+
+::-webkit-scrollbar-thumb:active {
+    cursor: grabbing;
 }
 
 .scrollY {
@@ -231,6 +249,7 @@ table.responsiveTable {
 .has_hover_label .label_icon {
     transition: opacity var(--animation-duration) ease, max-width var(--animation-duration) ease;
 }
+
 .has_hover_label .label {
     transition: opacity var(--animation-duration-slow) ease, max-width var(--animation-duration-slow) ease;
     /* Prevent double gap on hidden icon */
@@ -241,6 +260,7 @@ table.responsiveTable {
 .has_hover_label .label {
     transition-delay: var(--animation-duration-slow);
 }
+
 .has_hover_label.fast .label_icon,
 .has_hover_label.fast .label {
     transition-delay: var(--animation-duration);
@@ -487,6 +507,7 @@ input[type='checkbox']:focus-visible {
 .mes_text em {
     color: var(--SmartThemeEmColor);
 }
+
 .mes_reasoning i,
 .mes_reasoning em {
     color: hsl(from var(--reasoning-em-color) h calc(s * var(--reasoning-saturation)) l);
@@ -496,6 +517,7 @@ input[type='checkbox']:focus-visible {
 .mes_text q em {
     color: inherit;
 }
+
 .mes_reasoning q i,
 .mes_reasoning q em {
     color: hsl(from var(--SmartThemeQuoteColor) h calc(s * var(--reasoning-saturation)) l);
@@ -504,6 +526,7 @@ input[type='checkbox']:focus-visible {
 .mes_text u {
     color: var(--SmartThemeUnderlineColor);
 }
+
 .mes_reasoning u {
     color: hsl(from var(--SmartThemeUnderlineColor) h calc(s * var(--reasoning-saturation)) l);
 }
@@ -511,6 +534,7 @@ input[type='checkbox']:focus-visible {
 .mes_text q {
     color: var(--SmartThemeQuoteColor);
 }
+
 .mes_reasoning q {
     color: hsl(from var(--SmartThemeQuoteColor) h calc(s * var(--reasoning-saturation)) l);
 }
@@ -1188,6 +1212,17 @@ body .panelControlBar {
 #chat .mes.selected {
     /* background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5); */
     background-color: rgb(102, 0, 0);
+}
+
+#chat .style-pins {
+    visibility: hidden;
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .mes q:before,
@@ -3105,7 +3140,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .missing-avatar.inline_avatar {
     padding: unset;
     border-radius: var(--avatar-base-border-radius-round);
-    width: fit-content;
+    font-size: 20px;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -3905,14 +3940,38 @@ grammarly-extension {
 
 
 /* Override toastr default styles */
-body #toast-container {
-    top: var(--topBarBlockSize);
+body>#toast-container {
+    margin-top: var(--topBarBlockSize);
 }
 
 body #toast-container>div {
     opacity: 1;
     filter: unset;
     -ms-filter: unset;
+    padding: 10px 10px 10px 50px;
+    font-size: calc(var(--mainFontSize) * 0.95);
+    width: 300px;
+}
+
+body #toast-container .toast-success {
+    background-color: #5d9e5d;
+}
+
+body #toast-container .toast-error {
+    background-color: #a83c36;
+}
+
+body #toast-container .toast-info {
+    background-color: #4092aa;
+}
+
+body #toast-container .toast-warning {
+    background-color: #e29325;
+}
+
+button.toast-close-button {
+    padding-right: 5px;
+    padding-top: 3px;
 }
 
 #dialogue_del_mes {
@@ -4002,6 +4061,7 @@ input[type='checkbox'].del_checkbox {
 .avatar-container:not(.locked_to_chat) .locked_to_chat_label {
     display: none;
 }
+
 .avatar-container:not(.locked_to_character) .locked_to_character_label {
     display: none;
 }
@@ -4021,7 +4081,7 @@ input[type='checkbox'].del_checkbox {
 }
 
 #lock_user_name.locked {
-    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 50%, var(--SmartThemeBorderColor));;
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 50%, var(--SmartThemeBorderColor));
 }
 
 #lock_persona_to_char.locked {
@@ -5091,7 +5151,7 @@ body:not(.sd) .mes_img_swipes {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 10px;
+    padding: 0px;
     height: 100%;
     width: 100%;
 }
@@ -5700,6 +5760,7 @@ body:not(.movingUI) .drawer-content.maximized {
     width: unset;
     margin: 0;
     font-size: calc(var(--mainFontSize) * 0.85);
+    padding-right: 20px;
 }
 
 .paginationjs-pages ul li a {
@@ -6033,12 +6094,12 @@ body:not(.movingUI) .drawer-content.maximized {
     flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 0 2px;
+    gap: 5px;
 }
 
-.mes_text div[data-type="assistant_note"]:has(.assistant_note_export)>div:not(.assistant_note_export) {
+.mes_text div[data-type="assistant_note"]:has(.assistant_note_export)>div {
     flex: 1;
+    text-align: left;
 }
 
 .oneline-dropdown label {

@@ -30,7 +30,7 @@ router.post('/delete', getFileNameValidationFunction('bg'), function (request, r
         return response.sendStatus(400);
     }
 
-    fs.rmSync(fileName);
+    fs.unlinkSync(fileName);
     invalidateThumbnail(request.user.directories, 'bg', request.body.bg);
     return response.send('ok');
 });
@@ -52,7 +52,7 @@ router.post('/rename', function (request, response) {
     }
 
     fs.copyFileSync(oldFileName, newFileName);
-    fs.rmSync(oldFileName);
+    fs.unlinkSync(oldFileName);
     invalidateThumbnail(request.user.directories, 'bg', request.body.old_bg);
     return response.send('ok');
 });
@@ -65,7 +65,7 @@ router.post('/upload', function (request, response) {
 
     try {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
-        fs.rmSync(img_path);
+        fs.unlinkSync(img_path);
         invalidateThumbnail(request.user.directories, 'bg', filename);
         response.send(filename);
     } catch (err) {

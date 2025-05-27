@@ -1,6 +1,7 @@
 import process from 'node:process';
 import path from 'node:path';
 import isDocker from 'is-docker';
+import { serverDirectory } from './src/server-directory.js';
 
 /**
  * Get the Webpack configuration for the public/lib.js file.
@@ -40,7 +41,7 @@ export default function getPublicLibConfig(forceDist = false) {
 
     return {
         mode: 'production',
-        entry: './public/lib.js',
+        entry: path.join(serverDirectory, 'public/lib.js'),
         cache: {
             type: 'filesystem',
             cacheDirectory: cacheDirectory,

@@ -12,6 +12,8 @@ import { regex_placement, runRegexScript, substitute_find_regex } from './engine
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 
+const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase();
+
 /**
  * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
  */
@@ -167,7 +169,7 @@ async function loadRegexScripts() {
             await saveRegexScript(script, -1, true);
         });
         scriptHtml.find('.export_regex').on('click', async function () {
-            const fileName = `${script.scriptName.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()}.json`;
+            const fileName = `regex-${sanitizeFileName(script.scriptName)}.json`;
             const fileData = JSON.stringify(script, null, 4);
             download(fileData, fileName, 'application/json');
         });
@@ -459,19 +461,12 @@ async function toggleRegexCallback(args, scriptName) {
 }
 
 /**
- * Performs the import of the regex file.
- * @param {File} file Input file
+ * Performs the import of the regex object.
+ * @param {Object} regexScript Input object
  * @param {boolean} isScoped Is the script scoped to a character?
  */
-async function onRegexImportFileChange(file, isScoped) {
-    if (!file) {
-        toastr.error('No file provided.');
-        return;
-    }
-
+async function onRegexImportObjectChange(regexScript, isScoped) {
     try {
-        const fileText = await getFileText(file);
-        const regexScript = JSON.parse(fileText);
         if (!regexScript.scriptName) {
             throw new Error('No script name provided.');
         }
@@ -489,6 +484,33 @@ async function onRegexImportFileChange(file, isScoped) {
         saveSettingsDebounced();
         await loadRegexScripts();
         toastr.success(`Regex script "${regexScript.scriptName}" imported.`);
+    } catch (error) {
+        console.log(error);
+        toastr.error('Invalid regex object.');
+        return;
+    }
+}
+
+/**
+ * Performs the import of the regex file.
+ * @param {File} file Input file
+ * @param {boolean} isScoped Is the script scoped to a character?
+ */
+async function onRegexImportFileChange(file, isScoped) {
+    if (!file) {
+        toastr.error('No file provided.');
+        return;
+    }
+
+    try {
+        const regexScripts = JSON.parse(await getFileText(file));
+        if (Array.isArray(regexScripts)) {
+            for (const regexScript of regexScripts) {
+                await onRegexImportObjectChange(regexScript, isScoped);
+            }
+        } else {
+            await onRegexImportObjectChange(regexScripts, isScoped);
+        }
     } catch (error) {
         console.log(error);
         toastr.error('Invalid JSON file.');
@@ -583,6 +605,69 @@ jQuery(async () => {
     });
     $('#import_regex').on('click', function () {
         $('#import_regex_file').trigger('click');
+    });
+
+    function getSelectedScripts() {
+        const scripts = getRegexScripts();
+        const selector = '#regex_container .regex-script-label:has(.regex_bulk_checkbox:checked)';
+        const selectedIds = Array.from(document.querySelectorAll(selector)).map(e => e.getAttribute('id')).filter(id => id);
+        return scripts.filter(script => selectedIds.includes(script.id));
+    }
+
+    $('#bulk_enable_regex').on('click', async function () {
+        const scripts = getSelectedScripts().filter(script => script.disabled);
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for enabling.`);
+            return;
+        }
+        for (const script of scripts) {
+            script.disabled = false;
+        }
+        saveSettingsDebounced();
+        await loadRegexScripts();
+    });
+
+    $('#bulk_disable_regex').on('click', async function () {
+        const scripts = getSelectedScripts().filter(script => !script.disabled);
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for disabling.`);
+            return;
+        }
+        for (const script of scripts) {
+            script.disabled = true;
+        }
+        saveSettingsDebounced();
+        await loadRegexScripts();
+    });
+
+    $('#bulk_delete_regex').on('click', async function () {
+        const scripts = getSelectedScripts();
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for deletion.`);
+            return;
+        }
+        const confirm = await callGenericPopup('Are you sure you want to delete the selected regex scripts?', POPUP_TYPE.CONFIRM);
+        if (!confirm) {
+            return;
+        }
+        for (const script of scripts) {
+            const isScoped = characters[this_chid]?.data?.extensions?.regex_scripts?.some(s => s.id === script.id);
+            await deleteRegexScript({ id: script.id, isScoped: isScoped });
+        }
+        await reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $('#bulk_export_regex').on('click', async function () {
+        const scripts = getSelectedScripts();
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for export.`);
+            return;
+        }
+        const fileName = `regex-${new Date().toISOString()}.json`;
+        const fileData = JSON.stringify(scripts, null, 4);
+        download(fileData, fileName, 'application/json');
+        await loadRegexScripts();
     });
 
     let sortableDatas = [

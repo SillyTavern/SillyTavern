@@ -90,6 +90,11 @@ function setSamplerListListeners() {
             targetDisplayType = 'block';
         }
 
+        if (samplerName === 'xtc_probability') {
+            relatedDOMElement = $('#xtc_block');
+            targetDisplayType = 'block';
+        }
+
         if (samplerName === 'dynatemp') {
             relatedDOMElement = $('#dynatemp_block_ooba');
             targetDisplayType = 'block';
@@ -248,6 +253,10 @@ async function listSamplers(main_api, arrayOnly = false) {
             targetDOMelement = $('#dryBlock');
             displayname = 'DRY Rep Pen Block';
         }
+        if (sampler === 'xtc_probability') {
+            targetDOMelement = $('#xtc_block');
+            displayname = 'XTC Block';
+        }
 
         if (sampler === 'dynatemp') {
             targetDOMelement = $('#dynatemp_block_ooba');
@@ -371,6 +380,11 @@ export async function validateDisabledSamplers(redraw = false) {
 
         if (sampler === 'dry_multiplier') {
             relatedDOMElement = $('#dryBlock');
+            targetDisplayType = 'block';
+        }
+
+        if (sampler === 'xtc_probability') {
+            relatedDOMElement = $('#xtc_block');
             targetDisplayType = 'block';
         }
 

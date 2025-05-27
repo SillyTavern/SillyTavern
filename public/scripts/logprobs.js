@@ -8,6 +8,7 @@ import {
     getGeneratingApi,
     is_send_press,
     isStreamingEnabled,
+    substituteParamsExtended,
 } from '../script.js';
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
@@ -368,7 +369,7 @@ function onToggleLogprobsPanel() {
 function createSwipe(messageId, prompt) {
     // need to call `cleanUpMessage` on our new prompt, because we were working
     // with raw model output and our new prompt is missing trimming/macro replacements
-    const cleanedPrompt = cleanUpMessage({
+    let cleanedPrompt = cleanUpMessage({
         getMessage: prompt,
         isImpersonate: false,
         isContinue: false,
@@ -376,6 +377,46 @@ function createSwipe(messageId, prompt) {
     });
 
     const msg = chat[messageId];
+
+    const reasoningPrefix = substituteParamsExtended(power_user.reasoning.prefix);
+    const reasoningSuffix = substituteParamsExtended(power_user.reasoning.suffix);
+    const isReasoningAutoParsed = power_user.reasoning.auto_parse;
+    const msgHasParsedReasoning = msg.extra?.reasoning?.length > 0;
+    let shouldRerollReasoning = false;
+
+    //if we have pre-existing reasoning and are currently autoparsing
+    if (isReasoningAutoParsed && msgHasParsedReasoning) {
+        console.debug('saw autoparse on with reasoning in message');
+        //but the reroll prompt does not include the end of reasoning
+        if (cleanedPrompt.includes(reasoningPrefix) && !cleanedPrompt.includes(reasoningSuffix)) {
+            //we need to send the results to the reasoning block
+            //this will involve the ReasoningHandler from reasoning.js
+            console.debug('..with start tag but no end tag... reroll reasoning');
+            shouldRerollReasoning = true;
+        }
+
+        let hasReasoningPrefix = cleanedPrompt.includes(reasoningPrefix);
+        let hasReasoningSuffix = cleanedPrompt.includes(reasoningSuffix);
+
+        //..with both the start and end think tags
+        //OR
+        //..with only the end think tag (implying prefilled think start)
+        if (hasReasoningPrefix && hasReasoningSuffix) {
+            //we need to send the results to the response block without reasoning attached
+            console.debug('...incl. end tag...rerolling response');
+            const endOfThink = cleanedPrompt.indexOf(reasoningSuffix) + reasoningSuffix.length;
+            cleanedPrompt = cleanedPrompt.substring(endOfThink);
+        }
+
+        //if cleanedprompt includes the think prefix, but no suffix..
+        if (hasReasoningPrefix && !hasReasoningSuffix) {
+            console.debug('..no end tag...rerolling reasoning, so removing prefix');
+            cleanedPrompt = cleanedPrompt.replace(reasoningPrefix, '');
+        }
+    }
+
+    console.debug('cleanedPrompt: ', cleanedPrompt);
+
     const newSwipeInfo = {
         send_date: msg.send_date,
         gen_started: msg.gen_started,
@@ -387,8 +428,19 @@ function createSwipe(messageId, prompt) {
     msg.swipe_info = msg.swipe_info || [];
 
     // Add our new swipe, then make sure the active swipe is the one just before
-    // it. The call to `swipe_right` will switch to it immediately.
-    msg.swipes.push(cleanedPrompt);
+    // it. The call to `swipe_right` in addGeneration() will switch to it immediately.
+
+    //if we determined that we need to reroll from reasoning
+    if (shouldRerollReasoning) {
+        //cleaned prompt goes into reasoning
+        newSwipeInfo.extra.reasoning = cleanedPrompt;
+        //mes_text becomes empty, causing the reasoning handler to parse the reasoning first
+        msg.swipes.push('');
+    } else {
+        //otherwise just add the cleaned prompt to the message and continue
+        msg.swipes.push(cleanedPrompt);
+    }
+
     msg.swipe_info.push(newSwipeInfo);
     msg.swipe_id = Math.max(0, msg.swipes.length - 2);
 }

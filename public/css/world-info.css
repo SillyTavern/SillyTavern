@@ -124,6 +124,10 @@
     cursor: initial;
 }
 
+.world_entry .inline-drawer-header-pointer {
+    cursor: pointer;
+}
+
 .world_entry .killSwitch {
     cursor: pointer;
 }

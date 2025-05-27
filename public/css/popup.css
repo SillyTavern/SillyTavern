@@ -34,9 +34,17 @@ dialog {
 }
 
 /** Popup styles applied to the main popup */
-.popup--animation-fast { --popup-animation-speed: var(--animation-duration); }
-.popup--animation-slow { --popup-animation-speed: var(--animation-duration-slow); }
-.popup--animation-none { --popup-animation-speed: 0ms; }
+.popup--animation-fast {
+    --popup-animation-speed: var(--animation-duration);
+}
+
+.popup--animation-slow {
+    --popup-animation-speed: var(--animation-duration-slow);
+}
+
+.popup--animation-none {
+    --popup-animation-speed: 0ms;
+}
 
 /* Styling of main popup elements */
 .popup .popup-body {
@@ -190,4 +198,3 @@ body.no-blur .popup[open]::backdrop {
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
 }
-

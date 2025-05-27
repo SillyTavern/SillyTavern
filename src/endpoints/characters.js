@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
-import readline from 'node:readline';
 import { Buffer } from 'node:buffer';
 
 import express from 'express';
@@ -22,6 +21,7 @@ import { readWorldInfoFile } from './worldinfo.js';
 import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
+import { getChatInfo } from './chats.js';
 const defaultAvatarPath = './public/img/ai4.png';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
@@ -577,10 +577,10 @@ function charaFormatData(data, directories) {
     _.set(char, 'mes_example', data.mes_example || '');
 
     // Old ST extension fields (for backward compatibility, will be deprecated)
-    _.set(char, 'creatorcomment', data.creator_notes);
+    _.set(char, 'creatorcomment', data.creator_notes || '');
     _.set(char, 'avatar', 'none');
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
-    _.set(char, 'talkativeness', data.talkativeness);
+    _.set(char, 'talkativeness', data.talkativeness || 0.5);
     _.set(char, 'fav', data.fav == 'true');
     _.set(char, 'tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : data.tags || []);
 
@@ -604,7 +604,7 @@ function charaFormatData(data, directories) {
     _.set(char, 'data.alternate_greetings', getAlternateGreetings(data));
 
     // ST extension fields to V2 object
-    _.set(char, 'data.extensions.talkativeness', data.talkativeness);
+    _.set(char, 'data.extensions.talkativeness', data.talkativeness || 0.5);
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
 
@@ -702,6 +702,12 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 sticky: entry.sticky ?? null,
                 cooldown: entry.cooldown ?? null,
                 delay: entry.delay ?? null,
+                match_persona_description: entry.matchPersonaDescription ?? false,
+                match_character_description: entry.matchCharacterDescription ?? false,
+                match_character_personality: entry.matchCharacterPersonality ?? false,
+                match_character_depth_prompt: entry.matchCharacterDepthPrompt ?? false,
+                match_scenario: entry.matchScenario ?? false,
+                match_creator_notes: entry.matchCreatorNotes ?? false,
             },
         };
 
@@ -720,7 +726,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
  */
 async function importFromYaml(uploadPath, context, preservedFileName) {
     const fileText = fs.readFileSync(uploadPath, 'utf8');
-    fs.rmSync(uploadPath);
+    fs.unlinkSync(uploadPath);
     const yamlData = yaml.parse(fileText);
     console.info('Importing from YAML');
     yamlData.name = sanitize(yamlData.name);
@@ -754,7 +760,7 @@ async function importFromYaml(uploadPath, context, preservedFileName) {
  */
 async function importFromCharX(uploadPath, { request }, preservedFileName) {
     const data = fs.readFileSync(uploadPath).buffer;
-    fs.rmSync(uploadPath);
+    fs.unlinkSync(uploadPath);
     console.info('Importing from CharX');
     const cardBuffer = await extractFileFromZipBuffer(data, 'card.json');
 
@@ -937,7 +943,7 @@ router.post('/create', async function (request, response) {
         request.body.ch_name = sanitize(request.body.ch_name);
 
         const char = JSON.stringify(charaFormatData(request.body, request.user.directories));
-        const internalName = getPngName(request.body.ch_name, request.user.directories);
+        const internalName = request.body.file_name || getPngName(request.body.ch_name, request.user.directories);
         const avatarName = `${internalName}.png`;
         const chatsPath = path.join(request.user.directories.chats, internalName);
 
@@ -995,7 +1001,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         }
 
         // Remove the old character file
-        fs.rmSync(oldAvatarPath);
+        fs.unlinkSync(oldAvatarPath);
 
         // Return new avatar name to ST
         return response.send({ avatar: newAvatarName });
@@ -1150,7 +1156,7 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
         return response.sendStatus(400);
     }
 
-    fs.rmSync(avatarPath);
+    fs.unlinkSync(avatarPath);
     invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
     let dir_name = (request.body.avatar_url.replace('.png', ''));
 
@@ -1222,7 +1228,6 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
         if (!request.body) return response.sendStatus(400);
 
         const characterDirectory = (request.body.avatar_url).replace('.png', '');
-
         const chatsDirectory = path.join(request.user.directories.chats, characterDirectory);
 
         if (!fs.existsSync(chatsDirectory)) {
@@ -1242,54 +1247,11 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
         }
 
         const jsonFilesPromise = jsonFiles.map((file) => {
-            return new Promise(async (res) => {
-                const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
-                const fileStream = fs.createReadStream(pathToFile);
-                const stats = fs.statSync(pathToFile);
-                const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
-
-                if (stats.size === 0) {
-                    console.warn(`Found an empty chat file: ${pathToFile}`);
-                    res({});
-                    return;
-                }
-
-                const rl = readline.createInterface({
-                    input: fileStream,
-                    crlfDelay: Infinity,
-                });
-
-                let lastLine;
-                let itemCounter = 0;
-                rl.on('line', (line) => {
-                    itemCounter++;
-                    lastLine = line;
-                });
-                rl.on('close', () => {
-                    rl.close();
-
-                    if (lastLine) {
-                        const jsonData = tryParse(lastLine);
-                        if (jsonData && (jsonData.name || jsonData.character_name)) {
-                            const chatData = {};
-
-                            chatData['file_name'] = file;
-                            chatData['file_size'] = fileSizeInKB;
-                            chatData['chat_items'] = itemCounter - 1;
-                            chatData['mes'] = jsonData['mes'] || '[The chat is empty]';
-                            chatData['last_mes'] = jsonData['send_date'] || Date.now();
-
-                            res(chatData);
-                        } else {
-                            console.warn('Found an invalid or corrupted chat file:', pathToFile);
-                            res({});
-                        }
-                    }
-                });
-            });
+            const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
+            return getChatInfo(pathToFile);
         });
 
-        const chatData = await Promise.all(jsonFilesPromise);
+        const chatData = (await Promise.allSettled(jsonFilesPromise)).filter(x => x.status === 'fulfilled').map(x => x.value);
         const validFiles = chatData.filter(i => i.file_name);
 
         return response.send(validFiles);

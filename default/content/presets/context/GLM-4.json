@@ -1,0 +1,10 @@
+{
+    "story_string": "[gMASK]<sop>{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}\n",
+    "example_separator": "",
+    "chat_start": "",
+    "use_stop_strings": false,
+    "always_force_name2": true,
+    "trim_sentences": false,
+    "single_line": false,
+    "name": "GLM-4"
+}

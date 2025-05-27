@@ -3,7 +3,6 @@
     "example_separator": "This is how {{char}} should talk",
     "chat_start": "\nThen the roleplay chat between {{user}} and {{char}} begins.\n",
     "use_stop_strings": false,
-    "allow_jailbreak": false,
     "always_force_name2": true,
     "trim_sentences": false,
     "single_line": false,

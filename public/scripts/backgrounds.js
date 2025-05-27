@@ -1,11 +1,12 @@
 import { Fuse } from '../lib.js';
 
 import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
-import { saveMetadataDebounced } from './extensions.js';
+import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { flashHighlight, stringFormat } from './utils.js';
 import { t } from './i18n.js';
+import { Popup } from './popup.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -77,7 +78,7 @@ function getChatBackgroundsList() {
 }
 
 function getBackgroundPath(fileUrl) {
-    return `backgrounds/${fileUrl}`;
+    return `backgrounds/${encodeURIComponent(fileUrl)}`;
 }
 
 function highlightLockedBackground() {
@@ -217,7 +218,7 @@ async function onCopyToSystemBackgroundClick(e) {
     const formData = new FormData();
     formData.set('avatar', file);
 
-    uploadBackground(formData);
+    await uploadBackground(formData);
 
     const list = chat_metadata[LIST_METADATA_KEY] || [];
     const index = list.indexOf(bgNames.oldBg);
@@ -291,7 +292,7 @@ async function onDeleteBackgroundClick(e) {
     const bgToDelete = $(this).closest('.bg_example');
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
-    const confirm = await callPopup('<h3>Delete the background?</h3>', 'confirm');
+    const confirm = await Popup.show.confirm(t`Delete the background?`, null);
     const bg = bgToDelete.attr('bgfile');
 
     if (confirm) {
@@ -438,7 +439,7 @@ async function delBackground(bg) {
     });
 }
 
-function onBackgroundUploadSelected() {
+async function onBackgroundUploadSelected() {
     const form = $('#form_bg_download').get(0);
 
     if (!(form instanceof HTMLFormElement)) {
@@ -447,34 +448,82 @@ function onBackgroundUploadSelected() {
     }
 
     const formData = new FormData(form);
-    uploadBackground(formData);
+    await convertFileIfVideo(formData);
+    await uploadBackground(formData);
     form.reset();
+}
+
+/**
+ * Converts a video file to an animated webp format if the file is a video.
+ * @param {FormData} formData
+ * @returns {Promise<void>}
+ */
+async function convertFileIfVideo(formData) {
+    const file = formData.get('avatar');
+    if (!(file instanceof File)) {
+        return;
+    }
+    if (!file.type.startsWith('video/')) {
+        return;
+    }
+    if (typeof globalThis.convertVideoToAnimatedWebp !== 'function') {
+        toastr.warning(t`Click here to install the Video Background Loader extension`, t`Video background uploads require a downloadable add-on`, {
+            timeOut: 0,
+            extendedTimeOut: 0,
+            onclick: () => openThirdPartyExtensionMenu('https://github.com/SillyTavern/Extension-VideoBackgroundLoader'),
+        });
+        return;
+    }
+
+    let toastMessage = jQuery();
+    try {
+        toastMessage = toastr.info(t`Preparing video for upload. This may take several minutes.`, t`Please wait`, { timeOut: 0, extendedTimeOut: 0 });
+        const sourceBuffer = await file.arrayBuffer();
+        const convertedBuffer = await globalThis.convertVideoToAnimatedWebp({ buffer: new Uint8Array(sourceBuffer), name: file.name });
+        const convertedFileName = file.name.replace(/\.[^/.]+$/, '.webp');
+        const convertedFile = new File([convertedBuffer], convertedFileName, { type: 'image/webp' });
+        formData.set('avatar', convertedFile);
+        toastMessage.remove();
+    } catch (error) {
+        formData.delete('avatar');
+        toastMessage.remove();
+        console.error('Error converting video to animated webp:', error);
+        toastr.error(t`Error converting video to animated webp`);
+    }
 }
 
 /**
  * Uploads a background to the server
  * @param {FormData} formData
  */
-function uploadBackground(formData) {
-    jQuery.ajax({
-        type: 'POST',
-        url: '/api/backgrounds/upload',
-        data: formData,
-        beforeSend: function () {
-        },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (bg) {
-            setBackground(bg, generateUrlParameter(bg, false));
-            await getBackgrounds();
-            highlightNewBackground(bg);
-        },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+async function uploadBackground(formData) {
+    try {
+        if (!formData.has('avatar')) {
+            console.log('No file provided. Background upload cancelled.');
+            return;
+        }
+
+        const headers = getRequestHeaders();
+        delete headers['Content-Type'];
+
+        const response = await fetch('/api/backgrounds/upload', {
+            method: 'POST',
+            headers: headers,
+            body: formData,
+            cache: 'no-cache',
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to upload background');
+        }
+
+        const bg = await response.text();
+        setBackground(bg, generateUrlParameter(bg, false));
+        await getBackgrounds();
+        highlightNewBackground(bg);
+    } catch (error) {
+        console.error('Error uploading background:', error);
+    }
 }
 
 /**

@@ -394,7 +394,7 @@ function getHordeModelTemplate(option) {
     `));
 }
 
-jQuery(function () {
+export function initHorde () {
     $('#horde_model').on('mousedown change', async function (e) {
         console.log('Horde model change', e);
         horde_settings.models = $('#horde_model').val();
@@ -441,7 +441,7 @@ jQuery(function () {
     if (!isMobile()) {
         $('#horde_model').select2({
             width: '100%',
-            placeholder: 'Select Horde models',
+            placeholder: t`Select Horde models`,
             allowClear: true,
             closeOnSelect: false,
             templateSelection: function (data) {
@@ -451,5 +451,5 @@ jQuery(function () {
             templateResult: getHordeModelTemplate,
         });
     }
-});
+}
 

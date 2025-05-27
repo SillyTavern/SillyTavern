@@ -56,6 +56,8 @@ import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValu
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
+import { MacrosParser } from '../../macros.js';
+import { t } from '../../i18n.js';
 
 export { MODULE_NAME };
 
@@ -930,6 +932,10 @@ const resolutionOptions = {
     sd_res_768x1344: { width: 768, height: 1344, name: '768x1344 (3:4, SDXL)' },
     sd_res_1536x640: { width: 1536, height: 640, name: '1536x640 (24:10, SDXL)' },
     sd_res_640x1536: { width: 640, height: 1536, name: '640x1536 (10:24, SDXL)' },
+    sd_res_1536x1024: { width: 1536, height: 1024, name: '1536x1024 (3:2, ChatGPT)' },
+    sd_res_1024x1536: { width: 1024, height: 1536, name: '1024x1536 (2:3, ChatGPT)' },
+    sd_res_1024x1792: { width: 1024, height: 1792, name: '1024x1792 (4:7, DALL-E)' },
+    sd_res_1792x1024: { width: 1792, height: 1024, name: '1792x1024 (7:4, DALL-E)' },
 };
 
 function onResolutionChange() {
@@ -1947,8 +1953,9 @@ async function loadDrawthingsModels() {
 
 async function loadOpenAiModels() {
     return [
-        { value: 'dall-e-3', text: 'DALL-E 3' },
-        { value: 'dall-e-2', text: 'DALL-E 2' },
+        { value: 'gpt-image-1', text: 'gpt-image-1' },
+        { value: 'dall-e-3', text: 'dall-e-3' },
+        { value: 'dall-e-2', text: 'dall-e-2' },
     ];
 }
 
@@ -3250,9 +3257,11 @@ function getNovelParams() {
 async function generateOpenAiImage(prompt, signal) {
     const dalle2PromptLimit = 1000;
     const dalle3PromptLimit = 4000;
+    const gptImgPromptLimit = 32000;
 
     const isDalle2 = extension_settings.sd.model === 'dall-e-2';
     const isDalle3 = extension_settings.sd.model === 'dall-e-3';
+    const isGptImg = extension_settings.sd.model === 'gpt-image-1';
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
         prompt = prompt.substring(0, dalle2PromptLimit);
@@ -3260,6 +3269,10 @@ async function generateOpenAiImage(prompt, signal) {
 
     if (isDalle3 && prompt.length > dalle3PromptLimit) {
         prompt = prompt.substring(0, dalle3PromptLimit);
+    }
+
+    if (isGptImg && prompt.length > gptImgPromptLimit) {
+        prompt = prompt.substring(0, gptImgPromptLimit);
     }
 
     let width = 1024;
@@ -3272,6 +3285,14 @@ async function generateOpenAiImage(prompt, signal) {
 
     if (isDalle3 && aspectRatio > 1) {
         width = 1792;
+    }
+
+    if (isGptImg && aspectRatio < 1) {
+        height = 1536;
+    }
+
+    if (isGptImg && aspectRatio > 1) {
+        width = 1536;
     }
 
     if (isDalle2 && (extension_settings.sd.width <= 512 && extension_settings.sd.height <= 512)) {
@@ -3290,7 +3311,8 @@ async function generateOpenAiImage(prompt, signal) {
             n: 1,
             quality: isDalle3 ? extension_settings.sd.openai_quality : undefined,
             style: isDalle3 ? extension_settings.sd.openai_style : undefined,
-            response_format: 'b64_json',
+            response_format: isDalle2 || isDalle3 ? 'b64_json' : undefined,
+            moderation: isGptImg ? 'low' : undefined,
         }),
     });
 
@@ -4528,4 +4550,29 @@ jQuery(async () => {
 
     await loadSettings();
     $('body').addClass('sd');
+
+    const getMacroValue = ({ isNegative }) => {
+        if (selected_group || this_chid === undefined) {
+            return '';
+        }
+
+        const key = getCharaFilename(this_chid);
+        let characterPrompt = key ? (extension_settings.sd.character_prompts[key] || '') : '';
+        let negativePrompt = key ? (extension_settings.sd.character_negative_prompts[key] || '') : '';
+
+        const context = getContext();
+        const sharedPromptData = context?.characters[this_chid]?.data?.extensions?.sd_character_prompt;
+
+        if (typeof sharedPromptData?.positive === 'string' && !characterPrompt && sharedPromptData.positive) {
+            characterPrompt = sharedPromptData.positive || '';
+        }
+        if (typeof sharedPromptData?.negative === 'string' && !negativePrompt && sharedPromptData.negative) {
+            negativePrompt = sharedPromptData.negative || '';
+        }
+
+        return isNegative ? negativePrompt : characterPrompt;
+    };
+
+    MacrosParser.registerMacro('charPrefix', () => getMacroValue({ isNegative: false }), t`Character's positive positive Image Generation prompt prefix`);
+    MacrosParser.registerMacro('charNegativePrefix', () => getMacroValue({ isNegative: true }), t`Character's negative Image Generation prompt prefix`);
 });

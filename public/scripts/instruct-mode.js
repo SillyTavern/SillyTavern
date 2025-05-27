@@ -208,37 +208,39 @@ export function autoSelectInstructPreset(modelId) {
 
     // Select matching instruct preset
     let foundMatch = false;
-    for (const instruct_preset of instruct_presets) {
-        // If instruct preset matches the context template
-        if (power_user.instruct.bind_to_context && instruct_preset.name === power_user.context.preset) {
-            foundMatch = true;
-            selectInstructPreset(instruct_preset.name, { isAuto: true });
-            break;
-        }
-    }
-    // If no match was found, auto-select instruct preset
-    if (!foundMatch) {
-        for (const preset of instruct_presets) {
-            // If activation regex is set, check if it matches the model id
-            if (preset.activation_regex) {
-                try {
-                    const regex = regexFromString(preset.activation_regex);
 
-                    // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
-                    if (regex instanceof RegExp && regex.test(modelId)) {
-                        selectInstructPreset(preset.name, { isAuto: true });
+    for (const preset of instruct_presets) {
+        // If activation regex is set, check if it matches the model id
+        if (preset.activation_regex) {
+            try {
+                const regex = regexFromString(preset.activation_regex);
 
-                        return true;
-                    }
-                } catch {
-                    // If regex is invalid, ignore it
-                    console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
+                // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
+                if (regex instanceof RegExp && regex.test(modelId)) {
+                    selectInstructPreset(preset.name, { isAuto: true });
+                    foundMatch = true;
+                    break;
                 }
+            } catch {
+                // If regex is invalid, ignore it
+                console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
             }
         }
     }
 
-    return false;
+    // If no match was found, auto-select instruct preset
+    if (!foundMatch && power_user.instruct.bind_to_context) {
+        for (const instruct_preset of instruct_presets) {
+            // If instruct preset matches the context template
+            if (instruct_preset.name === power_user.context.preset) {
+                selectInstructPreset(instruct_preset.name, { isAuto: true });
+                foundMatch = true;
+                break;
+            }
+        }
+    }
+
+    return foundMatch;
 }
 
 /**

@@ -66,7 +66,7 @@ router.post('/delete', async (request, response) => {
             return response.status(404).send('File not found');
         }
 
-        fs.rmSync(pathToDelete);
+        fs.unlinkSync(pathToDelete);
         console.info(`Deleted file: ${request.body.path} from ${request.user.profile.handle}`);
         return response.sendStatus(200);
     } catch (error) {

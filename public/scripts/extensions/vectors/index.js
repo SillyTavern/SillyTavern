@@ -36,6 +36,7 @@ import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandRetur
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
+import { removeReasoningFromString } from '../../reasoning.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -260,7 +261,7 @@ async function summarizeExtra(element) {
  * @returns {Promise<boolean>} Sucess
  */
 async function summarizeMain(element) {
-    element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
+    element.text = removeReasoningFromString(await generateRaw(element.text, '', false, false, settings.summary_prompt));
     return true;
 }
 
@@ -829,11 +830,12 @@ async function getAdditionalArgs(items) {
 * @returns {Promise<number[]>} Saved hashes
 */
 async function getSavedHashes(collectionId) {
+    const args = await getAdditionalArgs([]);
     const response = await fetch('/api/vector/list', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            ...getVectorsRequestBody(),
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             source: settings.source,
         }),
@@ -1155,6 +1157,9 @@ function loadWebLlmModels() {
  * @returns {Promise<Record<string, number[]>>} Calculated embeddings
  */
 async function createWebLlmEmbeddings(items) {
+    if (items.length === 0) {
+        return /** @type {Record<string, number[]>} */ ({});
+    }
     return executeWithWebLlmErrorHandling(async () => {
         const embeddings = await webllmProvider.embedTexts(items, settings.webllm_model);
         const result = /** @type {Record<string, number[]>} */ ({});

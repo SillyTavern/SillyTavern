@@ -4,7 +4,7 @@ FROM node:lts-alpine3.19
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add --no-cache gcompat tini git
+RUN apk add --no-cache gcompat tini git git-lfs
 
 # Create app directory
 WORKDIR ${APP_HOME}
@@ -12,14 +12,12 @@ WORKDIR ${APP_HOME}
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Install app dependencies
-COPY package*.json post-install.js ./
+# Bundle app source
+COPY . ./
+
 RUN \
   echo "*** Install npm packages ***" && \
   npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
-
-# Bundle app source
-COPY . ./
 
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \

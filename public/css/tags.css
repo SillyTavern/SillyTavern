@@ -211,6 +211,7 @@
 
 .tag_as_folder.right_menu_button {
     filter: brightness(75%) saturate(0.6);
+    margin-right: 5px;
 }
 
 .tag_as_folder.right_menu_button:hover,

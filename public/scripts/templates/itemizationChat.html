@@ -83,7 +83,10 @@
                     <div class="tokenItemizingSubclass">{{scenarioTextTokens}}</div>
                 </div>
                 <div class="flex-container ">
-                    <div class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                    <div class=" flex1 tokenItemizingSubclass">
+                        <span>-- Examples:</span>
+                        {{#if examplesCount}}<small>({{examplesCount}})</small>{{/if}}
+                    </div>
                     <div class="tokenItemizingSubclass">{{examplesStringTokens}}</div>
                 </div>
                 <div class="flex-container ">
@@ -96,7 +99,10 @@
                 <div class="">{{worldInfoStringTokens}}</div>
             </div>
             <div class="wide100p flex-container">
-                <div class="flex1" style="color: palegreen;"><span data-i18n="Chat History:">Chat History:</span></div>
+                <div class="flex1" style="color: palegreen;">
+                    <span data-i18n="Chat History:">Chat History:</span>
+                    {{#if messagesCount}}<small>({{messagesCount}})</small>{{/if}}
+                </div>
                 <div class="">{{ActualChatHistoryTokens}}</div>
             </div>
             <div class="wide100p flex-container flexNoGap flexFlowColumn">

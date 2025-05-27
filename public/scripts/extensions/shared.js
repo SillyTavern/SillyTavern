@@ -15,14 +15,14 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  */
 export async function getMultimodalCaption(base64Img, prompt) {
     const useReverseProxy =
-        (['openai', 'anthropic', 'google', 'mistral'].includes(extension_settings.caption.multimodal_api))
+        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai'].includes(extension_settings.caption.multimodal_api))
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
 
     throwIfInvalidModel(useReverseProxy);
 
-    const noPrefix = ['ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
+    const noPrefix = ['ollama'].includes(extension_settings.caption.multimodal_api);
 
     if (noPrefix && base64Img.startsWith('data:image/')) {
         base64Img = base64Img.split(',')[1];
@@ -38,7 +38,8 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const isVllm = extension_settings.caption.multimodal_api === 'vllm';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
-    if ((['google', 'openrouter', 'mistral', 'groq'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
+    const thumbnailNeeded = ['google', 'openrouter', 'mistral', 'groq', 'vertexai'].includes(extension_settings.caption.multimodal_api);
+    if ((thumbnailNeeded && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
         const maxSide = 1024;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
     }
@@ -60,7 +61,9 @@ export async function getMultimodalCaption(base64Img, prompt) {
             requestBody.model = textgenerationwebui_settings.ollama_model;
         }
 
-        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+        requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
+            ? extension_settings.caption.alt_endpoint_url
+            : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
     }
 
     if (isVllm) {
@@ -68,19 +71,27 @@ export async function getMultimodalCaption(base64Img, prompt) {
             requestBody.model = textgenerationwebui_settings.vllm_model;
         }
 
-        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+        requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
+            ? extension_settings.caption.alt_endpoint_url
+            : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
     }
 
     if (isLlamaCpp) {
-        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+        requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
+            ? extension_settings.caption.alt_endpoint_url
+            : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
     }
 
     if (isOoba) {
-        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OOBA];
+        requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
+            ? extension_settings.caption.alt_endpoint_url
+            : textgenerationwebui_settings.server_urls[textgen_types.OOBA];
     }
 
     if (isKoboldCpp) {
-        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
+        requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
+            ? extension_settings.caption.alt_endpoint_url
+            : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
     }
 
     if (isCustom) {
@@ -94,11 +105,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
     function getEndpointUrl() {
         switch (extension_settings.caption.multimodal_api) {
             case 'google':
+            case 'vertexai':
                 return '/api/google/caption-image';
             case 'anthropic':
                 return '/api/anthropic/caption-image';
-            case 'llamacpp':
-                return '/api/backends/text-completions/llamacpp/caption-image';
             case 'ollama':
                 return '/api/backends/text-completions/ollama/caption-image';
             default:
@@ -121,71 +131,84 @@ export async function getMultimodalCaption(base64Img, prompt) {
 }
 
 function throwIfInvalidModel(useReverseProxy) {
-    if (extension_settings.caption.multimodal_api === 'openai' && !secret_state[SECRET_KEYS.OPENAI] && !useReverseProxy) {
+    const altEndpointEnabled = extension_settings.caption.alt_endpoint_enabled;
+    const altEndpointUrl = extension_settings.caption.alt_endpoint_url;
+    const multimodalModel = extension_settings.caption.multimodal_model;
+    const multimodalApi = extension_settings.caption.multimodal_api;
+
+    if (altEndpointEnabled && ['llamacpp', 'ooba', 'koboldcpp', 'vllm', 'ollama'].includes(multimodalApi) && !altEndpointUrl) {
+        throw new Error('Secondary endpoint URL is not set.');
+    }
+
+    if (multimodalApi === 'openai' && !secret_state[SECRET_KEYS.OPENAI] && !useReverseProxy) {
         throw new Error('OpenAI API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER]) {
+    if (multimodalApi === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER]) {
         throw new Error('OpenRouter API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'anthropic' && !secret_state[SECRET_KEYS.CLAUDE] && !useReverseProxy) {
+    if (multimodalApi === 'anthropic' && !secret_state[SECRET_KEYS.CLAUDE] && !useReverseProxy) {
         throw new Error('Anthropic (Claude) API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'zerooneai' && !secret_state[SECRET_KEYS.ZEROONEAI]) {
+    if (multimodalApi === 'zerooneai' && !secret_state[SECRET_KEYS.ZEROONEAI]) {
         throw new Error('01.AI API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'groq' && !secret_state[SECRET_KEYS.GROQ]) {
+    if (multimodalApi === 'groq' && !secret_state[SECRET_KEYS.GROQ]) {
         throw new Error('Groq API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
+    if (multimodalApi === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
         throw new Error('Google AI Studio API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {
+    if (multimodalApi === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !useReverseProxy) {
+        throw new Error('Google Vertex AI API key is not set.');
+    }
+
+    if (multimodalApi === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {
         throw new Error('Mistral AI API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+    if (multimodalApi === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
         throw new Error('Cohere API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'xai' && !secret_state[SECRET_KEYS.XAI]) {
+    if (multimodalApi === 'xai' && !secret_state[SECRET_KEYS.XAI] && !useReverseProxy) {
         throw new Error('xAI API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) {
+    if (multimodalApi === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] && !altEndpointEnabled) {
         throw new Error('Ollama server URL is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'ollama' && extension_settings.caption.multimodal_model === 'ollama_current' && !textgenerationwebui_settings.ollama_model) {
+    if (multimodalApi === 'ollama' && multimodalModel === 'ollama_current' && !textgenerationwebui_settings.ollama_model) {
         throw new Error('Ollama model is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+    if (multimodalApi === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP] && !altEndpointEnabled) {
         throw new Error('LlamaCPP server URL is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'ooba' && !textgenerationwebui_settings.server_urls[textgen_types.OOBA]) {
+    if (multimodalApi === 'ooba' && !textgenerationwebui_settings.server_urls[textgen_types.OOBA] && !altEndpointEnabled) {
         throw new Error('Text Generation WebUI server URL is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) {
+    if (multimodalApi === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP] && !altEndpointEnabled) {
         throw new Error('KoboldCpp server URL is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM]) {
+    if (multimodalApi === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] && !altEndpointEnabled) {
         throw new Error('vLLM server URL is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'vllm' && extension_settings.caption.multimodal_model === 'vllm_current' && !textgenerationwebui_settings.vllm_model) {
+    if (multimodalApi === 'vllm' && multimodalModel === 'vllm_current' && !textgenerationwebui_settings.vllm_model) {
         throw new Error('vLLM model is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {
+    if (multimodalApi === 'custom' && !oai_settings.custom_url) {
         throw new Error('Custom API URL is not set.');
     }
 }

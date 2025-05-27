@@ -3,7 +3,6 @@
     "example_separator": "<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nWrite an example narrative / conversation that is not part of the main story.",
     "chat_start": "<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nStart the role-play between {{char}} and {{user}}.",
     "use_stop_strings": false,
-    "allow_jailbreak": false,
     "always_force_name2": false,
     "trim_sentences": true,
     "single_line": false,

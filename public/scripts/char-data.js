@@ -33,6 +33,12 @@
  * @property {number} role - The specific function or purpose of the extension.
  * @property {boolean} vectorized - Indicates if the extension is optimized for vectorized processing.
  * @property {number} display_index - The order in which the extension should be displayed for user interfaces.
+ * @property {boolean} match_persona_description - Wether to match against the persona description.
+ * @property {boolean} match_character_description - Wether to match against the persona description.
+ * @property {boolean} match_character_personality - Wether to match against the character personality.
+ * @property {boolean} match_character_depth_prompt - Wether to match against the character depth prompt.
+ * @property {boolean} match_scenario - Wether to match against the character scenario.
+ * @property {boolean} match_creator_notes - Wether to match against the character creator notes.
  */
 
 /**

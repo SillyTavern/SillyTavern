@@ -36,7 +36,7 @@ import {
     textgenerationwebui_presets,
     textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
-import { download, equalsIgnoreCaseAndAccents, parseJsonFile, waitUntilCondition } from './utils.js';
+import { download, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
 import { reasoning_templates } from './reasoning.js';
 
@@ -696,13 +696,14 @@ class PresetManager {
             return;
         }
 
-        $(this.select).find(`option[value="${value}"]`).remove();
-
         if (this.isKeyedApi()) {
+            $(this.select).find(`option[value="${value}"]`).remove();
             const index = preset_names.indexOf(nameToDelete);
             preset_names.splice(index, 1);
             presets.splice(index, 1);
         } else {
+            const index = preset_names[nameToDelete];
+            $(this.select).find(`option[value="${index}"]`).remove();
             delete preset_names[nameToDelete];
         }
 
@@ -890,7 +891,7 @@ export async function initPresetManager() {
 
         const popupHeader = !presetManager.isAdvancedFormatting() ? t`Rename preset` : t`Rename template`;
         const oldName = presetManager.getSelectedPresetName();
-        const newName = await Popup.show.input(popupHeader, t`Enter a new name:`, oldName);
+        const newName = await getSanitizedFilename(await Popup.show.input(popupHeader, t`Enter a new name:`, oldName) || '');
         if (!newName || oldName === newName) {
             console.debug(!presetManager.isAdvancedFormatting() ? 'Preset rename cancelled' : 'Template rename cancelled');
             return;

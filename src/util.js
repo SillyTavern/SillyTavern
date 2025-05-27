@@ -15,13 +15,15 @@ import yauzl from 'yauzl';
 import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
-import { LOG_LEVELS } from './constants.js';
 import bytes from 'bytes';
+import { LOG_LEVELS } from './constants.js';
+import { serverDirectory } from './server-directory.js';
 
 /**
  * Parsed config object.
  */
 let CACHED_CONFIG = null;
+let CONFIG_PATH = null;
 
 /**
  * Converts a configuration key to an environment variable key.
@@ -32,22 +34,37 @@ let CACHED_CONFIG = null;
 export const keyToEnv = (key) => 'SILLYTAVERN_' + String(key).toUpperCase().replace(/\./g, '_');
 
 /**
+ * Set the config file path.
+ * @param {string} configFilePath Path to the config file
+ */
+export function setConfigFilePath(configFilePath) {
+    if (CONFIG_PATH !== null) {
+        console.error(color.red('Config file path already set. Please restart the server to change the config file path.'));
+    }
+    CONFIG_PATH = path.resolve(configFilePath);
+}
+
+/**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */
 export function getConfig() {
+    if (CONFIG_PATH === null) {
+        console.trace();
+        console.error(color.red('No config file path set. Please set the config file path using setConfigFilePath().'));
+        process.exit(1);
+    }
     if (CACHED_CONFIG) {
         return CACHED_CONFIG;
     }
-
-    if (!fs.existsSync('./config.yaml')) {
+    if (!fs.existsSync(CONFIG_PATH)) {
         console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
         console.error(color.red('The program will now exit.'));
         process.exit(1);
     }
 
     try {
-        const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+        const config = yaml.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         CACHED_CONFIG = config;
         return config;
     } catch (error) {
@@ -121,20 +138,19 @@ export async function getVersion() {
 
     try {
         const require = createRequire(import.meta.url);
-        const pkgJson = require(path.join(process.cwd(), './package.json'));
+        const pkgJson = require(path.join(serverDirectory, './package.json'));
         pkgVersion = pkgJson.version;
         if (commandExistsSync('git')) {
-            const git = simpleGit();
-            const cwd = process.cwd();
-            gitRevision = await git.cwd(cwd).revparse(['--short', 'HEAD']);
-            gitBranch = await git.cwd(cwd).revparse(['--abbrev-ref', 'HEAD']);
-            commitDate = await git.cwd(cwd).show(['-s', '--format=%ci', gitRevision]);
+            const git = simpleGit({ baseDir: serverDirectory });
+            gitRevision = await git.revparse(['--short', 'HEAD']);
+            gitBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
+            commitDate = await git.show(['-s', '--format=%ci', gitRevision]);
 
-            const trackingBranch = await git.cwd(cwd).revparse(['--abbrev-ref', '@{u}']);
+            const trackingBranch = await git.revparse(['--abbrev-ref', '@{u}']);
 
             // Might fail, but exception is caught. Just don't run anything relevant after in this block...
-            const localLatest = await git.cwd(cwd).revparse(['HEAD']);
-            const remoteLatest = await git.cwd(cwd).revparse([trackingBranch]);
+            const localLatest = await git.revparse(['HEAD']);
+            const remoteLatest = await git.revparse([trackingBranch]);
             isLatest = localLatest === remoteLatest;
         }
     }
@@ -191,35 +207,58 @@ export function formatBytes(bytes) {
  * @returns {Promise<Buffer|null>} Buffer containing the extracted file. Null if the file was not found.
  */
 export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
-    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-        if (err) reject(err);
+    return await new Promise((resolve) => {
+        try {
+            yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+                if (err) {
+                    console.warn(`Error opening ZIP file: ${err.message}`);
+                    return resolve(null);
+                }
 
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
-                console.info(`Extracting ${entry.fileName}`);
-                zipfile.openReadStream(entry, (err, readStream) => {
-                    if (err) {
-                        reject(err);
+                zipfile.readEntry();
+
+                zipfile.on('entry', (entry) => {
+                    if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
+                        console.info(`Extracting ${entry.fileName}`);
+                        zipfile.openReadStream(entry, (err, readStream) => {
+                            if (err) {
+                                console.warn(`Error opening read stream: ${err.message}`);
+                                return zipfile.readEntry();
+                            } else {
+                                const chunks = [];
+                                readStream.on('data', (chunk) => {
+                                    chunks.push(chunk);
+                                });
+
+                                readStream.on('end', () => {
+                                    const buffer = Buffer.concat(chunks);
+                                    resolve(buffer);
+                                    zipfile.readEntry(); // Continue to the next entry
+                                });
+
+                                readStream.on('error', (err) => {
+                                    console.warn(`Error reading stream: ${err.message}`);
+                                    zipfile.readEntry();
+                                });
+                            }
+                        });
                     } else {
-                        const chunks = [];
-                        readStream.on('data', (chunk) => {
-                            chunks.push(chunk);
-                        });
-
-                        readStream.on('end', () => {
-                            const buffer = Buffer.concat(chunks);
-                            resolve(buffer);
-                            zipfile.readEntry(); // Continue to the next entry
-                        });
+                        zipfile.readEntry();
                     }
                 });
-            } else {
-                zipfile.readEntry();
-            }
-        });
-        zipfile.on('end', () => resolve(null));
-    }));
+
+                zipfile.on('error', (err) => {
+                    console.warn('ZIP processing error', err);
+                    resolve(null);
+                });
+
+                zipfile.on('end', () => resolve(null));
+            });
+        } catch (error) {
+            console.warn('Failed to process ZIP buffer', error);
+            resolve(null);
+        }
+    });
 }
 
 /**
@@ -419,7 +458,7 @@ export function removeOldBackups(directory, prefix, limit = null) {
                 break;
             }
 
-            fs.rmSync(oldest);
+            fs.unlinkSync(oldest);
         }
     }
 }
@@ -1069,5 +1108,41 @@ export function mutateJsonString(jsonString, mutation) {
     } catch (error) {
         console.error('Error parsing or mutating JSON:', error);
         return jsonString;
+    }
+}
+
+/**
+ * Sets the permissions of a file or directory to be writable.
+ * @param {string} targetPath Path to the file or directory
+ */
+export function setPermissionsSync(targetPath) {
+    /**
+     * Appends writable permission to the file mode.
+     * @param {string} filePath Path to the file
+     * @param {fs.Stats} stats File stats
+     */
+    function appendWritablePermission(filePath, stats) {
+        const currentMode = stats.mode;
+        const newMode = currentMode | 0o200;
+        if (newMode != currentMode) {
+            fs.chmodSync(filePath, newMode);
+        }
+    }
+
+    try {
+        const stats = fs.statSync(targetPath);
+
+        if (stats.isDirectory()) {
+            appendWritablePermission(targetPath, stats);
+            const files = fs.readdirSync(targetPath);
+
+            files.forEach((file) => {
+                setPermissionsSync(path.join(targetPath, file));
+            });
+        } else {
+            appendWritablePermission(targetPath, stats);
+        }
+    } catch (error) {
+        console.error(`Error setting write permissions for ${targetPath}:`, error);
     }
 }

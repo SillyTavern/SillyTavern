@@ -117,7 +117,7 @@ router.post('/delete', async (request, response) => {
                 const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
                 if (fs.existsSync(pathToFile)) {
-                    fs.rmSync(pathToFile);
+                    fs.unlinkSync(pathToFile);
                 }
             }
         }
@@ -126,7 +126,7 @@ router.post('/delete', async (request, response) => {
     }
 
     if (fs.existsSync(pathToGroup)) {
-        fs.rmSync(pathToGroup);
+        fs.unlinkSync(pathToGroup);
     }
 
     return response.send({ ok: true });

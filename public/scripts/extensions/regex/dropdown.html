@@ -21,6 +21,29 @@
                     <small data-i18n="ext_regex_import_script">Import</small>
                 </div>
                 <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
+                <label for="regex_bulk_edit" class="menu_button menu_button_icon">
+                    <input id="regex_bulk_edit" type="checkbox" class="displayNone" />
+                    <i class="fa-solid fa-edit"></i>
+                    <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
+                </label>
+            </div>
+            <div class="regex_bulk_operations flex-container justifyCenter">
+                <div id="bulk_enable_regex" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-toggle-on"></i>
+                    <small data-i18n="Enable">Enable</small>
+                </div>
+                <div id="bulk_disable_regex" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-toggle-off"></i>
+                    <small data-i18n="Disable">Disable</small>
+                </div>
+                <div id="bulk_export_regex" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-file-export"></i>
+                    <small data-i18n="Export">Export</small>
+                </div>
+                <div id="bulk_delete_regex" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-trash"></i>
+                    <small data-i18n="Delete">Delete</small>
+                </div>
             </div>
             <hr />
             <div id="global_scripts_block" class="padding5">

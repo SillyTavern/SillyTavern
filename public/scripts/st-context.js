@@ -50,6 +50,8 @@ import {
     unshallowCharacter,
     deleteLastMessage,
     getCharacterCardFields,
+    swipe_right,
+    swipe_left,
 } from '../script.js';
 import {
     extension_settings,
@@ -196,6 +198,7 @@ export function getContext() {
         humanizedDateTime,
         updateMessageBlock,
         appendMediaToMessage,
+        swipe: { left: swipe_left, right: swipe_right },
         variables: {
             local: {
                 get: getLocalVariable,

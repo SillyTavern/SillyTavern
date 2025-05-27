@@ -234,6 +234,14 @@ claude:
   # should be ideal for most use cases.
   # Any value other than a non-negative integer will be ignored and caching at depth will not be enabled.
   cachingAtDepth: -1
+  # Use 1h TTL instead of the default 5m.
+  ## 5m: base price x 1.25
+  ## 1h: base price x 2
+  extendedTTL: false
+# -- GOOGLE GEMINI API CONFIGURATION --
+gemini:
+  # API endpoint version ("v1beta" or "v1alpha")
+  apiVersion: 'v1beta'
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
 # Attempt to automatically update server plugins on startup

@@ -3,7 +3,6 @@
     "example_separator": "",
     "chat_start": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>New Roleplay:<|END_OF_TURN_TOKEN|>",
     "use_stop_strings": false,
-    "allow_jailbreak": false,
     "always_force_name2": true,
     "trim_sentences": false,
     "single_line": false,

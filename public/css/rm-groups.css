@@ -87,7 +87,7 @@
 }
 
 #rm_group_members:empty::before {
-    content: 'Group is empty';
+    content: attr(group_empty_text);
 
     font-weight: bolder;
     width: 100%;
@@ -115,7 +115,7 @@
 }
 
 #rm_group_add_members:empty::before {
-    content: 'No characters available';
+    content: attr(no_characters_text);
 
     font-weight: bolder;
     width: 100%;

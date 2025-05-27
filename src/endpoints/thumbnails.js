@@ -75,7 +75,7 @@ export function invalidateThumbnail(directories, type, file) {
     const pathToThumbnail = path.join(folder, file);
 
     if (fs.existsSync(pathToThumbnail)) {
-        fs.rmSync(pathToThumbnail);
+        fs.unlinkSync(pathToThumbnail);
     }
 }
 

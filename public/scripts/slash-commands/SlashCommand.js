@@ -266,7 +266,7 @@ export class SlashCommand {
                             rawQuotes.classList.add('rawQuotes');
                             rawQuotes.classList.add('fa-solid');
                             rawQuotes.classList.add('fa-quote-left');
-                            rawQuotes.title = t`Does not alter quoted literal unnamed arguments`;
+                            rawQuotes.title = t`Does not alter quoted literal unnamed arguments. Pass raw=false argument to override.`;
                             head.append(rawQuotes);
                         }
                     }

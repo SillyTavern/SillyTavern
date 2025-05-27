@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mime from 'mime-types';
+import { serverDirectory } from './server-directory.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -67,10 +68,9 @@ globalThis.fetch = async (/** @type {string | URL | Request} */ request, /** @ty
     }
     const url = getRequestURL(request);
     const filePath = path.resolve(fileURLToPath(url));
-    const cwd = path.resolve(process.cwd()) + path.sep;
-    const isUnderCwd = isPathUnderParent(cwd, filePath);
-    if (!isUnderCwd) {
-        throw new Error('Requested file path is outside of the current working directory.');
+    const isUnderServerDirectory = isPathUnderParent(serverDirectory, filePath);
+    if (!isUnderServerDirectory) {
+        throw new Error('Requested file path is outside of the server directory.');
     }
     const parsedPath = path.parse(filePath);
     if (!ALLOWED_EXTENSIONS.includes(parsedPath.ext)) {

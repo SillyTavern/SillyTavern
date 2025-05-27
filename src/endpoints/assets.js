@@ -235,14 +235,14 @@ router.post('/download', async (request, response) => {
             const contentType = mime.lookup(temp_path) || 'application/octet-stream';
             response.setHeader('Content-Type', contentType);
             response.send(fileContent);
-            fs.rmSync(temp_path);
+            fs.unlinkSync(temp_path);
             return;
         }
 
         // Move into asset place
         console.info('Download finished, moving file from', temp_path, 'to', file_path);
         fs.copyFileSync(temp_path, file_path);
-        fs.rmSync(temp_path);
+        fs.unlinkSync(temp_path);
         response.sendStatus(200);
     }
     catch (error) {

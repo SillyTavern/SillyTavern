@@ -13,6 +13,10 @@ import {
     getBase64Async,
     resetScrollHeight,
     initScrollHeight,
+    localizePagination,
+    renderPaginationDropdown,
+    paginationDropdownChangeHandler,
+    waitUntilCondition,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -101,7 +105,7 @@ export {
 
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
-let hideMutedSprites = true;
+let hideMutedSprites = false;
 let groups = [];
 let selected_group = null;
 let group_generation_id = null;
@@ -203,6 +207,16 @@ async function validateGroup(group) {
         return character;
     });
 
+    // Remove duplicate chat ids
+    if (Array.isArray(group.chats)) {
+        const lengthBefore = group.chats.length;
+        group.chats = group.chats.filter(onlyUnique);
+        const lengthAfter = group.chats.length;
+        if (lengthBefore !== lengthAfter) {
+            dirty = true;
+        }
+    }
+
     if (dirty) {
         await editGroup(group.id, true, false);
     }
@@ -216,11 +230,12 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     // Run validation before any loading
-    validateGroup(group);
+    await validateGroup(group);
     await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
+    const metadata = group.chat_metadata ?? {};
     let freshChat = false;
 
     await loadItemizedPrompts(getCurrentChatId());
@@ -230,7 +245,8 @@ export async function getGroupChat(groupId, reload = false) {
         chat.splice(0, chat.length, ...data);
         await printMessages();
     } else {
-        if (group && Array.isArray(group.members)) {
+        freshChat = !metadata.tainted;
+        if (group && Array.isArray(group.members) && freshChat) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
                 if (!character) {
@@ -249,12 +265,10 @@ export async function getGroupChat(groupId, reload = false) {
                 addOneMessage(mes);
                 await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
             }
+            await saveGroupChat(groupId, false);
         }
-        await saveGroupChat(groupId, false);
-        freshChat = true;
     }
 
-    let metadata = group.chat_metadata ?? {};
     updateChatMetadata(metadata, true);
 
     if (reload) {
@@ -701,7 +715,7 @@ export function getGroupBlock(group) {
 
     // Display inline tags
     const tagsElement = template.find('.tags');
-    printTagList(tagsElement, { forEntityOrKey: group.id });
+    printTagList(tagsElement, { forEntityOrKey: group.id, tagOptions: { isCharacterList: true } });
 
     const avatar = getGroupAvatar(group);
     if (avatar) {
@@ -943,7 +957,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         setCharacterName('');
         activateSendButtons();
         showSwipeButtons();
-        await eventSource.emit(event_types.GROUP_WRAPPER_FINISHED,  { selected_group, type });
+        await eventSource.emit(event_types.GROUP_WRAPPER_FINISHED, { selected_group, type });
     }
 
     return Promise.resolve(textResult);
@@ -1181,7 +1195,9 @@ export async function editGroup(id, immediately, reload = true) {
         return;
     }
 
-    group['chat_metadata'] = chat_metadata;
+    if (id === selected_group) {
+        group['chat_metadata'] = structuredClone(chat_metadata);
+    }
 
     if (immediately) {
         return await _save(group, reload);
@@ -1374,6 +1390,8 @@ function getGroupCharacters({ doFilter, onlyMembers } = {}) {
 
 function printGroupCandidates() {
     const storageKey = 'GroupCandidates_PerPage';
+    const pageSize = Number(accountStorage.getItem(storageKey)) || 5;
+    const sizeChangerOptions = [5, 10, 25, 50, 100, 200, 500, 1000];
     $('#rm_group_add_members_pagination').pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
         pageRange: 1,
@@ -1382,18 +1400,20 @@ function printGroupCandidates() {
         prevText: '<',
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
+        formatSizeChanger: renderPaginationDropdown(pageSize, sizeChangerOptions),
         showNavigator: true,
         showSizeChanger: true,
-        pageSize: Number(accountStorage.getItem(storageKey)) || 5,
-        sizeChangerOptions: [5, 10, 25, 50, 100, 200, 500, 1000],
-        afterSizeSelectorChange: function (e) {
+        pageSize,
+        afterSizeSelectorChange: function (e, size) {
             accountStorage.setItem(storageKey, e.target.value);
+            paginationDropdownChangeHandler(e, size);
         },
         callback: function (data) {
             $('#rm_group_add_members').empty();
             for (const i of data) {
                 $('#rm_group_add_members').append(getGroupCharacterBlock(i.item));
             }
+            localizePagination($('#rm_group_add_members_pagination'));
         },
     });
 }
@@ -1401,6 +1421,9 @@ function printGroupCandidates() {
 function printGroupMembers() {
     const storageKey = 'GroupMembers_PerPage';
     $('.rm_group_members_pagination').each(function () {
+        let that = this;
+        const pageSize = Number(accountStorage.getItem(storageKey)) || 5;
+        const sizeChangerOptions = [5, 10, 25, 50, 100, 200, 500, 1000];
         $(this).pagination({
             dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
             pageRange: 1,
@@ -1411,16 +1434,18 @@ function printGroupMembers() {
             formatNavigator: PAGINATION_TEMPLATE,
             showNavigator: true,
             showSizeChanger: true,
-            pageSize: Number(accountStorage.getItem(storageKey)) || 5,
-            sizeChangerOptions: [5, 10, 25, 50, 100, 200, 500, 1000],
-            afterSizeSelectorChange: function (e) {
+            formatSizeChanger: renderPaginationDropdown(pageSize, sizeChangerOptions),
+            pageSize,
+            afterSizeSelectorChange: function (e, size) {
                 accountStorage.setItem(storageKey, e.target.value);
+                paginationDropdownChangeHandler(e, size);
             },
             callback: function (data) {
                 $('.rm_group_members').empty();
                 for (const i of data) {
                     $('.rm_group_members').append(getGroupCharacterBlock(i.item));
                 }
+                localizePagination($(that));
             },
         });
     });
@@ -1457,7 +1482,7 @@ function getGroupCharacterBlock(character) {
 
     // Display inline tags
     const tagsElement = template.find('.tags');
-    printTagList(tagsElement, { forEntityOrKey: characters.indexOf(character) });
+    printTagList(tagsElement, { forEntityOrKey: characters.indexOf(character), tagOptions: { isCharacterList: true } });
 
     if (!openGroupId) {
         template.find('[data-action="speak"]').hide();
@@ -1514,6 +1539,7 @@ async function onHideMutedSpritesClick(value) {
         _thisGroup.hideMutedSprites = value;
         console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`);
         await editGroup(openGroupId, false, false);
+        await eventSource.emit(event_types.GROUP_UPDATED);
     }
 }
 
@@ -1606,6 +1632,9 @@ function select_group_chats(groupId, skipAnimation) {
             resetScrollHeight(element);
         });
     }
+
+    hideMutedSprites = group?.hideMutedSprites ?? false;
+    $('#rm_group_hidemutedsprites').prop('checked', hideMutedSprites);
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
@@ -1804,7 +1833,7 @@ async function createGroup() {
     const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(', ');
 
     if (!name) {
-        name = `Group: ${memberNames}`;
+        name = t`Group: ${memberNames}`;
     }
 
     const avatar_url = $('#group_avatar_preview img').attr('src');
@@ -1900,6 +1929,7 @@ export async function getGroupPastChats(groupId) {
 }
 
 export async function openGroupChat(groupId, chatId) {
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     const group = groups.find(x => x.id === groupId);
 
     if (!group || !group.chats.includes(chatId)) {

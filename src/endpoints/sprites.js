@@ -165,7 +165,7 @@ router.post('/delete', async (request, response) => {
         // Remove existing sprite with the same label
         for (const file of files) {
             if (path.parse(file).name === spriteName) {
-                fs.rmSync(path.join(spritesPath, file));
+                fs.unlinkSync(path.join(spritesPath, file));
             }
         }
 
@@ -206,7 +206,7 @@ router.post('/upload-zip', async (request, response) => {
             const existingFile = files.find(file => path.parse(file).name === path.parse(filename).name);
 
             if (existingFile) {
-                fs.rmSync(path.join(spritesPath, existingFile));
+                fs.unlinkSync(path.join(spritesPath, existingFile));
             }
 
             // Write sprite buffer to disk
@@ -215,7 +215,7 @@ router.post('/upload-zip', async (request, response) => {
         }
 
         // Remove uploaded ZIP file
-        fs.rmSync(spritePackPath);
+        fs.unlinkSync(spritePackPath);
         return response.send({ count: sprites.length });
     } catch (error) {
         console.error(error);
@@ -251,7 +251,7 @@ router.post('/upload', async (request, response) => {
         // Remove existing sprite with the same label
         for (const file of files) {
             if (path.parse(file).name === spriteName) {
-                fs.rmSync(path.join(spritesPath, file));
+                fs.unlinkSync(path.join(spritesPath, file));
             }
         }
 
@@ -261,7 +261,7 @@ router.post('/upload', async (request, response) => {
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);
         // Remove uploaded file
-        fs.rmSync(spritePath);
+        fs.unlinkSync(spritePath);
         return response.sendStatus(200);
     } catch (error) {
         console.error(error);

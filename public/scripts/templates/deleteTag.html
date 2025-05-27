@@ -1,0 +1,9 @@
+<h3 data-i18n="Delete Tag">Delete Tag</h3>
+<div><span data-i18n="Do you want to delete the tag">Do you want to delete the tag</span> <div id="tag_to_delete" class="tags_inline inline-flex margin-r2"></div>?</div>
+<div class="m-t-2 marginBot5" data-i18n="If you want to merge all references to this tag into another tag, select it below:">If you want to merge all references to this tag into another tag, select it below:</div>
+<select id="merge_tag_select">
+    <option value="">--- None ---</option>
+    {{#each otherTags}}
+    <option value="{{this.id}}">{{this.name}}</option>
+    {{/each}}
+</select>

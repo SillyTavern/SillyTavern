@@ -57,7 +57,7 @@ router.post('/delete', (request, response) => {
         throw new Error(`World info file ${filename} doesn't exist.`);
     }
 
-    fs.rmSync(pathToWorldInfo);
+    fs.unlinkSync(pathToWorldInfo);
 
     return response.sendStatus(200);
 });

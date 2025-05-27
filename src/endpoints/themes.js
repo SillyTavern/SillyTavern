@@ -29,7 +29,7 @@ router.post('/delete', function (request, response) {
             console.error('Theme file not found:', filename);
             return response.sendStatus(404);
         }
-        fs.rmSync(filename);
+        fs.unlinkSync(filename);
         return response.sendStatus(200);
     } catch (error) {
         console.error(error);

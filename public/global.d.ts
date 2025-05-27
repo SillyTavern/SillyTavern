@@ -55,4 +55,15 @@ declare global {
      * @param provider Translation provider
      */
     async function translate(text: string, lang: string, provider: string = null): Promise<string>;
+
+    interface ConvertVideoArgs {
+        buffer: Uint8Array;
+        name: string;
+    }
+
+    /**
+     * Converts a video file to an animated WebP format using FFmpeg.
+     * @param args - The arguments for the conversion function.
+     */
+    function convertVideoToAnimatedWebp(args: ConvertVideoArgs): Promise<Uint8Array>;
 }

@@ -22,7 +22,7 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock } from './utils.js';
+import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
@@ -250,16 +250,18 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
         const perPage = Number(accountStorage.getItem(storageKey)) || 5;
+        const sizeChangerOptions = [5, 10, 25, 50, 100, 250, 500, 1000];
 
         $('#persona_pagination_container').pagination({
             dataSource: entities,
             pageSize: perPage,
-            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
+            sizeChangerOptions,
             pageRange: 1,
             pageNumber: savePersonasPage || 1,
             position: 'top',
             showPageNumbers: false,
             showSizeChanger: true,
+            formatSizeChanger: renderPaginationDropdown(perPage, sizeChangerOptions),
             prevText: '<',
             nextText: '>',
             formatNavigator: PAGINATION_TEMPLATE,
@@ -270,9 +272,11 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
                     $(listId).append(getUserAvatarBlock(item));
                 }
                 updatePersonaUIStates();
+                localizePagination($('#persona_pagination_container'));
             },
-            afterSizeSelectorChange: function (e) {
+            afterSizeSelectorChange: function (e, size) {
                 accountStorage.setItem(storageKey, e.target.value);
+                paginationDropdownChangeHandler(e, size);
             },
             afterPaging: function (e) {
                 savePersonasPage = e;
@@ -1966,7 +1970,7 @@ export async function initPersonas() {
 
     $('#char_connections_button').on('click', showCharConnections);
 
-    eventSource.on('charManagementDropdown', (target) => {
+    eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (target) => {
         if (target === 'convert_to_persona') {
             convertCharacterToPersona();
         }
