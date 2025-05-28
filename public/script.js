@@ -12347,7 +12347,7 @@ class OpenAITabManager {
         // Create tab containers
         tabButtons.insertAdjacentHTML('afterend',
             `<div id="openai-tab-content-parameters" class="openai-tab-content active"></div>
-             <div id="openai-tab-content-prompts" class="openai-tab-content"></div>`
+             <div id="openai-tab-content-prompts" class="openai-tab-content"></div>`,
         );
 
         const parametersTab = document.querySelector('#openai-tab-content-parameters');
