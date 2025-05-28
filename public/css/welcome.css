@@ -142,12 +142,28 @@ body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
     justify-content: space-between;
     align-items: baseline;
     font-size: calc(var(--mainFontSize) * 1);
+    gap: 5px;
 }
 
 .welcomeRecent .recentChatList .recentChat .chatNameContainer .chatName {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    flex: 1;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatActions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatActions button {
+    margin: 0;
+    font-size: 0.8em;
+    cursor: pointer;
 }
 
 .welcomeRecent .recentChatList .recentChat .chatMessageContainer {

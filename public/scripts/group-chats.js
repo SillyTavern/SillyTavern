@@ -1968,6 +1968,51 @@ export async function renameGroupChat(groupId, oldChatId, newChatId) {
     await editGroup(groupId, true, true);
 }
 
+/**
+ * Deletes a group chat by its name. Doesn't affect displayed chat.
+ * @param {string} groupId Group ID
+ * @param {string} chatName Name of the chat to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteGroupChatByName(groupId, chatName) {
+    const group = groups.find(x => x.id === groupId);
+    if (!group || !group.chats.includes(chatName)) {
+        return;
+    }
+
+    if (typeof group.past_metadata !== 'object') {
+        group.past_metadata = {};
+    }
+
+    group.chats.splice(group.chats.indexOf(chatName), 1);
+    delete group.past_metadata[chatName];
+
+    const response = await fetch('/api/chats/group/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: chatName }),
+    });
+
+    if (!response.ok) {
+        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group chat could not be deleted`);
+        console.error('Group chat could not be deleted');
+        return;
+    }
+
+    // If the deleted chat was the current chat, switch to the last chat in the group
+    if (group.chat_id === chatName) {
+        group.chat_id = '';
+        group.chat_metadata = {};
+
+        const newChatName = group.chats.length ? group.chats[group.chats.length - 1] : humanizedDateTime();
+        group.chat_id = newChatName;
+        group.chat_metadata = group.past_metadata[newChatName] || {};
+    }
+
+    await editGroup(groupId, true, true);
+    await eventSource.emit(event_types.GROUP_CHAT_DELETED, chatName);
+}
+
 export async function deleteGroupChat(groupId, chatId) {
     const group = groups.find(x => x.id === groupId);
 
