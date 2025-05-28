@@ -220,13 +220,11 @@
     flex-direction: row;
     justify-content: space-between;
     color: var(--white50a);
-    margin-top: 0.5em;
     padding: 0 0.25em;
     width: 100%
 }
 
 #completion_prompt_manager .completion_prompt_manager_header div {
-    margin-top: 0.5em;
     width: fit-content;
 }
 

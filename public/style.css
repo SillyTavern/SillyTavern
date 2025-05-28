@@ -6105,3 +6105,54 @@ body:not(.movingUI) .drawer-content.maximized {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
 }
+
+/* OpenAI Settings Tab Navigation */
+.openai-tab-buttons {
+    display: flex;
+    position: sticky;
+    top: 0;
+    margin-top: 0.5em;
+    margin-bottom: 0.8em;
+    padding: 2px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent);
+    z-index: 1000;
+}
+.openai-tab-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 2px;
+    padding: 6px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--SmartThemeBodyColor);
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    opacity: 0.5;
+    transition: all var(--animation-duration-slow) ease-in-out;
+}
+.openai-tab-button:hover {
+    opacity: 1;
+}
+.openai-tab-button.active {
+    background: color-mix(in srgb, var(--SmartThemeBodyColor) 15%, transparent);
+    color: var(--SmartThemeBodyColor);
+    opacity: 1;
+}
+/* Tab Content */
+.openai-tab-content {
+    display: none;
+}
+.openai-tab-content.active {
+    display: block;
+}
