@@ -1,4 +1,3 @@
-
 <div class="caption_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
@@ -178,11 +177,9 @@
                         <option data-type="pollinations" value="bidara">bidara</option>
                     </select>
                 </div>
-                <div data-type="ollama">
-                    The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
-                </div>
+                <div data-type="ollama">The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.</div>
                 <label data-type="openai,anthropic,google,vertexai,mistral,xai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
-                    <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
+                    <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox" />
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>
                 <div class="flexBasis100p m-b-1">
@@ -191,31 +188,31 @@
             </div>
             <div data-type="koboldcpp,ollama,vllm,llamacpp,ooba" class="flex-container flexFlowColumn">
                 <label for="caption_altEndpoint_enabled" class="checkbox_label">
-                    <input id="caption_altEndpoint_enabled" type="checkbox">
+                    <input id="caption_altEndpoint_enabled" type="checkbox" />
                     <span data-i18n="Use secondary URL">Use secondary URL</span>
                 </label>
-                <label for="caption_altEndpoint_url" data-i18n="Secondary captioning endpoint URL">
-                    Secondary captioning endpoint URL
-                </label>
+                <label for="caption_altEndpoint_url" data-i18n="Secondary captioning endpoint URL"> Secondary captioning endpoint URL </label>
                 <input id="caption_altEndpoint_url" class="text_pole" type="text" placeholder="e.g. http://localhost:5001" />
             </div>
             <div id="caption_prompt_block">
                 <label for="caption_prompt" data-i18n="Caption Prompt">Caption Prompt</label>
                 <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">{{PROMPT_DEFAULT}}</textarea>
                 <label class="checkbox_label margin-bot-10px" for="caption_prompt_ask" title="Ask for a custom prompt every time an image is captioned.">
-                    <input id="caption_prompt_ask" type="checkbox" class="checkbox">
+                    <input id="caption_prompt_ask" type="checkbox" class="checkbox" />
                     <span data-i18n="Ask every time">Ask every time</span>
                 </label>
             </div>
-            <label for="caption_template"><span data-i18n="Message Template">Message Template</span> <small><span data-i18n="(use _space">(use </span> <code>&lcub;&lcub;caption&rcub;&rcub;</code> <span data-i18n="macro)">macro)</span></small></label>
+            <label for="caption_template"
+                ><span data-i18n="Message Template">Message Template</span> <small><span data-i18n="(use _space">(use </span> <code>&lcub;&lcub;caption&rcub;&rcub;</code> <span data-i18n="macro)">macro)</span></small></label
+            >
             <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">{{TEMPLATE_DEFAULT}}</textarea>
             <label class="checkbox_label" for="caption_auto_mode">
-                <input id="caption_auto_mode" type="checkbox" class="checkbox">
+                <input id="caption_auto_mode" type="checkbox" class="checkbox" />
                 <span data-i18n="Automatically caption images">Automatically caption images</span>
                 <i class="fa-solid fa-info-circle" title="Automatically caption images when they are pasted into the chat or attached to messages."></i>
             </label>
             <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
-                <input id="caption_refine_mode" type="checkbox" class="checkbox">
+                <input id="caption_refine_mode" type="checkbox" class="checkbox" />
                 <span data-i18n="Edit captions before saving">Edit captions before saving</span>
             </label>
         </div>

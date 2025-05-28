@@ -1,17 +1,13 @@
-<h3 data-i18n="Choose what to export">
-    Choose what to export
-</h3>
+<h3 data-i18n="Choose what to export">Choose what to export</h3>
 <div class="flex-container flexFlowColumn justifyLeft">
-    {{#each sections}}
-        {{#with this}}
-            <label class="checkbox_label">
-                {{#if checked}}
-                    <input type="checkbox" value="{{key}}" checked />
-                {{else}}
-                    <input type="checkbox" value="{{key}}" />
-                {{/if}}
-                <span data-i18n="{{name}}">{{name}}</span>
-            </label>
-        {{/with}}
-    {{/each}}
+    {{#each sections}} {{#with this}}
+    <label class="checkbox_label">
+        {{#if checked}}
+        <input type="checkbox" value="{{key}}" checked />
+        {{else}}
+        <input type="checkbox" value="{{key}}" />
+        {{/if}}
+        <span data-i18n="{{name}}">{{name}}</span>
+    </label>
+    {{/with}} {{/each}}
 </div>

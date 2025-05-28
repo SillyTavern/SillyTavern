@@ -122,9 +122,9 @@
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
-        "prettier": "npx prettier \"src/**/*.html\" \"public/**/*.html\" ./*.html",
-        "prettier:fix": "npx prettier \"src/**/*.html\" \"public/**/*.html\" ./*.html --write",
-        "prettier:check": "npx prettier \"src/**/*.html\" \"public/**/*.html\" ./*.html --check",
+        "prettier": "npx prettier \"public/**/*.html\"",
+        "prettier:fix": "npx prettier \"public/**/*.html\" --write",
+        "prettier:check": "npx prettier \"public/**/*.html\" --check",
         "plugins:update": "node plugins update",
         "plugins:install": "node plugins install"
     },

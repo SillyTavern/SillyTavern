@@ -1,6 +1,6 @@
 <div class="welcomePanel">
     <div class="welcomeHeaderTitle">
-        <img src="img/logo.png" alt="SillyTavern Logo" class="welcomeHeaderLogo">
+        <img src="img/logo.png" alt="SillyTavern Logo" class="welcomeHeaderLogo" />
         <span class="welcomeHeaderVersionDisplay">{{version}}</span>
         <div class="mes_button showRecentChats" title="Show recent chats" data-i18n="[title]Show recent chats">
             <i class="fa-solid fa-circle-chevron-down fa-fw fa-lg"></i>
@@ -10,9 +10,7 @@
         </div>
     </div>
     <div class="welcomeHeader">
-        <div class="recentChatsTitle" data-i18n="Recent Chats">
-            Recent Chats
-        </div>
+        <div class="recentChatsTitle" data-i18n="Recent Chats">Recent Chats</div>
         <div class="welcomeShortcuts">
             <a class="menu_button menu_button_icon" target="_blank" href="https://docs.sillytavern.app/">
                 <i class="fa-solid fa-question-circle"></i>
@@ -35,17 +33,15 @@
     </div>
     <div class="welcomeRecent">
         <div class="recentChatList">
-        {{#if empty}}
+            {{#if empty}}
             <div class="noRecentChat">
                 <i class="fa-solid fa-comment-dots"></i>
                 <span data-i18n="No recent chats">No recent chats</span>
             </div>
-        {{/if}}
-        {{#each chats}}
-            {{#with this}}
+            {{/if}} {{#each chats}} {{#with this}}
             <div class="recentChat {{#if hidden}}hidden{{/if}} {{#if is_group}}group{{/if}}" data-file="{{chat_name}}" data-avatar="{{avatar}}" data-group="{{group}}">
                 <div class="avatar" title="[Character] {{char_name}}&#10;File: {{avatar}}">
-                    <img src="{{char_thumbnail}}" alt="{{char_name}}">
+                    <img src="{{char_thumbnail}}" alt="{{char_name}}" />
                 </div>
                 <div class="recentChatInfo">
                     <div class="chatNameContainer">
@@ -57,9 +53,7 @@
                         <small class="chatDate" title="{{date_long}}">{{date_short}}</small>
                     </div>
                     <div class="chatMessageContainer">
-                        <div class="chatMessage" title="{{mes}}">
-                            {{mes}}
-                        </div>
+                        <div class="chatMessage" title="{{mes}}">{{mes}}</div>
                         <div class="chatStats">
                             <div class="counterBlock">
                                 <i class="fa-solid fa-comment fa-xs"></i>
@@ -70,13 +64,11 @@
                     </div>
                 </div>
             </div>
-            {{/with}}
-        {{/each}}
-        {{#if more}}
+            {{/with}} {{/each}} {{#if more}}
             <button class="menu_button menu_button_icon showMoreChats">
                 <small class="fa-solid fa-chevron-down fa-fw fa-1x"></small>
             </button>
-        {{/if}}
+            {{/if}}
         </div>
     </div>
 </div>
