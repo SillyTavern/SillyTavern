@@ -1890,6 +1890,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
     // Make sure all the data is loaded.
     await unshallowCharacter(characterId);
 
+    /** @type {import('./scripts/char-data.js').v1CharData} */
     const character = characters[characterId];
     if (!character) {
         console.warn(`Character with ID ${characterId} not found.`);
@@ -1918,7 +1919,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
         });
         const chats = Object.values(await chatsResponse.json());
         chats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
-        const newChatName = chats.length && typeof chats[0] === 'object' ? chats[0].file_name.replace('.jsonl', '') : `${name2} - ${humanizedDateTime()}`;
+        const newChatName = chats.length && typeof chats[0] === 'object' ? chats[0].file_name.replace('.jsonl', '') : `${character.name} - ${humanizedDateTime()}`;
         await updateRemoteChatName(characterId, newChatName);
     }
 
