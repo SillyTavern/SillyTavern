@@ -12357,7 +12357,7 @@ class OpenAITabManager {
         [
             '#range_block_openai',
             '#openai_settings',
-            '#logit_bias_openai'
+            '#logit_bias_openai',
         ].forEach(selector => {
             const element = document.querySelector(selector);
             if (element) {
@@ -12480,10 +12480,6 @@ function initializeOpenAITabs() {
         return true;
     }
     return false;
-}
-
-function onApiChange() {
-    openAITabManager?.refreshTabs();
 }
 
 // Initialize
