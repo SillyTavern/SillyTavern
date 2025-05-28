@@ -12326,10 +12326,10 @@ class OpenAITabManager {
         presetDiv.insertAdjacentHTML('afterend', `
             <div class="openai-tab-buttons">
                 <button id="openai-tab-btn-parameters" class="openai-tab-button active">
-                    <i class="fa-solid fa-vial"></i>Parameters
+                    <i class="fa-solid fa-vial"></i><span data-i18n="Parameters">Parameters</span>
                 </button>
                 <button id="openai-tab-btn-prompts" class="openai-tab-button">
-                    <i class="fa-solid fa-file-edit"></i>Prompts
+                    <i class="fa-solid fa-file-edit"></i><span data-i18n="Prompts">Prompts</span>
                 </button>
             </div>
         `);
