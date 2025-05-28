@@ -1,16 +1,16 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 
-import express from 'express';
-import writeFileAtomic from 'write-file-atomic';
+import express from "express";
+import writeFileAtomic from "write-file-atomic";
 
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
-import { getAllUserHandles, getUserDirectories } from '../users.js';
+import { getAllUserHandles, getUserDirectories } from "../users.js";
 
-const STATS_FILE = 'stats.json';
+const STATS_FILE = "stats.json";
 
 /**
  * @type {Map<string, Object>} The stats object for each user.
@@ -48,7 +48,7 @@ function timestampToMoment(timestamp) {
         return 0;
     }
 
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === "number") {
         return timestamp;
     }
 
@@ -64,13 +64,13 @@ function timestampToMoment(timestamp) {
         second,
         millisecond,
     ) => {
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(
             2,
-            '0',
-        )}T${hour.padStart(2, '0')}:${minute.padStart(
+            "0",
+        )}T${hour.padStart(2, "0")}:${minute.padStart(
             2,
-            '0',
-        )}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
+            "0",
+        )}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
     if (!isNaN(Number(new Date(isoTimestamp1)))) {
@@ -80,30 +80,30 @@ function timestampToMoment(timestamp) {
     const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
     const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
         const monthNames = [
-            'January',
-            'February',
-            'March',
-            'April',
-            'May',
-            'June',
-            'July',
-            'August',
-            'September',
-            'October',
-            'November',
-            'December',
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
         ];
         const monthNum = monthNames.indexOf(month) + 1;
         const hour24 =
-            meridiem.toLowerCase() === 'pm'
+            meridiem.toLowerCase() === "pm"
                 ? (parseInt(hour, 10) % 12) + 12
                 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum.toString().padStart(2, '0')}-${day.padStart(
+        return `${year}-${monthNum.toString().padStart(2, "0")}-${day.padStart(
             2,
-            '0',
-        )}T${hour24.toString().padStart(2, '0')}:${minute.padStart(
+            "0",
+        )}T${hour24.toString().padStart(2, "0")}:${minute.padStart(
             2,
-            '0',
+            "0",
         )}:00Z`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
@@ -124,7 +124,7 @@ function timestampToMoment(timestamp) {
 async function collectAndCreateStats(chatsPath, charactersPath) {
     const files = await readdir(charactersPath);
 
-    const pngFiles = files.filter((file) => file.endsWith('.png'));
+    const pngFiles = files.filter((file) => file.endsWith(".png"));
 
     let processingPromises = pngFiles.map((file) =>
         calculateStats(chatsPath, file),
@@ -147,7 +147,7 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
  * @param {string} charactersPath Path to the directory containing the character files.
  */
 export async function recreateStats(handle, chatsPath, charactersPath) {
-    console.info('Collecting and creating stats for user:', handle);
+    console.info("Collecting and creating stats for user:", handle);
     const stats = await collectAndCreateStats(chatsPath, charactersPath);
     STATS.set(handle, stats);
     await saveStatsToFile();
@@ -164,19 +164,23 @@ export async function init() {
             const directories = getUserDirectories(handle);
             try {
                 const statsFilePath = path.join(directories.root, STATS_FILE);
-                const statsFileContent = await readFile(statsFilePath, 'utf-8');
+                const statsFileContent = await readFile(statsFilePath, "utf-8");
                 STATS.set(handle, JSON.parse(statsFileContent));
             } catch (err) {
                 // If the file doesn't exist or is invalid, initialize stats
-                if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-                    await recreateStats(handle, directories.chats, directories.characters);
+                if (err.code === "ENOENT" || err instanceof SyntaxError) {
+                    await recreateStats(
+                        handle,
+                        directories.chats,
+                        directories.characters,
+                    );
                 } else {
                     throw err; // Rethrow the error if it's something we didn't expect
                 }
             }
         }
     } catch (err) {
-        console.error('Failed to initialize stats:', err);
+        console.error("Failed to initialize stats:", err);
     }
     // Save stats every 5 minutes
     setInterval(saveStatsToFile, 5 * 60 * 1000);
@@ -199,7 +203,7 @@ async function saveStatsToFile() {
                 await writeFileAtomic(statsFilePath, JSON.stringify(charStats));
                 TIMESTAMPS.set(handle, Date.now());
             } catch (error) {
-                console.error('Failed to save stats to file.', error);
+                console.error("Failed to save stats to file.", error);
             }
         }
     }
@@ -213,7 +217,7 @@ export async function onExit() {
     try {
         await saveStatsToFile();
     } catch (err) {
-        console.error('Failed to write stats to file:', err);
+        console.error("Failed to write stats to file:", err);
     }
 }
 
@@ -226,8 +230,8 @@ export async function onExit() {
  */
 function readAndParseFile(filepath) {
     try {
-        let file = fs.readFileSync(filepath, 'utf8');
-        let lines = file.split('\n');
+        let file = fs.readFileSync(filepath, "utf8");
+        let lines = file.split("\n");
         return lines;
     } catch (error) {
         console.error(`Error reading file at ${filepath}: ${error}`);
@@ -267,7 +271,7 @@ function countWordsInString(str) {
  * @return {object}          An object containing the calculated statistics.
  */
 const calculateStats = (chatsPath, item) => {
-    const chatDir = path.join(chatsPath, item.replace('.png', ''));
+    const chatDir = path.join(chatsPath, item.replace(".png", ""));
     const stats = {
         total_gen_time: 0,
         user_word_count: 0,
@@ -277,7 +281,7 @@ const calculateStats = (chatsPath, item) => {
         total_swipe_count: 0,
         chat_size: 0,
         date_last_chat: 0,
-        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
+        date_first_chat: new Date("9999-12-31T23:59:59.999Z").getTime(),
     };
     let uniqueGenStartTimes = new Set();
 
@@ -332,11 +336,7 @@ function setCharStats(handle, stats) {
  * @returns {Object} - An object containing the total generation time, user word count, and non-user word count.
  * @throws Will throw an error if the file cannot be read or parsed.
  */
-function calculateTotalGenTimeAndWordCount(
-    chatDir,
-    chat,
-    uniqueGenStartTimes,
-) {
+function calculateTotalGenTimeAndWordCount(chatDir, chat, uniqueGenStartTimes) {
     let filepath = path.join(chatDir, chat);
     let lines = readAndParseFile(filepath);
 
@@ -346,7 +346,7 @@ function calculateTotalGenTimeAndWordCount(
     let nonUserMsgCount = 0;
     let userMsgCount = 0;
     let totalSwipeCount = 0;
-    let firstChatTime = new Date('9999-12-31T23:59:59.999Z').getTime();
+    let firstChatTime = new Date("9999-12-31T23:59:59.999Z").getTime();
 
     for (let line of lines) {
         if (line.length) {
@@ -354,9 +354,9 @@ function calculateTotalGenTimeAndWordCount(
                 let json = JSON.parse(line);
                 if (json.mes) {
                     let hash = crypto
-                        .createHash('sha256')
+                        .createHash("sha256")
                         .update(json.mes)
-                        .digest('hex');
+                        .digest("hex");
                     if (uniqueGenStartTimes.has(hash)) {
                         continue;
                     }
@@ -416,7 +416,10 @@ function calculateTotalGenTimeAndWordCount(
                 // If this is the first user message, set the first chat time
                 if (json.is_user) {
                     //get min between firstChatTime and timestampToMoment(json.send_date)
-                    firstChatTime = Math.min(timestampToMoment(json.send_date), firstChatTime);
+                    firstChatTime = Math.min(
+                        timestampToMoment(json.send_date),
+                        firstChatTime,
+                    );
                 }
             } catch (error) {
                 console.error(`Error parsing line ${line}: ${error}`);
@@ -439,7 +442,7 @@ export const router = express.Router();
 /**
  * Handle a POST request to get the stats object
  */
-router.post('/get', function (request, response) {
+router.post("/get", function (request, response) {
     const stats = STATS.get(request.user.profile.handle) || {};
     response.send(stats);
 });
@@ -447,9 +450,13 @@ router.post('/get', function (request, response) {
 /**
  * Triggers the recreation of statistics from chat files.
  */
-router.post('/recreate', async function (request, response) {
+router.post("/recreate", async function (request, response) {
     try {
-        await recreateStats(request.user.profile.handle, request.user.directories.chats, request.user.directories.characters);
+        await recreateStats(
+            request.user.profile.handle,
+            request.user.directories.chats,
+            request.user.directories.characters,
+        );
         return response.sendStatus(200);
     } catch (error) {
         console.error(error);
@@ -459,8 +466,8 @@ router.post('/recreate', async function (request, response) {
 
 /**
  * Handle a POST request to update the stats object
-*/
-router.post('/update', function (request, response) {
+ */
+router.post("/update", function (request, response) {
     if (!request.body) return response.sendStatus(400);
     setCharStats(request.user.profile.handle, request.body);
     return response.sendStatus(200);

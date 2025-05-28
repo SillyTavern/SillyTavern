@@ -1,4 +1,4 @@
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout } from "./constants.js";
 
 /**
  * Drag and drop handler
@@ -31,17 +31,29 @@ export class DragAndDropHandler {
      * Destroy the drag and drop functionality
      */
     destroy() {
-        if (this.selector === 'body') {
-            $(document.body).off('dragover', this.handleDragOver.bind(this));
-            $(document.body).off('dragleave', this.handleDragLeave.bind(this));
-            $(document.body).off('drop', this.handleDrop.bind(this));
+        if (this.selector === "body") {
+            $(document.body).off("dragover", this.handleDragOver.bind(this));
+            $(document.body).off("dragleave", this.handleDragLeave.bind(this));
+            $(document.body).off("drop", this.handleDrop.bind(this));
         } else {
-            $(document.body).off('dragover', this.selector, this.handleDragOver.bind(this));
-            $(document.body).off('dragleave', this.selector, this.handleDragLeave.bind(this));
-            $(document.body).off('drop', this.selector, this.handleDrop.bind(this));
+            $(document.body).off(
+                "dragover",
+                this.selector,
+                this.handleDragOver.bind(this),
+            );
+            $(document.body).off(
+                "dragleave",
+                this.selector,
+                this.handleDragLeave.bind(this),
+            );
+            $(document.body).off(
+                "drop",
+                this.selector,
+                this.handleDrop.bind(this),
+            );
         }
 
-        $(this.selector).remove('drop_target no_animation');
+        $(this.selector).remove("drop_target no_animation");
     }
 
     /**
@@ -50,18 +62,30 @@ export class DragAndDropHandler {
      * @private
      */
     init() {
-        if (this.selector === 'body') {
-            $(document.body).on('dragover', this.handleDragOver.bind(this));
-            $(document.body).on('dragleave', this.handleDragLeave.bind(this));
-            $(document.body).on('drop', this.handleDrop.bind(this));
+        if (this.selector === "body") {
+            $(document.body).on("dragover", this.handleDragOver.bind(this));
+            $(document.body).on("dragleave", this.handleDragLeave.bind(this));
+            $(document.body).on("drop", this.handleDrop.bind(this));
         } else {
-            $(document.body).on('dragover', this.selector, this.handleDragOver.bind(this));
-            $(document.body).on('dragleave', this.selector, this.handleDragLeave.bind(this));
-            $(document.body).on('drop', this.selector, this.handleDrop.bind(this));
+            $(document.body).on(
+                "dragover",
+                this.selector,
+                this.handleDragOver.bind(this),
+            );
+            $(document.body).on(
+                "dragleave",
+                this.selector,
+                this.handleDragLeave.bind(this),
+            );
+            $(document.body).on(
+                "drop",
+                this.selector,
+                this.handleDrop.bind(this),
+            );
         }
 
-        $(this.selector).addClass('drop_target');
-        if (this.noAnimation) $(this.selector).addClass('no_animation');
+        $(this.selector).addClass("drop_target");
+        if (this.noAnimation) $(this.selector).addClass("no_animation");
     }
 
     /**
@@ -72,8 +96,8 @@ export class DragAndDropHandler {
         event.preventDefault();
         event.stopPropagation();
         clearTimeout(this.dragLeaveTimeout);
-        $(this.selector).addClass('drop_target dragover');
-        if (this.noAnimation) $(this.selector).addClass('no_animation');
+        $(this.selector).addClass("drop_target dragover");
+        if (this.noAnimation) $(this.selector).addClass("no_animation");
     }
 
     /**
@@ -87,7 +111,7 @@ export class DragAndDropHandler {
         // Debounce the removal of the class, so it doesn't "flicker" on dragging over
         clearTimeout(this.dragLeaveTimeout);
         this.dragLeaveTimeout = setTimeout(() => {
-            $(this.selector).removeClass('dragover');
+            $(this.selector).removeClass("dragover");
         }, debounce_timeout.quick);
     }
 
@@ -99,7 +123,7 @@ export class DragAndDropHandler {
         event.preventDefault();
         event.stopPropagation();
         clearTimeout(this.dragLeaveTimeout);
-        $(this.selector).removeClass('dragover');
+        $(this.selector).removeClass("dragover");
 
         const files = Array.from(event.originalEvent.dataTransfer.files);
         this.onDropCallback(files, event);

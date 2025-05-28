@@ -1,7 +1,5 @@
-import { AutoCompleteNameResultBase } from './AutoCompleteNameResultBase.js';
-import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
-
-
+import { AutoCompleteNameResultBase } from "./AutoCompleteNameResultBase.js";
+import { AutoCompleteSecondaryNameResult } from "./AutoCompleteSecondaryNameResult.js";
 
 export class AutoCompleteNameResult extends AutoCompleteNameResultBase {
     /**

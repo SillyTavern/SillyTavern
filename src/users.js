@@ -1,46 +1,56 @@
 // Native Node Modules
-import path from 'node:path';
-import fs from 'node:fs';
-import crypto from 'node:crypto';
-import os from 'node:os';
-import process from 'node:process';
-import { Buffer } from 'node:buffer';
+import path from "node:path";
+import fs from "node:fs";
+import crypto from "node:crypto";
+import os from "node:os";
+import process from "node:process";
+import { Buffer } from "node:buffer";
 
 // Express and other dependencies
-import storage from 'node-persist';
-import express from 'express';
-import mime from 'mime-types';
-import archiver from 'archiver';
-import _ from 'lodash';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import storage from "node-persist";
+import express from "express";
+import mime from "mime-types";
+import archiver from "archiver";
+import _ from "lodash";
+import { sync as writeFileAtomicSync } from "write-file-atomic";
 
-import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp } from './util.js';
-import { readSecret, writeSecret } from './endpoints/secrets.js';
-import { getContentOfType } from './endpoints/content-manager.js';
-import { serverDirectory } from './server-directory.js';
+import {
+    USER_DIRECTORY_TEMPLATE,
+    DEFAULT_USER,
+    PUBLIC_DIRECTORIES,
+    SETTINGS_FILE,
+    UPLOADS_DIRECTORY,
+} from "./constants.js";
+import { getConfigValue, color, delay, generateTimestamp } from "./util.js";
+import { readSecret, writeSecret } from "./endpoints/secrets.js";
+import { getContentOfType } from "./endpoints/content-manager.js";
+import { serverDirectory } from "./server-directory.js";
 
-export const KEY_PREFIX = 'user:';
-const AVATAR_PREFIX = 'avatar:';
-const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
-const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false, 'boolean');
-const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
-const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
+export const KEY_PREFIX = "user:";
+const AVATAR_PREFIX = "avatar:";
+const ENABLE_ACCOUNTS = getConfigValue("enableUserAccounts", false, "boolean");
+const AUTHELIA_AUTH = getConfigValue("autheliaAuth", false, "boolean");
+const PER_USER_BASIC_AUTH = getConfigValue(
+    "perUserBasicAuth",
+    false,
+    "boolean",
+);
+const ANON_CSRF_SECRET = crypto.randomBytes(64).toString("base64");
 
 /**
  * Cache for user directories.
  * @type {Map<string, UserDirectoryList>}
  */
 const DIRECTORIES_CACHE = new Map();
-const PUBLIC_USER_AVATAR = '/img/default-user.png';
-const COOKIE_SECRET_PATH = 'cookie-secret.txt';
+const PUBLIC_USER_AVATAR = "/img/default-user.png";
+const COOKIE_SECRET_PATH = "cookie-secret.txt";
 
 const STORAGE_KEYS = {
-    csrfSecret: 'csrfSecret',
+    csrfSecret: "csrfSecret",
     /**
      * @deprecated Read from COOKIE_SECRET_PATH in DATA_ROOT instead.
      */
-    cookieSecret: 'cookieSecret',
+    cookieSecret: "cookieSecret",
 };
 
 /**
@@ -111,7 +121,9 @@ export async function ensurePublicDirectoriesExist() {
     }
 
     const userHandles = await getAllUserHandles();
-    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    const directoriesList = userHandles.map((handle) =>
+        getUserDirectories(handle),
+    );
     for (const userDirectories of directoriesList) {
         for (const dir of Object.values(userDirectories)) {
             if (!fs.existsSync(dir)) {
@@ -131,8 +143,12 @@ function logSecurityAlert(message) {
     const { basicAuthMode, whitelistMode } = globalThis.COMMAND_LINE_ARGS;
     if (basicAuthMode || whitelistMode) return; // safe!
     console.error(color.red(message));
-    if (getConfigValue('securityOverride', false, 'boolean')) {
-        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+    if (getConfigValue("securityOverride", false, "boolean")) {
+        console.warn(
+            color.red(
+                "Security has been overridden. If it's not a trusted network, change the settings.",
+            ),
+        );
         return;
     }
     process.exit(1);
@@ -151,38 +167,67 @@ export async function verifySecuritySettings() {
     }
 
     if (!ENABLE_ACCOUNTS) {
-        logSecurityAlert('Your current SillyTavern configuration is insecure (listening to non-localhost). Enable whitelisting, basic authentication or user accounts.');
+        logSecurityAlert(
+            "Your current SillyTavern configuration is insecure (listening to non-localhost). Enable whitelisting, basic authentication or user accounts.",
+        );
     }
 
     const users = await getAllEnabledUsers();
-    const unprotectedUsers = users.filter(x => !x.password);
-    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
+    const unprotectedUsers = users.filter((x) => !x.password);
+    const unprotectedAdminUsers = unprotectedUsers.filter((x) => x.admin);
 
     if (unprotectedUsers.length > 0) {
-        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
-        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
+        console.warn(
+            color.blue(
+                "A friendly reminder that the following users are not password protected:",
+            ),
+        );
+        unprotectedUsers
+            .map(
+                (x) =>
+                    `${color.yellow(x.handle)} ${color.red(x.admin ? "(admin)" : "")}`,
+            )
+            .forEach((x) => console.warn(x));
         console.log();
-        console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
+        console.warn(
+            `Consider setting a password in the admin panel or by using the ${color.blue("recover.js")} script.`,
+        );
         console.log();
 
         if (unprotectedAdminUsers.length > 0) {
-            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
+            logSecurityAlert(
+                "If you are not using basic authentication or whitelisting, you should set a password for all admin users.",
+            );
         }
     }
 
     if (basicAuthMode) {
-        const perUserBasicAuth = getConfigValue('perUserBasicAuth', false, 'boolean');
+        const perUserBasicAuth = getConfigValue(
+            "perUserBasicAuth",
+            false,
+            "boolean",
+        );
         if (perUserBasicAuth && !ENABLE_ACCOUNTS) {
-            console.error(color.red(
-                'Per-user basic authentication is enabled, but user accounts are disabled. This configuration may be insecure.',
-            ));
+            console.error(
+                color.red(
+                    "Per-user basic authentication is enabled, but user accounts are disabled. This configuration may be insecure.",
+                ),
+            );
         } else if (!perUserBasicAuth) {
-            const basicAuthUserName = getConfigValue('basicAuthUser.username', '');
-            const basicAuthUserPassword = getConfigValue('basicAuthUser.password', '');
+            const basicAuthUserName = getConfigValue(
+                "basicAuthUser.username",
+                "",
+            );
+            const basicAuthUserPassword = getConfigValue(
+                "basicAuthUser.password",
+                "",
+            );
             if (!basicAuthUserName || !basicAuthUserPassword) {
-                console.warn(color.yellow(
-                    'Basic Authentication is enabled, but username or password is not set or empty!',
-                ));
+                console.warn(
+                    color.yellow(
+                        "Basic Authentication is enabled, but username or password is not set or empty!",
+                    ),
+                );
             }
         }
     }
@@ -199,7 +244,7 @@ export function cleanUploads() {
             }
 
             console.debug(`Cleaning uploads folder (${uploads.length} files)`);
-            uploads.forEach(file => {
+            uploads.forEach((file) => {
                 const pathToFile = path.join(uploadsPath, file);
                 fs.unlinkSync(pathToFile);
             });
@@ -215,7 +260,9 @@ export function cleanUploads() {
  */
 export async function getUserDirectoriesList() {
     const userHandles = await getAllUserHandles();
-    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    const directoriesList = userHandles.map((handle) =>
+        getUserDirectories(handle),
+    );
     return directoriesList;
 }
 
@@ -223,156 +270,171 @@ export async function getUserDirectoriesList() {
  * Perform migration from the old user data format to the new one.
  */
 export async function migrateUserData() {
-    const publicDirectory = path.join(process.cwd(), 'public');
+    const publicDirectory = path.join(process.cwd(), "public");
 
     // No need to migrate if the characters directory doesn't exists
-    if (!fs.existsSync(path.join(publicDirectory, 'characters'))) {
+    if (!fs.existsSync(path.join(publicDirectory, "characters"))) {
         return;
     }
 
     const TIMEOUT = 10;
 
     console.log();
-    console.log(color.magenta('Preparing to migrate user data...'));
-    console.log(`All public data will be moved to the ${globalThis.DATA_ROOT} directory.`);
-    console.log('This process may take a while depending on the amount of data to move.');
-    console.log(`Backups will be placed in the ${PUBLIC_DIRECTORIES.backups} directory.`);
-    console.log(`The process will start in ${TIMEOUT} seconds. Press Ctrl+C to cancel.`);
+    console.log(color.magenta("Preparing to migrate user data..."));
+    console.log(
+        `All public data will be moved to the ${globalThis.DATA_ROOT} directory.`,
+    );
+    console.log(
+        "This process may take a while depending on the amount of data to move.",
+    );
+    console.log(
+        `Backups will be placed in the ${PUBLIC_DIRECTORIES.backups} directory.`,
+    );
+    console.log(
+        `The process will start in ${TIMEOUT} seconds. Press Ctrl+C to cancel.`,
+    );
 
     for (let i = TIMEOUT; i > 0; i--) {
         console.log(`${i}...`);
         await delay(1000);
     }
 
-    console.log(color.magenta('Starting migration... Do not interrupt the process!'));
+    console.log(
+        color.magenta("Starting migration... Do not interrupt the process!"),
+    );
 
     const userDirectories = getUserDirectories(DEFAULT_USER.handle);
 
     const dataMigrationMap = [
         {
-            old: path.join(publicDirectory, 'assets'),
+            old: path.join(publicDirectory, "assets"),
             new: userDirectories.assets,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'backgrounds'),
+            old: path.join(publicDirectory, "backgrounds"),
             new: userDirectories.backgrounds,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'characters'),
+            old: path.join(publicDirectory, "characters"),
             new: userDirectories.characters,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'chats'),
+            old: path.join(publicDirectory, "chats"),
             new: userDirectories.chats,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'context'),
+            old: path.join(publicDirectory, "context"),
             new: userDirectories.context,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'group chats'),
+            old: path.join(publicDirectory, "group chats"),
             new: userDirectories.groupChats,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'groups'),
+            old: path.join(publicDirectory, "groups"),
             new: userDirectories.groups,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'instruct'),
+            old: path.join(publicDirectory, "instruct"),
             new: userDirectories.instruct,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'KoboldAI Settings'),
+            old: path.join(publicDirectory, "KoboldAI Settings"),
             new: userDirectories.koboldAI_Settings,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'movingUI'),
+            old: path.join(publicDirectory, "movingUI"),
             new: userDirectories.movingUI,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'NovelAI Settings'),
+            old: path.join(publicDirectory, "NovelAI Settings"),
             new: userDirectories.novelAI_Settings,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'OpenAI Settings'),
+            old: path.join(publicDirectory, "OpenAI Settings"),
             new: userDirectories.openAI_Settings,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'QuickReplies'),
+            old: path.join(publicDirectory, "QuickReplies"),
             new: userDirectories.quickreplies,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'TextGen Settings'),
+            old: path.join(publicDirectory, "TextGen Settings"),
             new: userDirectories.textGen_Settings,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'themes'),
+            old: path.join(publicDirectory, "themes"),
             new: userDirectories.themes,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'user'),
+            old: path.join(publicDirectory, "user"),
             new: userDirectories.user,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'User Avatars'),
+            old: path.join(publicDirectory, "User Avatars"),
             new: userDirectories.avatars,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'worlds'),
+            old: path.join(publicDirectory, "worlds"),
             new: userDirectories.worlds,
             file: false,
         },
         {
-            old: path.join(publicDirectory, 'scripts/extensions/third-party'),
+            old: path.join(publicDirectory, "scripts/extensions/third-party"),
             new: userDirectories.extensions,
             file: false,
         },
         {
-            old: path.join(process.cwd(), 'thumbnails'),
+            old: path.join(process.cwd(), "thumbnails"),
             new: userDirectories.thumbnails,
             file: false,
         },
         {
-            old: path.join(process.cwd(), 'vectors'),
+            old: path.join(process.cwd(), "vectors"),
             new: userDirectories.vectors,
             file: false,
         },
         {
-            old: path.join(process.cwd(), 'secrets.json'),
-            new: path.join(userDirectories.root, 'secrets.json'),
+            old: path.join(process.cwd(), "secrets.json"),
+            new: path.join(userDirectories.root, "secrets.json"),
             file: true,
         },
         {
-            old: path.join(publicDirectory, 'settings.json'),
-            new: path.join(userDirectories.root, 'settings.json'),
+            old: path.join(publicDirectory, "settings.json"),
+            new: path.join(userDirectories.root, "settings.json"),
             file: true,
         },
         {
-            old: path.join(publicDirectory, 'stats.json'),
-            new: path.join(userDirectories.root, 'stats.json'),
+            old: path.join(publicDirectory, "stats.json"),
+            new: path.join(userDirectories.root, "stats.json"),
             file: true,
         },
     ];
 
-    const currentDate = new Date().toISOString().split('T')[0];
-    const backupDirectory = path.join(process.cwd(), PUBLIC_DIRECTORIES.backups, '_migration', currentDate);
+    const currentDate = new Date().toISOString().split("T")[0];
+    const backupDirectory = path.join(
+        process.cwd(),
+        PUBLIC_DIRECTORIES.backups,
+        "_migration",
+        currentDate,
+    );
 
     if (!fs.existsSync(backupDirectory)) {
         fs.mkdirSync(backupDirectory, { recursive: true });
@@ -385,7 +447,11 @@ export async function migrateUserData() {
 
         try {
             if (!fs.existsSync(migration.old)) {
-                console.log(color.yellow(`Skipping migration of ${migration.old} as it does not exist.`));
+                console.log(
+                    color.yellow(
+                        `Skipping migration of ${migration.old} as it does not exist.`,
+                    ),
+                );
                 continue;
             }
 
@@ -401,7 +467,10 @@ export async function migrateUserData() {
                 fs.rmSync(migration.old, { recursive: true, force: true });
             } else {
                 // Copy the directory to the new location
-                fs.cpSync(migration.old, migration.new, { recursive: true, force: true });
+                fs.cpSync(migration.old, migration.new, {
+                    recursive: true,
+                    force: true,
+                });
                 // Move the directory to the backup location
                 fs.cpSync(
                     migration.old,
@@ -411,17 +480,26 @@ export async function migrateUserData() {
                 fs.rmSync(migration.old, { recursive: true, force: true });
             }
         } catch (error) {
-            console.error(color.red(`Error migrating ${migration.old} to ${migration.new}:`), error.message);
+            console.error(
+                color.red(
+                    `Error migrating ${migration.old} to ${migration.new}:`,
+                ),
+                error.message,
+            );
             errors.push(migration.old);
         }
     }
 
     if (errors.length > 0) {
-        console.log(color.red('Migration completed with errors. Move the following files manually:'));
-        errors.forEach(error => console.error(error));
+        console.log(
+            color.red(
+                "Migration completed with errors. Move the following files manually:",
+            ),
+        );
+        errors.forEach((error) => console.error(error));
     }
 
-    console.log(color.green('Migration completed!'));
+    console.log(color.green("Migration completed!"));
 }
 
 export async function migrateSystemPrompts() {
@@ -431,7 +509,7 @@ export async function migrateSystemPrompts() {
      */
     async function getDefaultSystemPrompts() {
         try {
-            return getContentOfType('sysprompt', 'json');
+            return getContentOfType("sysprompt", "json");
         } catch {
             return [];
         }
@@ -440,11 +518,11 @@ export async function migrateSystemPrompts() {
     const directories = await getUserDirectoriesList();
     for (const directory of directories) {
         try {
-            const migrateMarker = path.join(directory.sysprompt, '.migrated');
+            const migrateMarker = path.join(directory.sysprompt, ".migrated");
             if (fs.existsSync(migrateMarker)) {
                 continue;
             }
-            const backupsPath = path.join(directory.backups, '_sysprompt');
+            const backupsPath = path.join(directory.backups, "_sysprompt");
             fs.mkdirSync(backupsPath, { recursive: true });
             const defaultPrompts = await getDefaultSystemPrompts();
             const instucts = fs.readdirSync(directory.instruct);
@@ -452,31 +530,58 @@ export async function migrateSystemPrompts() {
             for (const instruct of instucts) {
                 const instructPath = path.join(directory.instruct, instruct);
                 const sysPromptPath = path.join(directory.sysprompt, instruct);
-                if (path.extname(instruct) === '.json' && !fs.existsSync(sysPromptPath)) {
-                    const instructData = JSON.parse(fs.readFileSync(instructPath, 'utf8'));
-                    if ('system_prompt' in instructData && 'name' in instructData) {
-                        const backupPath = path.join(backupsPath, `${instructData.name}.json`);
+                if (
+                    path.extname(instruct) === ".json" &&
+                    !fs.existsSync(sysPromptPath)
+                ) {
+                    const instructData = JSON.parse(
+                        fs.readFileSync(instructPath, "utf8"),
+                    );
+                    if (
+                        "system_prompt" in instructData &&
+                        "name" in instructData
+                    ) {
+                        const backupPath = path.join(
+                            backupsPath,
+                            `${instructData.name}.json`,
+                        );
                         fs.cpSync(instructPath, backupPath, { force: true });
-                        const syspromptData = { name: instructData.name, content: instructData.system_prompt };
+                        const syspromptData = {
+                            name: instructData.name,
+                            content: instructData.system_prompt,
+                        };
                         migratedPrompts.push(syspromptData);
                         delete instructData.system_prompt;
-                        writeFileAtomicSync(instructPath, JSON.stringify(instructData, null, 4));
+                        writeFileAtomicSync(
+                            instructPath,
+                            JSON.stringify(instructData, null, 4),
+                        );
                     }
                 }
             }
             // Only leave unique contents
-            migratedPrompts = _.uniqBy(migratedPrompts, 'content');
+            migratedPrompts = _.uniqBy(migratedPrompts, "content");
             // Only leave contents that are not in the default prompts
-            migratedPrompts = migratedPrompts.filter(x => !defaultPrompts.some(y => y.content === x.content));
+            migratedPrompts = migratedPrompts.filter(
+                (x) => !defaultPrompts.some((y) => y.content === x.content),
+            );
             for (const sysPromptData of migratedPrompts) {
                 sysPromptData.name = `[Migrated] ${sysPromptData.name}`;
-                const syspromptPath = path.join(directory.sysprompt, `${sysPromptData.name}.json`);
-                writeFileAtomicSync(syspromptPath, JSON.stringify(sysPromptData, null, 4));
-                console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);
+                const syspromptPath = path.join(
+                    directory.sysprompt,
+                    `${sysPromptData.name}.json`,
+                );
+                writeFileAtomicSync(
+                    syspromptPath,
+                    JSON.stringify(sysPromptData, null, 4),
+                );
+                console.log(
+                    `Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`,
+                );
             }
-            writeFileAtomicSync(migrateMarker, '');
+            writeFileAtomicSync(migrateMarker, "");
         } catch (error) {
-            console.error('Error migrating system prompts:', error);
+            console.error("Error migrating system prompts:", error);
         }
     }
 }
@@ -505,9 +610,9 @@ export function toAvatarKey(handle) {
  * @returns {Promise<void>}
  */
 export async function initUserStorage(dataRoot) {
-    console.log('Using data root:', color.green(dataRoot));
+    console.log("Using data root:", color.green(dataRoot));
     await storage.init({
-        dir: path.join(dataRoot, '_storage'),
+        dir: path.join(dataRoot, "_storage"),
         ttl: false, // Never expire
     });
 
@@ -530,20 +635,24 @@ export function getCookieSecret(dataRoot) {
     if (fs.existsSync(cookieSecretPath)) {
         const stat = fs.statSync(cookieSecretPath);
         if (stat.size > 0) {
-            return fs.readFileSync(cookieSecretPath, 'utf8');
+            return fs.readFileSync(cookieSecretPath, "utf8");
         }
     }
 
     const oldSecret = getConfigValue(STORAGE_KEYS.cookieSecret);
     if (oldSecret) {
-        console.log('Migrating cookie secret from config.yaml...');
-        writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: 'utf8' });
+        console.log("Migrating cookie secret from config.yaml...");
+        writeFileAtomicSync(cookieSecretPath, oldSecret, { encoding: "utf8" });
         return oldSecret;
     }
 
-    console.warn(color.yellow('Cookie secret is missing from data root. Generating a new one...'));
-    const secret = crypto.randomBytes(64).toString('base64');
-    writeFileAtomicSync(cookieSecretPath, secret, { encoding: 'utf8' });
+    console.warn(
+        color.yellow(
+            "Cookie secret is missing from data root. Generating a new one...",
+        ),
+    );
+    const secret = crypto.randomBytes(64).toString("base64");
+    writeFileAtomicSync(cookieSecretPath, secret, { encoding: "utf8" });
     return secret;
 }
 
@@ -552,7 +661,7 @@ export function getCookieSecret(dataRoot) {
  * @returns {string} The password salt
  */
 export function getPasswordSalt() {
-    return crypto.randomBytes(16).toString('base64');
+    return crypto.randomBytes(16).toString("base64");
 }
 
 /**
@@ -561,14 +670,18 @@ export function getPasswordSalt() {
  */
 export function getCookieSessionName() {
     // Get server hostname and hash it to generate a session suffix
-    const hostname = os.hostname() || 'localhost';
-    const suffix = crypto.createHash('sha256').update(hostname).digest('hex').slice(0, 8);
+    const hostname = os.hostname() || "localhost";
+    const suffix = crypto
+        .createHash("sha256")
+        .update(hostname)
+        .digest("hex")
+        .slice(0, 8);
     return `session-${suffix}`;
 }
 
 export function getSessionCookieAge() {
     // Defaults to "no expiration" if not set
-    const configValue = getConfigValue('sessionTimeout', -1, 'number');
+    const configValue = getConfigValue("sessionTimeout", -1, "number");
 
     // Convert to milliseconds
     if (configValue > 0) {
@@ -592,7 +705,7 @@ export function getSessionCookieAge() {
  * @returns {string} Hashed password
  */
 export function getPasswordHash(password, salt) {
-    return crypto.scryptSync(password.normalize(), salt, 64).toString('base64');
+    return crypto.scryptSync(password.normalize(), salt, 64).toString("base64");
 }
 
 /**
@@ -605,11 +718,18 @@ export function getCsrfSecret(request) {
         return ANON_CSRF_SECRET;
     }
 
-    let csrfSecret = readSecret(request.user.directories, STORAGE_KEYS.csrfSecret);
+    let csrfSecret = readSecret(
+        request.user.directories,
+        STORAGE_KEYS.csrfSecret,
+    );
 
     if (!csrfSecret) {
-        csrfSecret = crypto.randomBytes(64).toString('base64');
-        writeSecret(request.user.directories, STORAGE_KEYS.csrfSecret, csrfSecret);
+        csrfSecret = crypto.randomBytes(64).toString("base64");
+        writeSecret(
+            request.user.directories,
+            STORAGE_KEYS.csrfSecret,
+            csrfSecret,
+        );
     }
 
     return csrfSecret;
@@ -620,8 +740,8 @@ export function getCsrfSecret(request) {
  * @returns {Promise<string[]>} - The list of user handles
  */
 export async function getAllUserHandles() {
-    const keys = await storage.keys(x => x.key.startsWith(KEY_PREFIX));
-    const handles = keys.map(x => x.replace(KEY_PREFIX, ''));
+    const keys = await storage.keys((x) => x.key.startsWith(KEY_PREFIX));
+    const handles = keys.map((x) => x.replace(KEY_PREFIX, ""));
     return handles;
 }
 
@@ -640,7 +760,11 @@ export function getUserDirectories(handle) {
 
     const directories = structuredClone(USER_DIRECTORY_TEMPLATE);
     for (const key in directories) {
-        directories[key] = path.join(globalThis.DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
+        directories[key] = path.join(
+            globalThis.DATA_ROOT,
+            handle,
+            USER_DIRECTORY_TEMPLATE[key],
+        );
     }
     DIRECTORIES_CACHE.set(handle, directories);
     return directories;
@@ -664,8 +788,11 @@ export async function getUserAvatar(handle) {
         // Fallback to reading from files if custom avatar is not set
         const directory = getUserDirectories(handle);
         const pathToSettings = path.join(directory.root, SETTINGS_FILE);
-        const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
-        const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
+        const settings = fs.existsSync(pathToSettings)
+            ? JSON.parse(fs.readFileSync(pathToSettings, "utf8"))
+            : {};
+        const avatarFile =
+            settings?.power_user?.default_persona || settings?.user_avatar;
         if (!avatarFile) {
             return PUBLIC_USER_AVATAR;
         }
@@ -674,10 +801,9 @@ export async function getUserAvatar(handle) {
             return PUBLIC_USER_AVATAR;
         }
         const mimeType = mime.lookup(avatarPath);
-        const base64Content = fs.readFileSync(avatarPath, 'base64');
+        const base64Content = fs.readFileSync(avatarPath, "base64");
         return `data:${mimeType};base64,${base64Content}`;
-    }
-    catch {
+    } catch {
         // Ignore errors
         return PUBLIC_USER_AVATAR;
     }
@@ -709,11 +835,15 @@ export async function tryAutoLogin(request, basicAuthMode) {
             return true;
         }
 
-        if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
+        if (AUTHELIA_AUTH && (await autheliaUserLogin(request))) {
             return true;
         }
 
-        if (basicAuthMode && PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
+        if (
+            basicAuthMode &&
+            PER_USER_BASIC_AUTH &&
+            (await basicUserLogin(request))
+        ) {
             return true;
         }
     }
@@ -753,7 +883,7 @@ async function autheliaUserLogin(request) {
         return false;
     }
 
-    const remoteUser = request.get('Remote-User');
+    const remoteUser = request.get("Remote-User");
     if (!remoteUser) {
         return false;
     }
@@ -787,22 +917,27 @@ async function basicUserLogin(request) {
         return false;
     }
 
-    const [scheme, credentials] = authHeader.split(' ');
+    const [scheme, credentials] = authHeader.split(" ");
 
-    if (scheme !== 'Basic' || !credentials) {
+    if (scheme !== "Basic" || !credentials) {
         return false;
     }
 
-    const [username, password] = Buffer.from(credentials, 'base64')
-        .toString('utf8')
-        .split(':');
+    const [username, password] = Buffer.from(credentials, "base64")
+        .toString("utf8")
+        .split(":");
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
         if (username === userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             // Verify pass again here just to be sure
-            if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
+            if (
+                user &&
+                user.enabled &&
+                user.password &&
+                user.password === getPasswordHash(password, user.salt)
+            ) {
                 request.session.handle = userHandle;
                 return true;
             }
@@ -831,7 +966,7 @@ export async function setUserDataMiddleware(request, response, next) {
     }
 
     if (!request.session) {
-        console.error('Session not available');
+        console.error("Session not available");
         return response.sendStatus(500);
     }
 
@@ -847,12 +982,12 @@ export async function setUserDataMiddleware(request, response, next) {
     const user = await storage.getItem(toKey(handle));
 
     if (!user) {
-        console.error('User not found:', handle);
+        console.error("User not found:", handle);
         return next();
     }
 
     if (!user.enabled) {
-        console.error('User is disabled:', handle);
+        console.error("User is disabled:", handle);
         return next();
     }
 
@@ -863,7 +998,7 @@ export async function setUserDataMiddleware(request, response, next) {
     };
 
     // Touch the session if loading the home page
-    if (request.method === 'GET' && request.path === '/') {
+    if (request.method === "GET" && request.path === "/") {
         request.session.touch = Date.now();
     }
 
@@ -891,8 +1026,8 @@ export function requireLoginMiddleware(request, response, next) {
  */
 export async function loginPageMiddleware(request, response) {
     if (!ENABLE_ACCOUNTS) {
-        console.log('User accounts are disabled. Redirecting to index page.');
-        return response.redirect('/');
+        console.log("User accounts are disabled. Redirecting to index page.");
+        return response.redirect("/");
     }
 
     try {
@@ -900,13 +1035,15 @@ export async function loginPageMiddleware(request, response) {
         const autoLogin = await tryAutoLogin(request, basicAuthMode);
 
         if (autoLogin) {
-            return response.redirect('/');
+            return response.redirect("/");
         }
     } catch (error) {
-        console.error('Error during auto-login:', error);
+        console.error("Error during auto-login:", error);
     }
 
-    return response.sendFile('login.html', { root: path.join(serverDirectory, 'public') });
+    return response.sendFile("login.html", {
+        root: path.join(serverDirectory, "public"),
+    });
 }
 
 /**
@@ -946,9 +1083,13 @@ function createExtensionsRouteHandler(directoryFn) {
                 return res.sendFile(filePath, { root: directory });
             }
 
-            const existsGlobal = fs.existsSync(path.join(PUBLIC_DIRECTORIES.globalExtensions, filePath));
+            const existsGlobal = fs.existsSync(
+                path.join(PUBLIC_DIRECTORIES.globalExtensions, filePath),
+            );
             if (existsGlobal) {
-                return res.sendFile(filePath, { root: PUBLIC_DIRECTORIES.globalExtensions });
+                return res.sendFile(filePath, {
+                    root: PUBLIC_DIRECTORIES.globalExtensions,
+                });
             }
 
             return res.sendStatus(404);
@@ -974,7 +1115,7 @@ export function requireAdminMiddleware(request, response, next) {
         return next();
     }
 
-    console.warn('Unauthorized access to admin endpoint:', request.originalUrl);
+    console.warn("Unauthorized access to admin endpoint:", request.originalUrl);
     return response.sendStatus(403);
 }
 
@@ -987,16 +1128,16 @@ export function requireAdminMiddleware(request, response, next) {
 export async function createBackupArchive(handle, response) {
     const directories = getUserDirectories(handle);
 
-    console.info('Backup requested for', handle);
-    const archive = archiver('zip');
+    console.info("Backup requested for", handle);
+    const archive = archiver("zip");
 
-    archive.on('error', function (err) {
+    archive.on("error", function (err) {
         response.status(500).send({ error: err.message });
     });
 
     // On stream closed we can end the request
-    archive.on('end', function () {
-        console.info('Archive wrote %d bytes', archive.pointer());
+    archive.on("end", function () {
+        console.info("Archive wrote %d bytes", archive.pointer());
         response.end(); // End the Express response
     });
 
@@ -1035,17 +1176,38 @@ async function getAllUsers() {
  */
 export async function getAllEnabledUsers() {
     const users = await getAllUsers();
-    return users.filter(x => x.enabled);
+    return users.filter((x) => x.enabled);
 }
 
 /**
  * Express router for serving files from the user's directories.
  */
 export const router = express.Router();
-router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
-router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
-router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
-router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
-router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
-router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
-router.use('/scripts/extensions/third-party/*', createExtensionsRouteHandler(req => req.user.directories.extensions));
+router.use(
+    "/backgrounds/*",
+    createRouteHandler((req) => req.user.directories.backgrounds),
+);
+router.use(
+    "/characters/*",
+    createRouteHandler((req) => req.user.directories.characters),
+);
+router.use(
+    "/User%20Avatars/*",
+    createRouteHandler((req) => req.user.directories.avatars),
+);
+router.use(
+    "/assets/*",
+    createRouteHandler((req) => req.user.directories.assets),
+);
+router.use(
+    "/user/images/*",
+    createRouteHandler((req) => req.user.directories.userImages),
+);
+router.use(
+    "/user/files/*",
+    createRouteHandler((req) => req.user.directories.files),
+);
+router.use(
+    "/scripts/extensions/third-party/*",
+    createExtensionsRouteHandler((req) => req.user.directories.extensions),
+);

@@ -5,12 +5,12 @@ import {
     max_context,
     saveSettingsDebounced,
     setGenerationProgress,
-} from '../script.js';
-import { SECRET_KEYS, writeSecret } from './secrets.js';
-import { delay } from './utils.js';
-import { isMobile } from './RossAscends-mods.js';
-import { autoSelectInstructPreset } from './instruct-mode.js';
-import { t } from './i18n.js';
+} from "../script.js";
+import { SECRET_KEYS, writeSecret } from "./secrets.js";
+import { delay } from "./utils.js";
+import { isMobile } from "./RossAscends-mods.js";
+import { autoSelectInstructPreset } from "./instruct-mode.js";
+import { t } from "./i18n.js";
 
 export {
     horde_settings,
@@ -41,8 +41,8 @@ const MIN_LENGTH = 16;
  * @returns {Promise<Array>} Array of workers
  */
 async function getWorkers(force) {
-    const response = await fetch('/api/horde/text-workers', {
-        method: 'POST',
+    const response = await fetch("/api/horde/text-workers", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ force }),
     });
@@ -55,16 +55,15 @@ async function getWorkers(force) {
  * @returns {Promise<Array>} Array of models
  */
 async function getModels(force) {
-    const response = await fetch('/api/horde/text-models', {
-        method: 'POST',
+    const response = await fetch("/api/horde/text-models", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ force }),
     });
     const data = await response.json();
-    console.log('getModels', data);
+    console.log("getModels", data);
     return data;
 }
-
 
 /**
  * Gets the status of a Horde task.
@@ -72,8 +71,8 @@ async function getModels(force) {
  * @returns {Promise<Object>} Task status
  */
 async function getTaskStatus(taskId) {
-    const response = await fetch('/api/horde/task-status', {
-        method: 'POST',
+    const response = await fetch("/api/horde/task-status", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ taskId }),
     });
@@ -90,8 +89,8 @@ async function getTaskStatus(taskId) {
  * @param {string} taskId Task ID
  */
 async function cancelTask(taskId) {
-    const response = await fetch('/api/horde/cancel-task', {
-        method: 'POST',
+    const response = await fetch("/api/horde/cancel-task", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ taskId }),
     });
@@ -107,8 +106,8 @@ async function cancelTask(taskId) {
  */
 async function checkHordeStatus() {
     try {
-        const response = await fetch('/api/horde/status', {
-            method: 'POST',
+        const response = await fetch("/api/horde/status", {
+            method: "POST",
             headers: getRequestHeaders(),
         });
 
@@ -125,11 +124,15 @@ async function checkHordeStatus() {
 }
 
 function validateHordeModel() {
-    let selectedModels = models.filter(m => horde_settings.models.includes(m.name));
+    let selectedModels = models.filter((m) =>
+        horde_settings.models.includes(m.name),
+    );
 
     if (selectedModels.length === 0) {
-        toastr.warning('No Horde model selected or the selected models are no longer available. Please choose another model');
-        throw new Error('No Horde model available');
+        toastr.warning(
+            "No Horde model selected or the selected models are no longer available. Please choose another model",
+        );
+        throw new Error("No Horde model available");
     }
 
     return selectedModels;
@@ -149,7 +152,10 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
 
     for (const model of selectedModels) {
         for (const worker of workers) {
-            if (model.cluster === worker.cluster && worker.models.includes(model.name)) {
+            if (
+                model.cluster === worker.cluster &&
+                worker.models.includes(model.name)
+            ) {
                 // Skip workers that are not trusted if the option is enabled
                 if (horde_settings.trusted_workers_only && !worker.trusted) {
                     continue;
@@ -163,14 +169,19 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     //get the minimum requires parameters, lowest common value for all selected
     for (const worker of availableWorkers) {
         if (horde_settings.auto_adjust_context_length) {
-            maxContextLength = Math.min(worker.max_context_length, maxContextLength);
+            maxContextLength = Math.min(
+                worker.max_context_length,
+                maxContextLength,
+            );
         }
         if (horde_settings.auto_adjust_response_length) {
             maxLength = Math.min(worker.max_length, maxLength);
         }
     }
     console.log(maxContextLength, maxLength);
-    $('#adjustedHordeParams').text(t`Context` + `: ${maxContextLength}, ` + t`Response` + `: ${maxLength}`);
+    $("#adjustedHordeParams").text(
+        t`Context` + `: ${maxContextLength}, ` + t`Response` + `: ${maxLength}`,
+    );
     return { maxContextLength, maxLength };
 }
 
@@ -178,7 +189,9 @@ function setContextSizePreview() {
     if (horde_settings.models.length) {
         adjustHordeGenerationParams(max_context, amount_gen);
     } else {
-        $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
+        $("#adjustedHordeParams").text(
+            t`Context` + ": --, " + t`Response` + ": --",
+        );
     }
 }
 
@@ -195,36 +208,36 @@ async function generateHorde(prompt, params, signal, reportProgress) {
     delete params.prompt;
 
     // No idea what these do
-    params['n'] = 1;
-    params['frmtadsnsp'] = false;
-    params['frmtrmblln'] = false;
-    params['frmtrmspch'] = false;
-    params['frmttriminc'] = false;
+    params["n"] = 1;
+    params["frmtadsnsp"] = false;
+    params["frmtrmblln"] = false;
+    params["frmtrmspch"] = false;
+    params["frmttriminc"] = false;
 
     const payload = {
-        'prompt': prompt,
-        'params': params,
-        'trusted_workers': horde_settings.trusted_workers_only,
+        prompt: prompt,
+        params: params,
+        trusted_workers: horde_settings.trusted_workers_only,
         //"slow_workers": false,
-        'models': horde_settings.models,
+        models: horde_settings.models,
     };
 
-    const response = await fetch('/api/horde/generate-text', {
-        method: 'POST',
+    const response = await fetch("/api/horde/generate-text", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-        toastr.error(response.statusText, 'Horde generation failed');
+        toastr.error(response.statusText, "Horde generation failed");
         throw new Error(`Horde generation failed: ${response.statusText}`);
     }
 
     const responseJson = await response.json();
 
     if (responseJson.error) {
-        const reason = responseJson.error?.message || 'Unknown error';
-        toastr.error(reason, 'Horde generation failed');
+        const reason = responseJson.error?.message || "Unknown error";
+        toastr.error(reason, "Horde generation failed");
         throw new Error(`Horde generation failed: ${reason}`);
     }
 
@@ -235,46 +248,58 @@ async function generateHorde(prompt, params, signal, reportProgress) {
     for (let retryNumber = 0; retryNumber < MAX_RETRIES; retryNumber++) {
         if (signal.aborted) {
             cancelTask(taskId);
-            throw new Error('Request aborted');
+            throw new Error("Request aborted");
         }
 
         const statusCheckJson = await getTaskStatus(taskId);
         console.log(statusCheckJson);
 
         if (statusCheckJson.faulted === true) {
-            toastr.error('Horde request faulted. Please try again.');
-            throw new Error('Horde generation failed: Faulted');
+            toastr.error("Horde request faulted. Please try again.");
+            throw new Error("Horde generation failed: Faulted");
         }
 
         if (statusCheckJson.is_possible === false) {
-            toastr.error('There are no Horde workers that are able to generate text with your request. Please change the parameters or try again later.');
-            throw new Error('Horde generation failed: Unsatisfiable request');
+            toastr.error(
+                "There are no Horde workers that are able to generate text with your request. Please change the parameters or try again later.",
+            );
+            throw new Error("Horde generation failed: Unsatisfiable request");
         }
 
-        if (statusCheckJson.done && Array.isArray(statusCheckJson.generations) && statusCheckJson.generations.length) {
+        if (
+            statusCheckJson.done &&
+            Array.isArray(statusCheckJson.generations) &&
+            statusCheckJson.generations.length
+        ) {
             reportProgress && setGenerationProgress(100);
             const generatedText = statusCheckJson.generations[0].text;
             const WorkerName = statusCheckJson.generations[0].worker_name;
             const WorkerModel = statusCheckJson.generations[0].model;
             console.log(generatedText);
-            console.log(`Generated by Horde Worker: ${WorkerName} [${WorkerModel}]`);
-            return { text: generatedText, workerName: `Generated by Horde worker: ${WorkerName} [${WorkerModel}]` };
+            console.log(
+                `Generated by Horde Worker: ${WorkerName} [${WorkerModel}]`,
+            );
+            return {
+                text: generatedText,
+                workerName: `Generated by Horde worker: ${WorkerName} [${WorkerModel}]`,
+            };
         } else if (!queue_position_first) {
             queue_position_first = statusCheckJson.queue_position;
             reportProgress && setGenerationProgress(0);
         } else if (statusCheckJson.queue_position >= 0) {
             let queue_position = statusCheckJson.queue_position;
-            const progress = Math.round(100 - (queue_position / queue_position_first * 100));
+            const progress = Math.round(
+                100 - (queue_position / queue_position_first) * 100,
+            );
             reportProgress && setGenerationProgress(progress);
         }
 
         await delay(CHECK_INTERVAL);
     }
 
-    callPopup('Horde request timed out. Try again', 'text');
-    throw new Error('Horde timeout');
+    callPopup("Horde request timed out. Try again", "text");
+    throw new Error("Horde timeout");
 }
-
 
 /**
  * Displays the available models in the Horde model selection dropdown.
@@ -283,22 +308,31 @@ async function generateHorde(prompt, params, signal, reportProgress) {
 async function getHordeModels(force) {
     const sortByPerformance = (a, b) => b.performance - a.performance;
     const sortByWhitelisted = (a, b) => b.is_whitelisted - a.is_whitelisted;
-    const sortByPopular = (a, b) => b.tags?.includes('popular') - a.tags?.includes('popular');
+    const sortByPopular = (a, b) =>
+        b.tags?.includes("popular") - a.tags?.includes("popular");
 
-    $('#horde_model').empty();
+    $("#horde_model").empty();
     models = (await getModels(force)).sort((a, b) => {
-        return sortByWhitelisted(a, b) || sortByPopular(a, b) || sortByPerformance(a, b);
+        return (
+            sortByWhitelisted(a, b) ||
+            sortByPopular(a, b) ||
+            sortByPerformance(a, b)
+        );
     });
     for (const model of models) {
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = model.name;
         option.innerText = hordeModelTextString(model);
         option.selected = horde_settings.models.includes(model.name);
-        $('#horde_model').append(option);
+        $("#horde_model").append(option);
     }
 
     // if previously selected is no longer available
-    if (horde_settings.models.length && models.filter(m => horde_settings.models.includes(m.name)).length === 0) {
+    if (
+        horde_settings.models.length &&
+        models.filter((m) => horde_settings.models.includes(m.name)).length ===
+            0
+    ) {
         horde_settings.models = [];
     }
 
@@ -310,30 +344,43 @@ function loadHordeSettings(settings) {
         Object.assign(horde_settings, settings.horde_settings);
     }
 
-    $('#horde_auto_adjust_response_length').prop('checked', horde_settings.auto_adjust_response_length);
-    $('#horde_auto_adjust_context_length').prop('checked', horde_settings.auto_adjust_context_length);
-    $('#horde_trusted_workers_only').prop('checked', horde_settings.trusted_workers_only);
+    $("#horde_auto_adjust_response_length").prop(
+        "checked",
+        horde_settings.auto_adjust_response_length,
+    );
+    $("#horde_auto_adjust_context_length").prop(
+        "checked",
+        horde_settings.auto_adjust_context_length,
+    );
+    $("#horde_trusted_workers_only").prop(
+        "checked",
+        horde_settings.trusted_workers_only,
+    );
 }
 
 async function showKudos() {
-    const response = await fetch('/api/horde/user-info', {
-        method: 'POST',
+    const response = await fetch("/api/horde/user-info", {
+        method: "POST",
         headers: getRequestHeaders(),
     });
 
     if (!response.ok) {
-        toastr.warning('Could not load user info from Horde. Please try again later.');
+        toastr.warning(
+            "Could not load user info from Horde. Please try again later.",
+        );
         return;
     }
 
     const data = await response.json();
 
     if (data.anonymous) {
-        toastr.info('You are in anonymous mode. Set your personal Horde API key to see kudos.');
+        toastr.info(
+            "You are in anonymous mode. Set your personal Horde API key to see kudos.",
+        );
         return;
     }
 
-    console.log('Horde user data', data);
+    console.log("Horde user data", data);
     toastr.info(`Kudos: ${data.kudos}`, data.username);
 }
 
@@ -347,100 +394,119 @@ function hordeModelQueueStateString(model) {
 }
 
 function getHordeModelTemplate(option) {
-    const model = models.find(x => x.name === option?.element?.value);
+    const model = models.find((x) => x.name === option?.element?.value);
 
     if (!option.id || !model) {
-        console.debug('No model found for option', option, option?.element?.value);
-        console.debug('Models', models);
+        console.debug(
+            "No model found for option",
+            option,
+            option?.element?.value,
+        );
+        console.debug("Models", models);
         return option.text;
     }
 
-    const strip = html => {
-        const tmp = document.createElement('DIV');
-        tmp.innerHTML = html || '';
-        return tmp.textContent || tmp.innerText || '';
+    const strip = (html) => {
+        const tmp = document.createElement("DIV");
+        tmp.innerHTML = html || "";
+        return tmp.textContent || tmp.innerText || "";
     };
 
     // how much do we trust the metadata from the models repo? about this much
-    const displayName = strip(model.display_name || model.name).replace(/.*\//g, '');
+    const displayName = strip(model.display_name || model.name).replace(
+        /.*\//g,
+        "",
+    );
     const description = strip(model.description);
     const tags = model.tags ? model.tags.map(strip) : [];
     const url = strip(model.url);
     const style = strip(model.style);
 
     const workerInfo = hordeModelQueueStateString(model);
-    const isPopular = model.tags?.includes('popular');
-    const descriptionDiv = description ? `<div class="horde-model-description">${description}</div>` : '';
-    const tagSpans = tags.length > 0 &&
-        `${tags.map(tag => `<span class="tag tag_name">${tag}</span>`).join('')}</span>` || '';
+    const isPopular = model.tags?.includes("popular");
+    const descriptionDiv = description
+        ? `<div class="horde-model-description">${description}</div>`
+        : "";
+    const tagSpans =
+        (tags.length > 0 &&
+            `${tags.map((tag) => `<span class="tag tag_name">${tag}</span>`).join("")}</span>`) ||
+        "";
 
-    const modelDetailsLink = url && `<a href="${url}" target="_blank" rel="noopener noreferrer" class="model-details-link fa-solid fa-circle-question"> </a>`;
-    const capitalize = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+    const modelDetailsLink =
+        url &&
+        `<a href="${url}" target="_blank" rel="noopener noreferrer" class="model-details-link fa-solid fa-circle-question"> </a>`;
+    const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : "");
     const innerContent = [
         `<strong>${displayName}</strong> ${modelDetailsLink}`,
-        style ? `${capitalize(style)}` : '',
-        tagSpans ? `<span class="tags tags_inline inline-flex margin-r2">${tagSpans}</span>` : '',
-    ].filter(Boolean).join(' | ');
+        style ? `${capitalize(style)}` : "",
+        tagSpans
+            ? `<span class="tags tags_inline inline-flex margin-r2">${tagSpans}</span>`
+            : "",
+    ]
+        .filter(Boolean)
+        .join(" | ");
 
-    return $((`
+    return $(`
         <div class="flex-container flexFlowColumn">
             <div>
-                ${isPopular ? '<span class="fa-fw fa-solid fa-star" title="Popular"></span>' : ''}
+                ${isPopular ? '<span class="fa-fw fa-solid fa-star" title="Popular"></span>' : ""}
                 ${innerContent}
             </div>
             ${descriptionDiv}
             <div><small>${workerInfo}</small></div>
         </div>
-    `));
+    `);
 }
 
-export function initHorde () {
-    $('#horde_model').on('mousedown change', async function (e) {
-        console.log('Horde model change', e);
-        horde_settings.models = $('#horde_model').val();
-        console.log('Updated Horde models', horde_settings.models);
+export function initHorde() {
+    $("#horde_model").on("mousedown change", async function (e) {
+        console.log("Horde model change", e);
+        horde_settings.models = $("#horde_model").val();
+        console.log("Updated Horde models", horde_settings.models);
 
         // Try select instruct preset
-        autoSelectInstructPreset(horde_settings.models.join(' '));
+        autoSelectInstructPreset(horde_settings.models.join(" "));
         if (horde_settings.models.length) {
             adjustHordeGenerationParams(max_context, amount_gen);
         } else {
-            $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
+            $("#adjustedHordeParams").text(
+                t`Context` + ": --, " + t`Response` + ": --",
+            );
         }
 
         saveSettingsDebounced();
     });
 
-    $('#horde_auto_adjust_response_length').on('input', function () {
-        horde_settings.auto_adjust_response_length = !!$(this).prop('checked');
+    $("#horde_auto_adjust_response_length").on("input", function () {
+        horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
         setContextSizePreview();
         saveSettingsDebounced();
     });
 
-    $('#horde_auto_adjust_context_length').on('input', function () {
-        horde_settings.auto_adjust_context_length = !!$(this).prop('checked');
+    $("#horde_auto_adjust_context_length").on("input", function () {
+        horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
         setContextSizePreview();
         saveSettingsDebounced();
     });
 
-    $('#horde_trusted_workers_only').on('input', function () {
-        horde_settings.trusted_workers_only = !!$(this).prop('checked');
+    $("#horde_trusted_workers_only").on("input", function () {
+        horde_settings.trusted_workers_only = !!$(this).prop("checked");
         setContextSizePreview();
         saveSettingsDebounced();
     });
 
-    $('#horde_api_key').on('input', async function () {
+    $("#horde_api_key").on("input", async function () {
         const key = String($(this).val()).trim();
         await writeSecret(SECRET_KEYS.HORDE, key);
     });
 
-    $('#horde_refresh').on('click', () => getHordeModels(true));
-    $('#horde_kudos').on('click', showKudos);
+    $("#horde_refresh").on("click", () => getHordeModels(true));
+    $("#horde_kudos").on("click", showKudos);
 
     // Not needed on mobile
     if (!isMobile()) {
-        $('#horde_model').select2({
-            width: '100%',
+        $("#horde_model").select2({
+            width: "100%",
             placeholder: t`Select Horde models`,
             allowClear: true,
             closeOnSelect: false,
@@ -452,4 +518,3 @@ export function initHorde () {
         });
     }
 }
-

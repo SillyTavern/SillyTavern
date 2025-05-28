@@ -1,6 +1,6 @@
 // Move chat functions here from script.js (eventually)
 
-import { Popper, css, DOMPurify } from '../lib.js';
+import { Popper, css, DOMPurify } from "../lib.js";
 import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
@@ -28,9 +28,9 @@ import {
     getSystemMessageByType,
     printMessages,
     clearChat,
-} from '../script.js';
-import { selected_group } from './group-chats.js';
-import { power_user } from './power-user.js';
+} from "../script.js";
+import { selected_group } from "./group-chats.js";
+import { power_user } from "./power-user.js";
 import {
     extractTextFromHTML,
     extractTextFromMarkdown,
@@ -43,15 +43,19 @@ import {
     extractTextFromOffice,
     download,
     getFileText,
-} from './utils.js';
-import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
-import { ScraperManager } from './scrapers.js';
-import { DragAndDropHandler } from './dragdrop.js';
-import { renderTemplateAsync } from './templates.js';
-import { t } from './i18n.js';
-import { humanizedDateTime } from './RossAscends-mods.js';
-import { accountStorage } from './util/AccountStorage.js';
+} from "./utils.js";
+import {
+    extension_settings,
+    renderExtensionTemplateAsync,
+    saveMetadataDebounced,
+} from "./extensions.js";
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from "./popup.js";
+import { ScraperManager } from "./scrapers.js";
+import { DragAndDropHandler } from "./dragdrop.js";
+import { renderTemplateAsync } from "./templates.js";
+import { t } from "./i18n.js";
+import { humanizedDateTime } from "./RossAscends-mods.js";
+import { accountStorage } from "./util/AccountStorage.js";
 
 /**
  * @typedef {Object} FileAttachment
@@ -70,25 +74,28 @@ import { accountStorage } from './util/AccountStorage.js';
 
 const fileSizeLimit = 1024 * 1024 * 100; // 100 MB
 const ATTACHMENT_SOURCE = {
-    GLOBAL: 'global',
-    CHARACTER: 'character',
-    CHAT: 'chat',
+    GLOBAL: "global",
+    CHARACTER: "character",
+    CHAT: "chat",
 };
 
 /**
  * @type {Record<string, ConverterFunction>} File converters
  */
 const converters = {
-    'application/pdf': extractTextFromPDF,
-    'text/html': extractTextFromHTML,
-    'text/markdown': extractTextFromMarkdown,
-    'application/epub+zip': extractTextFromEpub,
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': extractTextFromOffice,
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': extractTextFromOffice,
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': extractTextFromOffice,
-    'application/vnd.oasis.opendocument.text': extractTextFromOffice,
-    'application/vnd.oasis.opendocument.presentation': extractTextFromOffice,
-    'application/vnd.oasis.opendocument.spreadsheet': extractTextFromOffice,
+    "application/pdf": extractTextFromPDF,
+    "text/html": extractTextFromHTML,
+    "text/markdown": extractTextFromMarkdown,
+    "application/epub+zip": extractTextFromEpub,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        extractTextFromOffice,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        extractTextFromOffice,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        extractTextFromOffice,
+    "application/vnd.oasis.opendocument.text": extractTextFromOffice,
+    "application/vnd.oasis.opendocument.presentation": extractTextFromOffice,
+    "application/vnd.oasis.opendocument.spreadsheet": extractTextFromOffice,
 };
 
 /**
@@ -104,7 +111,7 @@ function findConverterKey(type) {
         }
 
         // Match wildcards
-        if (key.endsWith('*')) {
+        if (key.endsWith("*")) {
             return type.startsWith(key.substring(0, key.length - 1));
         }
 
@@ -139,7 +146,12 @@ function getConverter(type) {
  * @param {string} nameFitler Optional name filter
  * @returns {Promise<void>}
  */
-export async function hideChatMessageRange(start, end, unhide, nameFitler = null) {
+export async function hideChatMessageRange(
+    start,
+    end,
+    unhide,
+    nameFitler = null,
+) {
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
@@ -154,7 +166,7 @@ export async function hideChatMessageRange(start, end, unhide, nameFitler = null
         // Also toggle "hidden" state for all visible messages
         const messageBlock = $(`.mes[mesid="${messageId}"]`);
         if (!messageBlock.length) continue;
-        messageBlock.attr('is_system', String(hide));
+        messageBlock.attr("is_system", String(hide));
     }
 
     // Reload swipes. Useful when a last message is hidden.
@@ -191,7 +203,10 @@ export async function unhideChatMessage(messageId, _messageBlock) {
  * @param {object} message Message object
  * @returns {Promise<void>} A promise that resolves when file is uploaded.
  */
-export async function populateFileAttachment(message, inputId = 'file_form_input') {
+export async function populateFileAttachment(
+    message,
+    inputId = "file_form_input",
+) {
     try {
         if (!message) return;
         if (!message.extra) message.extra = {};
@@ -203,12 +218,17 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const slug = getStringHash(file.name);
         const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
-        let base64Data = fileBase64.split(',')[1];
+        let base64Data = fileBase64.split(",")[1];
 
         // If file is image
-        if (file.type.startsWith('image/')) {
-            const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+        if (file.type.startsWith("image/")) {
+            const extension = file.type.split("/")[1];
+            const imageUrl = await saveBase64AsFile(
+                base64Data,
+                name2,
+                fileNamePrefix,
+                extension,
+            );
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
         } else {
@@ -218,14 +238,19 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 try {
                     const converter = getConverter(file.type);
                     const fileText = await converter(file);
-                    base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+                    base64Data = window.btoa(
+                        unescape(encodeURIComponent(fileText)),
+                    );
                 } catch (error) {
                     toastr.error(String(error), t`Could not convert file`);
-                    console.error('Could not convert file', error);
+                    console.error("Could not convert file", error);
                 }
             }
 
-            const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+            const fileUrl = await uploadFileAttachment(
+                uniqueFileName,
+                base64Data,
+            );
 
             if (!fileUrl) {
                 return;
@@ -238,11 +263,10 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 created: Date.now(),
             };
         }
-
     } catch (error) {
-        console.error('Could not upload file', error);
+        console.error("Could not upload file", error);
     } finally {
-        $('#file_form').trigger('reset');
+        $("#file_form").trigger("reset");
     }
 }
 
@@ -254,8 +278,8 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
  */
 export async function uploadFileAttachment(fileName, base64Data) {
     try {
-        const result = await fetch('/api/files/upload', {
-            method: 'POST',
+        const result = await fetch("/api/files/upload", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 name: fileName,
@@ -272,7 +296,7 @@ export async function uploadFileAttachment(fileName, base64Data) {
         return responseData.path;
     } catch (error) {
         toastr.error(String(error), t`Could not upload file`);
-        console.error('Could not upload file', error);
+        console.error("Could not upload file", error);
     }
 }
 
@@ -284,8 +308,8 @@ export async function uploadFileAttachment(fileName, base64Data) {
 export async function getFileAttachment(url) {
     try {
         const result = await fetch(url, {
-            method: 'GET',
-            cache: 'force-cache',
+            method: "GET",
+            cache: "force-cache",
             headers: getRequestHeaders(),
         });
 
@@ -298,7 +322,7 @@ export async function getFileAttachment(url) {
         return text;
     } catch (error) {
         toastr.error(error, t`Could not download file`);
-        console.error('Could not download file', error);
+        console.error("Could not download file", error);
     }
 }
 
@@ -309,17 +333,21 @@ export async function getFileAttachment(url) {
  */
 async function validateFile(file) {
     const fileText = await file.text();
-    const isImage = file.type.startsWith('image/');
+    const isImage = file.type.startsWith("image/");
     const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
     if (!isImage && file.size > fileSizeLimit) {
-        toastr.error(t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`);
+        toastr.error(
+            t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`,
+        );
         return false;
     }
 
     // If file is binary
     if (isBinary && !isImage && !isConvertible(file.type)) {
-        toastr.error(t`Binary files are not supported. Select a text file or image.`);
+        toastr.error(
+            t`Binary files are not supported. Select a text file or image.`,
+        );
         return false;
     }
 
@@ -327,7 +355,7 @@ async function validateFile(file) {
 }
 
 export function hasPendingFileAttachment() {
-    const fileInput = document.getElementById('file_form_input');
+    const fileInput = document.getElementById("file_form_input");
     if (!(fileInput instanceof HTMLInputElement)) return false;
     const file = fileInput.files[0];
     return !!file;
@@ -345,19 +373,19 @@ async function onFileAttach(file) {
 
     // If file is binary
     if (!isValid) {
-        $('#file_form').trigger('reset');
+        $("#file_form").trigger("reset");
         return;
     }
 
-    $('#file_form .file_name').text(file.name);
-    $('#file_form .file_size').text(humanFileSize(file.size));
-    $('#file_form').removeClass('displayNone');
+    $("#file_form .file_name").text(file.name);
+    $("#file_form .file_size").text(humanFileSize(file.size));
+    $("#file_form").removeClass("displayNone");
 
     // Reset form on chat change (if not on a welcome screen)
     const currentChatId = getCurrentChatId();
     if (currentChatId) {
         eventSource.once(event_types.CHAT_CHANGED, () => {
-            $('#file_form').trigger('reset');
+            $("#file_form").trigger("reset");
         });
     }
 }
@@ -367,17 +395,20 @@ async function onFileAttach(file) {
  * @param {number} messageId Message ID
  */
 async function deleteMessageFile(messageId) {
-    const confirm = await callGenericPopup('Are you sure you want to delete this file?', POPUP_TYPE.CONFIRM);
+    const confirm = await callGenericPopup(
+        "Are you sure you want to delete this file?",
+        POPUP_TYPE.CONFIRM,
+    );
 
     if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-        console.debug('Delete file cancelled');
+        console.debug("Delete file cancelled");
         return;
     }
 
     const message = chat[messageId];
 
     if (!message?.extra?.file) {
-        console.debug('Message has no file');
+        console.debug("Message has no file");
         return;
     }
 
@@ -389,7 +420,6 @@ async function deleteMessageFile(messageId) {
     await deleteFileFromServer(url);
 }
 
-
 /**
  * Opens file from message in a modal.
  * @param {number} messageId Message ID
@@ -398,7 +428,7 @@ async function viewMessageFile(messageId) {
     const messageFile = chat[messageId]?.extra?.file;
 
     if (!messageFile) {
-        console.debug('Message has no file or it is empty');
+        console.debug("Message has no file or it is empty");
         return;
     }
 
@@ -415,14 +445,14 @@ function embedMessageFile(messageId, messageBlock) {
     const message = chat[messageId];
 
     if (!message) {
-        console.warn('Failed to find message with id', messageId);
+        console.warn("Failed to find message with id", messageId);
         return;
     }
 
-    $('#embed_file_input')
-        .off('change')
-        .on('change', parseAndUploadEmbed)
-        .trigger('click');
+    $("#embed_file_input")
+        .off("change")
+        .on("change", parseAndUploadEmbed)
+        .trigger("click");
 
     async function parseAndUploadEmbed(e) {
         const file = e.target.files[0];
@@ -431,11 +461,11 @@ function embedMessageFile(messageId, messageBlock) {
         const isValid = await validateFile(file);
 
         if (!isValid) {
-            $('#file_form').trigger('reset');
+            $("#file_form").trigger("reset");
             return;
         }
 
-        await populateFileAttachment(message, 'embed_file_input');
+        await populateFileAttachment(message, "embed_file_input");
         await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
         appendMediaToMessage(message, messageBlock);
         await saveChatConditional();
@@ -450,7 +480,9 @@ function embedMessageFile(messageId, messageBlock) {
  */
 export async function appendFileContent(message, messageText) {
     if (message.extra?.file) {
-        const fileText = message.extra.file.text || (await getFileAttachment(message.extra.file.url));
+        const fileText =
+            message.extra.file.text ||
+            (await getFileAttachment(message.extra.file.url));
 
         if (fileText) {
             const fileWrapped = `${fileText}\n\n`;
@@ -482,7 +514,7 @@ export function encodeStyleTags(text) {
  * @returns {string} Sanitized message text
  * @copyright https://github.com/kwaroran/risuAI
  */
-export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
+export function decodeStyleTags(text, { prefix } = { prefix: ".mes_text " }) {
     const styleDecodeRegex = /<custom-style>(.+?)<\/custom-style>/gms;
     const mediaAllowed = isExternalMediaAllowed();
 
@@ -491,29 +523,42 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             for (let i = 0; i < rule.selectors.length; i++) {
                 const selector = rule.selectors[i];
                 if (selector) {
-                    const selectors = (selector.split(' ') ?? []).map((v) => {
-                        if (v.startsWith('.')) {
-                            return '.custom-' + v.substring(1);
-                        }
-                        return v;
-                    }).join(' ');
+                    const selectors = (selector.split(" ") ?? [])
+                        .map((v) => {
+                            if (v.startsWith(".")) {
+                                return ".custom-" + v.substring(1);
+                            }
+                            return v;
+                        })
+                        .join(" ");
 
                     rule.selectors[i] = prefix + selectors;
                 }
             }
         }
-        if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-            rule.declarations = rule.declarations.filter(declaration => !declaration.value.includes('://'));
+        if (
+            !mediaAllowed &&
+            Array.isArray(rule.declarations) &&
+            rule.declarations.length > 0
+        ) {
+            rule.declarations = rule.declarations.filter(
+                (declaration) => !declaration.value.includes("://"),
+            );
         }
     }
 
     function sanitizeRuleSet(ruleSet) {
-        if (Array.isArray(ruleSet.selectors) || Array.isArray(ruleSet.declarations)) {
+        if (
+            Array.isArray(ruleSet.selectors) ||
+            Array.isArray(ruleSet.declarations)
+        ) {
             sanitizeRule(ruleSet);
         }
 
         if (Array.isArray(ruleSet.rules)) {
-            ruleSet.rules = ruleSet.rules.filter(rule => rule.type !== 'import');
+            ruleSet.rules = ruleSet.rules.filter(
+                (rule) => rule.type !== "import",
+            );
 
             for (const mediaRule of ruleSet.rules) {
                 sanitizeRuleSet(mediaRule);
@@ -523,7 +568,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
-            let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
+            let styleCleaned = unescape(style).replaceAll(/<br\/>/g, "");
             const ast = css.parse(styleCleaned);
             const sheet = ast?.stylesheet;
             if (sheet) {
@@ -560,9 +605,7 @@ class StylesPreference {
      * @returns {boolean} True if preference exists, false otherwise
      */
     exists() {
-        return this.avatarId
-            ? accountStorage.getItem(this.key) !== null
-            : true; // No character == assume preference is set
+        return this.avatarId ? accountStorage.getItem(this.key) !== null : true; // No character == assume preference is set
     }
 
     /**
@@ -571,7 +614,7 @@ class StylesPreference {
      */
     get() {
         return this.avatarId
-            ? accountStorage.getItem(this.key) === 'true'
+            ? accountStorage.getItem(this.key) === "true"
             : false; // Always disabled when creating a new character
     }
 
@@ -595,14 +638,16 @@ class StylesPreference {
 export function formatCreatorNotes(text, avatarId) {
     const preference = new StylesPreference(avatarId);
     const sanitizeStyles = !preference.get();
-    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
+    const decodeStyleParam = {
+        prefix: sanitizeStyles ? "#creator_notes_spoiler " : "",
+    };
     /** @type {import('dompurify').Config & { MESSAGE_SANITIZE: boolean }} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
         RETURN_TRUSTED_TYPE: false,
         MESSAGE_SANITIZE: true,
-        ADD_TAGS: ['custom-style'],
+        ADD_TAGS: ["custom-style"],
     };
 
     let html = converter.makeHtml(substituteParams(text));
@@ -615,7 +660,9 @@ export function formatCreatorNotes(text, avatarId) {
 
 async function openGlobalStylesPreferenceDialog() {
     if (selected_group) {
-        toastr.info(t`To change the global styles preference, please select a character individually.`);
+        toastr.info(
+            t`To change the global styles preference, please select a character individually.`,
+        );
         return;
     }
 
@@ -623,32 +670,35 @@ async function openGlobalStylesPreferenceDialog() {
     const preference = new StylesPreference(entityId);
     const currentValue = preference.get();
 
-    const template = $(await renderTemplateAsync('globalStylesPreference'));
+    const template = $(await renderTemplateAsync("globalStylesPreference"));
 
-    const allowedRadio = template.find('#global_styles_allowed');
-    const forbiddenRadio = template.find('#global_styles_forbidden');
+    const allowedRadio = template.find("#global_styles_allowed");
+    const forbiddenRadio = template.find("#global_styles_forbidden");
 
-    allowedRadio.on('change', () => {
+    allowedRadio.on("change", () => {
         preference.set(true);
-        allowedRadio.prop('checked', true);
-        forbiddenRadio.prop('checked', false);
+        allowedRadio.prop("checked", true);
+        forbiddenRadio.prop("checked", false);
     });
 
-    forbiddenRadio.on('change', () => {
+    forbiddenRadio.on("change", () => {
         preference.set(false);
-        allowedRadio.prop('checked', false);
-        forbiddenRadio.prop('checked', true);
+        allowedRadio.prop("checked", false);
+        forbiddenRadio.prop("checked", true);
     });
 
     const currentPreferenceRadio = currentValue ? allowedRadio : forbiddenRadio;
-    template.find(currentPreferenceRadio).prop('checked', true);
+    template.find(currentPreferenceRadio).prop("checked", true);
 
-    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
+    await callGenericPopup(template, POPUP_TYPE.TEXT, "", {
+        wide: false,
+        large: false,
+    });
 
     // Re-render the notes if the preference changed
     const newValue = preference.get();
     if (newValue !== currentValue) {
-        $('#rm_button_selected_ch').trigger('click');
+        $("#rm_button_selected_ch").trigger("click");
         setGlobalStylesButtonClass(newValue);
     }
 }
@@ -659,7 +709,9 @@ async function checkForCreatorNotesStyles() {
         return;
     }
 
-    const notes = characters[this_chid].data?.creator_notes || characters[this_chid].creatorcomment;
+    const notes =
+        characters[this_chid].data?.creator_notes ||
+        characters[this_chid].creatorcomment;
     const avatarId = characters[this_chid].avatar;
     const styleContents = getStyleContentsFromMarkdown(notes);
 
@@ -671,14 +723,19 @@ async function checkForCreatorNotesStyles() {
     const preference = new StylesPreference(avatarId);
     const hasPreference = preference.exists();
     if (!hasPreference) {
-        const template = $(await renderTemplateAsync('globalStylesPopup'));
-        template.find('textarea').val(styleContents);
-        const confirmResult = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', {
-            wide: false,
-            large: false,
-            okButton: t`Just to Creator's Notes`,
-            cancelButton: t`Apply to the entire app`,
-        });
+        const template = $(await renderTemplateAsync("globalStylesPopup"));
+        template.find("textarea").val(styleContents);
+        const confirmResult = await callGenericPopup(
+            template,
+            POPUP_TYPE.CONFIRM,
+            "",
+            {
+                wide: false,
+                large: false,
+                okButton: t`Just to Creator's Notes`,
+                cancelButton: t`Apply to the entire app`,
+            },
+        );
 
         switch (confirmResult) {
             case POPUP_RESULT.AFFIRMATIVE:
@@ -692,7 +749,7 @@ async function checkForCreatorNotesStyles() {
                 break;
         }
 
-        $('#rm_button_selected_ch').trigger('click');
+        $("#rm_button_selected_ch").trigger("click");
     }
 
     const currentPreference = preference.get();
@@ -704,10 +761,10 @@ async function checkForCreatorNotesStyles() {
  * @param {boolean|null} state State of the button
  */
 function setGlobalStylesButtonClass(state) {
-    const button = $('#creators_note_styles_button');
-    button.toggleClass('empty', state === null);
-    button.toggleClass('allowed', state === true);
-    button.toggleClass('forbidden', state === false);
+    const button = $("#creators_note_styles_button");
+    button.toggleClass("empty", state === null);
+    button.toggleClass("allowed", state === true);
+    button.toggleClass("forbidden", state === false);
 }
 
 /**
@@ -717,17 +774,17 @@ function setGlobalStylesButtonClass(state) {
  */
 function getStyleContentsFromMarkdown(text) {
     if (!text) {
-        return '';
+        return "";
     }
 
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     const html = converter.makeHtml(substituteParams(text));
     div.innerHTML = html;
-    const styleElements = Array.from(div.querySelectorAll('style'));
+    const styleElements = Array.from(div.querySelectorAll("style"));
     return styleElements
-        .filter(s => s.textContent.trim().length > 0)
-        .map(s => s.textContent.trim())
-        .join('\n\n');
+        .filter((s) => s.textContent.trim().length > 0)
+        .map((s) => s.textContent.trim())
+        .join("\n\n");
 }
 
 async function openExternalMediaOverridesDialog() {
@@ -738,21 +795,28 @@ async function openExternalMediaOverridesDialog() {
         return;
     }
 
-    const template = $(await renderTemplateAsync('forbidMedia'));
-    template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_media);
-    template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_media);
+    const template = $(await renderTemplateAsync("forbidMedia"));
+    template
+        .find(".forbid_media_global_state_forbidden")
+        .toggle(power_user.forbid_external_media);
+    template
+        .find(".forbid_media_global_state_allowed")
+        .toggle(!power_user.forbid_external_media);
 
     if (power_user.external_media_allowed_overrides.includes(entityId)) {
-        template.find('#forbid_media_override_allowed').prop('checked', true);
-    }
-    else if (power_user.external_media_forbidden_overrides.includes(entityId)) {
-        template.find('#forbid_media_override_forbidden').prop('checked', true);
-    }
-    else {
-        template.find('#forbid_media_override_global').prop('checked', true);
+        template.find("#forbid_media_override_allowed").prop("checked", true);
+    } else if (
+        power_user.external_media_forbidden_overrides.includes(entityId)
+    ) {
+        template.find("#forbid_media_override_forbidden").prop("checked", true);
+    } else {
+        template.find("#forbid_media_override_global").prop("checked", true);
     }
 
-    callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, "", {
+        wide: false,
+        large: false,
+    });
 }
 
 export function getCurrentEntityId() {
@@ -781,8 +845,8 @@ export function isExternalMediaAllowed() {
 }
 
 function expandMessageImage(event) {
-    const mesBlock = $(event.currentTarget).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
+    const mesBlock = $(event.currentTarget).closest(".mes");
+    const mesId = mesBlock.attr("mesid");
     const message = chat[mesId];
     const imgSrc = message?.extra?.image;
     const title = message?.extra?.title;
@@ -791,37 +855,42 @@ function expandMessageImage(event) {
         return;
     }
 
-    const img = document.createElement('img');
-    img.classList.add('img_enlarged');
+    const img = document.createElement("img");
+    img.classList.add("img_enlarged");
     img.src = imgSrc;
-    const imgHolder = document.createElement('div');
-    imgHolder.classList.add('img_enlarged_holder');
+    const imgHolder = document.createElement("div");
+    imgHolder.classList.add("img_enlarged_holder");
     imgHolder.append(img);
-    const imgContainer = $('<div><pre><code class="img_enlarged_title"></code></pre></div>');
+    const imgContainer = $(
+        '<div><pre><code class="img_enlarged_title"></code></pre></div>',
+    );
     imgContainer.prepend(imgHolder);
-    imgContainer.addClass('img_enlarged_container');
+    imgContainer.addClass("img_enlarged_container");
 
-    const codeTitle = imgContainer.find('.img_enlarged_title');
-    codeTitle.addClass('txt').text(title);
+    const codeTitle = imgContainer.find(".img_enlarged_title");
+    codeTitle.addClass("txt").text(title);
     const titleEmpty = !title || title.trim().length === 0;
-    imgContainer.find('pre').toggle(!titleEmpty);
+    imgContainer.find("pre").toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
 
-    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
-
-    popup.dlg.style.width = 'unset';
-    popup.dlg.style.height = 'unset';
-
-    img.addEventListener('click', event => {
-        const shouldZoom = !img.classList.contains('zoomed');
-        img.classList.toggle('zoomed', shouldZoom);
-        event.stopPropagation();
-    });
-    codeTitle[0]?.addEventListener('click', event => {
-        event.stopPropagation();
+    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, "", {
+        large: true,
+        transparent: true,
     });
 
-    popup.dlg.addEventListener('click', event => {
+    popup.dlg.style.width = "unset";
+    popup.dlg.style.height = "unset";
+
+    img.addEventListener("click", (event) => {
+        const shouldZoom = !img.classList.contains("zoomed");
+        img.classList.toggle("zoomed", shouldZoom);
+        event.stopPropagation();
+    });
+    codeTitle[0]?.addEventListener("click", (event) => {
+        event.stopPropagation();
+    });
+
+    popup.dlg.addEventListener("click", (event) => {
         popup.completeCancelled();
     });
 
@@ -834,28 +903,33 @@ function expandAndZoomMessageImage(event) {
 }
 
 async function deleteMessageImage() {
-    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.TEXT, '', {
-        okButton: t`Delete one`,
-        customButtons: [
-            {
-                text: t`Delete all`,
-                appendAtEnd: true,
-                result: POPUP_RESULT.CUSTOM1,
-            },
-            {
-                text: t`Cancel`,
-                appendAtEnd: true,
-                result: POPUP_RESULT.CANCELLED,
-            },
-        ],
-    });
+    const value = await callGenericPopup(
+        "<h3>Delete image from message?<br>This action can't be undone.</h3>",
+        POPUP_TYPE.TEXT,
+        "",
+        {
+            okButton: t`Delete one`,
+            customButtons: [
+                {
+                    text: t`Delete all`,
+                    appendAtEnd: true,
+                    result: POPUP_RESULT.CUSTOM1,
+                },
+                {
+                    text: t`Cancel`,
+                    appendAtEnd: true,
+                    result: POPUP_RESULT.CANCELLED,
+                },
+            ],
+        },
+    );
 
     if (!value) {
         return;
     }
 
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
+    const mesBlock = $(this).closest(".mes");
+    const mesId = mesBlock.attr("mesid");
     const message = chat[mesId];
 
     let isLastImage = true;
@@ -866,7 +940,10 @@ async function deleteMessageImage() {
             message.extra.image_swipes.splice(indexOf, 1);
             isLastImage = message.extra.image_swipes.length === 0;
             if (!isLastImage) {
-                const newIndex = Math.min(indexOf, message.extra.image_swipes.length - 1);
+                const newIndex = Math.min(
+                    indexOf,
+                    message.extra.image_swipes.length - 1,
+                );
                 message.extra.image = message.extra.image_swipes[newIndex];
             }
         }
@@ -878,8 +955,8 @@ async function deleteMessageImage() {
         delete message.extra.title;
         delete message.extra.append_title;
         delete message.extra.image_swipes;
-        mesBlock.find('.mes_img_container').removeClass('img_extra');
-        mesBlock.find('.mes_img').attr('src', '');
+        mesBlock.find(".mes_img_container").removeClass("img_extra");
+        mesBlock.find(".mes_img").attr("src", "");
     } else {
         appendMediaToMessage(message, mesBlock);
     }
@@ -895,8 +972,8 @@ async function deleteMessageImage() {
  */
 async function deleteFileFromServer(url, silent = false) {
     try {
-        const result = await fetch('/api/files/delete', {
-            method: 'POST',
+        const result = await fetch("/api/files/delete", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({ path: url }),
         });
@@ -910,7 +987,7 @@ async function deleteFileFromServer(url, silent = false) {
         return true;
     } catch (error) {
         toastr.error(String(error), t`Could not delete file`);
-        console.error('Could not delete file', error);
+        console.error("Could not delete file", error);
         return false;
     }
 }
@@ -920,14 +997,21 @@ async function deleteFileFromServer(url, silent = false) {
  * @param {FileAttachment} attachment File attachment
  */
 async function openFilePopup(attachment) {
-    const fileText = attachment.text || (await getFileAttachment(attachment.url));
+    const fileText =
+        attachment.text || (await getFileAttachment(attachment.url));
 
-    const modalTemplate = $('<div><pre><code></code></pre></div>');
-    modalTemplate.find('code').addClass('txt').text(fileText);
-    modalTemplate.addClass('file_modal').addClass('textarea_compact').addClass('fontsize90p');
+    const modalTemplate = $("<div><pre><code></code></pre></div>");
+    modalTemplate.find("code").addClass("txt").text(fileText);
+    modalTemplate
+        .addClass("file_modal")
+        .addClass("textarea_compact")
+        .addClass("fontsize90p");
     addCopyToCodeBlocks(modalTemplate);
 
-    callGenericPopup(modalTemplate, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+    callGenericPopup(modalTemplate, POPUP_TYPE.TEXT, "", {
+        wide: true,
+        large: true,
+    });
 }
 
 /**
@@ -937,32 +1021,51 @@ async function openFilePopup(attachment) {
  * @param {function} callback Callback function
  */
 async function editAttachment(attachment, source, callback) {
-    const originalFileText = attachment.text || (await getFileAttachment(attachment.url));
-    const template = $(await renderExtensionTemplateAsync('attachments', 'notepad'));
+    const originalFileText =
+        attachment.text || (await getFileAttachment(attachment.url));
+    const template = $(
+        await renderExtensionTemplateAsync("attachments", "notepad"),
+    );
 
     let editedFileText = originalFileText;
-    template.find('[name="notepadFileContent"]').val(editedFileText).on('input', function () {
-        editedFileText = String($(this).val());
-    });
+    template
+        .find('[name="notepadFileContent"]')
+        .val(editedFileText)
+        .on("input", function () {
+            editedFileText = String($(this).val());
+        });
 
     let editedFileName = attachment.name;
-    template.find('[name="notepadFileName"]').val(editedFileName).on('input', function () {
-        editedFileName = String($(this).val());
-    });
+    template
+        .find('[name="notepadFileName"]')
+        .val(editedFileName)
+        .on("input", function () {
+            editedFileName = String($(this).val());
+        });
 
-    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: true, large: true, okButton: 'Save', cancelButton: 'Cancel' });
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, "", {
+        wide: true,
+        large: true,
+        okButton: "Save",
+        cancelButton: "Cancel",
+    });
 
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
         return;
     }
 
-    if (editedFileText === originalFileText && editedFileName === attachment.name) {
+    if (
+        editedFileText === originalFileText &&
+        editedFileName === attachment.name
+    ) {
         return;
     }
 
-    const nullCallback = () => { };
+    const nullCallback = () => {};
     await deleteAttachment(attachment, source, nullCallback, false);
-    const file = new File([editedFileText], editedFileName, { type: 'text/plain' });
+    const file = new File([editedFileText], editedFileName, {
+        type: "text/plain",
+    });
     await uploadFileAttachmentToServer(file, source);
 
     callback();
@@ -973,10 +1076,11 @@ async function editAttachment(attachment, source, callback) {
  * @param {FileAttachment} attachment Attachment to download
  */
 async function downloadAttachment(attachment) {
-    const fileText = attachment.text || (await getFileAttachment(attachment.url));
-    const blob = new Blob([fileText], { type: 'text/plain' });
+    const fileText =
+        attachment.text || (await getFileAttachment(attachment.url));
+    const blob = new Blob([fileText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = attachment.name;
     a.click();
@@ -990,7 +1094,10 @@ async function downloadAttachment(attachment) {
  */
 function enableAttachment(attachment, callback) {
     ensureAttachmentsExist();
-    extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+    extension_settings.disabled_attachments =
+        extension_settings.disabled_attachments.filter(
+            (url) => url !== attachment.url,
+        );
     saveSettingsDebounced();
     callback();
 }
@@ -1017,26 +1124,39 @@ function disableAttachment(attachment, callback) {
 async function moveAttachment(attachment, source, callback) {
     let selectedTarget = source;
     const targets = getAvailableTargets();
-    const template = $(await renderExtensionTemplateAsync('attachments', 'move-attachment', { name: attachment.name, targets }));
-    template.find('.moveAttachmentTarget').val(source).on('input', function () {
-        selectedTarget = String($(this).val());
+    const template = $(
+        await renderExtensionTemplateAsync("attachments", "move-attachment", {
+            name: attachment.name,
+            targets,
+        }),
+    );
+    template
+        .find(".moveAttachmentTarget")
+        .val(source)
+        .on("input", function () {
+            selectedTarget = String($(this).val());
+        });
+
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, "", {
+        wide: false,
+        large: false,
+        okButton: "Move",
+        cancelButton: "Cancel",
     });
 
-    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Move', cancelButton: 'Cancel' });
-
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
-        console.debug('Move attachment cancelled');
+        console.debug("Move attachment cancelled");
         return;
     }
 
     if (selectedTarget === source) {
-        console.debug('Move attachment cancelled: same source and target');
+        console.debug("Move attachment cancelled: same source and target");
         return;
     }
 
     const content = await getFileAttachment(attachment.url);
-    const file = new File([content], attachment.name, { type: 'text/plain' });
-    await deleteAttachment(attachment, source, () => { }, false);
+    const file = new File([content], attachment.name, { type: "text/plain" });
+    await deleteAttachment(attachment, source, () => {}, false);
     await uploadFileAttachmentToServer(file, selectedTarget);
     callback();
 }
@@ -1049,9 +1169,17 @@ async function moveAttachment(attachment, source, callback) {
  * @param {boolean} [confirm=true] If true, show a confirmation dialog
  * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
  */
-export async function deleteAttachment(attachment, source, callback, confirm = true) {
+export async function deleteAttachment(
+    attachment,
+    source,
+    callback,
+    confirm = true,
+) {
     if (confirm) {
-        const result = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
+        const result = await callGenericPopup(
+            "Are you sure you want to delete this attachment?",
+            POPUP_TYPE.CONFIRM,
+        );
 
         if (result !== POPUP_RESULT.AFFIRMATIVE) {
             return;
@@ -1061,21 +1189,36 @@ export async function deleteAttachment(attachment, source, callback, confirm = t
     ensureAttachmentsExist();
 
     switch (source) {
-        case 'global':
-            extension_settings.attachments = extension_settings.attachments.filter((a) => a.url !== attachment.url);
+        case "global":
+            extension_settings.attachments =
+                extension_settings.attachments.filter(
+                    (a) => a.url !== attachment.url,
+                );
             saveSettingsDebounced();
             break;
-        case 'chat':
-            chat_metadata.attachments = chat_metadata.attachments.filter((a) => a.url !== attachment.url);
+        case "chat":
+            chat_metadata.attachments = chat_metadata.attachments.filter(
+                (a) => a.url !== attachment.url,
+            );
             saveMetadataDebounced();
             break;
-        case 'character':
-            extension_settings.character_attachments[characters[this_chid]?.avatar] = extension_settings.character_attachments[characters[this_chid]?.avatar].filter((a) => a.url !== attachment.url);
+        case "character":
+            extension_settings.character_attachments[
+                characters[this_chid]?.avatar
+            ] = extension_settings.character_attachments[
+                characters[this_chid]?.avatar
+            ].filter((a) => a.url !== attachment.url);
             break;
     }
 
-    if (Array.isArray(extension_settings.disabled_attachments) && extension_settings.disabled_attachments.includes(attachment.url)) {
-        extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+    if (
+        Array.isArray(extension_settings.disabled_attachments) &&
+        extension_settings.disabled_attachments.includes(attachment.url)
+    ) {
+        extension_settings.disabled_attachments =
+            extension_settings.disabled_attachments.filter(
+                (url) => url !== attachment.url,
+            );
         saveSettingsDebounced();
     }
 
@@ -1090,7 +1233,9 @@ export async function deleteAttachment(attachment, source, callback, confirm = t
  * @returns {boolean} True if attachment is disabled, false otherwise.
  */
 function isAttachmentDisabled(attachment) {
-    return extension_settings.disabled_attachments.some(url => url === attachment?.url);
+    return extension_settings.disabled_attachments.some(
+        (url) => url === attachment?.url,
+    );
 }
 
 /**
@@ -1112,10 +1257,16 @@ async function openAttachmentManager() {
         function sortFn(a, b) {
             const sortValueA = a[sortField];
             const sortValueB = b[sortField];
-            if (typeof sortValueA === 'string' && typeof sortValueB === 'string') {
-                return sortValueA.localeCompare(sortValueB) * (sortOrder === 'asc' ? 1 : -1);
+            if (
+                typeof sortValueA === "string" &&
+                typeof sortValueB === "string"
+            ) {
+                return (
+                    sortValueA.localeCompare(sortValueB) *
+                    (sortOrder === "asc" ? 1 : -1)
+                );
             }
-            return (sortValueA - sortValueB) * (sortOrder === 'asc' ? 1 : -1);
+            return (sortValueA - sortValueB) * (sortOrder === "asc" ? 1 : -1);
         }
 
         /**
@@ -1131,43 +1282,88 @@ async function openAttachmentManager() {
             return a.name.toLowerCase().includes(filterString.toLowerCase());
         }
         const sources = {
-            [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsList',
-            [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsList',
-            [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsList',
+            [ATTACHMENT_SOURCE.GLOBAL]: ".globalAttachmentsList",
+            [ATTACHMENT_SOURCE.CHARACTER]: ".characterAttachmentsList",
+            [ATTACHMENT_SOURCE.CHAT]: ".chatAttachmentsList",
         };
 
         const selected = template
             .find(sources[source])
-            .find('.attachmentListItemCheckbox:checked')
-            .map((_, el) => $(el).closest('.attachmentListItem').attr('data-attachment-url'))
+            .find(".attachmentListItemCheckbox:checked")
+            .map((_, el) =>
+                $(el)
+                    .closest(".attachmentListItem")
+                    .attr("data-attachment-url"),
+            )
             .get();
 
         template.find(sources[source]).empty();
 
         // Sort attachments by sortField and sortOrder, and apply filter
-        const sortedAttachmentList = attachments.slice().filter(filterFn).sort(sortFn);
+        const sortedAttachmentList = attachments
+            .slice()
+            .filter(filterFn)
+            .sort(sortFn);
 
         for (const attachment of sortedAttachmentList) {
             const isDisabled = isAttachmentDisabled(attachment);
-            const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
-            attachmentTemplate.toggleClass('disabled', isDisabled);
-            attachmentTemplate.attr('data-attachment-url', attachment.url);
-            attachmentTemplate.attr('data-attachment-source', source);
-            attachmentTemplate.find('.attachmentFileIcon').attr('title', attachment.url);
-            attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
-            attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
-            attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
-            attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
-            attachmentTemplate.find('.editAttachmentButton').on('click', () => editAttachment(attachment, source, renderAttachments));
-            attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
-            attachmentTemplate.find('.downloadAttachmentButton').on('click', () => downloadAttachment(attachment));
-            attachmentTemplate.find('.moveAttachmentButton').on('click', () => moveAttachment(attachment, source, renderAttachments));
-            attachmentTemplate.find('.enableAttachmentButton').toggle(isDisabled).on('click', () => enableAttachment(attachment, renderAttachments));
-            attachmentTemplate.find('.disableAttachmentButton').toggle(!isDisabled).on('click', () => disableAttachment(attachment, renderAttachments));
+            const attachmentTemplate = template
+                .find(".attachmentListItemTemplate .attachmentListItem")
+                .clone();
+            attachmentTemplate.toggleClass("disabled", isDisabled);
+            attachmentTemplate.attr("data-attachment-url", attachment.url);
+            attachmentTemplate.attr("data-attachment-source", source);
+            attachmentTemplate
+                .find(".attachmentFileIcon")
+                .attr("title", attachment.url);
+            attachmentTemplate
+                .find(".attachmentListItemName")
+                .text(attachment.name);
+            attachmentTemplate
+                .find(".attachmentListItemSize")
+                .text(humanFileSize(attachment.size));
+            attachmentTemplate
+                .find(".attachmentListItemCreated")
+                .text(new Date(attachment.created).toLocaleString());
+            attachmentTemplate
+                .find(".viewAttachmentButton")
+                .on("click", () => openFilePopup(attachment));
+            attachmentTemplate
+                .find(".editAttachmentButton")
+                .on("click", () =>
+                    editAttachment(attachment, source, renderAttachments),
+                );
+            attachmentTemplate
+                .find(".deleteAttachmentButton")
+                .on("click", () =>
+                    deleteAttachment(attachment, source, renderAttachments),
+                );
+            attachmentTemplate
+                .find(".downloadAttachmentButton")
+                .on("click", () => downloadAttachment(attachment));
+            attachmentTemplate
+                .find(".moveAttachmentButton")
+                .on("click", () =>
+                    moveAttachment(attachment, source, renderAttachments),
+                );
+            attachmentTemplate
+                .find(".enableAttachmentButton")
+                .toggle(isDisabled)
+                .on("click", () =>
+                    enableAttachment(attachment, renderAttachments),
+                );
+            attachmentTemplate
+                .find(".disableAttachmentButton")
+                .toggle(!isDisabled)
+                .on("click", () =>
+                    disableAttachment(attachment, renderAttachments),
+                );
             template.find(sources[source]).append(attachmentTemplate);
 
             if (selected.includes(attachment.url)) {
-                attachmentTemplate.find('.attachmentListItemCheckbox').prop('checked', true);
+                attachmentTemplate
+                    .find(".attachmentListItemCheckbox")
+                    .prop("checked", true);
             }
         }
     }
@@ -1177,72 +1373,93 @@ async function openAttachmentManager() {
      */
     async function renderButtons() {
         const sources = {
-            [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsTitle',
-            [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsTitle',
-            [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsTitle',
+            [ATTACHMENT_SOURCE.GLOBAL]: ".globalAttachmentsTitle",
+            [ATTACHMENT_SOURCE.CHARACTER]: ".characterAttachmentsTitle",
+            [ATTACHMENT_SOURCE.CHAT]: ".chatAttachmentsTitle",
         };
 
-        const modal = template.find('.actionButtonsModal').hide();
+        const modal = template.find(".actionButtonsModal").hide();
         const scrapers = ScraperManager.getDataBankScrapers();
 
         for (const scraper of scrapers) {
-            const isAvailable = await ScraperManager.isScraperAvailable(scraper.id);
+            const isAvailable = await ScraperManager.isScraperAvailable(
+                scraper.id,
+            );
             if (!isAvailable) {
                 continue;
             }
 
-            const buttonTemplate = template.find('.actionButtonTemplate .actionButton').clone();
+            const buttonTemplate = template
+                .find(".actionButtonTemplate .actionButton")
+                .clone();
             if (scraper.iconAvailable) {
-                buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
-                buttonTemplate.find('.actionButtonImg').remove();
+                buttonTemplate
+                    .find(".actionButtonIcon")
+                    .addClass(scraper.iconClass);
+                buttonTemplate.find(".actionButtonImg").remove();
             } else {
-                buttonTemplate.find('.actionButtonImg').attr('src', scraper.iconClass);
-                buttonTemplate.find('.actionButtonIcon').remove();
+                buttonTemplate
+                    .find(".actionButtonImg")
+                    .attr("src", scraper.iconClass);
+                buttonTemplate.find(".actionButtonIcon").remove();
             }
-            buttonTemplate.find('.actionButtonText').text(scraper.name);
-            buttonTemplate.attr('title', scraper.description);
-            buttonTemplate.on('click', () => {
-                const target = modal.attr('data-attachment-manager-target');
+            buttonTemplate.find(".actionButtonText").text(scraper.name);
+            buttonTemplate.attr("title", scraper.description);
+            buttonTemplate.on("click", () => {
+                const target = modal.attr("data-attachment-manager-target");
                 runScraper(scraper.id, target, renderAttachments);
             });
             modal.append(buttonTemplate);
         }
 
-        const modalButtonData = Object.entries(sources).map(entry => {
-            const [source, selector] = entry;
-            const button = template.find(selector).find('.openActionModalButton').get(0);
+        const modalButtonData = Object.entries(sources)
+            .map((entry) => {
+                const [source, selector] = entry;
+                const button = template
+                    .find(selector)
+                    .find(".openActionModalButton")
+                    .get(0);
 
-            if (!button) {
-                return;
-            }
-
-            const bodyListener = (e) => {
-                if (modal.is(':visible') && (!$(e.target).closest('.openActionModalButton').length)) {
-                    modal.hide();
+                if (!button) {
+                    return;
                 }
 
-                // Replay a click if the modal was already open by another button
-                if ($(e.target).closest('.openActionModalButton').length && !modal.is(':visible')) {
-                    modal.show();
-                }
-            };
-            document.body.addEventListener('click', bodyListener);
+                const bodyListener = (e) => {
+                    if (
+                        modal.is(":visible") &&
+                        !$(e.target).closest(".openActionModalButton").length
+                    ) {
+                        modal.hide();
+                    }
 
-            const popper = Popper.createPopper(button, modal.get(0), { placement: 'bottom-end' });
-            button.addEventListener('click', () => {
-                modal.attr('data-attachment-manager-target', source);
-                modal.toggle();
-                popper.update();
-            });
+                    // Replay a click if the modal was already open by another button
+                    if (
+                        $(e.target).closest(".openActionModalButton").length &&
+                        !modal.is(":visible")
+                    ) {
+                        modal.show();
+                    }
+                };
+                document.body.addEventListener("click", bodyListener);
 
-            return { popper, bodyListener };
-        }).filter(Boolean);
+                const popper = Popper.createPopper(button, modal.get(0), {
+                    placement: "bottom-end",
+                });
+                button.addEventListener("click", () => {
+                    modal.attr("data-attachment-manager-target", source);
+                    modal.toggle();
+                    popper.update();
+                });
+
+                return { popper, bodyListener };
+            })
+            .filter(Boolean);
 
         return () => {
-            modalButtonData.forEach(p => {
-                const { popper,bodyListener } = p;
+            modalButtonData.forEach((p) => {
+                const { popper, bodyListener } = p;
                 popper.destroy();
-                document.body.removeEventListener('click', bodyListener);
+                document.body.removeEventListener("click", bodyListener);
             });
             modal.remove();
         };
@@ -1254,7 +1471,10 @@ async function openAttachmentManager() {
         /** @type {FileAttachment[]} */
         const chatAttachments = chat_metadata.attachments ?? [];
         /** @type {FileAttachment[]} */
-        const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+        const characterAttachments =
+            extension_settings.character_attachments?.[
+                characters[this_chid]?.avatar
+            ] ?? [];
 
         await renderList(globalAttachments, ATTACHMENT_SOURCE.GLOBAL);
         await renderList(chatAttachments, ATTACHMENT_SOURCE.CHAT);
@@ -1262,59 +1482,87 @@ async function openAttachmentManager() {
 
         const isNotCharacter = this_chid === undefined || selected_group;
         const isNotInChat = getCurrentChatId() === undefined;
-        template.find('.characterAttachmentsBlock').toggle(!isNotCharacter);
-        template.find('.chatAttachmentsBlock').toggle(!isNotInChat);
+        template.find(".characterAttachmentsBlock").toggle(!isNotCharacter);
+        template.find(".chatAttachmentsBlock").toggle(!isNotInChat);
 
-        const characterName = characters[this_chid]?.name || 'Anonymous';
-        template.find('.characterAttachmentsName').text(characterName);
+        const characterName = characters[this_chid]?.name || "Anonymous";
+        template.find(".characterAttachmentsName").text(characterName);
 
-        const chatName = getCurrentChatId() || 'Unnamed chat';
-        template.find('.chatAttachmentsName').text(chatName);
+        const chatName = getCurrentChatId() || "Unnamed chat";
+        template.find(".chatAttachmentsName").text(chatName);
     }
 
-    const dragDropHandler = new DragAndDropHandler('.popup', async (files, event) => {
-        let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
-        const targets = getAvailableTargets();
+    const dragDropHandler = new DragAndDropHandler(
+        ".popup",
+        async (files, event) => {
+            let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
+            const targets = getAvailableTargets();
 
-        const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
-        targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
-            selectedTarget = String($(this).val());
-        });
-        const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
-        if (result !== POPUP_RESULT.AFFIRMATIVE) {
-            console.log('File upload cancelled');
-            return;
-        }
-        for (const file of files) {
-            await uploadFileAttachmentToServer(file, selectedTarget);
-        }
-        renderAttachments();
-    });
+            const targetSelectTemplate = $(
+                await renderExtensionTemplateAsync(
+                    "attachments",
+                    "files-dropped",
+                    { count: files.length, targets: targets },
+                ),
+            );
+            targetSelectTemplate
+                .find(".droppedFilesTarget")
+                .on("input", function () {
+                    selectedTarget = String($(this).val());
+                });
+            const result = await callGenericPopup(
+                targetSelectTemplate,
+                POPUP_TYPE.CONFIRM,
+                "",
+                {
+                    wide: false,
+                    large: false,
+                    okButton: "Upload",
+                    cancelButton: "Cancel",
+                },
+            );
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                console.log("File upload cancelled");
+                return;
+            }
+            for (const file of files) {
+                await uploadFileAttachmentToServer(file, selectedTarget);
+            }
+            renderAttachments();
+        },
+    );
 
-    let sortField = accountStorage.getItem('DataBank_sortField') || 'created';
-    let sortOrder = accountStorage.getItem('DataBank_sortOrder') || 'desc';
-    let filterString = '';
+    let sortField = accountStorage.getItem("DataBank_sortField") || "created";
+    let sortOrder = accountStorage.getItem("DataBank_sortOrder") || "desc";
+    let filterString = "";
 
-    const template = $(await renderExtensionTemplateAsync('attachments', 'manager', {}));
+    const template = $(
+        await renderExtensionTemplateAsync("attachments", "manager", {}),
+    );
 
-    template.find('.attachmentSearch').on('input', function () {
+    template.find(".attachmentSearch").on("input", function () {
         filterString = String($(this).val());
         renderAttachments();
     });
-    template.find('.attachmentSort').on('change', function () {
-        if (!(this instanceof HTMLSelectElement) || this.selectedOptions.length === 0) {
+    template.find(".attachmentSort").on("change", function () {
+        if (
+            !(this instanceof HTMLSelectElement) ||
+            this.selectedOptions.length === 0
+        ) {
             return;
         }
 
         sortField = this.selectedOptions[0].dataset.sortField;
         sortOrder = this.selectedOptions[0].dataset.sortOrder;
-        accountStorage.setItem('DataBank_sortField', sortField);
-        accountStorage.setItem('DataBank_sortOrder', sortOrder);
+        accountStorage.setItem("DataBank_sortField", sortField);
+        accountStorage.setItem("DataBank_sortOrder", sortOrder);
         renderAttachments();
     });
     function handleBulkAction(action) {
         return async () => {
-            const selectedAttachments = document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
+            const selectedAttachments = document.querySelectorAll(
+                ".attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked",
+            );
 
             if (selectedAttachments.length === 0) {
                 toastr.info(t`No attachments selected.`, t`Data Bank`);
@@ -1322,7 +1570,10 @@ async function openAttachmentManager() {
             }
 
             if (action.confirmMessage) {
-                const confirm = await callGenericPopup(action.confirmMessage, POPUP_TYPE.CONFIRM);
+                const confirm = await callGenericPopup(
+                    action.confirmMessage,
+                    POPUP_TYPE.CONFIRM,
+                );
                 if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
                     return;
                 }
@@ -1331,51 +1582,66 @@ async function openAttachmentManager() {
             const includeDisabled = true;
             const attachments = getDataBankAttachments(includeDisabled);
             selectedAttachments.forEach(async (checkbox) => {
-                const listItem = checkbox.closest('.attachmentListItem');
+                const listItem = checkbox.closest(".attachmentListItem");
                 if (!(listItem instanceof HTMLElement)) {
                     return;
                 }
                 const url = listItem.dataset.attachmentUrl;
                 const source = listItem.dataset.attachmentSource;
-                const attachment = attachments.find(a => a.url === url);
+                const attachment = attachments.find((a) => a.url === url);
                 if (!attachment) {
                     return;
                 }
                 await action.perform(attachment, source);
             });
 
-            document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
-                if (checkbox instanceof HTMLInputElement) {
-                    checkbox.checked = false;
-                }
-            });
+            document
+                .querySelectorAll(
+                    ".attachmentListItemCheckbox, .attachmentsBulkEditCheckbox",
+                )
+                .forEach((checkbox) => {
+                    if (checkbox instanceof HTMLInputElement) {
+                        checkbox.checked = false;
+                    }
+                });
 
             await renderAttachments();
         };
     }
 
-    template.find('.bulkActionDisable').on('click', handleBulkAction({
-        perform: (attachment) => disableAttachment(attachment, () => { }),
-    }));
+    template.find(".bulkActionDisable").on(
+        "click",
+        handleBulkAction({
+            perform: (attachment) => disableAttachment(attachment, () => {}),
+        }),
+    );
 
-    template.find('.bulkActionEnable').on('click', handleBulkAction({
-        perform: (attachment) => enableAttachment(attachment, () => { }),
-    }));
+    template.find(".bulkActionEnable").on(
+        "click",
+        handleBulkAction({
+            perform: (attachment) => enableAttachment(attachment, () => {}),
+        }),
+    );
 
-    template.find('.bulkActionDelete').on('click', handleBulkAction({
-        confirmMessage: 'Are you sure you want to delete the selected attachments?',
-        perform: async (attachment, source) => await deleteAttachment(attachment, source, () => { }, false),
-    }));
+    template.find(".bulkActionDelete").on(
+        "click",
+        handleBulkAction({
+            confirmMessage:
+                "Are you sure you want to delete the selected attachments?",
+            perform: async (attachment, source) =>
+                await deleteAttachment(attachment, source, () => {}, false),
+        }),
+    );
 
-    template.find('.bulkActionSelectAll').on('click', () => {
-        $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
+    template.find(".bulkActionSelectAll").on("click", () => {
+        $(".attachmentListItemCheckbox:visible").each((_, checkbox) => {
             if (checkbox instanceof HTMLInputElement) {
                 checkbox.checked = true;
             }
         });
     });
-    template.find('.bulkActionSelectNone').on('click', () => {
-        $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
+    template.find(".bulkActionSelectNone").on("click", () => {
+        $(".attachmentListItemCheckbox:visible").each((_, checkbox) => {
             if (checkbox instanceof HTMLInputElement) {
                 checkbox.checked = false;
             }
@@ -1385,7 +1651,12 @@ async function openAttachmentManager() {
     const cleanupFn = await renderButtons();
     await verifyAttachments();
     await renderAttachments();
-    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close', allowVerticalScrolling: true });
+    await callGenericPopup(template, POPUP_TYPE.TEXT, "", {
+        wide: true,
+        large: true,
+        okButton: "Close",
+        allowVerticalScrolling: true,
+    });
 
     cleanupFn();
     dragDropHandler.destroy();
@@ -1425,12 +1696,12 @@ async function runScraper(scraperId, target, callback) {
         const files = await ScraperManager.runDataBankScraper(scraperId);
 
         if (!Array.isArray(files)) {
-            console.warn('Scraping returned nothing');
+            console.warn("Scraping returned nothing");
             return;
         }
 
         if (files.length === 0) {
-            console.warn('Scraping returned no files');
+            console.warn("Scraping returned no files");
             toastr.info(t`No files were scraped.`, t`Data Bank`);
             return;
         }
@@ -1439,11 +1710,13 @@ async function runScraper(scraperId, target, callback) {
             await uploadFileAttachmentToServer(file, target);
         }
 
-        toastr.success(t`Scraped ${files.length} files from ${scraperId} to ${target}.`, t`Data Bank`);
+        toastr.success(
+            t`Scraped ${files.length} files from ${scraperId} to ${target}.`,
+            t`Data Bank`,
+        );
         callback();
-    }
-    catch (error) {
-        console.error('Scraping failed', error);
+    } catch (error) {
+        console.error("Scraping failed", error);
         toastr.error(t`Check browser console for details.`, t`Scraping failed`);
     }
 }
@@ -1472,7 +1745,7 @@ export async function uploadFileAttachmentToServer(file, target) {
             base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
         } catch (error) {
             toastr.error(String(error), t`Could not convert file`);
-            console.error('Could not convert file', error);
+            console.error("Could not convert file", error);
         }
     } else {
         const fileText = await file.text();
@@ -1505,7 +1778,9 @@ export async function uploadFileAttachmentToServer(file, target) {
             saveMetadataDebounced();
             break;
         case ATTACHMENT_SOURCE.CHARACTER:
-            extension_settings.character_attachments[characters[this_chid]?.avatar].push(attachment);
+            extension_settings.character_attachments[
+                characters[this_chid]?.avatar
+            ].push(attachment);
             saveSettingsDebounced();
             break;
     }
@@ -1531,8 +1806,16 @@ function ensureAttachmentsExist() {
             extension_settings.character_attachments = {};
         }
 
-        if (!Array.isArray(extension_settings.character_attachments[characters[this_chid].avatar])) {
-            extension_settings.character_attachments[characters[this_chid].avatar] = [];
+        if (
+            !Array.isArray(
+                extension_settings.character_attachments[
+                    characters[this_chid].avatar
+                ],
+            )
+        ) {
+            extension_settings.character_attachments[
+                characters[this_chid].avatar
+            ] = [];
         }
     }
 }
@@ -1546,9 +1829,16 @@ export function getDataBankAttachments(includeDisabled = false) {
     ensureAttachmentsExist();
     const globalAttachments = extension_settings.attachments ?? [];
     const chatAttachments = chat_metadata.attachments ?? [];
-    const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    const characterAttachments =
+        extension_settings.character_attachments?.[
+            characters[this_chid]?.avatar
+        ] ?? [];
 
-    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => includeDisabled || !isAttachmentDisabled(x));
+    return [
+        ...globalAttachments,
+        ...chatAttachments,
+        ...characterAttachments,
+    ].filter((x) => includeDisabled || !isAttachmentDisabled(x));
 }
 
 /**
@@ -1557,7 +1847,10 @@ export function getDataBankAttachments(includeDisabled = false) {
  * @param {boolean} [includeDisabled=true] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
-export function getDataBankAttachmentsForSource(source, includeDisabled = true) {
+export function getDataBankAttachmentsForSource(
+    source,
+    includeDisabled = true,
+) {
     ensureAttachmentsExist();
 
     function getBySource() {
@@ -1567,13 +1860,19 @@ export function getDataBankAttachmentsForSource(source, includeDisabled = true) 
             case ATTACHMENT_SOURCE.CHAT:
                 return chat_metadata.attachments ?? [];
             case ATTACHMENT_SOURCE.CHARACTER:
-                return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+                return (
+                    extension_settings.character_attachments?.[
+                        characters[this_chid]?.avatar
+                    ] ?? []
+                );
         }
 
         return [];
     }
 
-    return getBySource().filter(x => includeDisabled || !isAttachmentDisabled(x));
+    return getBySource().filter(
+        (x) => includeDisabled || !isAttachmentDisabled(x),
+    );
 }
 
 /**
@@ -1594,9 +1893,9 @@ async function verifyAttachments() {
 async function verifyAttachmentsForSource(source) {
     try {
         const attachments = getDataBankAttachmentsForSource(source);
-        const urls = attachments.map(a => a.url);
-        const response = await fetch('/api/files/verify', {
-            method: 'POST',
+        const urls = attachments.map((a) => a.url);
+        const response = await fetch("/api/files/verify", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({ urls }),
         });
@@ -1609,27 +1908,38 @@ async function verifyAttachmentsForSource(source) {
         const verifiedUrls = await response.json();
         for (const attachment of attachments) {
             if (verifiedUrls[attachment.url] === false) {
-                console.log('Deleting orphaned attachment', attachment);
-                await deleteAttachment(attachment, source, () => { }, false);
+                console.log("Deleting orphaned attachment", attachment);
+                await deleteAttachment(attachment, source, () => {}, false);
             }
         }
     } catch (error) {
-        console.error('Attachment verification failed', error);
+        console.error("Attachment verification failed", error);
     }
 }
 
-const NEUTRAL_CHAT_KEY = 'neutralChat';
+const NEUTRAL_CHAT_KEY = "neutralChat";
 
 export function preserveNeutralChat() {
-    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+    if (
+        this_chid !== undefined ||
+        selected_group ||
+        name2 !== neutralCharacterName
+    ) {
         return;
     }
 
-    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
+    sessionStorage.setItem(
+        NEUTRAL_CHAT_KEY,
+        JSON.stringify({ chat, chat_metadata }),
+    );
 }
 
 export function restoreNeutralChat() {
-    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+    if (
+        this_chid !== undefined ||
+        selected_group ||
+        name2 !== neutralCharacterName
+    ) {
         return;
     }
 
@@ -1638,7 +1948,8 @@ export function restoreNeutralChat() {
         return;
     }
 
-    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
+    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } =
+        JSON.parse(neutralChat);
     chat.splice(0, chat.length, ...neutralChatData);
     updateChatMetadata(neutralChatMetadata, true);
     sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
@@ -1651,13 +1962,13 @@ export function restoreNeutralChat() {
  * @returns {void}
  */
 export function registerFileConverter(mimeType, converter) {
-    if (typeof mimeType !== 'string' || typeof converter !== 'function') {
-        console.error('Invalid converter registration');
+    if (typeof mimeType !== "string" || typeof converter !== "function") {
+        console.error("Invalid converter registration");
         return;
     }
 
     if (Object.keys(converters).includes(mimeType)) {
-        console.error('Converter already registered');
+        console.error("Converter already registered");
         return;
     }
 
@@ -1665,44 +1976,50 @@ export function registerFileConverter(mimeType, converter) {
 }
 
 export function initChatUtilities() {
-    $(document).on('click', '.mes_hide', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+    $(document).on("click", ".mes_hide", async function () {
+        const messageBlock = $(this).closest(".mes");
+        const messageId = Number(messageBlock.attr("mesid"));
         await hideChatMessageRange(messageId, messageId, false);
     });
 
-    $(document).on('click', '.mes_unhide', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+    $(document).on("click", ".mes_unhide", async function () {
+        const messageBlock = $(this).closest(".mes");
+        const messageId = Number(messageBlock.attr("mesid"));
         await hideChatMessageRange(messageId, messageId, true);
     });
 
-    $(document).on('click', '.mes_file_delete', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+    $(document).on("click", ".mes_file_delete", async function () {
+        const messageBlock = $(this).closest(".mes");
+        const messageId = Number(messageBlock.attr("mesid"));
         await deleteMessageFile(messageId);
     });
 
-    $(document).on('click', '.mes_file_open', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+    $(document).on("click", ".mes_file_open", async function () {
+        const messageBlock = $(this).closest(".mes");
+        const messageId = Number(messageBlock.attr("mesid"));
         await viewMessageFile(messageId);
     });
 
-    $(document).on('click', '.assistant_note_export', async function () {
+    $(document).on("click", ".assistant_note_export", async function () {
         const chatToSave = [
             {
                 user_name: name1,
                 character_name: name2,
                 chat_metadata: chat_metadata,
             },
-            ...chat.filter(x => x?.extra?.type !== system_message_types.ASSISTANT_NOTE),
+            ...chat.filter(
+                (x) => x?.extra?.type !== system_message_types.ASSISTANT_NOTE,
+            ),
         ];
 
-        download(chatToSave.map((m) => JSON.stringify(m)).join('\n'), `Assistant - ${humanizedDateTime()}.jsonl`, 'application/json');
+        download(
+            chatToSave.map((m) => JSON.stringify(m)).join("\n"),
+            `Assistant - ${humanizedDateTime()}.jsonl`,
+            "application/json",
+        );
     });
 
-    $(document).on('click', '.assistant_note_import', async function () {
+    $(document).on("click", ".assistant_note_import", async function () {
         const importFile = async () => {
             const file = fileInput.files[0];
             if (!file) {
@@ -1711,82 +2028,106 @@ export function initChatUtilities() {
 
             try {
                 const text = await getFileText(file);
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                const messages = lines.map(line => JSON.parse(line));
+                const lines = text
+                    .split("\n")
+                    .filter((line) => line.trim() !== "");
+                const messages = lines.map((line) => JSON.parse(line));
                 const metadata = messages.shift()?.chat_metadata || {};
-                messages.unshift(getSystemMessageByType(system_message_types.ASSISTANT_NOTE));
+                messages.unshift(
+                    getSystemMessageByType(system_message_types.ASSISTANT_NOTE),
+                );
                 await clearChat();
                 chat.splice(0, chat.length, ...messages);
                 updateChatMetadata(metadata, true);
                 await printMessages();
             } catch (error) {
-                console.error('Error importing assistant chat:', error);
-                toastr.error(t`It's either corrupted or not a valid JSONL file.`, t`Failed to import chat`);
+                console.error("Error importing assistant chat:", error);
+                toastr.error(
+                    t`It's either corrupted or not a valid JSONL file.`,
+                    t`Failed to import chat`,
+                );
             }
         };
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.jsonl';
-        fileInput.addEventListener('change', importFile);
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = ".jsonl";
+        fileInput.addEventListener("change", importFile);
         fileInput.click();
     });
 
     // Do not change. #attachFile is added by extension.
-    $(document).on('click', '#attachFile', function () {
-        $('#file_form_input').trigger('click');
+    $(document).on("click", "#attachFile", function () {
+        $("#file_form_input").trigger("click");
     });
 
     // Do not change. #manageAttachments is added by extension.
-    $(document).on('click', '#manageAttachments', function () {
+    $(document).on("click", "#manageAttachments", function () {
         openAttachmentManager();
     });
 
-    $(document).on('click', '.mes_embed', function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+    $(document).on("click", ".mes_embed", function () {
+        const messageBlock = $(this).closest(".mes");
+        const messageId = Number(messageBlock.attr("mesid"));
         embedMessageFile(messageId, messageBlock);
     });
 
-    $(document).on('click', '.editor_maximize', async function () {
-        const broId = $(this).attr('data-for');
+    $(document).on("click", ".editor_maximize", async function () {
+        const broId = $(this).attr("data-for");
         const bro = $(`#${broId}`);
-        const contentEditable = bro.is('[contenteditable]');
-        const withTab = $(this).attr('data-tab');
+        const contentEditable = bro.is("[contenteditable]");
+        const withTab = $(this).attr("data-tab");
 
         if (!bro.length) {
-            console.error('Could not find editor with id', broId);
+            console.error("Could not find editor with id", broId);
             return;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('height100p', 'wide100p', 'flex-container');
-        wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
-        const textarea = document.createElement('textarea');
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("height100p", "wide100p", "flex-container");
+        wrapper.classList.add(
+            "flexFlowColumn",
+            "justifyCenter",
+            "alignitemscenter",
+        );
+        const textarea = document.createElement("textarea");
         textarea.dataset.for = broId;
         textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
-        textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
-        bro.hasClass('monospace') && textarea.classList.add('monospace');
-        bro.hasClass('mdHotkeys') && textarea.classList.add('mdHotkeys');
-        textarea.addEventListener('input', function () {
+        textarea.classList.add("height100p", "wide100p", "maximized_textarea");
+        bro.hasClass("monospace") && textarea.classList.add("monospace");
+        bro.hasClass("mdHotkeys") && textarea.classList.add("mdHotkeys");
+        textarea.addEventListener("input", function () {
             if (contentEditable) {
                 bro[0].innerText = textarea.value;
-                bro.trigger('input');
+                bro.trigger("input");
             } else {
-                bro.val(textarea.value).trigger('input');
+                bro.val(textarea.value).trigger("input");
             }
         });
         wrapper.appendChild(textarea);
 
         if (withTab) {
-            textarea.addEventListener('keydown', (evt) => {
-                if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+            textarea.addEventListener("keydown", (evt) => {
+                if (
+                    evt.key == "Tab" &&
+                    !evt.shiftKey &&
+                    !evt.ctrlKey &&
+                    !evt.altKey
+                ) {
                     evt.preventDefault();
                     const start = textarea.selectionStart;
                     const end = textarea.selectionEnd;
-                    if (end - start > 0 && textarea.value.substring(start, end).includes('\n')) {
-                        const lineStart = textarea.value.lastIndexOf('\n', start);
-                        const count = textarea.value.substring(lineStart, end).split('\n').length - 1;
-                        textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${textarea.value.substring(end)}`;
+                    if (
+                        end - start > 0 &&
+                        textarea.value.substring(start, end).includes("\n")
+                    ) {
+                        const lineStart = textarea.value.lastIndexOf(
+                            "\n",
+                            start,
+                        );
+                        const count =
+                            textarea.value.substring(lineStart, end).split("\n")
+                                .length - 1;
+                        textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n/g, "\n\t")}${textarea.value.substring(end)}`;
                         textarea.selectionStart = start + 1;
                         textarea.selectionEnd = end + count;
                     } else {
@@ -1794,93 +2135,121 @@ export function initChatUtilities() {
                         textarea.selectionStart = start + 1;
                         textarea.selectionEnd = end + 1;
                     }
-                } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+                } else if (
+                    evt.key == "Tab" &&
+                    evt.shiftKey &&
+                    !evt.ctrlKey &&
+                    !evt.altKey
+                ) {
                     evt.preventDefault();
                     const start = textarea.selectionStart;
                     const end = textarea.selectionEnd;
-                    const lineStart = textarea.value.lastIndexOf('\n', start);
-                    const count = textarea.value.substring(lineStart, end).split('\n\t').length - 1;
-                    textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${textarea.value.substring(end)}`;
+                    const lineStart = textarea.value.lastIndexOf("\n", start);
+                    const count =
+                        textarea.value.substring(lineStart, end).split("\n\t")
+                            .length - 1;
+                    textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n\t/g, "\n")}${textarea.value.substring(end)}`;
                     textarea.selectionStart = start - 1;
                     textarea.selectionEnd = end - count;
                 }
             });
         }
 
-        await callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+        await callGenericPopup(wrapper, POPUP_TYPE.TEXT, "", {
+            wide: true,
+            large: true,
+        });
     });
 
-    $(document).on('click', 'body .mes .mes_text', function () {
+    $(document).on("click", "body .mes .mes_text", function () {
         if (!power_user.click_to_edit) return;
         if (window.getSelection().toString()) return;
-        if ($('.edit_textarea').length) return;
-        $(this).closest('.mes').find('.mes_edit').trigger('click');
+        if ($(".edit_textarea").length) return;
+        $(this).closest(".mes").find(".mes_edit").trigger("click");
     });
 
-    $(document).on('click', '.open_media_overrides', openExternalMediaOverridesDialog);
-    $(document).on('input', '#forbid_media_override_allowed', function () {
+    $(document).on(
+        "click",
+        ".open_media_overrides",
+        openExternalMediaOverridesDialog,
+    );
+    $(document).on("input", "#forbid_media_override_allowed", function () {
         const entityId = getCurrentEntityId();
         if (!entityId) return;
         power_user.external_media_allowed_overrides.push(entityId);
-        power_user.external_media_forbidden_overrides = power_user.external_media_forbidden_overrides.filter((v) => v !== entityId);
+        power_user.external_media_forbidden_overrides =
+            power_user.external_media_forbidden_overrides.filter(
+                (v) => v !== entityId,
+            );
         saveSettingsDebounced();
         reloadCurrentChat();
     });
-    $(document).on('input', '#forbid_media_override_forbidden', function () {
+    $(document).on("input", "#forbid_media_override_forbidden", function () {
         const entityId = getCurrentEntityId();
         if (!entityId) return;
         power_user.external_media_forbidden_overrides.push(entityId);
-        power_user.external_media_allowed_overrides = power_user.external_media_allowed_overrides.filter((v) => v !== entityId);
+        power_user.external_media_allowed_overrides =
+            power_user.external_media_allowed_overrides.filter(
+                (v) => v !== entityId,
+            );
         saveSettingsDebounced();
         reloadCurrentChat();
     });
-    $(document).on('input', '#forbid_media_override_global', function () {
+    $(document).on("input", "#forbid_media_override_global", function () {
         const entityId = getCurrentEntityId();
         if (!entityId) return;
-        power_user.external_media_allowed_overrides = power_user.external_media_allowed_overrides.filter((v) => v !== entityId);
-        power_user.external_media_forbidden_overrides = power_user.external_media_forbidden_overrides.filter((v) => v !== entityId);
+        power_user.external_media_allowed_overrides =
+            power_user.external_media_allowed_overrides.filter(
+                (v) => v !== entityId,
+            );
+        power_user.external_media_forbidden_overrides =
+            power_user.external_media_forbidden_overrides.filter(
+                (v) => v !== entityId,
+            );
         saveSettingsDebounced();
         reloadCurrentChat();
     });
 
-    $('#creators_note_styles_button').on('click', function () {
+    $("#creators_note_styles_button").on("click", function () {
         openGlobalStylesPreferenceDialog();
     });
 
-    $(document).on('click', '.mes_img', expandMessageImage);
-    $(document).on('click', '.mes_img_enlarge', expandAndZoomMessageImage);
-    $(document).on('click', '.mes_img_delete', deleteMessageImage);
+    $(document).on("click", ".mes_img", expandMessageImage);
+    $(document).on("click", ".mes_img_enlarge", expandAndZoomMessageImage);
+    $(document).on("click", ".mes_img_delete", deleteMessageImage);
 
-    $('#file_form_input').on('change', async () => {
-        const fileInput = document.getElementById('file_form_input');
+    $("#file_form_input").on("change", async () => {
+        const fileInput = document.getElementById("file_form_input");
         if (!(fileInput instanceof HTMLInputElement)) return;
         const file = fileInput.files[0];
         await onFileAttach(file);
     });
-    $('#file_form').on('reset', function () {
-        $('#file_form').addClass('displayNone');
+    $("#file_form").on("reset", function () {
+        $("#file_form").addClass("displayNone");
     });
 
-    document.getElementById('send_textarea').addEventListener('paste', async function (event) {
-        if (event.clipboardData.files.length === 0) {
-            return;
-        }
+    document
+        .getElementById("send_textarea")
+        .addEventListener("paste", async function (event) {
+            if (event.clipboardData.files.length === 0) {
+                return;
+            }
 
-        event.preventDefault();
-        event.stopPropagation();
+            event.preventDefault();
+            event.stopPropagation();
 
-        const fileInput = document.getElementById('file_form_input');
-        if (!(fileInput instanceof HTMLInputElement)) return;
+            const fileInput = document.getElementById("file_form_input");
+            if (!(fileInput instanceof HTMLInputElement)) return;
 
-        // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
-        const dataTransfer = new DataTransfer();
-        for (let i = 0; i < event.clipboardData.files.length; i++) {
-            dataTransfer.items.add(event.clipboardData.files[i]);
-        }
+            // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
+            const dataTransfer = new DataTransfer();
+            for (let i = 0; i < event.clipboardData.files.length; i++) {
+                dataTransfer.items.add(event.clipboardData.files[i]);
+            }
 
-        fileInput.files = dataTransfer.files;
-        await onFileAttach(fileInput.files[0]);
-    });
+            fileInput.files = dataTransfer.files;
+            await onFileAttach(fileInput.files[0]);
+        });
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
 }

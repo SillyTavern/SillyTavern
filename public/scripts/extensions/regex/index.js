@@ -1,18 +1,56 @@
-import { callPopup, characters, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
-import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
-import { selected_group } from '../../group-chats.js';
-import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
-import { SlashCommand } from '../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
-import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
-import { t } from '../../i18n.js';
-import { accountStorage } from '../../util/AccountStorage.js';
+import {
+    callPopup,
+    characters,
+    eventSource,
+    event_types,
+    getCurrentChatId,
+    reloadCurrentChat,
+    saveSettingsDebounced,
+    this_chid,
+} from "../../../script.js";
+import {
+    extension_settings,
+    renderExtensionTemplateAsync,
+    writeExtensionField,
+} from "../../extensions.js";
+import { selected_group } from "../../group-chats.js";
+import { callGenericPopup, POPUP_TYPE } from "../../popup.js";
+import { SlashCommand } from "../../slash-commands/SlashCommand.js";
+import {
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument,
+} from "../../slash-commands/SlashCommandArgument.js";
+import {
+    commonEnumProviders,
+    enumIcons,
+} from "../../slash-commands/SlashCommandCommonEnumsProvider.js";
+import {
+    SlashCommandEnumValue,
+    enumTypes,
+} from "../../slash-commands/SlashCommandEnumValue.js";
+import { SlashCommandParser } from "../../slash-commands/SlashCommandParser.js";
+import {
+    download,
+    equalsIgnoreCaseAndAccents,
+    getFileText,
+    getSortableDelay,
+    isFalseBoolean,
+    isTrueBoolean,
+    regexFromString,
+    setInfoBlock,
+    uuidv4,
+} from "../../utils.js";
+import {
+    regex_placement,
+    runRegexScript,
+    substitute_find_regex,
+} from "./engine.js";
+import { t } from "../../i18n.js";
+import { accountStorage } from "../../util/AccountStorage.js";
 
-const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase();
+const sanitizeFileName = (name) =>
+    name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, "_").toLowerCase();
 
 /**
  * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
@@ -24,7 +62,10 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
  * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
 export function getRegexScripts() {
-    return [...(extension_settings.regex ?? []), ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? [])];
+    return [
+        ...(extension_settings.regex ?? []),
+        ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? []),
+    ];
 }
 
 /**
@@ -36,7 +77,10 @@ export function getRegexScripts() {
  */
 async function saveRegexScript(regexScript, existingScriptIndex, isScoped) {
     // If not editing
-    const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
+    const array =
+        (isScoped
+            ? characters[this_chid]?.data?.extensions?.regex_scripts
+            : extension_settings.regex) ?? [];
 
     // Assign a UUID if it doesn't exist
     if (!regexScript.id) {
@@ -45,18 +89,24 @@ async function saveRegexScript(regexScript, existingScriptIndex, isScoped) {
 
     // Is the script name undefined or empty?
     if (!regexScript.scriptName) {
-        toastr.error('Could not save regex script: The script name was undefined or empty!');
+        toastr.error(
+            "Could not save regex script: The script name was undefined or empty!",
+        );
         return;
     }
 
     // Is a find regex present?
     if (regexScript.findRegex.length === 0) {
-        toastr.warning('This regex script will not work, but was saved anyway: A find regex isn\'t present.');
+        toastr.warning(
+            "This regex script will not work, but was saved anyway: A find regex isn't present.",
+        );
     }
 
     // Is there someplace to place results?
     if (regexScript.placement.length === 0) {
-        toastr.warning('This regex script will not work, but was saved anyway: One "Affects" checkbox must be selected!');
+        toastr.warning(
+            'This regex script will not work, but was saved anyway: One "Affects" checkbox must be selected!',
+        );
     }
 
     if (existingScriptIndex !== -1) {
@@ -66,11 +116,17 @@ async function saveRegexScript(regexScript, existingScriptIndex, isScoped) {
     }
 
     if (isScoped) {
-        await writeExtensionField(this_chid, 'regex_scripts', array);
+        await writeExtensionField(this_chid, "regex_scripts", array);
 
         // Add the character to the allowed list
-        if (!extension_settings.character_allowed_regex.includes(characters[this_chid].avatar)) {
-            extension_settings.character_allowed_regex.push(characters[this_chid].avatar);
+        if (
+            !extension_settings.character_allowed_regex.includes(
+                characters[this_chid].avatar,
+            )
+        ) {
+            extension_settings.character_allowed_regex.push(
+                characters[this_chid].avatar,
+            );
         }
     }
 
@@ -85,14 +141,17 @@ async function saveRegexScript(regexScript, existingScriptIndex, isScoped) {
 }
 
 async function deleteRegexScript({ id, isScoped }) {
-    const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
+    const array =
+        (isScoped
+            ? characters[this_chid]?.data?.extensions?.regex_scripts
+            : extension_settings.regex) ?? [];
 
     const existingScriptIndex = array.findIndex((script) => script.id === id);
     if (!existingScriptIndex || existingScriptIndex !== -1) {
         array.splice(existingScriptIndex, 1);
 
         if (isScoped) {
-            await writeExtensionField(this_chid, 'regex_scripts', array);
+            await writeExtensionField(this_chid, "regex_scripts", array);
         }
 
         saveSettingsDebounced();
@@ -101,10 +160,12 @@ async function deleteRegexScript({ id, isScoped }) {
 }
 
 async function loadRegexScripts() {
-    $('#saved_regex_scripts').empty();
-    $('#saved_scoped_scripts').empty();
+    $("#saved_regex_scripts").empty();
+    $("#saved_scoped_scripts").empty();
 
-    const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
+    const scriptTemplate = $(
+        await renderExtensionTemplateAsync("regex", "scriptTemplate"),
+    );
 
     /**
      * Renders a script to the UI.
@@ -122,24 +183,35 @@ async function loadRegexScripts() {
             script.id = uuidv4();
         }
 
-        scriptHtml.attr('id', script.id);
-        scriptHtml.find('.regex_script_name').text(script.scriptName);
-        scriptHtml.find('.disable_regex').prop('checked', script.disabled ?? false)
-            .on('input', async function () {
-                script.disabled = !!$(this).prop('checked');
+        scriptHtml.attr("id", script.id);
+        scriptHtml.find(".regex_script_name").text(script.scriptName);
+        scriptHtml
+            .find(".disable_regex")
+            .prop("checked", script.disabled ?? false)
+            .on("input", async function () {
+                script.disabled = !!$(this).prop("checked");
                 await save();
             });
-        scriptHtml.find('.regex-toggle-on').on('click', function () {
-            scriptHtml.find('.disable_regex').prop('checked', true).trigger('input');
+        scriptHtml.find(".regex-toggle-on").on("click", function () {
+            scriptHtml
+                .find(".disable_regex")
+                .prop("checked", true)
+                .trigger("input");
         });
-        scriptHtml.find('.regex-toggle-off').on('click', function () {
-            scriptHtml.find('.disable_regex').prop('checked', false).trigger('input');
+        scriptHtml.find(".regex-toggle-off").on("click", function () {
+            scriptHtml
+                .find(".disable_regex")
+                .prop("checked", false)
+                .trigger("input");
         });
-        scriptHtml.find('.edit_existing_regex').on('click', async function () {
-            await onRegexEditorOpenClick(scriptHtml.attr('id'), isScoped);
+        scriptHtml.find(".edit_existing_regex").on("click", async function () {
+            await onRegexEditorOpenClick(scriptHtml.attr("id"), isScoped);
         });
-        scriptHtml.find('.move_to_global').on('click', async function () {
-            const confirm = await callGenericPopup('Are you sure you want to move this regex script to global?', POPUP_TYPE.CONFIRM);
+        scriptHtml.find(".move_to_global").on("click", async function () {
+            const confirm = await callGenericPopup(
+                "Are you sure you want to move this regex script to global?",
+                POPUP_TYPE.CONFIRM,
+            );
 
             if (!confirm) {
                 return;
@@ -148,18 +220,21 @@ async function loadRegexScripts() {
             await deleteRegexScript({ id: script.id, isScoped: true });
             await saveRegexScript(script, -1, false);
         });
-        scriptHtml.find('.move_to_scoped').on('click', async function () {
+        scriptHtml.find(".move_to_scoped").on("click", async function () {
             if (this_chid === undefined) {
-                toastr.error('No character selected.');
+                toastr.error("No character selected.");
                 return;
             }
 
             if (selected_group) {
-                toastr.error('Cannot edit scoped scripts in group chats.');
+                toastr.error("Cannot edit scoped scripts in group chats.");
                 return;
             }
 
-            const confirm = await callGenericPopup('Are you sure you want to move this regex script to scoped?', POPUP_TYPE.CONFIRM);
+            const confirm = await callGenericPopup(
+                "Are you sure you want to move this regex script to scoped?",
+                POPUP_TYPE.CONFIRM,
+            );
 
             if (!confirm) {
                 return;
@@ -168,13 +243,16 @@ async function loadRegexScripts() {
             await deleteRegexScript({ id: script.id, isScoped: false });
             await saveRegexScript(script, -1, true);
         });
-        scriptHtml.find('.export_regex').on('click', async function () {
+        scriptHtml.find(".export_regex").on("click", async function () {
             const fileName = `regex-${sanitizeFileName(script.scriptName)}.json`;
             const fileData = JSON.stringify(script, null, 4);
-            download(fileData, fileName, 'application/json');
+            download(fileData, fileName, "application/json");
         });
-        scriptHtml.find('.delete_regex').on('click', async function () {
-            const confirm = await callGenericPopup('Are you sure you want to delete this regex script?', POPUP_TYPE.CONFIRM);
+        scriptHtml.find(".delete_regex").on("click", async function () {
+            const confirm = await callGenericPopup(
+                "Are you sure you want to delete this regex script?",
+                POPUP_TYPE.CONFIRM,
+            );
 
             if (!confirm) {
                 return;
@@ -187,11 +265,18 @@ async function loadRegexScripts() {
         $(container).append(scriptHtml);
     }
 
-    extension_settings?.regex?.forEach((script, index, array) => renderScript('#saved_regex_scripts', script, false, index, array));
-    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index, array) => renderScript('#saved_scoped_scripts', script, true, index, array));
+    extension_settings?.regex?.forEach((script, index, array) =>
+        renderScript("#saved_regex_scripts", script, false, index, array),
+    );
+    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach(
+        (script, index, array) =>
+            renderScript("#saved_scoped_scripts", script, true, index, array),
+    );
 
-    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
-    $('#regex_scoped_toggle').prop('checked', isAllowed);
+    const isAllowed = extension_settings?.character_allowed_regex?.includes(
+        characters?.[this_chid]?.avatar,
+    );
+    $("#regex_scoped_toggle").prop("checked", isAllowed);
 }
 
 /**
@@ -201,103 +286,161 @@ async function loadRegexScripts() {
  * @returns {Promise<void>}
  */
 async function onRegexEditorOpenClick(existingId, isScoped) {
-    const editorHtml = $(await renderExtensionTemplateAsync('regex', 'editor'));
-    const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
+    const editorHtml = $(await renderExtensionTemplateAsync("regex", "editor"));
+    const array =
+        (isScoped
+            ? characters[this_chid]?.data?.extensions?.regex_scripts
+            : extension_settings.regex) ?? [];
 
     // If an ID exists, fill in all the values
     let existingScriptIndex = -1;
     if (existingId) {
-        existingScriptIndex = array.findIndex((script) => script.id === existingId);
+        existingScriptIndex = array.findIndex(
+            (script) => script.id === existingId,
+        );
         if (existingScriptIndex !== -1) {
             const existingScript = array[existingScriptIndex];
             if (existingScript.scriptName) {
-                editorHtml.find('.regex_script_name').val(existingScript.scriptName);
+                editorHtml
+                    .find(".regex_script_name")
+                    .val(existingScript.scriptName);
             } else {
-                toastr.error('This script doesn\'t have a name! Please delete it.');
+                toastr.error(
+                    "This script doesn't have a name! Please delete it.",
+                );
                 return;
             }
 
-            editorHtml.find('.find_regex').val(existingScript.findRegex || '');
-            editorHtml.find('.regex_replace_string').val(existingScript.replaceString || '');
-            editorHtml.find('.regex_trim_strings').val(existingScript.trimStrings?.join('\n') || []);
-            editorHtml.find('input[name="disabled"]').prop('checked', existingScript.disabled ?? false);
-            editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
-            editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
-            editorHtml.find('input[name="run_on_edit"]').prop('checked', existingScript.runOnEdit ?? false);
-            editorHtml.find('select[name="substitute_regex"]').val(existingScript.substituteRegex ?? substitute_find_regex.NONE);
-            editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
-            editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
+            editorHtml.find(".find_regex").val(existingScript.findRegex || "");
+            editorHtml
+                .find(".regex_replace_string")
+                .val(existingScript.replaceString || "");
+            editorHtml
+                .find(".regex_trim_strings")
+                .val(existingScript.trimStrings?.join("\n") || []);
+            editorHtml
+                .find('input[name="disabled"]')
+                .prop("checked", existingScript.disabled ?? false);
+            editorHtml
+                .find('input[name="only_format_display"]')
+                .prop("checked", existingScript.markdownOnly ?? false);
+            editorHtml
+                .find('input[name="only_format_prompt"]')
+                .prop("checked", existingScript.promptOnly ?? false);
+            editorHtml
+                .find('input[name="run_on_edit"]')
+                .prop("checked", existingScript.runOnEdit ?? false);
+            editorHtml
+                .find('select[name="substitute_regex"]')
+                .val(
+                    existingScript.substituteRegex ??
+                        substitute_find_regex.NONE,
+                );
+            editorHtml
+                .find('input[name="min_depth"]')
+                .val(existingScript.minDepth ?? "");
+            editorHtml
+                .find('input[name="max_depth"]')
+                .val(existingScript.maxDepth ?? "");
 
             existingScript.placement.forEach((element) => {
                 editorHtml
                     .find(`input[name="replace_position"][value="${element}"]`)
-                    .prop('checked', true);
+                    .prop("checked", true);
             });
         }
     } else {
         editorHtml
             .find('input[name="only_format_display"]')
-            .prop('checked', true);
+            .prop("checked", true);
 
-        editorHtml
-            .find('input[name="run_on_edit"]')
-            .prop('checked', true);
+        editorHtml.find('input[name="run_on_edit"]').prop("checked", true);
 
         editorHtml
             .find('input[name="replace_position"][value="1"]')
-            .prop('checked', true);
+            .prop("checked", true);
     }
 
-    editorHtml.find('#regex_test_mode_toggle').on('click', function () {
-        editorHtml.find('#regex_test_mode').toggleClass('displayNone');
+    editorHtml.find("#regex_test_mode_toggle").on("click", function () {
+        editorHtml.find("#regex_test_mode").toggleClass("displayNone");
         updateTestResult();
     });
 
     function updateTestResult() {
         updateInfoBlock(editorHtml);
 
-        if (!editorHtml.find('#regex_test_mode').is(':visible')) {
+        if (!editorHtml.find("#regex_test_mode").is(":visible")) {
             return;
         }
 
         const testScript = {
             id: uuidv4(),
-            scriptName: editorHtml.find('.regex_script_name').val(),
-            findRegex: editorHtml.find('.find_regex').val(),
-            replaceString: editorHtml.find('.regex_replace_string').val(),
-            trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
-            substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
+            scriptName: editorHtml.find(".regex_script_name").val(),
+            findRegex: editorHtml.find(".find_regex").val(),
+            replaceString: editorHtml.find(".regex_replace_string").val(),
+            trimStrings:
+                String(editorHtml.find(".regex_trim_strings").val())
+                    .split("\n")
+                    .filter((e) => e.length !== 0) || [],
+            substituteRegex: Number(
+                editorHtml.find('select[name="substitute_regex"]').val(),
+            ),
         };
-        const rawTestString = String(editorHtml.find('#regex_test_input').val());
+        const rawTestString = String(
+            editorHtml.find("#regex_test_input").val(),
+        );
         const result = runRegexScript(testScript, rawTestString);
-        editorHtml.find('#regex_test_output').text(result);
+        editorHtml.find("#regex_test_output").text(result);
     }
 
-    editorHtml.find('input, textarea, select').on('input', updateTestResult);
+    editorHtml.find("input, textarea, select").on("input", updateTestResult);
     updateInfoBlock(editorHtml);
 
-    const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: t`Save` });
+    const popupResult = await callPopup(editorHtml, "confirm", undefined, {
+        okButton: t`Save`,
+    });
     if (popupResult) {
         const newRegexScript = {
             id: existingId ? String(existingId) : uuidv4(),
-            scriptName: String(editorHtml.find('.regex_script_name').val()),
-            findRegex: String(editorHtml.find('.find_regex').val()),
-            replaceString: String(editorHtml.find('.regex_replace_string').val()),
-            trimStrings: editorHtml.find('.regex_trim_strings').val().split('\n').filter((e) => e.length !== 0) || [],
+            scriptName: String(editorHtml.find(".regex_script_name").val()),
+            findRegex: String(editorHtml.find(".find_regex").val()),
+            replaceString: String(
+                editorHtml.find(".regex_replace_string").val(),
+            ),
+            trimStrings:
+                editorHtml
+                    .find(".regex_trim_strings")
+                    .val()
+                    .split("\n")
+                    .filter((e) => e.length !== 0) || [],
             placement:
                 editorHtml
                     .find('input[name="replace_position"]')
-                    .filter(':checked')
-                    .map(function () { return parseInt($(this).val()); })
+                    .filter(":checked")
+                    .map(function () {
+                        return parseInt($(this).val());
+                    })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
-            disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
-            markdownOnly: editorHtml.find('input[name="only_format_display"]').prop('checked'),
-            promptOnly: editorHtml.find('input[name="only_format_prompt"]').prop('checked'),
-            runOnEdit: editorHtml.find('input[name="run_on_edit"]').prop('checked'),
-            substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
-            minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
-            maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
+            disabled: editorHtml.find('input[name="disabled"]').prop("checked"),
+            markdownOnly: editorHtml
+                .find('input[name="only_format_display"]')
+                .prop("checked"),
+            promptOnly: editorHtml
+                .find('input[name="only_format_prompt"]')
+                .prop("checked"),
+            runOnEdit: editorHtml
+                .find('input[name="run_on_edit"]')
+                .prop("checked"),
+            substituteRegex: Number(
+                editorHtml.find('select[name="substitute_regex"]').val(),
+            ),
+            minDepth: parseInt(
+                String(editorHtml.find('input[name="min_depth"]').val()),
+            ),
+            maxDepth: parseInt(
+                String(editorHtml.find('input[name="max_depth"]').val()),
+            ),
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex, isScoped);
@@ -309,15 +452,15 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
  * @param {JQuery<HTMLElement>} editorHtml The editor HTML
  */
 function updateInfoBlock(editorHtml) {
-    const infoBlock = editorHtml.find('.info-block').get(0);
-    const infoBlockFlagsHint = editorHtml.find('#regex_info_block_flags_hint');
-    const findRegex = String(editorHtml.find('.find_regex').val());
+    const infoBlock = editorHtml.find(".info-block").get(0);
+    const infoBlockFlagsHint = editorHtml.find("#regex_info_block_flags_hint");
+    const findRegex = String(editorHtml.find(".find_regex").val());
 
     infoBlockFlagsHint.hide();
 
     // Clear the info block if the find regex is empty
     if (!findRegex) {
-        setInfoBlock(infoBlock, t`Find Regex is empty`, 'info');
+        setInfoBlock(infoBlock, t`Find Regex is empty`, "info");
         return;
     }
 
@@ -328,13 +471,19 @@ function updateInfoBlock(editorHtml) {
         }
 
         const flagInfo = [];
-        flagInfo.push(regex.flags.includes('g') ? t`Applies to all matches` : t`Applies to the first match`);
-        flagInfo.push(regex.flags.includes('i') ? t`Case insensitive` : t`Case sensitive`);
+        flagInfo.push(
+            regex.flags.includes("g")
+                ? t`Applies to all matches`
+                : t`Applies to the first match`,
+        );
+        flagInfo.push(
+            regex.flags.includes("i") ? t`Case insensitive` : t`Case sensitive`,
+        );
 
-        setInfoBlock(infoBlock, flagInfo.join('. '), 'hint');
+        setInfoBlock(infoBlock, flagInfo.join(". "), "hint");
         infoBlockFlagsHint.show();
     } catch (error) {
-        setInfoBlock(infoBlock, error.message, 'error');
+        setInfoBlock(infoBlock, error.message, "error");
     }
 }
 
@@ -351,9 +500,14 @@ function migrateSettings() {
         }
 
         if (script.placement.includes(regex_placement.MD_DISPLAY)) {
-            script.placement = script.placement.length === 1 ?
-                Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
-                script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
+            script.placement =
+                script.placement.length === 1
+                    ? Object.values(regex_placement).filter(
+                          (e) => e !== regex_placement.MD_DISPLAY,
+                      )
+                    : (script.placement = script.placement.filter(
+                          (e) => e !== regex_placement.MD_DISPLAY,
+                      ));
 
             script.markdownOnly = true;
             script.promptOnly = true;
@@ -364,9 +518,12 @@ function migrateSettings() {
         // Old system and sendas placement migration
         // 4 - sendAs
         if (script.placement.includes(4)) {
-            script.placement = script.placement.length === 1 ?
-                [regex_placement.SLASH_COMMAND] :
-                script.placement = script.placement.filter((e) => e !== 4);
+            script.placement =
+                script.placement.length === 1
+                    ? [regex_placement.SLASH_COMMAND]
+                    : (script.placement = script.placement.filter(
+                          (e) => e !== 4,
+                      ));
 
             performSave = true;
         }
@@ -390,7 +547,7 @@ function migrateSettings() {
  */
 function runRegexCallback(args, value) {
     if (!args.name) {
-        toastr.warning('No regex script name provided.');
+        toastr.warning("No regex script name provided.");
         return value;
     }
 
@@ -420,26 +577,31 @@ function runRegexCallback(args, value) {
  * @returns {Promise<string>} The name of the script
  */
 async function toggleRegexCallback(args, scriptName) {
-    if (typeof scriptName !== 'string') throw new Error('Script name must be a string.');
+    if (typeof scriptName !== "string")
+        throw new Error("Script name must be a string.");
 
     const quiet = isTrueBoolean(args?.quiet);
-    const action = isTrueBoolean(args?.state) ? 'enable' :
-        isFalseBoolean(args?.state) ? 'disable' :
-            'toggle';
+    const action = isTrueBoolean(args?.state)
+        ? "enable"
+        : isFalseBoolean(args?.state)
+          ? "disable"
+          : "toggle";
 
     const scripts = getRegexScripts();
-    const script = scripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+    const script = scripts.find((s) =>
+        equalsIgnoreCaseAndAccents(s.scriptName, scriptName),
+    );
 
     if (!script) {
         toastr.warning(t`Regex script '${scriptName}' not found.`);
-        return '';
+        return "";
     }
 
     switch (action) {
-        case 'enable':
+        case "enable":
             script.disabled = false;
             break;
-        case 'disable':
+        case "disable":
             script.disabled = true;
             break;
         default:
@@ -447,17 +609,25 @@ async function toggleRegexCallback(args, scriptName) {
             break;
     }
 
-    const isScoped = characters[this_chid]?.data?.extensions?.regex_scripts?.some(s => s.id === script.id);
-    const index = isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts?.indexOf(script) : scripts.indexOf(script);
+    const isScoped = characters[
+        this_chid
+    ]?.data?.extensions?.regex_scripts?.some((s) => s.id === script.id);
+    const index = isScoped
+        ? characters[this_chid]?.data?.extensions?.regex_scripts?.indexOf(
+              script,
+          )
+        : scripts.indexOf(script);
 
     await saveRegexScript(script, index, isScoped);
     if (script.disabled) {
-        !quiet && toastr.success(t`Regex script '${scriptName}' has been disabled.`);
+        !quiet &&
+            toastr.success(t`Regex script '${scriptName}' has been disabled.`);
     } else {
-        !quiet && toastr.success(t`Regex script '${scriptName}' has been enabled.`);
+        !quiet &&
+            toastr.success(t`Regex script '${scriptName}' has been enabled.`);
     }
 
-    return script.scriptName || '';
+    return script.scriptName || "";
 }
 
 /**
@@ -468,17 +638,20 @@ async function toggleRegexCallback(args, scriptName) {
 async function onRegexImportObjectChange(regexScript, isScoped) {
     try {
         if (!regexScript.scriptName) {
-            throw new Error('No script name provided.');
+            throw new Error("No script name provided.");
         }
 
         // Assign a new UUID
         regexScript.id = uuidv4();
 
-        const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
+        const array =
+            (isScoped
+                ? characters[this_chid]?.data?.extensions?.regex_scripts
+                : extension_settings.regex) ?? [];
         array.push(regexScript);
 
         if (isScoped) {
-            await writeExtensionField(this_chid, 'regex_scripts', array);
+            await writeExtensionField(this_chid, "regex_scripts", array);
         }
 
         saveSettingsDebounced();
@@ -486,7 +659,7 @@ async function onRegexImportObjectChange(regexScript, isScoped) {
         toastr.success(`Regex script "${regexScript.scriptName}" imported.`);
     } catch (error) {
         console.log(error);
-        toastr.error('Invalid regex object.');
+        toastr.error("Invalid regex object.");
         return;
     }
 }
@@ -498,7 +671,7 @@ async function onRegexImportObjectChange(regexScript, isScoped) {
  */
 async function onRegexImportFileChange(file, isScoped) {
     if (!file) {
-        toastr.error('No file provided.');
+        toastr.error("No file provided.");
         return;
     }
 
@@ -513,7 +686,7 @@ async function onRegexImportFileChange(file, isScoped) {
         }
     } catch (error) {
         console.log(error);
-        toastr.error('Invalid JSON file.');
+        toastr.error("Invalid JSON file.");
         return;
     }
 }
@@ -521,8 +694,12 @@ async function onRegexImportFileChange(file, isScoped) {
 function purgeEmbeddedRegexScripts({ character }) {
     const avatar = character?.avatar;
 
-    if (avatar && extension_settings.character_allowed_regex?.includes(avatar)) {
-        const index = extension_settings.character_allowed_regex.indexOf(avatar);
+    if (
+        avatar &&
+        extension_settings.character_allowed_regex?.includes(avatar)
+    ) {
+        const index =
+            extension_settings.character_allowed_regex.indexOf(avatar);
         if (index !== -1) {
             extension_settings.character_allowed_regex.splice(index, 1);
             saveSettingsDebounced();
@@ -538,13 +715,25 @@ async function checkEmbeddedRegexScripts() {
         const scripts = characters[chid]?.data?.extensions?.regex_scripts;
 
         if (Array.isArray(scripts) && scripts.length > 0) {
-            if (avatar && !extension_settings.character_allowed_regex.includes(avatar)) {
+            if (
+                avatar &&
+                !extension_settings.character_allowed_regex.includes(avatar)
+            ) {
                 const checkKey = `AlertRegex_${characters[chid].avatar}`;
 
                 if (!accountStorage.getItem(checkKey)) {
-                    accountStorage.setItem(checkKey, 'true');
-                    const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
-                    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
+                    accountStorage.setItem(checkKey, "true");
+                    const template = await renderExtensionTemplateAsync(
+                        "regex",
+                        "embeddedScripts",
+                        {},
+                    );
+                    const result = await callGenericPopup(
+                        template,
+                        POPUP_TYPE.CONFIRM,
+                        "",
+                        { okButton: "Yes" },
+                    );
 
                     if (result) {
                         extension_settings.character_allowed_regex.push(avatar);
@@ -567,55 +756,68 @@ jQuery(async () => {
     }
 
     // Manually disable the extension since static imports auto-import the JS file
-    if (extension_settings.disabledExtensions.includes('regex')) {
+    if (extension_settings.disabledExtensions.includes("regex")) {
         return;
     }
 
-    const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
-    $('#regex_container').append(settingsHtml);
-    $('#open_regex_editor').on('click', function () {
+    const settingsHtml = $(
+        await renderExtensionTemplateAsync("regex", "dropdown"),
+    );
+    $("#regex_container").append(settingsHtml);
+    $("#open_regex_editor").on("click", function () {
         onRegexEditorOpenClick(false, false);
     });
-    $('#open_scoped_editor').on('click', function () {
+    $("#open_scoped_editor").on("click", function () {
         if (this_chid === undefined) {
-            toastr.error('No character selected.');
+            toastr.error("No character selected.");
             return;
         }
 
         if (selected_group) {
-            toastr.error('Cannot edit scoped scripts in group chats.');
+            toastr.error("Cannot edit scoped scripts in group chats.");
             return;
         }
 
         onRegexEditorOpenClick(false, true);
     });
-    $('#import_regex_file').on('change', async function () {
-        let target = 'global';
-        const template = $(await renderExtensionTemplateAsync('regex', 'importTarget'));
-        template.find('#regex_import_target_global').on('input', () => target = 'global');
-        template.find('#regex_import_target_scoped').on('input', () => target = 'scoped');
+    $("#import_regex_file").on("change", async function () {
+        let target = "global";
+        const template = $(
+            await renderExtensionTemplateAsync("regex", "importTarget"),
+        );
+        template
+            .find("#regex_import_target_global")
+            .on("input", () => (target = "global"));
+        template
+            .find("#regex_import_target_scoped")
+            .on("input", () => (target = "scoped"));
 
         await callGenericPopup(template, POPUP_TYPE.TEXT);
 
         const inputElement = this instanceof HTMLInputElement && this;
         for (const file of inputElement.files) {
-            await onRegexImportFileChange(file, target === 'scoped');
+            await onRegexImportFileChange(file, target === "scoped");
         }
-        inputElement.value = '';
+        inputElement.value = "";
     });
-    $('#import_regex').on('click', function () {
-        $('#import_regex_file').trigger('click');
+    $("#import_regex").on("click", function () {
+        $("#import_regex_file").trigger("click");
     });
 
     function getSelectedScripts() {
         const scripts = getRegexScripts();
-        const selector = '#regex_container .regex-script-label:has(.regex_bulk_checkbox:checked)';
-        const selectedIds = Array.from(document.querySelectorAll(selector)).map(e => e.getAttribute('id')).filter(id => id);
-        return scripts.filter(script => selectedIds.includes(script.id));
+        const selector =
+            "#regex_container .regex-script-label:has(.regex_bulk_checkbox:checked)";
+        const selectedIds = Array.from(document.querySelectorAll(selector))
+            .map((e) => e.getAttribute("id"))
+            .filter((id) => id);
+        return scripts.filter((script) => selectedIds.includes(script.id));
     }
 
-    $('#bulk_enable_regex').on('click', async function () {
-        const scripts = getSelectedScripts().filter(script => script.disabled);
+    $("#bulk_enable_regex").on("click", async function () {
+        const scripts = getSelectedScripts().filter(
+            (script) => script.disabled,
+        );
         if (scripts.length === 0) {
             toastr.warning(t`No regex scripts selected for enabling.`);
             return;
@@ -627,8 +829,10 @@ jQuery(async () => {
         await loadRegexScripts();
     });
 
-    $('#bulk_disable_regex').on('click', async function () {
-        const scripts = getSelectedScripts().filter(script => !script.disabled);
+    $("#bulk_disable_regex").on("click", async function () {
+        const scripts = getSelectedScripts().filter(
+            (script) => !script.disabled,
+        );
         if (scripts.length === 0) {
             toastr.warning(t`No regex scripts selected for disabling.`);
             return;
@@ -640,25 +844,30 @@ jQuery(async () => {
         await loadRegexScripts();
     });
 
-    $('#bulk_delete_regex').on('click', async function () {
+    $("#bulk_delete_regex").on("click", async function () {
         const scripts = getSelectedScripts();
         if (scripts.length === 0) {
             toastr.warning(t`No regex scripts selected for deletion.`);
             return;
         }
-        const confirm = await callGenericPopup('Are you sure you want to delete the selected regex scripts?', POPUP_TYPE.CONFIRM);
+        const confirm = await callGenericPopup(
+            "Are you sure you want to delete the selected regex scripts?",
+            POPUP_TYPE.CONFIRM,
+        );
         if (!confirm) {
             return;
         }
         for (const script of scripts) {
-            const isScoped = characters[this_chid]?.data?.extensions?.regex_scripts?.some(s => s.id === script.id);
+            const isScoped = characters[
+                this_chid
+            ]?.data?.extensions?.regex_scripts?.some((s) => s.id === script.id);
             await deleteRegexScript({ id: script.id, isScoped: isScoped });
         }
         await reloadCurrentChat();
         saveSettingsDebounced();
     });
 
-    $('#bulk_export_regex').on('click', async function () {
+    $("#bulk_export_regex").on("click", async function () {
         const scripts = getSelectedScripts();
         if (scripts.length === 0) {
             toastr.warning(t`No regex scripts selected for export.`);
@@ -666,20 +875,21 @@ jQuery(async () => {
         }
         const fileName = `regex-${new Date().toISOString()}.json`;
         const fileData = JSON.stringify(scripts, null, 4);
-        download(fileData, fileName, 'application/json');
+        download(fileData, fileName, "application/json");
         await loadRegexScripts();
     });
 
     let sortableDatas = [
         {
-            selector: '#saved_regex_scripts',
-            setter: x => extension_settings.regex = x,
+            selector: "#saved_regex_scripts",
+            setter: (x) => (extension_settings.regex = x),
             getter: () => extension_settings.regex ?? [],
         },
         {
-            selector: '#saved_scoped_scripts',
-            setter: x => writeExtensionField(this_chid, 'regex_scripts', x),
-            getter: () => characters[this_chid]?.data?.extensions?.regex_scripts ?? [],
+            selector: "#saved_scoped_scripts",
+            setter: (x) => writeExtensionField(this_chid, "regex_scripts", x),
+            getter: () =>
+                characters[this_chid]?.data?.extensions?.regex_scripts ?? [],
         },
     ];
     for (const { selector, setter, getter } of sortableDatas) {
@@ -688,13 +898,17 @@ jQuery(async () => {
             stop: async function () {
                 const oldScripts = getter();
                 const newScripts = [];
-                $(selector).children().each(function () {
-                    const id = $(this).attr('id');
-                    const existingScript = oldScripts.find((e) => e.id === id);
-                    if (existingScript) {
-                        newScripts.push(existingScript);
-                    }
-                });
+                $(selector)
+                    .children()
+                    .each(function () {
+                        const id = $(this).attr("id");
+                        const existingScript = oldScripts.find(
+                            (e) => e.id === id,
+                        );
+                        if (existingScript) {
+                            newScripts.push(existingScript);
+                        }
+                    });
 
                 await setter(newScripts);
                 saveSettingsDebounced();
@@ -705,18 +919,18 @@ jQuery(async () => {
         });
     }
 
-    $('#regex_scoped_toggle').on('input', function () {
+    $("#regex_scoped_toggle").on("input", function () {
         if (this_chid === undefined) {
-            toastr.error('No character selected.');
+            toastr.error("No character selected.");
             return;
         }
 
         if (selected_group) {
-            toastr.error('Cannot edit scoped scripts in group chats.');
+            toastr.error("Cannot edit scoped scripts in group chats.");
             return;
         }
 
-        const isEnable = !!$(this).prop('checked');
+        const isEnable = !!$(this).prop("checked");
         const avatar = characters[this_chid].avatar;
 
         if (isEnable) {
@@ -724,7 +938,8 @@ jQuery(async () => {
                 extension_settings.character_allowed_regex.push(avatar);
             }
         } else {
-            const index = extension_settings.character_allowed_regex.indexOf(avatar);
+            const index =
+                extension_settings.character_allowed_regex.indexOf(avatar);
             if (index !== -1) {
                 extension_settings.character_allowed_regex.splice(index, 1);
             }
@@ -735,65 +950,79 @@ jQuery(async () => {
     });
 
     await loadRegexScripts();
-    $('#saved_regex_scripts').sortable('enable');
+    $("#saved_regex_scripts").sortable("enable");
 
     const localEnumProviders = {
-        regexScripts: () => getRegexScripts().map(script => {
-            const isGlobal = extension_settings.regex?.some(x => x.scriptName === script.scriptName);
-            return new SlashCommandEnumValue(script.scriptName, `${enumIcons.getStateIcon(!script.disabled)} [${isGlobal ? 'global' : 'scoped'}] ${script.findRegex}`,
-                isGlobal ? enumTypes.enum : enumTypes.name, isGlobal ? 'G' : 'S');
-        }),
+        regexScripts: () =>
+            getRegexScripts().map((script) => {
+                const isGlobal = extension_settings.regex?.some(
+                    (x) => x.scriptName === script.scriptName,
+                );
+                return new SlashCommandEnumValue(
+                    script.scriptName,
+                    `${enumIcons.getStateIcon(!script.disabled)} [${isGlobal ? "global" : "scoped"}] ${script.findRegex}`,
+                    isGlobal ? enumTypes.enum : enumTypes.name,
+                    isGlobal ? "G" : "S",
+                );
+            }),
     };
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'regex',
-        callback: runRegexCallback,
-        returns: 'replaced text',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'name',
-                description: 'script name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                enumProvider: localEnumProviders.regexScripts,
-            }),
-        ],
-        unnamedArgumentList: [
-            new SlashCommandArgument(
-                'input', [ARGUMENT_TYPE.STRING], false,
-            ),
-        ],
-        helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'regex-toggle',
-        callback: toggleRegexCallback,
-        returns: 'The name of the script that was toggled',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'state',
-                description: 'Explicitly set the state of the script (\'on\' to enable, \'off\' to disable). If not provided, the state will be toggled to the opposite of the current state.',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'toggle',
-                enumList: commonEnumProviders.boolean('onOffToggle')(),
-            }),
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message script toggled',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'script name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                enumProvider: localEnumProviders.regexScripts,
-            }),
-        ],
-        helpString: `
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "regex",
+            callback: runRegexCallback,
+            returns: "replaced text",
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: "name",
+                    description: "script name",
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: localEnumProviders.regexScripts,
+                }),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    "input",
+                    [ARGUMENT_TYPE.STRING],
+                    false,
+                ),
+            ],
+            helpString:
+                "Runs a Regex extension script by name on the provided string. The script must be enabled.",
+        }),
+    );
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "regex-toggle",
+            callback: toggleRegexCallback,
+            returns: "The name of the script that was toggled",
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: "state",
+                    description:
+                        "Explicitly set the state of the script ('on' to enable, 'off' to disable). If not provided, the state will be toggled to the opposite of the current state.",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: "toggle",
+                    enumList: commonEnumProviders.boolean("onOffToggle")(),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: "quiet",
+                    description: "Suppress the toast message script toggled",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: "false",
+                    enumList: commonEnumProviders.boolean("trueFalse")(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: "script name",
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: localEnumProviders.regexScripts,
+                }),
+            ],
+            helpString: `
             <div>
                 Toggles the state of a specified regex script.
             </div>
@@ -809,7 +1038,8 @@ jQuery(async () => {
                 </ul>
             </div>
         `,
-    }));
+        }),
+    );
 
     eventSource.on(event_types.CHAT_CHANGED, checkEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);

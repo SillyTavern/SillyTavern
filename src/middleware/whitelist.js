@@ -1,24 +1,35 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import process from 'node:process';
-import dns from 'node:dns';
-import Handlebars from 'handlebars';
-import ipMatching from 'ip-matching';
-import isDocker from 'is-docker';
+import path from "node:path";
+import fs from "node:fs";
+import process from "node:process";
+import dns from "node:dns";
+import Handlebars from "handlebars";
+import ipMatching from "ip-matching";
+import isDocker from "is-docker";
 
-import { getIpFromRequest } from '../express-common.js';
-import { color, getConfigValue, safeReadFileSync } from '../util.js';
+import { getIpFromRequest } from "../express-common.js";
+import { color, getConfigValue, safeReadFileSync } from "../util.js";
 
-const whitelistPath = path.join(process.cwd(), './whitelist.txt');
-const enableForwardedWhitelist = !!getConfigValue('enableForwardedWhitelist', false, 'boolean');
-const whitelistDockerHosts = !!getConfigValue('whitelistDockerHosts', true, 'boolean');
+const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
+const enableForwardedWhitelist = !!getConfigValue(
+    "enableForwardedWhitelist",
+    false,
+    "boolean",
+);
+const whitelistDockerHosts = !!getConfigValue(
+    "whitelistDockerHosts",
+    true,
+    "boolean",
+);
 /** @type {string[]} */
-let whitelist = getConfigValue('whitelist', []);
+let whitelist = getConfigValue("whitelist", []);
 
 if (fs.existsSync(whitelistPath)) {
     try {
-        let whitelistTxt = fs.readFileSync(whitelistPath, 'utf-8');
-        whitelist = whitelistTxt.split('\n').filter(ip => ip).map(ip => ip.trim());
+        let whitelistTxt = fs.readFileSync(whitelistPath, "utf-8");
+        whitelist = whitelistTxt
+            .split("\n")
+            .filter((ip) => ip)
+            .map((ip) => ip.trim());
     } catch (e) {
         // Ignore errors that may occur when reading the whitelist (e.g. permissions)
     }
@@ -35,13 +46,16 @@ function getForwardedIp(req) {
     }
 
     // Check if X-Real-IP is available
-    if (req.headers['x-real-ip']) {
-        return req.headers['x-real-ip'].toString();
+    if (req.headers["x-real-ip"]) {
+        return req.headers["x-real-ip"].toString();
     }
 
     // Check for X-Forwarded-For and parse if available
-    if (req.headers['x-forwarded-for']) {
-        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
+    if (req.headers["x-forwarded-for"]) {
+        const ipList = req.headers["x-forwarded-for"]
+            .toString()
+            .split(",")
+            .map((ip) => ip.trim());
         return ipList[0];
     }
 
@@ -58,15 +72,19 @@ async function addDockerHostsToWhitelist() {
         return;
     }
 
-    const whitelistHosts = ['host.docker.internal', 'gateway.docker.internal'];
+    const whitelistHosts = ["host.docker.internal", "gateway.docker.internal"];
 
     for (const entry of whitelistHosts) {
         try {
             const result = await dns.promises.lookup(entry);
-            console.info(`Resolved whitelist hostname ${color.green(entry)} to IPv${result.family} address ${color.green(result.address)}`);
+            console.info(
+                `Resolved whitelist hostname ${color.green(entry)} to IPv${result.family} address ${color.green(result.address)}`,
+            );
             whitelist.push(result.address);
         } catch (e) {
-            console.warn(`Failed to resolve whitelist hostname ${color.red(entry)}: ${e.message}`);
+            console.warn(
+                `Failed to resolve whitelist hostname ${color.red(entry)}: ${e.message}`,
+            );
         }
     }
 }
@@ -77,23 +95,27 @@ async function addDockerHostsToWhitelist() {
  */
 export default async function getWhitelistMiddleware() {
     const forbiddenWebpage = Handlebars.compile(
-        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+        safeReadFileSync("./public/error/forbidden-by-whitelist.html") ?? "",
     );
 
-    const noLogPaths = [
-        '/favicon.ico',
-    ];
+    const noLogPaths = ["/favicon.ico"];
 
     await addDockerHostsToWhitelist();
 
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
         const forwardedIp = getForwardedIp(req);
-        const userAgent = req.headers['user-agent'];
+        const userAgent = req.headers["user-agent"];
 
         //clientIp = req.connection.remoteAddress.split(':').pop();
-        if (!whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))
-            || forwardedIp && !whitelist.some(x => ipMatching.matches(forwardedIp, ipMatching.getMatch(x)))
+        if (
+            !whitelist.some((x) =>
+                ipMatching.matches(clientIp, ipMatching.getMatch(x)),
+            ) ||
+            (forwardedIp &&
+                !whitelist.some((x) =>
+                    ipMatching.matches(forwardedIp, ipMatching.getMatch(x)),
+                ))
         ) {
             // Log the connection attempt with real IP address
             const ipDetails = forwardedIp

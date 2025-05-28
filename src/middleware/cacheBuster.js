@@ -1,5 +1,5 @@
-import crypto from 'node:crypto';
-import { DEFAULT_USER } from '../constants.js';
+import crypto from "node:crypto";
+import { DEFAULT_USER } from "../constants.js";
 
 /**
  * Middleware to bust the browser cache for the current user.
@@ -13,8 +13,11 @@ export default function getCacheBusterMiddleware() {
 
     return (request, response, next) => {
         const handle = request.user?.profile?.handle || DEFAULT_USER.handle;
-        const userAgent = request.headers['user-agent'] || '';
-        const hash = crypto.createHash('sha256').update(userAgent).digest('hex');
+        const userAgent = request.headers["user-agent"] || "";
+        const hash = crypto
+            .createHash("sha256")
+            .update(userAgent)
+            .digest("hex");
         const key = `${handle}-${hash}`;
 
         if (keys.has(key)) {
@@ -22,7 +25,7 @@ export default function getCacheBusterMiddleware() {
         }
 
         keys.add(key);
-        response.setHeader('Clear-Site-Data', '"cache"');
+        response.setHeader("Clear-Site-Data", '"cache"');
         next();
     };
 }

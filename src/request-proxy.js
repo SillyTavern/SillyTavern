@@ -1,10 +1,10 @@
-import process from 'node:process';
-import http from 'node:http';
-import https from 'node:https';
-import { ProxyAgent } from 'proxy-agent';
-import { isValidUrl, color } from './util.js';
+import process from "node:process";
+import http from "node:http";
+import https from "node:https";
+import { ProxyAgent } from "proxy-agent";
+import { isValidUrl, color } from "./util.js";
 
-const LOG_HEADER = '[Request Proxy]';
+const LOG_HEADER = "[Request Proxy]";
 
 /**
  * Initialize request proxy.
@@ -22,12 +22,12 @@ export default function initRequestProxy({ enabled, url, bypass }) {
         }
 
         if (!url) {
-            console.error(color.red(LOG_HEADER), 'No proxy URL provided');
+            console.error(color.red(LOG_HEADER), "No proxy URL provided");
             return;
         }
 
         if (!isValidUrl(url)) {
-            console.error(color.red(LOG_HEADER), 'Invalid proxy URL provided');
+            console.error(color.red(LOG_HEADER), "Invalid proxy URL provided");
             return;
         }
 
@@ -36,7 +36,7 @@ export default function initRequestProxy({ enabled, url, bypass }) {
         process.env.all_proxy = url;
 
         if (Array.isArray(bypass) && bypass.length > 0) {
-            process.env.no_proxy = bypass.join(',');
+            process.env.no_proxy = bypass.join(",");
         }
 
         const proxyAgent = new ProxyAgent();
@@ -44,9 +44,17 @@ export default function initRequestProxy({ enabled, url, bypass }) {
         https.globalAgent = proxyAgent;
 
         console.info();
-        console.info(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
+        console.info(
+            color.green(LOG_HEADER),
+            "Proxy URL is used:",
+            color.blue(url),
+        );
         console.info();
     } catch (error) {
-        console.error(color.red(LOG_HEADER), 'Failed to initialize request proxy:', error);
+        console.error(
+            color.red(LOG_HEADER),
+            "Failed to initialize request proxy:",
+            error,
+        );
     }
 }

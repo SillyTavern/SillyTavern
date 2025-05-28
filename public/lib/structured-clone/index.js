@@ -1,5 +1,5 @@
-import {deserialize} from './deserialize.js';
-import {serialize} from './serialize.js';
+import { deserialize } from "./deserialize.js";
+import { serialize } from "./serialize.js";
 
 /**
  * @typedef {Array<string,any>} Record a type representation
@@ -13,13 +13,13 @@ import {serialize} from './serialize.js';
  * fallback to the polyfill if present.
  * @returns {Record[]}
  */
-export default typeof structuredClone === "function" ?
-  /* c8 ignore start */
-  (any, options) => (
-    options && ('json' in options || 'lossy' in options) ?
-      deserialize(serialize(any, options)) : structuredClone(any)
-  ) :
-  (any, options) => deserialize(serialize(any, options));
-  /* c8 ignore stop */
+export default typeof structuredClone === "function"
+    ? /* c8 ignore start */
+      (any, options) =>
+          options && ("json" in options || "lossy" in options)
+              ? deserialize(serialize(any, options))
+              : structuredClone(any)
+    : (any, options) => deserialize(serialize(any, options));
+/* c8 ignore stop */
 
-export {deserialize, serialize};
+export { deserialize, serialize };

@@ -1,49 +1,54 @@
 /* All selectors that should act as interactables / keyboard buttons by default */
 const interactableSelectors = [
-    '.interactable', // Main interactable class for ALL interactable controls (can also be manually added in code, so that's why its listed here)
-    '.custom_interactable', // Manually made interactable controls via code (see 'makeKeyboardInteractable()')
-    '.menu_button', // General menu button in ST
-    '.right_menu_button', // Button-likes in many menus
-    '.drawer-icon', // Main "menu bar" icons
-    '.inline-drawer-icon', // Buttons/icons inside the drawer menus
-    '.paginationjs-pages li a', // Pagination buttons
-    '.group_select, .character_select, .bogus_folder_select', // Cards to select char, group or folder in character list and other places
-    '.avatar-container', // Persona list blocks
-    '.tag .tag_remove', // Remove button in removable tags
-    '.bg_example', // Background elements in the background menu
-    '.bg_example .bg_button', // The inline buttons on the backgrounds
-    '#options a', // Option entries in the popup options menu
-    '.mes_buttons .mes_button', // Small inline buttons on the chat messages
-    '.extraMesButtons>div:not(.mes_button)', // The extra/extension buttons inline on the chat messages
-    '.swipe_left, .swipe_right', // Swipe buttons on the last message
-    '.stscript_btn', // STscript buttons in the chat bar
-    '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
-    '.avatar_load_preview', // Char display avatar selection
+    ".interactable", // Main interactable class for ALL interactable controls (can also be manually added in code, so that's why its listed here)
+    ".custom_interactable", // Manually made interactable controls via code (see 'makeKeyboardInteractable()')
+    ".menu_button", // General menu button in ST
+    ".right_menu_button", // Button-likes in many menus
+    ".drawer-icon", // Main "menu bar" icons
+    ".inline-drawer-icon", // Buttons/icons inside the drawer menus
+    ".paginationjs-pages li a", // Pagination buttons
+    ".group_select, .character_select, .bogus_folder_select", // Cards to select char, group or folder in character list and other places
+    ".avatar-container", // Persona list blocks
+    ".tag .tag_remove", // Remove button in removable tags
+    ".bg_example", // Background elements in the background menu
+    ".bg_example .bg_button", // The inline buttons on the backgrounds
+    "#options a", // Option entries in the popup options menu
+    ".mes_buttons .mes_button", // Small inline buttons on the chat messages
+    ".extraMesButtons>div:not(.mes_button)", // The extra/extension buttons inline on the chat messages
+    ".swipe_left, .swipe_right", // Swipe buttons on the last message
+    ".stscript_btn", // STscript buttons in the chat bar
+    ".select2_choice_clickable+span.select2-container .select2-selection__choice__display", // select2 control elements if they are meant to be clickable
+    ".avatar_load_preview", // Char display avatar selection
 ];
 
-if (CSS.supports('selector(:has(*))')) {
+if (CSS.supports("selector(:has(*))")) {
     // Option entries in the extension menu popup that are coming from extensions
-    interactableSelectors.push('#extensionsMenu div:has(.extensionsMenuExtensionButton)');
+    interactableSelectors.push(
+        "#extensionsMenu div:has(.extensionsMenuExtensionButton)",
+    );
 }
 
-export const INTERACTABLE_CONTROL_CLASS = 'interactable';
-export const CUSTOM_INTERACTABLE_CONTROL_CLASS = 'custom_interactable';
+export const INTERACTABLE_CONTROL_CLASS = "interactable";
+export const CUSTOM_INTERACTABLE_CONTROL_CLASS = "custom_interactable";
 
-export const NOT_FOCUSABLE_CONTROL_CLASS = 'not_focusable';
-export const DISABLED_CONTROL_CLASS = 'disabled';
+export const NOT_FOCUSABLE_CONTROL_CLASS = "not_focusable";
+export const DISABLED_CONTROL_CLASS = "disabled";
 
 /**
  * An observer that will check if any new interactables or scroll reset containers are added to the body
  * @type {MutationObserver}
  */
-const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-        if (mutation.type === 'childList') {
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === "childList") {
             mutation.addedNodes.forEach(handleNodeChange);
         }
-        if (mutation.type === 'attributes') {
+        if (mutation.type === "attributes") {
             const target = mutation.target;
-            if (mutation.attributeName === 'class' && target instanceof Element) {
+            if (
+                mutation.attributeName === "class" &&
+                target instanceof Element
+            ) {
                 handleNodeChange(target);
             }
         }
@@ -63,7 +68,7 @@ function handleNodeChange(node) {
         initializeInteractables(node);
 
         // Handle scroll reset containers
-        if (node.classList.contains('scroll-reset-container')) {
+        if (node.classList.contains("scroll-reset-container")) {
             applyScrollResetBehavior(node);
         }
         initializeScrollResetBehaviors(node);
@@ -79,15 +84,20 @@ function handleNodeChange(node) {
  * @param {boolean} [options.disabledByDefault=false] - Whether interactables of this class should be disabled by default
  * @param {boolean} [options.notFocusableByDefault=false] - Whether interactables of this class should not be focusable by default
  */
-export function registerInteractableType(interactableSelector, { disabledByDefault = false, notFocusableByDefault = false } = {}) {
+export function registerInteractableType(
+    interactableSelector,
+    { disabledByDefault = false, notFocusableByDefault = false } = {},
+) {
     interactableSelectors.push(interactableSelector);
 
     const interactables = document.querySelectorAll(interactableSelector);
 
     if (disabledByDefault || notFocusableByDefault) {
-        interactables.forEach(interactable => {
-            if (disabledByDefault) interactable.classList.add(DISABLED_CONTROL_CLASS);
-            if (notFocusableByDefault) interactable.classList.add(NOT_FOCUSABLE_CONTROL_CLASS);
+        interactables.forEach((interactable) => {
+            if (disabledByDefault)
+                interactable.classList.add(DISABLED_CONTROL_CLASS);
+            if (notFocusableByDefault)
+                interactable.classList.add(NOT_FOCUSABLE_CONTROL_CLASS);
         });
     }
 
@@ -102,7 +112,7 @@ export function registerInteractableType(interactableSelector, { disabledByDefau
  */
 export function isKeyboardInteractable(control) {
     // Check if this control matches any of the selectors
-    return interactableSelectors.some(selector => control.matches(selector));
+    return interactableSelectors.some((selector) => control.matches(selector));
 }
 
 /**
@@ -112,7 +122,7 @@ export function isKeyboardInteractable(control) {
  * @param {Element[]} interactables - The controls to make interactable and set their state
  */
 export function makeKeyboardInteractable(...interactables) {
-    interactables.forEach(interactable => {
+    interactables.forEach((interactable) => {
         // If this control doesn't have any of the classes, lets say the caller knows this and wants this to be a custom-enabled keyboard control.
         if (!isKeyboardInteractable(interactable)) {
             interactable.classList.add(CUSTOM_INTERACTABLE_CONTROL_CLASS);
@@ -130,7 +140,10 @@ export function makeKeyboardInteractable(...interactables) {
          */
         const hasDisabledOrNotFocusableAncestor = (el) => {
             while (el) {
-                if (el.classList.contains(NOT_FOCUSABLE_CONTROL_CLASS) || el.classList.contains(DISABLED_CONTROL_CLASS)) {
+                if (
+                    el.classList.contains(NOT_FOCUSABLE_CONTROL_CLASS) ||
+                    el.classList.contains(DISABLED_CONTROL_CLASS)
+                ) {
                     return true;
                 }
                 el = el.parentElement;
@@ -140,13 +153,17 @@ export function makeKeyboardInteractable(...interactables) {
 
         // Set/remove the tabindex accordingly to the classes. Remembering if it had a custom value.
         if (!hasDisabledOrNotFocusableAncestor(interactable)) {
-            if (!interactable.hasAttribute('tabindex')) {
-                const tabIndex = interactable.getAttribute('data-original-tabindex') ?? '0';
-                interactable.setAttribute('tabindex', tabIndex);
+            if (!interactable.hasAttribute("tabindex")) {
+                const tabIndex =
+                    interactable.getAttribute("data-original-tabindex") ?? "0";
+                interactable.setAttribute("tabindex", tabIndex);
             }
         } else {
-            interactable.setAttribute('data-original-tabindex', interactable.getAttribute('tabindex'));
-            interactable.removeAttribute('tabindex');
+            interactable.setAttribute(
+                "data-original-tabindex",
+                interactable.getAttribute("tabindex"),
+            );
+            interactable.removeAttribute("tabindex");
         }
     });
 }
@@ -169,7 +186,11 @@ function initializeInteractables(element = document) {
  */
 function getAllInteractables(element) {
     // Query each selector individually and combine all to a big array to return
-    return [].concat(...interactableSelectors.map(selector => Array.from(element.querySelectorAll(`${selector}`))));
+    return [].concat(
+        ...interactableSelectors.map((selector) =>
+            Array.from(element.querySelectorAll(`${selector}`)),
+        ),
+    );
 }
 
 /**
@@ -177,7 +198,7 @@ function getAllInteractables(element) {
  * @param {Element} container - The container
  */
 const applyScrollResetBehavior = (container) => {
-    container.addEventListener('focusout', (e) => {
+    container.addEventListener("focusout", (e) => {
         setTimeout(() => {
             const focusedElement = document.activeElement;
             if (!container.contains(focusedElement)) {
@@ -194,8 +215,12 @@ const applyScrollResetBehavior = (container) => {
  * @param {Element|Document} [element=document] - The element on which to initialize the scroll reset behavior. Defaults to the document.
  */
 function initializeScrollResetBehaviors(element = document) {
-    const scrollResetContainers = element.querySelectorAll('.scroll-reset-container');
-    scrollResetContainers.forEach(container => applyScrollResetBehavior(container));
+    const scrollResetContainers = element.querySelectorAll(
+        ".scroll-reset-container",
+    );
+    scrollResetContainers.forEach((container) =>
+        applyScrollResetBehavior(container),
+    );
 }
 
 /**
@@ -204,13 +229,11 @@ function initializeScrollResetBehaviors(element = document) {
  * @param {KeyboardEvent} event - The keyboard event
  */
 function handleGlobalKeyDown(event) {
-    if (event.key === 'Enter') {
-        if (!(event.target instanceof HTMLElement))
-            return;
+    if (event.key === "Enter") {
+        if (!(event.target instanceof HTMLElement)) return;
 
         // Only count enter on this interactable if no modifier key is pressed
-        if (event.altKey || event.ctrlKey || event.shiftKey)
-            return;
+        if (event.altKey || event.ctrlKey || event.shiftKey) return;
 
         // Traverse up the DOM tree to find the actual interactable element
         let target = event.target;
@@ -220,7 +243,10 @@ function handleGlobalKeyDown(event) {
 
         // Trigger click if a valid interactable is found and it's not disabled
         if (target && !target.classList.contains(DISABLED_CONTROL_CLASS)) {
-            console.debug('Triggering click on keyboard-focused interactable control via Enter', target);
+            console.debug(
+                "Triggering click on keyboard-focused interactable control via Enter",
+                target,
+            );
             target.click();
         }
     }
@@ -235,7 +261,7 @@ export function initKeyboard() {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['class'],
+        attributeFilter: ["class"],
     });
 
     // Initialize already existing controls
@@ -243,5 +269,5 @@ export function initKeyboard() {
     initializeScrollResetBehaviors();
 
     // Add a global keydown listener
-    document.addEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener("keydown", handleGlobalKeyDown);
 }

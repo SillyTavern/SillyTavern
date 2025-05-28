@@ -1,5 +1,5 @@
-import { getPipeline } from '../transformers.js';
-const TASK = 'feature-extraction';
+import { getPipeline } from "../transformers.js";
+const TASK = "feature-extraction";
 
 /**
  * Gets the vectorized text in form of an array of numbers.
@@ -8,7 +8,7 @@ const TASK = 'feature-extraction';
  */
 export async function getTransformersVector(text) {
     const pipe = await getPipeline(TASK);
-    const result = await pipe(text, { pooling: 'mean', normalize: true });
+    const result = await pipe(text, { pooling: "mean", normalize: true });
     const vector = Array.from(result.data);
     return vector;
 }

@@ -1,7 +1,7 @@
-import { animation_duration } from '../../../../../script.js';
-import { dragElement } from '../../../../RossAscends-mods.js';
-import { loadMovingUIState } from '../../../../power-user.js';
-import { QuickReplySettings } from '../QuickReplySettings.js';
+import { animation_duration } from "../../../../../script.js";
+import { dragElement } from "../../../../RossAscends-mods.js";
+import { loadMovingUIState } from "../../../../power-user.js";
+import { QuickReplySettings } from "../QuickReplySettings.js";
 
 export class ButtonUi {
     /** @type {QuickReplySettings} */ settings;
@@ -9,15 +9,9 @@ export class ButtonUi {
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLElement}*/ popoutDom;
 
-
-
-
-    constructor(/**@type {QuickReplySettings}*/settings) {
+    constructor(/**@type {QuickReplySettings}*/ settings) {
         this.settings = settings;
     }
-
-
-
 
     render() {
         if (this.settings.isPopout) {
@@ -40,9 +34,12 @@ export class ButtonUi {
             $(this.render()).fadeIn(animation_duration);
             dragElement($(this.render()));
         } else {
-            const sendForm = document.querySelector('#send_form');
+            const sendForm = document.querySelector("#send_form");
             if (sendForm.children.length > 0) {
-                sendForm.children[0].insertAdjacentElement('beforebegin', this.render());
+                sendForm.children[0].insertAdjacentElement(
+                    "beforebegin",
+                    this.render(),
+                );
             } else {
                 sendForm.append(this.render());
             }
@@ -56,26 +53,25 @@ export class ButtonUi {
         this.show();
     }
 
-
-
-
     renderBar() {
         if (!this.dom) {
             let buttonHolder;
-            const root = document.createElement('div'); {
+            const root = document.createElement("div");
+            {
                 this.dom = root;
                 buttonHolder = root;
-                root.id = 'qr--bar';
-                root.classList.add('flex-container');
-                root.classList.add('flexGap5');
+                root.id = "qr--bar";
+                root.classList.add("flex-container");
+                root.classList.add("flexGap5");
                 if (this.settings.showPopoutButton) {
-                    root.classList.add('popoutVisible');
-                    const popout = document.createElement('div'); {
-                        popout.id = 'qr--popoutTrigger';
-                        popout.classList.add('menu_button');
-                        popout.classList.add('fa-solid');
-                        popout.classList.add('fa-window-restore');
-                        popout.addEventListener('click', ()=>{
+                    root.classList.add("popoutVisible");
+                    const popout = document.createElement("div");
+                    {
+                        popout.id = "qr--popoutTrigger";
+                        popout.classList.add("menu_button");
+                        popout.classList.add("fa-solid");
+                        popout.classList.add("fa-window-restore");
+                        popout.addEventListener("click", () => {
                             this.settings.isPopout = true;
                             this.refresh();
                             this.settings.save();
@@ -84,53 +80,58 @@ export class ButtonUi {
                     }
                 }
                 if (this.settings.isCombined) {
-                    const buttons = document.createElement('div'); {
+                    const buttons = document.createElement("div");
+                    {
                         buttonHolder = buttons;
-                        buttons.classList.add('qr--buttons');
+                        buttons.classList.add("qr--buttons");
                         root.append(buttons);
                     }
                 }
-                [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
-                    .filter(link=>link.isVisible)
-                    .forEach(link=>buttonHolder.append(link.set.render()))
-                ;
+                [
+                    ...this.settings.config.setList,
+                    ...(this.settings.chatConfig?.setList ?? []),
+                ]
+                    .filter((link) => link.isVisible)
+                    .forEach((link) => buttonHolder.append(link.set.render()));
             }
         }
         return this.dom;
     }
 
-
-
-
     renderPopout() {
         if (!this.popoutDom) {
             let buttonHolder;
-            const root = document.createElement('div'); {
+            const root = document.createElement("div");
+            {
                 this.popoutDom = root;
-                root.id = 'qr--popout';
-                root.classList.add('qr--popout');
-                root.classList.add('draggable');
-                const head = document.createElement('div'); {
-                    head.classList.add('qr--header');
+                root.id = "qr--popout";
+                root.classList.add("qr--popout");
+                root.classList.add("draggable");
+                const head = document.createElement("div");
+                {
+                    head.classList.add("qr--header");
                     root.append(head);
-                    const controls = document.createElement('div'); {
-                        controls.classList.add('qr--controls');
-                        controls.classList.add('panelControlBar');
-                        controls.classList.add('flex-container');
-                        const drag = document.createElement('div'); {
-                            drag.id = 'qr--popoutheader';
-                            drag.classList.add('fa-solid');
-                            drag.classList.add('fa-grip');
-                            drag.classList.add('drag-grabber');
-                            drag.classList.add('hoverglow');
+                    const controls = document.createElement("div");
+                    {
+                        controls.classList.add("qr--controls");
+                        controls.classList.add("panelControlBar");
+                        controls.classList.add("flex-container");
+                        const drag = document.createElement("div");
+                        {
+                            drag.id = "qr--popoutheader";
+                            drag.classList.add("fa-solid");
+                            drag.classList.add("fa-grip");
+                            drag.classList.add("drag-grabber");
+                            drag.classList.add("hoverglow");
                             controls.append(drag);
                         }
-                        const close = document.createElement('div'); {
-                            close.classList.add('qr--close');
-                            close.classList.add('fa-solid');
-                            close.classList.add('fa-circle-xmark');
-                            close.classList.add('hoverglow');
-                            close.addEventListener('click', ()=>{
+                        const close = document.createElement("div");
+                        {
+                            close.classList.add("qr--close");
+                            close.classList.add("fa-solid");
+                            close.classList.add("fa-circle-xmark");
+                            close.classList.add("hoverglow");
+                            close.addEventListener("click", () => {
                                 this.settings.isPopout = false;
                                 this.refresh();
                                 this.settings.save();
@@ -140,20 +141,26 @@ export class ButtonUi {
                         head.append(controls);
                     }
                 }
-                const body = document.createElement('div'); {
+                const body = document.createElement("div");
+                {
                     buttonHolder = body;
-                    body.classList.add('qr--body');
+                    body.classList.add("qr--body");
                     if (this.settings.isCombined) {
-                        const buttons = document.createElement('div'); {
+                        const buttons = document.createElement("div");
+                        {
                             buttonHolder = buttons;
-                            buttons.classList.add('qr--buttons');
+                            buttons.classList.add("qr--buttons");
                             body.append(buttons);
                         }
                     }
-                    [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
-                        .filter(link=>link.isVisible)
-                        .forEach(link=>buttonHolder.append(link.set.render()))
-                    ;
+                    [
+                        ...this.settings.config.setList,
+                        ...(this.settings.chatConfig?.setList ?? []),
+                    ]
+                        .filter((link) => link.isVisible)
+                        .forEach((link) =>
+                            buttonHolder.append(link.set.render()),
+                        );
                     root.append(body);
                 }
             }

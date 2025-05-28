@@ -1,6 +1,6 @@
-import path from 'node:path';
-import webpack from 'webpack';
-import getPublicLibConfig from '../../webpack.config.js';
+import path from "node:path";
+import webpack from "webpack";
+import getPublicLibConfig from "../../webpack.config.js";
 
 export default function getWebpackServeMiddleware() {
     /**
@@ -15,7 +15,7 @@ export default function getWebpackServeMiddleware() {
         const outputPath = publicLibConfig.output?.path;
         const outputFile = publicLibConfig.output?.filename;
 
-        if (req.method === 'GET' && path.parse(req.path).base === outputFile) {
+        if (req.method === "GET" && path.parse(req.path).base === outputFile) {
             return res.sendFile(outputFile, { root: outputPath });
         }
 
@@ -34,7 +34,7 @@ export default function getWebpackServeMiddleware() {
 
         return new Promise((resolve) => {
             console.log();
-            console.log('Compiling frontend libraries...');
+            console.log("Compiling frontend libraries...");
             compiler.run((_error, stats) => {
                 const output = stats?.toString(publicLibConfig.stats);
                 if (output) {

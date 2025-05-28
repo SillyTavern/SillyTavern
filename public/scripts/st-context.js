@@ -52,40 +52,81 @@ import {
     getCharacterCardFields,
     swipe_right,
     swipe_left,
-} from '../script.js';
+} from "../script.js";
 import {
     extension_settings,
     ModuleWorkerWrapper,
     renderExtensionTemplate,
     renderExtensionTemplateAsync,
     writeExtensionField,
-} from './extensions.js';
-import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
-import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
-import { hideLoader, showLoader } from './loader.js';
-import { MacrosParser } from './macros.js';
-import { getChatCompletionModel, oai_settings } from './openai.js';
-import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
-import { power_user, registerDebugFunction } from './power-user.js';
-import { getPresetManager } from './preset-manager.js';
-import { humanizedDateTime, isMobile, shouldSendOnEnter } from './RossAscends-mods.js';
-import { ScraperManager } from './scrapers.js';
-import { executeSlashCommands, executeSlashCommandsWithOptions, registerSlashCommand } from './slash-commands.js';
-import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { tag_map, tags } from './tags.js';
-import { getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
-import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
-import { ToolManager } from './tool-calling.js';
-import { accountStorage } from './util/AccountStorage.js';
-import { timestampToMoment, uuidv4 } from './utils.js';
-import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
-import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList } from './world-info.js';
-import { ChatCompletionService, TextCompletionService } from './custom-request.js';
-import { ConnectionManagerRequestService } from './extensions/shared.js';
-import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
-import { IGNORE_SYMBOL } from './constants.js';
+} from "./extensions.js";
+import {
+    groups,
+    openGroupChat,
+    selected_group,
+    unshallowGroupMembers,
+} from "./group-chats.js";
+import { addLocaleData, getCurrentLocale, t, translate } from "./i18n.js";
+import { hideLoader, showLoader } from "./loader.js";
+import { MacrosParser } from "./macros.js";
+import { getChatCompletionModel, oai_settings } from "./openai.js";
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from "./popup.js";
+import { power_user, registerDebugFunction } from "./power-user.js";
+import { getPresetManager } from "./preset-manager.js";
+import {
+    humanizedDateTime,
+    isMobile,
+    shouldSendOnEnter,
+} from "./RossAscends-mods.js";
+import { ScraperManager } from "./scrapers.js";
+import {
+    executeSlashCommands,
+    executeSlashCommandsWithOptions,
+    registerSlashCommand,
+} from "./slash-commands.js";
+import { SlashCommand } from "./slash-commands/SlashCommand.js";
+import {
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument,
+} from "./slash-commands/SlashCommandArgument.js";
+import { SlashCommandParser } from "./slash-commands/SlashCommandParser.js";
+import { tag_map, tags } from "./tags.js";
+import {
+    getTextGenServer,
+    textgenerationwebui_settings,
+} from "./textgen-settings.js";
+import {
+    tokenizers,
+    getTextTokens,
+    getTokenCount,
+    getTokenCountAsync,
+    getTokenizerModel,
+} from "./tokenizers.js";
+import { ToolManager } from "./tool-calling.js";
+import { accountStorage } from "./util/AccountStorage.js";
+import { timestampToMoment, uuidv4 } from "./utils.js";
+import {
+    getGlobalVariable,
+    getLocalVariable,
+    setGlobalVariable,
+    setLocalVariable,
+} from "./variables.js";
+import {
+    convertCharacterBook,
+    getWorldInfoPrompt,
+    loadWorldInfo,
+    reloadEditor,
+    saveWorldInfo,
+    updateWorldInfoList,
+} from "./world-info.js";
+import {
+    ChatCompletionService,
+    TextCompletionService,
+} from "./custom-request.js";
+import { ConnectionManagerRequestService } from "./extensions/shared.js";
+import { updateReasoningUI, parseReasoningFromString } from "./reasoning.js";
+import { IGNORE_SYMBOL } from "./constants.js";
 
 export function getContext() {
     return {
@@ -98,8 +139,8 @@ export function getContext() {
         characterId: this_chid,
         groupId: selected_group,
         chatId: selected_group
-            ? groups.find(x => x.id == selected_group)?.chat_id
-            : (characters[this_chid]?.chat),
+            ? groups.find((x) => x.id == selected_group)?.chat_id
+            : characters[this_chid]?.chat,
         getCurrentChatId,
         getRequestHeaders,
         reloadCurrentChat,
@@ -147,19 +188,23 @@ export function getContext() {
         executeSlashCommands,
         timestampToMoment,
         /** @deprecated Handlebars for extensions are no longer supported. */
-        registerHelper: () => { },
+        registerHelper: () => {},
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
-        registerFunctionTool: ToolManager.registerFunctionTool.bind(ToolManager),
-        unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
-        isToolCallingSupported: ToolManager.isToolCallingSupported.bind(ToolManager),
+        registerFunctionTool:
+            ToolManager.registerFunctionTool.bind(ToolManager),
+        unregisterFunctionTool:
+            ToolManager.unregisterFunctionTool.bind(ToolManager),
+        isToolCallingSupported:
+            ToolManager.isToolCallingSupported.bind(ToolManager),
         canPerformToolCalls: ToolManager.canPerformToolCalls.bind(ToolManager),
         ToolManager,
         registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate,
         renderExtensionTemplateAsync,
-        registerDataBankScraper: ScraperManager.registerDataBankScraper.bind(ScraperManager),
+        registerDataBankScraper:
+            ScraperManager.registerDataBankScraper.bind(ScraperManager),
         /** @deprecated Use callGenericPopup or Popup instead. */
         callPopup,
         callGenericPopup,

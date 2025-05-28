@@ -1,21 +1,21 @@
-import { getRequestHeaders } from '../../../script.js';
-import { splitRecursive } from '../../utils.js';
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
+import { getRequestHeaders } from "../../../script.js";
+import { splitRecursive } from "../../utils.js";
+import { getPreviewString, saveTtsProviderSettings } from "./index.js";
 export { GoogleTranslateTtsProvider };
 
 class GoogleTranslateTtsProvider {
     settings;
     voices = [];
-    separator = ' . ';
-    audioElement = document.createElement('audio');
+    separator = " . ";
+    audioElement = document.createElement("audio");
 
     defaultSettings = {
-        region: '',
+        region: "",
         voiceMap: {},
     };
 
     get settingsHtml() {
-        return '';
+        return "";
     }
 
     onSettingsChange() {
@@ -26,7 +26,7 @@ class GoogleTranslateTtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
@@ -42,9 +42,11 @@ class GoogleTranslateTtsProvider {
 
         try {
             await this.checkReady();
-            console.debug('Google Translate TTS: Settings loaded');
+            console.debug("Google Translate TTS: Settings loaded");
         } catch {
-            console.debug('Google Translate TTS: Settings loaded, but not ready');
+            console.debug(
+                "Google Translate TTS: Settings loaded, but not ready",
+            );
         }
     }
 
@@ -66,7 +68,7 @@ class GoogleTranslateTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            voice => voice.name == voiceName || voice.voice_id == voiceName,
+            (voice) => voice.name == voiceName || voice.voice_id == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -83,19 +85,26 @@ class GoogleTranslateTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await fetch('/api/google/list-voices', {
-            method: 'POST',
+        const response = await fetch("/api/google/list-voices", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({}),
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         let responseJson = await response.json();
         responseJson = Object.entries(responseJson)
             .sort((a, b) => a[1].localeCompare(b[1]))
-            .map(x => ({ name: x[1], voice_id: x[0], preview_url: false, lang: x[0] }));
+            .map((x) => ({
+                name: x[1],
+                voice_id: x[0],
+                preview_url: false,
+                lang: x[0],
+            }));
         return responseJson;
     }
 
@@ -110,7 +119,9 @@ class GoogleTranslateTtsProvider {
         const text = getPreviewString(voice.lang);
         const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         const audio = await response.blob();
@@ -121,8 +132,8 @@ class GoogleTranslateTtsProvider {
     }
 
     async fetchTtsGeneration(text, voiceId) {
-        const response = await fetch('/api/google/generate-voice', {
-            method: 'POST',
+        const response = await fetch("/api/google/generate-voice", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 text: splitRecursive(text, 200),
@@ -131,8 +142,10 @@ class GoogleTranslateTtsProvider {
         });
 
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         return response;

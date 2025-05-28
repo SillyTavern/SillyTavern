@@ -3,9 +3,9 @@
  */
 async function searchSettings() {
     removeHighlighting(); // Remove previous highlights
-    const searchString = String($('#settingsSearch').val());
-    const searchableText = $('#user-settings-block-content'); // Get the HTML block
-    if (searchString.trim() !== '') {
+    const searchString = String($("#settingsSearch").val());
+    const searchableText = $("#user-settings-block-content"); // Get the HTML block
+    if (searchString.trim() !== "") {
         highlightMatchingElements(searchableText[0], searchString); // Highlight matching elements
     }
 }
@@ -16,7 +16,7 @@ async function searchSettings() {
  * @returns {boolean} True if the element is a child of a header element, false otherwise
  */
 function isParentHeader(element) {
-    return $(element).closest('h4, h3').length > 0;
+    return $(element).closest("h4, h3").length > 0;
 }
 
 /**
@@ -25,30 +25,40 @@ function isParentHeader(element) {
  * @param {string} searchString Search string
  */
 function highlightMatchingElements(element, searchString) {
-    $(element).contents().each(function () {
-        const isTextNode = this.nodeType === Node.TEXT_NODE;
-        const isElementNode = this.nodeType === Node.ELEMENT_NODE;
+    $(element)
+        .contents()
+        .each(function () {
+            const isTextNode = this.nodeType === Node.TEXT_NODE;
+            const isElementNode = this.nodeType === Node.ELEMENT_NODE;
 
-        if (isTextNode && this.nodeValue.trim() !== '' && !isParentHeader(this)) {
-            const parentElement = $(this).parent();
-            const elementText = this.nodeValue;
+            if (
+                isTextNode &&
+                this.nodeValue.trim() !== "" &&
+                !isParentHeader(this)
+            ) {
+                const parentElement = $(this).parent();
+                const elementText = this.nodeValue;
 
-            if (elementText.toLowerCase().includes(searchString.toLowerCase())) {
-                parentElement.addClass('highlighted'); // Add CSS class to highlight matched elements
+                if (
+                    elementText
+                        .toLowerCase()
+                        .includes(searchString.toLowerCase())
+                ) {
+                    parentElement.addClass("highlighted"); // Add CSS class to highlight matched elements
+                }
+            } else if (isElementNode && !$(this).is("h4")) {
+                highlightMatchingElements(this, searchString);
             }
-        } else if (isElementNode && !$(this).is('h4')) {
-            highlightMatchingElements(this, searchString);
-        }
-    });
+        });
 }
 
 /**
  * Remove highlighting from previously highlighted elements.
  */
 function removeHighlighting() {
-    $('.highlighted').removeClass('highlighted');  // Remove CSS class from previously highlighted elements
+    $(".highlighted").removeClass("highlighted"); // Remove CSS class from previously highlighted elements
 }
 
 export function initSettingsSearch() {
-    $('#settingsSearch').on('input change', searchSettings);
+    $("#settingsSearch").on("input change", searchSettings);
 }

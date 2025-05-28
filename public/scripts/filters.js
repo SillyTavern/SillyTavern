@@ -1,7 +1,13 @@
-import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
-import { tag_map } from './tags.js';
-import { includesIgnoreCaseAndAccents } from './utils.js';
-
+import {
+    fuzzySearchCharacters,
+    fuzzySearchGroups,
+    fuzzySearchPersonas,
+    fuzzySearchTags,
+    fuzzySearchWorldInfo,
+    power_user,
+} from "./power-user.js";
+import { tag_map } from "./tags.js";
+import { includesIgnoreCaseAndAccents } from "./utils.js";
 
 /**
  * @typedef FilterType The filter type possible for this filter helper
@@ -13,13 +19,13 @@ import { includesIgnoreCaseAndAccents } from './utils.js';
  * @type {{ SEARCH: 'search', TAG: 'tag', FOLDER: 'folder', FAV: 'fav', GROUP: 'group', WORLD_INFO_SEARCH: 'world_info_search', PERSONA_SEARCH: 'persona_search'}}
  */
 export const FILTER_TYPES = {
-    SEARCH: 'search',
-    TAG: 'tag',
-    FOLDER: 'folder',
-    FAV: 'fav',
-    GROUP: 'group',
-    WORLD_INFO_SEARCH: 'world_info_search',
-    PERSONA_SEARCH: 'persona_search',
+    SEARCH: "search",
+    TAG: "tag",
+    FOLDER: "folder",
+    FAV: "fav",
+    GROUP: "group",
+    WORLD_INFO_SEARCH: "world_info_search",
+    PERSONA_SEARCH: "persona_search",
 };
 
 /**
@@ -33,9 +39,9 @@ export const FILTER_TYPES = {
  * @type {{ SELECTED: FilterState, EXCLUDED: FilterState, UNDEFINED: FilterState, [key: string]: FilterState }}
  */
 export const FILTER_STATES = {
-    SELECTED: { key: 'SELECTED', class: 'selected' },
-    EXCLUDED: { key: 'EXCLUDED', class: 'excluded' },
-    UNDEFINED: { key: 'UNDEFINED', class: 'undefined' },
+    SELECTED: { key: "SELECTED", class: "selected" },
+    EXCLUDED: { key: "EXCLUDED", class: "excluded" },
+    UNDEFINED: { key: "UNDEFINED", class: "undefined" },
 };
 /** @type {string} the default filter state of `FILTER_STATES` */
 export const DEFAULT_FILTER_STATE = FILTER_STATES.UNDEFINED.key;
@@ -49,8 +55,14 @@ export const DEFAULT_FILTER_STATE = FILTER_STATES.UNDEFINED.key;
 export function isFilterState(a, b) {
     const states = Object.keys(FILTER_STATES);
 
-    const aKey = typeof a == 'string' && states.includes(a) ? a : states.find(key => FILTER_STATES[key] === a);
-    const bKey = typeof b == 'string' && states.includes(b) ? b : states.find(key => FILTER_STATES[key] === b);
+    const aKey =
+        typeof a == "string" && states.includes(a)
+            ? a
+            : states.find((key) => FILTER_STATES[key] === a);
+    const bKey =
+        typeof b == "string" && states.includes(b)
+            ? b
+            : states.find((key) => FILTER_STATES[key] === b);
 
     return aKey === bKey;
 }
@@ -60,13 +72,12 @@ export function isFilterState(a, b) {
  * @type {{ characters: string, worldInfo: string, personas: string, tags: string, groups: string }}
  */
 export const fuzzySearchCategories = Object.freeze({
-    characters: 'characters',
-    worldInfo: 'worldInfo',
-    personas: 'personas',
-    tags: 'tags',
-    groups: 'groups',
+    characters: "characters",
+    worldInfo: "worldInfo",
+    personas: "personas",
+    tags: "tags",
+    groups: "groups",
 });
-
 
 /**
  * Helper class for filtering data.
@@ -76,7 +87,6 @@ export const fuzzySearchCategories = Object.freeze({
  * data = filterHelper.applyFilters(data);
  */
 export class FilterHelper {
-
     /**
      * Cache fuzzy search weighting scores for re-usability, sorting and stuff
      *
@@ -118,13 +128,21 @@ export class FilterHelper {
          * @returns {boolean} Whether the object has any values
          */
         function checkRecursive(obj) {
-            if (typeof obj === 'string' && obj.length > 0 && obj !== 'UNDEFINED') {
+            if (
+                typeof obj === "string" &&
+                obj.length > 0 &&
+                obj !== "UNDEFINED"
+            ) {
                 return true;
-            } else if (typeof obj === 'boolean' && obj) {
+            } else if (typeof obj === "boolean" && obj) {
                 return true;
             } else if (Array.isArray(obj) && obj.length > 0) {
                 return true;
-            } else if (typeof obj === 'object' && obj !== null && Object.keys(obj.length > 0)) {
+            } else if (
+                typeof obj === "object" &&
+                obj !== null &&
+                Object.keys(obj.length > 0)
+            ) {
                 for (const key in obj) {
                     if (checkRecursive(obj[key])) {
                         return true;
@@ -156,13 +174,13 @@ export class FilterHelper {
      * @type {Object.<string, any>}
      */
     filterData = {
-        [FILTER_TYPES.SEARCH]: '',
+        [FILTER_TYPES.SEARCH]: "",
         [FILTER_TYPES.FAV]: false,
         [FILTER_TYPES.GROUP]: false,
         [FILTER_TYPES.FOLDER]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
-        [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
-        [FILTER_TYPES.PERSONA_SEARCH]: '',
+        [FILTER_TYPES.WORLD_INFO_SEARCH]: "",
+        [FILTER_TYPES.PERSONA_SEARCH]: "",
     };
 
     /**
@@ -177,10 +195,19 @@ export class FilterHelper {
             return data;
         }
 
-        const fuzzySearchResults = fuzzySearchWorldInfo(data, term, this.fuzzySearchCaches);
-        this.cacheScores(FILTER_TYPES.WORLD_INFO_SEARCH, new Map(fuzzySearchResults.map(i => [i.item?.uid, i.score])));
+        const fuzzySearchResults = fuzzySearchWorldInfo(
+            data,
+            term,
+            this.fuzzySearchCaches,
+        );
+        this.cacheScores(
+            FILTER_TYPES.WORLD_INFO_SEARCH,
+            new Map(fuzzySearchResults.map((i) => [i.item?.uid, i.score])),
+        );
 
-        const filteredData = data.filter(entity => fuzzySearchResults.find(x => x.item === entity));
+        const filteredData = data.filter((entity) =>
+            fuzzySearchResults.find((x) => x.item === entity),
+        );
         return filteredData;
     }
 
@@ -196,10 +223,19 @@ export class FilterHelper {
             return data;
         }
 
-        const fuzzySearchResults = fuzzySearchPersonas(data, term, this.fuzzySearchCaches);
-        this.cacheScores(FILTER_TYPES.PERSONA_SEARCH, new Map(fuzzySearchResults.map(i => [i.item.key, i.score])));
+        const fuzzySearchResults = fuzzySearchPersonas(
+            data,
+            term,
+            this.fuzzySearchCaches,
+        );
+        this.cacheScores(
+            FILTER_TYPES.PERSONA_SEARCH,
+            new Map(fuzzySearchResults.map((i) => [i.item.key, i.score])),
+        );
 
-        const filteredData = data.filter(name => fuzzySearchResults.find(x => x.item.key === name));
+        const filteredData = data.filter((name) =>
+            fuzzySearchResults.find((x) => x.item.key === name),
+        );
         return filteredData;
     }
 
@@ -210,9 +246,13 @@ export class FilterHelper {
      * @returns {boolean} Whether the entity is tagged with the given tag ID
      */
     isElementTagged(entity, tagId) {
-        const isCharacter = entity.type === 'character';
-        const lookupValue = isCharacter ? entity.item.avatar : String(entity.id);
-        const isTagged = Array.isArray(tag_map[lookupValue]) && tag_map[lookupValue].includes(tagId);
+        const isCharacter = entity.type === "character";
+        const lookupValue = isCharacter
+            ? entity.item.avatar
+            : String(entity.id);
+        const isTagged =
+            Array.isArray(tag_map[lookupValue]) &&
+            tag_map[lookupValue].includes(tagId);
 
         return isTagged;
     }
@@ -231,12 +271,18 @@ export class FilterHelper {
         }
 
         const getIsTagged = (entity) => {
-            const isTag = entity.type === 'tag';
-            const tagFlags = selected.map(tagId => this.isElementTagged(entity, tagId));
-            const trueFlags = tagFlags.filter(x => x);
-            const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
+            const isTag = entity.type === "tag";
+            const tagFlags = selected.map((tagId) =>
+                this.isElementTagged(entity, tagId),
+            );
+            const trueFlags = tagFlags.filter((x) => x);
+            const isTagged = TAG_LOGIC_AND
+                ? tagFlags.length === trueFlags.length
+                : trueFlags.length > 0;
 
-            const excludedTagFlags = excluded.map(tagId => this.isElementTagged(entity, tagId));
+            const excludedTagFlags = excluded.map((tagId) =>
+                this.isElementTagged(entity, tagId),
+            );
             const isExcluded = excludedTagFlags.includes(true);
 
             if (isTag) {
@@ -250,7 +296,7 @@ export class FilterHelper {
             }
         };
 
-        return data.filter(entity => getIsTagged(entity));
+        return data.filter((entity) => getIsTagged(entity));
     }
 
     /**
@@ -260,9 +306,11 @@ export class FilterHelper {
      */
     favFilter(data) {
         const state = this.filterData[FILTER_TYPES.FAV];
-        const isFav = entity => entity.item.fav || entity.item.fav == 'true';
+        const isFav = (entity) => entity.item.fav || entity.item.fav == "true";
 
-        return this.filterDataByState(data, state, isFav, { includeFolders: true });
+        return this.filterDataByState(data, state, isFav, {
+            includeFolders: true,
+        });
     }
 
     /**
@@ -272,9 +320,11 @@ export class FilterHelper {
      */
     groupFilter(data) {
         const state = this.filterData[FILTER_TYPES.GROUP];
-        const isGroup = entity => entity.type === 'group';
+        const isGroup = (entity) => entity.type === "group";
 
-        return this.filterDataByState(data, state, isGroup, { includeFolders: true });
+        return this.filterDataByState(data, state, isGroup, {
+            includeFolders: true,
+        });
     }
 
     /**
@@ -285,17 +335,30 @@ export class FilterHelper {
     folderFilter(data) {
         const state = this.filterData[FILTER_TYPES.FOLDER];
         // Filter directly on folder. Special rules on still displaying characters with active folder filter are implemented in 'getEntitiesList' directly.
-        const isFolder = entity => entity.type === 'tag';
+        const isFolder = (entity) => entity.type === "tag";
 
         return this.filterDataByState(data, state, isFolder);
     }
 
-    filterDataByState(data, state, filterFunc, { includeFolders = false } = {}) {
+    filterDataByState(
+        data,
+        state,
+        filterFunc,
+        { includeFolders = false } = {},
+    ) {
         if (isFilterState(state, FILTER_STATES.SELECTED)) {
-            return data.filter(entity => filterFunc(entity) || (includeFolders && entity.type == 'tag'));
+            return data.filter(
+                (entity) =>
+                    filterFunc(entity) ||
+                    (includeFolders && entity.type == "tag"),
+            );
         }
         if (isFilterState(state, FILTER_STATES.EXCLUDED)) {
-            return data.filter(entity => !filterFunc(entity) || (includeFolders && entity.type == 'tag'));
+            return data.filter(
+                (entity) =>
+                    !filterFunc(entity) ||
+                    (includeFolders && entity.type == "tag"),
+            );
         }
 
         return data;
@@ -315,28 +378,66 @@ export class FilterHelper {
 
         // Save fuzzy search results and scores if enabled
         if (power_user.fuzzy_search) {
-            const fuzzySearchCharactersResults = fuzzySearchCharacters(searchValue, this.fuzzySearchCaches);
-            const fuzzySearchGroupsResults = fuzzySearchGroups(searchValue, this.fuzzySearchCaches);
-            const fuzzySearchTagsResult = fuzzySearchTags(searchValue, this.fuzzySearchCaches);
-            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchCharactersResults.map(i => [`character.${i.refIndex}`, i.score])));
-            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchGroupsResults.map(i => [`group.${i.item.id}`, i.score])));
-            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchTagsResult.map(i => [`tag.${i.item.id}`, i.score])));
+            const fuzzySearchCharactersResults = fuzzySearchCharacters(
+                searchValue,
+                this.fuzzySearchCaches,
+            );
+            const fuzzySearchGroupsResults = fuzzySearchGroups(
+                searchValue,
+                this.fuzzySearchCaches,
+            );
+            const fuzzySearchTagsResult = fuzzySearchTags(
+                searchValue,
+                this.fuzzySearchCaches,
+            );
+            this.cacheScores(
+                FILTER_TYPES.SEARCH,
+                new Map(
+                    fuzzySearchCharactersResults.map((i) => [
+                        `character.${i.refIndex}`,
+                        i.score,
+                    ]),
+                ),
+            );
+            this.cacheScores(
+                FILTER_TYPES.SEARCH,
+                new Map(
+                    fuzzySearchGroupsResults.map((i) => [
+                        `group.${i.item.id}`,
+                        i.score,
+                    ]),
+                ),
+            );
+            this.cacheScores(
+                FILTER_TYPES.SEARCH,
+                new Map(
+                    fuzzySearchTagsResult.map((i) => [
+                        `tag.${i.item.id}`,
+                        i.score,
+                    ]),
+                ),
+            );
         }
 
         const _this = this;
         function getIsValidSearch(entity) {
             if (power_user.fuzzy_search) {
                 // We can filter easily by checking if we have saved a score
-                const score = _this.getScore(FILTER_TYPES.SEARCH, `${entity.type}.${entity.id}`);
+                const score = _this.getScore(
+                    FILTER_TYPES.SEARCH,
+                    `${entity.type}.${entity.id}`,
+                );
                 return score !== undefined;
-            }
-            else {
+            } else {
                 // Compare insensitive and without accents
-                return includesIgnoreCaseAndAccents(entity.item?.name, searchValue);
+                return includesIgnoreCaseAndAccents(
+                    entity.item?.name,
+                    searchValue,
+                );
             }
         }
 
-        return data.filter(entity => getIsValidSearch(entity));
+        return data.filter((entity) => getIsValidSearch(entity));
     }
 
     /**
@@ -350,7 +451,10 @@ export class FilterHelper {
         this.filterData[filterType] = data;
 
         // only trigger a data change if the data actually changed
-        if (JSON.stringify(oldData) !== JSON.stringify(data) && !suppressDataChanged) {
+        if (
+            JSON.stringify(oldData) !== JSON.stringify(data) &&
+            !suppressDataChanged
+        ) {
             this.onDataChanged();
         }
     }
@@ -372,7 +476,14 @@ export class FilterHelper {
      * @param {boolean} [options.clearFuzzySearchCaches=true] - Whether the fuzzy search caches should be cleared.
      * @returns {any[]} The filtered data.
      */
-    applyFilters(data, { clearScoreCache = true, tempOverrides = {}, clearFuzzySearchCaches = true } = {}) {
+    applyFilters(
+        data,
+        {
+            clearScoreCache = true,
+            tempOverrides = {},
+            clearFuzzySearchCaches = true,
+        } = {},
+    ) {
         if (clearScoreCache) this.clearScoreCache();
 
         if (clearFuzzySearchCaches) this.clearFuzzySearchCaches();
@@ -385,8 +496,10 @@ export class FilterHelper {
         }
 
         try {
-            const result = Object.values(this.filterFunctions)
-                .reduce((data, fn) => fn(data), data);
+            const result = Object.values(this.filterFunctions).reduce(
+                (data, fn) => fn(data),
+                data,
+            );
 
             // Restore original filter states
             for (const key in originalStates) {
@@ -403,7 +516,6 @@ export class FilterHelper {
         }
     }
 
-
     /**
      * Cache scores for a specific filter type
      * @param {FilterType} type - The type of data being cached
@@ -416,7 +528,7 @@ export class FilterHelper {
             typeScores.set(uid, score);
         }
         this.scoreCache.set(type, typeScores);
-        console.debug('search scores chached', type, typeScores);
+        console.debug("search scores chached", type, typeScores);
     }
 
     /**

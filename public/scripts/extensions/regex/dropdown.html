@@ -1,46 +1,85 @@
 <div class="regex_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b data-i18n="ext_regex_title">
-                Regex
-            </b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            <b data-i18n="ext_regex_title"> Regex </b>
+            <div
+                class="inline-drawer-icon fa-solid fa-circle-chevron-down down"
+            ></div>
         </div>
         <div class="inline-drawer-content">
             <div class="flex-container">
-                <div id="open_regex_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_global_script_desc" title="New global regex script">
+                <div
+                    id="open_regex_editor"
+                    class="menu_button menu_button_icon"
+                    data-i18n="[title]ext_regex_new_global_script_desc"
+                    title="New global regex script"
+                >
                     <i class="fa-solid fa-pen-to-square"></i>
-                    <small data-i18n="ext_regex_new_global_script">+ Global</small>
+                    <small data-i18n="ext_regex_new_global_script"
+                        >+ Global</small
+                    >
                 </div>
-                <div id="open_scoped_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_scoped_script_desc" title="New scoped regex script">
+                <div
+                    id="open_scoped_editor"
+                    class="menu_button menu_button_icon"
+                    data-i18n="[title]ext_regex_new_scoped_script_desc"
+                    title="New scoped regex script"
+                >
                     <i class="fa-solid fa-address-card"></i>
-                    <small data-i18n="ext_regex_new_scoped_script">+ Scoped</small>
+                    <small data-i18n="ext_regex_new_scoped_script"
+                        >+ Scoped</small
+                    >
                 </div>
                 <div id="import_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-file-import"></i>
                     <small data-i18n="ext_regex_import_script">Import</small>
                 </div>
-                <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
-                <label for="regex_bulk_edit" class="menu_button menu_button_icon">
-                    <input id="regex_bulk_edit" type="checkbox" class="displayNone" />
+                <input
+                    type="file"
+                    id="import_regex_file"
+                    hidden
+                    accept="*.json"
+                    multiple
+                />
+                <label
+                    for="regex_bulk_edit"
+                    class="menu_button menu_button_icon"
+                >
+                    <input
+                        id="regex_bulk_edit"
+                        type="checkbox"
+                        class="displayNone"
+                    />
                     <i class="fa-solid fa-edit"></i>
                     <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
                 </label>
             </div>
             <div class="regex_bulk_operations flex-container justifyCenter">
-                <div id="bulk_enable_regex" class="menu_button menu_button_icon">
+                <div
+                    id="bulk_enable_regex"
+                    class="menu_button menu_button_icon"
+                >
                     <i class="fa-solid fa-toggle-on"></i>
                     <small data-i18n="Enable">Enable</small>
                 </div>
-                <div id="bulk_disable_regex" class="menu_button menu_button_icon">
+                <div
+                    id="bulk_disable_regex"
+                    class="menu_button menu_button_icon"
+                >
                     <i class="fa-solid fa-toggle-off"></i>
                     <small data-i18n="Disable">Disable</small>
                 </div>
-                <div id="bulk_export_regex" class="menu_button menu_button_icon">
+                <div
+                    id="bulk_export_regex"
+                    class="menu_button menu_button_icon"
+                >
                     <i class="fa-solid fa-file-export"></i>
                     <small data-i18n="Export">Export</small>
                 </div>
-                <div id="bulk_delete_regex" class="menu_button menu_button_icon">
+                <div
+                    id="bulk_delete_regex"
+                    class="menu_button menu_button_icon"
+                >
                     <i class="fa-solid fa-trash"></i>
                     <small data-i18n="Delete">Delete</small>
                 </div>
@@ -48,27 +87,53 @@
             <hr />
             <div id="global_scripts_block" class="padding5">
                 <div>
-                    <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
+                    <strong data-i18n="ext_regex_global_scripts"
+                        >Global Scripts</strong
+                    >
                 </div>
                 <small data-i18n="ext_regex_global_scripts_desc">
                     Available for all characters. Saved to local settings.
                 </small>
-                <div id="saved_regex_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
+                <div
+                    id="saved_regex_scripts"
+                    class="flex-container regex-script-container flexFlowColumn"
+                ></div>
             </div>
             <hr />
             <div id="scoped_scripts_block" class="padding5">
                 <div class="flex-container alignItemsBaseline">
-                    <strong class="flex1" data-i18n="ext_regex_scoped_scripts">Scoped Scripts</strong>
-                    <label id="toggle_scoped_regex" class="checkbox flex-container" for="regex_scoped_toggle">
-                        <input type="checkbox" id="regex_scoped_toggle" class="enable_scoped" />
-                        <span class="regex-toggle-on fa-solid fa-toggle-on fa-lg" data-i18n="[title]ext_regex_disallow_scoped" title="Disallow using scoped regex"></span>
-                        <span class="regex-toggle-off fa-solid fa-toggle-off fa-lg" data-i18n="[title]ext_regex_allow_scoped" title="Allow using scoped regex"></span>
+                    <strong class="flex1" data-i18n="ext_regex_scoped_scripts"
+                        >Scoped Scripts</strong
+                    >
+                    <label
+                        id="toggle_scoped_regex"
+                        class="checkbox flex-container"
+                        for="regex_scoped_toggle"
+                    >
+                        <input
+                            type="checkbox"
+                            id="regex_scoped_toggle"
+                            class="enable_scoped"
+                        />
+                        <span
+                            class="regex-toggle-on fa-solid fa-toggle-on fa-lg"
+                            data-i18n="[title]ext_regex_disallow_scoped"
+                            title="Disallow using scoped regex"
+                        ></span>
+                        <span
+                            class="regex-toggle-off fa-solid fa-toggle-off fa-lg"
+                            data-i18n="[title]ext_regex_allow_scoped"
+                            title="Allow using scoped regex"
+                        ></span>
                     </label>
                 </div>
                 <small data-i18n="ext_regex_scoped_scripts_desc">
                     Only available for this character. Saved to the card data.
                 </small>
-                <div id="saved_scoped_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
+                <div
+                    id="saved_scoped_scripts"
+                    class="flex-container regex-script-container flexFlowColumn"
+                ></div>
             </div>
         </div>
     </div>

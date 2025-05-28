@@ -1,7 +1,7 @@
-import { QuickReply } from '../../QuickReply.js';
-import { QuickReplySet } from '../../QuickReplySet.js';
-import { MenuHeader } from './MenuHeader.js';
-import { MenuItem } from './MenuItem.js';
+import { QuickReply } from "../../QuickReply.js";
+import { QuickReplySet } from "../../QuickReplySet.js";
+import { MenuHeader } from "./MenuHeader.js";
+import { MenuItem } from "./MenuItem.js";
 
 export class ContextMenu {
     /**@type {MenuItem[]}*/ itemList = [];
@@ -10,16 +10,14 @@ export class ContextMenu {
     /**@type {HTMLElement}*/ root;
     /**@type {HTMLElement}*/ menu;
 
-
-
-
-    constructor(/**@type {QuickReply}*/qr) {
+    constructor(/**@type {QuickReply}*/ qr) {
         // this.itemList = items;
         this.itemList = this.build(qr).children;
-        this.itemList.forEach(item => {
+        this.itemList.forEach((item) => {
             item.onExpand = () => {
-                this.itemList.filter(it => it !== item)
-                    .forEach(it => it.collapse());
+                this.itemList
+                    .filter((it) => it !== item)
+                    .forEach((it) => it.collapse());
             };
         });
     }
@@ -36,7 +34,9 @@ export class ContextMenu {
             showLabel: qr.showLabel,
             label: qr.label,
             title: qr.title,
-            message: (chainedMessage && qr.message ? `${chainedMessage} | ` : '') + qr.message,
+            message:
+                (chainedMessage && qr.message ? `${chainedMessage} | ` : "") +
+                qr.message,
             children: [],
         };
         qr.contextList.forEach((cl) => {
@@ -57,28 +57,43 @@ export class ContextMenu {
                 const qrsOwnSetAddedAsContextMenu = cl.set.qrList.includes(qr);
                 const visible = (subQr) => {
                     return qrsOwnSetAddedAsContextMenu
-                        ? subQr.isHidden && !!subQr.icon  // yes .isHidden gets inverted here
+                        ? subQr.isHidden && !!subQr.icon // yes .isHidden gets inverted here
                         : !subQr.isHidden;
                 };
 
-                cl.set.qrList.filter(visible).forEach(subQr => {
-                    const subTree = this.build(subQr, cl.isChained ? tree.message : null, nextHierarchy, nextLabelHierarchy);
-                    tree.children.push(new MenuItem(
-                        subTree.icon,
-                        subTree.showLabel,
-                        subTree.label,
-                        subTree.title,
-                        subTree.message,
-                        (evt) => {
-                            evt.stopPropagation();
-                            const finalQr = Object.assign(new QuickReply(), subQr);
-                            finalQr.message = subTree.message.replace(/%%parent(-\d+)?%%/g, (_, index) => {
-                                return nextLabelHierarchy.slice(parseInt(index ?? '-1'))[0];
-                            });
-                            cl.set.execute(finalQr);
-                        },
-                        subTree.children,
-                    ));
+                cl.set.qrList.filter(visible).forEach((subQr) => {
+                    const subTree = this.build(
+                        subQr,
+                        cl.isChained ? tree.message : null,
+                        nextHierarchy,
+                        nextLabelHierarchy,
+                    );
+                    tree.children.push(
+                        new MenuItem(
+                            subTree.icon,
+                            subTree.showLabel,
+                            subTree.label,
+                            subTree.title,
+                            subTree.message,
+                            (evt) => {
+                                evt.stopPropagation();
+                                const finalQr = Object.assign(
+                                    new QuickReply(),
+                                    subQr,
+                                );
+                                finalQr.message = subTree.message.replace(
+                                    /%%parent(-\d+)?%%/g,
+                                    (_, index) => {
+                                        return nextLabelHierarchy.slice(
+                                            parseInt(index ?? "-1"),
+                                        )[0];
+                                    },
+                                );
+                                cl.set.execute(finalQr);
+                            },
+                            subTree.children,
+                        ),
+                    );
                 });
             }
         });
@@ -87,24 +102,23 @@ export class ContextMenu {
 
     render() {
         if (!this.root) {
-            const blocker = document.createElement('div'); {
+            const blocker = document.createElement("div");
+            {
                 this.root = blocker;
-                blocker.classList.add('ctx-blocker');
-                blocker.addEventListener('click', () => this.hide());
-                const menu = document.createElement('ul'); {
+                blocker.classList.add("ctx-blocker");
+                blocker.addEventListener("click", () => this.hide());
+                const menu = document.createElement("ul");
+                {
                     this.menu = menu;
-                    menu.classList.add('list-group');
-                    menu.classList.add('ctx-menu');
-                    this.itemList.forEach(it => menu.append(it.render()));
+                    menu.classList.add("list-group");
+                    menu.classList.add("ctx-menu");
+                    this.itemList.forEach((it) => menu.append(it.render()));
                     blocker.append(menu);
                 }
             }
         }
         return this.root;
     }
-
-
-
 
     show({ clientX, clientY }) {
         if (this.isActive) return;
@@ -120,7 +134,7 @@ export class ContextMenu {
         }
         this.isActive = false;
     }
-    toggle(/**@type {PointerEvent}*/evt) {
+    toggle(/**@type {PointerEvent}*/ evt) {
         if (this.isActive) {
             this.hide();
         } else {

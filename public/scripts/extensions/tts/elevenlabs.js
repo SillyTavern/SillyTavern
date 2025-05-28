@@ -1,4 +1,4 @@
-import { saveTtsProviderSettings } from './index.js';
+import { saveTtsProviderSettings } from "./index.js";
 export { ElevenLabsTtsProvider };
 
 class ElevenLabsTtsProvider {
@@ -8,16 +8,15 @@ class ElevenLabsTtsProvider {
 
     settings;
     voices = [];
-    separator = ' ... ... ... ';
-
+    separator = " ... ... ... ";
 
     defaultSettings = {
         stability: 0.75,
         similarity_boost: 0.75,
-        style_exaggeration: 0.00,
+        style_exaggeration: 0.0,
         speaker_boost: true,
-        apiKey: '',
-        model: 'eleven_monolingual_v1',
+        apiKey: "",
+        model: "eleven_monolingual_v1",
         voiceMap: {},
     };
 
@@ -65,36 +64,54 @@ class ElevenLabsTtsProvider {
     }
 
     shouldInvolveExtendedSettings() {
-        return this.settings.model === 'eleven_multilingual_v2';
+        return this.settings.model === "eleven_multilingual_v2";
     }
 
     onSettingsChange() {
         // Update dynamically
-        this.settings.stability = $('#elevenlabs_tts_stability').val();
-        this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val();
-        this.settings.style_exaggeration = $('#elevenlabs_tts_style_exaggeration').val();
-        this.settings.speaker_boost = $('#elevenlabs_tts_speaker_boost').is(':checked');
-        this.settings.model = $('#elevenlabs_tts_model').find(':selected').val();
-        $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
-        $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
-        $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
-        $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
+        this.settings.stability = $("#elevenlabs_tts_stability").val();
+        this.settings.similarity_boost = $(
+            "#elevenlabs_tts_similarity_boost",
+        ).val();
+        this.settings.style_exaggeration = $(
+            "#elevenlabs_tts_style_exaggeration",
+        ).val();
+        this.settings.speaker_boost = $("#elevenlabs_tts_speaker_boost").is(
+            ":checked",
+        );
+        this.settings.model = $("#elevenlabs_tts_model")
+            .find(":selected")
+            .val();
+        $("#elevenlabs_tts_stability_output").text(
+            Math.round(this.settings.stability * 100) + "%",
+        );
+        $("#elevenlabs_tts_similarity_boost_output").text(
+            Math.round(this.settings.similarity_boost * 100) + "%",
+        );
+        $("#elevenlabs_tts_style_exaggeration_output").text(
+            Math.round(this.settings.style_exaggeration * 100) + "%",
+        );
+        $("#elevenlabs_tts_v2_options").toggle(
+            this.shouldInvolveExtendedSettings(),
+        );
         saveTtsProviderSettings();
     }
 
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings;
 
         // Migrate old settings
-        if (settings['multilingual'] !== undefined) {
-            settings.model = settings.multilingual ? 'eleven_multilingual_v1' : 'eleven_monolingual_v1';
-            delete settings['multilingual'];
+        if (settings["multilingual"] !== undefined) {
+            settings.model = settings.multilingual
+                ? "eleven_multilingual_v1"
+                : "eleven_monolingual_v1";
+            delete settings["multilingual"];
         }
 
         for (const key in settings) {
@@ -105,27 +122,59 @@ class ElevenLabsTtsProvider {
             }
         }
 
-        $('#elevenlabs_tts_stability').val(this.settings.stability);
-        $('#elevenlabs_tts_similarity_boost').val(this.settings.similarity_boost);
-        $('#elevenlabs_tts_style_exaggeration').val(this.settings.style_exaggeration);
-        $('#elevenlabs_tts_speaker_boost').prop('checked', this.settings.speaker_boost);
-        $('#elevenlabs_tts_api_key').val(this.settings.apiKey);
-        $('#elevenlabs_tts_model').val(this.settings.model);
-        $('#eleven_labs_connect').on('click', () => { this.onConnectClick(); });
-        $('#elevenlabs_tts_similarity_boost').on('input', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_stability').on('input', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_style_exaggeration').on('input', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_speaker_boost').on('change', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_model').on('change', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
-        $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
-        $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
-        $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
+        $("#elevenlabs_tts_stability").val(this.settings.stability);
+        $("#elevenlabs_tts_similarity_boost").val(
+            this.settings.similarity_boost,
+        );
+        $("#elevenlabs_tts_style_exaggeration").val(
+            this.settings.style_exaggeration,
+        );
+        $("#elevenlabs_tts_speaker_boost").prop(
+            "checked",
+            this.settings.speaker_boost,
+        );
+        $("#elevenlabs_tts_api_key").val(this.settings.apiKey);
+        $("#elevenlabs_tts_model").val(this.settings.model);
+        $("#eleven_labs_connect").on("click", () => {
+            this.onConnectClick();
+        });
+        $("#elevenlabs_tts_similarity_boost").on(
+            "input",
+            this.onSettingsChange.bind(this),
+        );
+        $("#elevenlabs_tts_stability").on(
+            "input",
+            this.onSettingsChange.bind(this),
+        );
+        $("#elevenlabs_tts_style_exaggeration").on(
+            "input",
+            this.onSettingsChange.bind(this),
+        );
+        $("#elevenlabs_tts_speaker_boost").on(
+            "change",
+            this.onSettingsChange.bind(this),
+        );
+        $("#elevenlabs_tts_model").on(
+            "change",
+            this.onSettingsChange.bind(this),
+        );
+        $("#elevenlabs_tts_stability_output").text(
+            Math.round(this.settings.stability * 100) + "%",
+        );
+        $("#elevenlabs_tts_similarity_boost_output").text(
+            Math.round(this.settings.similarity_boost * 100) + "%",
+        );
+        $("#elevenlabs_tts_style_exaggeration_output").text(
+            Math.round(this.settings.style_exaggeration * 100) + "%",
+        );
+        $("#elevenlabs_tts_v2_options").toggle(
+            this.shouldInvolveExtendedSettings(),
+        );
         try {
             await this.checkReady();
-            console.debug('ElevenLabs: Settings loaded');
+            console.debug("ElevenLabs: Settings loaded");
         } catch {
-            console.debug('ElevenLabs: Settings loaded, but not ready');
+            console.debug("ElevenLabs: Settings loaded, but not ready");
         }
 
         this.setupVoiceCloningMenu();
@@ -136,8 +185,7 @@ class ElevenLabsTtsProvider {
         await this.fetchTtsVoiceObjects();
     }
 
-    async onRefreshClick() {
-    }
+    async onRefreshClick() {}
 
     async onConnectClick() {
         // Update on Apply click
@@ -147,55 +195,71 @@ class ElevenLabsTtsProvider {
     }
 
     setupVoiceCloningMenu() {
-        const audioFilesInput = document.getElementById('elevenlabs_tts_audio_files');
-        const selectedFilesListElement = document.getElementById('elevenlabs_tts_selected_files_list');
-        const cloneVoiceButton = document.getElementById('elevenlabs_tts_clone_voice_button');
-        const uploadAudioFileButton = document.getElementById('upload_audio_file');
-        const voiceCloningNameInput = document.getElementById('elevenlabs_tts_voice_cloning_name');
-        const voiceCloningDescriptionInput = document.getElementById('elevenlabs_tts_voice_cloning_description');
-        const voiceCloningLabelsInput = document.getElementById('elevenlabs_tts_voice_cloning_labels');
+        const audioFilesInput = document.getElementById(
+            "elevenlabs_tts_audio_files",
+        );
+        const selectedFilesListElement = document.getElementById(
+            "elevenlabs_tts_selected_files_list",
+        );
+        const cloneVoiceButton = document.getElementById(
+            "elevenlabs_tts_clone_voice_button",
+        );
+        const uploadAudioFileButton =
+            document.getElementById("upload_audio_file");
+        const voiceCloningNameInput = document.getElementById(
+            "elevenlabs_tts_voice_cloning_name",
+        );
+        const voiceCloningDescriptionInput = document.getElementById(
+            "elevenlabs_tts_voice_cloning_description",
+        );
+        const voiceCloningLabelsInput = document.getElementById(
+            "elevenlabs_tts_voice_cloning_labels",
+        );
 
         const updateCloneVoiceButtonVisibility = () => {
-            cloneVoiceButton.style.display = audioFilesInput.files.length > 0 ? 'inline-block' : 'none';
+            cloneVoiceButton.style.display =
+                audioFilesInput.files.length > 0 ? "inline-block" : "none";
         };
 
         const clearSelectedFiles = () => {
-            audioFilesInput.value = '';
-            selectedFilesListElement.innerHTML = '';
+            audioFilesInput.value = "";
+            selectedFilesListElement.innerHTML = "";
             updateCloneVoiceButtonVisibility();
         };
 
-        uploadAudioFileButton.addEventListener('click', () => {
+        uploadAudioFileButton.addEventListener("click", () => {
             audioFilesInput.click();
         });
 
-        audioFilesInput.addEventListener('change', () => {
-            selectedFilesListElement.innerHTML = '';
+        audioFilesInput.addEventListener("change", () => {
+            selectedFilesListElement.innerHTML = "";
             for (const file of audioFilesInput.files) {
-                const listItem = document.createElement('div');
+                const listItem = document.createElement("div");
                 listItem.textContent = file.name;
                 selectedFilesListElement.appendChild(listItem);
             }
             updateCloneVoiceButtonVisibility();
         });
 
-        cloneVoiceButton.addEventListener('click', async () => {
+        cloneVoiceButton.addEventListener("click", async () => {
             const voiceName = voiceCloningNameInput.value.trim();
             const voiceDescription = voiceCloningDescriptionInput.value.trim();
             const voiceLabels = voiceCloningLabelsInput.value.trim();
 
             if (!voiceName) {
-                toastr.error('Please provide a name for the cloned voice.');
+                toastr.error("Please provide a name for the cloned voice.");
                 return;
             }
 
             try {
                 await this.addVoice(voiceName, voiceDescription, voiceLabels);
-                toastr.success('Voice cloned successfully. Hit reload to see the new voice in the voice listing.');
+                toastr.success(
+                    "Voice cloned successfully. Hit reload to see the new voice in the voice listing.",
+                );
                 clearSelectedFiles();
-                voiceCloningNameInput.value = '';
-                voiceCloningDescriptionInput.value = '';
-                voiceCloningLabelsInput.value = '';
+                voiceCloningNameInput.value = "";
+                voiceCloningDescriptionInput.value = "";
+                voiceCloningLabelsInput.value = "";
             } catch (error) {
                 toastr.error(`Failed to clone voice: ${error.message}`);
             }
@@ -206,13 +270,13 @@ class ElevenLabsTtsProvider {
 
     async updateApiKey() {
         // Using this call to validate API key
-        this.settings.apiKey = $('#elevenlabs_tts_api_key').val();
+        this.settings.apiKey = $("#elevenlabs_tts_api_key").val();
 
-        await this.fetchTtsVoiceObjects().catch(error => {
-            throw 'TTS API key validation failed';
+        await this.fetchTtsVoiceObjects().catch((error) => {
+            throw "TTS API key validation failed";
         });
         console.debug(`Saved new API_KEY: ${this.settings.apiKey}`);
-        $('#tts_status').text('');
+        $("#tts_status").text("");
         this.onSettingsChange();
     }
 
@@ -225,14 +289,13 @@ class ElevenLabsTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            elevenVoice => elevenVoice.name == voiceName,
+            (elevenVoice) => elevenVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found in ElevenLabs account`;
         }
         return match;
     }
-
 
     async generateTts(text, voiceId) {
         const historyId = await this.findTtsGenerationInHistory(text, voiceId);
@@ -242,7 +305,9 @@ class ElevenLabsTtsProvider {
             console.debug(`Found existing TTS generation with id ${historyId}`);
             response = await this.fetchTtsFromHistory(historyId);
         } else {
-            console.debug('No existing TTS generation found, requesting new generation');
+            console.debug(
+                "No existing TTS generation found, requesting new generation",
+            );
             response = await this.fetchTtsGeneration(text, voiceId);
         }
         return response;
@@ -258,26 +323,29 @@ class ElevenLabsTtsProvider {
             const text = history.text;
             const itemId = history.history_item_id;
             if (message === text && history.voice_id == voiceId) {
-                console.info(`Existing TTS history item ${itemId} found: ${text} `);
+                console.info(
+                    `Existing TTS history item ${itemId} found: ${text} `,
+                );
                 return itemId;
             }
         }
-        return '';
+        return "";
     }
-
 
     //###########//
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
         const headers = {
-            'xi-api-key': this.settings.apiKey,
+            "xi-api-key": this.settings.apiKey,
         };
-        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        const response = await fetch("https://api.elevenlabs.io/v1/voices", {
             headers: headers,
         });
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         const responseJson = await response.json();
         return responseJson.voices;
@@ -285,23 +353,27 @@ class ElevenLabsTtsProvider {
 
     async fetchTtsVoiceSettings() {
         const headers = {
-            'xi-api-key': this.settings.apiKey,
+            "xi-api-key": this.settings.apiKey,
         };
         const response = await fetch(
-            'https://api.elevenlabs.io/v1/voices/settings/default',
+            "https://api.elevenlabs.io/v1/voices/settings/default",
             {
                 headers: headers,
             },
         );
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response.json();
     }
 
     async fetchTtsGeneration(text, voiceId) {
-        let model = this.settings.model ?? 'eleven_monolingual_v1';
-        console.info(`Generating new TTS for voice_id ${voiceId}, model ${model}`);
+        let model = this.settings.model ?? "eleven_monolingual_v1";
+        console.info(
+            `Generating new TTS for voice_id ${voiceId}, model ${model}`,
+        );
         const request = {
             model_id: model,
             text: text,
@@ -311,78 +383,100 @@ class ElevenLabsTtsProvider {
             },
         };
         if (this.shouldInvolveExtendedSettings()) {
-            request.voice_settings.style = Number(this.settings.style_exaggeration);
-            request.voice_settings.use_speaker_boost = Boolean(this.settings.speaker_boost);
+            request.voice_settings.style = Number(
+                this.settings.style_exaggeration,
+            );
+            request.voice_settings.use_speaker_boost = Boolean(
+                this.settings.speaker_boost,
+            );
         }
-        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-            method: 'POST',
-            headers: {
-                'xi-api-key': this.settings.apiKey,
-                'Content-Type': 'application/json',
+        const response = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+            {
+                method: "POST",
+                headers: {
+                    "xi-api-key": this.settings.apiKey,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(request),
             },
-            body: JSON.stringify(request),
-        });
+        );
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response;
     }
 
     async fetchTtsFromHistory(history_item_id) {
-        console.info(`Fetched existing TTS with history_item_id ${history_item_id}`);
+        console.info(
+            `Fetched existing TTS with history_item_id ${history_item_id}`,
+        );
         const response = await fetch(
             `https://api.elevenlabs.io/v1/history/${history_item_id}/audio`,
             {
                 headers: {
-                    'xi-api-key': this.settings.apiKey,
+                    "xi-api-key": this.settings.apiKey,
                 },
             },
         );
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response;
     }
 
     async fetchTtsHistory() {
         const headers = {
-            'xi-api-key': this.settings.apiKey,
+            "xi-api-key": this.settings.apiKey,
         };
-        const response = await fetch('https://api.elevenlabs.io/v1/history', {
+        const response = await fetch("https://api.elevenlabs.io/v1/history", {
             headers: headers,
         });
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         const responseJson = await response.json();
         return responseJson.history;
     }
 
     async addVoice(name, description, labels) {
-        const selected_files = document.querySelectorAll('input[type="file"][name="audio_files"]');
+        const selected_files = document.querySelectorAll(
+            'input[type="file"][name="audio_files"]',
+        );
         const formData = new FormData();
 
-        formData.append('name', name);
-        formData.append('description', description);
-        formData.append('labels', labels);
+        formData.append("name", name);
+        formData.append("description", description);
+        formData.append("labels", labels);
 
         for (const file of selected_files) {
             if (file.files.length > 0) {
-                formData.append('files', file.files[0]);
+                formData.append("files", file.files[0]);
             }
         }
 
-        const response = await fetch('https://api.elevenlabs.io/v1/voices/add', {
-            method: 'POST',
-            headers: {
-                'xi-api-key': this.settings.apiKey,
+        const response = await fetch(
+            "https://api.elevenlabs.io/v1/voices/add",
+            {
+                method: "POST",
+                headers: {
+                    "xi-api-key": this.settings.apiKey,
+                },
+                body: formData,
             },
-            body: formData,
-        });
+        );
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         return await response.json();

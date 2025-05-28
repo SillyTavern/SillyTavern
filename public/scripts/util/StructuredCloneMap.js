@@ -11,7 +11,9 @@ export class StructuredCloneMap extends Map {
      * @param {boolean} options.cloneOnGet - Whether to clone the value when getting it from the map
      * @param {boolean} options.cloneOnSet - Whether to clone the value when setting it in the map
      */
-    constructor({ cloneOnGet, cloneOnSet } = { cloneOnGet: true, cloneOnSet: true }) {
+    constructor(
+        { cloneOnGet, cloneOnSet } = { cloneOnGet: true, cloneOnSet: true },
+    ) {
         super();
         this.cloneOnGet = cloneOnGet;
         this.cloneOnSet = cloneOnSet;

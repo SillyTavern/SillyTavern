@@ -1,4 +1,4 @@
-import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandClosure } from "./SlashCommandClosure.js";
 
 export class SlashCommandNamedArgumentAssignment {
     /** @type {number} */ start;
@@ -6,7 +6,5 @@ export class SlashCommandNamedArgumentAssignment {
     /** @type {string} */ name;
     /** @type {string|SlashCommandClosure} */ value;
 
-
-    constructor() {
-    }
+    constructor() {}
 }

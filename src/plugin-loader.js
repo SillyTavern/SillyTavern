@@ -1,14 +1,22 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import url from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
-import express from 'express';
-import { default as git, CheckRepoActions } from 'simple-git';
-import { sync as commandExistsSync } from 'command-exists';
-import { getConfigValue, color } from './util.js';
+import express from "express";
+import { default as git, CheckRepoActions } from "simple-git";
+import { sync as commandExistsSync } from "command-exists";
+import { getConfigValue, color } from "./util.js";
 
-const enableServerPlugins = !!getConfigValue('enableServerPlugins', false, 'boolean');
-const enableServerPluginsAutoUpdate = !!getConfigValue('enableServerPluginsAutoUpdate', true, 'boolean');
+const enableServerPlugins = !!getConfigValue(
+    "enableServerPlugins",
+    false,
+    "boolean",
+);
+const enableServerPluginsAutoUpdate = !!getConfigValue(
+    "enableServerPluginsAutoUpdate",
+    true,
+    "boolean",
+);
 
 /**
  * Map of loaded plugins.
@@ -21,14 +29,15 @@ const loadedPlugins = new Map();
  * @param {string} file Path to file
  * @returns {boolean} True if file is a CommonJS module
  */
-const isCommonJS = (file) => path.extname(file) === '.js' || path.extname(file) === '.cjs';
+const isCommonJS = (file) =>
+    path.extname(file) === ".js" || path.extname(file) === ".cjs";
 
 /**
  * Determine if a file is an ECMAScript module.
  * @param {string} file Path to file
  * @returns {boolean} True if file is an ECMAScript module
  */
-const isESModule = (file) => path.extname(file) === '.mjs';
+const isESModule = (file) => path.extname(file) === ".mjs";
 
 /**
  * Load and initialize server plugins from a directory if they are enabled.
@@ -40,7 +49,7 @@ const isESModule = (file) => path.extname(file) === '.mjs';
 export async function loadPlugins(app, pluginsPath) {
     try {
         const exitHooks = [];
-        const emptyFn = () => { };
+        const emptyFn = () => {};
 
         // Server plugins are disabled.
         if (!enableServerPlugins) {
@@ -78,14 +87,16 @@ export async function loadPlugins(app, pluginsPath) {
         }
 
         if (loadedPlugins.size > 0) {
-            console.log(`${loadedPlugins.size} server plugin(s) are currently loaded. Make sure you know exactly what they do, and only install plugins from trusted sources!`);
+            console.log(
+                `${loadedPlugins.size} server plugin(s) are currently loaded. Make sure you know exactly what they do, and only install plugins from trusted sources!`,
+            );
         }
 
         // Call all plugin "exit" functions at once and wait for them to finish
-        return () => Promise.all(exitHooks.map(exitFn => exitFn()));
+        return () => Promise.all(exitHooks.map((exitFn) => exitFn()));
     } catch (error) {
-        console.error('Plugin loading failed.', error);
-        return () => { };
+        console.error("Plugin loading failed.", error);
+        return () => {};
     }
 }
 
@@ -98,7 +109,7 @@ async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
     }
 
     // Plugin is an npm package.
-    const packageJsonFilePath = path.join(pluginDirectoryPath, 'package.json');
+    const packageJsonFilePath = path.join(pluginDirectoryPath, "package.json");
     if (fs.existsSync(packageJsonFilePath)) {
         if (await loadFromPackage(app, packageJsonFilePath, exitHooks)) {
             return;
@@ -106,7 +117,7 @@ async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
     }
 
     // Plugin is a module file.
-    const fileTypes = ['index.js', 'index.cjs', 'index.mjs'];
+    const fileTypes = ["index.js", "index.cjs", "index.mjs"];
 
     for (const fileType of fileTypes) {
         const filePath = path.join(pluginDirectoryPath, fileType);
@@ -128,13 +139,20 @@ async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
  */
 async function loadFromPackage(app, packageJsonPath, exitHooks) {
     try {
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const packageJson = JSON.parse(
+            fs.readFileSync(packageJsonPath, "utf8"),
+        );
         if (packageJson.main) {
-            const pluginFilePath = path.join(path.dirname(packageJsonPath), packageJson.main);
+            const pluginFilePath = path.join(
+                path.dirname(packageJsonPath),
+                packageJson.main,
+            );
             return await loadFromFile(app, pluginFilePath, exitHooks);
         }
     } catch (error) {
-        console.error(`Failed to load plugin from ${packageJsonPath}: ${error}`);
+        console.error(
+            `Failed to load plugin from ${packageJsonPath}: ${error}`,
+        );
     }
     return false;
 }
@@ -178,35 +196,41 @@ function isValidPluginID(id) {
  */
 async function initPlugin(app, plugin, exitHooks) {
     const info = plugin.info || plugin.default?.info;
-    if (typeof info !== 'object') {
-        console.error('Failed to load plugin module; plugin info not found');
+    if (typeof info !== "object") {
+        console.error("Failed to load plugin module; plugin info not found");
         return false;
     }
 
     // We don't currently use "name" or "description" but it would be nice to have a UI for listing server plugins, so
     // require them now just to be safe
-    for (const field of ['id', 'name', 'description']) {
-        if (typeof info[field] !== 'string') {
-            console.error(`Failed to load plugin module; plugin info missing field '${field}'`);
+    for (const field of ["id", "name", "description"]) {
+        if (typeof info[field] !== "string") {
+            console.error(
+                `Failed to load plugin module; plugin info missing field '${field}'`,
+            );
             return false;
         }
     }
 
     const init = plugin.init || plugin.default?.init;
-    if (typeof init !== 'function') {
-        console.error('Failed to load plugin module; no init function');
+    if (typeof init !== "function") {
+        console.error("Failed to load plugin module; no init function");
         return false;
     }
 
     const { id } = info;
 
     if (!isValidPluginID(id)) {
-        console.error(`Failed to load plugin module; invalid plugin ID '${id}'`);
+        console.error(
+            `Failed to load plugin module; invalid plugin ID '${id}'`,
+        );
         return false;
     }
 
     if (loadedPlugins.has(id)) {
-        console.error(`Failed to load plugin module; plugin ID '${id}' is already in use`);
+        console.error(
+            `Failed to load plugin module; plugin ID '${id}' is already in use`,
+        );
         return false;
     }
 
@@ -223,7 +247,7 @@ async function initPlugin(app, plugin, exitHooks) {
     }
 
     const exit = plugin.exit || plugin.default?.exit;
-    if (typeof exit === 'function') {
+    if (typeof exit === "function") {
         exitHooks.push(exit);
     }
 
@@ -239,18 +263,29 @@ async function updatePlugins(pluginsPath) {
         return;
     }
 
-    const directories = fs.readdirSync(pluginsPath)
-        .filter(file => !file.startsWith('.'))
-        .filter(file => fs.statSync(path.join(pluginsPath, file)).isDirectory());
+    const directories = fs
+        .readdirSync(pluginsPath)
+        .filter((file) => !file.startsWith("."))
+        .filter((file) =>
+            fs.statSync(path.join(pluginsPath, file)).isDirectory(),
+        );
 
     if (directories.length === 0) {
         return;
     }
 
-    console.log(color.blue('Auto-updating server plugins... Set'), color.yellow('enableServerPluginsAutoUpdate: false'), color.blue('in config.yaml to disable this feature.'));
+    console.log(
+        color.blue("Auto-updating server plugins... Set"),
+        color.yellow("enableServerPluginsAutoUpdate: false"),
+        color.blue("in config.yaml to disable this feature."),
+    );
 
-    if (!commandExistsSync('git')) {
-        console.error(color.red('Git is not installed. Please install Git to enable auto-updating of server plugins.'));
+    if (!commandExistsSync("git")) {
+        console.error(
+            color.red(
+                "Git is not installed. Please install Git to enable auto-updating of server plugins.",
+            ),
+        );
         return;
     }
 
@@ -261,14 +296,19 @@ async function updatePlugins(pluginsPath) {
             const pluginPath = path.join(pluginsPath, directory);
             const pluginRepo = git(pluginPath);
 
-            const isRepo = await pluginRepo.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+            const isRepo = await pluginRepo.checkIsRepo(
+                CheckRepoActions.IS_REPO_ROOT,
+            );
             if (!isRepo) {
                 continue;
             }
 
             await pluginRepo.fetch();
-            const commitHash = await pluginRepo.revparse(['HEAD']);
-            const trackingBranch = await pluginRepo.revparse(['--abbrev-ref', '@{u}']);
+            const commitHash = await pluginRepo.revparse(["HEAD"]);
+            const trackingBranch = await pluginRepo.revparse([
+                "--abbrev-ref",
+                "@{u}",
+            ]);
             const log = await pluginRepo.log({
                 from: commitHash,
                 to: trackingBranch,
@@ -280,14 +320,20 @@ async function updatePlugins(pluginsPath) {
 
             pluginsToUpdate++;
             await pluginRepo.pull();
-            const latestCommit = await pluginRepo.revparse(['HEAD']);
-            console.log(`Plugin ${color.green(directory)} updated to commit ${color.cyan(latestCommit)}`);
+            const latestCommit = await pluginRepo.revparse(["HEAD"]);
+            console.log(
+                `Plugin ${color.green(directory)} updated to commit ${color.cyan(latestCommit)}`,
+            );
         } catch (error) {
-            console.error(color.red(`Failed to update plugin ${directory}: ${error.message}`));
+            console.error(
+                color.red(
+                    `Failed to update plugin ${directory}: ${error.message}`,
+                ),
+            );
         }
     }
 
     if (pluginsToUpdate === 0) {
-        console.log('All plugins are up to date.');
+        console.log("All plugins are up to date.");
     }
 }

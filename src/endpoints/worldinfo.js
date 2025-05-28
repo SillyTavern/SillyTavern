@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from "node:fs";
+import path from "node:path";
 
-import express from 'express';
-import sanitize from 'sanitize-filename';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import express from "express";
+import sanitize from "sanitize-filename";
+import { sync as writeFileAtomicSync } from "write-file-atomic";
 
 /**
  * Reads a World Info file and returns its contents
@@ -27,31 +27,38 @@ export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
         return dummyObject;
     }
 
-    const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
+    const worldInfoText = fs.readFileSync(pathToWorldInfo, "utf8");
     const worldInfo = JSON.parse(worldInfoText);
     return worldInfo;
 }
 
 export const router = express.Router();
 
-router.post('/get', (request, response) => {
+router.post("/get", (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
 
-    const file = readWorldInfoFile(request.user.directories, request.body.name, true);
+    const file = readWorldInfoFile(
+        request.user.directories,
+        request.body.name,
+        true,
+    );
 
     return response.send(file);
 });
 
-router.post('/delete', (request, response) => {
+router.post("/delete", (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
 
     const worldInfoName = request.body.name;
     const filename = sanitize(`${worldInfoName}.json`);
-    const pathToWorldInfo = path.join(request.user.directories.worlds, filename);
+    const pathToWorldInfo = path.join(
+        request.user.directories.worlds,
+        filename,
+    );
 
     if (!fs.existsSync(pathToWorldInfo)) {
         throw new Error(`World info file ${filename} doesn't exist.`);
@@ -62,7 +69,7 @@ router.post('/delete', (request, response) => {
     return response.sendStatus(200);
 });
 
-router.post('/import', (request, response) => {
+router.post("/import", (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     const filename = `${path.parse(sanitize(request.file.originalname)).name}.json`;
@@ -72,46 +79,49 @@ router.post('/import', (request, response) => {
     if (request.body.convertedData) {
         fileContents = request.body.convertedData;
     } else {
-        const pathToUpload = path.join(request.file.destination, request.file.filename);
-        fileContents = fs.readFileSync(pathToUpload, 'utf8');
+        const pathToUpload = path.join(
+            request.file.destination,
+            request.file.filename,
+        );
+        fileContents = fs.readFileSync(pathToUpload, "utf8");
         fs.unlinkSync(pathToUpload);
     }
 
     try {
         const worldContent = JSON.parse(fileContents);
-        if (!('entries' in worldContent)) {
-            throw new Error('File must contain a world info entries list');
+        if (!("entries" in worldContent)) {
+            throw new Error("File must contain a world info entries list");
         }
     } catch (err) {
-        return response.status(400).send('Is not a valid world info file');
+        return response.status(400).send("Is not a valid world info file");
     }
 
     const pathToNewFile = path.join(request.user.directories.worlds, filename);
     const worldName = path.parse(pathToNewFile).name;
 
     if (!worldName) {
-        return response.status(400).send('World file must have a name');
+        return response.status(400).send("World file must have a name");
     }
 
     writeFileAtomicSync(pathToNewFile, fileContents);
     return response.send({ name: worldName });
 });
 
-router.post('/edit', (request, response) => {
+router.post("/edit", (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
 
     if (!request.body.name) {
-        return response.status(400).send('World file must have a name');
+        return response.status(400).send("World file must have a name");
     }
 
     try {
-        if (!('entries' in request.body.data)) {
-            throw new Error('World info must contain an entries list');
+        if (!("entries" in request.body.data)) {
+            throw new Error("World info must contain an entries list");
         }
     } catch (err) {
-        return response.status(400).send('Is not a valid world info file');
+        return response.status(400).send("Is not a valid world info file");
     }
 
     const filename = `${sanitize(request.body.name)}.json`;

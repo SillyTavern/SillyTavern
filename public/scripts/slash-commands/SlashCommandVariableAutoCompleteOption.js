@@ -1,4 +1,4 @@
-import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
+import { AutoCompleteOption } from "../autocomplete/AutoCompleteOption.js";
 
 export class SlashCommandVariableAutoCompleteOption extends AutoCompleteOption {
     /**
@@ -8,31 +8,32 @@ export class SlashCommandVariableAutoCompleteOption extends AutoCompleteOption {
         super(name);
     }
 
-
     renderItem() {
         let li;
-        li = this.makeItem(this.name, '[𝑥]', true);
-        li.setAttribute('data-name', this.name);
-        li.setAttribute('data-option-type', 'variable');
+        li = this.makeItem(this.name, "[𝑥]", true);
+        li.setAttribute("data-name", this.name);
+        li.setAttribute("data-option-type", "variable");
         return li;
     }
 
-
     renderDetails() {
         const frag = document.createDocumentFragment();
-        const specs = document.createElement('div'); {
-            specs.classList.add('specs');
-            const name = document.createElement('div'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
+        const specs = document.createElement("div");
+        {
+            specs.classList.add("specs");
+            const name = document.createElement("div");
+            {
+                name.classList.add("name");
+                name.classList.add("monospace");
                 name.textContent = this.name;
                 specs.append(name);
             }
             frag.append(specs);
         }
-        const help = document.createElement('span'); {
-            help.classList.add('help');
-            help.textContent = 'scoped variable';
+        const help = document.createElement("span");
+        {
+            help.classList.add("help");
+            help.textContent = "scoped variable";
             frag.append(help);
         }
         return frag;

@@ -1,10 +1,25 @@
-import { Handlebars, moment, seedrandom, droll } from '../lib.js';
-import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams, eventSource, event_types } from '../script.js';
-import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
-import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
-import { getInstructMacros } from './instruct-mode.js';
-import { getVariableMacros } from './variables.js';
-import { isMobile } from './RossAscends-mods.js';
+import { Handlebars, moment, seedrandom, droll } from "../lib.js";
+import {
+    chat,
+    chat_metadata,
+    main_api,
+    getMaxContextSize,
+    getCurrentChatId,
+    substituteParams,
+    eventSource,
+    event_types,
+} from "../script.js";
+import {
+    timestampToMoment,
+    isDigitsOnly,
+    getStringHash,
+    escapeRegex,
+    uuidv4,
+} from "./utils.js";
+import { textgenerationwebui_banned_in_macros } from "./textgen-settings.js";
+import { getInstructMacros } from "./instruct-mode.js";
+import { getVariableMacros } from "./variables.js";
+import { isMobile } from "./RossAscends-mods.js";
 
 /**
  * @typedef Macro
@@ -13,9 +28,9 @@ import { isMobile } from './RossAscends-mods.js';
  */
 
 // Register any macro that you want to leave in the compiled story string
-Handlebars.registerHelper('trim', () => '{{trim}}');
+Handlebars.registerHelper("trim", () => "{{trim}}");
 // Catch-all helper for any macro that is not defined for story strings
-Handlebars.registerHelper('helperMissing', function () {
+Handlebars.registerHelper("helperMissing", function () {
     const options = arguments[arguments.length - 1];
     const macroName = options.name;
     return substituteParams(`{{${macroName}}}`);
@@ -51,7 +66,10 @@ export class MacrosParser {
      */
     static [Symbol.iterator] = function* () {
         for (const macro of MacrosParser.#macros.keys()) {
-            yield { key: macro, description: MacrosParser.#descriptions.get(macro) };
+            yield {
+                key: macro,
+                description: MacrosParser.#descriptions.get(macro),
+            };
         }
     };
 
@@ -61,24 +79,28 @@ export class MacrosParser {
      * @param {string|MacroFunction} value A string or a function that returns a string
      * @param {string} [description] Optional description of the macro
      */
-    static registerMacro(key, value, description = '') {
-        if (typeof key !== 'string') {
-            throw new Error('Macro key must be a string');
+    static registerMacro(key, value, description = "") {
+        if (typeof key !== "string") {
+            throw new Error("Macro key must be a string");
         }
 
         // Allowing surrounding whitespace would just create more confusion...
         key = key.trim();
 
         if (!key) {
-            throw new Error('Macro key must not be empty or whitespace only');
+            throw new Error("Macro key must not be empty or whitespace only");
         }
 
-        if (key.startsWith('{{') || key.endsWith('}}')) {
-            throw new Error('Macro key must not include the surrounding braces');
+        if (key.startsWith("{{") || key.endsWith("}}")) {
+            throw new Error(
+                "Macro key must not include the surrounding braces",
+            );
         }
 
-        if (typeof value !== 'string' && typeof value !== 'function') {
-            console.warn(`Macro value for "${key}" will be converted to a string`);
+        if (typeof value !== "string" && typeof value !== "function") {
+            console.warn(
+                `Macro value for "${key}" will be converted to a string`,
+            );
             value = this.sanitizeMacroValue(value);
         }
 
@@ -88,7 +110,7 @@ export class MacrosParser {
 
         this.#macros.set(key, value);
 
-        if (typeof description === 'string' && description) {
+        if (typeof description === "string" && description) {
             this.#descriptions.set(key, description);
         }
     }
@@ -99,15 +121,15 @@ export class MacrosParser {
      * @param {string} key Macro name (key)
      */
     static unregisterMacro(key) {
-        if (typeof key !== 'string') {
-            throw new Error('Macro key must be a string');
+        if (typeof key !== "string") {
+            throw new Error("Macro key must be a string");
         }
 
         // Allowing surrounding whitespace would just create more confusion...
         key = key.trim();
 
         if (!key) {
-            throw new Error('Macro key must not be empty or whitespace only');
+            throw new Error("Macro key must not be empty or whitespace only");
         }
 
         const deleted = this.#macros.delete(key);
@@ -125,8 +147,8 @@ export class MacrosParser {
      * @returns {void}
      */
     static populateEnv(env) {
-        if (!env || typeof env !== 'object') {
-            console.warn('Env object is not provided');
+        if (!env || typeof env !== "object") {
+            console.warn("Env object is not provided");
             return;
         }
 
@@ -146,29 +168,29 @@ export class MacrosParser {
      * @returns {string} Sanitized value
      */
     static sanitizeMacroValue(value) {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             return value;
         }
 
         if (value === null || value === undefined) {
-            return '';
+            return "";
         }
 
         if (value instanceof Promise) {
-            console.warn('Promises are not supported as macro values');
-            return '';
+            console.warn("Promises are not supported as macro values");
+            return "";
         }
 
-        if (typeof value === 'function') {
-            console.warn('Functions are not supported as macro values');
-            return '';
+        if (typeof value === "function") {
+            console.warn("Functions are not supported as macro values");
+            return "";
         }
 
         if (value instanceof Date) {
             return value.toISOString();
         }
 
-        if (typeof value === 'object') {
+        if (typeof value === "object") {
             return JSON.stringify(value);
         }
 
@@ -182,14 +204,14 @@ export class MacrosParser {
  * @returns {number} The hashed chat id
  */
 function getChatIdHash() {
-    const cachedIdHash = chat_metadata['chat_id_hash'];
+    const cachedIdHash = chat_metadata["chat_id_hash"];
 
     // If chat_id_hash is not already set, calculate it
     if (!cachedIdHash) {
         // Use the main_chat if it's available, otherwise get the current chat ID
-        const chatId = chat_metadata['main_chat'] ?? getCurrentChatId();
+        const chatId = chat_metadata["main_chat"] ?? getCurrentChatId();
         const chatIdHash = getStringHash(chatId);
-        chat_metadata['chat_id_hash'] = chatIdHash;
+        chat_metadata["chat_id_hash"] = chatIdHash;
         return chatIdHash;
     }
 
@@ -206,13 +228,20 @@ function getChatIdHash() {
  * @param {function(object):boolean} [param0.filter] - A filter applied to the search, ignoring all messages that don't match the criteria. For example to only find user messages, etc.
  * @returns {number|null} The message id, or null if none was found
  */
-export function getLastMessageId({ exclude_swipe_in_propress = true, filter = null } = {}) {
+export function getLastMessageId({
+    exclude_swipe_in_propress = true,
+    filter = null,
+} = {}) {
     for (let i = chat?.length - 1; i >= 0; i--) {
         let message = chat[i];
 
         // If ignoring swipes and the message is being swiped, continue
         // We can check if a message is being swiped by checking whether the current swipe id is not in the list of finished swipes yet
-        if (exclude_swipe_in_propress && message.swipes && message.swipe_id >= message.swipes.length) {
+        if (
+            exclude_swipe_in_propress &&
+            message.swipes &&
+            message.swipe_id >= message.swipes.length
+        ) {
             continue;
         }
 
@@ -231,7 +260,7 @@ export function getLastMessageId({ exclude_swipe_in_propress = true, filter = nu
  * @returns {number|null} The ID of the first message in the context
  */
 function getFirstIncludedMessageId() {
-    return chat_metadata['lastInContextMessageId'];
+    return chat_metadata["lastInContextMessageId"];
 }
 
 /**
@@ -240,7 +269,9 @@ function getFirstIncludedMessageId() {
  * @returns {number|null} The ID of the first displayed message
  */
 function getFirstDisplayedMessageId() {
-    const mesId = Number(document.querySelector('#chat .mes')?.getAttribute('mesid'));
+    const mesId = Number(
+        document.querySelector("#chat .mes")?.getAttribute("mesid"),
+    );
 
     if (!isNaN(mesId) && mesId >= 0) {
         return mesId;
@@ -256,7 +287,7 @@ function getFirstDisplayedMessageId() {
  */
 function getLastMessage() {
     const mid = getLastMessageId();
-    return chat[mid]?.mes ?? '';
+    return chat[mid]?.mes ?? "";
 }
 
 /**
@@ -265,8 +296,8 @@ function getLastMessage() {
  * @returns {string} The last message from the user
  */
 function getLastUserMessage() {
-    const mid = getLastMessageId({ filter: m => m.is_user && !m.is_system });
-    return chat[mid]?.mes ?? '';
+    const mid = getLastMessageId({ filter: (m) => m.is_user && !m.is_system });
+    return chat[mid]?.mes ?? "";
 }
 
 /**
@@ -275,8 +306,8 @@ function getLastUserMessage() {
  * @returns {string} The last message from the bot
  */
 function getLastCharMessage() {
-    const mid = getLastMessageId({ filter: m => !m.is_user && !m.is_system });
-    return chat[mid]?.mes ?? '';
+    const mid = getLastMessageId({ filter: (m) => !m.is_user && !m.is_system });
+    return chat[mid]?.mes ?? "";
 }
 
 /**
@@ -311,11 +342,11 @@ function getCurrentSwipeId() {
 function getBannedWordsMacro() {
     const banPattern = /{{banned "(.*)"}}/gi;
     const banReplace = (match, bannedWord) => {
-        if (main_api == 'textgenerationwebui') {
-            console.log('Found banned word in macros: ' + bannedWord);
+        if (main_api == "textgenerationwebui") {
+            console.log("Found banned word in macros: " + bannedWord);
             textgenerationwebui_banned_in_macros.push(bannedWord);
         }
-        return '';
+        return "";
     };
 
     return { regex: banPattern, replace: banReplace };
@@ -350,7 +381,7 @@ function getTimeSinceLastMessage() {
         }
     }
 
-    return 'just now';
+    return "just now";
 }
 
 /**
@@ -361,15 +392,18 @@ function getRandomReplaceMacro() {
     const randomPattern = /{{random\s?::?([^}]+)}}/gi;
     const randomReplace = (match, listString) => {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
-        const list = listString.includes('::')
-            ? listString.split('::')
-            // Replaced escaped commas with a placeholder to avoid splitting on them
-            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
+        const list = listString.includes("::")
+            ? listString.split("::")
+            : // Replaced escaped commas with a placeholder to avoid splitting on them
+              listString
+                  .replace(/\\,/g, "##�COMMA�##")
+                  .split(",")
+                  .map((item) => item.trim().replace(/##�COMMA�##/g, ","));
 
         if (list.length === 0) {
-            return '';
+            return "";
         }
-        const rng = seedrandom('added entropy.', { entropy: true });
+        const rng = seedrandom("added entropy.", { entropy: true });
         const randomIndex = Math.floor(rng() * list.length);
         return list[randomIndex];
     };
@@ -391,13 +425,16 @@ function getPickReplaceMacro(rawContent) {
     const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
     const pickReplace = (match, listString, offset) => {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
-        const list = listString.includes('::')
-            ? listString.split('::')
-            // Replaced escaped commas with a placeholder to avoid splitting on them
-            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
+        const list = listString.includes("::")
+            ? listString.split("::")
+            : // Replaced escaped commas with a placeholder to avoid splitting on them
+              listString
+                  .replace(/\\,/g, "##�COMMA�##")
+                  .split(",")
+                  .map((item) => item.trim().replace(/##�COMMA�##/g, ","));
 
         if (list.length === 0) {
-            return '';
+            return "";
         }
 
         // We build a hash seed based on: unique chat file, raw content, and the placement inside this content
@@ -429,11 +466,11 @@ function getDiceRollMacro() {
 
         if (!isValid) {
             console.debug(`Invalid roll formula: ${formula}`);
-            return '';
+            return "";
         }
 
         const result = droll.roll(formula);
-        if (result === false) return '';
+        if (result === false) return "";
         return String(result.total);
     };
 
@@ -468,10 +505,11 @@ function getTimeDiffMacro() {
  */
 export function evaluateMacros(content, env, postProcessFn) {
     if (!content) {
-        return '';
+        return "";
     }
 
-    postProcessFn = typeof postProcessFn === 'function' ? postProcessFn : (x => x);
+    postProcessFn =
+        typeof postProcessFn === "function" ? postProcessFn : (x) => x;
     const rawContent = content;
 
     /**
@@ -480,44 +518,101 @@ export function evaluateMacros(content, env, postProcessFn) {
      * */
     const preEnvMacros = [
         // Legacy non-curly macros
-        { regex: /<USER>/gi, replace: () => typeof env.user === 'function' ? env.user() : env.user },
-        { regex: /<BOT>/gi, replace: () => typeof env.char === 'function' ? env.char() : env.char },
-        { regex: /<CHAR>/gi, replace: () => typeof env.char === 'function' ? env.char() : env.char },
-        { regex: /<CHARIFNOTGROUP>/gi, replace: () => typeof env.group === 'function' ? env.group() : env.group },
-        { regex: /<GROUP>/gi, replace: () => typeof env.group === 'function' ? env.group() : env.group },
+        {
+            regex: /<USER>/gi,
+            replace: () =>
+                typeof env.user === "function" ? env.user() : env.user,
+        },
+        {
+            regex: /<BOT>/gi,
+            replace: () =>
+                typeof env.char === "function" ? env.char() : env.char,
+        },
+        {
+            regex: /<CHAR>/gi,
+            replace: () =>
+                typeof env.char === "function" ? env.char() : env.char,
+        },
+        {
+            regex: /<CHARIFNOTGROUP>/gi,
+            replace: () =>
+                typeof env.group === "function" ? env.group() : env.group,
+        },
+        {
+            regex: /<GROUP>/gi,
+            replace: () =>
+                typeof env.group === "function" ? env.group() : env.group,
+        },
         getDiceRollMacro(),
         ...getInstructMacros(env),
         ...getVariableMacros(),
-        { regex: /{{newline}}/gi, replace: () => '\n' },
-        { regex: /(?:\r?\n)*{{trim}}(?:\r?\n)*/gi, replace: () => '' },
-        { regex: /{{noop}}/gi, replace: () => '' },
-        { regex: /{{input}}/gi, replace: () => String($('#send_textarea').val()) },
+        { regex: /{{newline}}/gi, replace: () => "\n" },
+        { regex: /(?:\r?\n)*{{trim}}(?:\r?\n)*/gi, replace: () => "" },
+        { regex: /{{noop}}/gi, replace: () => "" },
+        {
+            regex: /{{input}}/gi,
+            replace: () => String($("#send_textarea").val()),
+        },
     ];
 
     /**
      * Built-ins running after the env variables
      * @type {Macro[]}
-    */
+     */
     const postEnvMacros = [
-        { regex: /{{maxPrompt}}/gi, replace: () => String(getMaxContextSize()) },
+        {
+            regex: /{{maxPrompt}}/gi,
+            replace: () => String(getMaxContextSize()),
+        },
         { regex: /{{lastMessage}}/gi, replace: () => getLastMessage() },
-        { regex: /{{lastMessageId}}/gi, replace: () => String(getLastMessageId() ?? '') },
+        {
+            regex: /{{lastMessageId}}/gi,
+            replace: () => String(getLastMessageId() ?? ""),
+        },
         { regex: /{{lastUserMessage}}/gi, replace: () => getLastUserMessage() },
         { regex: /{{lastCharMessage}}/gi, replace: () => getLastCharMessage() },
-        { regex: /{{firstIncludedMessageId}}/gi, replace: () => String(getFirstIncludedMessageId() ?? '') },
-        { regex: /{{firstDisplayedMessageId}}/gi, replace: () => String(getFirstDisplayedMessageId() ?? '') },
-        { regex: /{{lastSwipeId}}/gi, replace: () => String(getLastSwipeId() ?? '') },
-        { regex: /{{currentSwipeId}}/gi, replace: () => String(getCurrentSwipeId() ?? '') },
-        { regex: /{{reverse:(.+?)}}/gi, replace: (_, str) => Array.from(str).reverse().join('') },
-        { regex: /\{\{\/\/([\s\S]*?)\}\}/gm, replace: () => '' },
-        { regex: /{{time}}/gi, replace: () => moment().format('LT') },
-        { regex: /{{date}}/gi, replace: () => moment().format('LL') },
-        { regex: /{{weekday}}/gi, replace: () => moment().format('dddd') },
-        { regex: /{{isotime}}/gi, replace: () => moment().format('HH:mm') },
-        { regex: /{{isodate}}/gi, replace: () => moment().format('YYYY-MM-DD') },
-        { regex: /{{datetimeformat +([^}]*)}}/gi, replace: (_, format) => moment().format(format) },
-        { regex: /{{idle_duration}}/gi, replace: () => getTimeSinceLastMessage() },
-        { regex: /{{time_UTC([-+]\d+)}}/gi, replace: (_, offset) => moment().utc().utcOffset(parseInt(offset, 10)).format('LT') },
+        {
+            regex: /{{firstIncludedMessageId}}/gi,
+            replace: () => String(getFirstIncludedMessageId() ?? ""),
+        },
+        {
+            regex: /{{firstDisplayedMessageId}}/gi,
+            replace: () => String(getFirstDisplayedMessageId() ?? ""),
+        },
+        {
+            regex: /{{lastSwipeId}}/gi,
+            replace: () => String(getLastSwipeId() ?? ""),
+        },
+        {
+            regex: /{{currentSwipeId}}/gi,
+            replace: () => String(getCurrentSwipeId() ?? ""),
+        },
+        {
+            regex: /{{reverse:(.+?)}}/gi,
+            replace: (_, str) => Array.from(str).reverse().join(""),
+        },
+        { regex: /\{\{\/\/([\s\S]*?)\}\}/gm, replace: () => "" },
+        { regex: /{{time}}/gi, replace: () => moment().format("LT") },
+        { regex: /{{date}}/gi, replace: () => moment().format("LL") },
+        { regex: /{{weekday}}/gi, replace: () => moment().format("dddd") },
+        { regex: /{{isotime}}/gi, replace: () => moment().format("HH:mm") },
+        {
+            regex: /{{isodate}}/gi,
+            replace: () => moment().format("YYYY-MM-DD"),
+        },
+        {
+            regex: /{{datetimeformat +([^}]*)}}/gi,
+            replace: (_, format) => moment().format(format),
+        },
+        {
+            regex: /{{idle_duration}}/gi,
+            replace: () => getTimeSinceLastMessage(),
+        },
+        {
+            regex: /{{time_UTC([-+]\d+)}}/gi,
+            replace: (_, offset) =>
+                moment().utc().utcOffset(parseInt(offset, 10)).format("LT"),
+        },
         getTimeDiffMacro(),
         getBannedWordsMacro(),
         getRandomReplaceMacro(),
@@ -533,10 +628,12 @@ export function evaluateMacros(content, env, postProcessFn) {
     for (const varName in env) {
         if (!Object.hasOwn(env, varName)) continue;
 
-        const envRegex = new RegExp(`{{${escapeRegex(varName)}}}`, 'gi');
+        const envRegex = new RegExp(`{{${escapeRegex(varName)}}}`, "gi");
         const envReplace = () => {
             const param = env[varName];
-            const value = MacrosParser.sanitizeMacroValue(typeof param === 'function' ? param(nonce) : param);
+            const value = MacrosParser.sanitizeMacroValue(
+                typeof param === "function" ? param(nonce) : param,
+            );
             return value;
         };
 
@@ -552,14 +649,19 @@ export function evaluateMacros(content, env, postProcessFn) {
         }
 
         // Short-circuit if no curly braces are found
-        if (!macro.regex.source.startsWith('<') && !content.includes('{{')) {
+        if (!macro.regex.source.startsWith("<") && !content.includes("{{")) {
             break;
         }
 
         try {
-            content = content.replace(macro.regex, (...args) => postProcessFn(macro.replace(...args)));
+            content = content.replace(macro.regex, (...args) =>
+                postProcessFn(macro.replace(...args)),
+            );
         } catch (e) {
-            console.warn(`Macro content can't be replaced: ${macro.regex} in ${content}`, e);
+            console.warn(
+                `Macro content can't be replaced: ${macro.regex} in ${content}`,
+                e,
+            );
         }
     }
 
@@ -568,20 +670,26 @@ export function evaluateMacros(content, env, postProcessFn) {
 
 export function initMacros() {
     function initLastGenerationType() {
-        let lastGenerationType = '';
+        let lastGenerationType = "";
 
-        MacrosParser.registerMacro('lastGenerationType', () => lastGenerationType);
+        MacrosParser.registerMacro(
+            "lastGenerationType",
+            () => lastGenerationType,
+        );
 
-        eventSource.on(event_types.GENERATION_STARTED, (type, _params, isDryRun) => {
-            if (isDryRun) return;
-            lastGenerationType = type || 'normal';
-        });
+        eventSource.on(
+            event_types.GENERATION_STARTED,
+            (type, _params, isDryRun) => {
+                if (isDryRun) return;
+                lastGenerationType = type || "normal";
+            },
+        );
 
         eventSource.on(event_types.CHAT_CHANGED, () => {
-            lastGenerationType = '';
+            lastGenerationType = "";
         });
     }
 
-    MacrosParser.registerMacro('isMobile', () => String(isMobile()));
+    MacrosParser.registerMacro("isMobile", () => String(isMobile()));
     initLastGenerationType();
 }

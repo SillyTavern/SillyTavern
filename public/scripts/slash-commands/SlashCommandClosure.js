@@ -1,22 +1,23 @@
-import { substituteParams } from '../../script.js';
-import { delay, escapeRegex, uuidv4 } from '../utils.js';
-import { SlashCommand } from './SlashCommand.js';
-import { SlashCommandAbortController } from './SlashCommandAbortController.js';
-import { SlashCommandBreak } from './SlashCommandBreak.js';
-import { SlashCommandBreakController } from './SlashCommandBreakController.js';
-import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
-import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
-import { SlashCommandDebugController } from './SlashCommandDebugController.js';
-import { SlashCommandExecutionError } from './SlashCommandExecutionError.js';
-import { SlashCommandExecutor } from './SlashCommandExecutor.js';
-import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
-import { SlashCommandScope } from './SlashCommandScope.js';
+import { substituteParams } from "../../script.js";
+import { delay, escapeRegex, uuidv4 } from "../utils.js";
+import { SlashCommand } from "./SlashCommand.js";
+import { SlashCommandAbortController } from "./SlashCommandAbortController.js";
+import { SlashCommandBreak } from "./SlashCommandBreak.js";
+import { SlashCommandBreakController } from "./SlashCommandBreakController.js";
+import { SlashCommandBreakPoint } from "./SlashCommandBreakPoint.js";
+import { SlashCommandClosureResult } from "./SlashCommandClosureResult.js";
+import { SlashCommandDebugController } from "./SlashCommandDebugController.js";
+import { SlashCommandExecutionError } from "./SlashCommandExecutionError.js";
+import { SlashCommandExecutor } from "./SlashCommandExecutor.js";
+import { SlashCommandNamedArgumentAssignment } from "./SlashCommandNamedArgumentAssignment.js";
+import { SlashCommandScope } from "./SlashCommandScope.js";
 
 export class SlashCommandClosure {
     /** @type {SlashCommandScope} */ scope;
     /** @type {boolean} */ executeNow = false;
     /** @type {SlashCommandNamedArgumentAssignment[]} */ argumentList = [];
-    /** @type {SlashCommandNamedArgumentAssignment[]} */ providedArgumentList = [];
+    /** @type {SlashCommandNamedArgumentAssignment[]} */ providedArgumentList =
+        [];
     /** @type {SlashCommandExecutor[]} */ executorList = [];
     /** @type {SlashCommandAbortController} */ abortController;
     /** @type {SlashCommandBreakController} */ breakController;
@@ -26,7 +27,9 @@ export class SlashCommandClosure {
     /** @type {string} */ fullText;
     /** @type {string} */ parserContext;
     /** @type {string} */ #source = uuidv4();
-    get source() { return this.#source; }
+    get source() {
+        return this.#source;
+    }
     set source(value) {
         this.#source = value;
         for (const executor of this.executorList) {
@@ -36,7 +39,9 @@ export class SlashCommandClosure {
 
     /**@type {number}*/
     get commandCount() {
-        return this.executorList.map(executor=>executor.commandCount).reduce((sum,cur)=>sum + cur, 0);
+        return this.executorList
+            .map((executor) => executor.commandCount)
+            .reduce((sum, cur) => sum + cur, 0);
     }
 
     constructor(parent) {
@@ -44,7 +49,7 @@ export class SlashCommandClosure {
     }
 
     toString() {
-        return `[Closure]${this.executeNow ? '()' : ''}`;
+        return `[Closure]${this.executeNow ? "()" : ""}`;
     }
 
     /**
@@ -57,30 +62,43 @@ export class SlashCommandClosure {
         let isList = false;
         let listValues = [];
         scope = scope ?? this.scope;
-        const escapeMacro = (it, isAnchored = false)=>{
-            const regexText = escapeRegex(it.key.replace(/\*/g, '~~~WILDCARD~~~'))
-                .replaceAll('~~~WILDCARD~~~', '(?:(?:(?!(?:::|}})).)*)')
-            ;
+        const escapeMacro = (it, isAnchored = false) => {
+            const regexText = escapeRegex(
+                it.key.replace(/\*/g, "~~~WILDCARD~~~"),
+            ).replaceAll("~~~WILDCARD~~~", "(?:(?:(?!(?:::|}})).)*)");
             if (isAnchored) {
                 return `^${regexText}$`;
             }
             return regexText;
         };
-        const macroList = scope.macroList.toSorted((a,b)=>{
-            if (a.key.includes('*') && !b.key.includes('*')) return 1;
-            if (!a.key.includes('*') && b.key.includes('*')) return -1;
-            if (a.key.includes('*') && b.key.includes('*')) return b.key.indexOf('*') - a.key.indexOf('*');
+        const macroList = scope.macroList.toSorted((a, b) => {
+            if (a.key.includes("*") && !b.key.includes("*")) return 1;
+            if (!a.key.includes("*") && b.key.includes("*")) return -1;
+            if (a.key.includes("*") && b.key.includes("*"))
+                return b.key.indexOf("*") - a.key.indexOf("*");
             return 0;
         });
-        const macros = macroList.map(it=>escapeMacro(it)).join('|');
-        const re = new RegExp(`(?<pipe>{{pipe}})|(?:{{var::(?<var>[^\\s]+?)(?:::(?<varIndex>(?!}}).+))?}})|(?:{{(?<macro>${macros})}})`);
-        let done = '';
+        const macros = macroList.map((it) => escapeMacro(it)).join("|");
+        const re = new RegExp(
+            `(?<pipe>{{pipe}})|(?:{{var::(?<var>[^\\s]+?)(?:::(?<varIndex>(?!}}).+))?}})|(?:{{(?<macro>${macros})}})`,
+        );
+        let done = "";
         let remaining = text;
         while (re.test(remaining)) {
             const match = re.exec(remaining);
             const before = substituteParams(remaining.slice(0, match.index));
             const after = remaining.slice(match.index + match[0].length);
-            const replacer = match.groups.pipe ? scope.pipe : match.groups.var ? scope.getVariable(match.groups.var, match.groups.index) : macroList.find(it=>it.key == match.groups.macro || new RegExp(escapeMacro(it, true)).test(match.groups.macro))?.value;
+            const replacer = match.groups.pipe
+                ? scope.pipe
+                : match.groups.var
+                  ? scope.getVariable(match.groups.var, match.groups.index)
+                  : macroList.find(
+                        (it) =>
+                            it.key == match.groups.macro ||
+                            new RegExp(escapeMacro(it, true)).test(
+                                match.groups.macro,
+                            ),
+                    )?.value;
             if (replacer instanceof SlashCommandClosure) {
                 replacer.abortController = this.abortController;
                 replacer.breakController = this.breakController;
@@ -143,15 +161,24 @@ export class SlashCommandClosure {
         const gen = closure.executeDirect();
         let step;
         while (!step?.done) {
-            step = await gen.next(this.debugController?.testStepping(this) ?? false);
-            if (!(step.value instanceof SlashCommandClosureResult) && this.debugController) {
-                this.debugController.isStepping = await this.debugController.awaitBreakPoint(step.value.closure, step.value.executor);
+            step = await gen.next(
+                this.debugController?.testStepping(this) ?? false,
+            );
+            if (
+                !(step.value instanceof SlashCommandClosureResult) &&
+                this.debugController
+            ) {
+                this.debugController.isStepping =
+                    await this.debugController.awaitBreakPoint(
+                        step.value.closure,
+                        step.value.executor,
+                    );
             }
         }
         return step.value;
     }
 
-    async * executeDirect() {
+    async *executeDirect() {
         this.debugController?.down(this);
         // closure arguments
         for (const arg of this.argumentList) {
@@ -170,11 +197,8 @@ export class SlashCommandClosure {
                 v = this.substituteParams(v);
             }
             // unescape value
-            if (typeof v == 'string') {
-                v = v
-                    ?.replace(/\\\{/g, '{')
-                    ?.replace(/\\\}/g, '}')
-                ;
+            if (typeof v == "string") {
+                v = v?.replace(/\\\{/g, "{")?.replace(/\\\}/g, "}");
             }
             this.scope.letVariable(arg.name, v);
         }
@@ -194,17 +218,14 @@ export class SlashCommandClosure {
                 v = this.substituteParams(v, this.scope.parent);
             }
             // unescape value
-            if (typeof v == 'string') {
-                v = v
-                    ?.replace(/\\\{/g, '{')
-                    ?.replace(/\\\}/g, '}')
-                ;
+            if (typeof v == "string") {
+                v = v?.replace(/\\\{/g, "{")?.replace(/\\\}/g, "}");
             }
             this.scope.setVariable(arg.name, v);
         }
 
         if (this.executorList.length == 0) {
-            this.scope.pipe = '';
+            this.scope.pipe = "";
         }
         const stepper = this.executeStep();
         let step;
@@ -212,7 +233,7 @@ export class SlashCommandClosure {
             // get executor before execution
             step = await stepper.next();
             if (step.value instanceof SlashCommandBreakPoint) {
-                console.log('encountered SlashCommandBreakPoint');
+                console.log("encountered SlashCommandBreakPoint");
                 if (this.debugController) {
                     // resolve args
                     step = await stepper.next();
@@ -223,36 +244,81 @@ export class SlashCommandClosure {
                     // breakpoint has to yield before arguments are resolved if one of the
                     // arguments is an immediate closure, otherwise you cannot step into the
                     // immediate closure
-                    const hasImmediateClosureInNamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                    const hasImmediateClosureInUnnamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                    if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
-                        this.debugController.isStepping = yield { closure:this, executor:step.value };
+                    const hasImmediateClosureInNamedArgs =
+                        /**@type {SlashCommandExecutor}*/ (
+                            step.value
+                        )?.namedArgumentList?.find(
+                            (it) =>
+                                it.value instanceof SlashCommandClosure &&
+                                it.value.executeNow,
+                        );
+                    const hasImmediateClosureInUnnamedArgs =
+                        /**@type {SlashCommandExecutor}*/ (
+                            step.value
+                        )?.unnamedArgumentList?.find(
+                            (it) =>
+                                it.value instanceof SlashCommandClosure &&
+                                it.value.executeNow,
+                        );
+                    if (
+                        hasImmediateClosureInNamedArgs ||
+                        hasImmediateClosureInUnnamedArgs
+                    ) {
+                        this.debugController.isStepping = yield {
+                            closure: this,
+                            executor: step.value,
+                        };
                     } else {
                         this.debugController.isStepping = true;
-                        this.debugController.stepStack[this.debugController.stepStack.length - 1] = true;
+                        this.debugController.stepStack[
+                            this.debugController.stepStack.length - 1
+                        ] = true;
                     }
                 }
             } else if (!step.done && this.debugController?.testStepping(this)) {
                 this.debugController.isSteppingInto = false;
                 // if stepping, have to yield before arguments are resolved if one of the arguments
                 // is an immediate closure, otherwise you cannot step into the immediate closure
-                const hasImmediateClosureInNamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                const hasImmediateClosureInUnnamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
-                    this.debugController.isStepping = yield { closure:this, executor:step.value };
+                const hasImmediateClosureInNamedArgs =
+                    /**@type {SlashCommandExecutor}*/ (
+                        step.value
+                    )?.namedArgumentList?.find(
+                        (it) =>
+                            it.value instanceof SlashCommandClosure &&
+                            it.value.executeNow,
+                    );
+                const hasImmediateClosureInUnnamedArgs =
+                    /**@type {SlashCommandExecutor}*/ (
+                        step.value
+                    )?.unnamedArgumentList?.find(
+                        (it) =>
+                            it.value instanceof SlashCommandClosure &&
+                            it.value.executeNow,
+                    );
+                if (
+                    hasImmediateClosureInNamedArgs ||
+                    hasImmediateClosureInUnnamedArgs
+                ) {
+                    this.debugController.isStepping = yield {
+                        closure: this,
+                        executor: step.value,
+                    };
                 }
             }
             // resolve args
             step = await stepper.next();
             if (step.value instanceof SlashCommandBreak) {
-                console.log('encountered SlashCommandBreak');
+                console.log("encountered SlashCommandBreak");
                 if (this.breakController) {
                     this.breakController?.break();
                     break;
                 }
             } else if (!step.done && this.debugController?.testStepping(this)) {
                 this.debugController.isSteppingInto = false;
-                this.debugController.isStepping = yield { closure:this, executor:step.value };
+                this.debugController.isStepping = yield {
+                    closure: this,
+                    executor: step.value,
+                };
             }
             // execute executor
             step = await stepper.next();
@@ -264,7 +330,10 @@ export class SlashCommandClosure {
             return step.value;
         }
         /**@type {SlashCommandClosureResult} */
-        const result = Object.assign(new SlashCommandClosureResult(), { pipe: this.scope.pipe, isBreak: this.breakController?.isBreak ?? false });
+        const result = Object.assign(new SlashCommandClosureResult(), {
+            pipe: this.scope.pipe,
+            isBreak: this.breakController?.isBreak ?? false,
+        });
         this.debugController?.up();
         return result;
     }
@@ -275,7 +344,7 @@ export class SlashCommandClosure {
      *  - after arguments are resolved
      *  - after execution
      */
-    async * executeStep() {
+    async *executeStep() {
         let done = 0;
         let isFirst = true;
         for (const executor of this.executorList) {
@@ -306,15 +375,25 @@ export class SlashCommandClosure {
             } else if (executor instanceof SlashCommandBreak) {
                 // /break need to resolve the unnamed arg and put it into pipe, then yield
                 // for "before exec"
-                const value = await this.substituteUnnamedArgument(executor, isFirst, args);
-                done += this.executorList.length - this.executorList.indexOf(executor);
+                const value = await this.substituteUnnamedArgument(
+                    executor,
+                    isFirst,
+                    args,
+                );
+                done +=
+                    this.executorList.length -
+                    this.executorList.indexOf(executor);
                 this.scope.pipe = value ?? this.scope.pipe;
                 yield executor;
                 isFirst = false;
             } else {
                 // regular commands do all the argument resolving logic...
                 await this.substituteNamedArguments(executor, args);
-                let value = await this.substituteUnnamedArgument(executor, isFirst, args);
+                let value = await this.substituteUnnamedArgument(
+                    executor,
+                    isFirst,
+                    args,
+                );
 
                 let abortResult = await this.testAbortController();
                 if (abortResult) {
@@ -322,20 +401,33 @@ export class SlashCommandClosure {
                 }
                 if (this.debugController) {
                     this.debugController.namedArguments = args;
-                    this.debugController.unnamedArguments = value ?? '';
+                    this.debugController.unnamedArguments = value ?? "";
                 }
                 // then yield for "before exec"
                 yield executor;
                 // followed by command execution
-                executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
+                executor.onProgress = (subDone, subTotal) =>
+                    this.onProgress?.(done + subDone, this.commandCount);
                 const isStepping = this.debugController?.testStepping(this);
                 if (this.debugController) {
-                    this.debugController.isStepping = false || this.debugController.isSteppingInto;
+                    this.debugController.isStepping =
+                        false || this.debugController.isSteppingInto;
                 }
                 try {
-                    this.scope.pipe = await executor.command.callback(args, value ?? '');
+                    this.scope.pipe = await executor.command.callback(
+                        args,
+                        value ?? "",
+                    );
                 } catch (ex) {
-                    throw new SlashCommandExecutionError(ex, ex.message, executor.name, executor.start, executor.end, this.fullText.slice(executor.start, executor.end), this.fullText);
+                    throw new SlashCommandExecutionError(
+                        ex,
+                        ex.message,
+                        executor.name,
+                        executor.start,
+                        executor.end,
+                        this.fullText.slice(executor.start, executor.end),
+                        this.fullText,
+                    );
                 }
                 if (this.debugController) {
                     this.debugController.namedArguments = undefined;
@@ -357,7 +449,10 @@ export class SlashCommandClosure {
     }
 
     async testPaused() {
-        while (!this.abortController?.signal?.aborted && this.abortController?.signal?.paused) {
+        while (
+            !this.abortController?.signal?.aborted &&
+            this.abortController?.signal?.paused
+        ) {
             await delay(200);
         }
     }
@@ -391,16 +486,16 @@ export class SlashCommandClosure {
                 return;
             }
 
-            const definition = executor.command.namedArgumentList.find(x => x.name == name);
+            const definition = executor.command.namedArgumentList.find(
+                (x) => x.name == name,
+            );
 
             // Prefer definition name if a valid named args defintion is found
             name = definition?.name ?? name;
 
             // Unescape named argument
-            if (value && typeof value == 'string') {
-                value = value
-                    .replace(/\\\{/g, '{')
-                    .replace(/\\\}/g, '}');
+            if (value && typeof value == "string") {
+                value = value.replace(/\\\{/g, "{").replace(/\\\}/g, "}");
             }
 
             // If the named argument accepts multiple values, we have to make sure to build an array correctly
@@ -418,7 +513,10 @@ export class SlashCommandClosure {
                     args[name] = [value];
                 }
             } else {
-                args[name] !== undefined && console.debug(`Named argument assigned multiple times: ${name}`);
+                args[name] !== undefined &&
+                    console.debug(
+                        `Named argument assigned multiple times: ${name}`,
+                    );
                 args[name] = value;
             }
         };
@@ -456,7 +554,8 @@ export class SlashCommandClosure {
         if (executor.unnamedArgumentList.length == 0) {
             if (!isFirst && executor.injectPipe) {
                 value = this.scope.pipe;
-                args._hasUnnamedArgument = this.scope.pipe !== null && this.scope.pipe !== undefined;
+                args._hasUnnamedArgument =
+                    this.scope.pipe !== null && this.scope.pipe !== undefined;
             }
         } else {
             value = [];
@@ -484,29 +583,26 @@ export class SlashCommandClosure {
             if (!executor.command.splitUnnamedArgument) {
                 if (value.length == 1) {
                     value = value[0];
-                } else if (!value.find(it=>it instanceof SlashCommandClosure)) {
-                    value = value.join('');
+                } else if (
+                    !value.find((it) => it instanceof SlashCommandClosure)
+                ) {
+                    value = value.join("");
                 }
             }
         }
         // unescape unnamed argument
-        if (typeof value == 'string') {
-            value = value
-                ?.replace(/\\\{/g, '{')
-                ?.replace(/\\\}/g, '}')
-            ;
+        if (typeof value == "string") {
+            value = value?.replace(/\\\{/g, "{")?.replace(/\\\}/g, "}");
         } else if (Array.isArray(value)) {
-            value = value.map(v=>{
-                if (typeof v == 'string') {
-                    return v
-                        ?.replace(/\\\{/g, '{')
-                        ?.replace(/\\\}/g, '}');
+            value = value.map((v) => {
+                if (typeof v == "string") {
+                    return v?.replace(/\\\{/g, "{")?.replace(/\\\}/g, "}");
                 }
                 return v;
             });
         }
 
-        value ??= '';
+        value ??= "";
 
         // Make sure that if unnamed args are split, it should always return an array
         if (executor.command.splitUnnamedArgument && !Array.isArray(value)) {
@@ -522,11 +618,20 @@ export class SlashCommandClosure {
      */
     #lintPipe(command) {
         if (this.scope.pipe === undefined || this.scope.pipe === null) {
-            console.warn(`/${command.name} returned undefined or null. Auto-fixing to empty string.`);
-            this.scope.pipe = '';
-        } else if (!(typeof this.scope.pipe == 'string' || this.scope.pipe instanceof SlashCommandClosure)) {
-            console.warn(`/${command.name} returned illegal type (${typeof this.scope.pipe} - ${this.scope.pipe.constructor?.name ?? ''}). Auto-fixing to stringified JSON.`);
-            this.scope.pipe = JSON.stringify(this.scope.pipe) ?? '';
+            console.warn(
+                `/${command.name} returned undefined or null. Auto-fixing to empty string.`,
+            );
+            this.scope.pipe = "";
+        } else if (
+            !(
+                typeof this.scope.pipe == "string" ||
+                this.scope.pipe instanceof SlashCommandClosure
+            )
+        ) {
+            console.warn(
+                `/${command.name} returned illegal type (${typeof this.scope.pipe} - ${this.scope.pipe.constructor?.name ?? ""}). Auto-fixing to stringified JSON.`,
+            );
+            this.scope.pipe = JSON.stringify(this.scope.pipe) ?? "";
         }
     }
 }

@@ -1,14 +1,12 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import mime from 'mime-types';
-import { serverDirectory } from './server-directory.js';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import mime from "mime-types";
+import { serverDirectory } from "./server-directory.js";
 
 const originalFetch = globalThis.fetch;
 
-const ALLOWED_EXTENSIONS = [
-    '.wasm',
-];
+const ALLOWED_EXTENSIONS = [".wasm"];
 
 /**
  * Checks if a child path is under a parent path.
@@ -22,7 +20,7 @@ function isPathUnderParent(parentPath, childPath) {
 
     const relativePath = path.relative(normalizedParent, normalizedChild);
 
-    return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+    return !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
 }
 
 /**
@@ -31,14 +29,14 @@ function isPathUnderParent(parentPath, childPath) {
  * @return {boolean} Returns true if the request is a file URL, false otherwise
  */
 function isFileURL(request) {
-    if (typeof request === 'string') {
-        return request.startsWith('file://');
+    if (typeof request === "string") {
+        return request.startsWith("file://");
     }
     if (request instanceof URL) {
-        return request.protocol === 'file:';
+        return request.protocol === "file:";
     }
     if (request instanceof Request) {
-        return request.url.startsWith('file://');
+        return request.url.startsWith("file://");
     }
     return false;
 }
@@ -49,7 +47,7 @@ function isFileURL(request) {
  * @return {string} The URL of the request
  */
 function getRequestURL(request) {
-    if (typeof request === 'string') {
+    if (typeof request === "string") {
         return request;
     }
     if (request instanceof URL) {
@@ -58,11 +56,14 @@ function getRequestURL(request) {
     if (request instanceof Request) {
         return request.url;
     }
-    throw new TypeError('Invalid request type');
+    throw new TypeError("Invalid request type");
 }
 
 // Patched fetch function that handles file URLs
-globalThis.fetch = async (/** @type {string | URL | Request} */ request, /** @type {RequestInit | undefined} */ options) => {
+globalThis.fetch = async (
+    /** @type {string | URL | Request} */ request,
+    /** @type {RequestInit | undefined} */ options,
+) => {
     if (!isFileURL(request)) {
         return originalFetch(request, options);
     }
@@ -70,20 +71,22 @@ globalThis.fetch = async (/** @type {string | URL | Request} */ request, /** @ty
     const filePath = path.resolve(fileURLToPath(url));
     const isUnderServerDirectory = isPathUnderParent(serverDirectory, filePath);
     if (!isUnderServerDirectory) {
-        throw new Error('Requested file path is outside of the server directory.');
+        throw new Error(
+            "Requested file path is outside of the server directory.",
+        );
     }
     const parsedPath = path.parse(filePath);
     if (!ALLOWED_EXTENSIONS.includes(parsedPath.ext)) {
-        throw new Error('Unsupported file extension.');
+        throw new Error("Unsupported file extension.");
     }
     const fileName = parsedPath.base;
     const buffer = await fs.promises.readFile(filePath);
     const response = new Response(buffer, {
         status: 200,
-        statusText: 'OK',
+        statusText: "OK",
         headers: {
-            'Content-Type': mime.lookup(fileName) || 'application/octet-stream',
-            'Content-Length': buffer.length.toString(),
+            "Content-Type": mime.lookup(fileName) || "application/octet-stream",
+            "Content-Length": buffer.length.toString(),
         },
     });
     return response;

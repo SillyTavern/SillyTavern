@@ -1,6 +1,6 @@
-import fetch from 'node-fetch';
-import { setAdditionalHeadersByType } from '../additional-headers.js';
-import { TEXTGEN_TYPES } from '../constants.js';
+import fetch from "node-fetch";
+import { setAdditionalHeadersByType } from "../additional-headers.js";
+import { TEXTGEN_TYPES } from "../constants.js";
 
 /**
  * Gets the vector for the given text from LlamaCpp
@@ -11,15 +11,20 @@ import { TEXTGEN_TYPES } from '../constants.js';
  */
 export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
     const url = new URL(apiUrl);
-    url.pathname = '/v1/embeddings';
+    url.pathname = "/v1/embeddings";
 
     const headers = {};
-    setAdditionalHeadersByType(headers, TEXTGEN_TYPES.LLAMACPP, apiUrl, directories);
+    setAdditionalHeadersByType(
+        headers,
+        TEXTGEN_TYPES.LLAMACPP,
+        apiUrl,
+        directories,
+    );
 
     const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...headers,
         },
         body: JSON.stringify({ input: texts }),
@@ -27,20 +32,22 @@ export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
 
     if (!response.ok) {
         const responseText = await response.text();
-        throw new Error(`LlamaCpp: Failed to get vector for text: ${response.statusText} ${responseText}`);
+        throw new Error(
+            `LlamaCpp: Failed to get vector for text: ${response.statusText} ${responseText}`,
+        );
     }
 
     /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.data)) {
-        throw new Error('API response was not an array');
+        throw new Error("API response was not an array");
     }
 
     // Sort data by x.index to ensure the order is correct
     data.data.sort((a, b) => a.index - b.index);
 
-    const vectors = data.data.map(x => x.embedding);
+    const vectors = data.data.map((x) => x.embedding);
     return vectors;
 }
 

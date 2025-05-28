@@ -1,6 +1,10 @@
-import { TEXTGEN_TYPES, OPENROUTER_HEADERS, FEATHERLESS_HEADERS } from './constants.js';
-import { SECRET_KEYS, readSecret } from './endpoints/secrets.js';
-import { getConfigValue } from './util.js';
+import {
+    TEXTGEN_TYPES,
+    OPENROUTER_HEADERS,
+    FEATHERLESS_HEADERS,
+} from "./constants.js";
+import { SECRET_KEYS, readSecret } from "./endpoints/secrets.js";
+import { getConfigValue } from "./util.js";
 
 /**
  * Gets the headers for the Mancer API.
@@ -10,10 +14,12 @@ import { getConfigValue } from './util.js';
 function getMancerHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.MANCER);
 
-    return apiKey ? ({
-        'X-API-KEY': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              "X-API-KEY": apiKey,
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -24,9 +30,11 @@ function getMancerHeaders(directories) {
 function getTogetherAIHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.TOGETHERAI);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -37,9 +45,11 @@ function getTogetherAIHeaders(directories) {
 function getInfermaticAIHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.INFERMATICAI);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -50,9 +60,11 @@ function getInfermaticAIHeaders(directories) {
 function getDreamGenHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.DREAMGEN);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -64,7 +76,9 @@ function getOpenRouterHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.OPENROUTER);
     const baseHeaders = { ...OPENROUTER_HEADERS };
 
-    return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
+    return apiKey
+        ? Object.assign(baseHeaders, { Authorization: `Bearer ${apiKey}` })
+        : baseHeaders;
 }
 
 /**
@@ -75,9 +89,11 @@ function getOpenRouterHeaders(directories) {
 function getVllmHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.VLLM);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -88,10 +104,12 @@ function getVllmHeaders(directories) {
 function getAphroditeHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.APHRODITE);
 
-    return apiKey ? ({
-        'X-API-KEY': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              "X-API-KEY": apiKey,
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -102,10 +120,12 @@ function getAphroditeHeaders(directories) {
 function getTabbyHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.TABBY);
 
-    return apiKey ? ({
-        'x-api-key': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              "x-api-key": apiKey,
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -116,9 +136,11 @@ function getTabbyHeaders(directories) {
 function getLlamaCppHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.LLAMACPP);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -129,9 +151,11 @@ function getLlamaCppHeaders(directories) {
 function getOobaHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.OOBA);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -142,9 +166,11 @@ function getOobaHeaders(directories) {
 function getKoboldCppHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.KOBOLDCPP);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -156,7 +182,9 @@ function getFeatherlessHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.FEATHERLESS);
     const baseHeaders = { ...FEATHERLESS_HEADERS };
 
-    return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
+    return apiKey
+        ? Object.assign(baseHeaders, { Authorization: `Bearer ${apiKey}` })
+        : baseHeaders;
 }
 
 /**
@@ -167,9 +195,11 @@ function getFeatherlessHeaders(directories) {
 function getHuggingFaceHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.HUGGINGFACE);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 /**
@@ -180,14 +210,18 @@ function getHuggingFaceHeaders(directories) {
 function getGenericHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.GENERIC);
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey
+        ? {
+              Authorization: `Bearer ${apiKey}`,
+          }
+        : {};
 }
 
 export function getOverrideHeaders(urlHost) {
-    const requestOverrides = getConfigValue('requestOverrides', []);
-    const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
+    const requestOverrides = getConfigValue("requestOverrides", []);
+    const overrideHeaders = requestOverrides?.find((e) =>
+        e.hosts?.includes(urlHost),
+    )?.headers;
     if (overrideHeaders && urlHost) {
         return overrideHeaders;
     } else {
@@ -202,7 +236,12 @@ export function getOverrideHeaders(urlHost) {
  * @param {string|null} server API server for new request
  */
 export function setAdditionalHeaders(request, args, server) {
-    setAdditionalHeadersByType(args.headers, request.body.api_type, server, request.user.directories);
+    setAdditionalHeadersByType(
+        args.headers,
+        request.body.api_type,
+        server,
+        request.user.directories,
+    );
 }
 
 /**
@@ -212,7 +251,12 @@ export function setAdditionalHeaders(request, args, server) {
  * @param {string|null} server API server for new request
  * @param {import('./users.js').UserDirectoryList} directories User directories
  */
-export function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
+export function setAdditionalHeadersByType(
+    requestHeaders,
+    type,
+    server,
+    directories,
+) {
     const headerGetters = {
         [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
         [TEXTGEN_TYPES.VLLM]: getVllmHeaders,
@@ -233,7 +277,7 @@ export function setAdditionalHeadersByType(requestHeaders, type, server, directo
     const getHeaders = headerGetters[type];
     const headers = getHeaders ? getHeaders(directories) : {};
 
-    if (typeof server === 'string' && server.length > 0) {
+    if (typeof server === "string" && server.length > 0) {
         try {
             const url = new URL(server);
             const overrideHeaders = getOverrideHeaders(url.host);

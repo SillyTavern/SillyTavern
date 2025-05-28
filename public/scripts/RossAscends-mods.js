@@ -1,4 +1,4 @@
-import { DOMPurify, Bowser, slideToggle } from '../lib.js';
+import { DOMPurify, Bowser, slideToggle } from "../lib.js";
 
 import {
     characters,
@@ -20,65 +20,78 @@ import {
     substituteParams,
     sendTextareaMessage,
     getSlideToggleOptions,
-} from '../script.js';
+} from "../script.js";
+
+import { power_user, send_on_enter_options } from "./power-user.js";
 
 import {
-    power_user,
-    send_on_enter_options,
-} from './power-user.js';
-
-import { selected_group, is_group_generating, openGroupById } from './group-chats.js';
-import { getTagKeyForEntity, applyTagsOnCharacterSelect } from './tags.js';
+    selected_group,
+    is_group_generating,
+    openGroupById,
+} from "./group-chats.js";
+import { getTagKeyForEntity, applyTagsOnCharacterSelect } from "./tags.js";
+import { SECRET_KEYS, secret_state } from "./secrets.js";
+import { debounce, getStringHash, isValidUrl } from "./utils.js";
+import { chat_completion_sources, oai_settings } from "./openai.js";
+import { getTokenCountAsync } from "./tokenizers.js";
 import {
-    SECRET_KEYS,
-    secret_state,
-} from './secrets.js';
-import { debounce, getStringHash, isValidUrl } from './utils.js';
-import { chat_completion_sources, oai_settings } from './openai.js';
-import { getTokenCountAsync } from './tokenizers.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
-import { debounce_timeout } from './constants.js';
+    textgen_types,
+    textgenerationwebui_settings as textgen_settings,
+    getTextGenServer,
+} from "./textgen-settings.js";
+import { debounce_timeout } from "./constants.js";
 
-import { Popup } from './popup.js';
-import { accountStorage } from './util/AccountStorage.js';
-import { getCurrentUserHandle } from './user.js';
+import { Popup } from "./popup.js";
+import { accountStorage } from "./util/AccountStorage.js";
+import { getCurrentUserHandle } from "./user.js";
 
-var RPanelPin = document.getElementById('rm_button_panel_pin');
-var LPanelPin = document.getElementById('lm_button_panel_pin');
-var WIPanelPin = document.getElementById('WI_panel_pin');
+var RPanelPin = document.getElementById("rm_button_panel_pin");
+var LPanelPin = document.getElementById("lm_button_panel_pin");
+var WIPanelPin = document.getElementById("WI_panel_pin");
 
-var RightNavPanel = document.getElementById('right-nav-panel');
-var RightNavDrawerIcon = document.getElementById('rightNavDrawerIcon');
-var LeftNavPanel = document.getElementById('left-nav-panel');
-var LeftNavDrawerIcon = document.getElementById('leftNavDrawerIcon');
-var WorldInfo = document.getElementById('WorldInfo');
-var WIDrawerIcon = document.getElementById('WIDrawerIcon');
+var RightNavPanel = document.getElementById("right-nav-panel");
+var RightNavDrawerIcon = document.getElementById("rightNavDrawerIcon");
+var LeftNavPanel = document.getElementById("left-nav-panel");
+var LeftNavDrawerIcon = document.getElementById("leftNavDrawerIcon");
+var WorldInfo = document.getElementById("WorldInfo");
+var WIDrawerIcon = document.getElementById("WIDrawerIcon");
 
-var SelectedCharacterTab = document.getElementById('rm_button_selected_ch');
+var SelectedCharacterTab = document.getElementById("rm_button_selected_ch");
 
 var connection_made = false;
 var retry_delay = 500;
 let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
-const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
-const countTokensShortDebounced = debounce(RA_CountCharTokens, debounce_timeout.short);
-const checkStatusDebounced = debounce(RA_checkOnlineStatus, debounce_timeout.short);
+const countTokensDebounced = debounce(
+    RA_CountCharTokens,
+    debounce_timeout.relaxed,
+);
+const countTokensShortDebounced = debounce(
+    RA_CountCharTokens,
+    debounce_timeout.short,
+);
+const checkStatusDebounced = debounce(
+    RA_checkOnlineStatus,
+    debounce_timeout.short,
+);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
         if (!(mutation.target instanceof HTMLElement)) {
             return;
         }
-        if (mutation.target.classList.contains('online_status_text')) {
+        if (mutation.target.classList.contains("online_status_text")) {
             checkStatusDebounced();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             countTokensShortDebounced();
-        } else if (mutation.target.classList.contains('mes_text')) {
-            for (const element of mutation.target.getElementsByTagName('math')) {
+        } else if (mutation.target.classList.contains("mes_text")) {
+            for (const element of mutation.target.getElementsByTagName(
+                "math",
+            )) {
                 element.childNodes.forEach(function (child) {
                     if (child.nodeType === Node.TEXT_NODE) {
-                        child.textContent = '';
+                        child.textContent = "";
                     }
                 });
             }
@@ -87,7 +100,6 @@ const observer = new MutationObserver(function (mutations) {
 });
 
 observer.observe(document.documentElement, observerConfig);
-
 
 /**
  * Converts generation time from milliseconds to a human-readable format.
@@ -100,7 +112,6 @@ observer.observe(document.documentElement, observerConfig);
  * @returns {string} - A human-readable string that represents the time spent generating characters.
  */
 export function humanizeGenTime(total_gen_time) {
-
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
     let time_spent = total_gen_time || 0;
     time_spent = Math.floor(time_spent / 1000);
@@ -111,10 +122,16 @@ export function humanizeGenTime(total_gen_time) {
     let hours = time_spent % 24;
     time_spent = Math.floor(time_spent / 24);
     let days = time_spent;
-    time_spent = '';
-    if (days > 0) { time_spent += `${days} Days, `; }
-    if (hours > 0) { time_spent += `${hours} Hours, `; }
-    if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
+    time_spent = "";
+    if (days > 0) {
+        time_spent += `${days} Days, `;
+    }
+    if (hours > 0) {
+        time_spent += `${hours} Hours, `;
+    }
+    if (minutes > 0) {
+        time_spent += `${minutes} Minutes, `;
+    }
     time_spent += `${seconds} Seconds`;
     return time_spent;
 }
@@ -141,7 +158,7 @@ export function getParsedUA() {
  * @returns {boolean} - True if the device is a mobile device, false otherwise.
  */
 export function isMobile() {
-    const mobileTypes = ['mobile', 'tablet'];
+    const mobileTypes = ["mobile", "tablet"];
 
     return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
@@ -168,11 +185,15 @@ export function shouldSendOnEnter() {
 export function humanizedDateTime() {
     const now = new Date(Date.now());
     const dt = {
-        year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate(),
-        hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds(),
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+        second: now.getSeconds(),
     };
     for (const key in dt) {
-        dt[key] = dt[key].toString().padStart(2, '0');
+        dt[key] = dt[key].toString().padStart(2, "0");
     }
     return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s`;
 }
@@ -181,34 +202,61 @@ export function humanizedDateTime() {
 //returns something like: June 19, 2023 2:20pm
 export function getMessageTimeStamp() {
     const date = Date.now();
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
     const d = new Date(date);
     const month = months[d.getMonth()];
     const day = d.getDate();
     const year = d.getFullYear();
     let hours = d.getHours();
-    const minutes = ('0' + d.getMinutes()).slice(-2);
-    let meridiem = 'am';
+    const minutes = ("0" + d.getMinutes()).slice(-2);
+    let meridiem = "am";
     if (hours >= 12) {
-        meridiem = 'pm';
+        meridiem = "pm";
         hours -= 12;
     }
     if (hours === 0) {
         hours = 12;
     }
-    const formattedDate = month + ' ' + day + ', ' + year + ' ' + hours + ':' + minutes + meridiem;
+    const formattedDate =
+        month +
+        " " +
+        day +
+        ", " +
+        year +
+        " " +
+        hours +
+        ":" +
+        minutes +
+        meridiem;
     return formattedDate;
 }
 
-
 // triggers:
-$('#rm_button_create').on('click', function () {                 //when "+New Character" is clicked
-    $(SelectedCharacterTab).children('h2').html('');        // empty nav's 3rd panel tab
+$("#rm_button_create").on("click", function () {
+    //when "+New Character" is clicked
+    $(SelectedCharacterTab).children("h2").html(""); // empty nav's 3rd panel tab
 });
 //when any input is made to the create/edit character form textareas
-$('#rm_ch_create_block').on('input', function () { countTokensDebounced(); });
+$("#rm_ch_create_block").on("input", function () {
+    countTokensDebounced();
+});
 //when any input is made to the advanced editing popup textareas
-$('#character_popup').on('input', function () { countTokensDebounced(); });
+$("#character_popup").on("input", function () {
+    countTokensDebounced();
+});
 //function:
 export async function RA_CountCharTokens() {
     counterNonce = Date.now();
@@ -216,36 +264,37 @@ export async function RA_CountCharTokens() {
     let total_tokens = 0;
     let permanent_tokens = 0;
 
-    const tokenCounters = document.querySelectorAll('[data-token-counter]');
+    const tokenCounters = document.querySelectorAll("[data-token-counter]");
     for (const tokenCounter of tokenCounters) {
         if (counterNonceLocal !== counterNonce) {
             return;
         }
 
         const counter = $(tokenCounter);
-        const input = $(document.getElementById(counter.data('token-counter')));
-        const isPermanent = counter.data('token-permanent') === true;
+        const input = $(document.getElementById(counter.data("token-counter")));
+        const isPermanent = counter.data("token-permanent") === true;
         const value = String(input.val());
 
         if (input.length === 0) {
-            counter.text('Invalid input reference');
+            counter.text("Invalid input reference");
             continue;
         }
 
         if (!value) {
-            input.data('last-value-hash', '');
+            input.data("last-value-hash", "");
             counter.text(0);
             continue;
         }
 
         const valueHash = getStringHash(value);
 
-        if (input.data('last-value-hash') === valueHash) {
+        if (input.data("last-value-hash") === valueHash) {
             total_tokens += Number(counter.text());
             permanent_tokens += isPermanent ? Number(counter.text()) : 0;
         } else {
             // We substitute macro for existing characters, but not for the character being created
-            const valueToCount = menu_type === 'create' ? value : substituteParams(value);
+            const valueToCount =
+                menu_type === "create" ? value : substituteParams(value);
             const tokens = await getTokenCountAsync(valueToCount);
 
             if (counterNonceLocal !== counterNonce) {
@@ -255,17 +304,22 @@ export async function RA_CountCharTokens() {
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;
-            input.data('last-value-hash', valueHash);
+            input.data("last-value-hash", valueHash);
         }
     }
 
     // Warn if total tokens exceeds the limit of half the max context
-    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
-    const showWarning = (total_tokens > tokenLimit);
-    $('#result_info_total_tokens').text(total_tokens);
-    $('#result_info_permanent_tokens').text(permanent_tokens);
-    $('#result_info_text').toggleClass('neutral_warning', showWarning);
-    $('#chartokenwarning').toggle(showWarning);
+    const tokenLimit = Math.max(
+        (main_api !== "openai"
+            ? max_context
+            : oai_settings.openai_max_context) / 2,
+        1024,
+    );
+    const showWarning = total_tokens > tokenLimit;
+    $("#result_info_total_tokens").text(total_tokens);
+    $("#result_info_permanent_tokens").text(permanent_tokens);
+    $("#result_info_text").toggleClass("neutral_warning", showWarning);
+    $("#chartokenwarning").toggle(showWarning);
 }
 /**
  * Auto load chat with the last active character or group.
@@ -276,26 +330,38 @@ export async function RA_CountCharTokens() {
  * The character or group is selected (clicked) if it is found.
  */
 async function RA_autoloadchat() {
-    if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
+    if (
+        document.querySelector(
+            "#rm_print_characters_block .character_select",
+        ) !== null
+    ) {
         // active character is the name, we should look it up in the character list and get the id
         if (active_character !== null && active_character !== undefined) {
-            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+            const active_character_id = characters.findIndex(
+                (x) => getTagKeyForEntity(x) === active_character,
+            );
             if (active_character_id !== -1) {
                 await selectCharacterById(active_character_id);
 
                 // Do a little tomfoolery to spoof the tag selector
-                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
+                const selectedCharElement = $(
+                    `#rm_print_characters_block .character_select[chid="${active_character_id}"]`,
+                );
                 applyTagsOnCharacterSelect.call(selectedCharElement);
             } else {
                 setActiveCharacter(null);
                 saveSettingsDebounced();
-                console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
+                console.warn(
+                    `Currently active character with ID ${active_character} not found. Resetting to no active character.`,
+                );
             }
         }
 
         if (active_group !== null && active_group !== undefined) {
             if (active_character) {
-                console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+                console.warn(
+                    "Active character and active group are both set. Only active character will be loaded. Resetting active group.",
+                );
                 setActiveGroup(null);
                 saveSettingsDebounced();
             } else {
@@ -303,59 +369,80 @@ async function RA_autoloadchat() {
                 if (!result) {
                     setActiveGroup(null);
                     saveSettingsDebounced();
-                    console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
+                    console.warn(
+                        `Currently active group with ID ${active_group} not found. Resetting to no active group.`,
+                    );
                 }
             }
         }
 
         // if the character list hadn't been loaded yet, try again.
-    } else { setTimeout(RA_autoloadchat, 100); }
+    } else {
+        setTimeout(RA_autoloadchat, 100);
+    }
 }
 
 export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
-    const container = $('#right-nav-panel .hotswap');
+    const container = $("#right-nav-panel .hotswap");
 
     // Hard limit is required because even if all hotswaps don't fit the screen, their images would still be loaded
     // 25 is roughly calculated as the maximum number of favs that can fit an ultrawide monitor with the default theme
     const FAVS_LIMIT = 25;
-    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true').slice(0, FAVS_LIMIT);
+    const favs = entities
+        .filter((x) => x.item.fav || x.item.fav == "true")
+        .slice(0, FAVS_LIMIT);
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html(`<small><span><i class="fa-solid fa-star"></i>&nbsp;${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
+        container.html(
+            `<small><span><i class="fa-solid fa-star"></i>&nbsp;${DOMPurify.sanitize(container.attr("no_favs"))}</span></small>`,
+        );
         return;
     }
 
-    buildAvatarList(container, favs, { interactable: true, highlightFavs: false });
+    buildAvatarList(container, favs, {
+        interactable: true,
+        highlightFavs: false,
+    });
 }
 
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
-    if (online_status == 'no_connection') {
-        const send_textarea = $('#send_textarea');
-        send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
-        $('#send_form').addClass('no-connection');
-        $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
-        $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
-        $('#mes_impersonate').addClass('displayNone'); //continue button is hidden when not connected;
-        $('#API-status-top').removeClass('fa-plug');
-        $('#API-status-top').addClass('fa-plug-circle-exclamation redOverlayGlow');
+    if (online_status == "no_connection") {
+        const send_textarea = $("#send_textarea");
+        send_textarea.attr(
+            "placeholder",
+            send_textarea.attr("no_connection_text"),
+        ); //Input bar placeholder tells users they are not connected
+        $("#send_form").addClass("no-connection");
+        $("#send_but").addClass("displayNone"); //send button is hidden when not connected;
+        $("#mes_continue").addClass("displayNone"); //continue button is hidden when not connected;
+        $("#mes_impersonate").addClass("displayNone"); //continue button is hidden when not connected;
+        $("#API-status-top").removeClass("fa-plug");
+        $("#API-status-top").addClass(
+            "fa-plug-circle-exclamation redOverlayGlow",
+        );
         connection_made = false;
     } else {
-        if (online_status !== undefined && online_status !== 'no_connection') {
-            const send_textarea = $('#send_textarea');
-            send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
-            $('#send_form').removeClass('no-connection');
-            $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
-            $('#API-status-top').addClass('fa-plug');
+        if (online_status !== undefined && online_status !== "no_connection") {
+            const send_textarea = $("#send_textarea");
+            send_textarea.attr(
+                "placeholder",
+                send_textarea.attr("connected_text"),
+            ); //on connect, placeholder tells user to type message
+            $("#send_form").removeClass("no-connection");
+            $("#API-status-top").removeClass(
+                "fa-plug-circle-exclamation redOverlayGlow",
+            );
+            $("#API-status-top").addClass("fa-plug");
             connection_made = true;
             retry_delay = 100;
 
             if (!is_send_press && !(selected_group && is_group_generating)) {
-                $('#send_but').removeClass('displayNone'); //on connect, send button shows
-                $('#mes_continue').removeClass('displayNone'); //continue button is shown when connected
-                $('#mes_impersonate').removeClass('displayNone'); //continue button is shown when connected
+                $("#send_but").removeClass("displayNone"); //on connect, send button shows
+                $("#mes_continue").removeClass("displayNone"); //continue button is shown when connected
+                $("#mes_impersonate").removeClass("displayNone"); //continue button is shown when connected
             }
         }
     }
@@ -368,54 +455,102 @@ function RA_autoconnect(PrevApi) {
         setTimeout(RA_autoconnect, 100);
         return;
     }
-    if (online_status === 'no_connection' && power_user.auto_connect) {
+    if (online_status === "no_connection" && power_user.auto_connect) {
         switch (main_api) {
-            case 'kobold':
+            case "kobold":
                 if (api_server && isValidUrl(api_server)) {
-                    $('#api_button').trigger('click');
+                    $("#api_button").trigger("click");
                 }
                 break;
-            case 'novel':
+            case "novel":
                 if (secret_state[SECRET_KEYS.NOVEL]) {
-                    $('#api_button_novel').trigger('click');
+                    $("#api_button_novel").trigger("click");
                 }
                 break;
-            case 'textgenerationwebui':
-                if ((textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER])
-                    || (textgen_settings.type === textgen_types.TOGETHERAI && secret_state[SECRET_KEYS.TOGETHERAI])
-                    || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI])
-                    || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
-                    || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
-                    || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
+            case "textgenerationwebui":
+                if (
+                    (textgen_settings.type === textgen_types.MANCER &&
+                        secret_state[SECRET_KEYS.MANCER]) ||
+                    (textgen_settings.type === textgen_types.TOGETHERAI &&
+                        secret_state[SECRET_KEYS.TOGETHERAI]) ||
+                    (textgen_settings.type === textgen_types.INFERMATICAI &&
+                        secret_state[SECRET_KEYS.INFERMATICAI]) ||
+                    (textgen_settings.type === textgen_types.DREAMGEN &&
+                        secret_state[SECRET_KEYS.DREAMGEN]) ||
+                    (textgen_settings.type === textgen_types.OPENROUTER &&
+                        secret_state[SECRET_KEYS.OPENROUTER]) ||
+                    (textgen_settings.type === textgen_types.FEATHERLESS &&
+                        secret_state[SECRET_KEYS.FEATHERLESS])
                 ) {
-                    $('#api_button_textgenerationwebui').trigger('click');
-                }
-                else if (isValidUrl(getTextGenServer())) {
-                    $('#api_button_textgenerationwebui').trigger('click');
+                    $("#api_button_textgenerationwebui").trigger("click");
+                } else if (isValidUrl(getTextGenServer())) {
+                    $("#api_button_textgenerationwebui").trigger("click");
                 }
                 break;
-            case 'openai':
-                if (((secret_state[SECRET_KEYS.OPENAI] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
-                    || ((secret_state[SECRET_KEYS.CLAUDE] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
-                    || ((secret_state[SECRET_KEYS.SCALE] || secret_state[SECRET_KEYS.SCALE_COOKIE]) && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
-                    || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
-                    || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
-                    || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
-                    || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
-                    || (secret_state[SECRET_KEYS.VERTEXAI] && oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI && oai_settings.vertexai_auth_mode === 'express')
-                    || (secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] && oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI && oai_settings.vertexai_auth_mode === 'full')
-                    || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
-                    || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
-                    || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
-                    || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
-                    || (secret_state[SECRET_KEYS.ZEROONEAI] && oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI)
-                    || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
-                    || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
-                    || (secret_state[SECRET_KEYS.XAI] && oai_settings.chat_completion_source == chat_completion_sources.XAI)
-                    || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
-                    || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
+            case "openai":
+                if (
+                    ((secret_state[SECRET_KEYS.OPENAI] ||
+                        oai_settings.reverse_proxy) &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.OPENAI) ||
+                    ((secret_state[SECRET_KEYS.CLAUDE] ||
+                        oai_settings.reverse_proxy) &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.CLAUDE) ||
+                    ((secret_state[SECRET_KEYS.SCALE] ||
+                        secret_state[SECRET_KEYS.SCALE_COOKIE]) &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.SCALE) ||
+                    oai_settings.chat_completion_source ==
+                        chat_completion_sources.WINDOWAI ||
+                    (secret_state[SECRET_KEYS.OPENROUTER] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.OPENROUTER) ||
+                    (secret_state[SECRET_KEYS.AI21] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.AI21) ||
+                    (secret_state[SECRET_KEYS.MAKERSUITE] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.MAKERSUITE) ||
+                    (secret_state[SECRET_KEYS.VERTEXAI] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.VERTEXAI &&
+                        oai_settings.vertexai_auth_mode === "express") ||
+                    (secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.VERTEXAI &&
+                        oai_settings.vertexai_auth_mode === "full") ||
+                    (secret_state[SECRET_KEYS.MISTRALAI] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.MISTRALAI) ||
+                    (secret_state[SECRET_KEYS.COHERE] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.COHERE) ||
+                    (secret_state[SECRET_KEYS.PERPLEXITY] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.PERPLEXITY) ||
+                    (secret_state[SECRET_KEYS.GROQ] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.GROQ) ||
+                    (secret_state[SECRET_KEYS.ZEROONEAI] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.ZEROONEAI) ||
+                    (secret_state[SECRET_KEYS.NANOGPT] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.NANOGPT) ||
+                    (secret_state[SECRET_KEYS.DEEPSEEK] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.DEEPSEEK) ||
+                    (secret_state[SECRET_KEYS.XAI] &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.XAI) ||
+                    oai_settings.chat_completion_source ===
+                        chat_completion_sources.POLLINATIONS ||
+                    (isValidUrl(oai_settings.custom_url) &&
+                        oai_settings.chat_completion_source ==
+                            chat_completion_sources.CUSTOM)
                 ) {
-                    $('#api_button_openai').trigger('click');
+                    $("#api_button_openai").trigger("click");
                 }
                 break;
         }
@@ -431,43 +566,54 @@ function RA_autoconnect(PrevApi) {
 function OpenNavPanels() {
     if (!isMobile()) {
         //auto-open R nav if locked and previously open
-        if (accountStorage.getItem('NavLockOn') == 'true' && accountStorage.getItem('NavOpened') == 'true') {
+        if (
+            accountStorage.getItem("NavLockOn") == "true" &&
+            accountStorage.getItem("NavOpened") == "true"
+        ) {
             //console.log("RA -- clicking right nav to open");
-            $('#rightNavDrawerIcon').click();
+            $("#rightNavDrawerIcon").click();
         }
 
         //auto-open L nav if locked and previously open
-        if (accountStorage.getItem('LNavLockOn') == 'true' && accountStorage.getItem('LNavOpened') == 'true') {
-            console.debug('RA -- clicking left nav to open');
-            $('#leftNavDrawerIcon').click();
+        if (
+            accountStorage.getItem("LNavLockOn") == "true" &&
+            accountStorage.getItem("LNavOpened") == "true"
+        ) {
+            console.debug("RA -- clicking left nav to open");
+            $("#leftNavDrawerIcon").click();
         }
 
         //auto-open WI if locked and previously open
-        if (accountStorage.getItem('WINavLockOn') == 'true' && accountStorage.getItem('WINavOpened') == 'true') {
-            console.debug('RA -- clicking WI to open');
-            $('#WIDrawerIcon').click();
+        if (
+            accountStorage.getItem("WINavLockOn") == "true" &&
+            accountStorage.getItem("WINavOpened") == "true"
+        ) {
+            console.debug("RA -- clicking WI to open");
+            $("#WIDrawerIcon").click();
         }
     }
 }
 
-const getUserInputKey = () => getCurrentUserHandle() + '_userInput';
+const getUserInputKey = () => getCurrentUserHandle() + "_userInput";
 
 function restoreUserInput() {
     if (!power_user.restore_user_input) {
-        console.debug('restoreUserInput disabled');
+        console.debug("restoreUserInput disabled");
         return;
     }
 
     const userInput = localStorage.getItem(getUserInputKey());
     if (userInput) {
-        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles: true }));
+        $("#send_textarea")
+            .val(userInput)[0]
+            .dispatchEvent(new Event("input", { bubbles: true }));
     }
 }
 
 function saveUserInput() {
-    const userInput = String($('#send_textarea').val());
+    const userInput = String($("#send_textarea").val());
     localStorage.setItem(getUserInputKey(), userInput);
-    console.debug('User Input -- ', userInput);
+    console.debug("User Input -- ", userInput);
 }
 const saveUserInputDebounced = debounce(saveUserInput);
 
@@ -477,37 +623,61 @@ export function dragElement(elmnt) {
     var isHeaderBeingDragged = false;
     var isMouseDown = false;
 
-    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    var height, width, top, left, right, bottom,
-        maxX, maxY, winHeight, winWidth,
-        topbar, topBarFirstX, topBarLastY;
+    var pos1 = 0,
+        pos2 = 0,
+        pos3 = 0,
+        pos4 = 0;
+    var height,
+        width,
+        top,
+        left,
+        right,
+        bottom,
+        maxX,
+        maxY,
+        winHeight,
+        winWidth,
+        topbar,
+        topBarFirstX,
+        topBarLastY;
 
-    var elmntName = elmnt.attr('id');
+    var elmntName = elmnt.attr("id");
     console.debug(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {
-        elmntHeader.off('mousedown').on('mousedown', (e) => { //listener for drag handle repositioning
+        elmntHeader.off("mousedown").on("mousedown", (e) => {
+            //listener for drag handle repositioning
             isHeaderBeingDragged = true;
             isMouseDown = true;
-            observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
+            observer.observe(elmnt.get(0), {
+                attributes: true,
+                attributeFilter: ["style"],
+            });
             dragMouseDown(e);
         });
-        $(elmnt).off('mousedown').on('mousedown', () => { //listener for resize
-            isMouseDown = true;
-            observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
-        });
+        $(elmnt)
+            .off("mousedown")
+            .on("mousedown", () => {
+                //listener for resize
+                isMouseDown = true;
+                observer.observe(elmnt.get(0), {
+                    attributes: true,
+                    attributeFilter: ["style"],
+                });
+            });
     }
 
     const observer = new MutationObserver((mutations) => {
         const target = mutations[0].target;
-        if (!$(target).is(':visible') //abort if element is invisible
-            || $(target).hasClass('resizing') //being auto-resized by other JS code
-            || Number((String(target.height).replace('px', ''))) < 50 //too short
-            || Number((String(target.width).replace('px', ''))) < 50 //too narrow
-            || power_user.movingUI === false // if MUI is not turned on
-            || isMobile() // if it's a mobile screen
+        if (
+            !$(target).is(":visible") || //abort if element is invisible
+            $(target).hasClass("resizing") || //being auto-resized by other JS code
+            Number(String(target.height).replace("px", "")) < 50 || //too short
+            Number(String(target.width).replace("px", "")) < 50 || //too narrow
+            power_user.movingUI === false || // if MUI is not turned on
+            isMobile() // if it's a mobile screen
         ) {
             return;
         }
@@ -524,7 +694,7 @@ export function dragElement(elmnt) {
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
 
-        topbar = document.getElementById('top-bar');
+        topbar = document.getElementById("top-bar");
         const topbarstyle = getComputedStyle(topbar);
         topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
@@ -536,75 +706,94 @@ export function dragElement(elmnt) {
         }
 
         //handle resizing
-        if (!isHeaderBeingDragged && isMouseDown) { //if user is dragging the resize handle (not in header)
+        if (!isHeaderBeingDragged && isMouseDown) {
+            //if user is dragging the resize handle (not in header)
             let imgHeight, imgWidth, imageAspectRatio;
             let containerAspectRatio = height / width;
 
             //force aspect ratio for zoomed avatars
-            if ($(elmnt).attr('id').startsWith('zoomFor_')) {
-                let zoomedAvatarImage = $(elmnt).find('.zoomed_avatar_img');
+            if ($(elmnt).attr("id").startsWith("zoomFor_")) {
+                let zoomedAvatarImage = $(elmnt).find(".zoomed_avatar_img");
                 imgHeight = zoomedAvatarImage.height();
                 imgWidth = zoomedAvatarImage.width();
                 imageAspectRatio = imgHeight / imgWidth;
 
                 // Maintain aspect ratio
                 if (containerAspectRatio !== imageAspectRatio) {
-                    elmnt.css('width', elmnt.width());
-                    elmnt.css('height', elmnt.width() * imageAspectRatio);
+                    elmnt.css("width", elmnt.width());
+                    elmnt.css("height", elmnt.width() * imageAspectRatio);
                 }
 
                 // Prevent resizing offscreen
                 if (top + elmnt.height() >= winHeight) {
-                    elmnt.css('height', winHeight - top - 1 + 'px');
-                    elmnt.css('width', (winHeight - top - 1) / imageAspectRatio + 'px');
+                    elmnt.css("height", winHeight - top - 1 + "px");
+                    elmnt.css(
+                        "width",
+                        (winHeight - top - 1) / imageAspectRatio + "px",
+                    );
                 }
 
                 if (left + elmnt.width() >= winWidth) {
-                    elmnt.css('width', winWidth - left - 1 + 'px');
-                    elmnt.css('height', (winWidth - left - 1) * imageAspectRatio + 'px');
+                    elmnt.css("width", winWidth - left - 1 + "px");
+                    elmnt.css(
+                        "height",
+                        (winWidth - left - 1) * imageAspectRatio + "px",
+                    );
                 }
-            } else { //prevent divs that are not zoomedAvatars from resizing offscreen
+            } else {
+                //prevent divs that are not zoomedAvatars from resizing offscreen
 
                 if (top + elmnt.height() >= winHeight) {
-                    elmnt.css('height', winHeight - top - 1 + 'px');
+                    elmnt.css("height", winHeight - top - 1 + "px");
                 }
 
                 if (left + elmnt.width() >= winWidth) {
-                    elmnt.css('width', winWidth - left - 1 + 'px');
+                    elmnt.css("width", winWidth - left - 1 + "px");
                 }
             }
 
             //prevent resizing from top left into the top bar
-            if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
-                elmnt.css('width', width - 1 + 'px');
+            if (
+                top < topBarLastY &&
+                maxX >= topBarFirstX &&
+                left <= topBarFirstX
+            ) {
+                elmnt.css("width", width - 1 + "px");
             }
 
             //set css to prevent weird resize behavior (does not save)
-            elmnt.css('left', left);
-            elmnt.css('top', top);
+            elmnt.css("left", left);
+            elmnt.css("top", top);
 
             //set a listener for mouseup to save new width/height
-            $(window).off('mouseup').on('mouseup', () => {
-                console.log(`Saving ${elmntName} Height/Width`);
-                // check if the height or width actually changed
-                if (power_user.movingUIState[elmntName].width === elmnt.width() && power_user.movingUIState[elmntName].height === elmnt.height()) {
-                    console.log('no change detected, aborting save');
-                    return;
-                }
+            $(window)
+                .off("mouseup")
+                .on("mouseup", () => {
+                    console.log(`Saving ${elmntName} Height/Width`);
+                    // check if the height or width actually changed
+                    if (
+                        power_user.movingUIState[elmntName].width ===
+                            elmnt.width() &&
+                        power_user.movingUIState[elmntName].height ===
+                            elmnt.height()
+                    ) {
+                        console.log("no change detected, aborting save");
+                        return;
+                    }
 
-                power_user.movingUIState[elmntName].width = width;
-                power_user.movingUIState[elmntName].height = height;
-                eventSource.emit('resizeUI', elmntName);
-                saveSettingsDebounced();
-                imgHeight = null;
-                imgWidth = null;
-                height = null;
-                width = null;
+                    power_user.movingUIState[elmntName].width = width;
+                    power_user.movingUIState[elmntName].height = height;
+                    eventSource.emit("resizeUI", elmntName);
+                    saveSettingsDebounced();
+                    imgHeight = null;
+                    imgWidth = null;
+                    height = null;
+                    width = null;
 
-                containerAspectRatio = null;
-                imageAspectRatio = null;
-                $(window).off('mouseup');
-            });
+                    containerAspectRatio = null;
+                    imageAspectRatio = null;
+                    $(window).off("mouseup");
+                });
         }
 
         //only record position changes if header is being dragged
@@ -612,44 +801,43 @@ export function dragElement(elmnt) {
         power_user.movingUIState[elmntName].left = left;
         power_user.movingUIState[elmntName].right = right;
         power_user.movingUIState[elmntName].bottom = bottom;
-        power_user.movingUIState[elmntName].margin = 'unset';
+        power_user.movingUIState[elmntName].margin = "unset";
 
         //handle dragging hit detection to prevent dragging offscreen
         if (isHeaderBeingDragged && isMouseDown) {
-
             if (top <= 0) {
-                elmnt.css('top', '0px');
+                elmnt.css("top", "0px");
             } else if (maxY >= winHeight) {
-                elmnt.css('top', winHeight - maxY + top - 1 + 'px');
+                elmnt.css("top", winHeight - maxY + top - 1 + "px");
             }
 
             if (left <= 0) {
-                elmnt.css('left', '0px');
+                elmnt.css("left", "0px");
             } else if (maxX >= winWidth) {
-                elmnt.css('left', winWidth - maxX + left - 1 + 'px');
+                elmnt.css("left", winWidth - maxX + left - 1 + "px");
             }
         }
 
         // Check if the element header exists and set the reposition listener on the grabber in the header
         if (elmntHeader.length) {
-            elmntHeader.off('mousedown').on('mousedown', (e) => {
+            elmntHeader.off("mousedown").on("mousedown", (e) => {
                 dragMouseDown(e);
             });
-        } else { //if no header, put the listener on the elmnt itself.
-            elmnt.off('mousedown').on('mousedown', dragMouseDown);
+        } else {
+            //if no header, put the listener on the elmnt itself.
+            elmnt.off("mousedown").on("mousedown", dragMouseDown);
         }
     });
 
     function dragMouseDown(e) {
-
         if (e) {
             isHeaderBeingDragged = true;
             e.preventDefault();
             pos3 = e.clientX; //mouse X at click
             pos4 = e.clientY; //mouse Y at click
         }
-        $(document).on('mouseup', closeDragElement);
-        $(document).on('mousemove', elementDrag);
+        $(document).on("mouseup", closeDragElement);
+        $(document).on("mousemove", elementDrag);
     }
 
     function elementDrag(e) {
@@ -660,41 +848,41 @@ export function dragElement(elmnt) {
         e = e || window.event;
         e.preventDefault();
 
-        pos1 = pos3 - e.clientX;    //X change amt (-1 or 1)
-        pos2 = pos4 - e.clientY;    //Y change amt (-1 or 1)
-        pos3 = e.clientX;   //new mouse X
-        pos4 = e.clientY;   //new mouse Y
+        pos1 = pos3 - e.clientX; //X change amt (-1 or 1)
+        pos2 = pos4 - e.clientY; //Y change amt (-1 or 1)
+        pos3 = e.clientX; //new mouse X
+        pos4 = e.clientY; //new mouse Y
 
-        elmnt.attr('data-dragged', 'true');
+        elmnt.attr("data-dragged", "true");
 
         //first set css to computed values to avoid CSS NaN results from 'auto', etc
-        elmnt.css('left', (elmnt.offset().left) + 'px');
-        elmnt.css('top', (elmnt.offset().top) + 'px');
+        elmnt.css("left", elmnt.offset().left + "px");
+        elmnt.css("top", elmnt.offset().top + "px");
 
         //then update element position styles to account for drag changes
-        elmnt.css('margin', 'unset');
-        elmnt.css('left', (elmnt.offset().left - pos1) + 'px');
-        elmnt.css('top', (elmnt.offset().top - pos2) + 'px');
+        elmnt.css("margin", "unset");
+        elmnt.css("left", elmnt.offset().left - pos1 + "px");
+        elmnt.css("top", elmnt.offset().top - pos2 + "px");
         /*         elmnt.css('right', ((winWidth - maxX) + 'px'));
                 elmnt.css('bottom', ((winHeight - maxY) + 'px')); */
 
         // Height/Width here are for visuals only, and are not saved to settings.
         // This is required because some divs do hot have a set width/height
         // and will default to shrink to min value of 100px set in CSS file
-        elmnt.css('height', height);
-        elmnt.css('width', width);
+        elmnt.css("height", height);
+        elmnt.css("width", width);
         return;
     }
 
     function closeDragElement() {
-        console.debug('drag finished');
+        console.debug("drag finished");
         isHeaderBeingDragged = false;
         isMouseDown = false;
-        $(document).off('mouseup', closeDragElement);
-        $(document).off('mousemove', elementDrag);
-        $('body').css('overflow', '');
+        $(document).off("mouseup", closeDragElement);
+        $(document).off("mousemove", elementDrag);
+        $("body").css("overflow", "");
         // Clear the "data-dragged" attribute
-        elmnt.attr('data-dragged', 'false');
+        elmnt.attr("data-dragged", "false");
         observer.disconnect();
         console.debug(`Saving ${elmntName} UI position`);
         saveSettingsDebounced();
@@ -709,37 +897,43 @@ export function dragElement(elmnt) {
 
 export async function initMovingUI() {
     if (!isMobile() && power_user.movingUI === true) {
-        console.debug('START MOVING UI');
-        dragElement($('#sheld'));
-        dragElement($('#left-nav-panel'));
-        dragElement($('#right-nav-panel'));
-        dragElement($('#WorldInfo'));
-        dragElement($('#floatingPrompt'));
-        dragElement($('#logprobsViewer'));
-        dragElement($('#cfgConfig'));
+        console.debug("START MOVING UI");
+        dragElement($("#sheld"));
+        dragElement($("#left-nav-panel"));
+        dragElement($("#right-nav-panel"));
+        dragElement($("#WorldInfo"));
+        dragElement($("#floatingPrompt"));
+        dragElement($("#logprobsViewer"));
+        dragElement($("#cfgConfig"));
     }
 }
 
 /**@type {HTMLTextAreaElement} */
-const sendTextArea = document.querySelector('#send_textarea');
-const chatBlock = document.getElementById('chat');
-const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+const sendTextArea = document.querySelector("#send_textarea");
+const chatBlock = document.getElementById("chat");
+const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
 
 /**
  * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
  */
 function autoFitSendTextArea() {
-    const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
+    const originalScrollBottom =
+        chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
 
-    sendTextArea.style.height = '1px'; // Reset height to 1px to force recalculation of scrollHeight
+    sendTextArea.style.height = "1px"; // Reset height to 1px to force recalculation of scrollHeight
     const newHeight = sendTextArea.scrollHeight;
     sendTextArea.style.height = `${newHeight}px`;
 
     if (!isFirefox) {
-        chatBlock.scrollTop = chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom);
+        chatBlock.scrollTop =
+            chatBlock.scrollHeight -
+            (chatBlock.offsetHeight + originalScrollBottom);
     }
 }
-export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, debounce_timeout.short);
+export const autoFitSendTextAreaDebounced = debounce(
+    autoFitSendTextArea,
+    debounce_timeout.short,
+);
 
 // ---------------------------------------------------
 
@@ -755,137 +949,158 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
-    $('#main_api').change(function () {
+    $("#main_api").change(function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
     });
 
-    $('#api_button').on('click', () => checkStatusDebounced());
+    $("#api_button").on("click", () => checkStatusDebounced());
 
     //toggle pin class when lock toggle clicked
-    $(RPanelPin).on('click', function () {
-        accountStorage.setItem('NavLockOn', $(RPanelPin).prop('checked'));
-        if ($(RPanelPin).prop('checked') == true) {
+    $(RPanelPin).on("click", function () {
+        accountStorage.setItem("NavLockOn", $(RPanelPin).prop("checked"));
+        if ($(RPanelPin).prop("checked") == true) {
             //console.log('adding pin class to right nav');
-            $(RightNavPanel).addClass('pinnedOpen');
-            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+            $(RightNavPanel).addClass("pinnedOpen");
+            $(RightNavDrawerIcon).addClass("drawerPinnedOpen");
         } else {
             //console.log('removing pin class from right nav');
-            $(RightNavPanel).removeClass('pinnedOpen');
-            $(RightNavDrawerIcon).removeClass('drawerPinnedOpen');
+            $(RightNavPanel).removeClass("pinnedOpen");
+            $(RightNavDrawerIcon).removeClass("drawerPinnedOpen");
 
-            if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
+            if (
+                $(RightNavPanel).hasClass("openDrawer") &&
+                $(".openDrawer").length > 1
+            ) {
                 slideToggle(RightNavPanel, getSlideToggleOptions());
-                $(RightNavDrawerIcon).toggleClass('closedIcon openIcon');
-                $(RightNavPanel).toggleClass('openDrawer closedDrawer');
+                $(RightNavDrawerIcon).toggleClass("closedIcon openIcon");
+                $(RightNavPanel).toggleClass("openDrawer closedDrawer");
             }
         }
     });
-    $(LPanelPin).on('click', function () {
-        accountStorage.setItem('LNavLockOn', $(LPanelPin).prop('checked'));
-        if ($(LPanelPin).prop('checked') == true) {
+    $(LPanelPin).on("click", function () {
+        accountStorage.setItem("LNavLockOn", $(LPanelPin).prop("checked"));
+        if ($(LPanelPin).prop("checked") == true) {
             //console.log('adding pin class to Left nav');
-            $(LeftNavPanel).addClass('pinnedOpen');
-            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+            $(LeftNavPanel).addClass("pinnedOpen");
+            $(LeftNavDrawerIcon).addClass("drawerPinnedOpen");
         } else {
             //console.log('removing pin class from Left nav');
-            $(LeftNavPanel).removeClass('pinnedOpen');
-            $(LeftNavDrawerIcon).removeClass('drawerPinnedOpen');
+            $(LeftNavPanel).removeClass("pinnedOpen");
+            $(LeftNavDrawerIcon).removeClass("drawerPinnedOpen");
 
-            if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
+            if (
+                $(LeftNavPanel).hasClass("openDrawer") &&
+                $(".openDrawer").length > 1
+            ) {
                 slideToggle(LeftNavPanel, getSlideToggleOptions());
-                $(LeftNavDrawerIcon).toggleClass('closedIcon openIcon');
-                $(LeftNavPanel).toggleClass('openDrawer closedDrawer');
+                $(LeftNavDrawerIcon).toggleClass("closedIcon openIcon");
+                $(LeftNavPanel).toggleClass("openDrawer closedDrawer");
             }
         }
     });
 
-    $(WIPanelPin).on('click', function () {
-        accountStorage.setItem('WINavLockOn', $(WIPanelPin).prop('checked'));
-        if ($(WIPanelPin).prop('checked') == true) {
-            console.debug('adding pin class to WI');
-            $(WorldInfo).addClass('pinnedOpen');
-            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+    $(WIPanelPin).on("click", function () {
+        accountStorage.setItem("WINavLockOn", $(WIPanelPin).prop("checked"));
+        if ($(WIPanelPin).prop("checked") == true) {
+            console.debug("adding pin class to WI");
+            $(WorldInfo).addClass("pinnedOpen");
+            $(WIDrawerIcon).addClass("drawerPinnedOpen");
         } else {
-            console.debug('removing pin class from WI');
-            $(WorldInfo).removeClass('pinnedOpen');
-            $(WIDrawerIcon).removeClass('drawerPinnedOpen');
+            console.debug("removing pin class from WI");
+            $(WorldInfo).removeClass("pinnedOpen");
+            $(WIDrawerIcon).removeClass("drawerPinnedOpen");
 
-            if ($(WorldInfo).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                console.debug('closing WI after lock removal');
+            if (
+                $(WorldInfo).hasClass("openDrawer") &&
+                $(".openDrawer").length > 1
+            ) {
+                console.debug("closing WI after lock removal");
                 slideToggle(WorldInfo, getSlideToggleOptions());
-                $(WIDrawerIcon).toggleClass('closedIcon openIcon');
-                $(WorldInfo).toggleClass('openDrawer closedDrawer');
+                $(WIDrawerIcon).toggleClass("closedIcon openIcon");
+                $(WorldInfo).toggleClass("openDrawer closedDrawer");
             }
         }
     });
 
     // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
-    if (accountStorage.getItem('NavLockOn') == 'true') {
+    $(RPanelPin).prop("checked", accountStorage.getItem("NavLockOn") == "true");
+    if (accountStorage.getItem("NavLockOn") == "true") {
         //console.log('setting pin class via local var');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        $(RightNavPanel).addClass("pinnedOpen");
+        $(RightNavDrawerIcon).addClass("drawerPinnedOpen");
     }
-    if ($(RPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+    if ($(RPanelPin).prop("checked")) {
+        console.debug("setting pin class via checkbox state");
+        $(RightNavPanel).addClass("pinnedOpen");
+        $(RightNavDrawerIcon).addClass("drawerPinnedOpen");
     }
     // read the state of left Nav Lock and apply to leftnav classlist
-    $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
-    if (accountStorage.getItem('LNavLockOn') == 'true') {
+    $(LPanelPin).prop(
+        "checked",
+        accountStorage.getItem("LNavLockOn") === "true",
+    );
+    if (accountStorage.getItem("LNavLockOn") == "true") {
         //console.log('setting pin class via local var');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        $(LeftNavPanel).addClass("pinnedOpen");
+        $(LeftNavDrawerIcon).addClass("drawerPinnedOpen");
     }
-    if ($(LPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+    if ($(LPanelPin).prop("checked")) {
+        console.debug("setting pin class via checkbox state");
+        $(LeftNavPanel).addClass("pinnedOpen");
+        $(LeftNavDrawerIcon).addClass("drawerPinnedOpen");
     }
 
     // read the state of left Nav Lock and apply to leftnav classlist
-    $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
-    if (accountStorage.getItem('WINavLockOn') == 'true') {
+    $(WIPanelPin).prop(
+        "checked",
+        accountStorage.getItem("WINavLockOn") === "true",
+    );
+    if (accountStorage.getItem("WINavLockOn") == "true") {
         //console.log('setting pin class via local var');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        $(WorldInfo).addClass("pinnedOpen");
+        $(WIDrawerIcon).addClass("drawerPinnedOpen");
     }
 
-    if ($(WIPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
+    if ($(WIPanelPin).prop("checked")) {
+        console.debug("setting pin class via checkbox state");
+        $(WorldInfo).addClass("pinnedOpen");
+        $(WIDrawerIcon).addClass("drawerPinnedOpen");
     }
 
     //save state of Right nav being open or closed
-    $('#rightNavDrawerIcon').on('click', function () {
-        if (!$('#rightNavDrawerIcon').hasClass('openIcon')) {
-            accountStorage.setItem('NavOpened', 'true');
-        } else { accountStorage.setItem('NavOpened', 'false'); }
+    $("#rightNavDrawerIcon").on("click", function () {
+        if (!$("#rightNavDrawerIcon").hasClass("openIcon")) {
+            accountStorage.setItem("NavOpened", "true");
+        } else {
+            accountStorage.setItem("NavOpened", "false");
+        }
     });
 
     //save state of Left nav being open or closed
-    $('#leftNavDrawerIcon').on('click', function () {
-        if (!$('#leftNavDrawerIcon').hasClass('openIcon')) {
-            accountStorage.setItem('LNavOpened', 'true');
-        } else { accountStorage.setItem('LNavOpened', 'false'); }
+    $("#leftNavDrawerIcon").on("click", function () {
+        if (!$("#leftNavDrawerIcon").hasClass("openIcon")) {
+            accountStorage.setItem("LNavOpened", "true");
+        } else {
+            accountStorage.setItem("LNavOpened", "false");
+        }
     });
 
     //save state of Left nav being open or closed
-    $('#WorldInfo').on('click', function () {
-        if (!$('#WorldInfo').hasClass('openIcon')) {
-            accountStorage.setItem('WINavOpened', 'true');
-        } else { accountStorage.setItem('WINavOpened', 'false'); }
+    $("#WorldInfo").on("click", function () {
+        if (!$("#WorldInfo").hasClass("openIcon")) {
+            accountStorage.setItem("WINavOpened", "true");
+        } else {
+            accountStorage.setItem("WINavOpened", "false");
+        }
     });
 
     var chatbarInFocus = false;
-    $('#send_textarea').focus(function () {
+    $("#send_textarea").focus(function () {
         chatbarInFocus = true;
     });
 
-    $('#send_textarea').blur(function () {
+    $("#send_textarea").blur(function () {
         chatbarInFocus = false;
     });
 
@@ -893,27 +1108,31 @@ export function initRossMods() {
         OpenNavPanels();
     }, 300);
 
-    $(SelectedCharacterTab).click(function () { accountStorage.setItem('SelectedNavTab', 'rm_button_selected_ch'); });
-    $('#rm_button_characters').click(function () { accountStorage.setItem('SelectedNavTab', 'rm_button_characters'); });
+    $(SelectedCharacterTab).click(function () {
+        accountStorage.setItem("SelectedNavTab", "rm_button_selected_ch");
+    });
+    $("#rm_button_characters").click(function () {
+        accountStorage.setItem("SelectedNavTab", "rm_button_characters");
+    });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
-    $(document).on('click', '.character_select', function () {
-        const characterId = $(this).attr('data-chid');
+    $(document).on("click", ".character_select", function () {
+        const characterId = $(this).attr("data-chid");
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
-    $(document).on('click', '.group_select', function () {
-        const groupId = $(this).attr('data-chid') || $(this).attr('data-grid');
+    $(document).on("click", ".group_select", function () {
+        const groupId = $(this).attr("data-chid") || $(this).attr("data-grid");
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();
     });
 
-    const cssAutofit = CSS.supports('field-sizing', 'content');
+    const cssAutofit = CSS.supports("field-sizing", "content");
 
     if (cssAutofit) {
         let lastHeight = chatBlock.offsetHeight;
@@ -926,7 +1145,12 @@ export function initRossMods() {
                 const threshold = 1;
                 const newHeight = chatBlock.offsetHeight;
                 const deltaHeight = newHeight - lastHeight;
-                const isScrollAtBottom = Math.abs(chatBlock.scrollHeight - chatBlock.scrollTop - newHeight) <= threshold;
+                const isScrollAtBottom =
+                    Math.abs(
+                        chatBlock.scrollHeight -
+                            chatBlock.scrollTop -
+                            newHeight,
+                    ) <= threshold;
 
                 if (!isScrollAtBottom && Math.abs(deltaHeight) > threshold) {
                     chatBlock.scrollTop -= deltaHeight;
@@ -938,20 +1162,25 @@ export function initRossMods() {
         chatBlockResizeObserver.observe(chatBlock);
     }
 
-    sendTextArea.addEventListener('input', () => {
+    sendTextArea.addEventListener("input", () => {
         saveUserInputDebounced();
 
         if (cssAutofit) {
             // Unset modifications made with a manual resize
-            sendTextArea.style.height = 'auto';
+            sendTextArea.style.height = "auto";
             return;
         }
 
-        const hasContent = sendTextArea.value !== '';
-        const fitsCurrentSize = sendTextArea.scrollHeight <= sendTextArea.offsetHeight;
-        const isScrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth;
-        const isHalfScreenHeight = sendTextArea.offsetHeight >= window.innerHeight / 2;
-        const needsDebounce = hasContent && (fitsCurrentSize || (isScrollbarShown && isHalfScreenHeight));
+        const hasContent = sendTextArea.value !== "";
+        const fitsCurrentSize =
+            sendTextArea.scrollHeight <= sendTextArea.offsetHeight;
+        const isScrollbarShown =
+            sendTextArea.clientWidth < sendTextArea.offsetWidth;
+        const isHalfScreenHeight =
+            sendTextArea.offsetHeight >= window.innerHeight / 2;
+        const needsDebounce =
+            hasContent &&
+            (fitsCurrentSize || (isScrollbarShown && isHalfScreenHeight));
         if (needsDebounce) autoFitSendTextAreaDebounced();
         else autoFitSendTextArea();
     });
@@ -959,61 +1188,64 @@ export function initRossMods() {
     restoreUserInput();
 
     // Swipe gestures (see: https://www.npmjs.com/package/swiped-events)
-    document.addEventListener('swiped-left', function (e) {
+    document.addEventListener("swiped-left", function (e) {
         if (power_user.gestures === false) {
             return;
         }
         if (Popup.util.isPopupOpen()) {
             return;
         }
-        if (!$(e.target).closest('#sheld').length) {
+        if (!$(e.target).closest("#sheld").length) {
             return;
         }
-        if ($('#curEditTextarea').length) {
+        if ($("#curEditTextarea").length) {
             // Don't swipe while in text edit mode
             // the ios selection gestures get picked up
             // as swipe gestures
             return;
         }
-        var SwipeButR = $('.swipe_right:last');
-        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
+        var SwipeButR = $(".swipe_right:last");
+        var SwipeTargetMesClassParent = $(e.target).closest(".last_mes");
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButR.css('display') === 'flex') {
+            if (SwipeButR.css("display") === "flex") {
                 SwipeButR.click();
             }
         }
     });
-    document.addEventListener('swiped-right', function (e) {
+    document.addEventListener("swiped-right", function (e) {
         if (power_user.gestures === false) {
             return;
         }
         if (Popup.util.isPopupOpen()) {
             return;
         }
-        if (!$(e.target).closest('#sheld').length) {
+        if (!$(e.target).closest("#sheld").length) {
             return;
         }
-        if ($('#curEditTextarea').length) {
+        if ($("#curEditTextarea").length) {
             // Don't swipe while in text edit mode
             // the ios selection gestures get picked up
             // as swipe gestures
             return;
         }
-        var SwipeButL = $('.swipe_left:last');
-        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
+        var SwipeButL = $(".swipe_left:last");
+        var SwipeTargetMesClassParent = $(e.target).closest(".last_mes");
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButL.css('display') === 'flex') {
+            if (SwipeButL.css("display") === "flex") {
                 SwipeButL.click();
             }
         }
     });
 
-
     function isInputElementInFocus() {
         //return $(document.activeElement).is(":input");
-        var focused = $(':focus');
-        if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
-            if (focused.attr('id') === 'send_textarea') {
+        var focused = $(":focus");
+        if (
+            focused.is("input") ||
+            focused.is("textarea") ||
+            focused.prop("contenteditable") == "true"
+        ) {
+            if (focused.attr("id") === "send_textarea") {
                 return false;
             }
             return true;
@@ -1022,20 +1254,21 @@ export function initRossMods() {
     }
 
     function isModifiedKeyboardEvent(event) {
-        return (event instanceof KeyboardEvent &&
-            event.shiftKey ||
+        return (
+            (event instanceof KeyboardEvent && event.shiftKey) ||
             event.ctrlKey ||
             event.altKey ||
-            event.metaKey);
+            event.metaKey
+        );
     }
 
-    $(document).on('keydown', async function (event) {
+    $(document).on("keydown", async function (event) {
         await processHotkeys(event.originalEvent);
     });
 
     const hotkeyTargets = {
-        'send_textarea': sendTextArea,
-        'dialogue_popup_input': document.querySelector('#dialogue_popup_input'),
+        send_textarea: sendTextArea,
+        dialogue_popup_input: document.querySelector("#dialogue_popup_input"),
     };
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
@@ -1049,162 +1282,216 @@ export function initRossMods() {
         }
 
         //Enter to send when send_textarea in focus
-        if (document.activeElement == hotkeyTargets['send_textarea']) {
+        if (document.activeElement == hotkeyTargets["send_textarea"]) {
             const sendOnEnter = shouldSendOnEnter();
-            if (!event.isComposing && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && sendOnEnter) {
+            if (
+                !event.isComposing &&
+                !event.shiftKey &&
+                !event.ctrlKey &&
+                !event.altKey &&
+                event.key == "Enter" &&
+                sendOnEnter
+            ) {
                 event.preventDefault();
                 sendTextareaMessage();
                 return;
             }
         }
-        if (document.activeElement == hotkeyTargets['dialogue_popup_input'] && !isMobile()) {
-            if (!event.shiftKey && !event.ctrlKey && event.key == 'Enter') {
+        if (
+            document.activeElement == hotkeyTargets["dialogue_popup_input"] &&
+            !isMobile()
+        ) {
+            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter") {
                 event.preventDefault();
-                $('#dialogue_popup_ok').trigger('click');
+                $("#dialogue_popup_ok").trigger("click");
                 return;
             }
         }
         //ctrl+shift+up to scroll to context line
-        if (event.shiftKey && event.ctrlKey && event.key == 'ArrowUp') {
+        if (event.shiftKey && event.ctrlKey && event.key == "ArrowUp") {
             event.preventDefault();
-            let contextLine = $('.lastInContext');
+            let contextLine = $(".lastInContext");
             if (contextLine.length !== 0) {
-                $('#chat').animate({
-                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop(),
-                }, 300);
-            } else { toastr.warning('Context line not found, send a message first!'); }
+                $("#chat").animate(
+                    {
+                        scrollTop:
+                            contextLine.offset().top -
+                            $("#chat").offset().top +
+                            $("#chat").scrollTop(),
+                    },
+                    300,
+                );
+            } else {
+                toastr.warning("Context line not found, send a message first!");
+            }
             return;
         }
         //ctrl+shift+down to scroll to bottom of chat
-        if (event.shiftKey && event.ctrlKey && event.key == 'ArrowDown') {
+        if (event.shiftKey && event.ctrlKey && event.key == "ArrowDown") {
             event.preventDefault();
-            $('#chat').animate({
-                scrollTop: $('#chat').prop('scrollHeight'),
-            }, 300);
+            $("#chat").animate(
+                {
+                    scrollTop: $("#chat").prop("scrollHeight"),
+                },
+                300,
+            );
             return;
         }
 
         // Alt+Enter or AltGr+Enter to Continue
-        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == 'Enter') {
+        if (
+            (event.altKey || (event.altKey && event.ctrlKey)) &&
+            event.key == "Enter"
+        ) {
             if (is_send_press == false) {
-                console.debug('Continuing with Alt+Enter');
-                $('#option_continue').trigger('click');
+                console.debug("Continuing with Alt+Enter");
+                $("#option_continue").trigger("click");
                 return;
             }
         }
 
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
-        if (event.ctrlKey && event.key == 'Enter') {
-            const editMesDone = $('.mes_edit_done:visible');
-            const reasoningMesDone = $('.mes_reasoning_edit_done:visible');
+        if (event.ctrlKey && event.key == "Enter") {
+            const editMesDone = $(".mes_edit_done:visible");
+            const reasoningMesDone = $(".mes_reasoning_edit_done:visible");
             if (editMesDone.length > 0) {
-                console.debug('Accepting edits with Ctrl+Enter');
-                $('#send_textarea').trigger('focus');
-                editMesDone.trigger('click');
+                console.debug("Accepting edits with Ctrl+Enter");
+                $("#send_textarea").trigger("focus");
+                editMesDone.trigger("click");
                 return;
             } else if (reasoningMesDone.length > 0) {
-                console.debug('Accepting edits with Ctrl+Enter');
-                $('#send_textarea').trigger('focus');
-                reasoningMesDone.trigger('click');
+                console.debug("Accepting edits with Ctrl+Enter");
+                $("#send_textarea").trigger("focus");
+                reasoningMesDone.trigger("click");
                 return;
-            }
-            else if (is_send_press == false) {
-                const skipConfirmKey = 'RegenerateWithCtrlEnter';
-                const skipConfirm = accountStorage.getItem(skipConfirmKey) === 'true';
+            } else if (is_send_press == false) {
+                const skipConfirmKey = "RegenerateWithCtrlEnter";
+                const skipConfirm =
+                    accountStorage.getItem(skipConfirmKey) === "true";
                 function doRegenerate() {
-                    console.debug('Regenerating with Ctrl+Enter');
-                    $('#option_regenerate').trigger('click');
-                    $('#options').hide();
+                    console.debug("Regenerating with Ctrl+Enter");
+                    $("#option_regenerate").trigger("click");
+                    $("#options").hide();
                 }
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
                     let regenerateWithCtrlEnter = false;
-                    const result = await Popup.show.confirm('Regenerate Message', 'Are you sure you want to regenerate the latest message?', {
-                        customInputs: [{ id: 'regenerateWithCtrlEnter', label: 'Don\'t ask again' }],
-                        onClose: (popup) => {
-                            regenerateWithCtrlEnter = Boolean(popup.inputResults.get('regenerateWithCtrlEnter') ?? false);
+                    const result = await Popup.show.confirm(
+                        "Regenerate Message",
+                        "Are you sure you want to regenerate the latest message?",
+                        {
+                            customInputs: [
+                                {
+                                    id: "regenerateWithCtrlEnter",
+                                    label: "Don't ask again",
+                                },
+                            ],
+                            onClose: (popup) => {
+                                regenerateWithCtrlEnter = Boolean(
+                                    popup.inputResults.get(
+                                        "regenerateWithCtrlEnter",
+                                    ) ?? false,
+                                );
+                            },
                         },
-                    });
+                    );
                     if (!result) {
                         return;
                     }
 
-                    accountStorage.setItem(skipConfirmKey, String(regenerateWithCtrlEnter));
+                    accountStorage.setItem(
+                        skipConfirmKey,
+                        String(regenerateWithCtrlEnter),
+                    );
                     doRegenerate();
                 }
                 return;
             } else {
-                console.debug('Ctrl+Enter ignored');
+                console.debug("Ctrl+Enter ignored");
             }
         }
 
         // Helper function to check if nanogallery2's lightbox is active
         function isNanogallery2LightboxActive() {
             // Check if the body has the 'nGY2On' class, adjust this based on actual behavior
-            return document.body.classList.contains('nGY2_body_scrollbar');
+            return document.body.classList.contains("nGY2_body_scrollbar");
         }
 
-        if (event.key == 'ArrowLeft') {        //swipes left
+        if (event.key == "ArrowLeft") {
+            //swipes left
             if (
-                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_left:last').css('display') === 'flex' &&
-                $('#send_textarea').val() === '' &&
-                $('#character_popup').css('display') === 'none' &&
-                $('#shadow_select_chat_popup').css('display') === 'none' &&
+                !isNanogallery2LightboxActive() && // Check if lightbox is NOT active
+                $(".swipe_left:last").css("display") === "flex" &&
+                $("#send_textarea").val() === "" &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none" &&
                 !isInputElementInFocus() &&
                 !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_left:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $(".swipe_left:last").trigger("click", {
+                    source: "keyboard",
+                    repeated: event.repeat,
+                });
                 return;
             }
         }
-        if (event.key == 'ArrowRight') { //swipes right
+        if (event.key == "ArrowRight") {
+            //swipes right
             if (
-                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_right:last').css('display') === 'flex' &&
-                $('#send_textarea').val() === '' &&
-                $('#character_popup').css('display') === 'none' &&
-                $('#shadow_select_chat_popup').css('display') === 'none' &&
+                !isNanogallery2LightboxActive() && // Check if lightbox is NOT active
+                $(".swipe_right:last").css("display") === "flex" &&
+                $("#send_textarea").val() === "" &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none" &&
                 !isInputElementInFocus() &&
                 !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_right:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $(".swipe_right:last").trigger("click", {
+                    source: "keyboard",
+                    repeated: event.repeat,
+                });
                 return;
             }
         }
 
-
-        if (event.ctrlKey && event.key == 'ArrowUp') { //edits last USER message if chatbar is empty and focused
+        if (event.ctrlKey && event.key == "ArrowUp") {
+            //edits last USER message if chatbar is empty and focused
             if (
-                hotkeyTargets['send_textarea'].value === '' &&
+                hotkeyTargets["send_textarea"].value === "" &&
                 chatbarInFocus === true &&
-                ($('.swipe_right:last').css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
-                $('#character_popup').css('display') === 'none' &&
-                $('#shadow_select_chat_popup').css('display') === 'none'
+                ($(".swipe_right:last").css("display") === "flex" ||
+                    $(".last_mes").attr("is_system") === "true") &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
             ) {
-                const isUserMesList = document.querySelectorAll('div[is_user="true"]');
+                const isUserMesList = document.querySelectorAll(
+                    'div[is_user="true"]',
+                );
                 const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
-                const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
+                const editMes = lastIsUserMes.querySelector(
+                    ".mes_block .mes_edit",
+                );
                 if (editMes !== null) {
-                    $(editMes).trigger('click');
+                    $(editMes).trigger("click");
                     return;
                 }
             }
         }
 
-        if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
-            console.log('got uparrow input');
+        if (event.key == "ArrowUp") {
+            //edits last message if chatbar is empty and focused
+            console.log("got uparrow input");
             if (
-                hotkeyTargets['send_textarea'].value === '' &&
+                hotkeyTargets["send_textarea"].value === "" &&
                 chatbarInFocus === true &&
                 //$('.swipe_right:last').css('display') === 'flex' &&
-                $('.last_mes .mes_buttons').is(':visible') &&
-                $('#character_popup').css('display') === 'none' &&
-                $('#shadow_select_chat_popup').css('display') === 'none'
+                $(".last_mes .mes_buttons").is(":visible") &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
             ) {
-                const lastMes = document.querySelector('.last_mes');
-                const editMes = lastMes.querySelector('.mes_block .mes_edit');
+                const lastMes = document.querySelector(".last_mes");
+                const editMes = lastMes.querySelector(".mes_block .mes_edit");
                 if (editMes !== null) {
                     $(editMes).click();
                     return;
@@ -1212,112 +1499,126 @@ export function initRossMods() {
             }
         }
 
-        if (event.key == 'Escape') { //closes various panels
+        if (event.key == "Escape") {
+            //closes various panels
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
-            if ($('#curEditTextarea').is(':visible') || $('#mes_stop').is(':visible')) {
-                console.debug('escape key, but deferring to script.js routines');
+            if (
+                $("#curEditTextarea").is(":visible") ||
+                $("#mes_stop").is(":visible")
+            ) {
+                console.debug(
+                    "escape key, but deferring to script.js routines",
+                );
                 return;
             }
 
-            if ($('#dialogue_popup').is(':visible')) {
-                if ($('#dialogue_popup_cancel').is(':visible')) {
-                    $('#dialogue_popup_cancel').trigger('click');
+            if ($("#dialogue_popup").is(":visible")) {
+                if ($("#dialogue_popup_cancel").is(":visible")) {
+                    $("#dialogue_popup_cancel").trigger("click");
                     return;
                 } else {
-                    $('#dialogue_popup_ok').trigger('click');
+                    $("#dialogue_popup_ok").trigger("click");
                     return;
                 }
             }
 
-            if ($('#select_chat_popup').is(':visible')) {
-                $('#select_chat_cross').trigger('click');
+            if ($("#select_chat_popup").is(":visible")) {
+                $("#select_chat_cross").trigger("click");
                 return;
             }
 
-            if ($('#character_popup').is(':visible')) {
-                $('#character_cross').trigger('click');
+            if ($("#character_popup").is(":visible")) {
+                $("#character_cross").trigger("click");
                 return;
             }
 
-            if ($('#dialogue_del_mes_cancel').is(':visible')) {
-                $('#dialogue_del_mes_cancel').trigger('click');
+            if ($("#dialogue_del_mes_cancel").is(":visible")) {
+                $("#dialogue_del_mes_cancel").trigger("click");
                 return;
             }
 
-            if ($('.drawer-content')
-                .not('#WorldInfo')
-                .not('#left-nav-panel')
-                .not('#right-nav-panel')
-                .not('#floatingPrompt')
-                .not('#cfgConfig')
-                .not('#logprobsViewer')
-                .not('#movingDivs > div')
-                .is(':visible')) {
-                let visibleDrawerContent = $('.drawer-content:visible')
-                    .not('#WorldInfo')
-                    .not('#left-nav-panel')
-                    .not('#right-nav-panel')
-                    .not('#floatingPrompt')
-                    .not('#cfgConfig')
-                    .not('#logprobsViewer')
-                    .not('#movingDivs > div');
-                $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
+            if (
+                $(".drawer-content")
+                    .not("#WorldInfo")
+                    .not("#left-nav-panel")
+                    .not("#right-nav-panel")
+                    .not("#floatingPrompt")
+                    .not("#cfgConfig")
+                    .not("#logprobsViewer")
+                    .not("#movingDivs > div")
+                    .is(":visible")
+            ) {
+                let visibleDrawerContent = $(".drawer-content:visible")
+                    .not("#WorldInfo")
+                    .not("#left-nav-panel")
+                    .not("#right-nav-panel")
+                    .not("#floatingPrompt")
+                    .not("#cfgConfig")
+                    .not("#logprobsViewer")
+                    .not("#movingDivs > div");
+                $(visibleDrawerContent)
+                    .parent()
+                    .find(".drawer-icon")
+                    .trigger("click");
                 return;
             }
 
-            if ($('#floatingPrompt').is(':visible')) {
-                $('#ANClose').trigger('click');
+            if ($("#floatingPrompt").is(":visible")) {
+                $("#ANClose").trigger("click");
                 return;
             }
 
-            if ($('#WorldInfo').is(':visible')) {
-                $('#WIDrawerIcon').trigger('click');
+            if ($("#WorldInfo").is(":visible")) {
+                $("#WIDrawerIcon").trigger("click");
                 return;
             }
 
-            if ($('#cfgConfig').is(':visible')) {
-                $('#CFGClose').trigger('click');
+            if ($("#cfgConfig").is(":visible")) {
+                $("#CFGClose").trigger("click");
                 return;
             }
 
-            if ($('#logprobsViewer').is(':visible')) {
-                $('#logprobsViewerClose').trigger('click');
+            if ($("#logprobsViewer").is(":visible")) {
+                $("#logprobsViewerClose").trigger("click");
                 return;
             }
 
-            $('#movingDivs > div').each(function () {
-                if ($(this).is(':visible')) {
-                    $('#movingDivs > div .floating_panel_close').trigger('click');
+            $("#movingDivs > div").each(function () {
+                if ($(this).is(":visible")) {
+                    $("#movingDivs > div .floating_panel_close").trigger(
+                        "click",
+                    );
                     return;
                 }
             });
 
-            if ($('#left-nav-panel').is(':visible') &&
-                $(LPanelPin).prop('checked') === false) {
-                $('#leftNavDrawerIcon').trigger('click');
+            if (
+                $("#left-nav-panel").is(":visible") &&
+                $(LPanelPin).prop("checked") === false
+            ) {
+                $("#leftNavDrawerIcon").trigger("click");
                 return;
             }
 
-            if ($('#right-nav-panel').is(':visible') &&
-                $(RPanelPin).prop('checked') === false) {
-                $('#rightNavDrawerIcon').trigger('click');
+            if (
+                $("#right-nav-panel").is(":visible") &&
+                $(RPanelPin).prop("checked") === false
+            ) {
+                $("#rightNavDrawerIcon").trigger("click");
                 return;
             }
-            if ($('.draggable').is(':visible')) {
+            if ($(".draggable").is(":visible")) {
                 // Remove the first matched element
-                $('.draggable:first').remove();
+                $(".draggable:first").remove();
                 return;
             }
         }
 
-
-
-
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // This will eventually be to trigger quick replies
             // event.preventDefault();
-            console.log('Ctrl +' + event.key + ' pressed!');
+            console.log("Ctrl +" + event.key + " pressed!");
         }
     }
 }

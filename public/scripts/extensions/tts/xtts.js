@@ -1,5 +1,5 @@
-import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
-import { saveTtsProviderSettings } from './index.js';
+import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js";
+import { saveTtsProviderSettings } from "./index.js";
 
 export { XTTSTtsProvider };
 
@@ -11,7 +11,7 @@ class XTTSTtsProvider {
     settings;
     ready = false;
     voices = [];
-    separator = '. ';
+    separator = ". ";
 
     /**
      * Perform any text processing before passing to TTS engine.
@@ -20,37 +20,37 @@ class XTTSTtsProvider {
      */
     processText(text) {
         // Replace fancy ellipsis with "..."
-        text = text.replace(/…/g, '...');
+        text = text.replace(/…/g, "...");
         // Remove quotes
-        text = text.replace(/["“”‘’]/g, '');
+        text = text.replace(/["“”‘’]/g, "");
         // Replace multiple "." with single "."
-        text = text.replace(/\.+/g, '.');
+        text = text.replace(/\.+/g, ".");
         return text;
     }
 
     languageLabels = {
-        'Arabic': 'ar',
-        'Brazilian Portuguese': 'pt',
-        'Chinese': 'zh-cn',
-        'Czech': 'cs',
-        'Dutch': 'nl',
-        'English': 'en',
-        'French': 'fr',
-        'German': 'de',
-        'Italian': 'it',
-        'Polish': 'pl',
-        'Russian': 'ru',
-        'Spanish': 'es',
-        'Turkish': 'tr',
-        'Japanese': 'ja',
-        'Korean': 'ko',
-        'Hungarian': 'hu',
-        'Hindi': 'hi',
+        Arabic: "ar",
+        "Brazilian Portuguese": "pt",
+        Chinese: "zh-cn",
+        Czech: "cs",
+        Dutch: "nl",
+        English: "en",
+        French: "fr",
+        German: "de",
+        Italian: "it",
+        Polish: "pl",
+        Russian: "ru",
+        Spanish: "es",
+        Turkish: "tr",
+        Japanese: "ja",
+        Korean: "ko",
+        Hungarian: "hu",
+        Hindi: "hi",
     };
 
     defaultSettings = {
-        provider_endpoint: 'http://localhost:8020',
-        language: 'en',
+        provider_endpoint: "http://localhost:8020",
+        language: "en",
         temperature: 0.75,
         length_penalty: 1.0,
         repetition_penalty: 5.0,
@@ -109,7 +109,7 @@ class XTTSTtsProvider {
         <input id="xtts_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="400" step="1" />
 
         <label for="xtts_enable_text_splitting" class="checkbox_label">
-            <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
+            <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? "checked" : ""} />
             Enable Text Splitting
         </label>
         `;
@@ -119,28 +119,34 @@ class XTTSTtsProvider {
 
     onSettingsChange() {
         // Used when provider settings are updated from UI
-        this.settings.provider_endpoint = $('#xtts_tts_endpoint').val();
-        this.settings.language = $('#xtts_api_language').val();
+        this.settings.provider_endpoint = $("#xtts_tts_endpoint").val();
+        this.settings.language = $("#xtts_api_language").val();
 
         // Update the default TTS settings based on input fields
-        this.settings.speed = $('#xtts_speed').val();
-        this.settings.temperature = $('#xtts_temperature').val();
-        this.settings.length_penalty = $('#xtts_length_penalty').val();
-        this.settings.repetition_penalty = $('#xtts_repetition_penalty').val();
-        this.settings.top_k = $('#xtts_top_k').val();
-        this.settings.top_p = $('#xtts_top_p').val();
-        this.settings.stream_chunk_size = $('#xtts_stream_chunk_size').val();
-        this.settings.enable_text_splitting = $('#xtts_enable_text_splitting').is(':checked');
-        this.settings.streaming = $('#xtts_tts_streaming').is(':checked');
+        this.settings.speed = $("#xtts_speed").val();
+        this.settings.temperature = $("#xtts_temperature").val();
+        this.settings.length_penalty = $("#xtts_length_penalty").val();
+        this.settings.repetition_penalty = $("#xtts_repetition_penalty").val();
+        this.settings.top_k = $("#xtts_top_k").val();
+        this.settings.top_p = $("#xtts_top_p").val();
+        this.settings.stream_chunk_size = $("#xtts_stream_chunk_size").val();
+        this.settings.enable_text_splitting = $(
+            "#xtts_enable_text_splitting",
+        ).is(":checked");
+        this.settings.streaming = $("#xtts_tts_streaming").is(":checked");
 
         // Update the UI to reflect changes
-        $('#xtts_tts_speed_output').text(this.settings.speed);
-        $('#xtts_tts_temperature_output').text(this.settings.temperature);
-        $('#xtts_length_penalty_output').text(this.settings.length_penalty);
-        $('#xtts_repetition_penalty_output').text(this.settings.repetition_penalty);
-        $('#xtts_top_k_output').text(this.settings.top_k);
-        $('#xtts_top_p_output').text(this.settings.top_p);
-        $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
+        $("#xtts_tts_speed_output").text(this.settings.speed);
+        $("#xtts_tts_temperature_output").text(this.settings.temperature);
+        $("#xtts_length_penalty_output").text(this.settings.length_penalty);
+        $("#xtts_repetition_penalty_output").text(
+            this.settings.repetition_penalty,
+        );
+        $("#xtts_top_k_output").text(this.settings.top_k);
+        $("#xtts_top_p_output").text(this.settings.top_p);
+        $("#xtts_stream_chunk_size_output").text(
+            this.settings.stream_chunk_size,
+        );
 
         saveTtsProviderSettings();
         this.changeTTSSettings();
@@ -149,7 +155,7 @@ class XTTSTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
@@ -165,58 +171,90 @@ class XTTSTtsProvider {
 
         const apiCheckInterval = setInterval(() => {
             // Use Extras API if TTS support is enabled
-            if (modules.includes('tts') || modules.includes('xtts-tts')) {
+            if (modules.includes("tts") || modules.includes("xtts-tts")) {
                 const baseUrl = new URL(getApiUrl());
-                baseUrl.pathname = '/api/tts';
+                baseUrl.pathname = "/api/tts";
                 this.settings.provider_endpoint = baseUrl.toString();
-                $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
+                $("#xtts_tts_endpoint").val(this.settings.provider_endpoint);
                 clearInterval(apiCheckInterval);
             }
         }, 2000);
 
         // Set initial values from the settings
-        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
-        $('#xtts_api_language').val(this.settings.language);
-        $('#xtts_speed').val(this.settings.speed);
-        $('#xtts_temperature').val(this.settings.temperature);
-        $('#xtts_length_penalty').val(this.settings.length_penalty);
-        $('#xtts_repetition_penalty').val(this.settings.repetition_penalty);
-        $('#xtts_top_k').val(this.settings.top_k);
-        $('#xtts_top_p').val(this.settings.top_p);
-        $('#xtts_enable_text_splitting').prop('checked', this.settings.enable_text_splitting);
-        $('#xtts_stream_chunk_size').val(this.settings.stream_chunk_size);
-        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
+        $("#xtts_tts_endpoint").val(this.settings.provider_endpoint);
+        $("#xtts_api_language").val(this.settings.language);
+        $("#xtts_speed").val(this.settings.speed);
+        $("#xtts_temperature").val(this.settings.temperature);
+        $("#xtts_length_penalty").val(this.settings.length_penalty);
+        $("#xtts_repetition_penalty").val(this.settings.repetition_penalty);
+        $("#xtts_top_k").val(this.settings.top_k);
+        $("#xtts_top_p").val(this.settings.top_p);
+        $("#xtts_enable_text_splitting").prop(
+            "checked",
+            this.settings.enable_text_splitting,
+        );
+        $("#xtts_stream_chunk_size").val(this.settings.stream_chunk_size);
+        $("#xtts_tts_streaming").prop("checked", this.settings.streaming);
 
         // Update the UI to reflect changes
-        $('#xtts_tts_speed_output').text(this.settings.speed);
-        $('#xtts_tts_temperature_output').text(this.settings.temperature);
-        $('#xtts_length_penalty_output').text(this.settings.length_penalty);
-        $('#xtts_repetition_penalty_output').text(this.settings.repetition_penalty);
-        $('#xtts_top_k_output').text(this.settings.top_k);
-        $('#xtts_top_p_output').text(this.settings.top_p);
-        $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
+        $("#xtts_tts_speed_output").text(this.settings.speed);
+        $("#xtts_tts_temperature_output").text(this.settings.temperature);
+        $("#xtts_length_penalty_output").text(this.settings.length_penalty);
+        $("#xtts_repetition_penalty_output").text(
+            this.settings.repetition_penalty,
+        );
+        $("#xtts_top_k_output").text(this.settings.top_k);
+        $("#xtts_top_p_output").text(this.settings.top_p);
+        $("#xtts_stream_chunk_size_output").text(
+            this.settings.stream_chunk_size,
+        );
 
         // Register input/change event listeners to update settings on user interaction
-        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
-        $('#xtts_speed').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_temperature').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_length_penalty').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_repetition_penalty').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_top_k').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_top_p').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_enable_text_splitting').on('change', () => { this.onSettingsChange(); });
-        $('#xtts_stream_chunk_size').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
+        $("#xtts_tts_endpoint").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_api_language").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_speed").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_temperature").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_length_penalty").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_repetition_penalty").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_top_k").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_top_p").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_enable_text_splitting").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_stream_chunk_size").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#xtts_tts_streaming").on("change", () => {
+            this.onSettingsChange();
+        });
 
         await this.checkReady();
 
-        console.debug('XTTS: Settings loaded');
+        console.debug("XTTS: Settings loaded");
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-        await Promise.allSettled([this.fetchTtsVoiceObjects(), this.changeTTSSettings()]);
+        await Promise.allSettled([
+            this.fetchTtsVoiceObjects(),
+            this.changeTTSSettings(),
+        ]);
     }
 
     async onRefreshClick() {
@@ -232,7 +270,7 @@ class XTTSTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            XTTSVoice => XTTSVoice.name == voiceName,
+            (XTTSVoice) => XTTSVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -249,9 +287,13 @@ class XTTSTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`);
+        const response = await doExtrasFetch(
+            `${this.settings.provider_endpoint}/speakers`,
+        );
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.json()}`,
+            );
         }
         const responseJson = await response.json();
         return responseJson;
@@ -266,20 +308,20 @@ class XTTSTtsProvider {
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/set_tts_settings`,
             {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache',
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache",
                 },
                 body: JSON.stringify({
-                    'temperature': this.settings.temperature,
-                    'speed': this.settings.speed,
-                    'length_penalty': this.settings.length_penalty,
-                    'repetition_penalty': this.settings.repetition_penalty,
-                    'top_p': this.settings.top_p,
-                    'top_k': this.settings.top_k,
-                    'enable_text_splitting': this.settings.enable_text_splitting,
-                    'stream_chunk_size': this.settings.stream_chunk_size,
+                    temperature: this.settings.temperature,
+                    speed: this.settings.speed,
+                    length_penalty: this.settings.length_penalty,
+                    repetition_penalty: this.settings.repetition_penalty,
+                    top_p: this.settings.top_p,
+                    top_k: this.settings.top_k,
+                    enable_text_splitting: this.settings.enable_text_splitting,
+                    stream_chunk_size: this.settings.stream_chunk_size,
                 }),
             },
         );
@@ -291,30 +333,32 @@ class XTTSTtsProvider {
 
         if (this.settings.streaming) {
             const params = new URLSearchParams();
-            params.append('text', inputText);
-            params.append('speaker_wav', voiceId);
-            params.append('language', this.settings.language);
+            params.append("text", inputText);
+            params.append("speaker_wav", voiceId);
+            params.append("language", this.settings.language);
             return `${this.settings.provider_endpoint}/tts_stream/?${params.toString()}`;
         }
 
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/tts_to_audio/`,
             {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache',  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache", // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
-                    'text': inputText,
-                    'speaker_wav': voiceId,
-                    'language': this.settings.language,
+                    text: inputText,
+                    speaker_wav: voiceId,
+                    language: this.settings.language,
                 }),
             },
         );
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response;
     }
@@ -323,5 +367,4 @@ class XTTSTtsProvider {
     async fetchTtsFromHistory(history_item_id) {
         return Promise.resolve(history_item_id);
     }
-
 }

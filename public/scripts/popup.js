@@ -1,7 +1,7 @@
-import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
-import { shouldSendOnEnter } from './RossAscends-mods.js';
-import { power_user, toastPositionClasses } from './power-user.js';
-import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
+import dialogPolyfill from "../lib/dialog-polyfill.esm.js";
+import { shouldSendOnEnter } from "./RossAscends-mods.js";
+import { power_user, toastPositionClasses } from "./power-user.js";
+import { removeFromArray, runAfterAnimation, uuidv4 } from "./utils.js";
 
 /** @readonly */
 /** @enum {Number} */
@@ -91,13 +91,18 @@ const showPopupHelper = {
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<string?>} A Promise that resolves with the user's input.
      */
-    input: async (header, text, defaultValue = '', popupOptions = {}) => {
+    input: async (header, text, defaultValue = "", popupOptions = {}) => {
         const content = PopupUtils.BuildTextWithHeader(header, text);
-        const popup = new Popup(content, POPUP_TYPE.INPUT, defaultValue, popupOptions);
+        const popup = new Popup(
+            content,
+            POPUP_TYPE.INPUT,
+            defaultValue,
+            popupOptions,
+        );
         const value = await popup.show();
         // Return values: If empty string, we explicitly handle that as returning that empty string as "success" provided.
         // Otherwise, all non-truthy values (false, null, undefined) are treated as "cancel" and return null.
-        if (value === '') return '';
+        if (value === "") return "";
         return value ? String(value) : null;
     },
 
@@ -111,9 +116,17 @@ const showPopupHelper = {
      */
     confirm: async (header, text, popupOptions = {}) => {
         const content = PopupUtils.BuildTextWithHeader(header, text);
-        const popup = new Popup(content, POPUP_TYPE.CONFIRM, null, popupOptions);
+        const popup = new Popup(
+            content,
+            POPUP_TYPE.CONFIRM,
+            null,
+            popupOptions,
+        );
         const result = await popup.show();
-        if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`);
+        if (typeof result === "string" || typeof result === "boolean")
+            throw new Error(
+                `Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`,
+            );
         return result;
     },
     /**
@@ -128,7 +141,10 @@ const showPopupHelper = {
         const content = PopupUtils.BuildTextWithHeader(header, text);
         const popup = new Popup(content, POPUP_TYPE.TEXT, null, popupOptions);
         const result = await popup.show();
-        if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. TEXT popups only support numbers, or null. Result: ${result}`);
+        if (typeof result === "string" || typeof result === "boolean")
+            throw new Error(
+                `Invalid popup result. TEXT popups only support numbers, or null. Result: ${result}`,
+            );
         return result;
     },
 };
@@ -175,7 +191,31 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(
+        content,
+        type,
+        inputValue = "",
+        {
+            okButton = null,
+            cancelButton = null,
+            rows = 1,
+            wide = false,
+            wider = false,
+            large = false,
+            transparent = false,
+            allowHorizontalScrolling = false,
+            allowVerticalScrolling = false,
+            leftAlign = false,
+            animation = "fast",
+            defaultResult = POPUP_RESULT.AFFIRMATIVE,
+            customButtons = null,
+            customInputs = null,
+            onClosing = null,
+            onClose = null,
+            cropAspect = null,
+            cropImage = null,
+        } = {},
+    ) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -187,11 +227,11 @@ export class Popup {
         this.onClose = onClose;
 
         /**@type {HTMLTemplateElement}*/
-        const template = document.querySelector('#popup_template');
+        const template = document.querySelector("#popup_template");
         // @ts-ignore
-        this.dlg = template.content.cloneNode(true).querySelector('.popup');
+        this.dlg = template.content.cloneNode(true).querySelector(".popup");
         if (!this.dlg.showModal) {
-            this.dlg.classList.add('poly_dialog');
+            this.dlg.classList.add("poly_dialog");
             dialogPolyfill.registerDialog(this.dlg);
             // Force a vertical reposition after the content
             // (like crop image) has been set
@@ -202,41 +242,52 @@ export class Popup {
             });
             resizeObserver.observe(this.dlg);
         }
-        this.body = this.dlg.querySelector('.popup-body');
-        this.content = this.dlg.querySelector('.popup-content');
-        this.mainInput = this.dlg.querySelector('.popup-input');
-        this.inputControls = this.dlg.querySelector('.popup-inputs');
-        this.buttonControls = this.dlg.querySelector('.popup-controls');
-        this.okButton = this.dlg.querySelector('.popup-button-ok');
-        this.cancelButton = this.dlg.querySelector('.popup-button-cancel');
-        this.closeButton = this.dlg.querySelector('.popup-button-close');
-        this.cropWrap = this.dlg.querySelector('.popup-crop-wrap');
-        this.cropImage = this.dlg.querySelector('.popup-crop-image');
+        this.body = this.dlg.querySelector(".popup-body");
+        this.content = this.dlg.querySelector(".popup-content");
+        this.mainInput = this.dlg.querySelector(".popup-input");
+        this.inputControls = this.dlg.querySelector(".popup-inputs");
+        this.buttonControls = this.dlg.querySelector(".popup-controls");
+        this.okButton = this.dlg.querySelector(".popup-button-ok");
+        this.cancelButton = this.dlg.querySelector(".popup-button-cancel");
+        this.closeButton = this.dlg.querySelector(".popup-button-close");
+        this.cropWrap = this.dlg.querySelector(".popup-crop-wrap");
+        this.cropImage = this.dlg.querySelector(".popup-crop-image");
 
-        this.dlg.setAttribute('data-id', this.id);
-        if (wide) this.dlg.classList.add('wide_dialogue_popup');
-        if (wider) this.dlg.classList.add('wider_dialogue_popup');
-        if (large) this.dlg.classList.add('large_dialogue_popup');
-        if (transparent) this.dlg.classList.add('transparent_dialogue_popup');
-        if (allowHorizontalScrolling) this.dlg.classList.add('horizontal_scrolling_dialogue_popup');
-        if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
-        if (leftAlign) this.dlg.classList.add('left_aligned_dialogue_popup');
-        if (animation) this.dlg.classList.add('popup--animation-' + animation);
+        this.dlg.setAttribute("data-id", this.id);
+        if (wide) this.dlg.classList.add("wide_dialogue_popup");
+        if (wider) this.dlg.classList.add("wider_dialogue_popup");
+        if (large) this.dlg.classList.add("large_dialogue_popup");
+        if (transparent) this.dlg.classList.add("transparent_dialogue_popup");
+        if (allowHorizontalScrolling)
+            this.dlg.classList.add("horizontal_scrolling_dialogue_popup");
+        if (allowVerticalScrolling)
+            this.dlg.classList.add("vertical_scrolling_dialogue_popup");
+        if (leftAlign) this.dlg.classList.add("left_aligned_dialogue_popup");
+        if (animation) this.dlg.classList.add("popup--animation-" + animation);
 
         // If custom button captions are provided, we set them beforehand
-        this.okButton.textContent = typeof okButton === 'string' ? okButton : 'OK';
+        this.okButton.textContent =
+            typeof okButton === "string" ? okButton : "OK";
         this.okButton.dataset.i18n = this.okButton.textContent;
-        this.cancelButton.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
+        this.cancelButton.textContent =
+            typeof cancelButton === "string"
+                ? cancelButton
+                : template.getAttribute("popup-button-cancel");
         this.cancelButton.dataset.i18n = this.cancelButton.textContent;
 
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
         this.customButtons?.forEach((x, index) => {
             /** @type {CustomPopupButton} */
-            const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
+            const button =
+                typeof x === "string" ? { text: x, result: index + 2 } : x;
 
-            const buttonElement = document.createElement('div');
-            buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
+            const buttonElement = document.createElement("div");
+            buttonElement.classList.add(
+                "menu_button",
+                "popup-button-custom",
+                "result-control",
+            );
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
             buttonElement.textContent = button.text;
@@ -249,54 +300,58 @@ export class Popup {
                 this.buttonControls.insertBefore(buttonElement, this.okButton);
             }
 
-            if (typeof button.action === 'function') {
-                buttonElement.addEventListener('click', button.action);
+            if (typeof button.action === "function") {
+                buttonElement.addEventListener("click", button.action);
             }
         });
 
         this.customInputs = customInputs;
-        this.customInputs?.forEach(input => {
-            if (!input.id || !(typeof input.id === 'string')) {
-                console.warn('Given custom input does not have a valid id set');
+        this.customInputs?.forEach((input) => {
+            if (!input.id || !(typeof input.id === "string")) {
+                console.warn("Given custom input does not have a valid id set");
                 return;
             }
 
-            if (!input.type || input.type === 'checkbox') {
-                const label = document.createElement('label');
-                label.classList.add('checkbox_label', 'justifyCenter');
-                label.setAttribute('for', input.id);
-                const inputElement = document.createElement('input');
-                inputElement.type = 'checkbox';
+            if (!input.type || input.type === "checkbox") {
+                const label = document.createElement("label");
+                label.classList.add("checkbox_label", "justifyCenter");
+                label.setAttribute("for", input.id);
+                const inputElement = document.createElement("input");
+                inputElement.type = "checkbox";
                 inputElement.id = input.id;
                 inputElement.checked = Boolean(input.defaultState ?? false);
                 label.appendChild(inputElement);
-                const labelText = document.createElement('span');
+                const labelText = document.createElement("span");
                 labelText.innerText = input.label;
                 labelText.dataset.i18n = input.label;
                 label.appendChild(labelText);
 
                 if (input.tooltip) {
-                    const tooltip = document.createElement('div');
-                    tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
+                    const tooltip = document.createElement("div");
+                    tooltip.classList.add(
+                        "fa-solid",
+                        "fa-circle-info",
+                        "opacity50p",
+                    );
                     tooltip.title = input.tooltip;
-                    tooltip.dataset.i18n = '[title]' + input.tooltip;
+                    tooltip.dataset.i18n = "[title]" + input.tooltip;
                     label.appendChild(tooltip);
                 }
 
                 this.inputControls.appendChild(label);
-            } else if (input.type === 'text') {
-                const label = document.createElement('label');
-                label.classList.add('text_label', 'justifyCenter');
-                label.setAttribute('for', input.id);
+            } else if (input.type === "text") {
+                const label = document.createElement("label");
+                label.classList.add("text_label", "justifyCenter");
+                label.setAttribute("for", input.id);
 
-                const inputElement = document.createElement('input');
-                inputElement.classList.add('text_pole');
-                inputElement.type = 'text';
+                const inputElement = document.createElement("input");
+                inputElement.classList.add("text_pole");
+                inputElement.type = "text";
                 inputElement.id = input.id;
-                inputElement.value = String(input.defaultState ?? '');
-                inputElement.placeholder = input.tooltip ?? '';
+                inputElement.value = String(input.defaultState ?? "");
+                inputElement.placeholder = input.tooltip ?? "";
 
-                const labelText = document.createElement('span');
+                const labelText = document.createElement("span");
                 labelText.innerText = input.label;
                 labelText.dataset.i18n = input.label;
 
@@ -305,47 +360,61 @@ export class Popup {
 
                 this.inputControls.appendChild(label);
             } else {
-                console.warn('Unknown custom input type. Only checkbox and text are supported.', input);
+                console.warn(
+                    "Unknown custom input type. Only checkbox and text are supported.",
+                    input,
+                );
                 return;
             }
         });
 
         // Set the default button class
-        const defaultButton = this.buttonControls.querySelector(`[data-result="${this.defaultResult}"]`);
-        if (defaultButton) defaultButton.classList.add('menu_button_default');
+        const defaultButton = this.buttonControls.querySelector(
+            `[data-result="${this.defaultResult}"]`,
+        );
+        if (defaultButton) defaultButton.classList.add("menu_button_default");
 
         // Styling differences depending on the popup type
         // General styling for all types first, that might be overriden for specific types below
-        this.mainInput.style.display = 'none';
-        this.inputControls.style.display = customInputs ? 'block' : 'none';
-        this.closeButton.style.display = 'none';
-        this.cropWrap.style.display = 'none';
+        this.mainInput.style.display = "none";
+        this.inputControls.style.display = customInputs ? "block" : "none";
+        this.closeButton.style.display = "none";
+        this.cropWrap.style.display = "none";
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
-                if (!cancelButton) this.cancelButton.style.display = 'none';
+                if (!cancelButton) this.cancelButton.style.display = "none";
                 break;
             }
             case POPUP_TYPE.CONFIRM: {
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-yes');
-                if (!cancelButton) this.cancelButton.textContent = template.getAttribute('popup-button-no');
+                if (!okButton)
+                    this.okButton.textContent =
+                        template.getAttribute("popup-button-yes");
+                if (!cancelButton)
+                    this.cancelButton.textContent =
+                        template.getAttribute("popup-button-no");
                 break;
             }
             case POPUP_TYPE.INPUT: {
-                this.mainInput.style.display = 'block';
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
-                if (cancelButton === false) this.cancelButton.style.display = 'none';
+                this.mainInput.style.display = "block";
+                if (!okButton)
+                    this.okButton.textContent =
+                        template.getAttribute("popup-button-save");
+                if (cancelButton === false)
+                    this.cancelButton.style.display = "none";
                 break;
             }
             case POPUP_TYPE.DISPLAY: {
-                this.buttonControls.style.display = 'none';
-                this.closeButton.style.display = 'block';
+                this.buttonControls.style.display = "none";
+                this.closeButton.style.display = "block";
                 break;
             }
             case POPUP_TYPE.CROP: {
-                this.cropWrap.style.display = 'block';
+                this.cropWrap.style.display = "block";
                 this.cropImage.src = cropImage;
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
+                if (!okButton)
+                    this.okButton.textContent =
+                        template.getAttribute("popup-button-crop");
                 $(this.cropImage).cropper({
                     aspectRatio: cropAspect ?? 2 / 3,
                     autoCropArea: 1,
@@ -353,13 +422,14 @@ export class Popup {
                     rotatable: false,
                     crop: (event) => {
                         this.cropData = event.detail;
-                        this.cropData.want_resize = !power_user.never_resize_avatars;
+                        this.cropData.want_resize =
+                            !power_user.never_resize_avatars;
                     },
                 });
                 break;
             }
             default: {
-                console.warn('Unknown popup type.', type);
+                console.warn("Unknown popup type.", type);
                 break;
             }
         }
@@ -367,36 +437,52 @@ export class Popup {
         this.mainInput.value = inputValue;
         this.mainInput.rows = rows ?? 1;
 
-        this.content.innerHTML = '';
+        this.content.innerHTML = "";
         if (content instanceof jQuery) {
             $(this.content).append(content);
         } else if (content instanceof HTMLElement) {
             this.content.append(content);
-        } else if (typeof content == 'string') {
+        } else if (typeof content == "string") {
             this.content.innerHTML = content;
         } else {
-            console.warn('Unknown popup text type. Should be jQuery, HTMLElement or string.', content);
+            console.warn(
+                "Unknown popup text type. Should be jQuery, HTMLElement or string.",
+                content,
+            );
         }
 
         // Already prepare the auto-focus control by adding the "autofocus" attribute, this should be respected by showModal()
         this.setAutoFocus({ applyAutoFocus: true });
 
         // Set focus event that remembers the focused element
-        this.dlg.addEventListener('focusin', (evt) => { if (evt.target instanceof HTMLElement && evt.target != this.dlg) this.lastFocus = evt.target; });
+        this.dlg.addEventListener("focusin", (evt) => {
+            if (evt.target instanceof HTMLElement && evt.target != this.dlg)
+                this.lastFocus = evt.target;
+        });
 
         // Bind event listeners for all result controls to their defined event type
-        this.dlg.querySelectorAll('[data-result]').forEach(resultControl => {
+        this.dlg.querySelectorAll("[data-result]").forEach((resultControl) => {
             if (!(resultControl instanceof HTMLElement)) return;
             // If no value was set, we exit out and don't bind an action
-            if (String(resultControl.dataset.result) === String(undefined)) return;
+            if (String(resultControl.dataset.result) === String(undefined))
+                return;
 
             // Make sure that both `POPUP_RESULT` numbers and also `null` as 'cancelled' are supported
-            const result = String(resultControl.dataset.result) === String(null) ? null
-                : Number(resultControl.dataset.result);
+            const result =
+                String(resultControl.dataset.result) === String(null)
+                    ? null
+                    : Number(resultControl.dataset.result);
 
-            if (result !== null && isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
-            const type = resultControl.dataset.resultEvent || 'click';
-            resultControl.addEventListener(type, async () => await this.complete(result));
+            if (result !== null && isNaN(result))
+                throw new Error(
+                    "Invalid result control. Result must be a number. " +
+                        resultControl.dataset.result,
+                );
+            const type = resultControl.dataset.resultEvent || "click";
+            resultControl.addEventListener(
+                type,
+                async () => await this.complete(result),
+            );
         });
 
         // Bind dialog listeners manually, so we can be sure context is preserved
@@ -405,7 +491,7 @@ export class Popup {
             evt.stopPropagation();
             await this.complete(POPUP_RESULT.CANCELLED);
         };
-        this.dlg.addEventListener('cancel', cancelListener.bind(this));
+        this.dlg.addEventListener("cancel", cancelListener.bind(this));
 
         // Don't ask me why this is needed. I don't get it. But we have to keep it.
         // We make sure that the modal on its own doesn't hide. Dunno why, if onClosing is triggered multiple times through the cancel event, and stopped,
@@ -418,35 +504,45 @@ export class Popup {
                 this.dlg.showModal();
             }
         };
-        this.dlg.addEventListener('close', closeListener.bind(this));
+        this.dlg.addEventListener("close", closeListener.bind(this));
 
         const keyListener = async (evt) => {
             switch (evt.key) {
-                case 'Enter': {
+                case "Enter": {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
-                    if (evt.altKey || evt.shiftKey)
-                        return;
+                    if (evt.altKey || evt.shiftKey) return;
 
                     // Check if we are the currently active popup
-                    if (this.dlg != document.activeElement?.closest('.popup'))
+                    if (this.dlg != document.activeElement?.closest(".popup"))
                         return;
 
                     // Check if the current focus is a result control. Only should we apply the complete action
-                    const resultControl = document.activeElement?.closest('.result-control');
-                    if (!resultControl)
-                        return;
+                    const resultControl =
+                        document.activeElement?.closest(".result-control");
+                    if (!resultControl) return;
 
                     // Check if we are inside an input type text or a textarea field and send on enter is disabled
-                    const textarea = document.activeElement?.closest('textarea');
-                    if (textarea instanceof HTMLTextAreaElement && !shouldSendOnEnter())
+                    const textarea =
+                        document.activeElement?.closest("textarea");
+                    if (
+                        textarea instanceof HTMLTextAreaElement &&
+                        !shouldSendOnEnter()
+                    )
                         return;
-                    const input = document.activeElement?.closest('input[type="text"]');
-                    if (input instanceof HTMLInputElement && !shouldSendOnEnter())
+                    const input =
+                        document.activeElement?.closest('input[type="text"]');
+                    if (
+                        input instanceof HTMLInputElement &&
+                        !shouldSendOnEnter()
+                    )
                         return;
 
                     evt.preventDefault();
                     evt.stopPropagation();
-                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
+                    const result = Number(
+                        document.activeElement.getAttribute("data-result") ??
+                            this.defaultResult,
+                    );
 
                     // Call complete on the popup. Make sure that we handle `onClosing` cancels correctly and don't remove the listener then.
                     await this.complete(result);
@@ -454,9 +550,8 @@ export class Popup {
                     break;
                 }
             }
-
         };
-        this.dlg.addEventListener('keydown', keyListener.bind(this));
+        this.dlg.addEventListener("keydown", keyListener.bind(this));
     }
 
     /**
@@ -469,7 +564,7 @@ export class Popup {
         document.body.append(this.dlg);
 
         // Run opening animation
-        this.dlg.setAttribute('opening', '');
+        this.dlg.setAttribute("opening", "");
 
         this.dlg.showModal();
 
@@ -477,7 +572,7 @@ export class Popup {
         fixToastrForDialogs();
 
         runAfterAnimation(this.dlg, () => {
-            this.dlg.removeAttribute('opening');
+            this.dlg.removeAttribute("opening");
         });
 
         this.#promise = new Promise((resolve) => {
@@ -491,7 +586,7 @@ export class Popup {
         let control;
 
         // Try to find if we have an autofocus control already present
-        control = this.dlg.querySelector('[autofocus]');
+        control = this.dlg.querySelector("[autofocus]");
 
         // If not, find the default control for this popup type
         if (!control) {
@@ -502,13 +597,15 @@ export class Popup {
                 }
                 default:
                     // Select default button
-                    control = this.buttonControls.querySelector(`[data-result="${this.defaultResult}"]`);
+                    control = this.buttonControls.querySelector(
+                        `[data-result="${this.defaultResult}"]`,
+                    );
                     break;
             }
         }
 
         if (applyAutoFocus) {
-            control.setAttribute('autofocus', '');
+            control.setAttribute("autofocus", "");
             // Manually enable tabindex too, as this might only be applied by the interactable functionality in the background, but too late for HTML autofocus
             // interactable only gets applied when inserted into the DOM
             control.tabIndex = 0;
@@ -538,7 +635,8 @@ export class Popup {
         let value = result;
         // Input type have special results, so the input can be accessed directly without the need to save the popup and access both result and value
         if (this.type === POPUP_TYPE.INPUT) {
-            if (result >= POPUP_RESULT.AFFIRMATIVE) value = this.mainInput.value;
+            if (result >= POPUP_RESULT.AFFIRMATIVE)
+                value = this.mainInput.value;
             else if (result === POPUP_RESULT.NEGATIVE) value = false;
             else if (result === POPUP_RESULT.CANCELLED) value = null;
             else value = false; // Might a custom negative value?
@@ -546,18 +644,27 @@ export class Popup {
 
         // Cropped image should be returned as a data URL
         if (this.type === POPUP_TYPE.CROP) {
-            value = result >= POPUP_RESULT.AFFIRMATIVE
-                ? $(this.cropImage).data('cropper').getCroppedCanvas().toDataURL('image/jpeg')
-                : null;
+            value =
+                result >= POPUP_RESULT.AFFIRMATIVE
+                    ? $(this.cropImage)
+                          .data("cropper")
+                          .getCroppedCanvas()
+                          .toDataURL("image/jpeg")
+                    : null;
         }
 
         if (this.customInputs?.length) {
-            this.inputResults = new Map(this.customInputs.map(input => {
-                /** @type {HTMLInputElement} */
-                const inputControl = this.dlg.querySelector(`#${input.id}`);
-                const value = input.type === 'text' ? inputControl.value : inputControl.checked;
-                return [inputControl.id, value];
-            }));
+            this.inputResults = new Map(
+                this.customInputs.map((input) => {
+                    /** @type {HTMLInputElement} */
+                    const inputControl = this.dlg.querySelector(`#${input.id}`);
+                    const value =
+                        input.type === "text"
+                            ? inputControl.value
+                            : inputControl.checked;
+                    return [inputControl.id, value];
+                }),
+            );
         }
 
         this.value = value;
@@ -576,7 +683,11 @@ export class Popup {
         }
         this.#isClosingPrevented = false;
 
-        Popup.util.lastResult = { value, result, inputResults: this.inputResults };
+        Popup.util.lastResult = {
+            value,
+            result,
+            inputResults: this.inputResults,
+        };
         this.#hide();
 
         return this.#promise;
@@ -596,7 +707,7 @@ export class Popup {
      */
     #hide() {
         // We close the dialog, first running the animation
-        this.dlg.setAttribute('closing', '');
+        this.dlg.setAttribute("closing", "");
 
         // Once the hiding starts, we need to fix the toastr to the layer below
         fixToastrForDialogs();
@@ -619,9 +730,9 @@ export class Popup {
 
             // If there is any popup below this one, see if we can set the focus
             if (Popup.util.popups.length > 0) {
-                const activeDialog = document.activeElement?.closest('.popup');
-                const id = activeDialog?.getAttribute('data-id');
-                const popup = Popup.util.popups.find(x => x.id == id);
+                const activeDialog = document.activeElement?.closest(".popup");
+                const id = activeDialog?.getAttribute("data-id");
+                const popup = Popup.util.popups.find((x) => x.id == id);
                 if (popup) {
                     if (popup.lastFocus) popup.lastFocus.focus();
                     else popup.setAutoFocus();
@@ -651,7 +762,10 @@ export class Popup {
 
         /** @returns {boolean} Checks if any modal popup dialog is open */
         isPopupOpen() {
-            return Popup.util.popups.filter(x => x.dlg.hasAttribute('open')).length > 0;
+            return (
+                Popup.util.popups.filter((x) => x.dlg.hasAttribute("open"))
+                    .length > 0
+            );
         },
 
         /**
@@ -678,7 +792,7 @@ class PopupUtils {
             return text;
         }
         return `<h3>${header}</h3>
-            ${text ?? ''}`; // Convert no text to empty string
+            ${text ?? ""}`; // Convert no text to empty string
     }
 }
 
@@ -691,13 +805,13 @@ class PopupUtils {
  * @param {PopupOptions} [popupOptions={}] - Options for the popup
  * @returns {Promise<POPUP_RESULT|string|boolean?>} The value for this popup, which can either be the popup retult or the input value if chosen
  */
-export function callGenericPopup(content, type, inputValue = '', popupOptions = {}) {
-    const popup = new Popup(
-        content,
-        type,
-        inputValue,
-        popupOptions,
-    );
+export function callGenericPopup(
+    content,
+    type,
+    inputValue = "",
+    popupOptions = {},
+) {
+    const popup = new Popup(content, type, inputValue, popupOptions);
     return popup.show();
 }
 
@@ -708,7 +822,9 @@ export function callGenericPopup(content, type, inputValue = '', popupOptions = 
  * @return {HTMLElement} The topmost modal layer element
  */
 export function getTopmostModalLayer() {
-    const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
+    const dlg = Array.from(
+        document.querySelectorAll("dialog[open]:not([closing])"),
+    ).pop();
     if (dlg instanceof HTMLElement) return dlg;
     return document.body;
 }
@@ -718,14 +834,17 @@ export function getTopmostModalLayer() {
  */
 export function fixToastrForDialogs() {
     // Hacky way of getting toastr to actually display on top of the popup...
-    const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
+    const dlg = Array.from(
+        document.querySelectorAll("dialog[open]:not([closing])"),
+    ).pop();
 
-    let toastContainer = document.getElementById('toast-container');
+    let toastContainer = document.getElementById("toast-container");
     const isAlreadyPresent = !!toastContainer;
     if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.setAttribute('id', 'toast-container');
-        if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
+        toastContainer = document.createElement("div");
+        toastContainer.setAttribute("id", "toast-container");
+        if (toastr.options.positionClass)
+            toastContainer.classList.add(toastr.options.positionClass);
     }
 
     // Check if toastr is already a child. If not, we need to move it inside this dialog.

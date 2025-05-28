@@ -1,4 +1,4 @@
-import { crc32 } from 'crc';
+import { crc32 } from "crc";
 
 /**
  * Encodes PNG chunks into a PNG file format buffer.
@@ -23,12 +23,12 @@ export default function encode(chunks) {
 
     output[0] = 0x89;
     output[1] = 0x50;
-    output[2] = 0x4E;
+    output[2] = 0x4e;
     output[3] = 0x47;
-    output[4] = 0x0D;
-    output[5] = 0x0A;
-    output[6] = 0x1A;
-    output[7] = 0x0A;
+    output[4] = 0x0d;
+    output[5] = 0x0a;
+    output[6] = 0x1a;
+    output[7] = 0x0a;
 
     for (let i = 0; i < chunks.length; i++) {
         const { name, data } = chunks[i];
@@ -51,7 +51,7 @@ export default function encode(chunks) {
         output[idx++] = nameChars[2];
         output[idx++] = nameChars[3];
 
-        for (let j = 0; j < size;) {
+        for (let j = 0; j < size; ) {
             output[idx++] = data[j++];
         }
 

@@ -1,23 +1,21 @@
-import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { SlashCommandExecutor } from './SlashCommandExecutor.js';
-import { SlashCommandScope } from './SlashCommandScope.js';
-
-
+import { SlashCommandClosure } from "./SlashCommandClosure.js";
+import { commonEnumProviders } from "./SlashCommandCommonEnumsProvider.js";
+import { SlashCommandEnumValue } from "./SlashCommandEnumValue.js";
+import { SlashCommandExecutor } from "./SlashCommandExecutor.js";
+import { SlashCommandScope } from "./SlashCommandScope.js";
 
 /**@readonly*/
 /**@enum {string}*/
 export const ARGUMENT_TYPE = {
-    'STRING': 'string',
-    'NUMBER': 'number',
-    'RANGE': 'range',
-    'BOOLEAN': 'bool',
-    'VARIABLE_NAME': 'varname',
-    'CLOSURE': 'closure',
-    'SUBCOMMAND': 'subcommand',
-    'LIST': 'list',
-    'DICTIONARY': 'dictionary',
+    STRING: "string",
+    NUMBER: "number",
+    RANGE: "range",
+    BOOLEAN: "bool",
+    VARIABLE_NAME: "varname",
+    CLOSURE: "closure",
+    SUBCOMMAND: "subcommand",
+    LIST: "list",
+    DICTIONARY: "dictionary",
 };
 
 export class SlashCommandArgument {
@@ -52,7 +50,8 @@ export class SlashCommandArgument {
     /**@type {boolean}*/ acceptsMultiple = false;
     /**@type {string|SlashCommandClosure}*/ defaultValue;
     /**@type {SlashCommandEnumValue[]}*/ enumList = [];
-    /**@type {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]}*/ enumProvider = null;
+    /**@type {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]}*/ enumProvider =
+        null;
     /**@type {boolean}*/ forceEnum = false;
 
     /**
@@ -62,13 +61,24 @@ export class SlashCommandArgument {
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
      * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} enumProvider function that returns auto complete options
      */
-    constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], enumProvider = null, forceEnum = false) {
+    constructor(
+        description,
+        types,
+        isRequired = false,
+        acceptsMultiple = false,
+        defaultValue = null,
+        enums = [],
+        enumProvider = null,
+        forceEnum = false,
+    ) {
         this.description = description;
-        this.typeList = types ? Array.isArray(types) ? types : [types] : [];
+        this.typeList = types ? (Array.isArray(types) ? types : [types]) : [];
         this.isRequired = isRequired ?? false;
         this.acceptsMultiple = acceptsMultiple ?? false;
         this.defaultValue = defaultValue;
-        this.enumList = (enums ? Array.isArray(enums) ? enums : [enums] : []).map(it=>{
+        this.enumList = (
+            enums ? (Array.isArray(enums) ? enums : [enums]) : []
+        ).map((it) => {
             if (it instanceof SlashCommandEnumValue) return it;
             return new SlashCommandEnumValue(it);
         });
@@ -76,7 +86,12 @@ export class SlashCommandArgument {
         this.forceEnum = forceEnum;
 
         // If no enums were set explictly and the type is one where we know possible enum values, we set them here
-        if (!this.enumList.length && this.typeList.length === 1 && this.typeList.includes(ARGUMENT_TYPE.BOOLEAN)) this.enumList = commonEnumProviders.boolean()();
+        if (
+            !this.enumList.length &&
+            this.typeList.length === 1 &&
+            this.typeList.includes(ARGUMENT_TYPE.BOOLEAN)
+        )
+            this.enumList = commonEnumProviders.boolean()();
     }
 }
 
@@ -125,9 +140,33 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [enumProvider=null] function that returns auto complete options
      * @param {boolean} [forceEnum=false]
      */
-    constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = [], enumProvider = null, forceEnum = false) {
-        super(description, types, isRequired, acceptsMultiple, defaultValue, enums, enumProvider, forceEnum);
+    constructor(
+        name,
+        description,
+        types,
+        isRequired = false,
+        acceptsMultiple = false,
+        defaultValue = null,
+        enums = [],
+        aliases = [],
+        enumProvider = null,
+        forceEnum = false,
+    ) {
+        super(
+            description,
+            types,
+            isRequired,
+            acceptsMultiple,
+            defaultValue,
+            enums,
+            enumProvider,
+            forceEnum,
+        );
         this.name = name;
-        this.aliasList = aliases ? Array.isArray(aliases) ? aliases : [aliases] : [];
+        this.aliasList = aliases
+            ? Array.isArray(aliases)
+                ? aliases
+                : [aliases]
+            : [];
     }
 }

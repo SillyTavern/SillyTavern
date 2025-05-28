@@ -15,10 +15,13 @@ export class AbstractEventTarget {
     }
 
     dispatchEvent(event) {
-        if (!this.listeners[event.type] || this.listeners[event.type].length === 0) {
+        if (
+            !this.listeners[event.type] ||
+            this.listeners[event.type].length === 0
+        ) {
             return true;
         }
-        this.listeners[event.type].forEach(listener => {
+        this.listeners[event.type].forEach((listener) => {
             listener(event);
         });
         return true;

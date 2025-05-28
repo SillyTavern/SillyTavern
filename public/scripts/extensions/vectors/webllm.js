@@ -11,12 +11,16 @@ export class WebLlmVectorProvider {
      * @throws {Error} If WebLLM is not available or not up-to-date
      */
     #checkWebLlm() {
-        if (!Object.hasOwn(SillyTavern, 'llm')) {
-            throw new Error('WebLLM is not available', { cause: 'webllm-not-available' });
+        if (!Object.hasOwn(SillyTavern, "llm")) {
+            throw new Error("WebLLM is not available", {
+                cause: "webllm-not-available",
+            });
         }
 
-        if (typeof SillyTavern.llm.generateEmbedding !== 'function') {
-            throw new Error('WebLLM is not updated', { cause: 'webllm-not-updated' });
+        if (typeof SillyTavern.llm.generateEmbedding !== "function") {
+            throw new Error("WebLLM is not updated", {
+                cause: "webllm-not-updated",
+            });
         }
     }
 

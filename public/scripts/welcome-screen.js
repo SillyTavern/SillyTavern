@@ -21,17 +21,26 @@ import {
     system_message_types,
     this_chid,
     unshallowCharacter,
-} from '../script.js';
-import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { getGroupAvatar, groups, is_group_generating, openGroupById, openGroupChat } from './group-chats.js';
-import { t } from './i18n.js';
-import { getMessageTimeStamp } from './RossAscends-mods.js';
-import { renderTemplateAsync } from './templates.js';
-import { accountStorage } from './util/AccountStorage.js';
-import { sortMoments, timestampToMoment } from './utils.js';
+} from "../script.js";
+import {
+    getRegexedString,
+    regex_placement,
+} from "./extensions/regex/engine.js";
+import {
+    getGroupAvatar,
+    groups,
+    is_group_generating,
+    openGroupById,
+    openGroupChat,
+} from "./group-chats.js";
+import { t } from "./i18n.js";
+import { getMessageTimeStamp } from "./RossAscends-mods.js";
+import { renderTemplateAsync } from "./templates.js";
+import { accountStorage } from "./util/AccountStorage.js";
+import { sortMoments, timestampToMoment } from "./utils.js";
 
-const assistantAvatarKey = 'assistant';
-const defaultAssistantAvatar = 'default_Assistant.png';
+const assistantAvatarKey = "assistant";
+const defaultAssistantAvatar = "default_Assistant.png";
 
 const DEFAULT_DISPLAYED = 3;
 const MAX_DISPLAYED = 15;
@@ -42,7 +51,7 @@ export function getPermanentAssistantAvatar() {
         return defaultAssistantAvatar;
     }
 
-    const character = characters.find(x => x.avatar === assistantAvatar);
+    const character = characters.find((x) => x.avatar === assistantAvatar);
     if (character === undefined) {
         accountStorage.removeItem(assistantAvatarKey);
         return defaultAssistantAvatar;
@@ -60,7 +69,7 @@ export async function openWelcomeScreen() {
     const recentChats = await getRecentChats();
     const chatAfterFetch = getCurrentChatId();
     if (chatAfterFetch !== currentChatId) {
-        console.debug('Chat changed while fetching recent chats.');
+        console.debug("Chat changed while fetching recent chats.");
         return;
     }
 
@@ -76,7 +85,9 @@ export async function openWelcomeScreen() {
  */
 async function unshallowPermanentAssistant() {
     const assistantAvatar = getPermanentAssistantAvatar();
-    const characterId = characters.findIndex(x => x.avatar === assistantAvatar);
+    const characterId = characters.findIndex(
+        (x) => x.avatar === assistantAvatar,
+    );
     if (characterId === -1) {
         return;
     }
@@ -88,7 +99,7 @@ async function unshallowPermanentAssistant() {
  * Returns a greeting message for the assistant based on the character.
  * @param {import('./char-data.js').v1CharData} character Character data
  * @returns {string} Greeting message
-*/
+ */
 function getAssistantGreeting(character) {
     const defaultGreeting = t`If you're connected to an API, try asking me something!`;
 
@@ -96,20 +107,32 @@ function getAssistantGreeting(character) {
         return defaultGreeting;
     }
 
-    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT) || defaultGreeting;
+    return (
+        getRegexedString(
+            character.first_mes || "",
+            regex_placement.AI_OUTPUT,
+        ) || defaultGreeting
+    );
 }
 
 function sendAssistantMessage() {
     const currentAssistantAvatar = getPermanentAssistantAvatar();
-    const character = characters.find(x => x.avatar === currentAssistantAvatar);
+    const character = characters.find(
+        (x) => x.avatar === currentAssistantAvatar,
+    );
     const name = character ? character.name : neutralCharacterName;
-    const avatar = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
+    const avatar = character
+        ? getThumbnailUrl("avatar", character.avatar)
+        : system_avatar;
     const greeting = getAssistantGreeting(character);
 
     const message = {
         name: name,
         force_avatar: avatar,
-        mes: greeting + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
+        mes:
+            greeting +
+            "\n***\n" +
+            t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
         is_system: false,
         is_user: false,
         send_date: getMessageTimeStamp(),
@@ -134,44 +157,49 @@ function sendWelcomePrompt() {
  */
 async function sendWelcomePanel(chats) {
     try {
-        const chatElement = document.getElementById('chat');
-        const sendTextArea = document.getElementById('send_textarea');
+        const chatElement = document.getElementById("chat");
+        const sendTextArea = document.getElementById("send_textarea");
         if (!chatElement) {
-            console.error('Chat element not found');
+            console.error("Chat element not found");
             return;
         }
         const templateData = {
             chats,
             empty: !chats.length,
             version: displayVersion,
-            more: chats.some(chat => chat.hidden),
+            more: chats.some((chat) => chat.hidden),
         };
-        const template = await renderTemplateAsync('welcomePanel', templateData);
-        const fragment = document.createRange().createContextualFragment(template);
-        fragment.querySelectorAll('.welcomePanel').forEach((root) => {
-            const recentHiddenClass = 'recentHidden';
-            const recentHiddenKey = 'WelcomePage_RecentChatsHidden';
-            if (accountStorage.getItem(recentHiddenKey) === 'true') {
+        const template = await renderTemplateAsync(
+            "welcomePanel",
+            templateData,
+        );
+        const fragment = document
+            .createRange()
+            .createContextualFragment(template);
+        fragment.querySelectorAll(".welcomePanel").forEach((root) => {
+            const recentHiddenClass = "recentHidden";
+            const recentHiddenKey = "WelcomePage_RecentChatsHidden";
+            if (accountStorage.getItem(recentHiddenKey) === "true") {
                 root.classList.add(recentHiddenClass);
             }
-            root.querySelectorAll('.showRecentChats').forEach((button) => {
-                button.addEventListener('click', () => {
+            root.querySelectorAll(".showRecentChats").forEach((button) => {
+                button.addEventListener("click", () => {
                     root.classList.remove(recentHiddenClass);
-                    accountStorage.setItem(recentHiddenKey, 'false');
+                    accountStorage.setItem(recentHiddenKey, "false");
                 });
             });
-            root.querySelectorAll('.hideRecentChats').forEach((button) => {
-                button.addEventListener('click', () => {
+            root.querySelectorAll(".hideRecentChats").forEach((button) => {
+                button.addEventListener("click", () => {
                     root.classList.add(recentHiddenClass);
-                    accountStorage.setItem(recentHiddenKey, 'true');
+                    accountStorage.setItem(recentHiddenKey, "true");
                 });
             });
         });
-        fragment.querySelectorAll('.recentChat').forEach((item) => {
-            item.addEventListener('click', () => {
-                const avatarId = item.getAttribute('data-avatar');
-                const groupId = item.getAttribute('data-group');
-                const fileName = item.getAttribute('data-file');
+        fragment.querySelectorAll(".recentChat").forEach((item) => {
+            item.addEventListener("click", () => {
+                const avatarId = item.getAttribute("data-avatar");
+                const groupId = item.getAttribute("data-group");
+                const fileName = item.getAttribute("data-file");
                 if (avatarId && fileName) {
                     void openRecentCharacterChat(avatarId, fileName);
                 }
@@ -180,34 +208,39 @@ async function sendWelcomePanel(chats) {
                 }
             });
         });
-        const hiddenChats = fragment.querySelectorAll('.recentChat.hidden');
-        fragment.querySelectorAll('button.showMoreChats').forEach((button) => {
+        const hiddenChats = fragment.querySelectorAll(".recentChat.hidden");
+        fragment.querySelectorAll("button.showMoreChats").forEach((button) => {
             const showRecentChatsTitle = t`Show more recent chats`;
             const hideRecentChatsTitle = t`Show less recent chats`;
 
-            button.setAttribute('title', showRecentChatsTitle);
-            button.addEventListener('click', () => {
-                const rotate = button.classList.contains('rotated');
+            button.setAttribute("title", showRecentChatsTitle);
+            button.addEventListener("click", () => {
+                const rotate = button.classList.contains("rotated");
                 hiddenChats.forEach((chatItem) => {
-                    chatItem.classList.toggle('hidden', rotate);
+                    chatItem.classList.toggle("hidden", rotate);
                 });
-                button.classList.toggle('rotated', !rotate);
-                button.setAttribute('title', rotate ? showRecentChatsTitle : hideRecentChatsTitle);
+                button.classList.toggle("rotated", !rotate);
+                button.setAttribute(
+                    "title",
+                    rotate ? showRecentChatsTitle : hideRecentChatsTitle,
+                );
             });
         });
-        fragment.querySelectorAll('button.openTemporaryChat').forEach((button) => {
-            button.addEventListener('click', async () => {
-                await newAssistantChat({ temporary: true });
-                if (sendTextArea instanceof HTMLTextAreaElement) {
-                    sendTextArea.focus();
-                }
+        fragment
+            .querySelectorAll("button.openTemporaryChat")
+            .forEach((button) => {
+                button.addEventListener("click", async () => {
+                    await newAssistantChat({ temporary: true });
+                    if (sendTextArea instanceof HTMLTextAreaElement) {
+                        sendTextArea.focus();
+                    }
+                });
             });
-        });
-        fragment.querySelectorAll('.recentChat.group').forEach((groupChat) => {
-            const groupId = groupChat.getAttribute('data-group');
-            const group = groups.find(x => x.id === groupId);
+        fragment.querySelectorAll(".recentChat.group").forEach((groupChat) => {
+            const groupId = groupChat.getAttribute("data-group");
+            const group = groups.find((x) => x.id === groupId);
             if (group) {
-                const avatar = groupChat.querySelector('.avatar');
+                const avatar = groupChat.querySelector(".avatar");
                 if (!avatar) {
                     return;
                 }
@@ -217,7 +250,7 @@ async function sendWelcomePanel(chats) {
         });
         chatElement.append(fragment.firstChild);
     } catch (error) {
-        console.error('Welcome screen error:', error);
+        console.error("Welcome screen error:", error);
     }
 }
 
@@ -227,7 +260,7 @@ async function sendWelcomePanel(chats) {
  * @param {string} fileName Chat file name
  */
 async function openRecentCharacterChat(avatarId, fileName) {
-    const characterId = characters.findIndex(x => x.avatar === avatarId);
+    const characterId = characters.findIndex((x) => x.avatar === avatarId);
     if (characterId === -1) {
         console.error(`Character not found for avatar ID: ${avatarId}`);
         return;
@@ -242,7 +275,7 @@ async function openRecentCharacterChat(avatarId, fileName) {
         }
         await openCharacterChat(fileName);
     } catch (error) {
-        console.error('Error opening recent chat:', error);
+        console.error("Error opening recent chat:", error);
         toastr.error(t`Failed to open recent chat. See console for details.`);
     }
 }
@@ -253,7 +286,7 @@ async function openRecentCharacterChat(avatarId, fileName) {
  * @param {string} fileName Chat file name
  */
 async function openRecentGroupChat(groupId, fileName) {
-    const group = groups.find(x => x.id === groupId);
+    const group = groups.find((x) => x.id === groupId);
     if (!group) {
         console.error(`Group not found for ID: ${groupId}`);
         return;
@@ -268,8 +301,10 @@ async function openRecentGroupChat(groupId, fileName) {
         }
         await openGroupChat(groupId, fileName);
     } catch (error) {
-        console.error('Error opening recent group chat:', error);
-        toastr.error(t`Failed to open recent group chat. See console for details.`);
+        console.error("Error opening recent group chat:", error);
+        toastr.error(
+            t`Failed to open recent group chat. See console for details.`,
+        );
     }
 }
 
@@ -294,56 +329,78 @@ async function openRecentGroupChat(groupId, fileName) {
  * @property {boolean} hidden Chat will be hidden by default
  */
 async function getRecentChats() {
-    const response = await fetch('/api/chats/recent', {
-        method: 'POST',
+    const response = await fetch("/api/chats/recent", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ max: MAX_DISPLAYED }),
     });
 
     if (!response.ok) {
-        console.warn('Failed to fetch recent character chats');
+        console.warn("Failed to fetch recent character chats");
         return [];
     }
 
     /** @type {RecentChat[]} */
     const data = await response.json();
 
-    data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)))
-        .map(chat => ({ chat, character: characters.find(x => x.avatar === chat.avatar), group: groups.find(x => x.id === chat.group) }))
-        .filter(t => t.character || t.group)
+    data.sort((a, b) =>
+        sortMoments(
+            timestampToMoment(a.last_mes),
+            timestampToMoment(b.last_mes),
+        ),
+    )
+        .map((chat) => ({
+            chat,
+            character: characters.find((x) => x.avatar === chat.avatar),
+            group: groups.find((x) => x.id === chat.group),
+        }))
+        .filter((t) => t.character || t.group)
         .forEach(({ chat, character, group }, index) => {
             const chatTimestamp = timestampToMoment(chat.last_mes);
-            chat.char_name = character?.name || group?.name || '';
-            chat.date_short = chatTimestamp.format('l');
-            chat.date_long = chatTimestamp.format('LL LT');
-            chat.chat_name = chat.file_name.replace('.jsonl', '');
-            chat.char_thumbnail = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
+            chat.char_name = character?.name || group?.name || "";
+            chat.date_short = chatTimestamp.format("l");
+            chat.date_long = chatTimestamp.format("LL LT");
+            chat.chat_name = chat.file_name.replace(".jsonl", "");
+            chat.char_thumbnail = character
+                ? getThumbnailUrl("avatar", character.avatar)
+                : system_avatar;
             chat.is_group = !!group;
             chat.hidden = index >= DEFAULT_DISPLAYED;
-            chat.avatar = chat.avatar || '';
-            chat.group = chat.group || '';
+            chat.avatar = chat.avatar || "";
+            chat.group = chat.group || "";
         });
 
     return data;
 }
 
-export async function openPermanentAssistantChat({ tryCreate = true, created = false } = {}) {
+export async function openPermanentAssistantChat({
+    tryCreate = true,
+    created = false,
+} = {}) {
     const avatar = getPermanentAssistantAvatar();
-    const characterId = characters.findIndex(x => x.avatar === avatar);
+    const characterId = characters.findIndex((x) => x.avatar === avatar);
     if (characterId === -1) {
         if (!tryCreate) {
-            console.error(`Character not found for avatar ID: ${avatar}. Cannot create.`);
+            console.error(
+                `Character not found for avatar ID: ${avatar}. Cannot create.`,
+            );
             return;
         }
 
         try {
-            console.log(`Character not found for avatar ID: ${avatar}. Creating new assistant.`);
+            console.log(
+                `Character not found for avatar ID: ${avatar}. Creating new assistant.`,
+            );
             await createPermanentAssistant();
-            return openPermanentAssistantChat({ tryCreate: false, created: true });
-        }
-        catch (error) {
-            console.error('Error creating permanent assistant:', error);
-            toastr.error(t`Failed to create ${neutralCharacterName}. See console for details.`);
+            return openPermanentAssistantChat({
+                tryCreate: false,
+                created: true,
+            });
+        } catch (error) {
+            console.error("Error creating permanent assistant:", error);
+            toastr.error(
+                t`Failed to create ${neutralCharacterName}. See console for details.`,
+            );
             return;
         }
     }
@@ -353,10 +410,15 @@ export async function openPermanentAssistantChat({ tryCreate = true, created = f
         if (!created) {
             await doNewChat({ deleteCurrentChat: false });
         }
-        console.log(`Opened permanent assistant chat for ${neutralCharacterName}.`, getCurrentChatId());
+        console.log(
+            `Opened permanent assistant chat for ${neutralCharacterName}.`,
+            getCurrentChatId(),
+        );
     } catch (error) {
-        console.error('Error opening permanent assistant chat:', error);
-        toastr.error(t`Failed to open permanent assistant chat. See console for details.`);
+        console.error("Error opening permanent assistant chat:", error);
+        toastr.error(
+            t`Failed to open permanent assistant chat. See console for details.`,
+        );
     }
 }
 
@@ -366,26 +428,32 @@ async function createPermanentAssistant() {
     }
 
     const formData = new FormData();
-    formData.append('ch_name', neutralCharacterName);
-    formData.append('file_name', defaultAssistantAvatar.replace('.png', ''));
-    formData.append('creator_notes', t`Automatically created character. Feel free to edit.`);
+    formData.append("ch_name", neutralCharacterName);
+    formData.append("file_name", defaultAssistantAvatar.replace(".png", ""));
+    formData.append(
+        "creator_notes",
+        t`Automatically created character. Feel free to edit.`,
+    );
 
     try {
         const avatarResponse = await fetch(system_avatar);
         const avatarBlob = await avatarResponse.blob();
-        formData.append('avatar', avatarBlob, defaultAssistantAvatar);
+        formData.append("avatar", avatarBlob, defaultAssistantAvatar);
     } catch (error) {
-        console.warn('Error fetching system avatar. Fallback image will be used.', error);
+        console.warn(
+            "Error fetching system avatar. Fallback image will be used.",
+            error,
+        );
     }
 
     const headers = getRequestHeaders();
-    delete headers['Content-Type'];
+    delete headers["Content-Type"];
 
-    const fetchResult = await fetch('/api/characters/create', {
-        method: 'POST',
+    const fetchResult = await fetch("/api/characters/create", {
+        method: "POST",
         headers: headers,
         body: formData,
-        cache: 'no-cache',
+        cache: "no-cache",
     });
 
     if (!fetchResult.ok) {
@@ -397,7 +465,7 @@ async function createPermanentAssistant() {
 
 export async function openPermanentAssistantCard() {
     const avatar = getPermanentAssistantAvatar();
-    const characterId = characters.findIndex(x => x.avatar === avatar);
+    const characterId = characters.findIndex((x) => x.avatar === avatar);
     if (characterId === -1) {
         toastr.info(t`Assistant not found. Try sending a chat message.`);
         return;
@@ -423,7 +491,9 @@ export function assignCharacterAsAssistant(characterId) {
     const currentAssistantAvatar = getPermanentAssistantAvatar();
     if (currentAssistantAvatar === character.avatar) {
         if (character.avatar === defaultAssistantAvatar) {
-            toastr.info(t`${character.name} is a system assistant. Choose another character.`);
+            toastr.info(
+                t`${character.name} is a system assistant. Choose another character.`,
+            );
             return;
         }
 
@@ -444,7 +514,7 @@ export function initWelcomeScreen() {
     }
 
     eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (target) => {
-        if (target !== 'set_as_assistant') {
+        if (target !== "set_as_assistant") {
             return;
         }
         assignCharacterAsAssistant(this_chid);

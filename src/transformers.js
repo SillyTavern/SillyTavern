@@ -1,11 +1,11 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import process from 'node:process';
-import { Buffer } from 'node:buffer';
+import path from "node:path";
+import fs from "node:fs";
+import process from "node:process";
+import { Buffer } from "node:buffer";
 
-import { pipeline, env, RawImage } from 'sillytavern-transformers';
-import { getConfigValue } from './util.js';
-import { serverDirectory } from './server-directory.js';
+import { pipeline, env, RawImage } from "sillytavern-transformers";
+import { getConfigValue } from "./util.js";
+import { serverDirectory } from "./server-directory.js";
 
 configureTransformers();
 
@@ -13,38 +13,44 @@ function configureTransformers() {
     // Limit the number of threads to 1 to avoid issues on Android
     env.backends.onnx.wasm.numThreads = 1;
     // Use WASM from a local folder to avoid CDN connections
-    env.backends.onnx.wasm.wasmPaths = path.join(serverDirectory, 'node_modules', 'sillytavern-transformers', 'dist') + path.sep;
+    env.backends.onnx.wasm.wasmPaths =
+        path.join(
+            serverDirectory,
+            "node_modules",
+            "sillytavern-transformers",
+            "dist",
+        ) + path.sep;
 }
 
 const tasks = {
-    'text-classification': {
-        defaultModel: 'Cohee/distilbert-base-uncased-go-emotions-onnx',
+    "text-classification": {
+        defaultModel: "Cohee/distilbert-base-uncased-go-emotions-onnx",
         pipeline: null,
-        configField: 'extensions.models.classification',
+        configField: "extensions.models.classification",
         quantized: true,
     },
-    'image-to-text': {
-        defaultModel: 'Xenova/vit-gpt2-image-captioning',
+    "image-to-text": {
+        defaultModel: "Xenova/vit-gpt2-image-captioning",
         pipeline: null,
-        configField: 'extensions.models.captioning',
+        configField: "extensions.models.captioning",
         quantized: true,
     },
-    'feature-extraction': {
-        defaultModel: 'Xenova/all-mpnet-base-v2',
+    "feature-extraction": {
+        defaultModel: "Xenova/all-mpnet-base-v2",
         pipeline: null,
-        configField: 'extensions.models.embedding',
+        configField: "extensions.models.embedding",
         quantized: true,
     },
-    'automatic-speech-recognition': {
-        defaultModel: 'Xenova/whisper-small',
+    "automatic-speech-recognition": {
+        defaultModel: "Xenova/whisper-small",
         pipeline: null,
-        configField: 'extensions.models.speechToText',
+        configField: "extensions.models.speechToText",
         quantized: true,
     },
-    'text-to-speech': {
-        defaultModel: 'Xenova/speecht5_tts',
+    "text-to-speech": {
+        defaultModel: "Xenova/speecht5_tts",
         pipeline: null,
-        configField: 'extensions.models.textToSpeech',
+        configField: "extensions.models.textToSpeech",
         quantized: false,
     },
 };
@@ -56,7 +62,7 @@ const tasks = {
  */
 export async function getRawImage(image) {
     try {
-        const buffer = Buffer.from(image, 'base64');
+        const buffer = Buffer.from(image, "base64");
         const byteArray = new Uint8Array(buffer);
         const blob = new Blob([byteArray]);
 
@@ -79,14 +85,16 @@ function getModelForTask(task) {
         const model = getConfigValue(tasks[task].configField, null);
         return model || defaultModel;
     } catch (error) {
-        console.warn('Failed to read config.yaml, using default classification model.');
+        console.warn(
+            "Failed to read config.yaml, using default classification model.",
+        );
         return defaultModel;
     }
 }
 
 async function migrateCacheToDataDir() {
-    const oldCacheDir = path.join(process.cwd(), 'cache');
-    const newCacheDir = path.join(globalThis.DATA_ROOT, '_cache');
+    const oldCacheDir = path.join(process.cwd(), "cache");
+    const newCacheDir = path.join(globalThis.DATA_ROOT, "_cache");
 
     if (!fs.existsSync(newCacheDir)) {
         fs.mkdirSync(newCacheDir, { recursive: true });
@@ -99,7 +107,9 @@ async function migrateCacheToDataDir() {
             return;
         }
 
-        console.log('Migrating model cache files to data directory. Please wait...');
+        console.log(
+            "Migrating model cache files to data directory. Please wait...",
+        );
 
         for (const file of files) {
             try {
@@ -108,7 +118,10 @@ async function migrateCacheToDataDir() {
                 fs.cpSync(oldPath, newPath, { recursive: true, force: true });
                 fs.rmSync(oldPath, { recursive: true, force: true });
             } catch (error) {
-                console.warn('Failed to migrate cache file. The model will be re-downloaded.', error);
+                console.warn(
+                    "Failed to migrate cache file. The model will be re-downloaded.",
+                    error,
+                );
             }
         }
     }
@@ -120,22 +133,40 @@ async function migrateCacheToDataDir() {
  * @param {string} forceModel The model to use for the pipeline, if any
  * @returns {Promise<import('sillytavern-transformers').Pipeline>} The transformers.js pipeline
  */
-export async function getPipeline(task, forceModel = '') {
+export async function getPipeline(task, forceModel = "") {
     await migrateCacheToDataDir();
 
     if (tasks[task].pipeline) {
-        if (forceModel === '' || tasks[task].currentModel === forceModel) {
+        if (forceModel === "" || tasks[task].currentModel === forceModel) {
             return tasks[task].pipeline;
         }
-        console.log('Disposing transformers.js pipeline for for task', task, 'with model', tasks[task].currentModel);
+        console.log(
+            "Disposing transformers.js pipeline for for task",
+            task,
+            "with model",
+            tasks[task].currentModel,
+        );
         await tasks[task].pipeline.dispose();
     }
 
-    const cacheDir = path.join(globalThis.DATA_ROOT, '_cache');
+    const cacheDir = path.join(globalThis.DATA_ROOT, "_cache");
     const model = forceModel || getModelForTask(task);
-    const localOnly = !getConfigValue('extensions.models.autoDownload', true, 'boolean');
-    console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
-    const instance = await pipeline(task, model, { cache_dir: cacheDir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
+    const localOnly = !getConfigValue(
+        "extensions.models.autoDownload",
+        true,
+        "boolean",
+    );
+    console.log(
+        "Initializing transformers.js pipeline for task",
+        task,
+        "with model",
+        model,
+    );
+    const instance = await pipeline(task, model, {
+        cache_dir: cacheDir,
+        quantized: tasks[task].quantized ?? true,
+        local_files_only: localOnly,
+    });
     tasks[task].pipeline = instance;
     tasks[task].currentModel = model;
     // @ts-ignore

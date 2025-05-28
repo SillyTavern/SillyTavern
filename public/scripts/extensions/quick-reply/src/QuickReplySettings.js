@@ -1,6 +1,10 @@
-import { chat_metadata, saveChatDebounced, saveSettingsDebounced } from '../../../../script.js';
-import { extension_settings } from '../../../extensions.js';
-import { QuickReplyConfig } from './QuickReplyConfig.js';
+import {
+    chat_metadata,
+    saveChatDebounced,
+    saveSettingsDebounced,
+} from "../../../../script.js";
+import { extension_settings } from "../../../extensions.js";
+import { QuickReplyConfig } from "./QuickReplyConfig.js";
 
 export class QuickReplySettings {
     static from(props) {
@@ -9,9 +13,6 @@ export class QuickReplySettings {
         instance.init();
         return instance;
     }
-
-
-
 
     /**@type {Boolean}*/ isEnabled = false;
     /**@type {Boolean}*/ isCombined = false;
@@ -33,9 +34,6 @@ export class QuickReplySettings {
     /**@type {Function}*/ onSave;
     /**@type {Function}*/ onRequestEditSet;
 
-
-
-
     init() {
         this.hookConfig(this.config);
         this.hookConfig(this.chatConfig);
@@ -43,8 +41,8 @@ export class QuickReplySettings {
 
     hookConfig(config) {
         if (config) {
-            config.onUpdate = ()=>this.save();
-            config.onRequestEditSet = (qrs)=>this.requestEditSet(qrs);
+            config.onUpdate = () => this.save();
+            config.onRequestEditSet = (qrs) => this.requestEditSet(qrs);
         }
     }
     unhookConfig(config) {
@@ -53,9 +51,6 @@ export class QuickReplySettings {
             config.onRequestEditSet = null;
         }
     }
-
-
-
 
     save() {
         extension_settings.quickReplyV2 = this.toJSON();

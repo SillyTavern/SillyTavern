@@ -1,11 +1,11 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { Buffer } from 'node:buffer';
+import fs from "node:fs";
+import path from "node:path";
+import { Buffer } from "node:buffer";
 
-import express from 'express';
-import sanitize from 'sanitize-filename';
+import express from "express";
+import sanitize from "sanitize-filename";
 
-import { clientRelativePath, removeFileExtension, getImages } from '../util.js';
+import { clientRelativePath, removeFileExtension, getImages } from "../util.js";
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -35,20 +35,22 @@ export const router = express.Router();
  * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
  * @returns {Object} response - The response object containing the path where the image was saved.
  */
-router.post('/upload', async (request, response) => {
+router.post("/upload", async (request, response) => {
     // Check for image data
     if (!request.body || !request.body.image) {
-        return response.status(400).send({ error: 'No image data provided' });
+        return response.status(400).send({ error: "No image data provided" });
     }
 
     try {
         // Extracting the base64 data and the image format
-        const splitParts = request.body.image.split(',');
-        const format = splitParts[0].split(';')[0].split('/')[1];
+        const splitParts = request.body.image.split(",");
+        const format = splitParts[0].split(";")[0].split("/")[1];
         const base64Data = splitParts[1];
-        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
+        const validFormat = ["png", "jpg", "webp", "jpeg", "gif"].includes(
+            format,
+        );
         if (!validFormat) {
-            return response.status(400).send({ error: 'Invalid image format' });
+            return response.status(400).send({ error: "Invalid image format" });
         }
 
         // Constructing filename and path
@@ -60,69 +62,91 @@ router.post('/upload', async (request, response) => {
         }
 
         // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(request.user.directories.userImages, sanitize(filename));
+        let pathToNewFile = path.join(
+            request.user.directories.userImages,
+            sanitize(filename),
+        );
         if (request.body.ch_name) {
-            pathToNewFile = path.join(request.user.directories.userImages, sanitize(request.body.ch_name), sanitize(filename));
+            pathToNewFile = path.join(
+                request.user.directories.userImages,
+                sanitize(request.body.ch_name),
+                sanitize(filename),
+            );
         }
 
         ensureDirectoryExistence(pathToNewFile);
-        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const imageBuffer = Buffer.from(base64Data, "base64");
         await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
-        response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
+        response.send({
+            path: clientRelativePath(
+                request.user.directories.root,
+                pathToNewFile,
+            ),
+        });
     } catch (error) {
         console.error(error);
-        response.status(500).send({ error: 'Failed to save the image' });
+        response.status(500).send({ error: "Failed to save the image" });
     }
 });
 
-router.post('/list/:folder?', (request, response) => {
+router.post("/list/:folder?", (request, response) => {
     try {
         if (request.params.folder) {
             if (request.body.folder) {
-                return response.status(400).send({ error: 'Folder specified in both URL and body' });
+                return response
+                    .status(400)
+                    .send({ error: "Folder specified in both URL and body" });
             }
 
-            console.warn('Deprecated: Use POST /api/images/list with folder in request body');
+            console.warn(
+                "Deprecated: Use POST /api/images/list with folder in request body",
+            );
             request.body.folder = request.params.folder;
         }
 
         if (!request.body.folder) {
-            return response.status(400).send({ error: 'No folder specified' });
+            return response.status(400).send({ error: "No folder specified" });
         }
 
-        const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
-        const sort = request.body.sortField || 'date';
-        const order = request.body.sortOrder || 'asc';
+        const directoryPath = path.join(
+            request.user.directories.userImages,
+            sanitize(request.body.folder),
+        );
+        const sort = request.body.sortField || "date";
+        const order = request.body.sortOrder || "asc";
 
         if (!fs.existsSync(directoryPath)) {
             fs.mkdirSync(directoryPath, { recursive: true });
         }
 
         const images = getImages(directoryPath, sort);
-        if (order === 'desc') {
+        if (order === "desc") {
             images.reverse();
         }
         return response.send(images);
     } catch (error) {
         console.error(error);
-        return response.status(500).send({ error: 'Unable to retrieve files' });
+        return response.status(500).send({ error: "Unable to retrieve files" });
     }
 });
 
-router.post('/folders', (request, response) => {
+router.post("/folders", (request, response) => {
     try {
         const directoryPath = request.user.directories.userImages;
         if (!fs.existsSync(directoryPath)) {
             fs.mkdirSync(directoryPath, { recursive: true });
         }
 
-        const folders = fs.readdirSync(directoryPath, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name);
+        const folders = fs
+            .readdirSync(directoryPath, { withFileTypes: true })
+            .filter((dirent) => dirent.isDirectory())
+            .map((dirent) => dirent.name);
 
         return response.send(folders);
     } catch (error) {
         console.error(error);
-        return response.status(500).send({ error: 'Unable to retrieve folders' });
+        return response
+            .status(500)
+            .send({ error: "Unable to retrieve folders" });
     }
 });

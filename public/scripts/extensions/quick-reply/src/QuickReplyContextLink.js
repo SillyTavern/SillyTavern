@@ -1,4 +1,4 @@
-import { QuickReplySet } from './QuickReplySet.js';
+import { QuickReplySet } from "./QuickReplySet.js";
 
 export class QuickReplyContextLink {
     static from(props) {
@@ -6,9 +6,6 @@ export class QuickReplyContextLink {
         const x = Object.assign(new this(), props);
         return x;
     }
-
-
-
 
     /**@type {QuickReplySet}*/ set;
     /**@type {Boolean}*/ isChained = false;

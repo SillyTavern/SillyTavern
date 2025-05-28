@@ -1,31 +1,28 @@
-import { QuickReply } from '../src/QuickReply.js';
-import { QuickReplyContextLink } from '../src/QuickReplyContextLink.js';
-import { QuickReplySet } from '../src/QuickReplySet.js';
-import { QuickReplySettings } from '../src/QuickReplySettings.js';
-import { SettingsUi } from '../src/ui/SettingsUi.js';
-import { onlyUnique } from '../../../utils.js';
+import { QuickReply } from "../src/QuickReply.js";
+import { QuickReplyContextLink } from "../src/QuickReplyContextLink.js";
+import { QuickReplySet } from "../src/QuickReplySet.js";
+import { QuickReplySettings } from "../src/QuickReplySettings.js";
+import { SettingsUi } from "../src/ui/SettingsUi.js";
+import { onlyUnique } from "../../../utils.js";
 
 export class QuickReplyApi {
     /** @type {QuickReplySettings} */ settings;
     /** @type {SettingsUi} */ settingsUi;
 
-
-
-
-    constructor(/** @type {QuickReplySettings} */settings, /** @type {SettingsUi} */settingsUi) {
+    constructor(
+        /** @type {QuickReplySettings} */ settings,
+        /** @type {SettingsUi} */ settingsUi,
+    ) {
         this.settings = settings;
         this.settingsUi = settingsUi;
     }
-
-
-
 
     /**
      * @param {QuickReply} qr
      * @returns {QuickReplySet}
      */
     getSetByQr(qr) {
-        return QuickReplySet.list.find(it=>it.qrList.includes(qr));
+        return QuickReplySet.list.find((it) => it.qrList.includes(qr));
     }
 
     /**
@@ -48,12 +45,10 @@ export class QuickReplyApi {
     getQrByLabel(setName, label) {
         const set = this.getSetByName(setName);
         if (!set) return;
-        if (Number.isInteger(label)) return set.qrList.find(it=>it.id == label);
-        return set.qrList.find(it=>it.label == label);
+        if (Number.isInteger(label))
+            return set.qrList.find((it) => it.id == label);
+        return set.qrList.find((it) => it.label == label);
     }
-
-
-
 
     /**
      * Executes a quick reply by its index and returns the result.
@@ -62,10 +57,12 @@ export class QuickReplyApi {
      * @returns the return value of the quick reply, or undefined if not found
      */
     async executeQuickReplyByIndex(idx) {
-        const qr = [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
-            .map(it=>it.set.qrList)
-            .flat()[idx]
-        ;
+        const qr = [
+            ...this.settings.config.setList,
+            ...(this.settings.chatConfig?.setList ?? []),
+        ]
+            .map((it) => it.set.qrList)
+            .flat()[idx];
         if (qr) {
             return await qr.onExecute();
         } else {
@@ -84,11 +81,12 @@ export class QuickReplyApi {
     async executeQuickReply(setName, label, args = {}, options = {}) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         return await qr.execute(args, false, false, options);
     }
-
 
     /**
      * Adds or removes a quick reply set to the list of globally active quick reply sets.
@@ -134,7 +132,6 @@ export class QuickReplyApi {
         }
         this.settings.config.removeSet(set);
     }
-
 
     /**
      * Adds or removes a quick reply set to the list of the current chat's active quick reply sets.
@@ -184,7 +181,6 @@ export class QuickReplyApi {
         this.settings.chatConfig.removeSet(set);
     }
 
-
     /**
      * Creates a new quick reply in an existing quick reply set.
      *
@@ -205,30 +201,36 @@ export class QuickReplyApi {
      * @param {string} [props.automationId] when not empty, the quick reply will be executed when the WI with the given automation ID is activated
      * @returns {QuickReply} the new quick reply
      */
-    createQuickReply(setName, label, {
-        icon,
-        showLabel,
-        message,
-        title,
-        isHidden,
-        executeOnStartup,
-        executeOnUser,
-        executeOnAi,
-        executeOnChatChange,
-        executeOnGroupMemberDraft,
-        executeOnNewChat,
-        automationId,
-    } = {}) {
+    createQuickReply(
+        setName,
+        label,
+        {
+            icon,
+            showLabel,
+            message,
+            title,
+            isHidden,
+            executeOnStartup,
+            executeOnUser,
+            executeOnAi,
+            executeOnChatChange,
+            executeOnGroupMemberDraft,
+            executeOnNewChat,
+            automationId,
+        } = {},
+    ) {
         const set = this.getSetByName(setName);
         if (!set) {
-            throw new Error(`No quick reply set with named "${setName}" found.`);
+            throw new Error(
+                `No quick reply set with named "${setName}" found.`,
+            );
         }
         const qr = set.addQuickReply();
-        qr.label = label ?? '';
-        qr.icon = icon ??  '';
+        qr.label = label ?? "";
+        qr.icon = icon ?? "";
         qr.showLabel = showLabel ?? false;
-        qr.message = message ?? '';
-        qr.title = title ?? '';
+        qr.message = message ?? "";
+        qr.title = title ?? "";
         qr.isHidden = isHidden ?? false;
         qr.executeOnStartup = executeOnStartup ?? false;
         qr.executeOnUser = executeOnUser ?? false;
@@ -236,7 +238,7 @@ export class QuickReplyApi {
         qr.executeOnChatChange = executeOnChatChange ?? false;
         qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? false;
         qr.executeOnNewChat = executeOnNewChat ?? false;
-        qr.automationId = automationId ?? '';
+        qr.automationId = automationId ?? "";
         qr.onUpdate();
         return qr;
     }
@@ -262,24 +264,30 @@ export class QuickReplyApi {
      * @param {string} [props.automationId] when not empty, the quick reply will be executed when the WI with the given automation ID is activated
      * @returns {QuickReply} the altered quick reply
      */
-    updateQuickReply(setName, label, {
-        icon,
-        showLabel,
-        newLabel,
-        message,
-        title,
-        isHidden,
-        executeOnStartup,
-        executeOnUser,
-        executeOnAi,
-        executeOnChatChange,
-        executeOnGroupMemberDraft,
-        executeOnNewChat,
-        automationId,
-    } = {}) {
+    updateQuickReply(
+        setName,
+        label,
+        {
+            icon,
+            showLabel,
+            newLabel,
+            message,
+            title,
+            isHidden,
+            executeOnStartup,
+            executeOnUser,
+            executeOnAi,
+            executeOnChatChange,
+            executeOnGroupMemberDraft,
+            executeOnNewChat,
+            automationId,
+        } = {},
+    ) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         qr.updateIcon(icon ?? qr.icon);
         qr.updateShowLabel(showLabel ?? qr.showLabel);
@@ -291,7 +299,8 @@ export class QuickReplyApi {
         qr.executeOnUser = executeOnUser ?? qr.executeOnUser;
         qr.executeOnAi = executeOnAi ?? qr.executeOnAi;
         qr.executeOnChatChange = executeOnChatChange ?? qr.executeOnChatChange;
-        qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? qr.executeOnGroupMemberDraft;
+        qr.executeOnGroupMemberDraft =
+            executeOnGroupMemberDraft ?? qr.executeOnGroupMemberDraft;
         qr.executeOnNewChat = executeOnNewChat ?? qr.executeOnNewChat;
         qr.automationId = automationId ?? qr.automationId;
         qr.onUpdate();
@@ -307,11 +316,12 @@ export class QuickReplyApi {
     deleteQuickReply(setName, label) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         qr.delete();
     }
-
 
     /**
      * Adds an existing quick reply set as a context menu to an existing quick reply.
@@ -325,10 +335,14 @@ export class QuickReplyApi {
         const qr = this.getQrByLabel(setName, label);
         const set = this.getSetByName(contextSetName);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         if (!set) {
-            throw new Error(`No quick reply set with name "${contextSetName}" found.`);
+            throw new Error(
+                `No quick reply set with name "${contextSetName}" found.`,
+            );
         }
         const cl = new QuickReplyContextLink();
         cl.set = set;
@@ -347,10 +361,14 @@ export class QuickReplyApi {
         const qr = this.getQrByLabel(setName, label);
         const set = this.getSetByName(contextSetName);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         if (!set) {
-            throw new Error(`No quick reply set with name "${contextSetName}" found.`);
+            throw new Error(
+                `No quick reply set with name "${contextSetName}" found.`,
+            );
         }
         qr.removeContextLink(set.name);
     }
@@ -364,11 +382,12 @@ export class QuickReplyApi {
     clearContextMenu(setName, label) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
-            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+            throw new Error(
+                `No quick reply with label "${label}" in set "${setName}" found.`,
+            );
         }
         qr.clearContextLinks();
     }
-
 
     /**
      * Create a new quick reply set.
@@ -380,11 +399,7 @@ export class QuickReplyApi {
      * @param {boolean} [props.injectInput] whether or not to automatically inject the user input at the end of the quick reply
      * @returns {Promise<QuickReplySet>} the new quick reply set
      */
-    async createSet(name, {
-        disableSend,
-        placeBeforeInput,
-        injectInput,
-    } = {}) {
+    async createSet(name, { disableSend, placeBeforeInput, injectInput } = {}) {
         const set = new QuickReplySet();
         set.name = name;
         set.disableSend = disableSend ?? false;
@@ -392,9 +407,15 @@ export class QuickReplyApi {
         set.injectInput = injectInput ?? false;
         const oldSet = this.getSetByName(name);
         if (oldSet) {
-            QuickReplySet.list.splice(QuickReplySet.list.indexOf(oldSet), 1, set);
+            QuickReplySet.list.splice(
+                QuickReplySet.list.indexOf(oldSet),
+                1,
+                set,
+            );
         } else {
-            const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
+            const idx = QuickReplySet.list.findIndex(
+                (it) => it.name.localeCompare(name) == 1,
+            );
             if (idx > -1) {
                 QuickReplySet.list.splice(idx, 0, set);
             } else {
@@ -416,11 +437,7 @@ export class QuickReplyApi {
      * @param {boolean} [props.injectInput] whether or not to automatically inject the user input at the end of the quick reply
      * @returns {Promise<QuickReplySet>} the altered quick reply set
      */
-    async updateSet(name, {
-        disableSend,
-        placeBeforeInput,
-        injectInput,
-    } = {}) {
+    async updateSet(name, { disableSend, placeBeforeInput, injectInput } = {}) {
         const set = this.getSetByName(name);
         if (!set) {
             throw new Error(`No quick reply set with name "${name}" found.`);
@@ -439,7 +456,7 @@ export class QuickReplyApi {
      * @param {string} name name of the existing quick reply set
      */
     async deleteSet(name) {
-        const set  = this.getSetByName(name);
+        const set = this.getSetByName(name);
         if (!set) {
             throw new Error(`No quick reply set with name "${name}" found.`);
         }
@@ -447,14 +464,13 @@ export class QuickReplyApi {
         this.settingsUi.rerender();
     }
 
-
     /**
      * Gets a list of all quick reply sets.
      *
      * @returns array with the names of all quick reply sets
      */
     listSets() {
-        return QuickReplySet.list.map(it=>it.name);
+        return QuickReplySet.list.map((it) => it.name);
     }
     /**
      * Gets a list of all globally active quick reply sets.
@@ -462,7 +478,7 @@ export class QuickReplyApi {
      * @returns array with the names of all quick reply sets
      */
     listGlobalSets() {
-        return this.settings.config.setList.map(it=>it.set.name);
+        return this.settings.config.setList.map((it) => it.set.name);
     }
     /**
      * Gets a list of all quick reply sets activated by the current chat.
@@ -470,7 +486,10 @@ export class QuickReplyApi {
      * @returns array with the names of all quick reply sets
      */
     listChatSets() {
-        return this.settings.chatConfig?.setList?.flatMap(it=>it.set.name) ?? [];
+        return (
+            this.settings.chatConfig?.setList?.flatMap((it) => it.set.name) ??
+            []
+        );
     }
 
     /**
@@ -484,7 +503,7 @@ export class QuickReplyApi {
         if (!set) {
             throw new Error(`No quick reply set with name "${name}" found.`);
         }
-        return set.qrList.map(it=>it.label);
+        return set.qrList.map((it) => it.label);
     }
 
     /**
@@ -493,10 +512,13 @@ export class QuickReplyApi {
      * @returns {String[]} array with all automation IDs used by quick replies
      */
     listAutomationIds() {
-        return this
-            .listSets()
-            .flatMap(it => ({ set: it, qrs: this.listQuickReplies(it) }))
-            .map(it => it.qrs?.map(qr => this.getQrByLabel(it.set, qr)?.automationId))
+        return this.listSets()
+            .flatMap((it) => ({ set: it, qrs: this.listQuickReplies(it) }))
+            .map((it) =>
+                it.qrs?.map(
+                    (qr) => this.getQrByLabel(it.set, qr)?.automationId,
+                ),
+            )
             .flat()
             .filter(Boolean)
             .filter(onlyUnique)

@@ -3,28 +3,34 @@ import {
     DOMPurify,
     Readability,
     isProbablyReaderable,
-} from '../lib.js';
+} from "../lib.js";
 
-import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, this_chid, user_avatar } from '../script.js';
-import { isMobile } from './RossAscends-mods.js';
-import { collapseNewlines, power_user } from './power-user.js';
-import { debounce_timeout } from './constants.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
-import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { getTagsList } from './tags.js';
-import { groups, selected_group } from './group-chats.js';
-import { getCurrentLocale, t } from './i18n.js';
+import { getContext } from "./extensions.js";
+import {
+    characters,
+    getRequestHeaders,
+    this_chid,
+    user_avatar,
+} from "../script.js";
+import { isMobile } from "./RossAscends-mods.js";
+import { collapseNewlines, power_user } from "./power-user.js";
+import { debounce_timeout } from "./constants.js";
+import { Popup, POPUP_RESULT, POPUP_TYPE } from "./popup.js";
+import { SlashCommandClosure } from "./slash-commands/SlashCommandClosure.js";
+import { getTagsList } from "./tags.js";
+import { groups, selected_group } from "./group-chats.js";
+import { getCurrentLocale, t } from "./i18n.js";
 
 /**
  * Pagination status string template.
  * @type {string}
  */
-export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>';
+export const PAGINATION_TEMPLATE =
+    "<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>";
 
-export const localizePagination = function(container) {
-    container.find('[title="Next page"]').attr('title', t`Next page`);
-    container.find('[title="Previous page"]').attr('title', t`Previous page`);
+export const localizePagination = function (container) {
+    container.find('[title="Next page"]').attr("title", t`Next page`);
+    container.find('[title="Previous page"]').attr("title", t`Previous page`);
 };
 
 /**
@@ -33,9 +39,12 @@ export const localizePagination = function(container) {
  * @param {number[]} sizeChangerOptions Array of page size options
  * @returns {string} The rendered dropdown element as a string
  */
-export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
-    const sizeSelect = document.createElement('select');
-    sizeSelect.classList.add('J-paginationjs-size-select');
+export const renderPaginationDropdown = function (
+    pageSize,
+    sizeChangerOptions,
+) {
+    const sizeSelect = document.createElement("select");
+    sizeSelect.classList.add("J-paginationjs-size-select");
 
     if (sizeChangerOptions.indexOf(pageSize) === -1) {
         sizeChangerOptions.unshift(pageSize);
@@ -43,11 +52,11 @@ export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
     }
 
     for (let i = 0; i < sizeChangerOptions.length; i++) {
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = `${sizeChangerOptions[i]}`;
         option.textContent = `${sizeChangerOptions[i]} ${t`/ page`}`;
         if (sizeChangerOptions[i] === pageSize) {
-            option.setAttribute('selected', 'selected');
+            option.setAttribute("selected", "selected");
         }
         sizeSelect.appendChild(option);
     }
@@ -55,10 +64,12 @@ export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
     return sizeSelect.outerHTML;
 };
 
-export const paginationDropdownChangeHandler = function(event, size) {
-    let dropdown = $(event?.originalEvent?.currentTarget || event.delegateTarget).find('select');
-    dropdown.find('[selected]').removeAttr('selected');
-    dropdown.find(`[value=${size}]`).attr('selected', '');
+export const paginationDropdownChangeHandler = function (event, size) {
+    let dropdown = $(
+        event?.originalEvent?.currentTarget || event.delegateTarget,
+    ).find("select");
+    dropdown.find("[selected]").removeAttr("selected");
+    dropdown.find(`[value=${size}]`).attr("selected", "");
 };
 
 /**
@@ -76,7 +87,7 @@ export const navigation_option = {
  * @returns {boolean} True if the item is an object, false otherwise.
  */
 function isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
+    return item && typeof item === "object" && !Array.isArray(item);
 }
 
 /**
@@ -88,12 +99,11 @@ function isObject(item) {
 export function deepMerge(target, source) {
     let output = Object.assign({}, target);
     if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
+        Object.keys(source).forEach((key) => {
             if (isObject(source[key])) {
                 if (!(key in target))
                     Object.assign(output, { [key]: source[key] });
-                else
-                    output[key] = deepMerge(target[key], source[key]);
+                else output[key] = deepMerge(target[key], source[key]);
             } else {
                 Object.assign(output, { [key]: source[key] });
             }
@@ -103,7 +113,11 @@ export function deepMerge(target, source) {
 }
 
 export function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 }
 
 /**
@@ -112,8 +126,8 @@ export function escapeHtml(str) {
  * @param {string} replacement Replacement for invalid characters
  * @returns {string} Sanitized string
  */
-export function sanitizeSelector(str, replacement = '_') {
-    return String(str).replace(/[^a-z0-9_-]/ig, replacement);
+export function sanitizeSelector(str, replacement = "_") {
+    return String(str).replace(/[^a-z0-9_-]/gi, replacement);
 }
 
 export function isValidUrl(value) {
@@ -132,37 +146,37 @@ export function isValidUrl(value) {
  * @returns {any} Converted value
  */
 export function convertValueType(value, type) {
-    if (value instanceof SlashCommandClosure || typeof type !== 'string') {
+    if (value instanceof SlashCommandClosure || typeof type !== "string") {
         return value;
     }
 
     switch (type.trim().toLowerCase()) {
-        case 'string':
-        case 'str':
+        case "string":
+        case "str":
             return String(value);
 
-        case 'null':
+        case "null":
             return null;
 
-        case 'undefined':
-        case 'none':
+        case "undefined":
+        case "none":
             return undefined;
 
-        case 'number':
+        case "number":
             return Number(value);
 
-        case 'int':
+        case "int":
             return parseInt(value, 10);
 
-        case 'float':
+        case "float":
             return parseFloat(value);
 
-        case 'boolean':
-        case 'bool':
+        case "boolean":
+        case "bool":
             return isTrueBoolean(value);
 
-        case 'list':
-        case 'array':
+        case "list":
+        case "array":
             try {
                 const parsedArray = JSON.parse(value);
                 if (Array.isArray(parsedArray)) {
@@ -174,12 +188,12 @@ export function convertValueType(value, type) {
                 return [];
             }
 
-        case 'object':
-        case 'dict':
-        case 'dictionary':
+        case "object":
+        case "dict":
+        case "dictionary":
             try {
                 const parsedObject = JSON.parse(value);
-                if (typeof parsedObject === 'object') {
+                if (typeof parsedObject === "object") {
                     return parsedObject;
                 }
                 // The value is not an object
@@ -205,12 +219,12 @@ export function convertValueType(value, type) {
 export function stringToRange(input, min, max) {
     let start, end;
 
-    if (typeof input !== 'string') {
+    if (typeof input !== "string") {
         input = String(input);
     }
 
-    if (input.includes('-')) {
-        const parts = input.split('-');
+    if (input.includes("-")) {
+        const parts = input.split("-");
         start = parts[0] ? parseInt(parts[0], 10) : NaN;
         end = parts[1] ? parseInt(parts[1], 10) : NaN;
     } else {
@@ -243,7 +257,10 @@ export function onlyUnique(value, index, array) {
  * @returns {boolean} True if the value is unique, false otherwise.
  */
 export function onlyUniqueJson(value, index, array) {
-    return array.map(v => JSON.stringify(v)).indexOf(JSON.stringify(value)) === index;
+    return (
+        array.map((v) => JSON.stringify(v)).indexOf(JSON.stringify(value)) ===
+        index
+    );
 }
 
 /**
@@ -282,13 +299,13 @@ export function getSortableDelay() {
 
 export async function bufferToBase64(buffer) {
     // use a FileReader to generate a base64 data URI:
-    const base64url = await new Promise(resolve => {
+    const base64url = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(new Blob([buffer]));
     });
     // remove the `data:...;base64,` part from the start
-    return base64url.slice(base64url.indexOf(',') + 1);
+    return base64url.slice(base64url.indexOf(",") + 1);
 }
 
 /**
@@ -320,7 +337,7 @@ export function shuffle(array) {
  * @param {string} contentType File content type.
  */
 export function download(content, fileName, contentType) {
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
     a.download = fileName;
@@ -411,8 +428,9 @@ export async function parseJsonFile(file) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
         fileReader.readAsText(file);
-        fileReader.onload = event => resolve(JSON.parse(String(event.target.result)));
-        fileReader.onerror = error => reject(error);
+        fileReader.onload = (event) =>
+            resolve(JSON.parse(String(event.target.result)));
+        fileReader.onerror = (error) => reject(error);
     });
 }
 
@@ -423,7 +441,7 @@ export async function parseJsonFile(file) {
  * @returns {number} The hash code.
  */
 export function getStringHash(str, seed = 0) {
-    if (typeof str !== 'string') {
+    if (typeof str !== "string") {
         return 0;
     }
 
@@ -435,8 +453,12 @@ export function getStringHash(str, seed = 0) {
         h2 = Math.imul(h2 ^ ch, 1597334677);
     }
 
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    h1 =
+        Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
+        Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 =
+        Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
+        Math.imul(h1 ^ (h1 >>> 13), 3266489909);
 
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }
@@ -451,13 +473,14 @@ export function copyText(text) {
         return navigator.clipboard.writeText(text);
     }
 
-    const parent = document.querySelector('dialog[open]:last-of-type') ?? document.body;
-    const textArea = document.createElement('textarea');
+    const parent =
+        document.querySelector("dialog[open]:last-of-type") ?? document.body;
+    const textArea = document.createElement("textarea");
     textArea.value = text;
     parent.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    document.execCommand('copy');
+    document.execCommand("copy");
     parent.removeChild(textArea);
 }
 
@@ -478,7 +501,9 @@ export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
     let fn = (...args) => {
         clearTimeout(timer);
-        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        timer = setTimeout(() => {
+            func.apply(this, args);
+        }, timeout);
         debounceMap.set(func, timer);
         debounceMap.set(fn, timer);
     };
@@ -501,7 +526,7 @@ export function debounceAsync(func, timeout = debounce_timeout.standard) {
     return (...args) => {
         clearTimeout(timer);
         if (!debouncePromise) {
-            debouncePromise = new Promise(resolve => {
+            debouncePromise = new Promise((resolve) => {
                 debounceResolver = resolve;
             });
         }
@@ -535,7 +560,7 @@ export function throttle(func, limit = 300) {
     let lastCall;
     return (...args) => {
         const now = Date.now();
-        if (!lastCall || (now - lastCall) >= limit) {
+        if (!lastCall || now - lastCall >= limit) {
             lastCall = now;
             func.apply(this, args);
         }
@@ -553,7 +578,8 @@ export function debouncedThrottle(func, limit = 300) {
     let db = debounce(func);
 
     return function () {
-        let now = +new Date, args = arguments;
+        let now = +new Date(),
+            args = arguments;
         if (!last || (last && now < last + limit)) {
             clearTimeout(deferTimer);
             db.apply(this, args);
@@ -577,15 +603,20 @@ export function isElementInViewport(el) {
     if (!el) {
         return false;
     }
-    if (typeof jQuery === 'function' && el instanceof jQuery) {
+    if (typeof jQuery === "function" && el instanceof jQuery) {
         el = el[0];
     }
     var rect = el.getBoundingClientRect();
     return (
         rect.top >= 0 &&
         rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+        rect.bottom <=
+            (window.innerHeight ||
+                document.documentElement
+                    .clientHeight) /* or $(window).height() */ &&
+        rect.right <=
+            (window.innerWidth ||
+                document.documentElement.clientWidth) /* or $(window).width() */
     );
 }
 
@@ -621,7 +652,9 @@ export function delay(ms) {
  * @returns {boolean} True if B is a subset of A, false otherwise.
  */
 export function isSubsetOf(a, b) {
-    return (Array.isArray(a) && Array.isArray(b)) ? b.every(val => a.includes(val)) : false;
+    return Array.isArray(a) && Array.isArray(b)
+        ? b.every((val) => a.includes(val))
+        : false;
 }
 
 /**
@@ -650,9 +683,7 @@ export function incrementString(str) {
 export function stringFormat(format) {
     const args = Array.prototype.slice.call(arguments, 1);
     return format.replace(/{(\d+)}/g, function (match, number) {
-        return typeof args[number] != 'undefined'
-            ? args[number]
-            : match;
+        return typeof args[number] != "undefined" ? args[number] : match;
     });
 }
 
@@ -684,7 +715,7 @@ export function saveCaretPosition(element) {
         end: range.endOffset,
     };
 
-    console.debug('Caret saved', position);
+    console.debug("Caret saved", position);
 
     return position;
 }
@@ -700,7 +731,7 @@ export function restoreCaretPosition(element, position) {
         return;
     }
 
-    console.debug('Caret restored', position);
+    console.debug("Caret restored", position);
 
     // Create a new range object
     const range = new Range();
@@ -716,8 +747,8 @@ export function restoreCaretPosition(element, position) {
 }
 
 export async function resetScrollHeight(element) {
-    $(element).css('height', '0px');
-    $(element).css('height', $(element).prop('scrollHeight') + 3 + 'px');
+    $(element).css("height", "0px");
+    $(element).css("height", $(element).prop("scrollHeight") + 3 + "px");
 }
 
 /**
@@ -728,16 +759,18 @@ export async function resetScrollHeight(element) {
 export async function initScrollHeight(element) {
     await delay(1);
 
-    const curHeight = Number($(element).css('height').replace('px', ''));
-    const curScrollHeight = Number($(element).prop('scrollHeight'));
+    const curHeight = Number($(element).css("height").replace("px", ""));
+    const curScrollHeight = Number($(element).prop("scrollHeight"));
     const diff = curScrollHeight - curHeight;
 
-    if (diff < 3) { return; } //happens when the div isn't loaded yet
+    if (diff < 3) {
+        return;
+    } //happens when the div isn't loaded yet
 
     const newHeight = curHeight + diff + 3; //the +3 here is to account for padding/line-height on text inputs
     //console.log(`init height to ${newHeight}`);
-    $(element).css('height', '');
-    $(element).css('height', `${newHeight}px`);
+    $(element).css("height", "");
+    $(element).css("height", `${newHeight}px`);
     //resetScrollHeight(element);
 }
 
@@ -748,8 +781,8 @@ export async function initScrollHeight(element) {
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortByCssOrder(a, b) {
-    const _a = Number($(a).css('order'));
-    const _b = Number($(b).css('order'));
+    const _a = Number($(a).css("order"));
+    const _b = Number($(b).css("order"));
     return _a - _b;
 }
 
@@ -760,7 +793,7 @@ export function sortByCssOrder(a, b) {
  */
 
 export function trimSpaces(input) {
-    if (!input || typeof input !== 'string') {
+    if (!input || typeof input !== "string") {
         return input;
     }
     return power_user.trim_spaces ? input.trim() : input;
@@ -775,11 +808,32 @@ export function trimSpaces(input) {
  */
 export function trimToEndSentence(input) {
     if (!input) {
-        return '';
+        return "";
     }
 
-    const isEmoji = x => /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
-    const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
+    const isEmoji = (x) =>
+        /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
+    const punctuation = new Set([
+        ".",
+        "!",
+        "?",
+        "*",
+        '"',
+        ")",
+        "}",
+        "`",
+        "]",
+        "$",
+        "。",
+        "！",
+        "？",
+        "”",
+        "）",
+        "】",
+        "’",
+        "」",
+        "_",
+    ]); // extend this as you see fit
     let last = -1;
 
     const characters = Array.from(input);
@@ -801,23 +855,33 @@ export function trimToEndSentence(input) {
         return input.trimEnd();
     }
 
-    return characters.slice(0, last + 1).join('').trimEnd();
+    return characters
+        .slice(0, last + 1)
+        .join("")
+        .trimEnd();
 }
 
 export function trimToStartSentence(input) {
     if (!input) {
-        return '';
+        return "";
     }
 
-    let p1 = input.indexOf('.');
-    let p2 = input.indexOf('!');
-    let p3 = input.indexOf('?');
-    let p4 = input.indexOf('\n');
+    let p1 = input.indexOf(".");
+    let p2 = input.indexOf("!");
+    let p3 = input.indexOf("?");
+    let p4 = input.indexOf("\n");
     let first = p1;
     let skip1 = false;
-    if (p2 > 0 && p2 < first) { first = p2; }
-    if (p3 > 0 && p3 < first) { first = p3; }
-    if (p4 > 0 && p4 < first) { first = p4; skip1 = true; }
+    if (p2 > 0 && p2 < first) {
+        first = p2;
+    }
+    if (p3 > 0 && p3 < first) {
+        first = p3;
+    }
+    if (p4 > 0 && p4 < first) {
+        first = p4;
+        skip1 = true;
+    }
     if (first > 0) {
         if (skip1) {
             return input.substring(first + 1);
@@ -842,22 +906,24 @@ export function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
 
     if (Math.abs(bytes) < thresh) {
-        return bytes + ' B';
+        return bytes + " B";
     }
 
     const units = si
-        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+        ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
     let u = -1;
     const r = 10 ** dp;
 
     do {
         bytes /= thresh;
         ++u;
-    } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+    } while (
+        Math.round(Math.abs(bytes) * r) / r >= thresh &&
+        u < units.length - 1
+    );
 
-
-    return bytes.toFixed(dp) + ' ' + units[u];
+    return bytes.toFixed(dp) + " " + units[u];
 }
 
 /**
@@ -887,7 +953,7 @@ export function countOccurrences(string, character) {
  * @returns {boolean} True if the string is true, false otherwise.
  */
 export function isTrueBoolean(arg) {
-    return ['on', 'true', '1'].includes(arg?.trim()?.toLowerCase());
+    return ["on", "true", "1"].includes(arg?.trim()?.toLowerCase());
 }
 
 /**
@@ -896,7 +962,7 @@ export function isTrueBoolean(arg) {
  * @returns {boolean} True if the string is false, false otherwise.
  */
 export function isFalseBoolean(arg) {
-    return ['off', 'false', '0'].includes(arg?.trim()?.toLowerCase());
+    return ["off", "false", "0"].includes(arg?.trim()?.toLowerCase());
 }
 
 /**
@@ -905,16 +971,19 @@ export function isFalseBoolean(arg) {
  * @returns {string[]} The parsed array.
  */
 export function parseStringArray(value) {
-    if (!value || typeof value !== 'string') return [];
+    if (!value || typeof value !== "string") return [];
 
     try {
         const parsedValue = JSON.parse(value);
         if (!Array.isArray(parsedValue)) {
-            throw new Error('Not an array');
+            throw new Error("Not an array");
         }
-        return parsedValue.map(x => String(x));
+        return parsedValue.map((x) => String(x));
     } catch (e) {
-        return value.split(',').map(x => x.trim()).filter(x => x);
+        return value
+            .split(",")
+            .map((x) => x.trim())
+            .filter((x) => x);
     }
 }
 
@@ -960,7 +1029,9 @@ export function timestampToMoment(timestamp) {
     }
 
     const iso8601 = parseTimestamp(timestamp);
-    const objMoment = iso8601 ? moment(iso8601).locale(getCurrentLocale()) : moment.invalid();
+    const objMoment = iso8601
+        ? moment(iso8601).locale(getCurrentLocale())
+        : moment.invalid();
 
     dateCache.set(timestamp, objMoment);
     return objMoment;
@@ -975,9 +1046,12 @@ function parseTimestamp(timestamp) {
     if (!timestamp) return;
 
     // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
+    if (typeof timestamp === "number" || /^\d+$/.test(timestamp)) {
         const unixTime = Number(timestamp);
-        const isValid = Number.isFinite(unixTime) && !Number.isNaN(unixTime) && unixTime >= 0;
+        const isValid =
+            Number.isFinite(unixTime) &&
+            !Number.isNaN(unixTime) &&
+            unixTime >= 0;
         if (!isValid) return;
         return new Date(unixTime).toISOString();
     }
@@ -990,23 +1064,44 @@ function parseTimestamp(timestamp) {
     let dtFmt = [];
 
     // meridiem-based format
-    const convertFromMeridiemBased = (_, month, day, year, hour, minute, meridiem) => {
-        const monthNum = moment().month(month).format('MM');
-        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
+    const convertFromMeridiemBased = (
+        _,
+        month,
+        day,
+        year,
+        hour,
+        minute,
+        meridiem,
+    ) => {
+        const monthNum = moment().month(month).format("MM");
+        const hour24 =
+            meridiem.toLowerCase() === "pm"
+                ? (parseInt(hour, 10) % 12) + 12
+                : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
     };
     // June 19, 2023 2:20pm
-    dtFmt.push({ callback: convertFromMeridiemBased, pattern: /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i });
+    dtFmt.push({
+        callback: convertFromMeridiemBased,
+        pattern: /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i,
+    });
 
     // ST "humanized" format patterns
     const convertFromHumanized = (_, year, month, day, hour, min, sec, ms) => {
-        ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
-        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
+        ms = typeof ms !== "undefined" ? `.${ms.padStart(3, "0")}` : "";
+        return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${min.padStart(2, "0")}:${sec.padStart(2, "0")}${ms}Z`;
     };
     // 2024-7-12@01h31m37s
-    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
+    dtFmt.push({
+        callback: convertFromHumanized,
+        pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/,
+    });
     // 2024-6-5 @14h 56m 50s 682ms
-    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/ });
+    dtFmt.push({
+        callback: convertFromHumanized,
+        pattern:
+            /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/,
+    });
 
     for (const x of dtFmt) {
         let rgxMatch = timestamp.match(x.pattern);
@@ -1024,30 +1119,37 @@ function parseTimestamp(timestamp) {
  * @returns {string[]} The split string.
  * @example
  * splitRecursive('Hello, world!', 3); // ['Hel', 'lo,', 'wor', 'ld!']
-*/
-export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '']) {
+ */
+export function splitRecursive(
+    input,
+    length,
+    delimiters = ["\n\n", "\n", " ", ""],
+) {
     // Invalid length
     if (length <= 0) {
         return [input];
     }
 
-    const delim = delimiters[0] ?? '';
+    const delim = delimiters[0] ?? "";
     const parts = input.split(delim);
 
-    const flatParts = parts.flatMap(p => {
+    const flatParts = parts.flatMap((p) => {
         if (p.length < length) return p;
         return splitRecursive(p, length, delimiters.slice(1));
     });
 
     // Merge short chunks
     const result = [];
-    let currentChunk = '';
-    for (let i = 0; i < flatParts.length;) {
+    let currentChunk = "";
+    for (let i = 0; i < flatParts.length; ) {
         currentChunk = flatParts[i];
         let j = i + 1;
         while (j < flatParts.length) {
             const nextChunk = flatParts[j];
-            if (currentChunk.length + nextChunk.length + delim.length <= length) {
+            if (
+                currentChunk.length + nextChunk.length + delim.length <=
+                length
+            ) {
                 currentChunk += delim + nextChunk;
             } else {
                 break;
@@ -1068,7 +1170,8 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
  * isDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...'); // true
  */
 export function isDataURL(str) {
-    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
+    const regex =
+        /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
     return regex.test(str);
 }
 
@@ -1085,7 +1188,7 @@ export function getImageSizeFromDataURL(dataUrl) {
             resolve({ width: image.width, height: image.height });
         };
         image.onerror = function () {
-            reject(new Error('Failed to load image'));
+            reject(new Error("Failed to load image"));
         };
     });
 }
@@ -1099,9 +1202,11 @@ export function getImageSizeFromDataURL(dataUrl) {
  */
 export function getCharaFilename(chid = null, { manualAvatarKey = null } = {}) {
     const context = getContext();
-    const fileName = manualAvatarKey ?? context.characters[chid ?? context.characterId]?.avatar;
+    const fileName =
+        manualAvatarKey ??
+        context.characters[chid ?? context.characterId]?.avatar;
 
-    return fileName?.replace(/\.[^/.]+$/, '') ?? null;
+    return fileName?.replace(/\.[^/.]+$/, "") ?? null;
 }
 
 /**
@@ -1133,7 +1238,7 @@ export function extractAllWords(value) {
  * escapeRegex('^Hello$'); // '\\^Hello\\$'
  */
 export function escapeRegex(string) {
-    return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+    return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, "\\$&");
 }
 
 /**
@@ -1166,7 +1271,7 @@ export class Stopwatch {
      */
     constructor(interval) {
         if (isNaN(interval) || !isFinite(interval) || interval <= 0) {
-            console.warn('Invalid interval for Stopwatch, setting to 1');
+            console.warn("Invalid interval for Stopwatch, setting to 1");
             interval = 1;
         }
 
@@ -1180,7 +1285,7 @@ export class Stopwatch {
      * @returns Promise<void>
      */
     async tick(action) {
-        const passed = (Date.now() - this.lastAction);
+        const passed = Date.now() - this.lastAction;
 
         if (passed < this.interval) {
             return;
@@ -1226,9 +1331,9 @@ export class RateLimiter {
             }, remainingTime);
 
             if (abortSignal) {
-                abortSignal.addEventListener('abort', () => {
+                abortSignal.addEventListener("abort", () => {
                     clearTimeout(timeoutId);
-                    reject(new Error('Aborted'));
+                    reject(new Error("Aborted"));
                 });
             }
         });
@@ -1257,14 +1362,24 @@ export class RateLimiter {
  * @param {string} identifier The identifier to look for in the PNG tEXT data.
  * @returns {object} The extracted JSON object.
  */
-export function extractDataFromPng(data, identifier = 'chara') {
-    console.log('Attempting PNG import...');
+export function extractDataFromPng(data, identifier = "chara") {
+    console.log("Attempting PNG import...");
     let uint8 = new Uint8Array(4);
     let uint32 = new Uint32Array(uint8.buffer);
 
     //check if png header is valid
-    if (!data || data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4E || data[3] !== 0x47 || data[4] !== 0x0D || data[5] !== 0x0A || data[6] !== 0x1A || data[7] !== 0x0A) {
-        console.log('PNG header invalid');
+    if (
+        !data ||
+        data[0] !== 0x89 ||
+        data[1] !== 0x50 ||
+        data[2] !== 0x4e ||
+        data[3] !== 0x47 ||
+        data[4] !== 0x0d ||
+        data[5] !== 0x0a ||
+        data[6] !== 0x1a ||
+        data[7] !== 0x0a
+    ) {
+        console.log("PNG header invalid");
         return null;
     }
 
@@ -1289,21 +1404,20 @@ export function extractDataFromPng(data, identifier = 'chara') {
         chunk[3] = data[idx++];
 
         // Get the name in ASCII for identification.
-        let name = (
+        let name =
             String.fromCharCode(chunk[0]) +
             String.fromCharCode(chunk[1]) +
             String.fromCharCode(chunk[2]) +
-            String.fromCharCode(chunk[3])
-        );
+            String.fromCharCode(chunk[3]);
 
         // The IHDR header MUST come first.
-        if (!chunks.length && name !== 'IHDR') {
-            console.log('Warning: IHDR header missing');
+        if (!chunks.length && name !== "IHDR") {
+            console.log("Warning: IHDR header missing");
         }
 
         // The IEND header marks the end of the file,
         // so on discovering it break out of the loop.
-        if (name === 'IEND') {
+        if (name === "IEND") {
             ended = true;
             chunks.push({
                 name: name,
@@ -1324,7 +1438,6 @@ export function extractDataFromPng(data, identifier = 'chara') {
         uint8[1] = data[idx++];
         uint8[0] = data[idx++];
 
-
         // The chunk data is now copied to remove the 4 preceding
         // bytes used for the chunk name/type.
         let chunkData = new Uint8Array(chunk.buffer.slice(4));
@@ -1336,21 +1449,25 @@ export function extractDataFromPng(data, identifier = 'chara') {
     }
 
     if (!ended) {
-        console.log('.png file ended prematurely: no IEND header was found');
+        console.log(".png file ended prematurely: no IEND header was found");
     }
 
     //find the chunk with the chara name, just check first and last letter
-    let found = chunks.filter(x => (
-        x.name == 'tEXt'
-        && x.data.length > identifier.length
-        && x.data.slice(0, identifier.length).every((v, i) => String.fromCharCode(v) == identifier[i])));
+    let found = chunks.filter(
+        (x) =>
+            x.name == "tEXt" &&
+            x.data.length > identifier.length &&
+            x.data
+                .slice(0, identifier.length)
+                .every((v, i) => String.fromCharCode(v) == identifier[i]),
+    );
 
     if (found.length == 0) {
-        console.log('PNG Image contains no data');
+        console.log("PNG Image contains no data");
         return null;
     } else {
         try {
-            let b64buf = '';
+            let b64buf = "";
             let bytes = found[0].data; //skip the chara
             for (let i = identifier.length + 1; i < bytes.length; i++) {
                 b64buf += String.fromCharCode(bytes[i]);
@@ -1359,7 +1476,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
             console.log(decoded);
             return decoded;
         } catch (e) {
-            console.log('Error decoding b64 in image: ' + e);
+            console.log("Error decoding b64 in image: " + e);
             return null;
         }
     }
@@ -1373,8 +1490,8 @@ export function extractDataFromPng(data, identifier = 'chara') {
  */
 export async function getSanitizedFilename(fileName) {
     try {
-        const result = await fetch('/api/files/sanitize-filename', {
-            method: 'POST',
+        const result = await fetch("/api/files/sanitize-filename", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 fileName: fileName,
@@ -1389,8 +1506,8 @@ export async function getSanitizedFilename(fileName) {
         const responseData = await result.json();
         return responseData.fileName;
     } catch (error) {
-        toastr.error(String(error), 'Could not sanitize fileName');
-        console.error('Could not sanitize fileName', error);
+        toastr.error(String(error), "Could not sanitize fileName");
+        console.error("Could not sanitize fileName", error);
         throw error;
     }
 }
@@ -1405,7 +1522,12 @@ export async function getSanitizedFilename(fileName) {
  * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename = '', ext) {
+export async function saveBase64AsFile(
+    base64Data,
+    characterName,
+    filename = "",
+    ext,
+) {
     // Construct the full data URL
     const format = ext; // Extract the file extension (jpg, png, webp)
     const dataURL = `data:image/${format};base64,${base64Data}`;
@@ -1414,16 +1536,16 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: String(filename).replace(/\./g, '_'),
+        filename: String(filename).replace(/\./g, "_"),
     };
 
     // Send the data URL to your backend using fetch
-    const response = await fetch('/api/images/upload', {
-        method: 'POST',
+    const response = await fetch("/api/images/upload", {
+        method: "POST",
         body: JSON.stringify(requestBody),
         headers: {
             ...getRequestHeaders(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
     });
 
@@ -1433,7 +1555,9 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
         return responseData.path;
     } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload the image to the server');
+        throw new Error(
+            errorData.error || "Failed to upload the image to the server",
+        );
     }
 }
 
@@ -1448,22 +1572,22 @@ export function loadFileToDocument(url, type) {
     return new Promise((resolve, reject) => {
         let element;
 
-        if (type === 'css') {
-            element = document.createElement('link');
-            element.rel = 'stylesheet';
+        if (type === "css") {
+            element = document.createElement("link");
+            element.rel = "stylesheet";
             element.href = url;
-        } else if (type === 'js') {
-            element = document.createElement('script');
+        } else if (type === "js") {
+            element = document.createElement("script");
             element.src = url;
         } else {
-            reject('Invalid type specified');
+            reject("Invalid type specified");
             return;
         }
 
         element.onload = resolve;
         element.onerror = reject;
 
-        type === 'css'
+        type === "css"
             ? document.head.appendChild(element)
             : document.body.appendChild(element);
     });
@@ -1476,21 +1600,21 @@ export function loadFileToDocument(url, type) {
  */
 export async function ensureImageFormatSupported(file) {
     const supportedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/bmp',
-        'image/tiff',
-        'image/gif',
-        'image/apng',
-        'image/webp',
-        'image/avif',
+        "image/jpeg",
+        "image/png",
+        "image/bmp",
+        "image/tiff",
+        "image/gif",
+        "image/apng",
+        "image/webp",
+        "image/avif",
     ];
 
-    if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
+    if (supportedTypes.includes(file.type) || !file.type.startsWith("image/")) {
         return file;
     }
 
-    return await convertImageFile(file, 'image/png');
+    return await convertImageFile(file, "image/png");
 }
 
 /**
@@ -1499,10 +1623,10 @@ export async function ensureImageFormatSupported(file) {
  * @param {string} type Target file type
  * @returns {Promise<File>} A promise that resolves to the converted file.
  */
-export async function convertImageFile(inputFile, type = 'image/png') {
+export async function convertImageFile(inputFile, type = "image/png") {
     const base64 = await getBase64Async(inputFile);
     const thumbnail = await createThumbnail(base64, null, null, type);
-    const blob = await fetch(thumbnail).then(res => res.blob());
+    const blob = await fetch(thumbnail).then((res) => res.blob());
     const outputFile = new File([blob], inputFile.name, { type });
     return outputFile;
 }
@@ -1515,9 +1639,14 @@ export async function convertImageFile(inputFile, type = 'image/png') {
  * @param {string} [type='image/jpeg'] The type of the thumbnail.
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
-export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
+export function createThumbnail(
+    dataUrl,
+    maxWidth = null,
+    maxHeight = null,
+    type = "image/jpeg",
+) {
     // Someone might pass in a base64 encoded string without the data URL prefix
-    if (!dataUrl.includes('data:')) {
+    if (!dataUrl.includes("data:")) {
         dataUrl = `data:image/jpeg;base64,${dataUrl}`;
     }
 
@@ -1525,8 +1654,8 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         const img = new Image();
         img.src = dataUrl;
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
 
             // Calculate the thumbnail dimensions while maintaining the aspect ratio
             const aspectRatio = img.width / img.height;
@@ -1560,7 +1689,7 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         };
 
         img.onerror = () => {
-            reject(new Error('Failed to load the image.'));
+            reject(new Error("Failed to load the image."));
         };
     });
 }
@@ -1572,11 +1701,15 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
  * @param {number} [interval=100] The interval in milliseconds.
  * @returns {Promise<void>} A promise that resolves when the condition is true.
  */
-export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+export async function waitUntilCondition(
+    condition,
+    timeout = 1000,
+    interval = 100,
+) {
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             clearInterval(intervalId);
-            reject(new Error('Timed out waiting for condition to be true'));
+            reject(new Error("Timed out waiting for condition to be true"));
         }, timeout);
 
         const intervalId = setInterval(() => {
@@ -1596,14 +1729,17 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
  * uuidv4(); // '3e2fd9e1-0a7a-4f6d-9aaf-8a7a4babe7eb'
  */
 export function uuidv4() {
-    if ('randomUUID' in crypto) {
+    if ("randomUUID" in crypto) {
         return crypto.randomUUID();
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        },
+    );
 }
 
 /**
@@ -1612,29 +1748,36 @@ export function uuidv4() {
  * @returns {string} String with collapsed spaces
  */
 export function collapseSpaces(s) {
-    return s.replace(/\s+/g, ' ').trim();
+    return s.replace(/\s+/g, " ").trim();
 }
 
 function postProcessText(text, collapse = true) {
     // Remove carriage returns
-    text = text.replace(/\r/g, '');
+    text = text.replace(/\r/g, "");
     // Replace tabs with spaces
-    text = text.replace(/\t/g, ' ');
+    text = text.replace(/\t/g, " ");
     // Normalize unicode spaces
-    text = text.replace(/\u00A0/g, ' ');
+    text = text.replace(/\u00A0/g, " ");
     // Collapse multiple newlines into one
     if (collapse) {
         text = collapseNewlines(text);
         // Trim leading and trailing whitespace, and remove empty lines
-        text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+        text = text
+            .split("\n")
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .join("\n");
     } else {
         // Replace more than 4 newlines with 4 newlines
-        text = text.replace(/\n{4,}/g, '\n\n\n\n');
+        text = text.replace(/\n{4,}/g, "\n\n\n\n");
         // Trim lines that contain nothing but whitespace
-        text = text.split('\n').map(l => /^\s+$/.test(l) ? '' : l).join('\n');
+        text = text
+            .split("\n")
+            .map((l) => (/^\s+$/.test(l) ? "" : l))
+            .join("\n");
     }
     // Collapse multiple spaces into one (except for newlines)
-    text = text.replace(/ {2,}/g, ' ');
+    text = text.replace(/ {2,}/g, " ");
     // Remove leading and trailing spaces
     text = text.trim();
     return text;
@@ -1646,7 +1789,7 @@ function postProcessText(text, collapse = true) {
  * @param {string} [textSelector='body'] The fallback selector for the text to parse.
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
-export async function getReadableText(document, textSelector = 'body') {
+export async function getReadableText(document, textSelector = "body") {
     if (isProbablyReaderable(document)) {
         const parser = new Readability(document);
         const article = parser.parse();
@@ -1654,7 +1797,9 @@ export async function getReadableText(document, textSelector = 'body') {
     }
 
     const elements = document.querySelectorAll(textSelector);
-    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const rawText = Array.from(elements)
+        .map((e) => e.textContent)
+        .join("\n");
     const text = postProcessText(rawText);
     return text;
 }
@@ -1665,9 +1810,9 @@ export async function getReadableText(document, textSelector = 'body') {
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
 export async function extractTextFromPDF(blob) {
-    if (!('pdfjsLib' in window)) {
-        await import('../lib/pdf.min.mjs');
-        await import('../lib/pdf.worker.min.mjs');
+    if (!("pdfjsLib" in window)) {
+        await import("../lib/pdf.min.mjs");
+        await import("../lib/pdf.worker.min.mjs");
     }
 
     const buffer = await getFileBuffer(blob);
@@ -1676,10 +1821,10 @@ export async function extractTextFromPDF(blob) {
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const text = textContent.items.map(item => item.str).join(' ');
+        const text = textContent.items.map((item) => item.str).join(" ");
         pages.push(text);
     }
-    return postProcessText(pages.join('\n'));
+    return postProcessText(pages.join("\n"));
 }
 
 /**
@@ -1687,10 +1832,13 @@ export async function extractTextFromPDF(blob) {
  * @param {Blob} blob HTML content blob
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
-export async function extractTextFromHTML(blob, textSelector = 'body') {
+export async function extractTextFromHTML(blob, textSelector = "body") {
     const html = await blob.text();
     const domParser = new DOMParser();
-    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
+    const document = domParser.parseFromString(
+        DOMPurify.sanitize(html),
+        "text/html",
+    );
     return await getReadableText(document, textSelector);
 }
 
@@ -1706,9 +1854,9 @@ export async function extractTextFromMarkdown(blob) {
 }
 
 export async function extractTextFromEpub(blob) {
-    if (!('ePub' in window)) {
-        await import('../lib/jszip.min.js');
-        await import('../lib/epub.min.js');
+    if (!("ePub" in window)) {
+        await import("../lib/jszip.min.js");
+        await import("../lib/epub.min.js");
     }
 
     const book = ePub(blob);
@@ -1719,7 +1867,7 @@ export async function extractTextFromEpub(blob) {
         const sectionPromise = (async () => {
             const chapter = await book.load(section.href);
             if (!(chapter instanceof Document) || !chapter.body?.textContent) {
-                return '';
+                return "";
             }
             return chapter.body.textContent.trim();
         })();
@@ -1728,8 +1876,8 @@ export async function extractTextFromEpub(blob) {
     });
 
     const content = await Promise.all(sectionPromises);
-    const text = content.filter(text => text);
-    return postProcessText(text.join('\n'), false);
+    const text = content.filter((text) => text);
+    return postProcessText(text.join("\n"), false);
 }
 
 /**
@@ -1740,8 +1888,8 @@ export async function extractTextFromEpub(blob) {
 export async function extractTextFromOffice(blob) {
     async function checkPluginAvailability() {
         try {
-            const result = await fetch('/api/plugins/office/probe', {
-                method: 'POST',
+            const result = await fetch("/api/plugins/office/probe", {
+                method: "POST",
                 headers: getRequestHeaders(),
             });
 
@@ -1754,19 +1902,21 @@ export async function extractTextFromOffice(blob) {
     const isPluginAvailable = await checkPluginAvailability();
 
     if (!isPluginAvailable) {
-        throw new Error('Importing Office documents requires a server plugin. Please refer to the documentation for more information.');
+        throw new Error(
+            "Importing Office documents requires a server plugin. Please refer to the documentation for more information.",
+        );
     }
 
     const base64 = await getBase64Async(blob);
 
-    const response = await fetch('/api/plugins/office/parse', {
-        method: 'POST',
+    const response = await fetch("/api/plugins/office/parse", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ data: base64 }),
     });
 
     if (!response.ok) {
-        throw new Error('Failed to parse the Office document');
+        throw new Error("Failed to parse the Office document");
     }
 
     const data = await response.text();
@@ -1781,7 +1931,7 @@ export async function extractTextFromOffice(blob) {
  * @returns {void}
  */
 export function setValueByPath(obj, path, value) {
-    const keyParts = path.split('.');
+    const keyParts = path.split(".");
     let currentObject = obj;
 
     for (let i = 0; i < keyParts.length - 1; i++) {
@@ -1805,23 +1955,22 @@ export function setValueByPath(obj, path, value) {
 export function flashHighlight(element, timespan = 2000) {
     const flashDuration = 2000; // Duration of a single flash cycle in milliseconds
 
-    element.addClass('flash animated');
-    element.css('--animation-duration', `${flashDuration}ms`);
+    element.addClass("flash animated");
+    element.css("--animation-duration", `${flashDuration}ms`);
 
     // Repeat the flash animation
     const intervalId = setInterval(() => {
-        element.removeClass('flash animated');
+        element.removeClass("flash animated");
         void element[0].offsetWidth; // Trigger reflow to restart animation
-        element.addClass('flash animated');
+        element.addClass("flash animated");
     }, flashDuration);
 
     setTimeout(() => {
         clearInterval(intervalId);
-        element.removeClass('flash animated');
-        element.css('--animation-duration', '');
+        element.removeClass("flash animated");
+        element.css("--animation-duration", "");
     }, timespan);
 }
-
 
 /**
  * Checks if the given control has an animation applied to it
@@ -1830,8 +1979,8 @@ export function flashHighlight(element, timespan = 2000) {
  * @returns {boolean} Whether the control has an animation applied
  */
 export function hasAnimation(control) {
-    const animatioName = getComputedStyle(control, null)['animation-name'];
-    return animatioName != 'none';
+    const animatioName = getComputedStyle(control, null)["animation-name"];
+    return animatioName != "none";
 }
 
 /**
@@ -1845,7 +1994,9 @@ export function runAfterAnimation(control, callback, timeout = 500) {
     if (hasAnimation(control)) {
         Promise.race([
             new Promise((r) => setTimeout(r, timeout)), // Fallback timeout
-            new Promise((r) => control.addEventListener('animationend', r, { once: true })),
+            new Promise((r) =>
+                control.addEventListener("animationend", r, { once: true }),
+            ),
         ]).finally(() => callback(control));
     } else {
         callback(control);
@@ -1865,8 +2016,14 @@ export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
     if (!a || !b) return comparisonFunction(a, b); // Return the comparison result if either string is empty
 
     // Normalize and remove diacritics, then convert to lower case
-    const normalizedA = a.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const normalizedB = b.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedA = a
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    const normalizedB = b
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
 
     // Check if the normalized strings are equal
     return comparisonFunction(normalizedA, normalizedB);
@@ -1881,7 +2038,11 @@ export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
  * @returns {boolean} true if the searchTerm is found within the text, otherwise returns false
  */
 export function includesIgnoreCaseAndAccents(text, searchTerm) {
-    return compareIgnoreCaseAndAccents(text, searchTerm, (a, b) => a?.includes(b) === true);
+    return compareIgnoreCaseAndAccents(
+        text,
+        searchTerm,
+        (a, b) => a?.includes(b) === true,
+    );
 }
 
 /**
@@ -1932,17 +2093,23 @@ export function getSelect2OptionId(option) {
  * @param {boolean} [options.select=false] - Whether the options should be selected right away
  * @param {object} [options.changeEventArgs=null] - Optional event args being passed into the "change" event when its triggered because a new options is selected
  */
-export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
+export function select2ModifyOptions(
+    element,
+    items,
+    { select = false, changeEventArgs = null } = {},
+) {
     if (!items.length) return;
     /** @type {Select2Option[]} */
-    const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
+    const dataItems = items.map((x) =>
+        typeof x === "string" ? { id: getSelect2OptionId(x), text: x } : x,
+    );
 
     const optionsToSelect = [];
     const newOptions = [];
 
-    dataItems.forEach(item => {
+    dataItems.forEach((item) => {
         // Set the value, creating a new option if necessary
-        if (element.find('option[value=\'' + item.id + '\']').length) {
+        if (element.find("option[value='" + item.id + "']").length) {
             if (select) optionsToSelect.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
@@ -1954,7 +2121,8 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     });
 
     element.append(newOptions);
-    if (optionsToSelect.length) element.val(optionsToSelect).trigger('change', changeEventArgs);
+    if (optionsToSelect.length)
+        element.val(optionsToSelect).trigger("change", changeEventArgs);
 }
 
 /**
@@ -1992,7 +2160,10 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
  */
 export function isSelect2ChoiceElement(element) {
     const $element = $(element);
-    return ($element.hasClass('select2-selection__choice__display') || $element.parents('.select2-selection__choice__display').length > 0);
+    return (
+        $element.hasClass("select2-selection__choice__display") ||
+        $element.parents(".select2-selection__choice__display").length > 0
+    );
 }
 
 /**
@@ -2005,25 +2176,32 @@ export function isSelect2ChoiceElement(element) {
  * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
  * @param {boolean} [options.openDrawer=false] - Whether the drawer should be opened, even if this click would normally close it
  */
-export function select2ChoiceClickSubscribe(control, action, { buttonStyle = false, closeDrawer = false, openDrawer = false } = {}) {
+export function select2ChoiceClickSubscribe(
+    control,
+    action,
+    { buttonStyle = false, closeDrawer = false, openDrawer = false } = {},
+) {
     // Add class for styling (hover color, changed cursor, etc)
-    control.addClass('select2_choice_clickable');
-    if (buttonStyle) control.addClass('select2_choice_clickable_buttonstyle');
+    control.addClass("select2_choice_clickable");
+    if (buttonStyle) control.addClass("select2_choice_clickable_buttonstyle");
 
     // Get the real container below and create a click handler on that one
-    const select2Container = control.next('span.select2-container');
-    select2Container.on('click', function (event) {
+    const select2Container = control.next("span.select2-container");
+    select2Container.on("click", function (event) {
         const isChoice = isSelect2ChoiceElement(event.target);
         if (isChoice) {
             event.preventDefault();
 
             // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
             if (closeDrawer) {
-                control.select2('close');
-                setTimeout(() => select2Container.find('textarea').trigger('blur'), debounce_timeout.quick);
+                control.select2("close");
+                setTimeout(
+                    () => select2Container.find("textarea").trigger("blur"),
+                    debounce_timeout.quick,
+                );
             }
             if (openDrawer) {
-                control.select2('open');
+                control.select2("open");
             }
 
             // Now execute the actual action that was subscribed
@@ -2040,9 +2218,19 @@ export function select2ChoiceClickSubscribe(control, action, { buttonStyle = fal
  */
 export function highlightRegex(regexStr) {
     // Function to escape special characters for safety or readability
-    const escape = (str) => str.replace(/[&<>"'\x01]/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;', '\x01': '\\x01',
-    })[match]);
+    const escape = (str) =>
+        str.replace(
+            /[&<>"'\x01]/g,
+            (match) =>
+                ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;",
+                    "\x01": "\\x01",
+                })[match],
+        );
 
     // Replace special characters with their escaped forms
     regexStr = escape(regexStr);
@@ -2051,22 +2239,21 @@ export function highlightRegex(regexStr) {
     function getPatterns() {
         try {
             return {
-                brackets: new RegExp('(?<!\\\\)\\[.*?\\]', 'g'),  // Non-escaped square brackets
-                quantifiers: new RegExp('(?<!\\\\)[*+?{}]', 'g'),  // Non-escaped quantifiers
-                operators: new RegExp('(?<!\\\\)[|.^$()]', 'g'),  // Non-escaped operators like | and ()
-                specialChars: new RegExp('\\\\.', 'g'),
-                flags: new RegExp('(?<=\\/)([gimsuy]*)$', 'g'),  // Match trailing flags
-                delimiters: new RegExp('^\\/|(?<![\\\\<])\\/', 'g'),  // Match leading or trailing delimiters
+                brackets: new RegExp("(?<!\\\\)\\[.*?\\]", "g"), // Non-escaped square brackets
+                quantifiers: new RegExp("(?<!\\\\)[*+?{}]", "g"), // Non-escaped quantifiers
+                operators: new RegExp("(?<!\\\\)[|.^$()]", "g"), // Non-escaped operators like | and ()
+                specialChars: new RegExp("\\\\.", "g"),
+                flags: new RegExp("(?<=\\/)([gimsuy]*)$", "g"), // Match trailing flags
+                delimiters: new RegExp("^\\/|(?<![\\\\<])\\/", "g"), // Match leading or trailing delimiters
             };
-
         } catch (error) {
             return {
-                brackets: new RegExp('(\\\\)?\\[.*?\\]', 'g'),  // Non-escaped square brackets
-                quantifiers: new RegExp('(\\\\)?[*+?{}]', 'g'),  // Non-escaped quantifiers
-                operators: new RegExp('(\\\\)?[|.^$()]', 'g'),  // Non-escaped operators like | and ()
-                specialChars: new RegExp('\\\\.', 'g'),
-                flags: new RegExp('/([gimsuy]*)$', 'g'),  // Match trailing flags
-                delimiters: new RegExp('^/|[^\\\\](/)', 'g'),  // Match leading or trailing delimiters
+                brackets: new RegExp("(\\\\)?\\[.*?\\]", "g"), // Non-escaped square brackets
+                quantifiers: new RegExp("(\\\\)?[*+?{}]", "g"), // Non-escaped quantifiers
+                operators: new RegExp("(\\\\)?[|.^$()]", "g"), // Non-escaped operators like | and ()
+                specialChars: new RegExp("\\\\.", "g"),
+                flags: new RegExp("/([gimsuy]*)$", "g"), // Match trailing flags
+                delimiters: new RegExp("^/|[^\\\\](/)", "g"), // Match leading or trailing delimiters
             };
         }
     }
@@ -2075,16 +2262,19 @@ export function highlightRegex(regexStr) {
 
     // Function to replace each pattern with a highlighted HTML span
     const wrapPattern = (pattern, className) => {
-        regexStr = regexStr.replace(pattern, match => `<span class="${className}">${match}</span>`);
+        regexStr = regexStr.replace(
+            pattern,
+            (match) => `<span class="${className}">${match}</span>`,
+        );
     };
 
     // Apply highlighting patterns
-    wrapPattern(patterns.brackets, 'regex-brackets');
-    wrapPattern(patterns.quantifiers, 'regex-quantifier');
-    wrapPattern(patterns.operators, 'regex-operator');
-    wrapPattern(patterns.specialChars, 'regex-special');
-    wrapPattern(patterns.flags, 'regex-flags');
-    wrapPattern(patterns.delimiters, 'regex-delimiter');
+    wrapPattern(patterns.brackets, "regex-brackets");
+    wrapPattern(patterns.quantifiers, "regex-quantifier");
+    wrapPattern(patterns.operators, "regex-operator");
+    wrapPattern(patterns.specialChars, "regex-special");
+    wrapPattern(patterns.flags, "regex-flags");
+    wrapPattern(patterns.delimiters, "regex-delimiter");
 
     return `<span class="regex-highlight">${regexStr}</span>`;
 }
@@ -2102,19 +2292,39 @@ export function highlightRegex(regexStr) {
  * @param {(existingName:string)=>void} [options.deleteAction=null] - Optional action to execute wen deleting an existing data object on overwrite
  * @returns {Promise<boolean>} True if the user confirmed the overwrite or there is no overwrite needed, false otherwise
  */
-export async function checkOverwriteExistingData(type, existingNames, name, { interactive = false, actionName = 'Overwrite', deleteAction = null } = {}) {
-    const existing = existingNames.find(x => equalsIgnoreCaseAndAccents(x, name));
+export async function checkOverwriteExistingData(
+    type,
+    existingNames,
+    name,
+    { interactive = false, actionName = "Overwrite", deleteAction = null } = {},
+) {
+    const existing = existingNames.find((x) =>
+        equalsIgnoreCaseAndAccents(x, name),
+    );
     if (!existing) {
         return true;
     }
 
-    const overwrite = interactive && await Popup.show.confirm(`${type} ${actionName}`, `<p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`);
+    const overwrite =
+        interactive &&
+        (await Popup.show.confirm(
+            `${type} ${actionName}`,
+            `<p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`,
+        ));
     if (!overwrite) {
-        toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+        toastr.warning(
+            `${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`,
+            `${type} ${actionName}`,
+            { escapeHtml: false },
+        );
         return false;
     }
 
-    toastr.info(`Overwriting Existing ${type}:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+    toastr.info(
+        `Overwriting Existing ${type}:<br />${existing}`,
+        `${type} ${actionName}`,
+        { escapeHtml: false },
+    );
 
     // If there is an action to delete the existing data, do it, as the name might be slightly different so file name would not be the same
     if (deleteAction) {
@@ -2143,7 +2353,6 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
     return `${name}${numberFormatter(counter)}`;
 }
 
-
 /**
  * Toggles the visibility of a drawer by changing the display style of its content.
  * This function skips the usual drawer animation.
@@ -2153,23 +2362,25 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
  */
 export function toggleDrawer(drawer, expand = true) {
     /** @type {HTMLElement} */
-    const icon = drawer.querySelector('.inline-drawer-icon');
+    const icon = drawer.querySelector(".inline-drawer-icon");
     /** @type {HTMLElement} */
-    const content = drawer.querySelector('.inline-drawer-content');
+    const content = drawer.querySelector(".inline-drawer-content");
 
     if (expand) {
-        icon.classList.remove('up', 'fa-circle-chevron-up');
-        icon.classList.add('down', 'fa-circle-chevron-down');
-        content.style.display = 'block';
+        icon.classList.remove("up", "fa-circle-chevron-up");
+        icon.classList.add("down", "fa-circle-chevron-down");
+        content.style.display = "block";
     } else {
-        icon.classList.remove('down', 'fa-circle-chevron-down');
-        icon.classList.add('up', 'fa-circle-chevron-up');
-        content.style.display = 'none';
+        icon.classList.remove("down", "fa-circle-chevron-down");
+        icon.classList.add("up", "fa-circle-chevron-up");
+        content.style.display = "none";
     }
 
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-    if (!CSS.supports('field-sizing', 'content')) {
-        content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    if (!CSS.supports("field-sizing", "content")) {
+        content
+            .querySelectorAll("textarea.autoSetHeight")
+            .forEach(resetScrollHeight);
     }
 }
 
@@ -2191,20 +2402,25 @@ export function setDatasetProperty(element, name, value) {
 }
 
 export async function fetchFaFile(name) {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.innerHTML = await (await fetch(`/css/${name}`)).text();
     document.head.append(style);
     const sheet = style.sheet;
     style.remove();
     return [...sheet.cssRules]
-        .filter(rule => rule.style?.content)
-        .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
-    ;
+        .filter((rule) => rule.style?.content)
+        .map((rule) =>
+            rule.selectorText
+                .split(/,\s*/)
+                .map((selector) => selector.split("::").shift().slice(1)),
+        );
 }
 export async function fetchFa() {
-    return [...new Set((await Promise.all([
-        fetchFaFile('fontawesome.min.css'),
-    ])).flat())];
+    return [
+        ...new Set(
+            (await Promise.all([fetchFaFile("fontawesome.min.css")])).flat(),
+        ),
+    ];
 }
 /**
  * Opens a popup with all the available Font Awesome icons and returns the selected icon's name.
@@ -2212,52 +2428,65 @@ export async function fetchFa() {
  * @returns {Promise<string>} The icon name (fa-pencil) or null if cancelled.
  */
 export async function showFontAwesomePicker(customList = null) {
-    const faList = customList ?? await fetchFa();
+    const faList = customList ?? (await fetchFa());
     const fas = {};
-    const dom = document.createElement('div'); {
-        dom.classList.add('faPicker-container');
-        const search = document.createElement('div'); {
-            search.classList.add('faQuery-container');
-            const qry = document.createElement('input'); {
-                qry.classList.add('text_pole');
-                qry.classList.add('faQuery');
-                qry.type = 'search';
-                qry.placeholder = 'Filter icons';
+    const dom = document.createElement("div");
+    {
+        dom.classList.add("faPicker-container");
+        const search = document.createElement("div");
+        {
+            search.classList.add("faQuery-container");
+            const qry = document.createElement("input");
+            {
+                qry.classList.add("text_pole");
+                qry.classList.add("faQuery");
+                qry.type = "search";
+                qry.placeholder = "Filter icons";
                 qry.autofocus = true;
                 const qryDebounced = debounce(() => {
-                    const result = faList.filter(fa => fa.find(className => className.includes(qry.value.toLowerCase())));
+                    const result = faList.filter((fa) =>
+                        fa.find((className) =>
+                            className.includes(qry.value.toLowerCase()),
+                        ),
+                    );
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
-                            fas[fa].classList.add('hidden');
+                            fas[fa].classList.add("hidden");
                         } else {
-                            fas[fa].classList.remove('hidden');
+                            fas[fa].classList.remove("hidden");
                         }
                     }
                 });
-                qry.addEventListener('input', () => qryDebounced());
+                qry.addEventListener("input", () => qryDebounced());
                 search.append(qry);
             }
             dom.append(search);
         }
-        const grid = document.createElement('div'); {
-            grid.classList.add('faPicker');
+        const grid = document.createElement("div");
+        {
+            grid.classList.add("faPicker");
             for (const fa of faList) {
-                const opt = document.createElement('div'); {
+                const opt = document.createElement("div");
+                {
                     fas[fa] = opt;
-                    opt.classList.add('menu_button');
-                    opt.classList.add('fa-solid');
+                    opt.classList.add("menu_button");
+                    opt.classList.add("fa-solid");
                     opt.classList.add(fa[0]);
-                    opt.title = fa.map(it => it.slice(3)).join(', ');
+                    opt.title = fa.map((it) => it.slice(3)).join(", ");
                     opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
-                    opt.addEventListener('click', () => value = fa[0]);
+                    opt.addEventListener("click", () => (value = fa[0]));
                     grid.append(opt);
                 }
             }
             dom.append(grid);
         }
     }
-    let value = '';
-    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, okButton: 'No Icon', cancelButton: 'Cancel' });
+    let value = "";
+    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, {
+        allowVerticalScrolling: true,
+        okButton: "No Icon",
+        cancelButton: "Cancel",
+    });
     await picker.show();
     if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
         return value;
@@ -2278,30 +2507,47 @@ export async function showFontAwesomePicker(customList = null) {
  * @property {string} avatar - The avatar of the persona
  * @property {string} name - The name of the persona
  */
-export function findPersona({ name = null, allowAvatar = true, insensitive = true, preferCurrentPersona = true, quiet = false } = {}) {
+export function findPersona({
+    name = null,
+    allowAvatar = true,
+    insensitive = true,
+    preferCurrentPersona = true,
+    quiet = false,
+} = {}) {
     /** @type {PersonaViewModel[]} */
-    const personas = Object.entries(power_user.personas).map(([avatar, name]) => ({ avatar, name }));
-    const matches = (/** @type {PersonaViewModel} */ persona) => !name || (allowAvatar && persona.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(persona.name, name) : persona.name === name);
+    const personas = Object.entries(power_user.personas).map(
+        ([avatar, name]) => ({ avatar, name }),
+    );
+    const matches = (/** @type {PersonaViewModel} */ persona) =>
+        !name ||
+        (allowAvatar && persona.avatar === name) ||
+        (insensitive
+            ? equalsIgnoreCaseAndAccents(persona.name, name)
+            : persona.name === name);
 
     // If we have a current persona and prefer it, return that if it matches
-    const currentPersona = personas.find(a => a.avatar === user_avatar);
+    const currentPersona = personas.find((a) => a.avatar === user_avatar);
     if (preferCurrentPersona && currentPersona && matches(currentPersona)) {
         return currentPersona;
     }
 
     // If allowAvatar is true, search by avatar first
     if (allowAvatar && name) {
-        const personaByAvatar = personas.find(a => a.avatar === name);
+        const personaByAvatar = personas.find((a) => a.avatar === name);
         if (personaByAvatar && matches(personaByAvatar)) {
             return personaByAvatar;
         }
     }
 
     // Search for matching personas by name
-    const matchingPersonas = personas.filter(a => matches(a));
+    const matchingPersonas = personas.filter((a) => matches(a));
     if (matchingPersonas.length > 1) {
-        if (!quiet) toastr.warning(t`Multiple personas found for given conditions.`);
-        else console.warn(t`Multiple personas found for given conditions. Returning the first match.`);
+        if (!quiet)
+            toastr.warning(t`Multiple personas found for given conditions.`);
+        else
+            console.warn(
+                t`Multiple personas found for given conditions. Returning the first match.`,
+            );
     }
 
     return matchingPersonas[0] || null;
@@ -2318,29 +2564,56 @@ export function findPersona({ name = null, allowAvatar = true, insensitive = tru
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
  * @returns {import('./char-data.js').v1CharData?} - The found character or null if not found
  */
-export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
-    const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
+export function findChar({
+    name = null,
+    allowAvatar = true,
+    insensitive = true,
+    filteredByTags = null,
+    preferCurrentChar = true,
+    quiet = false,
+} = {}) {
+    const matches = (char) =>
+        !name ||
+        (allowAvatar && char.avatar === name) ||
+        (insensitive
+            ? equalsIgnoreCaseAndAccents(char.name, name)
+            : char.name === name);
 
     // Filter characters by tags if provided
     let filteredCharacters = characters;
     if (filteredByTags) {
-        filteredCharacters = characters.filter(char => {
+        filteredCharacters = characters.filter((char) => {
             const charTags = getTagsList(char.avatar, false);
-            return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
+            return filteredByTags.every((tagName) =>
+                charTags.some((x) => x.name == tagName),
+            );
         });
     }
 
     // Get the current character(s)
     /** @type {any[]} */
-    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
-        : filteredCharacters.filter(char => characters[this_chid]?.avatar === char.avatar);
+    const currentChars = selected_group
+        ? groups
+              .find((group) => group.id === selected_group)
+              ?.members.map((member) =>
+                  filteredCharacters.find((char) => char.avatar === member),
+              )
+        : filteredCharacters.filter(
+              (char) => characters[this_chid]?.avatar === char.avatar,
+          );
 
     // If we have a current char and prefer it, return that if it matches
     if (preferCurrentChar) {
         const preferredCharSearch = currentChars.filter(matches);
         if (preferredCharSearch.length > 1) {
-            if (!quiet) toastr.warning(t`Multiple characters found for given conditions.`);
-            else console.warn(t`Multiple characters found for given conditions. Returning the first match.`);
+            if (!quiet)
+                toastr.warning(
+                    t`Multiple characters found for given conditions.`,
+                );
+            else
+                console.warn(
+                    t`Multiple characters found for given conditions. Returning the first match.`,
+                );
         }
         if (preferredCharSearch.length) {
             return preferredCharSearch[0];
@@ -2349,17 +2622,25 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
 
     // If allowAvatar is true, search by avatar first
     if (allowAvatar && name) {
-        const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
+        const characterByAvatar = filteredCharacters.find(
+            (char) => char.avatar === name,
+        );
         if (characterByAvatar) {
             return characterByAvatar;
         }
     }
 
     // Search for matching characters by name
-    const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
+    const matchingCharacters = name
+        ? filteredCharacters.filter(matches)
+        : filteredCharacters;
     if (matchingCharacters.length > 1) {
-        if (!quiet) toastr.warning('Multiple characters found for given conditions.');
-        else console.warn('Multiple characters found for given conditions. Returning the first match.');
+        if (!quiet)
+            toastr.warning("Multiple characters found for given conditions.");
+        else
+            console.warn(
+                "Multiple characters found for given conditions. Returning the first match.",
+            );
     }
 
     return matchingCharacters[0] || null;
@@ -2372,8 +2653,8 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
  * @returns {number} The index of the character in the characters array
  */
 export function getCharIndex(char) {
-    if (!char) throw new Error('Character is undefined');
-    const index = characters.findIndex(c => c.avatar === char.avatar);
+    if (!char) throw new Error("Character is undefined");
+    const index = characters.findIndex((c) => c.avatar === char.avatar);
     if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
     return index;
 }
@@ -2401,19 +2682,20 @@ export function arraysEqual(a, b) {
  * @param {string | HTMLElement?} content - The message to display inside the information block (supports HTML) or an HTML element
  * @param {'hint' | 'info' | 'warning' | 'error'} [type='info'] - The type of message, which determines the styling of the information block
  */
-export function setInfoBlock(target, content, type = 'info') {
+export function setInfoBlock(target, content, type = "info") {
     if (!content) {
         clearInfoBlock(target);
         return;
     }
 
-    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
+    const infoBlock =
+        typeof target === "string" ? document.querySelector(target) : target;
     if (infoBlock) {
         infoBlock.className = `info-block ${type}`;
-        if (typeof content === 'string') {
+        if (typeof content === "string") {
             infoBlock.innerHTML = content;
         } else {
-            infoBlock.innerHTML = '';
+            infoBlock.innerHTML = "";
             infoBlock.appendChild(content);
         }
     }
@@ -2424,9 +2706,10 @@ export function setInfoBlock(target, content, type = 'info') {
  * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
  */
 export function clearInfoBlock(target) {
-    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
-    if (infoBlock && infoBlock.classList.contains('info-block')) {
-        infoBlock.className = '';
-        infoBlock.innerHTML = '';
+    const infoBlock =
+        typeof target === "string" ? document.querySelector(target) : target;
+    if (infoBlock && infoBlock.classList.contains("info-block")) {
+        infoBlock.className = "";
+        infoBlock.innerHTML = "";
     }
 }

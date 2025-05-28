@@ -1,16 +1,32 @@
-import { DOMPurify } from '../lib.js';
+import { DOMPurify } from "../lib.js";
 
-import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
-import { chat_completion_sources, model_list, oai_settings } from './openai.js';
-import { Popup } from './popup.js';
-import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
-import { isTrueBoolean } from './utils.js';
+import {
+    addOneMessage,
+    chat,
+    event_types,
+    eventSource,
+    main_api,
+    saveChatConditional,
+    system_avatar,
+    systemUserName,
+} from "../script.js";
+import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
+import { Popup } from "./popup.js";
+import { SlashCommand } from "./slash-commands/SlashCommand.js";
+import {
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument,
+} from "./slash-commands/SlashCommandArgument.js";
+import { SlashCommandClosure } from "./slash-commands/SlashCommandClosure.js";
+import { enumIcons } from "./slash-commands/SlashCommandCommonEnumsProvider.js";
+import {
+    enumTypes,
+    SlashCommandEnumValue,
+} from "./slash-commands/SlashCommandEnumValue.js";
+import { SlashCommandParser } from "./slash-commands/SlashCommandParser.js";
+import { slashCommandReturnHelper } from "./slash-commands/SlashCommandReturnHelper.js";
+import { isTrueBoolean } from "./utils.js";
 
 /**
  * @typedef {object} ToolInvocation
@@ -59,7 +75,7 @@ import { isTrueBoolean } from './utils.js';
 function assignNestedVariables(scope, arg, prefix) {
     Object.entries(arg).forEach(([key, value]) => {
         const newPrefix = `${prefix}.${key}`;
-        if (typeof value === 'object' && value !== null) {
+        if (typeof value === "object" && value !== null) {
             assignNestedVariables(scope, value, newPrefix);
         } else {
             scope.letVariable(newPrefix, value);
@@ -100,7 +116,7 @@ function tryParse(str) {
  * @returns {string} A JSON string representation of the object.
  */
 function stringify(obj) {
-    return typeof obj === 'string' ? obj : JSON.stringify(obj);
+    return typeof obj === "string" ? obj : JSON.stringify(obj);
 }
 
 /**
@@ -166,7 +182,16 @@ class ToolDefinition {
      * @param {function} shouldRegister A function that will be called to determine if the tool should be registered.
      * @param {boolean} stealth A tool call result will not be shown in the chat. No follow-up generation will be performed.
      */
-    constructor(name, displayName, description, parameters, action, formatMessage, shouldRegister, stealth) {
+    constructor(
+        name,
+        displayName,
+        description,
+        parameters,
+        action,
+        formatMessage,
+        shouldRegister,
+        stealth,
+    ) {
         this.#name = name;
         this.#displayName = displayName;
         this.#description = description;
@@ -183,7 +208,7 @@ class ToolDefinition {
      */
     toFunctionOpenAI() {
         return {
-            type: 'function',
+            type: "function",
             function: {
                 name: this.#name,
                 description: this.#description,
@@ -210,13 +235,13 @@ class ToolDefinition {
      * @returns {Promise<string>} The formatted message.
      */
     async formatMessage(parameters) {
-        return typeof this.#formatMessage === 'function'
+        return typeof this.#formatMessage === "function"
             ? await this.#formatMessage(parameters)
             : `Invoking tool: ${this.#displayName || this.#name}`;
     }
 
     async shouldRegister() {
-        return typeof this.#shouldRegister === 'function'
+        return typeof this.#shouldRegister === "function"
             ? await this.#shouldRegister()
             : true;
     }
@@ -240,7 +265,7 @@ export class ToolManager {
      */
     static #tools = new Map();
 
-    static #INPUT_DELTA_KEY = '__input_json_delta';
+    static #INPUT_DELTA_KEY = "__input_json_delta";
 
     /**
      * The maximum number of times to recurse when parsing tool calls.
@@ -260,14 +285,25 @@ export class ToolManager {
      * Registers a new tool with the tool registry.
      * @param {ToolRegistration} tool The tool to register.
      */
-    static registerFunctionTool({ name, displayName, description, parameters, action, formatMessage, shouldRegister, stealth }) {
+    static registerFunctionTool({
+        name,
+        displayName,
+        description,
+        parameters,
+        action,
+        formatMessage,
+        shouldRegister,
+        stealth,
+    }) {
         // Convert WIP arguments
-        if (typeof arguments[0] !== 'object') {
+        if (typeof arguments[0] !== "object") {
             [name, description, parameters, action] = arguments;
         }
 
         if (this.#tools.has(name)) {
-            console.warn(`[ToolManager] A tool with the name "${name}" has already been registered. The definition will be overwritten.`);
+            console.warn(
+                `[ToolManager] A tool with the name "${name}" has already been registered. The definition will be overwritten.`,
+            );
         }
 
         const definition = new ToolDefinition(
@@ -281,7 +317,7 @@ export class ToolManager {
             stealth,
         );
         this.#tools.set(name, definition);
-        console.log('[ToolManager] Registered function tool:', definition);
+        console.log("[ToolManager] Registered function tool:", definition);
     }
 
     /**
@@ -306,22 +342,33 @@ export class ToolManager {
     static async invokeFunctionTool(name, parameters) {
         try {
             if (!this.#tools.has(name)) {
-                throw new Error(`No tool with the name "${name}" has been registered.`);
+                throw new Error(
+                    `No tool with the name "${name}" has been registered.`,
+                );
             }
 
-            const invokeParameters = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
+            const invokeParameters =
+                typeof parameters === "string"
+                    ? JSON.parse(parameters)
+                    : parameters;
             const tool = this.#tools.get(name);
             const result = await tool.invoke(invokeParameters);
-            return typeof result === 'string' ? result : JSON.stringify(result);
+            return typeof result === "string" ? result : JSON.stringify(result);
         } catch (error) {
-            console.error(`[ToolManager] An error occurred while invoking the tool "${name}":`, error);
+            console.error(
+                `[ToolManager] An error occurred while invoking the tool "${name}":`,
+                error,
+            );
 
             if (error instanceof Error) {
                 error.cause = name;
                 return error.toString();
             }
 
-            return new Error('Unknown error occurred while invoking the tool.', { cause: name }).toString();
+            return new Error(
+                "Unknown error occurred while invoking the tool.",
+                { cause: name },
+            ).toString();
         }
     }
 
@@ -352,10 +399,16 @@ export class ToolManager {
 
         try {
             const tool = this.#tools.get(name);
-            const formatParameters = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
+            const formatParameters =
+                typeof parameters === "string"
+                    ? JSON.parse(parameters)
+                    : parameters;
             return await tool.formatMessage(formatParameters);
         } catch (error) {
-            console.error(`[ToolManager] An error occurred while formatting the tool call message for "${name}":`, error);
+            console.error(
+                `[ToolManager] An error occurred while formatting the tool call message for "${name}":`,
+                error,
+            );
             return `Invoking tool: ${name}`;
         }
     }
@@ -384,17 +437,17 @@ export class ToolManager {
         for (const tool of ToolManager.tools) {
             const register = await tool.shouldRegister();
             if (!register) {
-                console.log('[ToolManager] Skipping tool registration:', tool);
+                console.log("[ToolManager] Skipping tool registration:", tool);
                 continue;
             }
             tools.push(tool.toFunctionOpenAI());
         }
 
         if (tools.length) {
-            console.log('[ToolManager] Registered function tools:', tools);
+            console.log("[ToolManager] Registered function tools:", tools);
 
-            data['tools'] = tools;
-            data['tool_choice'] = 'auto';
+            data["tools"] = tools;
+            data["tool_choice"] = "auto";
         }
     }
 
@@ -410,7 +463,8 @@ export class ToolManager {
         }
         if (Array.isArray(parsed?.choices)) {
             for (const choice of parsed.choices) {
-                const choiceIndex = (typeof choice.index === 'number') ? choice.index : null;
+                const choiceIndex =
+                    typeof choice.index === "number" ? choice.index : null;
                 const choiceDelta = choice.delta;
 
                 if (choiceIndex === null || !choiceDelta) {
@@ -428,7 +482,10 @@ export class ToolManager {
                 }
 
                 for (const toolCallDelta of toolCallDeltas) {
-                    const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
+                    const toolCallIndex =
+                        typeof toolCallDelta?.index === "number"
+                            ? toolCallDelta.index
+                            : toolCallDeltas.indexOf(toolCallDelta);
 
                     if (isNaN(toolCallIndex) || toolCallIndex < 0) {
                         continue;
@@ -438,14 +495,26 @@ export class ToolManager {
                         toolCalls[choiceIndex][toolCallIndex] = {};
                     }
 
-                    const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
+                    const targetToolCall =
+                        toolCalls[choiceIndex][toolCallIndex];
 
-                    ToolManager.#applyToolCallDelta(targetToolCall, toolCallDelta);
+                    ToolManager.#applyToolCallDelta(
+                        targetToolCall,
+                        toolCallDelta,
+                    );
                 }
             }
         }
-        const cohereToolEvents = ['message-start', 'tool-call-start', 'tool-call-delta', 'tool-call-end'];
-        if (cohereToolEvents.includes(parsed?.type) && typeof parsed?.delta?.message === 'object') {
+        const cohereToolEvents = [
+            "message-start",
+            "tool-call-start",
+            "tool-call-delta",
+            "tool-call-end",
+        ];
+        if (
+            cohereToolEvents.includes(parsed?.type) &&
+            typeof parsed?.delta?.message === "object"
+        ) {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
 
@@ -458,13 +527,16 @@ export class ToolManager {
             }
 
             const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
-            ToolManager.#applyToolCallDelta(targetToolCall, parsed.delta.message);
+            ToolManager.#applyToolCallDelta(
+                targetToolCall,
+                parsed.delta.message,
+            );
         }
-        if (typeof parsed?.content_block === 'object') {
+        if (typeof parsed?.content_block === "object") {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
 
-            if (parsed?.content_block?.type === 'tool_use') {
+            if (parsed?.content_block?.type === "tool_use") {
                 if (!Array.isArray(toolCalls[choiceIndex])) {
                     toolCalls[choiceIndex] = [];
                 }
@@ -472,24 +544,27 @@ export class ToolManager {
                     toolCalls[choiceIndex][toolCallIndex] = {};
                 }
                 const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
-                ToolManager.#applyToolCallDelta(targetToolCall, parsed.content_block);
+                ToolManager.#applyToolCallDelta(
+                    targetToolCall,
+                    parsed.content_block,
+                );
             }
         }
-        if (typeof parsed?.delta === 'object') {
+        if (typeof parsed?.delta === "object") {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
             const targetToolCall = toolCalls[choiceIndex]?.[toolCallIndex];
             if (targetToolCall) {
-                if (parsed?.delta?.type === 'input_json_delta') {
+                if (parsed?.delta?.type === "input_json_delta") {
                     const jsonDelta = parsed?.delta?.partial_json;
                     if (!targetToolCall[this.#INPUT_DELTA_KEY]) {
-                        targetToolCall[this.#INPUT_DELTA_KEY] = '';
+                        targetToolCall[this.#INPUT_DELTA_KEY] = "";
                     }
                     targetToolCall[this.#INPUT_DELTA_KEY] += jsonDelta;
                 }
             }
         }
-        if (parsed?.type === 'content_block_stop') {
+        if (parsed?.type === "content_block_stop") {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
             const targetToolCall = toolCalls[choiceIndex]?.[toolCallIndex];
@@ -497,30 +572,53 @@ export class ToolManager {
                 const jsonDeltaString = targetToolCall[this.#INPUT_DELTA_KEY];
                 if (jsonDeltaString) {
                     try {
-                        const jsonDelta = { input: JSON.parse(jsonDeltaString) };
+                        const jsonDelta = {
+                            input: JSON.parse(jsonDeltaString),
+                        };
                         delete targetToolCall[this.#INPUT_DELTA_KEY];
-                        ToolManager.#applyToolCallDelta(targetToolCall, jsonDelta);
+                        ToolManager.#applyToolCallDelta(
+                            targetToolCall,
+                            jsonDelta,
+                        );
                     } catch (error) {
-                        console.warn('[ToolManager] Failed to apply input JSON delta:', error);
+                        console.warn(
+                            "[ToolManager] Failed to apply input JSON delta:",
+                            error,
+                        );
                     }
                 }
             }
         }
         if (Array.isArray(parsed?.candidates)) {
-            for (let choiceIndex = 0; choiceIndex < parsed.candidates.length; choiceIndex++) {
+            for (
+                let choiceIndex = 0;
+                choiceIndex < parsed.candidates.length;
+                choiceIndex++
+            ) {
                 const candidate = parsed.candidates[choiceIndex];
                 if (Array.isArray(candidate?.content?.parts)) {
-                    for (let toolCallIndex = 0; toolCallIndex < candidate.content.parts.length; toolCallIndex++) {
+                    for (
+                        let toolCallIndex = 0;
+                        toolCallIndex < candidate.content.parts.length;
+                        toolCallIndex++
+                    ) {
                         const part = candidate.content.parts[toolCallIndex];
                         if (part.functionCall) {
                             if (!Array.isArray(toolCalls[choiceIndex])) {
                                 toolCalls[choiceIndex] = [];
                             }
-                            if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
+                            if (
+                                toolCalls[choiceIndex][toolCallIndex] ===
+                                undefined
+                            ) {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
                             }
-                            const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
-                            ToolManager.#applyToolCallDelta(targetToolCall, part.functionCall);
+                            const targetToolCall =
+                                toolCalls[choiceIndex][toolCallIndex];
+                            ToolManager.#applyToolCallDelta(
+                                targetToolCall,
+                                part.functionCall,
+                            );
                         }
                     }
                 }
@@ -536,7 +634,7 @@ export class ToolManager {
     static #applyToolCallDelta(target, delta) {
         for (const key in delta) {
             if (!Object.prototype.hasOwnProperty.call(delta, key)) continue;
-            if (key === '__proto__' || key === 'constructor') continue;
+            if (key === "__proto__" || key === "constructor") continue;
 
             const deltaValue = delta[key];
             const targetValue = target[key];
@@ -546,15 +644,22 @@ export class ToolManager {
                 continue;
             }
 
-            if (typeof deltaValue === 'string') {
-                if (typeof targetValue === 'string') {
+            if (typeof deltaValue === "string") {
+                if (typeof targetValue === "string") {
                     // Concatenate strings
                     target[key] = targetValue + deltaValue;
                 } else {
                     target[key] = deltaValue;
                 }
-            } else if (typeof deltaValue === 'object' && !Array.isArray(deltaValue)) {
-                if (typeof targetValue !== 'object' || targetValue === null || Array.isArray(targetValue)) {
+            } else if (
+                typeof deltaValue === "object" &&
+                !Array.isArray(deltaValue)
+            ) {
+                if (
+                    typeof targetValue !== "object" ||
+                    targetValue === null ||
+                    Array.isArray(targetValue)
+                ) {
                     target[key] = {};
                 }
                 // Recursively apply deltas to nested objects
@@ -571,7 +676,7 @@ export class ToolManager {
      * @returns {boolean} Whether tool calling is supported for the given type
      */
     static isToolCallingSupported() {
-        if (main_api !== 'openai' || !oai_settings.function_calling) {
+        if (main_api !== "openai" || !oai_settings.function_calling) {
             return false;
         }
 
@@ -580,8 +685,14 @@ export class ToolManager {
             return false;
         }
 
-        if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.pollinations_model);
+        if (
+            oai_settings.chat_completion_source ===
+                chat_completion_sources.POLLINATIONS &&
+            Array.isArray(model_list)
+        ) {
+            const currentModel = model_list.find(
+                (model) => model.id === oai_settings.pollinations_model,
+            );
             if (currentModel) {
                 return currentModel.tools;
             }
@@ -611,7 +722,7 @@ export class ToolManager {
      * @returns {boolean} Whether tool calls can be performed for the given type
      */
     static canPerformToolCalls(type) {
-        const noToolCallTypes = ['impersonate', 'quiet', 'continue'];
+        const noToolCallTypes = ["impersonate", "quiet", "continue"];
         const isSupported = ToolManager.isToolCallingSupported();
         return isSupported && !noToolCallTypes.includes(type);
     }
@@ -623,23 +734,37 @@ export class ToolManager {
      */
     static #getToolCallsFromData(data) {
         const getRandomId = () => Math.random().toString(36).substring(2);
-        const isClaudeToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isClaudeToolCall) : c?.input && c?.name && c?.id;
-        const isGoogleToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isGoogleToolCall) : c?.name && c?.args;
-        const convertClaudeToolCall = c => ({ id: c.id, function: { name: c.name, arguments: c.input } });
-        const convertGoogleToolCall = (c) => ({ id: getRandomId(), function: { name: c.name, arguments: c.args } });
+        const isClaudeToolCall = (c) =>
+            Array.isArray(c)
+                ? c.filter((x) => x).every(isClaudeToolCall)
+                : c?.input && c?.name && c?.id;
+        const isGoogleToolCall = (c) =>
+            Array.isArray(c)
+                ? c.filter((x) => x).every(isGoogleToolCall)
+                : c?.name && c?.args;
+        const convertClaudeToolCall = (c) => ({
+            id: c.id,
+            function: { name: c.name, arguments: c.input },
+        });
+        const convertGoogleToolCall = (c) => ({
+            id: getRandomId(),
+            function: { name: c.name, arguments: c.args },
+        });
 
         // Parsed tool calls from streaming data
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
             if (isClaudeToolCall(data[0])) {
-                return data[0].filter(x => x).map(convertClaudeToolCall);
+                return data[0].filter((x) => x).map(convertClaudeToolCall);
             }
 
             if (isGoogleToolCall(data[0])) {
-                return data[0].filter(x => x).map(convertGoogleToolCall);
+                return data[0].filter((x) => x).map(convertGoogleToolCall);
             }
 
-            if (typeof data[0]?.[0]?.tool_calls === 'object') {
-                return Array.isArray(data[0]?.[0]?.tool_calls) ? data[0][0].tool_calls : [data[0][0].tool_calls];
+            if (typeof data[0]?.[0]?.tool_calls === "object") {
+                return Array.isArray(data[0]?.[0]?.tool_calls)
+                    ? data[0][0].tool_calls
+                    : [data[0][0].tool_calls];
             }
 
             return data[0];
@@ -647,13 +772,15 @@ export class ToolManager {
 
         // Google AI Studio tool calls
         if (Array.isArray(data?.responseContent?.parts)) {
-            return data.responseContent.parts.filter(p => p.functionCall).map(p => convertGoogleToolCall(p.functionCall));
+            return data.responseContent.parts
+                .filter((p) => p.functionCall)
+                .map((p) => convertGoogleToolCall(p.functionCall));
         }
 
         // Parsed tool calls from non-streaming data
         if (Array.isArray(data?.choices)) {
             // Find a choice with 0-index
-            const choice = data.choices.find(choice => choice.index === 0);
+            const choice = data.choices.find((choice) => choice.index === 0);
 
             if (choice) {
                 return choice.message.tool_calls;
@@ -662,7 +789,9 @@ export class ToolManager {
 
         // Claude tool calls to OpenAI tool calls
         if (Array.isArray(data?.content)) {
-            const content = data.content.filter(c => c.type === 'tool_use').map(convertClaudeToolCall);
+            const content = data.content
+                .filter((c) => c.type === "tool_use")
+                .map(convertClaudeToolCall);
 
             if (content) {
                 return content;
@@ -670,8 +799,10 @@ export class ToolManager {
         }
 
         // Cohere tool calls
-        if (typeof data?.message?.tool_calls === 'object') {
-            return Array.isArray(data?.message?.tool_calls) ? data.message.tool_calls : [data.message.tool_calls];
+        if (typeof data?.message?.tool_calls === "object") {
+            return Array.isArray(data?.message?.tool_calls)
+                ? data.message.tool_calls
+                : [data.message.tool_calls];
         }
     }
 
@@ -704,21 +835,28 @@ export class ToolManager {
         }
 
         for (const toolCall of toolCalls) {
-            if (typeof toolCall.function !== 'object') {
+            if (typeof toolCall.function !== "object") {
                 continue;
             }
 
-            console.log('[ToolManager] Function tool call:', toolCall);
+            console.log("[ToolManager] Function tool call:", toolCall);
             const id = toolCall.id;
             const parameters = toolCall.function.arguments;
             const name = toolCall.function.name;
             const displayName = ToolManager.getDisplayName(name);
             const isStealth = ToolManager.isStealthTool(name);
-            const message = await ToolManager.formatToolCallMessage(name, parameters);
-            const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
-            const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
+            const message = await ToolManager.formatToolCallMessage(
+                name,
+                parameters,
+            );
+            const toast =
+                message && toastr.info(message, "Tool Calling", { timeOut: 0 });
+            const toolResult = await ToolManager.invokeFunctionTool(
+                name,
+                parameters,
+            );
             toastr.clear(toast);
-            console.log('[ToolManager] Function tool result:', result);
+            console.log("[ToolManager] Function tool result:", result);
 
             // Save a successful invocation
             if (toolResult instanceof Error) {
@@ -755,7 +893,9 @@ export class ToolManager {
             acc[name] = (acc[name] || 0) + 1;
             return acc;
         }, {});
-        return Object.entries(toolCounts).map(([name, count]) => count > 1 ? `${name} (${count})` : name).join(', ');
+        return Object.entries(toolCounts)
+            .map(([name, count]) => (count > 1 ? `${name} (${count})` : name))
+            .join(", ");
     }
 
     /**
@@ -765,17 +905,17 @@ export class ToolManager {
      */
     static #formatToolInvocationMessage(invocations) {
         const data = structuredClone(invocations);
-        const detailsElement = document.createElement('details');
-        const summaryElement = document.createElement('summary');
-        const preElement = document.createElement('pre');
-        const codeElement = document.createElement('code');
-        codeElement.classList.add('language-json');
-        data.forEach(i => {
+        const detailsElement = document.createElement("details");
+        const summaryElement = document.createElement("summary");
+        const preElement = document.createElement("pre");
+        const codeElement = document.createElement("code");
+        codeElement.classList.add("language-json");
+        data.forEach((i) => {
             i.parameters = tryParse(i.parameters);
             i.result = tryParse(i.result);
         });
         codeElement.textContent = JSON.stringify(data, null, 2);
-        const toolNames = data.map(i => i.displayName || i.name);
+        const toolNames = data.map((i) => i.displayName || i.name);
         summaryElement.textContent = `Tool calls: ${this.#groupToolNames(toolNames)}`;
         preElement.append(codeElement);
         detailsElement.append(summaryElement, preElement);
@@ -814,81 +954,123 @@ export class ToolManager {
      * @returns {void}
      */
     static showToolCallError(errors) {
-        toastr.error('An error occurred while invoking function tools. Click here for more details.', 'Tool Calling', {
-            onclick: () => Popup.show.text('Tool Calling Errors', DOMPurify.sanitize(errors.map(e => `${e.cause}: ${e.message}`).join('<br>'))),
-            timeOut: 5000,
-        });
+        toastr.error(
+            "An error occurred while invoking function tools. Click here for more details.",
+            "Tool Calling",
+            {
+                onclick: () =>
+                    Popup.show.text(
+                        "Tool Calling Errors",
+                        DOMPurify.sanitize(
+                            errors
+                                .map((e) => `${e.cause}: ${e.message}`)
+                                .join("<br>"),
+                        ),
+                    ),
+                timeOut: 5000,
+            },
+        );
     }
 
     static initToolSlashCommands() {
-        const toolsEnumProvider = () => ToolManager.tools.map(tool => {
-            const toolOpenAI = tool.toFunctionOpenAI();
-            return new SlashCommandEnumValue(toolOpenAI.function.name, toolOpenAI.function.description, enumTypes.enum, enumIcons.closure);
-        });
+        const toolsEnumProvider = () =>
+            ToolManager.tools.map((tool) => {
+                const toolOpenAI = tool.toFunctionOpenAI();
+                return new SlashCommandEnumValue(
+                    toolOpenAI.function.name,
+                    toolOpenAI.function.description,
+                    enumTypes.enum,
+                    enumIcons.closure,
+                );
+            });
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'tools-list',
-            aliases: ['tool-list'],
-            helpString: 'Gets a list of all registered tools in the OpenAI function JSON format. Use the <code>return</code> argument to specify the return value type.',
-            returns: 'A list of all registered tools.',
-            namedArgumentList: [
-                SlashCommandNamedArgument.fromProps({
-                    name: 'return',
-                    description: 'The way how you want the return value to be provided',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    defaultValue: 'none',
-                    enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
-                    forceEnum: true,
-                }),
-            ],
-            callback: async (args) => {
-                /** @type {any} */
-                const returnType = String(args?.return ?? 'popup-html').trim().toLowerCase();
-                const objectToStringFunc = (tools) => Array.isArray(tools) ? tools.map(x => x.toString()).join('\n\n') : tools.toString();
-                const tools = ToolManager.tools.map(tool => tool.toFunctionOpenAI());
-                return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', tools ?? [], { objectToStringFunc });
-            },
-        }));
+        SlashCommandParser.addCommandObject(
+            SlashCommand.fromProps({
+                name: "tools-list",
+                aliases: ["tool-list"],
+                helpString:
+                    "Gets a list of all registered tools in the OpenAI function JSON format. Use the <code>return</code> argument to specify the return value type.",
+                returns: "A list of all registered tools.",
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: "return",
+                        description:
+                            "The way how you want the return value to be provided",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        defaultValue: "none",
+                        enumList: slashCommandReturnHelper.enumList({
+                            allowObject: true,
+                        }),
+                        forceEnum: true,
+                    }),
+                ],
+                callback: async (args) => {
+                    /** @type {any} */
+                    const returnType = String(args?.return ?? "popup-html")
+                        .trim()
+                        .toLowerCase();
+                    const objectToStringFunc = (tools) =>
+                        Array.isArray(tools)
+                            ? tools.map((x) => x.toString()).join("\n\n")
+                            : tools.toString();
+                    const tools = ToolManager.tools.map((tool) =>
+                        tool.toFunctionOpenAI(),
+                    );
+                    return await slashCommandReturnHelper.doReturn(
+                        returnType ?? "popup-html",
+                        tools ?? [],
+                        { objectToStringFunc },
+                    );
+                },
+            }),
+        );
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'tools-invoke',
-            aliases: ['tool-invoke'],
-            helpString: 'Invokes a registered tool by name. The <code>parameters</code> argument MUST be a JSON-serialized object.',
-            namedArgumentList: [
-                SlashCommandNamedArgument.fromProps({
-                    name: 'parameters',
-                    description: 'The parameters to pass to the tool.',
-                    typeList: [ARGUMENT_TYPE.DICTIONARY],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-            ],
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'The name of the tool to invoke.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                    forceEnum: true,
-                    enumProvider: toolsEnumProvider,
-                }),
-            ],
-            callback: async (args, name) => {
-                const { parameters } = args;
+        SlashCommandParser.addCommandObject(
+            SlashCommand.fromProps({
+                name: "tools-invoke",
+                aliases: ["tool-invoke"],
+                helpString:
+                    "Invokes a registered tool by name. The <code>parameters</code> argument MUST be a JSON-serialized object.",
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: "parameters",
+                        description: "The parameters to pass to the tool.",
+                        typeList: [ARGUMENT_TYPE.DICTIONARY],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                ],
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: "The name of the tool to invoke.",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                        forceEnum: true,
+                        enumProvider: toolsEnumProvider,
+                    }),
+                ],
+                callback: async (args, name) => {
+                    const { parameters } = args;
 
-                const result = await ToolManager.invokeFunctionTool(String(name), parameters);
-                if (result instanceof Error) {
-                    throw result;
-                }
+                    const result = await ToolManager.invokeFunctionTool(
+                        String(name),
+                        parameters,
+                    );
+                    if (result instanceof Error) {
+                        throw result;
+                    }
 
-                return result;
-            },
-        }));
+                    return result;
+                },
+            }),
+        );
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'tools-register',
-            aliases: ['tool-register'],
-            helpString: `<div>Registers a new tool with the tool registry.</div>
+        SlashCommandParser.addCommandObject(
+            SlashCommand.fromProps({
+                name: "tools-register",
+                aliases: ["tool-register"],
+                helpString: `<div>Registers a new tool with the tool registry.</div>
                 <ul>
                     <li>The <code>parameters</code> argument MUST be a JSON-serialized object with a valid JSON schema.</li>
                     <li>The unnamed argument MUST be a closure that accepts the function parameters as local script variables.</li>
@@ -911,153 +1093,198 @@ export class ToolManager {
 }
 ||
 /tools-register name=Echo description="Echoes a message. Call when the user is asking to repeat something" parameters={{var::echoSchema}} {: /echo {{var::arg.message}} :}</code></pre>`,
-            namedArgumentList: [
-                SlashCommandNamedArgument.fromProps({
-                    name: 'name',
-                    description: 'The name of the tool.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'description',
-                    description: 'A description of what the tool does.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'parameters',
-                    description: 'The parameters for the tool.',
-                    typeList: [ARGUMENT_TYPE.DICTIONARY],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'displayName',
-                    description: 'The display name of the tool.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: false,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'formatMessage',
-                    description: 'The closure to be executed to format the tool call message. Must return a string.',
-                    typeList: [ARGUMENT_TYPE.CLOSURE],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'shouldRegister',
-                    description: 'The closure to be executed to determine if the tool should be registered. Must return a boolean.',
-                    typeList: [ARGUMENT_TYPE.CLOSURE],
-                    isRequired: false,
-                    acceptsMultiple: false,
-                }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'stealth',
-                    description: 'If true, a tool call result will not be shown in the chat and no follow-up generation will be performed.',
-                    typeList: [ARGUMENT_TYPE.BOOLEAN],
-                    isRequired: false,
-                    acceptsMultiple: false,
-                    defaultValue: String(false),
-                }),
-            ],
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'The closure to be executed when the tool is invoked.',
-                    typeList: [ARGUMENT_TYPE.CLOSURE],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                }),
-            ],
-            callback: async (args, action) => {
-                /**
-                 * Converts a slash command closure to a function.
-                 * @param {SlashCommandClosure} action Closure to convert to a function
-                 * @param {function(any): any} convertResult Function to convert the result
-                 * @returns {function} Function that executes the closure
-                 */
-                function closureToFunction(action, convertResult) {
-                    return async (args) => {
-                        const localClosure = action.getCopy();
-                        localClosure.onProgress = () => { };
-                        const scope = localClosure.scope;
-                        if (typeof args === 'object' && args !== null) {
-                            assignNestedVariables(scope, args, 'arg');
-                        } else if (typeof args !== 'undefined') {
-                            scope.letVariable('arg', args);
-                        }
-                        const result = await localClosure.execute();
-                        return convertResult(result.pipe);
-                    };
-                }
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: "name",
+                        description: "The name of the tool.",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "description",
+                        description: "A description of what the tool does.",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "parameters",
+                        description: "The parameters for the tool.",
+                        typeList: [ARGUMENT_TYPE.DICTIONARY],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "displayName",
+                        description: "The display name of the tool.",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: false,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "formatMessage",
+                        description:
+                            "The closure to be executed to format the tool call message. Must return a string.",
+                        typeList: [ARGUMENT_TYPE.CLOSURE],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "shouldRegister",
+                        description:
+                            "The closure to be executed to determine if the tool should be registered. Must return a boolean.",
+                        typeList: [ARGUMENT_TYPE.CLOSURE],
+                        isRequired: false,
+                        acceptsMultiple: false,
+                    }),
+                    SlashCommandNamedArgument.fromProps({
+                        name: "stealth",
+                        description:
+                            "If true, a tool call result will not be shown in the chat and no follow-up generation will be performed.",
+                        typeList: [ARGUMENT_TYPE.BOOLEAN],
+                        isRequired: false,
+                        acceptsMultiple: false,
+                        defaultValue: String(false),
+                    }),
+                ],
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description:
+                            "The closure to be executed when the tool is invoked.",
+                        typeList: [ARGUMENT_TYPE.CLOSURE],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                    }),
+                ],
+                callback: async (args, action) => {
+                    /**
+                     * Converts a slash command closure to a function.
+                     * @param {SlashCommandClosure} action Closure to convert to a function
+                     * @param {function(any): any} convertResult Function to convert the result
+                     * @returns {function} Function that executes the closure
+                     */
+                    function closureToFunction(action, convertResult) {
+                        return async (args) => {
+                            const localClosure = action.getCopy();
+                            localClosure.onProgress = () => {};
+                            const scope = localClosure.scope;
+                            if (typeof args === "object" && args !== null) {
+                                assignNestedVariables(scope, args, "arg");
+                            } else if (typeof args !== "undefined") {
+                                scope.letVariable("arg", args);
+                            }
+                            const result = await localClosure.execute();
+                            return convertResult(result.pipe);
+                        };
+                    }
 
-                const { name, displayName, description, parameters, formatMessage, shouldRegister, stealth } = args;
+                    const {
+                        name,
+                        displayName,
+                        description,
+                        parameters,
+                        formatMessage,
+                        shouldRegister,
+                        stealth,
+                    } = args;
 
-                if (!(action instanceof SlashCommandClosure)) {
-                    throw new Error('The unnamed argument must be a closure.');
-                }
-                if (typeof name !== 'string' || !name) {
-                    throw new Error('The "name" argument must be a non-empty string.');
-                }
-                if (typeof description !== 'string' || !description) {
-                    throw new Error('The "description" argument must be a non-empty string.');
-                }
-                if (typeof parameters !== 'string' || !isJson(parameters)) {
-                    throw new Error('The "parameters" argument must be a JSON-serialized object.');
-                }
-                if (displayName && typeof displayName !== 'string') {
-                    throw new Error('The "displayName" argument must be a string.');
-                }
-                if (formatMessage && !(formatMessage instanceof SlashCommandClosure)) {
-                    throw new Error('The "formatMessage" argument must be a closure.');
-                }
-                if (shouldRegister && !(shouldRegister instanceof SlashCommandClosure)) {
-                    throw new Error('The "shouldRegister" argument must be a closure.');
-                }
+                    if (!(action instanceof SlashCommandClosure)) {
+                        throw new Error(
+                            "The unnamed argument must be a closure.",
+                        );
+                    }
+                    if (typeof name !== "string" || !name) {
+                        throw new Error(
+                            'The "name" argument must be a non-empty string.',
+                        );
+                    }
+                    if (typeof description !== "string" || !description) {
+                        throw new Error(
+                            'The "description" argument must be a non-empty string.',
+                        );
+                    }
+                    if (typeof parameters !== "string" || !isJson(parameters)) {
+                        throw new Error(
+                            'The "parameters" argument must be a JSON-serialized object.',
+                        );
+                    }
+                    if (displayName && typeof displayName !== "string") {
+                        throw new Error(
+                            'The "displayName" argument must be a string.',
+                        );
+                    }
+                    if (
+                        formatMessage &&
+                        !(formatMessage instanceof SlashCommandClosure)
+                    ) {
+                        throw new Error(
+                            'The "formatMessage" argument must be a closure.',
+                        );
+                    }
+                    if (
+                        shouldRegister &&
+                        !(shouldRegister instanceof SlashCommandClosure)
+                    ) {
+                        throw new Error(
+                            'The "shouldRegister" argument must be a closure.',
+                        );
+                    }
 
-                const actionFunc = closureToFunction(action, x => x);
-                const formatMessageFunc = formatMessage instanceof SlashCommandClosure ? closureToFunction(formatMessage, x => String(x)) : null;
-                const shouldRegisterFunc = shouldRegister instanceof SlashCommandClosure ? closureToFunction(shouldRegister, x => isTrueBoolean(x)) : null;
+                    const actionFunc = closureToFunction(action, (x) => x);
+                    const formatMessageFunc =
+                        formatMessage instanceof SlashCommandClosure
+                            ? closureToFunction(formatMessage, (x) => String(x))
+                            : null;
+                    const shouldRegisterFunc =
+                        shouldRegister instanceof SlashCommandClosure
+                            ? closureToFunction(shouldRegister, (x) =>
+                                  isTrueBoolean(x),
+                              )
+                            : null;
 
-                ToolManager.registerFunctionTool({
-                    name: String(name ?? ''),
-                    displayName: String(displayName ?? ''),
-                    description: String(description ?? ''),
-                    parameters: JSON.parse(parameters ?? '{}'),
-                    action: actionFunc,
-                    formatMessage: formatMessageFunc,
-                    shouldRegister: shouldRegisterFunc,
-                    stealth: stealth && isTrueBoolean(String(stealth)),
-                });
+                    ToolManager.registerFunctionTool({
+                        name: String(name ?? ""),
+                        displayName: String(displayName ?? ""),
+                        description: String(description ?? ""),
+                        parameters: JSON.parse(parameters ?? "{}"),
+                        action: actionFunc,
+                        formatMessage: formatMessageFunc,
+                        shouldRegister: shouldRegisterFunc,
+                        stealth: stealth && isTrueBoolean(String(stealth)),
+                    });
 
-                return '';
-            },
-        }));
+                    return "";
+                },
+            }),
+        );
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'tools-unregister',
-            aliases: ['tool-unregister'],
-            helpString: 'Unregisters a tool from the tool registry.',
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'The name of the tool to unregister.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
-                    acceptsMultiple: false,
-                    forceEnum: true,
-                    enumProvider: toolsEnumProvider,
-                }),
-            ],
-            callback: async (_, name) => {
-                if (typeof name !== 'string' || !name) {
-                    throw new Error('The unnamed argument must be a non-empty string.');
-                }
+        SlashCommandParser.addCommandObject(
+            SlashCommand.fromProps({
+                name: "tools-unregister",
+                aliases: ["tool-unregister"],
+                helpString: "Unregisters a tool from the tool registry.",
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: "The name of the tool to unregister.",
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: true,
+                        acceptsMultiple: false,
+                        forceEnum: true,
+                        enumProvider: toolsEnumProvider,
+                    }),
+                ],
+                callback: async (_, name) => {
+                    if (typeof name !== "string" || !name) {
+                        throw new Error(
+                            "The unnamed argument must be a non-empty string.",
+                        );
+                    }
 
-                ToolManager.unregisterFunctionTool(name);
-                return '';
-            },
-        }));
+                    ToolManager.unregisterFunctionTool(name);
+                    return "";
+                },
+            }),
+        );
     }
 }

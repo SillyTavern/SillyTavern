@@ -1,100 +1,100 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import yaml from 'yaml';
-import color from 'chalk';
-import _ from 'lodash';
-import { serverDirectory } from './server-directory.js';
-import { setConfigFilePath } from './util.js';
+import fs from "node:fs";
+import path from "node:path";
+import yaml from "yaml";
+import color from "chalk";
+import _ from "lodash";
+import { serverDirectory } from "./server-directory.js";
+import { setConfigFilePath } from "./util.js";
 
 const keyMigrationMap = [
     {
-        oldKey: 'disableThumbnails',
-        newKey: 'thumbnails.enabled',
+        oldKey: "disableThumbnails",
+        newKey: "thumbnails.enabled",
         migrate: (value) => !value,
     },
     {
-        oldKey: 'thumbnailsQuality',
-        newKey: 'thumbnails.quality',
+        oldKey: "thumbnailsQuality",
+        newKey: "thumbnails.quality",
         migrate: (value) => value,
     },
     {
-        oldKey: 'avatarThumbnailsPng',
-        newKey: 'thumbnails.format',
-        migrate: (value) => (value ? 'png' : 'jpg'),
+        oldKey: "avatarThumbnailsPng",
+        newKey: "thumbnails.format",
+        migrate: (value) => (value ? "png" : "jpg"),
     },
     {
-        oldKey: 'disableChatBackup',
-        newKey: 'backups.chat.enabled',
+        oldKey: "disableChatBackup",
+        newKey: "backups.chat.enabled",
         migrate: (value) => !value,
     },
     {
-        oldKey: 'numberOfBackups',
-        newKey: 'backups.common.numberOfBackups',
+        oldKey: "numberOfBackups",
+        newKey: "backups.common.numberOfBackups",
         migrate: (value) => value,
     },
     {
-        oldKey: 'maxTotalChatBackups',
-        newKey: 'backups.chat.maxTotalBackups',
+        oldKey: "maxTotalChatBackups",
+        newKey: "backups.chat.maxTotalBackups",
         migrate: (value) => value,
     },
     {
-        oldKey: 'chatBackupThrottleInterval',
-        newKey: 'backups.chat.throttleInterval',
+        oldKey: "chatBackupThrottleInterval",
+        newKey: "backups.chat.throttleInterval",
         migrate: (value) => value,
     },
     {
-        oldKey: 'enableExtensions',
-        newKey: 'extensions.enabled',
+        oldKey: "enableExtensions",
+        newKey: "extensions.enabled",
         migrate: (value) => value,
     },
     {
-        oldKey: 'enableExtensionsAutoUpdate',
-        newKey: 'extensions.autoUpdate',
+        oldKey: "enableExtensionsAutoUpdate",
+        newKey: "extensions.autoUpdate",
         migrate: (value) => value,
     },
     {
-        oldKey: 'extras.disableAutoDownload',
-        newKey: 'extensions.models.autoDownload',
+        oldKey: "extras.disableAutoDownload",
+        newKey: "extensions.models.autoDownload",
         migrate: (value) => !value,
     },
     {
-        oldKey: 'extras.classificationModel',
-        newKey: 'extensions.models.classification',
+        oldKey: "extras.classificationModel",
+        newKey: "extensions.models.classification",
         migrate: (value) => value,
     },
     {
-        oldKey: 'extras.captioningModel',
-        newKey: 'extensions.models.captioning',
+        oldKey: "extras.captioningModel",
+        newKey: "extensions.models.captioning",
         migrate: (value) => value,
     },
     {
-        oldKey: 'extras.embeddingModel',
-        newKey: 'extensions.models.embedding',
+        oldKey: "extras.embeddingModel",
+        newKey: "extensions.models.embedding",
         migrate: (value) => value,
     },
     {
-        oldKey: 'extras.speechToTextModel',
-        newKey: 'extensions.models.speechToText',
+        oldKey: "extras.speechToTextModel",
+        newKey: "extensions.models.speechToText",
         migrate: (value) => value,
     },
     {
-        oldKey: 'extras.textToSpeechModel',
-        newKey: 'extensions.models.textToSpeech',
+        oldKey: "extras.textToSpeechModel",
+        newKey: "extensions.models.textToSpeech",
         migrate: (value) => value,
     },
     {
-        oldKey: 'minLogLevel',
-        newKey: 'logging.minLogLevel',
+        oldKey: "minLogLevel",
+        newKey: "logging.minLogLevel",
         migrate: (value) => value,
     },
     {
-        oldKey: 'cardsCacheCapacity',
-        newKey: 'performance.memoryCacheCapacity',
+        oldKey: "cardsCacheCapacity",
+        newKey: "performance.memoryCacheCapacity",
         migrate: (value) => `${value}mb`,
     },
     {
-        oldKey: 'cookieSecret',
-        newKey: 'cookieSecret',
+        oldKey: "cookieSecret",
+        newKey: "cookieSecret",
         migrate: () => void 0,
         remove: true,
     },
@@ -106,14 +106,14 @@ const keyMigrationMap = [
  * @param {string} prefix Prefix to prepend to all keys
  * @returns {string[]} Array of all keys in the object
  */
-function getAllKeys(obj, prefix = '') {
-    if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) {
+function getAllKeys(obj, prefix = "") {
+    if (typeof obj !== "object" || Array.isArray(obj) || obj === null) {
         return [];
     }
 
-    return _.flatMap(Object.keys(obj), key => {
+    return _.flatMap(Object.keys(obj), (key) => {
         const newPrefix = prefix ? `${prefix}.${key}` : key;
-        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+        if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
             return getAllKeys(obj[key], newPrefix);
         } else {
             return [newPrefix];
@@ -127,8 +127,13 @@ function getAllKeys(obj, prefix = '') {
  */
 export function addMissingConfigValues(configPath) {
     try {
-        const defaultConfig = yaml.parse(fs.readFileSync(path.join(serverDirectory, './default/config.yaml'), 'utf8'));
-        let config = yaml.parse(fs.readFileSync(configPath, 'utf8'));
+        const defaultConfig = yaml.parse(
+            fs.readFileSync(
+                path.join(serverDirectory, "./default/config.yaml"),
+                "utf8",
+            ),
+        );
+        let config = yaml.parse(fs.readFileSync(configPath, "utf8"));
 
         // Migrate old keys to new keys
         const migratedKeys = [];
@@ -174,16 +179,27 @@ export function addMissingConfigValues(configPath) {
         }
 
         if (addedKeys.length > 0) {
-            console.log('Adding missing config values to config.yaml:', addedKeys);
+            console.log(
+                "Adding missing config values to config.yaml:",
+                addedKeys,
+            );
         }
 
         if (migratedKeys.length > 0) {
-            console.log('Migrating config values in config.yaml:', migratedKeys);
+            console.log(
+                "Migrating config values in config.yaml:",
+                migratedKeys,
+            );
         }
 
         fs.writeFileSync(configPath, yaml.stringify(config));
     } catch (error) {
-        console.error(color.red('FATAL: Could not add missing config values to config.yaml'), error);
+        console.error(
+            color.red(
+                "FATAL: Could not add missing config values to config.yaml",
+            ),
+            error,
+        );
     }
 }
 

@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 /**
  * Gets the vector for the given text from SillyTavern-extras
@@ -33,42 +33,41 @@ async function getExtrasVectorImpl(text, apiUrl, apiKey) {
     let url;
     try {
         url = new URL(apiUrl);
-        url.pathname = '/api/embeddings/compute';
-    }
-    catch (error) {
-        console.error('Failed to set up Extras API call:', error);
-        console.debug('Extras API URL given was:', apiUrl);
+        url.pathname = "/api/embeddings/compute";
+    } catch (error) {
+        console.error("Failed to set up Extras API call:", error);
+        console.debug("Extras API URL given was:", apiUrl);
         throw error;
     }
 
     const headers = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
     };
 
     // Include the Extras API key, if enabled
     if (apiKey && apiKey.length > 0) {
         Object.assign(headers, {
-            'Authorization': `Bearer ${apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
         });
     }
 
     const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: headers,
         body: JSON.stringify({
-            text: text,  // The backend accepts {string|string[]} for one or multiple text items, respectively.
+            text: text, // The backend accepts {string|string[]} for one or multiple text items, respectively.
         }),
     });
 
     if (!response.ok) {
         const text = await response.text();
-        console.warn('Extras request failed', response.statusText, text);
-        throw new Error('Extras request failed');
+        console.warn("Extras request failed", response.statusText, text);
+        throw new Error("Extras request failed");
     }
 
     /** @type {any} */
     const data = await response.json();
-    const vector = data.embedding;  // `embedding`: number[] (one text item), or number[][] (multiple text items).
+    const vector = data.embedding; // `embedding`: number[] (one text item), or number[][] (multiple text items).
 
     return vector;
 }

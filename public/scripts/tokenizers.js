@@ -1,16 +1,32 @@
-import { localforage } from '../lib.js';
-import { characters, main_api, api_server, nai_settings, online_status, this_chid } from '../script.js';
-import { power_user, registerDebugFunction } from './power-user.js';
-import { chat_completion_sources, model_list, oai_settings } from './openai.js';
-import { groups, selected_group } from './group-chats.js';
-import { getStringHash } from './utils.js';
-import { kai_flags } from './kai-settings.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
-import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
+import { localforage } from "../lib.js";
+import {
+    characters,
+    main_api,
+    api_server,
+    nai_settings,
+    online_status,
+    this_chid,
+} from "../script.js";
+import { power_user, registerDebugFunction } from "./power-user.js";
+import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
+import { groups, selected_group } from "./group-chats.js";
+import { getStringHash } from "./utils.js";
+import { kai_flags } from "./kai-settings.js";
+import {
+    textgen_types,
+    textgenerationwebui_settings as textgen_settings,
+    getTextGenServer,
+    getTextGenModel,
+} from "./textgen-settings.js";
+import {
+    getCurrentDreamGenModelTokenizer,
+    getCurrentOpenRouterModelTokenizer,
+    openRouterModels,
+} from "./textgen-models.js";
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
-export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
-export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
+export const TOKENIZER_WARNING_KEY = "tokenizationWarningShown";
+export const TOKENIZER_SUPPORTED_KEY = "tokenizationSupported";
 
 export const tokenizers = {
     NONE: 0,
@@ -63,96 +79,98 @@ export const TEXTGEN_TOKENIZERS = [];
 
 const TOKENIZER_URLS = {
     [tokenizers.GPT2]: {
-        encode: '/api/tokenizers/gpt2/encode',
-        decode: '/api/tokenizers/gpt2/decode',
-        count: '/api/tokenizers/gpt2/encode',
+        encode: "/api/tokenizers/gpt2/encode",
+        decode: "/api/tokenizers/gpt2/decode",
+        count: "/api/tokenizers/gpt2/encode",
     },
     [tokenizers.OPENAI]: {
-        encode: '/api/tokenizers/openai/encode',
-        decode: '/api/tokenizers/openai/decode',
-        count: '/api/tokenizers/openai/encode',
+        encode: "/api/tokenizers/openai/encode",
+        decode: "/api/tokenizers/openai/decode",
+        count: "/api/tokenizers/openai/encode",
     },
     [tokenizers.LLAMA]: {
-        encode: '/api/tokenizers/llama/encode',
-        decode: '/api/tokenizers/llama/decode',
-        count: '/api/tokenizers/llama/encode',
+        encode: "/api/tokenizers/llama/encode",
+        decode: "/api/tokenizers/llama/decode",
+        count: "/api/tokenizers/llama/encode",
     },
     [tokenizers.NERD]: {
-        encode: '/api/tokenizers/nerdstash/encode',
-        decode: '/api/tokenizers/nerdstash/decode',
-        count: '/api/tokenizers/nerdstash/encode',
+        encode: "/api/tokenizers/nerdstash/encode",
+        decode: "/api/tokenizers/nerdstash/decode",
+        count: "/api/tokenizers/nerdstash/encode",
     },
     [tokenizers.NERD2]: {
-        encode: '/api/tokenizers/nerdstash_v2/encode',
-        decode: '/api/tokenizers/nerdstash_v2/decode',
-        count: '/api/tokenizers/nerdstash_v2/encode',
+        encode: "/api/tokenizers/nerdstash_v2/encode",
+        decode: "/api/tokenizers/nerdstash_v2/decode",
+        count: "/api/tokenizers/nerdstash_v2/encode",
     },
     [tokenizers.API_KOBOLD]: {
-        count: '/api/tokenizers/remote/kobold/count',
-        encode: '/api/tokenizers/remote/kobold/count',
+        count: "/api/tokenizers/remote/kobold/count",
+        encode: "/api/tokenizers/remote/kobold/count",
     },
     [tokenizers.MISTRAL]: {
-        encode: '/api/tokenizers/mistral/encode',
-        decode: '/api/tokenizers/mistral/decode',
-        count: '/api/tokenizers/mistral/encode',
+        encode: "/api/tokenizers/mistral/encode",
+        decode: "/api/tokenizers/mistral/decode",
+        count: "/api/tokenizers/mistral/encode",
     },
     [tokenizers.YI]: {
-        encode: '/api/tokenizers/yi/encode',
-        decode: '/api/tokenizers/yi/decode',
-        count: '/api/tokenizers/yi/encode',
+        encode: "/api/tokenizers/yi/encode",
+        decode: "/api/tokenizers/yi/decode",
+        count: "/api/tokenizers/yi/encode",
     },
     [tokenizers.CLAUDE]: {
-        encode: '/api/tokenizers/claude/encode',
-        decode: '/api/tokenizers/claude/decode',
-        count: '/api/tokenizers/claude/encode',
+        encode: "/api/tokenizers/claude/encode",
+        decode: "/api/tokenizers/claude/decode",
+        count: "/api/tokenizers/claude/encode",
     },
     [tokenizers.LLAMA3]: {
-        encode: '/api/tokenizers/llama3/encode',
-        decode: '/api/tokenizers/llama3/decode',
-        count: '/api/tokenizers/llama3/encode',
+        encode: "/api/tokenizers/llama3/encode",
+        decode: "/api/tokenizers/llama3/decode",
+        count: "/api/tokenizers/llama3/encode",
     },
     [tokenizers.GEMMA]: {
-        encode: '/api/tokenizers/gemma/encode',
-        decode: '/api/tokenizers/gemma/decode',
-        count: '/api/tokenizers/gemma/encode',
+        encode: "/api/tokenizers/gemma/encode",
+        decode: "/api/tokenizers/gemma/decode",
+        count: "/api/tokenizers/gemma/encode",
     },
     [tokenizers.JAMBA]: {
-        encode: '/api/tokenizers/jamba/encode',
-        decode: '/api/tokenizers/jamba/decode',
-        count: '/api/tokenizers/jamba/encode',
+        encode: "/api/tokenizers/jamba/encode",
+        decode: "/api/tokenizers/jamba/decode",
+        count: "/api/tokenizers/jamba/encode",
     },
     [tokenizers.QWEN2]: {
-        encode: '/api/tokenizers/qwen2/encode',
-        decode: '/api/tokenizers/qwen2/decode',
-        count: '/api/tokenizers/qwen2/encode',
+        encode: "/api/tokenizers/qwen2/encode",
+        decode: "/api/tokenizers/qwen2/decode",
+        count: "/api/tokenizers/qwen2/encode",
     },
     [tokenizers.COMMAND_R]: {
-        encode: '/api/tokenizers/command-r/encode',
-        decode: '/api/tokenizers/command-r/decode',
-        count: '/api/tokenizers/command-r/encode',
+        encode: "/api/tokenizers/command-r/encode",
+        decode: "/api/tokenizers/command-r/decode",
+        count: "/api/tokenizers/command-r/encode",
     },
     [tokenizers.COMMAND_A]: {
-        encode: '/api/tokenizers/command-a/encode',
-        decode: '/api/tokenizers/command-a/decode',
-        count: '/api/tokenizers/command-a/encode',
+        encode: "/api/tokenizers/command-a/encode",
+        decode: "/api/tokenizers/command-a/decode",
+        count: "/api/tokenizers/command-a/encode",
     },
     [tokenizers.NEMO]: {
-        encode: '/api/tokenizers/nemo/encode',
-        decode: '/api/tokenizers/nemo/decode',
-        count: '/api/tokenizers/nemo/encode',
+        encode: "/api/tokenizers/nemo/encode",
+        decode: "/api/tokenizers/nemo/decode",
+        count: "/api/tokenizers/nemo/encode",
     },
     [tokenizers.DEEPSEEK]: {
-        encode: '/api/tokenizers/deepseek/encode',
-        decode: '/api/tokenizers/deepseek/decode',
-        count: '/api/tokenizers/deepseek/encode',
+        encode: "/api/tokenizers/deepseek/encode",
+        decode: "/api/tokenizers/deepseek/decode",
+        count: "/api/tokenizers/deepseek/encode",
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
-        encode: '/api/tokenizers/remote/textgenerationwebui/encode',
-        count: '/api/tokenizers/remote/textgenerationwebui/encode',
+        encode: "/api/tokenizers/remote/textgenerationwebui/encode",
+        count: "/api/tokenizers/remote/textgenerationwebui/encode",
     },
 };
 
-const objectStore = localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
+const objectStore = localforage.createInstance({
+    name: "SillyTavern_ChatCompletions",
+});
 
 let tokenCache = {};
 
@@ -167,31 +185,36 @@ export function guesstimate(str) {
 
 async function loadTokenCache() {
     try {
-        console.debug('Chat Completions: loading token cache');
-        tokenCache = await objectStore.getItem('tokenCache') || {};
+        console.debug("Chat Completions: loading token cache");
+        tokenCache = (await objectStore.getItem("tokenCache")) || {};
     } catch (e) {
-        console.log('Chat Completions: unable to load token cache, using default value', e);
+        console.log(
+            "Chat Completions: unable to load token cache, using default value",
+            e,
+        );
         tokenCache = {};
     }
 }
 
 export async function saveTokenCache() {
     try {
-        console.debug('Chat Completions: saving token cache');
-        await objectStore.setItem('tokenCache', tokenCache);
+        console.debug("Chat Completions: saving token cache");
+        await objectStore.setItem("tokenCache", tokenCache);
     } catch (e) {
-        console.log('Chat Completions: unable to save token cache', e);
+        console.log("Chat Completions: unable to save token cache", e);
     }
 }
 
 async function resetTokenCache() {
     try {
-        console.debug('Chat Completions: resetting token cache');
-        Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
-        await objectStore.removeItem('tokenCache');
-        toastr.success('Token cache cleared. Please reload the chat to re-tokenize it.');
+        console.debug("Chat Completions: resetting token cache");
+        Object.keys(tokenCache).forEach((key) => delete tokenCache[key]);
+        await objectStore.removeItem("tokenCache");
+        toastr.success(
+            "Token cache cleared. Please reload the chat to re-tokenize it.",
+        );
     } catch (e) {
-        console.log('Chat Completions: unable to reset token cache', e);
+        console.log("Chat Completions: unable to reset token cache", e);
     }
 }
 
@@ -207,10 +230,12 @@ async function resetTokenCache() {
  * @returns {Tokenizer[]} Tokenizer info.
  */
 export function getAvailableTokenizers() {
-    const tokenizerOptions = $('#tokenizer').find('option').toArray();
-    return tokenizerOptions.map(tokenizerOption => ({
+    const tokenizerOptions = $("#tokenizer").find("option").toArray();
+    return tokenizerOptions.map((tokenizerOption) => ({
         tokenizerId: Number(tokenizerOption.value),
-        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
+        tokenizerKey: Object.entries(tokenizers)
+            .find(([_, value]) => value === Number(tokenizerOption.value))[0]
+            .toLocaleLowerCase(),
         tokenizerName: tokenizerOption.text,
     }));
 }
@@ -221,12 +246,14 @@ export function getAvailableTokenizers() {
  */
 export function selectTokenizer(tokenizerId) {
     if (tokenizerId !== power_user.tokenizer) {
-        const tokenizer = getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === tokenizerId);
+        const tokenizer = getAvailableTokenizers().find(
+            (tokenizer) => tokenizer.tokenizerId === tokenizerId,
+        );
         if (!tokenizer) {
-            console.warn('Failed to find tokenizer with id', tokenizerId);
+            console.warn("Failed to find tokenizer with id", tokenizerId);
             return;
         }
-        $('#tokenizer').val(tokenizer.tokenizerId).trigger('change');
+        $("#tokenizer").val(tokenizer.tokenizerId).trigger("change");
         toastr.info(`Tokenizer: "${tokenizer.tokenizerName}" selected`);
     }
 }
@@ -241,35 +268,35 @@ export function getFriendlyTokenizerName(forApi) {
         forApi = main_api;
     }
 
-    const tokenizerOption = $('#tokenizer').find(':selected');
+    const tokenizerOption = $("#tokenizer").find(":selected");
     let tokenizerId = Number(tokenizerOption.val());
     let tokenizerName = tokenizerOption.text();
 
-    if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
+    if (forApi !== "openai" && tokenizerId === tokenizers.BEST_MATCH) {
         tokenizerId = getTokenizerBestMatch(forApi);
 
         switch (tokenizerId) {
             case tokenizers.API_KOBOLD:
-                tokenizerName = 'API (KoboldAI Classic)';
+                tokenizerName = "API (KoboldAI Classic)";
                 break;
             case tokenizers.API_TEXTGENERATIONWEBUI:
-                tokenizerName = 'API (Text Completion)';
+                tokenizerName = "API (Text Completion)";
                 break;
             default:
-                tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+                tokenizerName = $(
+                    `#tokenizer option[value="${tokenizerId}"]`,
+                ).text();
                 break;
         }
     }
 
-    tokenizerName = forApi == 'openai'
-        ? getTokenizerModel()
-        : tokenizerName;
+    tokenizerName = forApi == "openai" ? getTokenizerModel() : tokenizerName;
 
-    tokenizerId = forApi == 'openai'
-        ? tokenizers.OPENAI
-        : tokenizerId;
+    tokenizerId = forApi == "openai" ? tokenizers.OPENAI : tokenizerId;
 
-    const tokenizerKey = Object.entries(tokenizers).find(([_, value]) => value === tokenizerId)[0].toLocaleLowerCase();
+    const tokenizerKey = Object.entries(tokenizers)
+        .find(([_, value]) => value === tokenizerId)[0]
+        .toLocaleLowerCase();
 
     return { tokenizerName, tokenizerKey, tokenizerId };
 }
@@ -284,73 +311,89 @@ export function getTokenizerBestMatch(forApi) {
         forApi = main_api;
     }
 
-    if (forApi === 'novel') {
-        if (nai_settings.model_novel.includes('clio')) {
+    if (forApi === "novel") {
+        if (nai_settings.model_novel.includes("clio")) {
             return tokenizers.NERD;
         }
-        if (nai_settings.model_novel.includes('kayra')) {
+        if (nai_settings.model_novel.includes("kayra")) {
             return tokenizers.NERD2;
         }
-        if (nai_settings.model_novel.includes('erato')) {
+        if (nai_settings.model_novel.includes("erato")) {
             return tokenizers.LLAMA3;
         }
     }
-    if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
+    if (
+        forApi === "kobold" ||
+        forApi === "textgenerationwebui" ||
+        forApi === "koboldhorde"
+    ) {
         // Try to use the API tokenizer if possible:
         // - API must be connected
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
-        const hasValidEndpoint = sessionStorage.getItem(TOKENIZER_SUPPORTED_KEY);
-        const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type) && (textgen_settings.type !== textgen_types.OOBA || hasValidEndpoint);
+        const hasValidEndpoint = sessionStorage.getItem(
+            TOKENIZER_SUPPORTED_KEY,
+        );
+        const isConnected = online_status !== "no_connection";
+        const isTokenizerSupported =
+            TEXTGEN_TOKENIZERS.includes(textgen_settings.type) &&
+            (textgen_settings.type !== textgen_types.OOBA || hasValidEndpoint);
 
         if (!hasTokenizerError && isConnected) {
-            if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
+            if (forApi === "kobold" && kai_flags.can_use_tokenization) {
                 return tokenizers.API_KOBOLD;
             }
 
-            if (forApi === 'textgenerationwebui' && isTokenizerSupported) {
+            if (forApi === "textgenerationwebui" && isTokenizerSupported) {
                 return tokenizers.API_TEXTGENERATIONWEBUI;
             }
-            if (forApi === 'textgenerationwebui' && textgen_settings.type === textgen_types.OPENROUTER) {
+            if (
+                forApi === "textgenerationwebui" &&
+                textgen_settings.type === textgen_types.OPENROUTER
+            ) {
                 return getCurrentOpenRouterModelTokenizer();
             }
-            if (forApi === 'textgenerationwebui' && textgen_settings.type === textgen_types.DREAMGEN) {
+            if (
+                forApi === "textgenerationwebui" &&
+                textgen_settings.type === textgen_types.DREAMGEN
+            ) {
                 return getCurrentDreamGenModelTokenizer();
             }
         }
 
-        if (forApi === 'textgenerationwebui') {
-            const model = String(getTextGenModel() || online_status).toLowerCase();
-            if (model.includes('llama3') || model.includes('llama-3')) {
+        if (forApi === "textgenerationwebui") {
+            const model = String(
+                getTextGenModel() || online_status,
+            ).toLowerCase();
+            if (model.includes("llama3") || model.includes("llama-3")) {
                 return tokenizers.LLAMA3;
             }
-            if (model.includes('mistral') || model.includes('mixtral')) {
+            if (model.includes("mistral") || model.includes("mixtral")) {
                 return tokenizers.MISTRAL;
             }
-            if (model.includes('gemma')) {
+            if (model.includes("gemma")) {
                 return tokenizers.GEMMA;
             }
-            if (model.includes('nemo') || model.includes('pixtral')) {
+            if (model.includes("nemo") || model.includes("pixtral")) {
                 return tokenizers.NEMO;
             }
-            if (model.includes('deepseek')) {
+            if (model.includes("deepseek")) {
                 return tokenizers.DEEPSEEK;
             }
-            if (model.includes('yi')) {
+            if (model.includes("yi")) {
                 return tokenizers.YI;
             }
-            if (model.includes('jamba')) {
+            if (model.includes("jamba")) {
                 return tokenizers.JAMBA;
             }
-            if (model.includes('command-r')) {
+            if (model.includes("command-r")) {
                 return tokenizers.COMMAND_R;
             }
-            if (model.includes('command-a')) {
+            if (model.includes("command-a")) {
                 return tokenizers.COMMAND_A;
             }
-            if (model.includes('qwen2')) {
+            if (model.includes("qwen2")) {
                 return tokenizers.QWEN2;
             }
         }
@@ -364,9 +407,9 @@ export function getTokenizerBestMatch(forApi) {
 // Get the current remote tokenizer API based on the current text generation API.
 function currentRemoteTokenizerAPI() {
     switch (main_api) {
-        case 'kobold':
+        case "kobold":
             return tokenizers.API_KOBOLD;
-        case 'textgenerationwebui':
+        case "textgenerationwebui":
             return tokenizers.API_TEXTGENERATIONWEBUI;
         default:
             return tokenizers.NONE;
@@ -392,7 +435,7 @@ function callTokenizer(type, str) {
         default: {
             const endpointUrl = TOKENIZER_URLS[type]?.count;
             if (!endpointUrl) {
-                console.warn('Unknown tokenizer type', type);
+                console.warn("Unknown tokenizer type", type);
                 return apiFailureTokenCount(str);
             }
             return countTokensFromServer(endpointUrl, str);
@@ -407,14 +450,17 @@ function callTokenizer(type, str) {
  * @returns {Promise<number>} Token count.
  */
 function callTokenizerAsync(type, str) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         if (type === tokenizers.NONE) {
             return resolve(guesstimate(str));
         }
 
         switch (type) {
             case tokenizers.API_CURRENT:
-                return callTokenizerAsync(currentRemoteTokenizerAPI(), str).then(resolve);
+                return callTokenizerAsync(
+                    currentRemoteTokenizerAPI(),
+                    str,
+                ).then(resolve);
             case tokenizers.API_KOBOLD:
                 return countTokensFromKoboldAPI(str, resolve);
             case tokenizers.API_TEXTGENERATIONWEBUI:
@@ -422,7 +468,7 @@ function callTokenizerAsync(type, str) {
             default: {
                 const endpointUrl = TOKENIZER_URLS[type]?.count;
                 if (!endpointUrl) {
-                    console.warn('Unknown tokenizer type', type);
+                    console.warn("Unknown tokenizer type", type);
                     return resolve(apiFailureTokenCount(str));
                 }
                 return countTokensFromServer(endpointUrl, str, resolve);
@@ -438,14 +484,14 @@ function callTokenizerAsync(type, str) {
  * @returns {Promise<number>} Token count.
  */
 export async function getTokenCountAsync(str, padding = undefined) {
-    if (typeof str !== 'string' || !str?.length) {
+    if (typeof str !== "string" || !str?.length) {
         return 0;
     }
 
     let tokenizerType = power_user.tokenizer;
-    let modelHash = '';
+    let modelHash = "";
 
-    if (main_api === 'openai') {
+    if (main_api === "openai") {
         if (padding === power_user.token_padding) {
             // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
@@ -460,7 +506,9 @@ export async function getTokenCountAsync(str, padding = undefined) {
     }
 
     if (tokenizerType === tokenizers.API_TEXTGENERATIONWEBUI) {
-        modelHash = getStringHash(getTextGenModel() || online_status).toString();
+        modelHash = getStringHash(
+            getTextGenModel() || online_status,
+        ).toString();
     }
 
     if (padding === undefined) {
@@ -471,14 +519,14 @@ export async function getTokenCountAsync(str, padding = undefined) {
     const hash = getStringHash(str);
     const cacheKey = `${tokenizerType}-${hash}${modelHash}+${padding}`;
 
-    if (typeof cacheObject[cacheKey] === 'number') {
+    if (typeof cacheObject[cacheKey] === "number") {
         return cacheObject[cacheKey];
     }
 
     const result = (await callTokenizerAsync(tokenizerType, str)) + padding;
 
     if (isNaN(result)) {
-        console.warn('Token count calculation returned NaN');
+        console.warn("Token count calculation returned NaN");
         return 0;
     }
 
@@ -494,14 +542,14 @@ export async function getTokenCountAsync(str, padding = undefined) {
  * @deprecated Use getTokenCountAsync instead.
  */
 export function getTokenCount(str, padding = undefined) {
-    if (typeof str !== 'string' || !str?.length) {
+    if (typeof str !== "string" || !str?.length) {
         return 0;
     }
 
     let tokenizerType = power_user.tokenizer;
-    let modelHash = '';
+    let modelHash = "";
 
-    if (main_api === 'openai') {
+    if (main_api === "openai") {
         if (padding === power_user.token_padding) {
             // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
@@ -516,7 +564,9 @@ export function getTokenCount(str, padding = undefined) {
     }
 
     if (tokenizerType === tokenizers.API_TEXTGENERATIONWEBUI) {
-        modelHash = getStringHash(getTextGenModel() || online_status).toString();
+        modelHash = getStringHash(
+            getTextGenModel() || online_status,
+        ).toString();
     }
 
     if (padding === undefined) {
@@ -527,14 +577,14 @@ export function getTokenCount(str, padding = undefined) {
     const hash = getStringHash(str);
     const cacheKey = `${tokenizerType}-${hash}${modelHash}+${padding}`;
 
-    if (typeof cacheObject[cacheKey] === 'number') {
+    if (typeof cacheObject[cacheKey] === "number") {
         return cacheObject[cacheKey];
     }
 
     const result = callTokenizer(tokenizerType, str) + padding;
 
     if (isNaN(result)) {
-        console.warn('Token count calculation returned NaN');
+        console.warn("Token count calculation returned NaN");
         return 0;
     }
 
@@ -549,7 +599,7 @@ export function getTokenCount(str, padding = undefined) {
  * @deprecated Use counterWrapperOpenAIAsync instead.
  */
 function counterWrapperOpenAI(text) {
-    const message = { role: 'system', content: text };
+    const message = { role: "system", content: text };
     return countTokensOpenAI(message, true);
 }
 
@@ -559,7 +609,7 @@ function counterWrapperOpenAI(text) {
  * @returns {Promise<number>} Token count.
  */
 function counterWrapperOpenAIAsync(text) {
-    const message = { role: 'system', content: text };
+    const message = { role: "system", content: text };
     return countTokensOpenAIAsync(message, true);
 }
 
@@ -569,114 +619,119 @@ export function getTokenizerModel() {
         return oai_settings.openai_model;
     }
 
-    const turboTokenizer = 'gpt-3.5-turbo';
-    const gpt4Tokenizer = 'gpt-4';
-    const gpt4oTokenizer = 'gpt-4o';
-    const gpt2Tokenizer = 'gpt2';
-    const claudeTokenizer = 'claude';
-    const llamaTokenizer = 'llama';
-    const llama3Tokenizer = 'llama3';
-    const mistralTokenizer = 'mistral';
-    const yiTokenizer = 'yi';
-    const gemmaTokenizer = 'gemma';
-    const jambaTokenizer = 'jamba';
-    const qwen2Tokenizer = 'qwen2';
-    const commandRTokenizer = 'command-r';
-    const commandATokenizer = 'command-a';
-    const nemoTokenizer = 'nemo';
-    const deepseekTokenizer = 'deepseek';
+    const turboTokenizer = "gpt-3.5-turbo";
+    const gpt4Tokenizer = "gpt-4";
+    const gpt4oTokenizer = "gpt-4o";
+    const gpt2Tokenizer = "gpt2";
+    const claudeTokenizer = "claude";
+    const llamaTokenizer = "llama";
+    const llama3Tokenizer = "llama3";
+    const mistralTokenizer = "mistral";
+    const yiTokenizer = "yi";
+    const gemmaTokenizer = "gemma";
+    const jambaTokenizer = "jamba";
+    const qwen2Tokenizer = "qwen2";
+    const commandRTokenizer = "command-r";
+    const commandATokenizer = "command-a";
+    const nemoTokenizer = "nemo";
+    const deepseekTokenizer = "deepseek";
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         return gpt4Tokenizer;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+    if (
+        oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK
+    ) {
         return deepseekTokenizer;
     }
 
     // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
-        if (oai_settings.windowai_model.includes('gpt-4')) {
+    if (
+        oai_settings.chat_completion_source ==
+            chat_completion_sources.WINDOWAI &&
+        oai_settings.windowai_model
+    ) {
+        if (oai_settings.windowai_model.includes("gpt-4")) {
             return gpt4Tokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
+        } else if (oai_settings.windowai_model.includes("gpt-3.5-turbo")) {
             return turboTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('claude')) {
+        } else if (oai_settings.windowai_model.includes("claude")) {
             return claudeTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
+        } else if (oai_settings.windowai_model.includes("GPT-NeoXT")) {
             return gpt2Tokenizer;
         }
     }
 
     // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
-    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model ||
-        main_api == 'textgenerationwebui' && textgen_settings.type === textgen_types.OPENROUTER && textgen_settings.openrouter_model) {
-        const model = main_api == 'openai'
-            ? model_list.find(x => x.id === oai_settings.openrouter_model)
-            : openRouterModels.find(x => x.id === textgen_settings.openrouter_model);
+    if (
+        (main_api == "openai" &&
+            oai_settings.chat_completion_source ==
+                chat_completion_sources.OPENROUTER &&
+            oai_settings.openrouter_model) ||
+        (main_api == "textgenerationwebui" &&
+            textgen_settings.type === textgen_types.OPENROUTER &&
+            textgen_settings.openrouter_model)
+    ) {
+        const model =
+            main_api == "openai"
+                ? model_list.find((x) => x.id === oai_settings.openrouter_model)
+                : openRouterModels.find(
+                      (x) => x.id === textgen_settings.openrouter_model,
+                  );
 
-        if (model?.architecture?.tokenizer === 'Llama2') {
+        if (model?.architecture?.tokenizer === "Llama2") {
             return llamaTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Llama3') {
+        } else if (model?.architecture?.tokenizer === "Llama3") {
             return llama3Tokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Mistral') {
+        } else if (model?.architecture?.tokenizer === "Mistral") {
             return mistralTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Yi') {
+        } else if (model?.architecture?.tokenizer === "Yi") {
             return yiTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Gemini') {
+        } else if (model?.architecture?.tokenizer === "Gemini") {
             return gemmaTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Qwen') {
+        } else if (model?.architecture?.tokenizer === "Qwen") {
             return qwen2Tokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Cohere') {
-            if (model?.id && model?.id.includes('command-a')) {
+        } else if (model?.architecture?.tokenizer === "Cohere") {
+            if (model?.id && model?.id.includes("command-a")) {
                 return commandATokenizer;
             }
             return commandRTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-4o')) {
+        } else if (oai_settings.openrouter_model.includes("gpt-4o")) {
             return gpt4oTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-4')) {
+        } else if (oai_settings.openrouter_model.includes("gpt-4")) {
             return gpt4Tokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
+        } else if (oai_settings.openrouter_model.includes("gpt-3.5-turbo")) {
             return turboTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('claude')) {
+        } else if (oai_settings.openrouter_model.includes("claude")) {
             return claudeTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
+        } else if (oai_settings.openrouter_model.includes("GPT-NeoXT")) {
             return gpt2Tokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('jamba')) {
+        } else if (oai_settings.openrouter_model.includes("jamba")) {
             return jambaTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('deepseek')) {
+        } else if (oai_settings.openrouter_model.includes("deepseek")) {
             return deepseekTokenizer;
         }
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
-        if (oai_settings.cohere_model.includes('command-a')) {
+        if (oai_settings.cohere_model.includes("command-a")) {
             return commandATokenizer;
         }
         return commandRTokenizer;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+    if (
+        oai_settings.chat_completion_source ==
+        chat_completion_sources.MAKERSUITE
+    ) {
         return gemmaTokenizer;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+    if (
+        oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI
+    ) {
         return gemmaTokenizer;
     }
 
@@ -688,8 +743,13 @@ export function getTokenizerModel() {
         return claudeTokenizer;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
-        if (oai_settings.mistralai_model.includes('nemo') || oai_settings.mistralai_model.includes('pixtral')) {
+    if (
+        oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI
+    ) {
+        if (
+            oai_settings.mistralai_model.includes("nemo") ||
+            oai_settings.mistralai_model.includes("pixtral")
+        ) {
             return nemoTokenizer;
         }
         return mistralTokenizer;
@@ -699,37 +759,58 @@ export function getTokenizerModel() {
         return oai_settings.custom_model;
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
-        if (oai_settings.perplexity_model.includes('sonar-reasoning') || oai_settings.perplexity_model.includes('r1-1776')) {
+    if (
+        oai_settings.chat_completion_source ===
+        chat_completion_sources.PERPLEXITY
+    ) {
+        if (
+            oai_settings.perplexity_model.includes("sonar-reasoning") ||
+            oai_settings.perplexity_model.includes("r1-1776")
+        ) {
             return deepseekTokenizer;
         }
-        if (oai_settings.perplexity_model.includes('llama-3') || oai_settings.perplexity_model.includes('llama3')) {
+        if (
+            oai_settings.perplexity_model.includes("llama-3") ||
+            oai_settings.perplexity_model.includes("llama3")
+        ) {
             return llama3Tokenizer;
         }
-        if (oai_settings.perplexity_model.includes('llama')) {
+        if (oai_settings.perplexity_model.includes("llama")) {
             return llamaTokenizer;
         }
-        if (oai_settings.perplexity_model.includes('mistral') || oai_settings.perplexity_model.includes('mixtral')) {
+        if (
+            oai_settings.perplexity_model.includes("mistral") ||
+            oai_settings.perplexity_model.includes("mixtral")
+        ) {
             return mistralTokenizer;
         }
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
-        if (oai_settings.groq_model.includes('qwen')) {
+        if (oai_settings.groq_model.includes("qwen")) {
             return qwen2Tokenizer;
         }
-        if (oai_settings.groq_model.includes('llama-3') || oai_settings.groq_model.includes('llama3')) {
+        if (
+            oai_settings.groq_model.includes("llama-3") ||
+            oai_settings.groq_model.includes("llama3")
+        ) {
             return llama3Tokenizer;
         }
-        if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
+        if (
+            oai_settings.groq_model.includes("mistral") ||
+            oai_settings.groq_model.includes("mixtral")
+        ) {
             return mistralTokenizer;
         }
-        if (oai_settings.groq_model.includes('gemma')) {
+        if (oai_settings.groq_model.includes("gemma")) {
             return gemmaTokenizer;
         }
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
+    if (
+        oai_settings.chat_completion_source ===
+        chat_completion_sources.ZEROONEAI
+    ) {
         return yiTokenizer;
     }
 
@@ -754,7 +835,7 @@ export function countTokensOpenAI(messages, full = false) {
     for (const message of messages) {
         const model = getTokenizerModel();
 
-        if (model === 'claude') {
+        if (model === "claude") {
             full = true;
         }
 
@@ -762,18 +843,16 @@ export function countTokensOpenAI(messages, full = false) {
         const cacheKey = `${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
-        if (typeof cachedCount === 'number') {
+        if (typeof cachedCount === "number") {
             token_count += cachedCount;
-        }
-
-        else {
+        } else {
             jQuery.ajax({
                 async: false,
-                type: 'POST', //
+                type: "POST", //
                 url: tokenizerEndpoint,
                 data: JSON.stringify([message]),
-                dataType: 'json',
-                contentType: 'application/json',
+                dataType: "json",
+                contentType: "application/json",
                 success: function (data) {
                     token_count += Number(data.token_count);
                     cacheObject[cacheKey] = Number(data.token_count);
@@ -806,7 +885,7 @@ export async function countTokensOpenAIAsync(messages, full = false) {
     for (const message of messages) {
         const model = getTokenizerModel();
 
-        if (model === 'claude') {
+        if (model === "claude") {
             full = true;
         }
 
@@ -814,18 +893,16 @@ export async function countTokensOpenAIAsync(messages, full = false) {
         const cacheKey = `${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
-        if (typeof cachedCount === 'number') {
+        if (typeof cachedCount === "number") {
             token_count += cachedCount;
-        }
-
-        else {
+        } else {
             const data = await jQuery.ajax({
                 async: true,
-                type: 'POST', //
+                type: "POST", //
                 url: tokenizerEndpoint,
                 data: JSON.stringify([message]),
-                dataType: 'json',
-                contentType: 'application/json',
+                dataType: "json",
+                contentType: "application/json",
             });
 
             token_count += Number(data.token_count);
@@ -843,20 +920,19 @@ export async function countTokensOpenAIAsync(messages, full = false) {
  * @returns {Object} Token cache object for the current chat.
  */
 function getTokenCacheObject() {
-    let chatId = 'undefined';
+    let chatId = "undefined";
 
     try {
         if (selected_group) {
-            chatId = groups.find(x => x.id == selected_group)?.chat_id;
-        }
-        else if (this_chid !== undefined) {
+            chatId = groups.find((x) => x.id == selected_group)?.chat_id;
+        } else if (this_chid !== undefined) {
             chatId = characters[this_chid].chat;
         }
     } catch {
-        console.log('No character / group selected. Using default cache item');
+        console.log("No character / group selected. Using default cache item");
     }
 
-    if (typeof tokenCache[chatId] !== 'object') {
+    if (typeof tokenCache[chatId] !== "object") {
         tokenCache[chatId] = {};
     }
 
@@ -871,18 +947,18 @@ function getTokenCacheObject() {
  * @returns {number} Token count.
  */
 function countTokensFromServer(endpoint, str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let tokenCount = 0;
 
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: endpoint,
         data: JSON.stringify({ text: str }),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
-            if (typeof data.count === 'number') {
+            if (typeof data.count === "number") {
                 tokenCount = data.count;
             } else {
                 tokenCount = apiFailureTokenCount(str);
@@ -902,21 +978,21 @@ function countTokensFromServer(endpoint, str, resolve) {
  * @returns {number} Token count.
  */
 function countTokensFromKoboldAPI(str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let tokenCount = 0;
 
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].count,
         data: JSON.stringify({
             text: str,
             url: api_server,
         }),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
-            if (typeof data.count === 'number') {
+            if (typeof data.count === "number") {
                 tokenCount = data.count;
             } else {
                 tokenCount = apiFailureTokenCount(str);
@@ -946,18 +1022,18 @@ function getTextgenAPITokenizationParams(str) {
  * @returns {number} Token count.
  */
 function countTokensFromTextgenAPI(str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let tokenCount = 0;
 
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: TOKENIZER_URLS[tokenizers.API_TEXTGENERATIONWEBUI].count,
         data: JSON.stringify(getTextgenAPITokenizationParams(str)),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
-            if (typeof data.count === 'number') {
+            if (typeof data.count === "number") {
                 tokenCount = data.count;
             } else {
                 tokenCount = apiFailureTokenCount(str);
@@ -971,14 +1047,20 @@ function countTokensFromTextgenAPI(str, resolve) {
 }
 
 function apiFailureTokenCount(str) {
-    console.error('Error counting tokens');
+    console.error("Error counting tokens");
     let shouldTryAgain = false;
 
     if (!sessionStorage.getItem(TOKENIZER_WARNING_KEY)) {
         const bestMatchBefore = getTokenizerBestMatch(main_api);
         sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
         const bestMatchAfter = getTokenizerBestMatch(main_api);
-        if ([tokenizers.API_TEXTGENERATIONWEBUI, tokenizers.API_KOBOLD].includes(bestMatchBefore) && bestMatchBefore !== bestMatchAfter) {
+        if (
+            [
+                tokenizers.API_TEXTGENERATIONWEBUI,
+                tokenizers.API_KOBOLD,
+            ].includes(bestMatchBefore) &&
+            bestMatchBefore !== bestMatchAfter
+        ) {
             shouldTryAgain = true;
         }
     }
@@ -999,21 +1081,21 @@ function apiFailureTokenCount(str) {
  * @returns {number[]} Array of token ids.
  */
 function getTextTokensFromServer(endpoint, str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let ids = [];
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: endpoint,
         data: JSON.stringify({ text: str }),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
             ids = data.ids;
 
             // Don't want to break reverse compatibility, so sprinkle in some of the JS magic
             if (Array.isArray(data.chunks)) {
-                Object.defineProperty(ids, 'chunks', { value: data.chunks });
+                Object.defineProperty(ids, "chunks", { value: data.chunks });
             }
 
             isAsync && resolve(ids);
@@ -1029,15 +1111,15 @@ function getTextTokensFromServer(endpoint, str, resolve) {
  * @returns {number[]} Array of token ids.
  */
 function getTextTokensFromTextgenAPI(str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let ids = [];
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: TOKENIZER_URLS[tokenizers.API_TEXTGENERATIONWEBUI].encode,
         data: JSON.stringify(getTextgenAPITokenizationParams(str)),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
             ids = data.ids;
             isAsync && resolve(ids);
@@ -1053,19 +1135,19 @@ function getTextTokensFromTextgenAPI(str, resolve) {
  * @returns {number[]} Array of token ids.
  */
 function getTextTokensFromKoboldAPI(str, resolve) {
-    const isAsync = typeof resolve === 'function';
+    const isAsync = typeof resolve === "function";
     let ids = [];
 
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].encode,
         data: JSON.stringify({
             text: str,
             url: api_server,
         }),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
             ids = data.ids;
             isAsync && resolve(ids);
@@ -1083,16 +1165,16 @@ function getTextTokensFromKoboldAPI(str, resolve) {
  * @returns {({ text: string, chunks?: string[] })} Decoded token text as a single string and individual chunks (if available).
  */
 function decodeTextTokensFromServer(endpoint, ids, resolve) {
-    const isAsync = typeof resolve === 'function';
-    let text = '';
+    const isAsync = typeof resolve === "function";
+    let text = "";
     let chunks = [];
     jQuery.ajax({
         async: isAsync,
-        type: 'POST',
+        type: "POST",
         url: endpoint,
         data: JSON.stringify({ ids: ids }),
-        dataType: 'json',
-        contentType: 'application/json',
+        dataType: "json",
+        contentType: "application/json",
         success: function (data) {
             text = data.text;
             chunks = data.chunks;
@@ -1120,13 +1202,16 @@ export function getTextTokens(tokenizerType, str) {
             const tokenizerEndpoints = TOKENIZER_URLS[tokenizerType];
             if (!tokenizerEndpoints) {
                 apiFailureTokenCount(str);
-                console.warn('Unknown tokenizer type', tokenizerType);
+                console.warn("Unknown tokenizer type", tokenizerType);
                 return [];
             }
             let endpointUrl = tokenizerEndpoints.encode;
             if (!endpointUrl) {
                 apiFailureTokenCount(str);
-                console.warn('This tokenizer type does not support encoding', tokenizerType);
+                console.warn(
+                    "This tokenizer type does not support encoding",
+                    tokenizerType,
+                );
                 return [];
             }
             if (tokenizerType === tokenizers.OPENAI) {
@@ -1150,13 +1235,16 @@ export function decodeTextTokens(tokenizerType, ids) {
     }
     const tokenizerEndpoints = TOKENIZER_URLS[tokenizerType];
     if (!tokenizerEndpoints) {
-        console.warn('Unknown tokenizer type', tokenizerType);
-        return { text: '', chunks: [] };
+        console.warn("Unknown tokenizer type", tokenizerType);
+        return { text: "", chunks: [] };
     }
     let endpointUrl = tokenizerEndpoints.decode;
     if (!endpointUrl) {
-        console.warn('This tokenizer type does not support decoding', tokenizerType);
-        return { text: '', chunks: [] };
+        console.warn(
+            "This tokenizer type does not support decoding",
+            tokenizerType,
+        );
+        return { text: "", chunks: [] };
     }
     if (tokenizerType === tokenizers.OPENAI) {
         endpointUrl += `?model=${getTokenizerModel()}`;
@@ -1174,5 +1262,10 @@ export async function initTokenizers() {
         textgen_types.APHRODITE,
     );
     await loadTokenCache();
-    registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
+    registerDebugFunction(
+        "resetTokenCache",
+        "Reset token cache",
+        "Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.",
+        resetTokenCache,
+    );
 }

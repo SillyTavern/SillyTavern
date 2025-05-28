@@ -1,16 +1,24 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import { finished } from 'node:stream/promises';
+import path from "node:path";
+import fs from "node:fs";
+import { finished } from "node:stream/promises";
 
-import mime from 'mime-types';
-import express from 'express';
-import sanitize from 'sanitize-filename';
-import fetch from 'node-fetch';
+import mime from "mime-types";
+import express from "express";
+import sanitize from "sanitize-filename";
+import fetch from "node-fetch";
 
-import { UNSAFE_EXTENSIONS } from '../constants.js';
-import { clientRelativePath } from '../util.js';
+import { UNSAFE_EXTENSIONS } from "../constants.js";
+import { clientRelativePath } from "../util.js";
 
-const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
+const VALID_CATEGORIES = [
+    "bgm",
+    "ambient",
+    "blip",
+    "live2d",
+    "vrm",
+    "character",
+    "temp",
+];
 
 /**
  * Validates the input filename for the asset.
@@ -21,29 +29,30 @@ export function validateAssetFileName(inputFilename) {
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         return {
             error: true,
-            message: 'Illegal character in filename; only alphanumeric, \'_\', \'-\' are accepted.',
+            message:
+                "Illegal character in filename; only alphanumeric, '_', '-' are accepted.",
         };
     }
 
     const inputExtension = path.extname(inputFilename).toLowerCase();
-    if (UNSAFE_EXTENSIONS.some(ext => ext === inputExtension)) {
+    if (UNSAFE_EXTENSIONS.some((ext) => ext === inputExtension)) {
         return {
             error: true,
-            message: 'Forbidden file extension.',
+            message: "Forbidden file extension.",
         };
     }
 
-    if (inputFilename.startsWith('.')) {
+    if (inputFilename.startsWith(".")) {
         return {
             error: true,
-            message: 'Filename cannot start with \'.\'',
+            message: "Filename cannot start with '.'",
         };
     }
 
     if (sanitize(inputFilename) !== inputFilename) {
         return {
             error: true,
-            message: 'Reserved or long filename.',
+            message: "Reserved or long filename.",
         };
     }
 
@@ -85,7 +94,10 @@ function ensureFoldersExist(directories) {
 
     for (const category of VALID_CATEGORIES) {
         const assetCategoryPath = path.join(folderPath, category);
-        if (fs.existsSync(assetCategoryPath) && !fs.statSync(assetCategoryPath).isDirectory()) {
+        if (
+            fs.existsSync(assetCategoryPath) &&
+            !fs.statSync(assetCategoryPath).isDirectory()
+        ) {
             fs.unlinkSync(assetCategoryPath);
         }
         if (!fs.existsSync(assetCategoryPath)) {
@@ -104,68 +116,92 @@ export const router = express.Router();
  *
  * @returns {void}
  */
-router.post('/get', async (request, response) => {
+router.post("/get", async (request, response) => {
     const folderPath = path.join(request.user.directories.assets);
     let output = {};
 
     try {
-        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-
+        if (
+            fs.existsSync(folderPath) &&
+            fs.statSync(folderPath).isDirectory()
+        ) {
             ensureFoldersExist(request.user.directories);
 
-            const folders = fs.readdirSync(folderPath, { withFileTypes: true })
-                .filter(file => file.isDirectory());
+            const folders = fs
+                .readdirSync(folderPath, { withFileTypes: true })
+                .filter((file) => file.isDirectory());
 
             for (const { name: folder } of folders) {
-                if (folder == 'temp')
-                    continue;
+                if (folder == "temp") continue;
 
                 // Live2d assets
-                if (folder == 'live2d') {
+                if (folder == "live2d") {
                     output[folder] = [];
-                    const live2d_folder = path.normalize(path.join(folderPath, folder));
+                    const live2d_folder = path.normalize(
+                        path.join(folderPath, folder),
+                    );
                     const files = getFiles(live2d_folder);
                     //console.debug("FILE FOUND:",files)
                     for (let file of files) {
-                        if (file.includes('model') && file.endsWith('.json')) {
+                        if (file.includes("model") && file.endsWith(".json")) {
                             //console.debug("Asset live2d model found:",file)
-                            output[folder].push(clientRelativePath(request.user.directories.root, file));
+                            output[folder].push(
+                                clientRelativePath(
+                                    request.user.directories.root,
+                                    file,
+                                ),
+                            );
                         }
                     }
                     continue;
                 }
 
                 // VRM assets
-                if (folder == 'vrm') {
-                    output[folder] = { 'model': [], 'animation': [] };
+                if (folder == "vrm") {
+                    output[folder] = { model: [], animation: [] };
                     // Extract models
-                    const vrm_model_folder = path.normalize(path.join(folderPath, 'vrm', 'model'));
+                    const vrm_model_folder = path.normalize(
+                        path.join(folderPath, "vrm", "model"),
+                    );
                     let files = getFiles(vrm_model_folder);
                     //console.debug("FILE FOUND:",files)
                     for (let file of files) {
-                        if (!file.endsWith('.placeholder')) {
+                        if (!file.endsWith(".placeholder")) {
                             //console.debug("Asset VRM model found:",file)
-                            output['vrm']['model'].push(clientRelativePath(request.user.directories.root, file));
+                            output["vrm"]["model"].push(
+                                clientRelativePath(
+                                    request.user.directories.root,
+                                    file,
+                                ),
+                            );
                         }
                     }
 
                     // Extract models
-                    const vrm_animation_folder = path.normalize(path.join(folderPath, 'vrm', 'animation'));
+                    const vrm_animation_folder = path.normalize(
+                        path.join(folderPath, "vrm", "animation"),
+                    );
                     files = getFiles(vrm_animation_folder);
                     //console.debug("FILE FOUND:",files)
                     for (let file of files) {
-                        if (!file.endsWith('.placeholder')) {
+                        if (!file.endsWith(".placeholder")) {
                             //console.debug("Asset VRM animation found:",file)
-                            output['vrm']['animation'].push(clientRelativePath(request.user.directories.root, file));
+                            output["vrm"]["animation"].push(
+                                clientRelativePath(
+                                    request.user.directories.root,
+                                    file,
+                                ),
+                            );
                         }
                     }
                     continue;
                 }
 
                 // Other assets (bgm/ambient/blip)
-                const files = fs.readdirSync(path.join(folderPath, folder))
-                    .filter(filename => {
-                        return filename != '.placeholder';
+                const files = fs
+                    .readdirSync(path.join(folderPath, folder))
+                    .filter((filename) => {
+                        return filename != ".placeholder";
                     });
                 output[folder] = [];
                 for (const file of files) {
@@ -173,8 +209,7 @@ router.post('/get', async (request, response) => {
                 }
             }
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
     }
     return response.send(output);
@@ -188,30 +223,35 @@ router.post('/get', async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/download', async (request, response) => {
+router.post("/download", async (request, response) => {
     const url = request.body.url;
     const inputCategory = request.body.category;
 
     // Check category
     let category = null;
-    for (let i of VALID_CATEGORIES)
-        if (i == inputCategory)
-            category = i;
+    for (let i of VALID_CATEGORIES) if (i == inputCategory) category = i;
 
     if (category === null) {
-        console.error('Bad request: unsupported asset category.');
+        console.error("Bad request: unsupported asset category.");
         return response.sendStatus(400);
     }
 
     // Validate filename
     ensureFoldersExist(request.user.directories);
     const validation = validateAssetFileName(request.body.filename);
-    if (validation.error)
-        return response.status(400).send(validation.message);
+    if (validation.error) return response.status(400).send(validation.message);
 
-    const temp_path = path.join(request.user.directories.assets, 'temp', request.body.filename);
-    const file_path = path.join(request.user.directories.assets, category, request.body.filename);
-    console.info('Request received to download', url, 'to', file_path);
+    const temp_path = path.join(
+        request.user.directories.assets,
+        "temp",
+        request.body.filename,
+    );
+    const file_path = path.join(
+        request.user.directories.assets,
+        category,
+        request.body.filename,
+    );
+    console.info("Request received to download", url, "to", file_path);
 
     try {
         // Download to temp
@@ -226,26 +266,31 @@ router.post('/download', async (request, response) => {
                 if (err) throw err;
             });
         }
-        const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+        const fileStream = fs.createWriteStream(destination, { flags: "wx" });
         // @ts-ignore
         await finished(res.body.pipe(fileStream));
 
-        if (category === 'character') {
+        if (category === "character") {
             const fileContent = fs.readFileSync(temp_path);
-            const contentType = mime.lookup(temp_path) || 'application/octet-stream';
-            response.setHeader('Content-Type', contentType);
+            const contentType =
+                mime.lookup(temp_path) || "application/octet-stream";
+            response.setHeader("Content-Type", contentType);
             response.send(fileContent);
             fs.unlinkSync(temp_path);
             return;
         }
 
         // Move into asset place
-        console.info('Download finished, moving file from', temp_path, 'to', file_path);
+        console.info(
+            "Download finished, moving file from",
+            temp_path,
+            "to",
+            file_path,
+        );
         fs.copyFileSync(temp_path, file_path);
         fs.unlinkSync(temp_path);
         response.sendStatus(200);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         response.sendStatus(500);
     }
@@ -259,27 +304,28 @@ router.post('/download', async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/delete', async (request, response) => {
+router.post("/delete", async (request, response) => {
     const inputCategory = request.body.category;
 
     // Check category
     let category = null;
-    for (let i of VALID_CATEGORIES)
-        if (i == inputCategory)
-            category = i;
+    for (let i of VALID_CATEGORIES) if (i == inputCategory) category = i;
 
     if (category === null) {
-        console.error('Bad request: unsupported asset category.');
+        console.error("Bad request: unsupported asset category.");
         return response.sendStatus(400);
     }
 
     // Validate filename
     const validation = validateAssetFileName(request.body.filename);
-    if (validation.error)
-        return response.status(400).send(validation.message);
+    if (validation.error) return response.status(400).send(validation.message);
 
-    const file_path = path.join(request.user.directories.assets, category, request.body.filename);
-    console.info('Request received to delete', category, file_path);
+    const file_path = path.join(
+        request.user.directories.assets,
+        category,
+        request.body.filename,
+    );
+    console.info("Request received to delete", category, file_path);
 
     try {
         // Delete if previous download failed
@@ -287,16 +333,14 @@ router.post('/delete', async (request, response) => {
             fs.unlink(file_path, (err) => {
                 if (err) throw err;
             });
-            console.info('Asset deleted.');
-        }
-        else {
-            console.error('Asset not found.');
+            console.info("Asset deleted.");
+        } else {
+            console.error("Asset not found.");
             response.sendStatus(400);
         }
         // Move into asset place
         response.sendStatus(200);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         response.sendStatus(500);
     }
@@ -311,7 +355,7 @@ router.post('/delete', async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/character', async (request, response) => {
+router.post("/character", async (request, response) => {
     if (request.query.name === undefined) return response.sendStatus(400);
 
     // For backwards compatibility, don't reject invalid character names, just sanitize them
@@ -320,24 +364,30 @@ router.post('/character', async (request, response) => {
 
     // Check category
     let category = null;
-    for (let i of VALID_CATEGORIES)
-        if (i == inputCategory)
-            category = i;
+    for (let i of VALID_CATEGORIES) if (i == inputCategory) category = i;
 
     if (category === null) {
-        console.error('Bad request: unsupported asset category.');
+        console.error("Bad request: unsupported asset category.");
         return response.sendStatus(400);
     }
 
-    const folderPath = path.join(request.user.directories.characters, name, category);
+    const folderPath = path.join(
+        request.user.directories.characters,
+        name,
+        category,
+    );
 
     let output = [];
     try {
-        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-
+        if (
+            fs.existsSync(folderPath) &&
+            fs.statSync(folderPath).isDirectory()
+        ) {
             // Live2d assets
-            if (category == 'live2d') {
-                const folders = fs.readdirSync(folderPath, { withFileTypes: true });
+            if (category == "live2d") {
+                const folders = fs.readdirSync(folderPath, {
+                    withFileTypes: true,
+                });
                 for (const folderInfo of folders) {
                     if (!folderInfo.isDirectory()) continue;
 
@@ -345,25 +395,31 @@ router.post('/character', async (request, response) => {
                     const live2dModelPath = path.join(folderPath, modelFolder);
                     for (let file of fs.readdirSync(live2dModelPath)) {
                         //console.debug("Character live2d model found:", file)
-                        if (file.includes('model') && file.endsWith('.json'))
-                            output.push(path.join('characters', name, category, modelFolder, file));
+                        if (file.includes("model") && file.endsWith(".json"))
+                            output.push(
+                                path.join(
+                                    "characters",
+                                    name,
+                                    category,
+                                    modelFolder,
+                                    file,
+                                ),
+                            );
                     }
                 }
                 return response.send(output);
             }
 
             // Other assets
-            const files = fs.readdirSync(folderPath)
-                .filter(filename => {
-                    return filename != '.placeholder';
-                });
+            const files = fs.readdirSync(folderPath).filter((filename) => {
+                return filename != ".placeholder";
+            });
 
             for (let i of files)
                 output.push(`/characters/${name}/${category}/${i}`);
         }
         return response.send(output);
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
         return response.sendStatus(500);
     }

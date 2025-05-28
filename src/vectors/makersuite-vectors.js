@@ -1,6 +1,6 @@
-import fetch from 'node-fetch';
-import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
-const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+import fetch from "node-fetch";
+import { SECRET_KEYS, readSecret } from "../endpoints/secrets.js";
+const API_MAKERSUITE = "https://generativelanguage.googleapis.com";
 
 /**
  * Gets the vector for the given text from gecko model
@@ -9,7 +9,9 @@ const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getMakerSuiteBatchVector(texts, directories) {
-    const promises = texts.map(text => getMakerSuiteVector(text, directories));
+    const promises = texts.map((text) =>
+        getMakerSuiteVector(text, directories),
+    );
     return await Promise.all(promises);
 }
 
@@ -23,37 +25,39 @@ export async function getMakerSuiteVector(text, directories) {
     const key = readSecret(directories, SECRET_KEYS.MAKERSUITE);
 
     if (!key) {
-        console.warn('No Google AI Studio key found');
-        throw new Error('No Google AI Studio key found');
+        console.warn("No Google AI Studio key found");
+        throw new Error("No Google AI Studio key found");
     }
 
     const apiUrl = new URL(API_MAKERSUITE);
-    const model = 'text-embedding-004';
+    const model = "text-embedding-004";
     const url = `${apiUrl.origin}/v1beta/models/${model}:embedContent?key=${key}`;
     const body = {
         content: {
-            parts: [
-                { text: text },
-            ],
+            parts: [{ text: text }],
         },
     };
 
     const response = await fetch(url, {
         body: JSON.stringify(body),
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
     });
 
     if (!response.ok) {
         const text = await response.text();
-        console.warn('Google AI Studio request failed', response.statusText, text);
-        throw new Error('Google AI Studio request failed');
+        console.warn(
+            "Google AI Studio request failed",
+            response.statusText,
+            text,
+        );
+        throw new Error("Google AI Studio request failed");
     }
 
     /** @type {any} */
     const data = await response.json();
     // noinspection JSValidateTypes
-    return data['embedding']['values'];
+    return data["embedding"]["values"];
 }

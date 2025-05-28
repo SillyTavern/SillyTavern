@@ -1,4 +1,4 @@
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
+import { getPreviewString, saveTtsProviderSettings } from "./index.js";
 
 export { SBVits2TtsProvider };
 
@@ -10,8 +10,8 @@ class SBVits2TtsProvider {
     settings;
     ready = false;
     voices = [];
-    separator = '. ';
-    audioElement = document.createElement('audio');
+    separator = ". ";
+    audioElement = document.createElement("audio");
 
     /**
      * Perform any text processing before passing to TTS engine.
@@ -20,36 +20,36 @@ class SBVits2TtsProvider {
      */
     processText(text) {
         // backup for auto_split
-        text = text.replace(/\n+/g, '<br>');
+        text = text.replace(/\n+/g, "<br>");
         return text;
     }
 
     languageLabels = {
-        'Chinese': 'ZH',
-        'English': 'EN',
-        'Japanese': 'JP',
+        Chinese: "ZH",
+        English: "EN",
+        Japanese: "JP",
     };
 
     langKey2LangCode = {
-        'ZH': 'zh-CN',
-        'EN': 'en-US',
-        'JP': 'ja-JP',
+        ZH: "zh-CN",
+        EN: "en-US",
+        JP: "ja-JP",
     };
 
     defaultSettings = {
-        provider_endpoint: 'http://localhost:5000',
+        provider_endpoint: "http://localhost:5000",
         sdp_ratio: 0.2,
         noise: 0.6,
         noisew: 0.8,
         length: 1,
-        language: 'JP',
+        language: "JP",
         auto_split: true,
         split_interval: 0.5,
-        assist_text: '',
+        assist_text: "",
         assist_text_weight: 1,
-        style: 'Neutral',
+        style: "Neutral",
         style_weight: 1,
-        reference_audio_path: '',
+        reference_audio_path: "",
     };
 
     get settingsHtml() {
@@ -86,7 +86,7 @@ class SBVits2TtsProvider {
         <input id="sbvits_length" type="range" value="${this.defaultSettings.length}" min="0.0" max="5" step="0.01" />
 
         <label for="sbvits_auto_split" class="checkbox_label">
-            <input id="sbvits_auto_split" type="checkbox" ${this.defaultSettings.auto_split ? 'checked' : ''} />
+            <input id="sbvits_auto_split" type="checkbox" ${this.defaultSettings.auto_split ? "checked" : ""} />
             Enable Text Splitting
         </label>
 
@@ -111,29 +111,35 @@ class SBVits2TtsProvider {
 
     onSettingsChange() {
         // Used when provider settings are updated from UI
-        this.settings.provider_endpoint = $('#sbvits_tts_endpoint').val();
-        this.settings.language = $('#sbvits_api_language').val();
-        this.settings.assist_text = $('#sbvits_assist_text').val();
-        this.settings.reference_audio_path = $('#sbvits_reference_audio_path').val();
+        this.settings.provider_endpoint = $("#sbvits_tts_endpoint").val();
+        this.settings.language = $("#sbvits_api_language").val();
+        this.settings.assist_text = $("#sbvits_assist_text").val();
+        this.settings.reference_audio_path = $(
+            "#sbvits_reference_audio_path",
+        ).val();
 
         // Update the default TTS settings based on input fields
-        this.settings.sdp_ratio = $('#sbvits_sdp_ratio').val();
-        this.settings.noise = $('#sbvits_noise').val();
-        this.settings.noisew = $('#sbvits_noisew').val();
-        this.settings.length = $('#sbvits_length').val();
-        this.settings.auto_split = $('#sbvits_auto_split').is(':checked');
-        this.settings.split_interval = $('#sbvits_split_interval').val();
-        this.settings.assist_text_weight = $('#sbvits_assist_text_weight').val();
-        this.settings.style_weight = $('#sbvits_style_weight').val();
+        this.settings.sdp_ratio = $("#sbvits_sdp_ratio").val();
+        this.settings.noise = $("#sbvits_noise").val();
+        this.settings.noisew = $("#sbvits_noisew").val();
+        this.settings.length = $("#sbvits_length").val();
+        this.settings.auto_split = $("#sbvits_auto_split").is(":checked");
+        this.settings.split_interval = $("#sbvits_split_interval").val();
+        this.settings.assist_text_weight = $(
+            "#sbvits_assist_text_weight",
+        ).val();
+        this.settings.style_weight = $("#sbvits_style_weight").val();
 
         // Update the UI to reflect changes
-        $('#sbvits_sdp_ratio_output').text(this.settings.sdp_ratio);
-        $('#sbvits_noise_output').text(this.settings.noise);
-        $('#sbvits_noisew_output').text(this.settings.noisew);
-        $('#sbvits_length_output').text(this.settings.length);
-        $('#sbvits_split_interval_output').text(this.settings.split_interval);
-        $('#sbvits_assist_text_weight_output').text(this.settings.assist_text_weight);
-        $('#sbvits_style_weight_output').text(this.settings.style_weight);
+        $("#sbvits_sdp_ratio_output").text(this.settings.sdp_ratio);
+        $("#sbvits_noise_output").text(this.settings.noise);
+        $("#sbvits_noisew_output").text(this.settings.noisew);
+        $("#sbvits_length_output").text(this.settings.length);
+        $("#sbvits_split_interval_output").text(this.settings.split_interval);
+        $("#sbvits_assist_text_weight_output").text(
+            this.settings.assist_text_weight,
+        );
+        $("#sbvits_style_weight_output").text(this.settings.style_weight);
 
         saveTtsProviderSettings();
         this.changeTTSSettings();
@@ -142,7 +148,7 @@ class SBVits2TtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
@@ -157,50 +163,81 @@ class SBVits2TtsProvider {
         }
 
         // Set initial values from the settings
-        $('#sbvits_tts_endpoint').val(this.settings.provider_endpoint);
-        $('#sbvits_api_language').val(this.settings.language);
-        $('#sbvits_assist_text').val(this.settings.assist_text);
-        $('#sbvits_reference_audio_path').val(this.settings.reference_audio_path);
-        $('#sbvits_sdp_ratio').val(this.settings.sdp_ratio);
-        $('#sbvits_noise').val(this.settings.noise);
-        $('#sbvits_noisew').val(this.settings.noisew);
-        $('#sbvits_length').val(this.settings.length);
-        $('#sbvits_auto_split').prop('checked', this.settings.auto_split);
-        $('#sbvits_split_interval').val(this.settings.split_interval);
-        $('#sbvits_assist_text_weight').val(this.settings.assist_text_weight);
-        $('#sbvits_style_weight').val(this.settings.style_weight);
+        $("#sbvits_tts_endpoint").val(this.settings.provider_endpoint);
+        $("#sbvits_api_language").val(this.settings.language);
+        $("#sbvits_assist_text").val(this.settings.assist_text);
+        $("#sbvits_reference_audio_path").val(
+            this.settings.reference_audio_path,
+        );
+        $("#sbvits_sdp_ratio").val(this.settings.sdp_ratio);
+        $("#sbvits_noise").val(this.settings.noise);
+        $("#sbvits_noisew").val(this.settings.noisew);
+        $("#sbvits_length").val(this.settings.length);
+        $("#sbvits_auto_split").prop("checked", this.settings.auto_split);
+        $("#sbvits_split_interval").val(this.settings.split_interval);
+        $("#sbvits_assist_text_weight").val(this.settings.assist_text_weight);
+        $("#sbvits_style_weight").val(this.settings.style_weight);
 
         // Update the UI to reflect changes
-        $('#sbvits_sdp_ratio_output').text(this.settings.sdp_ratio);
-        $('#sbvits_noise_output').text(this.settings.noise);
-        $('#sbvits_noisew_output').text(this.settings.noisew);
-        $('#sbvits_length_output').text(this.settings.length);
-        $('#sbvits_split_interval_output').text(this.settings.split_interval);
-        $('#sbvits_assist_text_weight_output').text(this.settings.assist_text_weight);
-        $('#sbvits_style_weight_output').text(this.settings.style_weight);
+        $("#sbvits_sdp_ratio_output").text(this.settings.sdp_ratio);
+        $("#sbvits_noise_output").text(this.settings.noise);
+        $("#sbvits_noisew_output").text(this.settings.noisew);
+        $("#sbvits_length_output").text(this.settings.length);
+        $("#sbvits_split_interval_output").text(this.settings.split_interval);
+        $("#sbvits_assist_text_weight_output").text(
+            this.settings.assist_text_weight,
+        );
+        $("#sbvits_style_weight_output").text(this.settings.style_weight);
 
         // Register input/change event listeners to update settings on user interaction
-        $('#sbvits_tts_endpoint').on('input', () => { this.onSettingsChange(); });
-        $('#sbvits_api_language').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_assist_text').on('input', () => { this.onSettingsChange(); });
-        $('#sbvits_reference_audio_path').on('input', () => { this.onSettingsChange(); });
-        $('#sbvits_sdp_ratio').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_noise').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_noisew').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_length').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_auto_split').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_split_interval').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_assist_text_weight').on('change', () => { this.onSettingsChange(); });
-        $('#sbvits_style_weight').on('change', () => { this.onSettingsChange(); });
+        $("#sbvits_tts_endpoint").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_api_language").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_assist_text").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_reference_audio_path").on("input", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_sdp_ratio").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_noise").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_noisew").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_length").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_auto_split").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_split_interval").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_assist_text_weight").on("change", () => {
+            this.onSettingsChange();
+        });
+        $("#sbvits_style_weight").on("change", () => {
+            this.onSettingsChange();
+        });
 
         await this.checkReady();
 
-        console.info('SBVits2: Settings loaded');
+        console.info("SBVits2: Settings loaded");
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-        await Promise.allSettled([this.fetchTtsVoiceObjects(), this.changeTTSSettings()]);
+        await Promise.allSettled([
+            this.fetchTtsVoiceObjects(),
+            this.changeTTSSettings(),
+        ]);
     }
 
     async onRefreshClick() {
@@ -220,9 +257,7 @@ class SBVits2TtsProvider {
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceObjects();
         }
-        const match = this.voices.filter(
-            v => v.name == voiceName,
-        )[0];
+        const match = this.voices.filter((v) => v.name == voiceName)[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
         }
@@ -238,12 +273,16 @@ class SBVits2TtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await fetch(`${this.settings.provider_endpoint}/models/info`);
+        const response = await fetch(
+            `${this.settings.provider_endpoint}/models/info`,
+        );
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.json()}`,
+            );
         }
         const data = await response.json();
-        const voices = Object.keys(data).flatMap(key => {
+        const voices = Object.keys(data).flatMap((key) => {
             const config = data[key];
             const spk2id = config.spk2id;
             const style2id = config.style2id;
@@ -264,8 +303,7 @@ class SBVits2TtsProvider {
     }
 
     // Each time a parameter is changed, we change the configuration
-    async changeTTSSettings() {
-    }
+    async changeTTSSettings() {}
 
     /**
      * Fetch TTS generation from the API.
@@ -276,43 +314,47 @@ class SBVits2TtsProvider {
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
-        const [model_id, speaker_id, ...rest] = voiceId.split('-');
-        const style = rest.join('-');
+        const [model_id, speaker_id, ...rest] = voiceId.split("-");
+        const style = rest.join("-");
         const params = new URLSearchParams();
         // restore for auto_split
-        inputText = inputText.replaceAll('<br>', '\n');
-        params.append('text', inputText);
-        params.append('model_id', model_id);
-        params.append('speaker_id', speaker_id);
-        params.append('sdp_ratio', this.settings.sdp_ratio);
-        params.append('noise', this.settings.noise);
-        params.append('noisew', this.settings.noisew);
-        params.append('length', this.settings.length);
-        params.append('language', this.settings.language);
-        params.append('auto_split', this.settings.auto_split);
-        params.append('split_interval', this.settings.split_interval);
+        inputText = inputText.replaceAll("<br>", "\n");
+        params.append("text", inputText);
+        params.append("model_id", model_id);
+        params.append("speaker_id", speaker_id);
+        params.append("sdp_ratio", this.settings.sdp_ratio);
+        params.append("noise", this.settings.noise);
+        params.append("noisew", this.settings.noisew);
+        params.append("length", this.settings.length);
+        params.append("language", this.settings.language);
+        params.append("auto_split", this.settings.auto_split);
+        params.append("split_interval", this.settings.split_interval);
         if (this.settings.assist_text) {
-            params.append('assist_text', this.settings.assist_text);
-            params.append('assist_text_weight', this.settings.assist_text_weight);
+            params.append("assist_text", this.settings.assist_text);
+            params.append(
+                "assist_text_weight",
+                this.settings.assist_text_weight,
+            );
         }
-        params.append('style', style);
-        params.append('style_weight', this.settings.style_weight);
+        params.append("style", style);
+        params.append("style_weight", this.settings.style_weight);
         if (this.settings.reference_audio_path) {
-            params.append('reference_audio_path', this.settings.reference_audio_path);
+            params.append(
+                "reference_audio_path",
+                this.settings.reference_audio_path,
+            );
         }
         const url = `${this.settings.provider_endpoint}/voice?${params.toString()}`;
 
-        const response = await fetch(
-            url,
-            {
-                method: 'POST',
-                headers: {
-                },
-            },
-        );
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {},
+        });
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response;
     }
@@ -324,11 +366,13 @@ class SBVits2TtsProvider {
     async previewTtsVoice(id) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
-        const lang_code = this.langKey2LangCode[this.settings.lang] ?? 'ja-JP';
+        const lang_code = this.langKey2LangCode[this.settings.lang] ?? "ja-JP";
         const text = getPreviewString(lang_code);
         const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         const audio = await response.blob();

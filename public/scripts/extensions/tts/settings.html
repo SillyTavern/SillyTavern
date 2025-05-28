@@ -2,85 +2,135 @@
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>TTS</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            <div
+                class="inline-drawer-icon fa-solid fa-circle-chevron-down down"
+            ></div>
         </div>
         <div class="inline-drawer-content">
-            <div id="tts_status">
-            </div>
-            <span data-i18n="Select TTS Provider">Select TTS Provider</span> </br>
+            <div id="tts_status"></div>
+            <span data-i18n="Select TTS Provider">Select TTS Provider</span>
+            <br />
             <div class="tts_block">
-                <select id="tts_provider" class="flex1">
-                </select>
-                <input id="tts_refresh" class="menu_button" type="submit" value="Reload" />
+                <select id="tts_provider" class="flex1"></select>
+                <input
+                    id="tts_refresh"
+                    class="menu_button"
+                    type="submit"
+                    value="Reload"
+                />
             </div>
             <div>
                 <label class="checkbox_label" for="tts_enabled">
-                    <input type="checkbox" id="tts_enabled" name="tts_enabled">
+                    <input
+                        type="checkbox"
+                        id="tts_enabled"
+                        name="tts_enabled"
+                    />
                     <small data-i18n="tts_enabled">Enabled</small>
                 </label>
                 <label class="checkbox_label" for="tts_narrate_user">
-                    <input type="checkbox" id="tts_narrate_user">
-                    <small data-i18n="Narrate user messages">Narrate user messages</small>
+                    <input type="checkbox" id="tts_narrate_user" />
+                    <small data-i18n="Narrate user messages"
+                        >Narrate user messages</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_auto_generation">
-                    <input type="checkbox" id="tts_auto_generation">
+                    <input type="checkbox" id="tts_auto_generation" />
                     <small data-i18n="Auto Generation">Auto Generation</small>
                 </label>
-                <label class="checkbox_label" for="tts_periodic_auto_generation" data-i18n="[title]Requires auto generation to be enabled." title="Requires auto generation to be enabled.">
-                    <input type="checkbox" id="tts_periodic_auto_generation">
-                    <small data-i18n="Narrate by paragraphs (when streaming)">Narrate by paragraphs (when streaming)</small>
+                <label
+                    class="checkbox_label"
+                    for="tts_periodic_auto_generation"
+                    data-i18n="[title]Requires auto generation to be enabled."
+                    title="Requires auto generation to be enabled."
+                >
+                    <input type="checkbox" id="tts_periodic_auto_generation" />
+                    <small data-i18n="Narrate by paragraphs (when streaming)"
+                        >Narrate by paragraphs (when streaming)</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_narrate_by_paragraphs">
-                    <input type="checkbox" id="tts_narrate_by_paragraphs">
-                    <small data-i18n="Narrate by paragraphs (when not streaming)">Narrate by paragraphs (when not streaming)</small>
+                    <input type="checkbox" id="tts_narrate_by_paragraphs" />
+                    <small
+                        data-i18n="Narrate by paragraphs (when not streaming)"
+                        >Narrate by paragraphs (when not streaming)</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_narrate_quoted">
-                    <input type="checkbox" id="tts_narrate_quoted">
-                    <small data-i18n="Only narrate quotes">Only narrate "quotes"</small>
+                    <input type="checkbox" id="tts_narrate_quoted" />
+                    <small data-i18n="Only narrate quotes"
+                        >Only narrate "quotes"</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_narrate_dialogues">
-                    <input type="checkbox" id="tts_narrate_dialogues">
-                    <small data-i18n="Ignore text, even quotes, inside asterisk">Ignore *text, even "quotes", inside asterisks*</small>
+                    <input type="checkbox" id="tts_narrate_dialogues" />
+                    <small data-i18n="Ignore text, even quotes, inside asterisk"
+                        >Ignore *text, even "quotes", inside asterisks*</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_narrate_translated_only">
-                    <input type="checkbox" id="tts_narrate_translated_only">
-                    <small data-i18n="Narrate only the translated text">Narrate only the translated text</small>
+                    <input type="checkbox" id="tts_narrate_translated_only" />
+                    <small data-i18n="Narrate only the translated text"
+                        >Narrate only the translated text</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_skip_codeblocks">
-                    <input type="checkbox" id="tts_skip_codeblocks">
+                    <input type="checkbox" id="tts_skip_codeblocks" />
                     <small data-i18n="Skip codeblocks">Skip codeblocks</small>
                 </label>
                 <label class="checkbox_label" for="tts_skip_tags">
-                    <input type="checkbox" id="tts_skip_tags">
-                    <small data-i18n="Skip tagged blocks">Skip &lt;tagged&gt; blocks</small>
+                    <input type="checkbox" id="tts_skip_tags" />
+                    <small data-i18n="Skip tagged blocks"
+                        >Skip &lt;tagged&gt; blocks</small
+                    >
                 </label>
                 <label class="checkbox_label" for="tts_pass_asterisks">
-                <input type="checkbox" id="tts_pass_asterisks">
-                <small data-i18n="Pass Asterisks to TTS Engine">Pass Asterisks to TTS Engine</small>
+                    <input type="checkbox" id="tts_pass_asterisks" />
+                    <small data-i18n="Pass Asterisks to TTS Engine"
+                        >Pass Asterisks to TTS Engine</small
+                    >
                 </label>
             </div>
             <div id="playback_rate_block" class="range-block">
-                <hr>
+                <hr />
                 <div class="range-block-title justifyLeft">
-                    <small data-i18n="Audio Playback Speed">Audio Playback Speed</small>
+                    <small data-i18n="Audio Playback Speed"
+                        >Audio Playback Speed</small
+                    >
                 </div>
                 <div class="range-block-range-and-counter">
                     <div class="range-block-range">
-                        <input type="range" id="playback_rate" name="volume" min="0" max="3" step="0.05">
+                        <input
+                            type="range"
+                            id="playback_rate"
+                            name="volume"
+                            min="0"
+                            max="3"
+                            step="0.05"
+                        />
                     </div>
                     <div class="range-block-counter">
-                        <input type="number" min="0" max="3" step="0.05" data-for="playback_rate" id="playback_rate_counter">
+                        <input
+                            type="number"
+                            min="0"
+                            max="3"
+                            step="0.05"
+                            data-for="playback_rate"
+                            id="playback_rate_counter"
+                        />
                     </div>
                 </div>
             </div>
-            <div id="tts_voicemap_block">
-            </div>
-            <hr>
-            <form id="tts_provider_settings">
-            </form>
+            <div id="tts_voicemap_block"></div>
+            <hr />
+            <form id="tts_provider_settings"></form>
             <div class="tts_buttons">
-                <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
-            </div>
+                <input
+                    id="tts_voices"
+                    class="menu_button"
+                    type="submit"
+                    value="Available voices"
+                />
             </div>
         </div>
     </div>

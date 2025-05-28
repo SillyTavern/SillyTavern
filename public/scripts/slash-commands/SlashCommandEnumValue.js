@@ -9,21 +9,21 @@
  */
 export const enumTypes = {
     /** 'enum' - [string] - light orange @type {EnumType} */
-    enum: 'enum',
+    enum: "enum",
     /** 'command' - [cmd] - light yellow @type {EnumType} */
-    command: 'command',
+    command: "command",
     /** 'namedArgument' - [argName] - sky blue @type {EnumType} */
-    namedArgument: 'namedArgument',
+    namedArgument: "namedArgument",
     /** 'variable' - [punctuationL1] - pink @type {EnumType} */
-    variable: 'variable',
+    variable: "variable",
     /** 'qr' - [variable] - light blue @type {EnumType} */
-    qr: 'qr',
+    qr: "qr",
     /** 'macro' - [variableLanguage] - blue @type {EnumType} */
-    macro: 'macro',
+    macro: "macro",
     /** 'number' - [number] - light green @type {EnumType} */
-    number: 'number',
+    number: "number",
     /** 'name' - [type] - forest green @type {EnumType} */
-    name: 'name',
+    name: "name",
 
     /**
      * Gets the value of the enum type based on the provided index
@@ -42,8 +42,8 @@ export const enumTypes = {
 export class SlashCommandEnumValue {
     /**@type {string}*/ value;
     /**@type {string}*/ description;
-    /**@type {EnumType}*/ type = 'enum';
-    /**@type {string}*/ typeIcon = '◊';
+    /**@type {EnumType}*/ type = "enum";
+    /**@type {string}*/ typeIcon = "◊";
     /**@type {(input:string)=>boolean}*/ matchProvider;
     /**@type {(input:string)=>string}*/ valueProvider;
     /**@type {boolean}*/ makeSelectable = false;
@@ -59,10 +59,18 @@ export class SlashCommandEnumValue {
      * @param {(input:string)=>string?} valueProvider - A function returning a value to be used in autocomplete instead of the enum value. "input" is the part of the text that is getting auto completed. By default, values with a valueProvider will not be selectable in the autocomplete (with tab/enter).
      * @param {boolean?} makeSelectable - Set to true to make the value selectable (through tab/enter) even though a valueProvider exists.
      */
-    constructor(value, description = null, type = 'enum', typeIcon = '◊', matchProvider = null, valueProvider = null, makeSelectable = false) {
+    constructor(
+        value,
+        description = null,
+        type = "enum",
+        typeIcon = "◊",
+        matchProvider = null,
+        valueProvider = null,
+        makeSelectable = false,
+    ) {
         this.value = value;
         this.description = description;
-        this.type = type ?? 'enum';
+        this.type = type ?? "enum";
         this.typeIcon = typeIcon;
         this.matchProvider = matchProvider;
         this.valueProvider = valueProvider;

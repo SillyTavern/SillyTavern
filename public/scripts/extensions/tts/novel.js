@@ -1,8 +1,8 @@
-import { getRequestHeaders } from '../../../script.js';
-import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
-import { splitRecursive } from '../../utils.js';
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
-import { initVoiceMap } from './index.js';
+import { getRequestHeaders } from "../../../script.js";
+import { POPUP_TYPE, callGenericPopup } from "../../popup.js";
+import { splitRecursive } from "../../utils.js";
+import { getPreviewString, saveTtsProviderSettings } from "./index.js";
+import { initVoiceMap } from "./index.js";
 
 export { NovelTtsProvider };
 
@@ -13,8 +13,8 @@ class NovelTtsProvider {
 
     settings;
     voices = [];
-    separator = ' . ';
-    audioElement = document.createElement('audio');
+    separator = " . ";
+    audioElement = document.createElement("audio");
 
     defaultSettings = {
         voiceMap: {},
@@ -28,9 +28,9 @@ class NovelTtsProvider {
      */
     processText(text) {
         // Novel reads tilde as a word. Replace with full stop
-        text = text.replace(/~/g, '.');
+        text = text.replace(/~/g, ".");
         // Novel reads asterisk as a word. Remove it
-        text = text.replace(/\*/g, '');
+        text = text.replace(/\*/g, "");
         return text;
     }
 
@@ -54,10 +54,12 @@ class NovelTtsProvider {
         return html;
     }
 
-
     // Add a new Novel custom voice to provider
     async addCustomVoice() {
-        const voiceName = await callGenericPopup('Custom Voice name:',  POPUP_TYPE.INPUT);
+        const voiceName = await callGenericPopup(
+            "Custom Voice name:",
+            POPUP_TYPE.INPUT,
+        );
         this.settings.customVoices.push(voiceName);
         this.populateCustomVoices();
         initVoiceMap(); // Update TTS extension voiceMap
@@ -66,7 +68,9 @@ class NovelTtsProvider {
 
     // Delete selected custom voice from provider
     deleteCustomVoice() {
-        const selected = $('#tts-novel-custom-voices-select').find(':selected').val();
+        const selected = $("#tts-novel-custom-voices-select")
+            .find(":selected")
+            .val();
         const voiceIndex = this.settings.customVoices.indexOf(selected);
 
         if (voiceIndex !== -1) {
@@ -79,9 +83,9 @@ class NovelTtsProvider {
 
     // Create the UI dropdown list of voices in provider
     populateCustomVoices() {
-        let voiceSelect = $('#tts-novel-custom-voices-select');
+        let voiceSelect = $("#tts-novel-custom-voices-select");
         voiceSelect.empty();
-        this.settings.customVoices.forEach(voice => {
+        this.settings.customVoices.forEach((voice) => {
             voiceSelect.append(`<option>${voice}</option>`);
         });
     }
@@ -89,10 +93,14 @@ class NovelTtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
-        $('#tts-novel-custom-voices-add').on('click', () => (this.addCustomVoice()));
-        $('#tts-novel-custom-voices-delete').on('click', () => (this.deleteCustomVoice()));
+        $("#tts-novel-custom-voices-add").on("click", () =>
+            this.addCustomVoice(),
+        );
+        $("#tts-novel-custom-voices-delete").on("click", () =>
+            this.deleteCustomVoice(),
+        );
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings;
@@ -107,7 +115,7 @@ class NovelTtsProvider {
 
         this.populateCustomVoices();
         await this.checkReady();
-        console.debug('NovelTTS: Settings loaded');
+        console.debug("NovelTTS: Settings loaded");
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -126,10 +134,15 @@ class NovelTtsProvider {
 
     async getVoice(voiceName) {
         if (!voiceName) {
-            throw 'TTS Voice name not provided';
+            throw "TTS Voice name not provided";
         }
 
-        return { name: voiceName, voice_id: voiceName, lang: 'en-US', preview_url: false };
+        return {
+            name: voiceName,
+            voice_id: voiceName,
+            lang: "en-US",
+            preview_url: false,
+        };
     }
 
     async generateTts(text, voiceId) {
@@ -142,36 +155,93 @@ class NovelTtsProvider {
     //###########//
     async fetchTtsVoiceObjects() {
         let voices = [
-            { name: 'Ligeia', voice_id: 'Ligeia', lang: 'en-US', preview_url: false },
-            { name: 'Aini', voice_id: 'Aini', lang: 'en-US', preview_url: false },
-            { name: 'Orea', voice_id: 'Orea', lang: 'en-US', preview_url: false },
-            { name: 'Claea', voice_id: 'Claea', lang: 'en-US', preview_url: false },
-            { name: 'Lim', voice_id: 'Lim', lang: 'en-US', preview_url: false },
-            { name: 'Aurae', voice_id: 'Aurae', lang: 'en-US', preview_url: false },
-            { name: 'Naia', voice_id: 'Naia', lang: 'en-US', preview_url: false },
-            { name: 'Aulon', voice_id: 'Aulon', lang: 'en-US', preview_url: false },
-            { name: 'Elei', voice_id: 'Elei', lang: 'en-US', preview_url: false },
-            { name: 'Ogma', voice_id: 'Ogma', lang: 'en-US', preview_url: false },
-            { name: 'Raid', voice_id: 'Raid', lang: 'en-US', preview_url: false },
-            { name: 'Pega', voice_id: 'Pega', lang: 'en-US', preview_url: false },
-            { name: 'Lam', voice_id: 'Lam', lang: 'en-US', preview_url: false },
+            {
+                name: "Ligeia",
+                voice_id: "Ligeia",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Aini",
+                voice_id: "Aini",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Orea",
+                voice_id: "Orea",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Claea",
+                voice_id: "Claea",
+                lang: "en-US",
+                preview_url: false,
+            },
+            { name: "Lim", voice_id: "Lim", lang: "en-US", preview_url: false },
+            {
+                name: "Aurae",
+                voice_id: "Aurae",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Naia",
+                voice_id: "Naia",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Aulon",
+                voice_id: "Aulon",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Elei",
+                voice_id: "Elei",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Ogma",
+                voice_id: "Ogma",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Raid",
+                voice_id: "Raid",
+                lang: "en-US",
+                preview_url: false,
+            },
+            {
+                name: "Pega",
+                voice_id: "Pega",
+                lang: "en-US",
+                preview_url: false,
+            },
+            { name: "Lam", voice_id: "Lam", lang: "en-US", preview_url: false },
         ];
 
         // Add in custom voices to the map
-        let addVoices = this.settings.customVoices.map(voice =>
-            ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false }),
-        );
+        let addVoices = this.settings.customVoices.map((voice) => ({
+            name: voice,
+            voice_id: voice,
+            lang: "en-US",
+            preview_url: false,
+        }));
         voices = voices.concat(addVoices);
 
         return voices;
     }
 
-
     async previewTtsVoice(id) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
 
-        const text = getPreviewString('en-US');
+        const text = getPreviewString("en-US");
         const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -184,24 +254,24 @@ class NovelTtsProvider {
         this.audioElement.onended = () => URL.revokeObjectURL(url);
     }
 
-    async* fetchTtsGeneration(inputText, voiceId) {
+    async *fetchTtsGeneration(inputText, voiceId) {
         const MAX_LENGTH = 1000;
         console.info(`Generating new TTS for voice_id ${voiceId}`);
         const chunks = splitRecursive(inputText, MAX_LENGTH);
         for (const chunk of chunks) {
-            const response = await fetch('/api/novelai/generate-voice',
-                {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        'text': chunk,
-                        'voice': voiceId,
-                    }),
-                },
-            );
+            const response = await fetch("/api/novelai/generate-voice", {
+                method: "POST",
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    text: chunk,
+                    voice: voiceId,
+                }),
+            });
             if (!response.ok) {
-                toastr.error(response.statusText, 'TTS Generation Failed');
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                toastr.error(response.statusText, "TTS Generation Failed");
+                throw new Error(
+                    `HTTP ${response.status}: ${await response.text()}`,
+                );
             }
             yield response;
         }

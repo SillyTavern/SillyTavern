@@ -1,13 +1,16 @@
 /* Polyfill indexOf. */
 var indexOf;
 
-if (typeof Array.prototype.indexOf === 'function') {
+if (typeof Array.prototype.indexOf === "function") {
     indexOf = function (haystack, needle) {
         return haystack.indexOf(needle);
     };
 } else {
     indexOf = function (haystack, needle) {
-        var i = 0, length = haystack.length, idx = -1, found = false;
+        var i = 0,
+            length = haystack.length,
+            idx = -1,
+            found = false;
 
         while (i < length && !found) {
             if (haystack[i] === needle) {
@@ -20,8 +23,7 @@ if (typeof Array.prototype.indexOf === 'function') {
 
         return idx;
     };
-};
-
+}
 
 /* Polyfill EventEmitter. */
 /**
@@ -43,11 +45,11 @@ var EventEmitter = function (autoFireAfterEmit = []) {
 EventEmitter.prototype.on = function (event, listener) {
     // Unknown event used by external libraries?
     if (event === undefined) {
-        console.trace('EventEmitter: Cannot listen to undefined event');
+        console.trace("EventEmitter: Cannot listen to undefined event");
         return;
     }
 
-    if (typeof this.events[event] !== 'object') {
+    if (typeof this.events[event] !== "object") {
         this.events[event] = [];
     }
 
@@ -64,7 +66,7 @@ EventEmitter.prototype.on = function (event, listener) {
  * @param {function} listener Event listener
  */
 EventEmitter.prototype.makeLast = function (event, listener) {
-    if (typeof this.events[event] !== 'object') {
+    if (typeof this.events[event] !== "object") {
         this.events[event] = [];
     }
 
@@ -80,7 +82,7 @@ EventEmitter.prototype.makeLast = function (event, listener) {
     if (this.autoFireAfterEmit.has(event) && this.autoFireLastArgs.has(event)) {
         listener.apply(this, this.autoFireLastArgs.get(event));
     }
-}
+};
 
 /**
  * Makes the listener the first to be called when the event is emitted
@@ -88,7 +90,7 @@ EventEmitter.prototype.makeLast = function (event, listener) {
  * @param {function} listener Event listener
  */
 EventEmitter.prototype.makeFirst = function (event, listener) {
-    if (typeof this.events[event] !== 'object') {
+    if (typeof this.events[event] !== "object") {
         this.events[event] = [];
     }
 
@@ -104,7 +106,7 @@ EventEmitter.prototype.makeFirst = function (event, listener) {
     if (this.autoFireAfterEmit.has(event) && this.autoFireLastArgs.has(event)) {
         listener.apply(this, this.autoFireLastArgs.get(event));
     }
-}
+};
 
 /**
  * Removes a listener from an event.
@@ -114,7 +116,7 @@ EventEmitter.prototype.makeFirst = function (event, listener) {
 EventEmitter.prototype.removeListener = function (event, listener) {
     var idx;
 
-    if (typeof this.events[event] === 'object') {
+    if (typeof this.events[event] === "object") {
         idx = indexOf(this.events[event], listener);
 
         if (idx > -1) {
@@ -129,25 +131,24 @@ EventEmitter.prototype.removeListener = function (event, listener) {
  */
 EventEmitter.prototype.emit = async function (event) {
     let args = [].slice.call(arguments, 1);
-    if (localStorage.getItem('eventTracing') === 'true') {
-        console.trace('Event emitted: ' + event, args);
+    if (localStorage.getItem("eventTracing") === "true") {
+        console.trace("Event emitted: " + event, args);
     } else {
-        console.debug('Event emitted: ' + event);
+        console.debug("Event emitted: " + event);
     }
 
     let i, listeners, length;
 
-    if (typeof this.events[event] === 'object') {
+    if (typeof this.events[event] === "object") {
         listeners = this.events[event].slice();
         length = listeners.length;
 
         for (i = 0; i < length; i++) {
             try {
                 await listeners[i].apply(this, args);
-            }
-            catch (err) {
+            } catch (err) {
                 console.error(err);
-                console.trace('Error in event listener');
+                console.trace("Error in event listener");
             }
         }
     }
@@ -159,25 +160,24 @@ EventEmitter.prototype.emit = async function (event) {
 
 EventEmitter.prototype.emitAndWait = function (event) {
     let args = [].slice.call(arguments, 1);
-    if (localStorage.getItem('eventTracing') === 'true') {
-        console.trace('Event emitted: ' + event, args);
+    if (localStorage.getItem("eventTracing") === "true") {
+        console.trace("Event emitted: " + event, args);
     } else {
-        console.debug('Event emitted: ' + event);
+        console.debug("Event emitted: " + event);
     }
 
     let i, listeners, length;
 
-    if (typeof this.events[event] === 'object') {
+    if (typeof this.events[event] === "object") {
         listeners = this.events[event].slice();
         length = listeners.length;
 
         for (i = 0; i < length; i++) {
             try {
                 listeners[i].apply(this, args);
-            }
-            catch (err) {
+            } catch (err) {
                 console.error(err);
-                console.trace('Error in event listener');
+                console.trace("Error in event listener");
             }
         }
     }
@@ -194,4 +194,4 @@ EventEmitter.prototype.once = function (event, listener) {
     });
 };
 
-export { EventEmitter }
+export { EventEmitter };

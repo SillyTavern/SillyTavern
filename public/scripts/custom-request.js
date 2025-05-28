@@ -1,10 +1,19 @@
-import { getPresetManager } from './preset-manager.js';
-import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { getTextGenServer } from './textgen-settings.js';
-import { extractReasoningFromData } from './reasoning.js';
-import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences, names_behavior_types } from './instruct-mode.js';
-import { getStreamingReply, tryParseStreamingError } from './openai.js';
-import EventSourceStream from './sse-stream.js';
+import { getPresetManager } from "./preset-manager.js";
+import {
+    extractMessageFromData,
+    getGenerateUrl,
+    getRequestHeaders,
+} from "../script.js";
+import { getTextGenServer } from "./textgen-settings.js";
+import { extractReasoningFromData } from "./reasoning.js";
+import {
+    formatInstructModeChat,
+    formatInstructModePrompt,
+    getInstructStoppingSequences,
+    names_behavior_types,
+} from "./instruct-mode.js";
+import { getStreamingReply, tryParseStreamingError } from "./openai.js";
+import EventSourceStream from "./sse-stream.js";
 
 // #region Type Definitions
 /**
@@ -74,13 +83,23 @@ import EventSourceStream from './sse-stream.js';
  * Creates & sends a text completion request.
  */
 export class TextCompletionService {
-    static TYPE = 'textgenerationwebui';
+    static TYPE = "textgenerationwebui";
 
     /**
      * @param {Record<string, any> & TextCompletionRequestBase & {prompt: string}} custom
      * @returns {TextCompletionPayload}
      */
-    static createRequestData({ stream = false, prompt, max_tokens, model, api_type, api_server, temperature, min_p, ...props }) {
+    static createRequestData({
+        stream = false,
+        prompt,
+        max_tokens,
+        model,
+        api_type,
+        api_server,
+        temperature,
+        min_p,
+        ...props
+    }) {
         const payload = {
             stream,
             prompt,
@@ -95,7 +114,7 @@ export class TextCompletionService {
         };
 
         // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
+        Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) {
                 delete payload[key];
             }
@@ -115,9 +134,9 @@ export class TextCompletionService {
     static async sendRequest(data, extractData = true, signal = null) {
         if (!data.stream) {
             const response = await fetch(getGenerateUrl(this.TYPE), {
-                method: 'POST',
+                method: "POST",
                 headers: getRequestHeaders(),
-                cache: 'no-cache',
+                cache: "no-cache",
                 body: JSON.stringify(data),
                 signal: signal ?? new AbortController().signal,
             });
@@ -141,13 +160,16 @@ export class TextCompletionService {
             };
         }
 
-        const response = await fetch('/api/backends/text-completions/generate', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify(data),
-            signal: signal ?? new AbortController().signal,
-        });
+        const response = await fetch(
+            "/api/backends/text-completions/generate",
+            {
+                method: "POST",
+                headers: getRequestHeaders(),
+                cache: "no-cache",
+                body: JSON.stringify(data),
+                signal: signal ?? new AbortController().signal,
+            },
+        );
 
         if (!response.ok) {
             const text = await response.text();
@@ -160,13 +182,13 @@ export class TextCompletionService {
         response.body.pipeThrough(eventStream);
         const reader = eventStream.readable.getReader();
         return async function* streamData() {
-            let text = '';
+            let text = "";
             const swipes = [];
-            const state = { reasoning: '' };
+            const state = { reasoning: "" };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
-                if (value.data === '[DONE]') return;
+                if (value.data === "[DONE]") return;
 
                 tryParseStreamingError(response, value.data, { quiet: true });
 
@@ -174,11 +196,13 @@ export class TextCompletionService {
 
                 if (data?.choices?.[0]?.index > 0) {
                     const swipeIndex = data.choices[0].index - 1;
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+                    swipes[swipeIndex] =
+                        (swipes[swipeIndex] || "") + data.choices[0].text;
                 } else {
-                    const newText = data?.choices?.[0]?.text || data?.content || '';
+                    const newText =
+                        data?.choices?.[0]?.text || data?.content || "";
                     text += newText;
-                    state.reasoning += data?.choices?.[0]?.reasoning ?? '';
+                    state.reasoning += data?.choices?.[0]?.reasoning ?? "";
                 }
 
                 yield { text, swipes, state };
@@ -212,26 +236,34 @@ export class TextCompletionService {
         if (presetName) {
             const presetManager = getPresetManager(this.TYPE);
             if (presetManager) {
-                const preset = presetManager.getCompletionPresetByName(presetName);
+                const preset =
+                    presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
+                    const presetPayload = this.presetToGeneratePayload(
+                        preset,
+                        {},
+                    );
                     requestData = { ...presetPayload, ...requestData };
                 } else {
-                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
+                    console.warn(
+                        `Preset "${presetName}" not found, continuing with default settings`,
+                    );
                 }
             } else {
-                console.warn('Preset manager not found, continuing with default settings');
+                console.warn(
+                    "Preset manager not found, continuing with default settings",
+                );
             }
         }
-
 
         /** @type {InstructSettings | undefined} */
         let instructPreset;
         // Handle instruct formatting if requested
         if (Array.isArray(prompt) && instructName) {
-            const instructPresetManager = getPresetManager('instruct');
-            instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
+            const instructPresetManager = getPresetManager("instruct");
+            instructPreset =
+                instructPresetManager?.getCompletionPresetByName(instructName);
             if (instructPreset) {
                 // Clone the preset to avoid modifying the original
                 instructPreset = structuredClone(instructPreset);
@@ -242,11 +274,15 @@ export class TextCompletionService {
 
                 // Format messages using instruct formatting
                 const formattedMessages = [];
-                const prefillActive = prompt.length > 0 ? prompt[prompt.length - 1].role === 'assistant' : false;
+                const prefillActive =
+                    prompt.length > 0
+                        ? prompt[prompt.length - 1].role === "assistant"
+                        : false;
                 for (const message of prompt) {
                     let messageContent = message.content;
                     if (!message.ignoreInstruct) {
-                        const isLastMessage = message === prompt[prompt.length - 1];
+                        const isLastMessage =
+                            message === prompt[prompt.length - 1];
 
                         // This complicated logic means:
                         // 1. If prefill is not active, format all messages
@@ -255,7 +291,7 @@ export class TextCompletionService {
                             messageContent = formatInstructModeChat(
                                 message.role,
                                 message.content,
-                                message.role === 'user',
+                                message.role === "user",
                                 false,
                                 undefined,
                                 undefined,
@@ -267,7 +303,8 @@ export class TextCompletionService {
 
                         // Add prompt formatting for the last message.
                         if (isLastMessage) {
-                            if (!prefillActive) { // e.g. "<|im_start|>user:"
+                            if (!prefillActive) {
+                                // e.g. "<|im_start|>user:"
                                 messageContent += formatInstructModePrompt(
                                     undefined,
                                     false,
@@ -278,9 +315,11 @@ export class TextCompletionService {
                                     false,
                                     instructPreset,
                                 );
-                            } else { // e.g. "<|im_start|>assistant: Hello, my name is"
-                                const overridenInstructPreset = structuredClone(instructPreset);
-                                overridenInstructPreset.output_suffix = '';
+                            } else {
+                                // e.g. "<|im_start|>assistant: Hello, my name is"
+                                const overridenInstructPreset =
+                                    structuredClone(instructPreset);
+                                overridenInstructPreset.output_suffix = "";
                                 overridenInstructPreset.wrap = false;
                                 messageContent = formatInstructModeChat(
                                     message.role,
@@ -298,18 +337,23 @@ export class TextCompletionService {
                     }
                     formattedMessages.push(messageContent);
                 }
-                requestData.prompt = formattedMessages.join('');
-                const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
+                requestData.prompt = formattedMessages.join("");
+                const stoppingStrings = getInstructStoppingSequences({
+                    customInstruct: instructPreset,
+                    useStopStrings: false,
+                });
                 requestData.stop = stoppingStrings;
                 requestData.stopping_strings = stoppingStrings;
             } else {
-                console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
-                requestData.prompt = prompt.map(x => x.content).join('\n\n');
+                console.warn(
+                    `Instruct preset "${instructName}" not found, using basic formatting`,
+                );
+                requestData.prompt = prompt.map((x) => x.content).join("\n\n");
             }
-        } else if (typeof prompt === 'string') {
+        } else if (typeof prompt === "string") {
             requestData.prompt = prompt;
         } else {
-            requestData.prompt = prompt.map(x => x.content).join('\n\n');
+            requestData.prompt = prompt.map((x) => x.content).join("\n\n");
         }
 
         // @ts-ignore
@@ -324,13 +368,15 @@ export class TextCompletionService {
 
             let message = extractedData.content;
 
-            message = message.replace(/[^\S\r\n]+$/gm, '');
+            message = message.replace(/[^\S\r\n]+$/gm, "");
 
             if (requestData.stopping_strings) {
                 for (const stoppingString of requestData.stopping_strings) {
                     if (stoppingString.length) {
                         for (let j = stoppingString.length; j > 0; j--) {
-                            if (message.slice(-j) === stoppingString.slice(0, j)) {
+                            if (
+                                message.slice(-j) === stoppingString.slice(0, j)
+                            ) {
                                 message = message.slice(0, -j);
                                 break;
                             }
@@ -343,7 +389,7 @@ export class TextCompletionService {
                 [
                     instructPreset.stop_sequence,
                     instructPreset.input_sequence,
-                ].forEach(sequence => {
+                ].forEach((sequence) => {
                     if (sequence?.trim()) {
                         const index = message.indexOf(sequence);
                         if (index !== -1) {
@@ -355,12 +401,13 @@ export class TextCompletionService {
                 [
                     instructPreset.output_sequence,
                     instructPreset.last_output_sequence,
-                ].forEach(sequences => {
+                ].forEach((sequences) => {
                     if (sequences) {
-                        sequences.split('\n')
-                            .filter(line => line.trim() !== '')
-                            .forEach(line => {
-                                message = message.replaceAll(line, '');
+                        sequences
+                            .split("\n")
+                            .filter((line) => line.trim() !== "")
+                            .forEach((line) => {
+                                message = message.replaceAll(line, "");
                             });
                     }
                 });
@@ -380,8 +427,8 @@ export class TextCompletionService {
      * @returns {Object} - Formatted payload for text completion API
      */
     static presetToGeneratePayload(preset, customPreset = {}) {
-        if (!preset || typeof preset !== 'object') {
-            throw new Error('Invalid preset: must be an object');
+        if (!preset || typeof preset !== "object") {
+            throw new Error("Invalid preset: must be an object");
         }
 
         // Merge preset with custom parameters
@@ -389,12 +436,12 @@ export class TextCompletionService {
 
         // Initialize base payload with common parameters
         let payload = {
-            'temperature': settings.temp ? Number(settings.temp) : undefined,
-            'min_p': settings.min_p ? Number(settings.min_p) : undefined,
+            temperature: settings.temp ? Number(settings.temp) : undefined,
+            min_p: settings.min_p ? Number(settings.min_p) : undefined,
         };
 
         // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
+        Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) {
                 delete payload[key];
             }
@@ -408,13 +455,24 @@ export class TextCompletionService {
  * Creates & sends a chat completion request.
  */
 export class ChatCompletionService {
-    static TYPE = 'openai';
+    static TYPE = "openai";
 
     /**
      * @param {ChatCompletionPayload} custom
      * @returns {ChatCompletionPayload}
      */
-    static createRequestData({ stream = false, messages, model, chat_completion_source, max_tokens, temperature, custom_url, reverse_proxy, proxy_password, ...props }) {
+    static createRequestData({
+        stream = false,
+        messages,
+        model,
+        chat_completion_source,
+        max_tokens,
+        temperature,
+        custom_url,
+        reverse_proxy,
+        proxy_password,
+        ...props
+    }) {
         const payload = {
             stream,
             messages,
@@ -431,7 +489,7 @@ export class ChatCompletionService {
         };
 
         // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
+        Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) {
                 delete payload[key];
             }
@@ -449,13 +507,16 @@ export class ChatCompletionService {
      * @throws {Error}
      */
     static async sendRequest(data, extractData = true, signal = null) {
-        const response = await fetch('/api/backends/chat-completions/generate', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify(data),
-            signal: signal ?? new AbortController().signal,
-        });
+        const response = await fetch(
+            "/api/backends/chat-completions/generate",
+            {
+                method: "POST",
+                headers: getRequestHeaders(),
+                cache: "no-cache",
+                body: JSON.stringify(data),
+                signal: signal ?? new AbortController().signal,
+            },
+        );
 
         if (!data.stream) {
             const json = await response.json();
@@ -488,14 +549,14 @@ export class ChatCompletionService {
         response.body.pipeThrough(eventStream);
         const reader = eventStream.readable.getReader();
         return async function* streamData() {
-            let text = '';
+            let text = "";
             const swipes = [];
-            const state = { reasoning: '', image: '' };
+            const state = { reasoning: "", image: "" };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
                 const rawData = value.data;
-                if (rawData === '[DONE]') return;
+                if (rawData === "[DONE]") return;
                 tryParseStreamingError(response, rawData, { quiet: true });
                 const parsed = JSON.parse(rawData);
 
@@ -503,9 +564,12 @@ export class ChatCompletionService {
                     chatCompletionSource: data.chat_completion_source,
                     overrideShowThoughts: true,
                 });
-                if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                if (
+                    Array.isArray(parsed?.choices) &&
+                    parsed?.choices?.[0]?.index > 0
+                ) {
                     const swipeIndex = parsed.choices[0].index - 1;
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + reply;
+                    swipes[swipeIndex] = (swipes[swipeIndex] || "") + reply;
                 } else {
                     text += reply;
                 }
@@ -525,7 +589,12 @@ export class ChatCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(custom, options, extractData = true, signal = null) {
+    static async processRequest(
+        custom,
+        options,
+        extractData = true,
+        signal = null,
+    ) {
         const { presetName } = options;
         let requestData = { ...custom };
 
@@ -533,16 +602,24 @@ export class ChatCompletionService {
         if (presetName) {
             const presetManager = getPresetManager(this.TYPE);
             if (presetManager) {
-                const preset = presetManager.getCompletionPresetByName(presetName);
+                const preset =
+                    presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
+                    const presetPayload = this.presetToGeneratePayload(
+                        preset,
+                        {},
+                    );
                     requestData = { ...presetPayload, ...requestData };
                 } else {
-                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
+                    console.warn(
+                        `Preset "${presetName}" not found, continuing with default settings`,
+                    );
                 }
             } else {
-                console.warn('Preset manager not found, continuing with default settings');
+                console.warn(
+                    "Preset manager not found, continuing with default settings",
+                );
             }
         }
 
@@ -559,8 +636,8 @@ export class ChatCompletionService {
      * @returns {Object} - Formatted payload for chat completion API
      */
     static presetToGeneratePayload(preset, customParams = {}) {
-        if (!preset || typeof preset !== 'object') {
-            throw new Error('Invalid preset: must be an object');
+        if (!preset || typeof preset !== "object") {
+            throw new Error("Invalid preset: must be an object");
         }
 
         // Merge preset with custom parameters
@@ -568,11 +645,13 @@ export class ChatCompletionService {
 
         // Initialize base payload with common parameters
         const payload = {
-            temperature: settings.temperature ? Number(settings.temperature) : undefined,
+            temperature: settings.temperature
+                ? Number(settings.temperature)
+                : undefined,
         };
 
         // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
+        Object.keys(payload).forEach((key) => {
             if (payload[key] === undefined) {
                 delete payload[key];
             }

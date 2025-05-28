@@ -1,5 +1,10 @@
 {{#each images}}
-<div class="expression_list_item interactable" data-expression="{{../expression}}" data-expression-type="{{this.type}}" data-filename="{{this.fileName}}">
+<div
+    class="expression_list_item interactable"
+    data-expression="{{../expression}}"
+    data-expression-type="{{this.type}}"
+    data-filename="{{this.fileName}}"
+>
     <div class="expression_list_buttons">
         <div class="menu_button expression_list_upload" title="Upload image">
             <i class="fa-solid fa-upload"></i>
@@ -11,11 +16,16 @@
     <div class="expression_list_title">
         <span>{{../expression}}</span>
         {{#if ../isCustom}}
-            <small class="expression_list_custom">(custom)</small>
+        <small class="expression_list_custom">(custom)</small>
         {{/if}}
     </div>
     <div class="expression_list_image_container" title="{{this.title}}">
-        <img class="expression_list_image" src="{{this.imageSrc}}" alt="{{this.title}}" data-epression="{{../expression}}" />
+        <img
+            class="expression_list_image"
+            src="{{this.imageSrc}}"
+            alt="{{this.title}}"
+            data-epression="{{../expression}}"
+        />
     </div>
 </div>
 {{/each}}

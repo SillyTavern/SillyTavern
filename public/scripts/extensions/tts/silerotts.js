@@ -1,5 +1,5 @@
-import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
-import { saveTtsProviderSettings } from './index.js';
+import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js";
+import { saveTtsProviderSettings } from "./index.js";
 
 export { SileroTtsProvider };
 
@@ -11,10 +11,10 @@ class SileroTtsProvider {
     settings;
     ready = false;
     voices = [];
-    separator = ' ';
+    separator = " ";
 
     defaultSettings = {
-        provider_endpoint: 'http://localhost:8001/tts',
+        provider_endpoint: "http://localhost:8001/tts",
         voiceMap: {},
     };
 
@@ -30,7 +30,7 @@ class SileroTtsProvider {
 
     onSettingsChange() {
         // Used when provider settings are updated from UI
-        this.settings.provider_endpoint = $('#silero_tts_endpoint').val();
+        this.settings.provider_endpoint = $("#silero_tts_endpoint").val();
         saveTtsProviderSettings();
         this.refreshSession();
     }
@@ -38,7 +38,7 @@ class SileroTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
@@ -54,22 +54,24 @@ class SileroTtsProvider {
 
         const apiCheckInterval = setInterval(() => {
             // Use Extras API if TTS support is enabled
-            if (modules.includes('tts') || modules.includes('silero-tts')) {
+            if (modules.includes("tts") || modules.includes("silero-tts")) {
                 const baseUrl = new URL(getApiUrl());
-                baseUrl.pathname = '/api/tts';
+                baseUrl.pathname = "/api/tts";
                 this.settings.provider_endpoint = baseUrl.toString();
-                $('#silero_tts_endpoint').val(this.settings.provider_endpoint);
+                $("#silero_tts_endpoint").val(this.settings.provider_endpoint);
                 clearInterval(apiCheckInterval);
             }
         }, 2000);
 
-        $('#silero_tts_endpoint').val(this.settings.provider_endpoint);
-        $('#silero_tts_endpoint').on('input', () => { this.onSettingsChange(); });
+        $("#silero_tts_endpoint").val(this.settings.provider_endpoint);
+        $("#silero_tts_endpoint").on("input", () => {
+            this.onSettingsChange();
+        });
         this.refreshSession();
 
         await this.checkReady();
 
-        console.debug('SileroTTS: Settings loaded');
+        console.debug("SileroTTS: Settings loaded");
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -94,7 +96,7 @@ class SileroTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            sileroVoice => sileroVoice.name == voiceName,
+            (sileroVoice) => sileroVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -111,9 +113,13 @@ class SileroTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`);
+        const response = await doExtrasFetch(
+            `${this.settings.provider_endpoint}/speakers`,
+        );
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.json()}`,
+            );
         }
         const responseJson = await response.json();
         return responseJson;
@@ -124,47 +130,51 @@ class SileroTtsProvider {
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/generate`,
             {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache',  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache", // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
-                    'text': inputText,
-                    'speaker': voiceId,
-                    'session': 'sillytavern',
+                    text: inputText,
+                    speaker: voiceId,
+                    session: "sillytavern",
                 }),
             },
         );
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         return response;
     }
 
     async initSession() {
-        console.info('Silero TTS: requesting new session');
+        console.info("Silero TTS: requesting new session");
         try {
             const response = await doExtrasFetch(
                 `${this.settings.provider_endpoint}/session`,
                 {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache',
+                        "Content-Type": "application/json",
+                        "Cache-Control": "no-cache",
                     },
                     body: JSON.stringify({
-                        'path': 'sillytavern',
+                        path: "sillytavern",
                     }),
                 },
             );
 
             if (!response.ok && response.status !== 404) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                throw new Error(
+                    `HTTP ${response.status}: ${await response.text()}`,
+                );
             }
         } catch (error) {
-            console.info('Silero TTS: endpoint not available', error);
+            console.info("Silero TTS: endpoint not available", error);
         }
     }
 
@@ -172,5 +182,4 @@ class SileroTtsProvider {
     async fetchTtsFromHistory(history_item_id) {
         return Promise.resolve(history_item_id);
     }
-
 }

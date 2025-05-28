@@ -1,17 +1,13 @@
-<h3 data-i18n="Choose what to import">
-    Choose what to import
-</h3>
+<h3 data-i18n="Choose what to import">Choose what to import</h3>
 <div class="flex-container flexFlowColumn justifyLeft">
-    {{#each sections}}
-        {{#with this}}
-            <label class="checkbox_label">
-                <input type="checkbox" value="{{key}}" checked>
-                <span data-i18n="{{name}}">{{name}}</span>
-                {{#if preset}}
-                    <span>&ndash;</span>
-                    <small>{{preset}}</small>
-                {{/if}}
-            </label>
-        {{/with}}
-    {{/each}}
+    {{#each sections}} {{#with this}}
+    <label class="checkbox_label">
+        <input type="checkbox" value="{{key}}" checked />
+        <span data-i18n="{{name}}">{{name}}</span>
+        {{#if preset}}
+        <span>&ndash;</span>
+        <small>{{preset}}</small>
+        {{/if}}
+    </label>
+    {{/with}} {{/each}}
 </div>

@@ -1,60 +1,60 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from "node:fs";
+import path from "node:path";
 
-import express from 'express';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
-import { getConfigValue } from '../util.js';
+import express from "express";
+import { sync as writeFileAtomicSync } from "write-file-atomic";
+import { getConfigValue } from "../util.js";
 
-export const SECRETS_FILE = 'secrets.json';
+export const SECRETS_FILE = "secrets.json";
 export const SECRET_KEYS = {
-    HORDE: 'api_key_horde',
-    MANCER: 'api_key_mancer',
-    VLLM: 'api_key_vllm',
-    APHRODITE: 'api_key_aphrodite',
-    TABBY: 'api_key_tabby',
-    OPENAI: 'api_key_openai',
-    NOVEL: 'api_key_novel',
-    CLAUDE: 'api_key_claude',
-    DEEPL: 'deepl',
-    LIBRE: 'libre',
-    LIBRE_URL: 'libre_url',
-    LINGVA_URL: 'lingva_url',
-    OPENROUTER: 'api_key_openrouter',
-    SCALE: 'api_key_scale',
-    AI21: 'api_key_ai21',
-    SCALE_COOKIE: 'scale_cookie',
-    ONERING_URL: 'oneringtranslator_url',
-    DEEPLX_URL: 'deeplx_url',
-    MAKERSUITE: 'api_key_makersuite',
-    VERTEXAI: 'api_key_vertexai',
-    SERPAPI: 'api_key_serpapi',
-    TOGETHERAI: 'api_key_togetherai',
-    MISTRALAI: 'api_key_mistralai',
-    CUSTOM: 'api_key_custom',
-    OOBA: 'api_key_ooba',
-    INFERMATICAI: 'api_key_infermaticai',
-    DREAMGEN: 'api_key_dreamgen',
-    NOMICAI: 'api_key_nomicai',
-    KOBOLDCPP: 'api_key_koboldcpp',
-    LLAMACPP: 'api_key_llamacpp',
-    COHERE: 'api_key_cohere',
-    PERPLEXITY: 'api_key_perplexity',
-    GROQ: 'api_key_groq',
-    AZURE_TTS: 'api_key_azure_tts',
-    FEATHERLESS: 'api_key_featherless',
-    ZEROONEAI: 'api_key_01ai',
-    HUGGINGFACE: 'api_key_huggingface',
-    STABILITY: 'api_key_stability',
-    CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
-    TAVILY: 'api_key_tavily',
-    NANOGPT: 'api_key_nanogpt',
-    BFL: 'api_key_bfl',
-    FALAI: 'api_key_falai',
-    GENERIC: 'api_key_generic',
-    DEEPSEEK: 'api_key_deepseek',
-    SERPER: 'api_key_serper',
-    XAI: 'api_key_xai',
-    VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
+    HORDE: "api_key_horde",
+    MANCER: "api_key_mancer",
+    VLLM: "api_key_vllm",
+    APHRODITE: "api_key_aphrodite",
+    TABBY: "api_key_tabby",
+    OPENAI: "api_key_openai",
+    NOVEL: "api_key_novel",
+    CLAUDE: "api_key_claude",
+    DEEPL: "deepl",
+    LIBRE: "libre",
+    LIBRE_URL: "libre_url",
+    LINGVA_URL: "lingva_url",
+    OPENROUTER: "api_key_openrouter",
+    SCALE: "api_key_scale",
+    AI21: "api_key_ai21",
+    SCALE_COOKIE: "scale_cookie",
+    ONERING_URL: "oneringtranslator_url",
+    DEEPLX_URL: "deeplx_url",
+    MAKERSUITE: "api_key_makersuite",
+    VERTEXAI: "api_key_vertexai",
+    SERPAPI: "api_key_serpapi",
+    TOGETHERAI: "api_key_togetherai",
+    MISTRALAI: "api_key_mistralai",
+    CUSTOM: "api_key_custom",
+    OOBA: "api_key_ooba",
+    INFERMATICAI: "api_key_infermaticai",
+    DREAMGEN: "api_key_dreamgen",
+    NOMICAI: "api_key_nomicai",
+    KOBOLDCPP: "api_key_koboldcpp",
+    LLAMACPP: "api_key_llamacpp",
+    COHERE: "api_key_cohere",
+    PERPLEXITY: "api_key_perplexity",
+    GROQ: "api_key_groq",
+    AZURE_TTS: "api_key_azure_tts",
+    FEATHERLESS: "api_key_featherless",
+    ZEROONEAI: "api_key_01ai",
+    HUGGINGFACE: "api_key_huggingface",
+    STABILITY: "api_key_stability",
+    CUSTOM_OPENAI_TTS: "api_key_custom_openai_tts",
+    TAVILY: "api_key_tavily",
+    NANOGPT: "api_key_nanogpt",
+    BFL: "api_key_bfl",
+    FALAI: "api_key_falai",
+    GENERIC: "api_key_generic",
+    DEEPSEEK: "api_key_deepseek",
+    SERPER: "api_key_serper",
+    XAI: "api_key_xai",
+    VERTEXAI_SERVICE_ACCOUNT: "vertexai_service_account_json",
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false
@@ -76,13 +76,13 @@ export function writeSecret(directories, key, value) {
 
     if (!fs.existsSync(filePath)) {
         const emptyFile = JSON.stringify({});
-        writeFileAtomicSync(filePath, emptyFile, 'utf-8');
+        writeFileAtomicSync(filePath, emptyFile, "utf-8");
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, "utf-8");
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), "utf-8");
 }
 
 /**
@@ -98,10 +98,10 @@ export function deleteSecret(directories, key) {
         return;
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, "utf-8");
     const secrets = JSON.parse(fileContents);
     delete secrets[key];
-    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), "utf-8");
 }
 
 /**
@@ -114,10 +114,10 @@ export function readSecret(directories, key) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
-        return '';
+        return "";
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, "utf-8");
     const secrets = JSON.parse(fileContents);
     return secrets[key];
 }
@@ -134,7 +134,7 @@ export function readSecretState(directories) {
         return {};
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf8');
+    const fileContents = fs.readFileSync(filePath, "utf8");
     const secrets = JSON.parse(fileContents);
     const state = {};
 
@@ -154,26 +154,26 @@ export function getAllSecrets(directories) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
-        console.error('Secrets file does not exist');
+        console.error("Secrets file does not exist");
         return undefined;
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf8');
+    const fileContents = fs.readFileSync(filePath, "utf8");
     const secrets = JSON.parse(fileContents);
     return secrets;
 }
 
 export const router = express.Router();
 
-router.post('/write', (request, response) => {
+router.post("/write", (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
     writeSecret(request.user.directories, key, value);
-    return response.send('ok');
+    return response.send("ok");
 });
 
-router.post('/read', (request, response) => {
+router.post("/read", (request, response) => {
     try {
         const state = readSecretState(request.user.directories);
         return response.send(state);
@@ -183,11 +183,17 @@ router.post('/read', (request, response) => {
     }
 });
 
-router.post('/view', async (request, response) => {
-    const allowKeysExposure = getConfigValue('allowKeysExposure', false, 'boolean');
+router.post("/view", async (request, response) => {
+    const allowKeysExposure = getConfigValue(
+        "allowKeysExposure",
+        false,
+        "boolean",
+    );
 
     if (!allowKeysExposure) {
-        console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
+        console.error(
+            "secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true",
+        );
         return response.sendStatus(403);
     }
 
@@ -205,12 +211,18 @@ router.post('/view', async (request, response) => {
     }
 });
 
-router.post('/find', (request, response) => {
-    const allowKeysExposure = getConfigValue('allowKeysExposure', false, 'boolean');
+router.post("/find", (request, response) => {
+    const allowKeysExposure = getConfigValue(
+        "allowKeysExposure",
+        false,
+        "boolean",
+    );
     const key = request.body.key;
 
     if (!allowKeysExposure && !EXPORTABLE_KEYS.includes(key)) {
-        console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
+        console.error(
+            "Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true",
+        );
         return response.sendStatus(403);
     }
 

@@ -1,6 +1,8 @@
 // Polyfills for old Safari versions
 if (!Object.hasOwn) {
-    Object.hasOwn = function (obj, prop) { return obj.hasOwnProperty(prop); }
+    Object.hasOwn = function (obj, prop) {
+        return obj.hasOwnProperty(prop);
+    };
 }
 
 if (!Array.prototype.findLastIndex) {

@@ -85,21 +85,21 @@
  */
 
 /**
-* @typedef {object} RegexScriptData
-* @property {string} id - UUID of the script
-* @property {string} scriptName - The name of the script
-* @property {string} findRegex - The regex to find
-* @property {string} replaceString - The string to replace
-* @property {string[]} trimStrings - The strings to trim
-* @property {number[]} placement - The placement of the script
-* @property {boolean} disabled - Whether the script is disabled
-* @property {boolean} markdownOnly - Whether the script only applies to Markdown
-* @property {boolean} promptOnly - Whether the script only applies to prompts
-* @property {boolean} runOnEdit - Whether the script runs on edit
-* @property {number} substituteRegex - Whether the regex should be substituted
-* @property {number} minDepth - The minimum depth
-* @property {number} maxDepth - The maximum depth
-*/
+ * @typedef {object} RegexScriptData
+ * @property {string} id - UUID of the script
+ * @property {string} scriptName - The name of the script
+ * @property {string} findRegex - The regex to find
+ * @property {string} replaceString - The string to replace
+ * @property {string[]} trimStrings - The strings to trim
+ * @property {number[]} placement - The placement of the script
+ * @property {boolean} disabled - Whether the script is disabled
+ * @property {boolean} markdownOnly - Whether the script only applies to Markdown
+ * @property {boolean} promptOnly - Whether the script only applies to prompts
+ * @property {boolean} runOnEdit - Whether the script runs on edit
+ * @property {number} substituteRegex - Whether the regex should be substituted
+ * @property {number} minDepth - The minimum depth
+ * @property {number} maxDepth - The maximum depth
+ */
 
 /**
  * @typedef {object} v1CharData
@@ -121,4 +121,4 @@
  * @property {string} json_data - the full raw JSON data of the character
  * @property {boolean?} shallow - if the data is shallow (lazy-loaded)
  */
-export default 0;// now this file is a module
+export default 0; // now this file is a module

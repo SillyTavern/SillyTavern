@@ -1,5 +1,5 @@
-import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { SlashCommandExecutor } from './SlashCommandExecutor.js';
+import { SlashCommandClosure } from "./SlashCommandClosure.js";
+import { SlashCommandExecutor } from "./SlashCommandExecutor.js";
 
 export class SlashCommandDebugController {
     /** @type {SlashCommandClosure[]} */ stack = [];
@@ -17,15 +17,9 @@ export class SlashCommandDebugController {
 
     /** @type {(closure:SlashCommandClosure, executor:SlashCommandExecutor)=>Promise<boolean>} */ onBreakPoint;
 
-
-
-
     testStepping(closure) {
         return this.stepStack[this.stack.indexOf(closure)];
     }
-
-
-
 
     down(closure) {
         this.stack.push(closure);
@@ -43,21 +37,19 @@ export class SlashCommandDebugController {
         this.cmdStack[this.stack.length - 1] = executor;
     }
 
-
-
     resume() {
         this.continueResolver?.(false);
         this.continuePromise = null;
-        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = false);
+        this.stepStack.forEach((_, idx) => (this.stepStack[idx] = false));
     }
     step() {
-        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = true);
+        this.stepStack.forEach((_, idx) => (this.stepStack[idx] = true));
         this.continueResolver?.(true);
         this.continuePromise = null;
     }
     stepInto() {
         this.isSteppingInto = true;
-        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = true);
+        this.stepStack.forEach((_, idx) => (this.stepStack[idx] = true));
         this.continueResolver?.(true);
         this.continuePromise = null;
     }
@@ -69,7 +61,7 @@ export class SlashCommandDebugController {
     }
 
     async awaitContinue() {
-        this.continuePromise ??= new Promise(resolve=>{
+        this.continuePromise ??= new Promise((resolve) => {
             this.continueResolver = resolve;
         });
         this.isStepping = await this.continuePromise;

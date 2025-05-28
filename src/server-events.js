@@ -1,5 +1,5 @@
-import EventEmitter from 'node:events';
-import process from 'node:process';
+import EventEmitter from "node:events";
+import process from "node:process";
 
 /**
  * @typedef {import('../index').ServerEventMap} ServerEventMap
@@ -17,5 +17,5 @@ export const EVENT_NAMES = Object.freeze({
     /**
      * Emitted when the server has started.
      */
-    SERVER_STARTED: 'server-started',
+    SERVER_STARTED: "server-started",
 });

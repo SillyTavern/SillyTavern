@@ -1,23 +1,23 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import http2 from 'node:http2';
-import process from 'node:process';
-import { Readable } from 'node:stream';
-import { createRequire } from 'node:module';
-import { Buffer } from 'node:buffer';
-import { promises as dnsPromise } from 'node:dns';
-import os from 'node:os';
+import path from "node:path";
+import fs from "node:fs";
+import http2 from "node:http2";
+import process from "node:process";
+import { Readable } from "node:stream";
+import { createRequire } from "node:module";
+import { Buffer } from "node:buffer";
+import { promises as dnsPromise } from "node:dns";
+import os from "node:os";
 
-import yaml from 'yaml';
-import { sync as commandExistsSync } from 'command-exists';
-import _ from 'lodash';
-import yauzl from 'yauzl';
-import mime from 'mime-types';
-import { default as simpleGit } from 'simple-git';
-import chalk from 'chalk';
-import bytes from 'bytes';
-import { LOG_LEVELS } from './constants.js';
-import { serverDirectory } from './server-directory.js';
+import yaml from "yaml";
+import { sync as commandExistsSync } from "command-exists";
+import _ from "lodash";
+import yauzl from "yauzl";
+import mime from "mime-types";
+import { default as simpleGit } from "simple-git";
+import chalk from "chalk";
+import bytes from "bytes";
+import { LOG_LEVELS } from "./constants.js";
+import { serverDirectory } from "./server-directory.js";
 
 /**
  * Parsed config object.
@@ -31,7 +31,8 @@ let CONFIG_PATH = null;
  * @returns {string} Environment variable key
  * @example keyToEnv('extensions.models.speechToText') // 'SILLYTAVERN_EXTENSIONS_MODELS_SPEECHTOTEXT'
  */
-export const keyToEnv = (key) => 'SILLYTAVERN_' + String(key).toUpperCase().replace(/\./g, '_');
+export const keyToEnv = (key) =>
+    "SILLYTAVERN_" + String(key).toUpperCase().replace(/\./g, "_");
 
 /**
  * Set the config file path.
@@ -39,7 +40,11 @@ export const keyToEnv = (key) => 'SILLYTAVERN_' + String(key).toUpperCase().repl
  */
 export function setConfigFilePath(configFilePath) {
     if (CONFIG_PATH !== null) {
-        console.error(color.red('Config file path already set. Please restart the server to change the config file path.'));
+        console.error(
+            color.red(
+                "Config file path already set. Please restart the server to change the config file path.",
+            ),
+        );
     }
     CONFIG_PATH = path.resolve(configFilePath);
 }
@@ -51,24 +56,36 @@ export function setConfigFilePath(configFilePath) {
 export function getConfig() {
     if (CONFIG_PATH === null) {
         console.trace();
-        console.error(color.red('No config file path set. Please set the config file path using setConfigFilePath().'));
+        console.error(
+            color.red(
+                "No config file path set. Please set the config file path using setConfigFilePath().",
+            ),
+        );
         process.exit(1);
     }
     if (CACHED_CONFIG) {
         return CACHED_CONFIG;
     }
     if (!fs.existsSync(CONFIG_PATH)) {
-        console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
-        console.error(color.red('The program will now exit.'));
+        console.error(
+            color.red(
+                "No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.",
+            ),
+        );
+        console.error(color.red("The program will now exit."));
         process.exit(1);
     }
 
     try {
-        const config = yaml.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+        const config = yaml.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
         CACHED_CONFIG = config;
         return config;
     } catch (error) {
-        console.error(color.red('FATAL: Failed to read config.yaml. Please check the file for syntax errors.'));
+        console.error(
+            color.red(
+                "FATAL: Failed to read config.yaml. Please check the file for syntax errors.",
+            ),
+        );
         console.error(error.message);
         process.exit(1);
     }
@@ -85,9 +102,12 @@ export function getConfigValue(key, defaultValue = null, typeConverter = null) {
     function _getValue() {
         const envKey = keyToEnv(key);
         if (envKey in process.env) {
-            const needsJsonParse = defaultValue && typeof defaultValue === 'object';
+            const needsJsonParse =
+                defaultValue && typeof defaultValue === "object";
             const envValue = process.env[envKey];
-            return needsJsonParse ? (tryParse(envValue) ?? defaultValue) : envValue;
+            return needsJsonParse
+                ? (tryParse(envValue) ?? defaultValue)
+                : envValue;
         }
         const config = getConfig();
         return _.get(config, key, defaultValue);
@@ -95,9 +115,9 @@ export function getConfigValue(key, defaultValue = null, typeConverter = null) {
 
     const value = _getValue();
     switch (typeConverter) {
-        case 'number':
+        case "number":
             return isNaN(parseFloat(value)) ? defaultValue : parseFloat(value);
-        case 'boolean':
+        case "boolean":
             return toBoolean(value);
         default:
             return value;
@@ -111,7 +131,9 @@ export function getConfigValue(key, defaultValue = null, typeConverter = null) {
  * @deprecated Configs are read-only. Use environment variables instead.
  */
 export function setConfigValue(_key, _value) {
-    console.trace(color.yellow('setConfigValue is deprecated and should not be used.'));
+    console.trace(
+        color.yellow("setConfigValue is deprecated and should not be used."),
+    );
 }
 
 /**
@@ -120,7 +142,7 @@ export function setConfigValue(_key, _value) {
  * @returns {string} Basic Auth header value
  */
 export function getBasicAuthHeader(auth) {
-    const encoded = Buffer.from(`${auth}`).toString('base64');
+    const encoded = Buffer.from(`${auth}`).toString("base64");
     return `Basic ${encoded}`;
 }
 
@@ -130,7 +152,7 @@ export function getBasicAuthHeader(auth) {
  * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null, commitDate: string | null, isLatest: boolean}>} Version info object
  */
 export async function getVersion() {
-    let pkgVersion = 'UNKNOWN';
+    let pkgVersion = "UNKNOWN";
     let gitRevision = null;
     let gitBranch = null;
     let commitDate = null;
@@ -138,28 +160,34 @@ export async function getVersion() {
 
     try {
         const require = createRequire(import.meta.url);
-        const pkgJson = require(path.join(serverDirectory, './package.json'));
+        const pkgJson = require(path.join(serverDirectory, "./package.json"));
         pkgVersion = pkgJson.version;
-        if (commandExistsSync('git')) {
+        if (commandExistsSync("git")) {
             const git = simpleGit({ baseDir: serverDirectory });
-            gitRevision = await git.revparse(['--short', 'HEAD']);
-            gitBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
-            commitDate = await git.show(['-s', '--format=%ci', gitRevision]);
+            gitRevision = await git.revparse(["--short", "HEAD"]);
+            gitBranch = await git.revparse(["--abbrev-ref", "HEAD"]);
+            commitDate = await git.show(["-s", "--format=%ci", gitRevision]);
 
-            const trackingBranch = await git.revparse(['--abbrev-ref', '@{u}']);
+            const trackingBranch = await git.revparse(["--abbrev-ref", "@{u}"]);
 
             // Might fail, but exception is caught. Just don't run anything relevant after in this block...
-            const localLatest = await git.revparse(['HEAD']);
+            const localLatest = await git.revparse(["HEAD"]);
             const remoteLatest = await git.revparse([trackingBranch]);
             isLatest = localLatest === remoteLatest;
         }
-    }
-    catch {
+    } catch {
         // suppress exception
     }
 
     const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
-    return { agent, pkgVersion, gitRevision, gitBranch, commitDate: commitDate?.trim() ?? null, isLatest };
+    return {
+        agent,
+        pkgVersion,
+        gitRevision,
+        gitBranch,
+        commitDate: commitDate?.trim() ?? null,
+        isLatest,
+    };
 }
 
 /**
@@ -168,7 +196,7 @@ export async function getVersion() {
  * @returns {Promise<void>} Promise that resolves after the given amount of milliseconds
  */
 export function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -178,8 +206,8 @@ export function delay(ms) {
  * @example getHexString(8) // 'a1b2c3d4'
  */
 export function getHexString(length) {
-    const chars = '0123456789abcdef';
-    let result = '';
+    const chars = "0123456789abcdef";
+    let result = "";
     for (let i = 0; i < length; i++) {
         result += chars[Math.floor(Math.random() * chars.length)];
     }
@@ -192,12 +220,12 @@ export function getHexString(length) {
  * @returns {string} The formatted string (e.g., "1.5 MB")
  */
 export function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return "0 B";
 
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 /**
@@ -209,53 +237,64 @@ export function formatBytes(bytes) {
 export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
     return await new Promise((resolve) => {
         try {
-            yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-                if (err) {
-                    console.warn(`Error opening ZIP file: ${err.message}`);
-                    return resolve(null);
-                }
-
-                zipfile.readEntry();
-
-                zipfile.on('entry', (entry) => {
-                    if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
-                        console.info(`Extracting ${entry.fileName}`);
-                        zipfile.openReadStream(entry, (err, readStream) => {
-                            if (err) {
-                                console.warn(`Error opening read stream: ${err.message}`);
-                                return zipfile.readEntry();
-                            } else {
-                                const chunks = [];
-                                readStream.on('data', (chunk) => {
-                                    chunks.push(chunk);
-                                });
-
-                                readStream.on('end', () => {
-                                    const buffer = Buffer.concat(chunks);
-                                    resolve(buffer);
-                                    zipfile.readEntry(); // Continue to the next entry
-                                });
-
-                                readStream.on('error', (err) => {
-                                    console.warn(`Error reading stream: ${err.message}`);
-                                    zipfile.readEntry();
-                                });
-                            }
-                        });
-                    } else {
-                        zipfile.readEntry();
+            yauzl.fromBuffer(
+                Buffer.from(archiveBuffer),
+                { lazyEntries: true },
+                (err, zipfile) => {
+                    if (err) {
+                        console.warn(`Error opening ZIP file: ${err.message}`);
+                        return resolve(null);
                     }
-                });
 
-                zipfile.on('error', (err) => {
-                    console.warn('ZIP processing error', err);
-                    resolve(null);
-                });
+                    zipfile.readEntry();
 
-                zipfile.on('end', () => resolve(null));
-            });
+                    zipfile.on("entry", (entry) => {
+                        if (
+                            entry.fileName.endsWith(fileExtension) &&
+                            !entry.fileName.startsWith("__MACOSX")
+                        ) {
+                            console.info(`Extracting ${entry.fileName}`);
+                            zipfile.openReadStream(entry, (err, readStream) => {
+                                if (err) {
+                                    console.warn(
+                                        `Error opening read stream: ${err.message}`,
+                                    );
+                                    return zipfile.readEntry();
+                                } else {
+                                    const chunks = [];
+                                    readStream.on("data", (chunk) => {
+                                        chunks.push(chunk);
+                                    });
+
+                                    readStream.on("end", () => {
+                                        const buffer = Buffer.concat(chunks);
+                                        resolve(buffer);
+                                        zipfile.readEntry(); // Continue to the next entry
+                                    });
+
+                                    readStream.on("error", (err) => {
+                                        console.warn(
+                                            `Error reading stream: ${err.message}`,
+                                        );
+                                        zipfile.readEntry();
+                                    });
+                                }
+                            });
+                        } else {
+                            zipfile.readEntry();
+                        }
+                    });
+
+                    zipfile.on("error", (err) => {
+                        console.warn("ZIP processing error", err);
+                        resolve(null);
+                    });
+
+                    zipfile.on("end", () => resolve(null));
+                },
+            );
         } catch (error) {
-            console.warn('Failed to process ZIP buffer', error);
+            console.warn("Failed to process ZIP buffer", error);
             resolve(null);
         }
     });
@@ -270,7 +309,7 @@ export async function getImageBuffers(zipFilePath) {
     return new Promise((resolve, reject) => {
         // Check if the zip file exists
         if (!fs.existsSync(zipFilePath)) {
-            reject(new Error('File not found'));
+            reject(new Error("File not found"));
             return;
         }
 
@@ -281,21 +320,28 @@ export async function getImageBuffers(zipFilePath) {
                 reject(err);
             } else {
                 zipfile.readEntry();
-                zipfile.on('entry', (entry) => {
+                zipfile.on("entry", (entry) => {
                     const mimeType = mime.lookup(entry.fileName);
-                    if (mimeType && mimeType.startsWith('image/') && !entry.fileName.startsWith('__MACOSX')) {
+                    if (
+                        mimeType &&
+                        mimeType.startsWith("image/") &&
+                        !entry.fileName.startsWith("__MACOSX")
+                    ) {
                         console.info(`Extracting ${entry.fileName}`);
                         zipfile.openReadStream(entry, (err, readStream) => {
                             if (err) {
                                 reject(err);
                             } else {
                                 const chunks = [];
-                                readStream.on('data', (chunk) => {
+                                readStream.on("data", (chunk) => {
                                     chunks.push(chunk);
                                 });
 
-                                readStream.on('end', () => {
-                                    imageBuffers.push([path.parse(entry.fileName).base, Buffer.concat(chunks)]);
+                                readStream.on("end", () => {
+                                    imageBuffers.push([
+                                        path.parse(entry.fileName).base,
+                                        Buffer.concat(chunks),
+                                    ]);
                                     zipfile.readEntry(); // Continue to the next entry
                                 });
                             }
@@ -305,11 +351,11 @@ export async function getImageBuffers(zipFilePath) {
                     }
                 });
 
-                zipfile.on('end', () => {
+                zipfile.on("end", () => {
                     resolve(imageBuffers);
                 });
 
-                zipfile.on('error', (err) => {
+                zipfile.on("error", (err) => {
                     reject(err);
                 });
             }
@@ -326,30 +372,30 @@ export async function readAllChunks(readableStream) {
     return new Promise((resolve, reject) => {
         // Consume the readable stream
         const chunks = [];
-        readableStream.on('data', (chunk) => {
+        readableStream.on("data", (chunk) => {
             chunks.push(chunk);
         });
 
-        readableStream.on('end', () => {
+        readableStream.on("end", () => {
             //console.log('Finished reading the stream.');
             resolve(chunks);
         });
 
-        readableStream.on('error', (error) => {
-            console.error('Error while reading the stream:', error);
+        readableStream.on("error", (error) => {
+            console.error("Error while reading the stream:", error);
             reject();
         });
     });
 }
 
 function isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
+    return item && typeof item === "object" && !Array.isArray(item);
 }
 
 export function deepMerge(target, source) {
     let output = Object.assign({}, target);
     if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
+        Object.keys(source).forEach((key) => {
             if (isObject(source[key])) {
                 if (!(key in target)) {
                     Object.assign(output, { [key]: source[key] });
@@ -371,26 +417,47 @@ export const color = chalk;
  * @returns {string} A UUIDv4 string
  */
 export function uuidv4() {
-    if ('crypto' in globalThis && 'randomUUID' in globalThis.crypto) {
+    if ("crypto" in globalThis && "randomUUID" in globalThis.crypto) {
         return globalThis.crypto.randomUUID();
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        },
+    );
 }
 
 export function humanizedISO8601DateTime(date) {
-    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
+    let baseDate = typeof date === "number" ? new Date(date) : new Date();
     let humanYear = baseDate.getFullYear();
-    let humanMonth = (baseDate.getMonth() + 1);
+    let humanMonth = baseDate.getMonth() + 1;
     let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
-    let humanMinute = (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
-    let humanSecond = (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
-    let humanMillisecond = (baseDate.getMilliseconds() < 10 ? '0' : '') + baseDate.getMilliseconds();
-    let HumanizedDateTime = (humanYear + '-' + humanMonth + '-' + humanDate + ' @' + humanHour + 'h ' + humanMinute + 'm ' + humanSecond + 's ' + humanMillisecond + 'ms');
+    let humanHour = (baseDate.getHours() < 10 ? "0" : "") + baseDate.getHours();
+    let humanMinute =
+        (baseDate.getMinutes() < 10 ? "0" : "") + baseDate.getMinutes();
+    let humanSecond =
+        (baseDate.getSeconds() < 10 ? "0" : "") + baseDate.getSeconds();
+    let humanMillisecond =
+        (baseDate.getMilliseconds() < 10 ? "0" : "") +
+        baseDate.getMilliseconds();
+    let HumanizedDateTime =
+        humanYear +
+        "-" +
+        humanMonth +
+        "-" +
+        humanDate +
+        " @" +
+        humanHour +
+        "h " +
+        humanMinute +
+        "m " +
+        humanSecond +
+        "s " +
+        humanMillisecond +
+        "ms";
     return HumanizedDateTime;
 }
 
@@ -411,10 +478,10 @@ export function tryParse(str) {
  */
 export function clientRelativePath(root, inputPath) {
     if (!inputPath.startsWith(root)) {
-        throw new Error('Input path does not start with the root directory');
+        throw new Error("Input path does not start with the root directory");
     }
 
-    return inputPath.slice(root.length).split(path.sep).join('/');
+    return inputPath.slice(root.length).split(path.sep).join("/");
 }
 
 /**
@@ -423,17 +490,17 @@ export function clientRelativePath(root, inputPath) {
  * @returns The file name, sans extension
  */
 export function removeFileExtension(filename) {
-    return filename.replace(/\.[^.]+$/, '');
+    return filename.replace(/\.[^.]+$/, "");
 }
 
 export function generateTimestamp() {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
 
     return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
@@ -445,11 +512,13 @@ export function generateTimestamp() {
  * @param {number?} limit Maximum number of backups to keep. If null, the limit is determined by the `backups.common.numberOfBackups` config value.
  */
 export function removeOldBackups(directory, prefix, limit = null) {
-    const MAX_BACKUPS = limit ?? Number(getConfigValue('backups.common.numberOfBackups', 50, 'number'));
+    const MAX_BACKUPS =
+        limit ??
+        Number(getConfigValue("backups.common.numberOfBackups", 50, "number"));
 
-    let files = fs.readdirSync(directory).filter(f => f.startsWith(prefix));
+    let files = fs.readdirSync(directory).filter((f) => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {
-        files = files.map(f => path.join(directory, f));
+        files = files.map((f) => path.join(directory, f));
         files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
 
         while (files.length > MAX_BACKUPS) {
@@ -469,13 +538,15 @@ export function removeOldBackups(directory, prefix, limit = null) {
  * @param {'name' | 'date'} sortBy Sort images by name or date
  * @returns {string[]} List of image file names
  */
-export function getImages(directoryPath, sortBy = 'name') {
+export function getImages(directoryPath, sortBy = "name") {
     function getSortFunction() {
         switch (sortBy) {
-            case 'name':
+            case "name":
                 return Intl.Collator().compare;
-            case 'date':
-                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
+            case "date":
+                return (a, b) =>
+                    fs.statSync(path.join(directoryPath, a)).mtimeMs -
+                    fs.statSync(path.join(directoryPath, b)).mtimeMs;
             default:
                 return (_a, _b) => 0;
         }
@@ -483,9 +554,9 @@ export function getImages(directoryPath, sortBy = 'name') {
 
     return fs
         .readdirSync(directoryPath)
-        .filter(file => {
+        .filter((file) => {
             const type = mime.lookup(file);
-            return type && type.startsWith('image/');
+            return type && type.startsWith("image/");
         })
         .sort(getSortFunction());
 }
@@ -500,7 +571,9 @@ export function forwardFetchResponse(from, to) {
     let statusText = from.statusText;
 
     if (!from.ok) {
-        console.warn(`Streaming request failed with status ${statusCode} ${statusText}`);
+        console.warn(
+            `Streaming request failed with status ${statusCode} ${statusText}`,
+        );
     }
 
     // Avoid sending 401 responses as they reset the client Basic auth.
@@ -518,14 +591,14 @@ export function forwardFetchResponse(from, to) {
     if (from.body && to.socket) {
         from.body.pipe(to);
 
-        to.socket.on('close', function () {
+        to.socket.on("close", function () {
             if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
 
             to.end(); // End the Express response
         });
 
-        from.body.on('end', function () {
-            console.info('Streaming request finished');
+        from.body.on("end", function () {
+            console.info("Streaming request finished");
             to.end();
         });
     } else {
@@ -550,32 +623,32 @@ export function makeHttp2Request(endpoint, method, body, headers) {
             const client = http2.connect(url.origin);
 
             const req = client.request({
-                ':method': method,
-                ':path': url.pathname,
+                ":method": method,
+                ":path": url.pathname,
                 ...headers,
             });
-            req.setEncoding('utf8');
+            req.setEncoding("utf8");
 
-            req.on('response', (headers) => {
-                const status = Number(headers[':status']);
+            req.on("response", (headers) => {
+                const status = Number(headers[":status"]);
 
                 if (status < 200 || status >= 300) {
                     reject(new Error(`Request failed with status ${status}`));
                 }
 
-                let data = '';
+                let data = "";
 
-                req.on('data', (chunk) => {
+                req.on("data", (chunk) => {
                     data += chunk;
                 });
 
-                req.on('end', () => {
+                req.on("end", () => {
                     console.debug(data);
                     resolve(data);
                 });
             });
 
-            req.on('error', (err) => {
+            req.on("error", (err) => {
                 reject(err);
             });
 
@@ -606,12 +679,11 @@ export function mergeObjectWithYaml(obj, yamlString) {
 
         if (Array.isArray(parsedObject)) {
             for (const item of parsedObject) {
-                if (typeof item === 'object' && item && !Array.isArray(item)) {
+                if (typeof item === "object" && item && !Array.isArray(item)) {
                     Object.assign(obj, item);
                 }
             }
-        }
-        else if (parsedObject && typeof parsedObject === 'object') {
+        } else if (parsedObject && typeof parsedObject === "object") {
             Object.assign(obj, parsedObject);
         }
     } catch {
@@ -634,14 +706,14 @@ export function excludeKeysByYaml(obj, yamlString) {
         const parsedObject = yaml.parse(yamlString);
 
         if (Array.isArray(parsedObject)) {
-            parsedObject.forEach(key => {
+            parsedObject.forEach((key) => {
                 delete obj[key];
             });
-        } else if (typeof parsedObject === 'object') {
-            Object.keys(parsedObject).forEach(key => {
+        } else if (typeof parsedObject === "object") {
+            Object.keys(parsedObject).forEach((key) => {
                 delete obj[key];
             });
-        } else if (typeof parsedObject === 'string') {
+        } else if (typeof parsedObject === "string") {
             delete obj[parsedObject];
         }
     } catch {
@@ -655,7 +727,9 @@ export function excludeKeysByYaml(obj, yamlString) {
  * @returns {string} Trimmed string
  */
 export function trimV1(str) {
-    return String(str ?? '').replace(/\/$/, '').replace(/\/v1$/, '');
+    return String(str ?? "")
+        .replace(/\/$/, "")
+        .replace(/\/v1$/, "");
 }
 
 /**
@@ -720,7 +794,7 @@ export class Cache {
  */
 export function removeColorFormatting(text) {
     // ANSI escape codes for colors are usually in the format \x1b[<codes>m
-    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, '');
+    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, "");
 }
 
 /**
@@ -729,7 +803,7 @@ export function removeColorFormatting(text) {
  * @returns {string} Separator string
  */
 export function getSeparator(n) {
-    return '='.repeat(n);
+    return "=".repeat(n);
 }
 
 /**
@@ -752,10 +826,10 @@ export function isValidUrl(url) {
  * @returns {string} hostname plus the modifications
  */
 export function urlHostnameToIPv6(hostname) {
-    if (hostname.startsWith('[')) {
+    if (hostname.startsWith("[")) {
         hostname = hostname.slice(1);
     }
-    if (hostname.endsWith(']')) {
+    if (hostname.endsWith("]")) {
         hostname = hostname.slice(0, -1);
     }
     return hostname;
@@ -792,7 +866,6 @@ export async function canResolve(name, useIPv6 = true, useIPv4 = true) {
         }
 
         return v6Resolved || v4Resolved;
-
     } catch (error) {
         return false;
     }
@@ -823,16 +896,16 @@ export async function getHasIP() {
         }
 
         for (const info of iface) {
-            if (info.family === 'IPv6') {
+            if (info.family === "IPv6") {
                 hasIPv6Any = true;
-                if (info.address === '::1') {
+                if (info.address === "::1") {
                     hasIPv6Local = true;
                 }
             }
 
-            if (info.family === 'IPv4') {
+            if (info.family === "IPv4") {
                 hasIPv4Any = true;
-                if (info.address === '127.0.0.1') {
+                if (info.address === "127.0.0.1") {
                     hasIPv4Local = true;
                 }
             }
@@ -844,7 +917,6 @@ export async function getHasIP() {
     return { hasIPv6Any, hasIPv4Any, hasIPv6Local, hasIPv4Local };
 }
 
-
 /**
  * Converts various JavaScript primitives to boolean values.
  * Handles special case for "true"/"false" strings (case-insensitive)
@@ -854,13 +926,13 @@ export async function getHasIP() {
  */
 export function toBoolean(value) {
     // Handle string values case-insensitively
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
         // Trim and convert to lowercase for case-insensitive comparison
         const trimmedLower = value.trim().toLowerCase();
 
         // Handle explicit "true"/"false" strings
-        if (trimmedLower === 'true') return true;
-        if (trimmedLower === 'false') return false;
+        if (trimmedLower === "true") return true;
+        if (trimmedLower === "false") return false;
     }
 
     // Handle all other JavaScript values based on their "truthiness"
@@ -873,8 +945,8 @@ export function toBoolean(value) {
  * @returns {boolean|string|null} boolean else original input string or null if input is
  */
 export function stringToBool(str) {
-    if (String(str).trim().toLowerCase() === 'true') return true;
-    if (String(str).trim().toLowerCase() === 'false') return false;
+    if (String(str).trim().toLowerCase() === "true") return true;
+    if (String(str).trim().toLowerCase() === "false") return false;
     return str;
 }
 
@@ -882,12 +954,20 @@ export function stringToBool(str) {
  * Setup the minimum log level
  */
 export function setupLogLevel() {
-    const logLevel = getConfigValue('logging.minLogLevel', LOG_LEVELS.DEBUG, 'number');
+    const logLevel = getConfigValue(
+        "logging.minLogLevel",
+        LOG_LEVELS.DEBUG,
+        "number",
+    );
 
-    globalThis.console.debug = logLevel <= LOG_LEVELS.DEBUG ? console.debug : () => { };
-    globalThis.console.info = logLevel <= LOG_LEVELS.INFO ? console.info : () => { };
-    globalThis.console.warn = logLevel <= LOG_LEVELS.WARN ? console.warn : () => { };
-    globalThis.console.error = logLevel <= LOG_LEVELS.ERROR ? console.error : () => { };
+    globalThis.console.debug =
+        logLevel <= LOG_LEVELS.DEBUG ? console.debug : () => {};
+    globalThis.console.info =
+        logLevel <= LOG_LEVELS.INFO ? console.info : () => {};
+    globalThis.console.warn =
+        logLevel <= LOG_LEVELS.WARN ? console.warn : () => {};
+    globalThis.console.error =
+        logLevel <= LOG_LEVELS.ERROR ? console.error : () => {};
 }
 
 /**
@@ -926,7 +1006,7 @@ export class MemoryLimitedMap {
             return;
         }
 
-        if (typeof key !== 'string' || typeof value !== 'string') {
+        if (typeof key !== "string" || typeof value !== "string") {
             return;
         }
 
@@ -950,10 +1030,14 @@ export class MemoryLimitedMap {
         }
 
         // Evict oldest entries until there's enough space
-        while (this.currentMemory + newValueSize > this.maxMemory && this.queue.length > 0) {
+        while (
+            this.currentMemory + newValueSize > this.maxMemory &&
+            this.queue.length > 0
+        ) {
             const oldestKey = this.queue.shift();
             const oldestValue = this.map.get(oldestKey);
-            const oldestValueSize = MemoryLimitedMap.estimateStringSize(oldestValue);
+            const oldestValueSize =
+                MemoryLimitedMap.estimateStringSize(oldestValue);
             this.map.delete(oldestKey);
             this.currentMemory -= oldestValueSize;
         }
@@ -1076,7 +1160,7 @@ export class MemoryLimitedMap {
  * @param {Parameters<typeof fs.readFileSync>[1]} options Options object to pass through to `fs.readFileSync()` (default: `{ encoding: 'utf-8' }`).
  * @returns The contents at `filePath` if it exists, or `null` if not.
  */
-export function safeReadFileSync(filePath, options = { encoding: 'utf-8' }) {
+export function safeReadFileSync(filePath, options = { encoding: "utf-8" }) {
     if (fs.existsSync(filePath)) return fs.readFileSync(filePath, options);
     return null;
 }
@@ -1086,10 +1170,9 @@ export function safeReadFileSync(filePath, options = { encoding: 'utf-8' }) {
  * @param {string} title Desired title for the window
  */
 export function setWindowTitle(title) {
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
         process.title = title;
-    }
-    else {
+    } else {
         process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
     }
 }
@@ -1106,7 +1189,7 @@ export function mutateJsonString(jsonString, mutation) {
         mutation(json);
         return JSON.stringify(json);
     } catch (error) {
-        console.error('Error parsing or mutating JSON:', error);
+        console.error("Error parsing or mutating JSON:", error);
         return jsonString;
     }
 }
@@ -1143,6 +1226,9 @@ export function setPermissionsSync(targetPath) {
             appendWritablePermission(targetPath, stats);
         }
     } catch (error) {
-        console.error(`Error setting write permissions for ${targetPath}:`, error);
+        console.error(
+            `Error setting write permissions for ${targetPath}:`,
+            error,
+        );
     }
 }

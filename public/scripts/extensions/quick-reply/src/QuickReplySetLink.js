@@ -1,4 +1,4 @@
-import { QuickReplySet } from './QuickReplySet.js';
+import { QuickReplySet } from "./QuickReplySet.js";
 
 export class QuickReplySetLink {
     static from(props) {
@@ -7,9 +7,6 @@ export class QuickReplySetLink {
         const instance = Object.assign(new this(), props);
         return instance;
     }
-
-
-
 
     /**@type {QuickReplySet}*/ set;
     /**@type {Boolean}*/ isVisible = true;
@@ -22,71 +19,84 @@ export class QuickReplySetLink {
 
     /**@type {HTMLElement}*/ settingsDom;
 
-
-
-
     renderSettings(idx) {
         this.index = idx;
-        const item = document.createElement('div'); {
+        const item = document.createElement("div");
+        {
             this.settingsDom = item;
-            item.classList.add('qr--item');
-            item.setAttribute('data-order', String(this.index));
-            const drag = document.createElement('div'); {
-                drag.classList.add('drag-handle');
-                drag.classList.add('ui-sortable-handle');
-                drag.textContent = '☰';
+            item.classList.add("qr--item");
+            item.setAttribute("data-order", String(this.index));
+            const drag = document.createElement("div");
+            {
+                drag.classList.add("drag-handle");
+                drag.classList.add("ui-sortable-handle");
+                drag.textContent = "☰";
                 item.append(drag);
             }
-            const set = document.createElement('select'); {
-                set.classList.add('qr--set');
+            const set = document.createElement("select");
+            {
+                set.classList.add("qr--set");
                 // fix for jQuery sortable breaking childrens' touch events
-                set.addEventListener('touchstart', (evt)=>evt.stopPropagation());
-                set.addEventListener('change', ()=>{
+                set.addEventListener("touchstart", (evt) =>
+                    evt.stopPropagation(),
+                );
+                set.addEventListener("change", () => {
                     this.set = QuickReplySet.get(set.value);
                     this.update();
                 });
-                QuickReplySet.list.toSorted((a,b)=>a.name.toLowerCase().localeCompare(b.name.toLowerCase())).forEach(qrs=>{
-                    const opt = document.createElement('option'); {
-                        opt.value = qrs.name;
-                        opt.textContent = qrs.name;
-                        opt.selected = qrs == this.set;
-                        set.append(opt);
-                    }
-                });
+                QuickReplySet.list
+                    .toSorted((a, b) =>
+                        a.name
+                            .toLowerCase()
+                            .localeCompare(b.name.toLowerCase()),
+                    )
+                    .forEach((qrs) => {
+                        const opt = document.createElement("option");
+                        {
+                            opt.value = qrs.name;
+                            opt.textContent = qrs.name;
+                            opt.selected = qrs == this.set;
+                            set.append(opt);
+                        }
+                    });
                 item.append(set);
             }
-            const visible = document.createElement('label'); {
-                visible.classList.add('qr--visible');
-                visible.title = 'Show buttons';
-                const cb = document.createElement('input'); {
-                    cb.type = 'checkbox';
+            const visible = document.createElement("label");
+            {
+                visible.classList.add("qr--visible");
+                visible.title = "Show buttons";
+                const cb = document.createElement("input");
+                {
+                    cb.type = "checkbox";
                     cb.checked = this.isVisible;
-                    cb.addEventListener('click', ()=>{
+                    cb.addEventListener("click", () => {
                         this.isVisible = cb.checked;
                         this.update();
                     });
                     visible.append(cb);
                 }
-                visible.append('Buttons');
+                visible.append("Buttons");
                 item.append(visible);
             }
-            const edit = document.createElement('div'); {
-                edit.classList.add('menu_button');
-                edit.classList.add('menu_button_icon');
-                edit.classList.add('fa-solid');
-                edit.classList.add('fa-pencil');
-                edit.title = 'Edit quick reply set';
-                edit.addEventListener('click', ()=>this.requestEditSet());
+            const edit = document.createElement("div");
+            {
+                edit.classList.add("menu_button");
+                edit.classList.add("menu_button_icon");
+                edit.classList.add("fa-solid");
+                edit.classList.add("fa-pencil");
+                edit.title = "Edit quick reply set";
+                edit.addEventListener("click", () => this.requestEditSet());
                 item.append(edit);
             }
-            const del = document.createElement('div'); {
-                del.classList.add('qr--del');
-                del.classList.add('menu_button');
-                del.classList.add('menu_button_icon');
-                del.classList.add('fa-solid');
-                del.classList.add('fa-trash-can');
-                del.title = 'Remove quick reply set';
-                del.addEventListener('click', ()=>this.delete());
+            const del = document.createElement("div");
+            {
+                del.classList.add("qr--del");
+                del.classList.add("menu_button");
+                del.classList.add("menu_button_icon");
+                del.classList.add("fa-solid");
+                del.classList.add("fa-trash-can");
+                del.title = "Remove quick reply set";
+                del.addEventListener("click", () => this.delete());
                 item.append(del);
             }
         }
@@ -96,9 +106,6 @@ export class QuickReplySetLink {
         this.settingsDom?.remove();
         this.settingsDom = null;
     }
-
-
-
 
     update() {
         if (this.onUpdate) {
@@ -116,9 +123,6 @@ export class QuickReplySetLink {
             this.onDelete();
         }
     }
-
-
-
 
     toJSON() {
         return {

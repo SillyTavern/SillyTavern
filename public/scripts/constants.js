@@ -21,4 +21,4 @@ export const debounce_timeout = {
  * prompts without affecting the number of chat messages,
  * which is needed to preserve world info timed effects.
  */
-export const IGNORE_SYMBOL = Symbol.for('ignore');
+export const IGNORE_SYMBOL = Symbol.for("ignore");

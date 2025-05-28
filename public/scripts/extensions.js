@@ -1,20 +1,29 @@
-import { DOMPurify, Popper } from '../lib.js';
+import { DOMPurify, Popper } from "../lib.js";
 
-import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
-import { showLoader } from './loader.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
-import { renderTemplate, renderTemplateAsync } from './templates.js';
-import { delay, isSubsetOf, sanitizeSelector, setValueByPath } from './utils.js';
-import { getContext } from './st-context.js';
-import { isAdmin } from './user.js';
-import { addLocaleData, getCurrentLocale, t } from './i18n.js';
-import { debounce_timeout } from './constants.js';
-import { accountStorage } from './util/AccountStorage.js';
+import {
+    eventSource,
+    event_types,
+    saveSettings,
+    saveSettingsDebounced,
+    getRequestHeaders,
+    animation_duration,
+} from "../script.js";
+import { showLoader } from "./loader.js";
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from "./popup.js";
+import { renderTemplate, renderTemplateAsync } from "./templates.js";
+import {
+    delay,
+    isSubsetOf,
+    sanitizeSelector,
+    setValueByPath,
+} from "./utils.js";
+import { getContext } from "./st-context.js";
+import { isAdmin } from "./user.js";
+import { addLocaleData, getCurrentLocale, t } from "./i18n.js";
+import { debounce_timeout } from "./constants.js";
+import { accountStorage } from "./util/AccountStorage.js";
 
-export {
-    getContext,
-    getApiUrl,
-};
+export { getContext, getApiUrl };
 
 /** @type {string[]} */
 export let extensionNames = [];
@@ -45,8 +54,12 @@ const activeExtensions = new Set();
 const extensionLoadErrors = new Set();
 
 const getApiUrl = () => extension_settings.apiUrl;
-const sortManifestsByOrder = (a, b) => parseInt(a.loading_order) - parseInt(b.loading_order) || String(a.display_name).localeCompare(String(b.display_name));
-const sortManifestsByName = (a, b) => String(a.display_name).localeCompare(String(b.display_name)) || parseInt(a.loading_order) - parseInt(b.loading_order);
+const sortManifestsByOrder = (a, b) =>
+    parseInt(a.loading_order) - parseInt(b.loading_order) ||
+    String(a.display_name).localeCompare(String(b.display_name));
+const sortManifestsByName = (a, b) =>
+    String(a.display_name).localeCompare(String(b.display_name)) ||
+    parseInt(a.loading_order) - parseInt(b.loading_order);
 let connectedToApi = false;
 
 /**
@@ -58,7 +71,7 @@ let manifests = {};
 /**
  * Default URL for the Extras API.
  */
-const defaultUrl = 'http://localhost:5100';
+const defaultUrl = "http://localhost:5100";
 
 let requiresReload = false;
 let stateChanged = false;
@@ -66,7 +79,7 @@ let saveMetadataTimeout = null;
 
 export function cancelDebouncedMetadataSave() {
     if (saveMetadataTimeout) {
-        console.debug('Debounced metadata save cancelled');
+        console.debug("Debounced metadata save cancelled");
         clearTimeout(saveMetadataTimeout);
         saveMetadataTimeout = null;
     }
@@ -83,18 +96,18 @@ export function saveMetadataDebounced() {
         const newContext = getContext();
 
         if (groupId !== newContext.groupId) {
-            console.warn('Group changed, not saving metadata');
+            console.warn("Group changed, not saving metadata");
             return;
         }
 
         if (characterId !== newContext.characterId) {
-            console.warn('Character changed, not saving metadata');
+            console.warn("Character changed, not saving metadata");
             return;
         }
 
-        console.debug('Saving metadata...');
+        console.debug("Saving metadata...");
         await newContext.saveMetadata();
-        console.debug('Saved metadata...');
+        console.debug("Saved metadata...");
     }, debounce_timeout.relaxed);
 }
 
@@ -108,8 +121,20 @@ export function saveMetadataDebounced() {
  *
  * @deprecated Use renderExtensionTemplateAsync instead.
  */
-export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
-    return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
+export function renderExtensionTemplate(
+    extensionName,
+    templateId,
+    templateData = {},
+    sanitize = true,
+    localize = true,
+) {
+    return renderTemplate(
+        `scripts/extensions/${extensionName}/${templateId}.html`,
+        templateData,
+        sanitize,
+        localize,
+        true,
+    );
 }
 
 /**
@@ -120,8 +145,20 @@ export function renderExtensionTemplate(extensionName, templateId, templateData 
  * @param {object} templateData Additional data to pass to the template
  * @returns {Promise<string>} Rendered HTML
  */
-export function renderExtensionTemplateAsync(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
-    return renderTemplateAsync(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
+export function renderExtensionTemplateAsync(
+    extensionName,
+    templateId,
+    templateData = {},
+    sanitize = true,
+    localize = true,
+) {
+    return renderTemplateAsync(
+        `scripts/extensions/${extensionName}/${templateId}.html`,
+        templateData,
+        sanitize,
+        localize,
+        true,
+    );
 }
 
 // Disables parallel updates
@@ -142,8 +179,7 @@ export class ModuleWorkerWrapper {
         try {
             this.isBusy = true;
             await this.callback(...args);
-        }
-        finally {
+        } finally {
             this.isBusy = false;
         }
     }
@@ -151,14 +187,14 @@ export class ModuleWorkerWrapper {
 
 export const extension_settings = {
     apiUrl: defaultUrl,
-    apiKey: '',
+    apiKey: "",
     autoConnect: false,
     notifyUpdates: false,
     disabledExtensions: [],
     expressionOverrides: [],
     memory: {},
     note: {
-        default: '',
+        default: "",
         chara: [],
         wiAddition: [],
     },
@@ -180,7 +216,7 @@ export const extension_settings = {
         rerollIfSame: false,
     },
     connectionManager: {
-        selectedProfile: '',
+        selectedProfile: "",
         /** @type {import('./extensions/connection-manager/index.js').ConnectionProfile[]} */
         profiles: [],
     },
@@ -226,13 +262,17 @@ export const extension_settings = {
         /** @type {{[characterKey: string]: string}} */
         folders: {},
         /** @type {string} */
-        sort: 'dateAsc',
+        sort: "dateAsc",
     },
 };
 
 function showHideExtensionsMenu() {
     // Get the number of menu items that are not hidden
-    const hasMenuItems = $('#extensionsMenu').children().filter((_, child) => $(child).css('display') !== 'none').length > 0;
+    const hasMenuItems =
+        $("#extensionsMenu")
+            .children()
+            .filter((_, child) => $(child).css("display") !== "none").length >
+        0;
 
     // We have menu items, so we can stop checking
     if (hasMenuItems) {
@@ -240,7 +280,7 @@ function showHideExtensionsMenu() {
     }
 
     // Show or hide the menu button
-    $('#extensionsMenuButton').toggle(hasMenuItems);
+    $("#extensionsMenuButton").toggle(hasMenuItems);
 }
 
 // Periodically check for new extensions
@@ -252,8 +292,12 @@ const menuInterval = setInterval(showHideExtensionsMenu, 1000);
  * @returns {string} Type of the extension (global, local, system, or empty string if not found)
  */
 function getExtensionType(externalId) {
-    const id = Object.keys(extensionTypes).find(id => id === externalId || (id.startsWith('third-party') && id.endsWith(externalId)));
-    return id ? extensionTypes[id] : '';
+    const id = Object.keys(extensionTypes).find(
+        (id) =>
+            id === externalId ||
+            (id.startsWith("third-party") && id.endsWith(externalId)),
+    );
+    return id ? extensionTypes[id] : "";
 }
 
 /**
@@ -268,7 +312,7 @@ export async function doExtrasFetch(endpoint, args = {}) {
     }
 
     if (!args.method) {
-        Object.assign(args, { method: 'GET' });
+        Object.assign(args, { method: "GET" });
     }
 
     if (!args.headers) {
@@ -277,7 +321,7 @@ export async function doExtrasFetch(endpoint, args = {}) {
 
     if (extension_settings.apiKey) {
         Object.assign(args.headers, {
-            'Authorization': `Bearer ${extension_settings.apiKey}`,
+            Authorization: `Bearer ${extension_settings.apiKey}`,
         });
     }
 
@@ -290,29 +334,27 @@ export async function doExtrasFetch(endpoint, args = {}) {
  */
 async function discoverExtensions() {
     try {
-        const response = await fetch('/api/extensions/discover');
+        const response = await fetch("/api/extensions/discover");
 
         if (response.ok) {
             const extensions = await response.json();
             return extensions;
-        }
-        else {
+        } else {
             return [];
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
         return [];
     }
 }
 
 function onDisableExtensionClick() {
-    const name = $(this).data('name');
+    const name = $(this).data("name");
     disableExtension(name, false);
 }
 
 function onEnableExtensionClick() {
-    const name = $(this).data('name');
+    const name = $(this).data("name");
     enableExtension(name, false);
 }
 
@@ -322,7 +364,8 @@ function onEnableExtensionClick() {
  * @param {boolean} [reload=true] If true, reload the page after enabling the extension
  */
 export async function enableExtension(name, reload = true) {
-    extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
+    extension_settings.disabledExtensions =
+        extension_settings.disabledExtensions.filter((x) => x !== name);
     stateChanged = true;
     await saveSettings();
     if (reload) {
@@ -359,18 +402,23 @@ async function getManifests(names) {
 
     for (const name of names) {
         const promise = new Promise((resolve, reject) => {
-            fetch(`/scripts/extensions/${name}/manifest.json`).then(async response => {
-                if (response.ok) {
-                    const json = await response.json();
-                    obj[name] = json;
-                    resolve();
-                } else {
+            fetch(`/scripts/extensions/${name}/manifest.json`)
+                .then(async (response) => {
+                    if (response.ok) {
+                        const json = await response.json();
+                        obj[name] = json;
+                        resolve();
+                    } else {
+                        reject();
+                    }
+                })
+                .catch((err) => {
                     reject();
-                }
-            }).catch(err => {
-                reject();
-                console.log('Could not load manifest.json for ' + name, err);
-            });
+                    console.log(
+                        "Could not load manifest.json for " + name,
+                        err,
+                    );
+                });
         });
 
         promises.push(promise);
@@ -386,8 +434,10 @@ async function getManifests(names) {
  */
 async function activateExtensions() {
     extensionLoadErrors.clear();
-    const extensions = Object.entries(manifests).sort((a, b) => sortManifestsByOrder(a[1], b[1]));
-    const extensionNames = extensions.map(x => x[0]);
+    const extensions = Object.entries(manifests).sort((a, b) =>
+        sortManifestsByOrder(a[1], b[1]),
+    );
+    const extensionNames = extensions.map((x) => x[0]);
     const promises = [];
 
     for (let entry of extensions) {
@@ -406,10 +456,17 @@ async function activateExtensions() {
         let missingModules = [];
         if (extrasRequirements !== undefined) {
             if (Array.isArray(extrasRequirements)) {
-                meetsModuleRequirements = isSubsetOf(modules, extrasRequirements);
-                missingModules = extrasRequirements.filter(req => !modules.includes(req));
+                meetsModuleRequirements = isSubsetOf(
+                    modules,
+                    extrasRequirements,
+                );
+                missingModules = extrasRequirements.filter(
+                    (req) => !modules.includes(req),
+                );
             } else {
-                console.warn(`Extension ${name}: manifest.json 'requires' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
+                console.warn(
+                    `Extension ${name}: manifest.json 'requires' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`,
+                );
             }
         }
 
@@ -420,18 +477,27 @@ async function activateExtensions() {
         if (extensionDependencies !== undefined) {
             if (Array.isArray(extensionDependencies)) {
                 // Check if all dependencies exist
-                meetsExtensionDeps = isSubsetOf(extensionNames, extensionDependencies);
-                missingDependencies = extensionDependencies.filter(dep => !extensionNames.includes(dep));
+                meetsExtensionDeps = isSubsetOf(
+                    extensionNames,
+                    extensionDependencies,
+                );
+                missingDependencies = extensionDependencies.filter(
+                    (dep) => !extensionNames.includes(dep),
+                );
                 // Check for disabled dependencies
                 if (meetsExtensionDeps) {
-                    disabledDependencies = extensionDependencies.filter(dep => extension_settings.disabledExtensions.includes(dep));
+                    disabledDependencies = extensionDependencies.filter((dep) =>
+                        extension_settings.disabledExtensions.includes(dep),
+                    );
                     if (disabledDependencies.length > 0) {
                         // Fail if any dependencies are disabled
                         meetsExtensionDeps = false;
                     }
                 }
             } else {
-                console.warn(`Extension ${name}: manifest.json 'dependencies' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
+                console.warn(
+                    `Extension ${name}: manifest.json 'dependencies' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`,
+                );
             }
         }
 
@@ -439,74 +505,94 @@ async function activateExtensions() {
 
         if (meetsModuleRequirements && meetsExtensionDeps && !isDisabled) {
             try {
-                console.debug('Activating extension', name);
+                console.debug("Activating extension", name);
                 const promise = addExtensionLocale(name, manifest).finally(() =>
-                    Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
+                    Promise.all([
+                        addExtensionScript(name, manifest),
+                        addExtensionStyle(name, manifest),
+                    ]),
                 );
                 await promise
                     .then(() => activeExtensions.add(name))
-                    .catch(err => {
-                        console.log('Could not activate extension', name, err);
-                        extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${err}`);
+                    .catch((err) => {
+                        console.log("Could not activate extension", name, err);
+                        extensionLoadErrors.add(
+                            t`Extension "${displayName}" failed to load: ${err}`,
+                        );
                     });
                 promises.push(promise);
             } catch (error) {
-                console.error('Could not activate extension', name, error);
+                console.error("Could not activate extension", name, error);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
-            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
-            extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
+            console.warn(
+                t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(", ")}"`,
+            );
+            extensionLoadErrors.add(
+                t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(", ")}"`,
+            );
         } else if (!meetsExtensionDeps && !isDisabled) {
             if (disabledDependencies.length > 0) {
-                console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
-                extensionLoadErrors.add(t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                console.warn(
+                    t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(", ")}". Enable them first, then reload.`,
+                );
+                extensionLoadErrors.add(
+                    t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(", ")}". Enable them first, then reload.`,
+                );
             } else {
-                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
-                extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
+                console.warn(
+                    t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(", ")}"`,
+                );
+                extensionLoadErrors.add(
+                    t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(", ")}"`,
+                );
             }
         }
     }
 
     await Promise.allSettled(promises);
-    $('#extensions_details').toggleClass('warning', extensionLoadErrors.size > 0);
+    $("#extensions_details").toggleClass(
+        "warning",
+        extensionLoadErrors.size > 0,
+    );
 }
 
 async function connectClickHandler() {
-    const baseUrl = String($('#extensions_url').val());
+    const baseUrl = String($("#extensions_url").val());
     extension_settings.apiUrl = baseUrl;
-    const testApiKey = $('#extensions_api_key').val();
+    const testApiKey = $("#extensions_api_key").val();
     extension_settings.apiKey = String(testApiKey);
     saveSettingsDebounced();
     await connectToApi(baseUrl);
 }
 
 function autoConnectInputHandler() {
-    const value = $(this).prop('checked');
+    const value = $(this).prop("checked");
     extension_settings.autoConnect = !!value;
 
     if (value && !connectedToApi) {
-        $('#extensions_connect').trigger('click');
+        $("#extensions_connect").trigger("click");
     }
 
     saveSettingsDebounced();
 }
 
 async function addExtensionsButtonAndMenu() {
-    const buttonHTML = await renderTemplateAsync('wandButton');
-    const extensionsMenuHTML = await renderTemplateAsync('wandMenu');
+    const buttonHTML = await renderTemplateAsync("wandButton");
+    const extensionsMenuHTML = await renderTemplateAsync("wandMenu");
 
     $(document.body).append(extensionsMenuHTML);
-    $('#leftSendForm').append(buttonHTML);
+    $("#leftSendForm").append(buttonHTML);
 
-    const button = $('#extensionsMenuButton');
-    const dropdown = $('#extensionsMenu');
+    const button = $("#extensionsMenuButton");
+    const dropdown = $("#extensionsMenu");
     let isDropdownVisible = false;
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-start',
+        placement: "top-start",
     });
 
-    $(button).on('click', function () {
+    $(button).on("click", function () {
         if (isDropdownVisible) {
             dropdown.fadeOut(animation_duration);
             isDropdownVisible = false;
@@ -517,11 +603,15 @@ async function addExtensionsButtonAndMenu() {
         popper.update();
     });
 
-    $('html').on('click', function (e) {
+    $("html").on("click", function (e) {
         if (!isDropdownVisible) return;
         const clickTarget = $(e.target);
-        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton', '#roll_dice'];
-        if (!noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
+        const noCloseTargets = [
+            "#sd_gen",
+            "#extensionsMenuButton",
+            "#roll_dice",
+        ];
+        if (!noCloseTargets.some((id) => clickTarget.closest(id).length > 0)) {
             dropdown.fadeOut(animation_duration);
             isDropdownVisible = false;
         }
@@ -529,7 +619,9 @@ async function addExtensionsButtonAndMenu() {
 }
 
 function notifyUpdatesInputHandler() {
-    extension_settings.notifyUpdates = !!$('#extensions_notify_updates').prop('checked');
+    extension_settings.notifyUpdates = !!$("#extensions_notify_updates").prop(
+        "checked",
+    );
     saveSettingsDebounced();
 
     if (extension_settings.notifyUpdates) {
@@ -548,7 +640,7 @@ async function connectToApi(baseUrl) {
     }
 
     const url = new URL(baseUrl);
-    url.pathname = '/api/modules';
+    url.pathname = "/api/modules";
 
     try {
         const getExtensionsResult = await doExtrasFetch(url);
@@ -561,8 +653,7 @@ async function connectToApi(baseUrl) {
         }
 
         updateStatus(getExtensionsResult.ok);
-    }
-    catch {
+    } catch {
         updateStatus(false);
     }
 }
@@ -574,9 +665,9 @@ async function connectToApi(baseUrl) {
 function updateStatus(success) {
     connectedToApi = success;
     const _text = success ? t`Connected to API` : t`Could not connect to API`;
-    const _class = success ? 'success' : 'failure';
-    $('#extensions_status').text(_text);
-    $('#extensions_status').attr('class', _class);
+    const _class = success ? "success" : "failure";
+    $("#extensions_status").text(_text);
+    $("#extensions_status").attr("class", _class);
 }
 
 /**
@@ -595,10 +686,10 @@ function addExtensionStyle(name, manifest) {
         const id = sanitizeSelector(`${name}-css`);
 
         if ($(`link[id="${id}"]`).length === 0) {
-            const link = document.createElement('link');
+            const link = document.createElement("link");
             link.id = id;
-            link.rel = 'stylesheet';
-            link.type = 'text/css';
+            link.rel = "stylesheet";
+            link.type = "text/css";
             link.href = url;
             link.onload = function () {
                 resolve();
@@ -628,9 +719,9 @@ function addExtensionScript(name, manifest) {
         let ready = false;
 
         if ($(`script[id="${id}"]`).length === 0) {
-            const script = document.createElement('script');
+            const script = document.createElement("script");
             script.id = id;
-            script.type = 'module';
+            script.type = "module";
             script.src = url;
             script.async = true;
             script.onerror = function (err) {
@@ -654,7 +745,7 @@ function addExtensionScript(name, manifest) {
  */
 function addExtensionLocale(name, manifest) {
     // No i18n data in the manifest
-    if (!manifest.i18n || typeof manifest.i18n !== 'object') {
+    if (!manifest.i18n || typeof manifest.i18n !== "object") {
         return Promise.resolve();
     }
 
@@ -667,19 +758,24 @@ function addExtensionLocale(name, manifest) {
     }
 
     return fetch(`/scripts/extensions/${name}/${localeFile}`)
-        .then(async response => {
+        .then(async (response) => {
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(
+                    `HTTP ${response.status}: ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
 
-            if (data && typeof data === 'object') {
+            if (data && typeof data === "object") {
                 addLocaleData(currentLocale, data);
             }
         })
-        .catch(err => {
-            console.log('Could not load extension locale data for ' + name, err);
+        .catch((err) => {
+            console.log(
+                "Could not load extension locale data for " + name,
+                err,
+            );
         });
 }
 
@@ -694,15 +790,22 @@ function addExtensionLocale(name, manifest) {
  * @param {string} checkboxClass - The class for the checkbox HTML element.
  * @return {string} - The HTML string that represents the extension.
  */
-function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
+function generateExtensionHtml(
+    name,
+    manifest,
+    isActive,
+    isDisabled,
+    isExternal,
+    checkboxClass,
+) {
     function getExtensionIcon() {
         const type = getExtensionType(name);
         switch (type) {
-            case 'global':
+            case "global":
                 return '<i class="fa-sm fa-fw fa-solid fa-server" data-i18n="[title]ext_type_global" title="This is a global extension, available for all users."></i>';
-            case 'local':
+            case "local":
                 return '<i class="fa-sm fa-fw fa-solid fa-user" data-i18n="[title]ext_type_local" title="This is a local extension, available only for you."></i>';
-            case 'system':
+            case "system":
                 return '<i class="fa-sm fa-fw fa-solid fa-cog" data-i18n="[title]ext_type_system" title="This is a built-in extension. It cannot be deleted and updates with the app."></i>';
             default:
                 return '<i class="fa-sm fa-fw fa-solid fa-question" title="Unknown extension type."></i>';
@@ -712,35 +815,54 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
     const isUserAdmin = isAdmin();
     const extensionIcon = getExtensionIcon();
     const displayName = manifest.display_name;
-    const displayVersion = manifest.version || '';
-    const externalId = name.replace('third-party', '');
-    let originHtml = '';
+    const displayVersion = manifest.version || "";
+    const externalId = name.replace("third-party", "");
+    let originHtml = "";
     if (isExternal) {
-        originHtml = '<a>';
+        originHtml = "<a>";
     }
 
-    let toggleElement = isActive || isDisabled ?
-        '<input type="checkbox" title="' + t`Click to toggle` + `" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
-        `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
+    let toggleElement =
+        isActive || isDisabled
+            ? '<input type="checkbox" title="' +
+              t`Click to toggle` +
+              `" data-name="${name}" class="${isActive ? "toggle_disable" : "toggle_enable"} ${checkboxClass}" ${isActive ? "checked" : ""}>`
+            : `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
 
-    let deleteButton = isExternal ? `<button class="btn_delete menu_button" data-name="${externalId}" data-i18n="[title]Delete" title="Delete"><i class="fa-fw fa-solid fa-trash-can"></i></button>` : '';
-    let updateButton = isExternal ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>` : '';
-    let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
-    let branchButton = isExternal && isUserAdmin ? `<button class="btn_branch menu_button" data-name="${externalId}" data-i18n="[title]Switch branch" title="Switch branch"><i class="fa-solid fa-code-branch fa-fw"></i></button>` : '';
-    let modulesInfo = '';
+    let deleteButton = isExternal
+        ? `<button class="btn_delete menu_button" data-name="${externalId}" data-i18n="[title]Delete" title="Delete"><i class="fa-fw fa-solid fa-trash-can"></i></button>`
+        : "";
+    let updateButton = isExternal
+        ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>`
+        : "";
+    let moveButton =
+        isExternal && isUserAdmin
+            ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>`
+            : "";
+    let branchButton =
+        isExternal && isUserAdmin
+            ? `<button class="btn_branch menu_button" data-name="${externalId}" data-i18n="[title]Switch branch" title="Switch branch"><i class="fa-solid fa-code-branch fa-fw"></i></button>`
+            : "";
+    let modulesInfo = "";
 
     if (isActive && Array.isArray(manifest.optional)) {
         const optional = new Set(manifest.optional);
-        modules.forEach(x => optional.delete(x));
+        modules.forEach((x) => optional.delete(x));
         if (optional.size > 0) {
-            const optionalString = DOMPurify.sanitize([...optional].join(', '));
-            modulesInfo = '<div class="extension_modules">' + t`Optional modules:` + ` <span class="optional">${optionalString}</span></div>`;
+            const optionalString = DOMPurify.sanitize([...optional].join(", "));
+            modulesInfo =
+                '<div class="extension_modules">' +
+                t`Optional modules:` +
+                ` <span class="optional">${optionalString}</span></div>`;
         }
-    } else if (!isDisabled) { // Neither active nor disabled
+    } else if (!isDisabled) {
+        // Neither active nor disabled
         const requirements = new Set(manifest.requires);
-        modules.forEach(x => requirements.delete(x));
+        modules.forEach((x) => requirements.delete(x));
         if (requirements.size > 0) {
-            const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
+            const requirementsString = DOMPurify.sanitize(
+                [...requirements].join(", "),
+            );
             modulesInfo = `<div class="extension_modules">Missing modules: <span class="failure">${requirementsString}</span></div>`;
         }
     }
@@ -757,12 +879,12 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
             </div>
             <div class="flexGrow extension_text_block">
                 ${originHtml}
-                <span class="${isActive ? 'extension_enabled' : isDisabled ? 'extension_disabled' : 'extension_missing'}">
+                <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
                     <span class="extension_name">${DOMPurify.sanitize(displayName)}</span>
                     <span class="extension_version">${DOMPurify.sanitize(displayVersion)}</span>
                     ${modulesInfo}
                 </span>
-                ${isExternal ? '</a>' : ''}
+                ${isExternal ? "</a>" : ""}
             </div>
 
             <div class="extension_actions flex-container alignItemsCenter">
@@ -787,15 +909,21 @@ function getExtensionData(extension) {
     const manifest = extension[1];
     const isActive = activeExtensions.has(name);
     const isDisabled = extension_settings.disabledExtensions.includes(name);
-    const isExternal = name.startsWith('third-party');
+    const isExternal = name.startsWith("third-party");
 
-    const checkboxClass = isDisabled ? 'checkbox_disabled' : '';
+    const checkboxClass = isDisabled ? "checkbox_disabled" : "";
 
-    const extensionHtml = generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
+    const extensionHtml = generateExtensionHtml(
+        name,
+        manifest,
+        isActive,
+        isDisabled,
+        isExternal,
+        checkboxClass,
+    );
 
     return { isExternal, extensionHtml };
 }
-
 
 /**
  * Gets the module information to be displayed.
@@ -803,11 +931,17 @@ function getExtensionData(extension) {
  * @return {string} - The HTML string for the module information.
  */
 function getModuleInformation() {
-    let moduleInfo = modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">' + t`Not connected to the API!` + '</p>';
-    return `
-        <h3>` + t`Modules provided by your Extras API:` + `</h3>
+    let moduleInfo = modules.length
+        ? `<p>${DOMPurify.sanitize(modules.join(", "))}</p>`
+        : '<p class="failure">' + t`Not connected to the API!` + "</p>";
+    return (
+        `
+        <h3>` +
+        t`Modules provided by your Extras API:` +
+        `</h3>
         ${moduleInfo}
-    `;
+    `
+    );
 }
 
 /**
@@ -816,14 +950,14 @@ function getModuleInformation() {
  */
 function getExtensionLoadErrorsHtml() {
     if (extensionLoadErrors.size === 0) {
-        return '';
+        return "";
     }
 
-    const container = document.createElement('div');
-    container.classList.add('info-block', 'error');
+    const container = document.createElement("div");
+    container.classList.add("info-block", "error");
 
     for (const error of extensionLoadErrors) {
-        const errorElement = document.createElement('div');
+        const errorElement = document.createElement("div");
         errorElement.textContent = error;
         container.appendChild(errorElement);
     }
@@ -840,34 +974,50 @@ async function showExtensionsDetails() {
     try {
         // If we are updating an extension, the "old" popup is still active. We should close that.
         let initialScrollTop = 0;
-        const oldPopup = Popup.util.popups.find(popup => popup.content.querySelector('.extensions_info'));
+        const oldPopup = Popup.util.popups.find((popup) =>
+            popup.content.querySelector(".extensions_info"),
+        );
         if (oldPopup) {
             initialScrollTop = oldPopup.content.scrollTop;
             await oldPopup.completeCancelled();
         }
         const htmlErrors = getExtensionLoadErrorsHtml();
-        const htmlDefault = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Built-in Extensions:` + '</h3></div>');
-        const htmlExternal = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Installed Extensions:` + '</h3></div>');
-        const htmlLoading = $(`<div class="flex-container alignItemsCenter justifyCenter marginTop10 marginBot5">
+        const htmlDefault = $(
+            '<div class="marginBot10"><h3 class="textAlignCenter">' +
+                t`Built-in Extensions:` +
+                "</h3></div>",
+        );
+        const htmlExternal = $(
+            '<div class="marginBot10"><h3 class="textAlignCenter">' +
+                t`Installed Extensions:` +
+                "</h3></div>",
+        );
+        const htmlLoading = $(
+            `<div class="flex-container alignItemsCenter justifyCenter marginTop10 marginBot5">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <span>` + t`Loading third-party extensions... Please wait...` + `</span>
-        </div>`);
+            <span>` +
+                t`Loading third-party extensions... Please wait...` +
+                `</span>
+        </div>`,
+        );
 
         htmlExternal.append(htmlLoading);
 
-        const sortOrderKey = 'extensions_sortByName';
-        const sortByName = accountStorage.getItem(sortOrderKey) === 'true';
+        const sortOrderKey = "extensions_sortByName";
+        const sortByName = accountStorage.getItem(sortOrderKey) === "true";
         const sortFn = sortByName ? sortManifestsByName : sortManifestsByOrder;
-        const extensions = Object.entries(manifests).sort((a, b) => sortFn(a[1], b[1])).map(getExtensionData);
+        const extensions = Object.entries(manifests)
+            .sort((a, b) => sortFn(a[1], b[1]))
+            .map(getExtensionData);
 
-        extensions.forEach(value => {
+        extensions.forEach((value) => {
             const { isExternal, extensionHtml } = value;
             const container = isExternal ? htmlExternal : htmlDefault;
             container.append(extensionHtml);
         });
 
-        const html = $('<div></div>')
-            .addClass('extensions_info')
+        const html = $("<div></div>")
+            .addClass("extensions_info")
             .append(htmlErrors)
             .append(htmlDefault)
             .append(htmlExternal)
@@ -880,38 +1030,53 @@ async function showExtensionsDetails() {
                 await popup.complete(POPUP_RESULT.AFFIRMATIVE);
             };
 
-            const toolbar = document.createElement('div');
-            toolbar.classList.add('extensions_toolbar');
+            const toolbar = document.createElement("div");
+            toolbar.classList.add("extensions_toolbar");
 
-            const updateAllButton = document.createElement('button');
-            updateAllButton.classList.add('menu_button', 'menu_button_icon');
+            const updateAllButton = document.createElement("button");
+            updateAllButton.classList.add("menu_button", "menu_button_icon");
             updateAllButton.textContent = t`Update all`;
-            updateAllButton.addEventListener('click', () => updateAction(true));
+            updateAllButton.addEventListener("click", () => updateAction(true));
 
-            const updateEnabledOnlyButton = document.createElement('button');
-            updateEnabledOnlyButton.classList.add('menu_button', 'menu_button_icon');
+            const updateEnabledOnlyButton = document.createElement("button");
+            updateEnabledOnlyButton.classList.add(
+                "menu_button",
+                "menu_button_icon",
+            );
             updateEnabledOnlyButton.textContent = t`Update enabled`;
-            updateEnabledOnlyButton.addEventListener('click', () => updateAction(false));
+            updateEnabledOnlyButton.addEventListener("click", () =>
+                updateAction(false),
+            );
 
-            const flexExpander = document.createElement('div');
-            flexExpander.classList.add('expander');
+            const flexExpander = document.createElement("div");
+            flexExpander.classList.add("expander");
 
-            const sortOrderButton = document.createElement('button');
-            sortOrderButton.classList.add('menu_button', 'menu_button_icon');
-            sortOrderButton.textContent = sortByName ? t`Sort: Display Name` : t`Sort: Loading Order`;
-            sortOrderButton.addEventListener('click', async () => {
+            const sortOrderButton = document.createElement("button");
+            sortOrderButton.classList.add("menu_button", "menu_button_icon");
+            sortOrderButton.textContent = sortByName
+                ? t`Sort: Display Name`
+                : t`Sort: Loading Order`;
+            sortOrderButton.addEventListener("click", async () => {
                 abortController.abort();
-                accountStorage.setItem(sortOrderKey, sortByName ? 'false' : 'true');
+                accountStorage.setItem(
+                    sortOrderKey,
+                    sortByName ? "false" : "true",
+                );
                 await showExtensionsDetails();
             });
 
-            toolbar.append(updateAllButton, updateEnabledOnlyButton, flexExpander, sortOrderButton);
+            toolbar.append(
+                updateAllButton,
+                updateEnabledOnlyButton,
+                flexExpander,
+                sortOrderButton,
+            );
             html.prepend(toolbar);
         }
 
         let waitingForSave = false;
 
-        const popup = new Popup(html, POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(html, POPUP_TYPE.TEXT, "", {
             okButton: t`Close`,
             wide: true,
             large: true,
@@ -923,7 +1088,10 @@ async function showExtensionsDetails() {
                 }
                 if (stateChanged) {
                     waitingForSave = true;
-                    const toast = toastr.info(t`The page will be reloaded shortly...`, t`Extensions state changed`);
+                    const toast = toastr.info(
+                        t`The page will be reloaded shortly...`,
+                        t`Extensions state changed`,
+                    );
                     await saveSettings();
                     toastr.clear(toast);
                     waitingForSave = false;
@@ -934,9 +1102,13 @@ async function showExtensionsDetails() {
         });
         popupPromise = popup.show();
         popup.content.scrollTop = initialScrollTop;
-        checkForUpdatesManual(sortFn, abortController.signal).finally(() => htmlLoading.remove());
+        checkForUpdatesManual(sortFn, abortController.signal).finally(() =>
+            htmlLoading.remove(),
+        );
     } catch (error) {
-        toastr.error(t`Error loading extensions. See browser console for details.`);
+        toastr.error(
+            t`Error loading extensions. See browser console for details.`,
+        );
         console.error(error);
     }
     if (popupPromise) {
@@ -957,18 +1129,18 @@ async function showExtensionsDetails() {
  */
 async function onUpdateClick() {
     const isCurrentUserAdmin = isAdmin();
-    const extensionName = $(this).data('name');
-    const isGlobal = getExtensionType(extensionName) === 'global';
+    const extensionName = $(this).data("name");
+    const isGlobal = getExtensionType(extensionName) === "global";
     if (isGlobal && !isCurrentUserAdmin) {
         toastr.error(t`You don't have permission to update global extensions.`);
         return;
     }
 
-    const icon = $(this).find('i');
-    icon.addClass('fa-spin');
+    const icon = $(this).find("i");
+    icon.addClass("fa-spin");
     await updateExtension(extensionName, false);
     // updateExtension eats the error, but we can at least stop the spinner
-    icon.removeClass('fa-spin');
+    icon.removeClass("fa-spin");
 }
 
 /**
@@ -978,19 +1150,28 @@ async function onUpdateClick() {
  */
 async function updateExtension(extensionName, quiet) {
     try {
-        const response = await fetch('/api/extensions/update', {
-            method: 'POST',
+        const response = await fetch("/api/extensions/update", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
-                global: getExtensionType(extensionName) === 'global',
+                global: getExtensionType(extensionName) === "global",
             }),
         });
 
         if (!response.ok) {
             const text = await response.text();
-            toastr.error(text || response.statusText, t`Extension update failed`, { timeOut: 5000 });
-            console.error('Extension update failed', response.status, response.statusText, text);
+            toastr.error(
+                text || response.statusText,
+                t`Extension update failed`,
+                { timeOut: 5000 },
+            );
+            console.error(
+                "Extension update failed",
+                response.status,
+                response.statusText,
+                text,
+            );
             return;
         }
 
@@ -1002,13 +1183,16 @@ async function updateExtension(extensionName, quiet) {
 
         if (data.isUpToDate) {
             if (!quiet) {
-                toastr.success('Extension is already up to date');
+                toastr.success("Extension is already up to date");
             }
         } else {
-            toastr.success(t`Extension ${extensionName} updated to ${data.shortCommitHash}`, t`Reload the page to apply updates`);
+            toastr.success(
+                t`Extension ${extensionName} updated to ${data.shortCommitHash}`,
+                t`Reload the page to apply updates`,
+            );
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
     }
 }
 
@@ -1019,47 +1203,52 @@ async function updateExtension(extensionName, quiet) {
  * Creates a popup for the user to confirm before delete.
  */
 async function onDeleteClick() {
-    const extensionName = $(this).data('name');
+    const extensionName = $(this).data("name");
     const isCurrentUserAdmin = isAdmin();
-    const isGlobal = getExtensionType(extensionName) === 'global';
+    const isGlobal = getExtensionType(extensionName) === "global";
     if (isGlobal && !isCurrentUserAdmin) {
         toastr.error(t`You don't have permission to delete global extensions.`);
         return;
     }
 
     // use callPopup to create a popup for the user to confirm before delete
-    const confirmation = await callGenericPopup(t`Are you sure you want to delete ${extensionName}?`, POPUP_TYPE.CONFIRM, '', {});
+    const confirmation = await callGenericPopup(
+        t`Are you sure you want to delete ${extensionName}?`,
+        POPUP_TYPE.CONFIRM,
+        "",
+        {},
+    );
     if (confirmation === POPUP_RESULT.AFFIRMATIVE) {
         await deleteExtension(extensionName);
     }
 }
 
 async function onBranchClick() {
-    const extensionName = $(this).data('name');
+    const extensionName = $(this).data("name");
     const isCurrentUserAdmin = isAdmin();
-    const isGlobal = getExtensionType(extensionName) === 'global';
+    const isGlobal = getExtensionType(extensionName) === "global";
     if (isGlobal && !isCurrentUserAdmin) {
         toastr.error(t`You don't have permission to switch branch.`);
         return;
     }
 
-    let newBranch = '';
+    let newBranch = "";
 
     const branches = await getExtensionBranches(extensionName, isGlobal);
-    const selectElement = document.createElement('select');
-    selectElement.classList.add('text_pole', 'wide100p');
-    selectElement.addEventListener('change', function () {
+    const selectElement = document.createElement("select");
+    selectElement.classList.add("text_pole", "wide100p");
+    selectElement.addEventListener("change", function () {
         newBranch = this.value;
     });
     for (const branch of branches) {
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = branch.name;
         option.textContent = `${branch.name} (${branch.commit}) [${branch.label}]`;
         option.selected = branch.current;
         selectElement.appendChild(option);
     }
 
-    const popup = new Popup(selectElement, POPUP_TYPE.CONFIRM, '', {
+    const popup = new Popup(selectElement, POPUP_TYPE.CONFIRM, "", {
         okButton: t`Switch`,
         cancelButton: t`Cancel`,
     });
@@ -1073,29 +1262,33 @@ async function onBranchClick() {
 }
 
 async function onMoveClick() {
-    const extensionName = $(this).data('name');
+    const extensionName = $(this).data("name");
     const isCurrentUserAdmin = isAdmin();
-    const isGlobal = getExtensionType(extensionName) === 'global';
+    const isGlobal = getExtensionType(extensionName) === "global";
     if (isGlobal && !isCurrentUserAdmin) {
         toastr.error(t`You don't have permission to move extensions.`);
         return;
     }
 
     const source = getExtensionType(extensionName);
-    const destination = source === 'global' ? 'local' : 'global';
+    const destination = source === "global" ? "local" : "global";
 
     const confirmationHeader = t`Move extension`;
-    const confirmationText = source == 'global'
-        ? t`Are you sure you want to move ${extensionName} to your local extensions? This will make it available only for you.`
-        : t`Are you sure you want to move ${extensionName} to the global extensions? This will make it available for all users.`;
+    const confirmationText =
+        source == "global"
+            ? t`Are you sure you want to move ${extensionName} to your local extensions? This will make it available only for you.`
+            : t`Are you sure you want to move ${extensionName} to the global extensions? This will make it available for all users.`;
 
-    const confirmation = await Popup.show.confirm(confirmationHeader, confirmationText);
+    const confirmation = await Popup.show.confirm(
+        confirmationHeader,
+        confirmationText,
+    );
 
     if (!confirmation) {
         return;
     }
 
-    $(this).find('i').addClass('fa-spin');
+    $(this).find("i").addClass("fa-spin");
     await moveExtension(extensionName, source, destination);
 }
 
@@ -1108,8 +1301,8 @@ async function onMoveClick() {
  */
 async function moveExtension(extensionName, source, destination) {
     try {
-        const result = await fetch('/api/extensions/move', {
-            method: 'POST',
+        const result = await fetch("/api/extensions/move", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
@@ -1120,8 +1313,15 @@ async function moveExtension(extensionName, source, destination) {
 
         if (!result.ok) {
             const text = await result.text();
-            toastr.error(text || result.statusText, t`Extension move failed`, { timeOut: 5000 });
-            console.error('Extension move failed', result.status, result.statusText, text);
+            toastr.error(text || result.statusText, t`Extension move failed`, {
+                timeOut: 5000,
+            });
+            console.error(
+                "Extension move failed",
+                result.status,
+                result.statusText,
+                text,
+            );
             return;
         }
 
@@ -1129,7 +1329,7 @@ async function moveExtension(extensionName, source, destination) {
         await loadExtensionSettings({}, false, false);
         void showExtensionsDetails();
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
     }
 }
 
@@ -1139,16 +1339,16 @@ async function moveExtension(extensionName, source, destination) {
  */
 export async function deleteExtension(extensionName) {
     try {
-        await fetch('/api/extensions/delete', {
-            method: 'POST',
+        await fetch("/api/extensions/delete", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
-                global: getExtensionType(extensionName) === 'global',
+                global: getExtensionType(extensionName) === "global",
             }),
         });
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
     }
 
     toastr.success(t`Extension ${extensionName} deleted`);
@@ -1166,12 +1366,12 @@ export async function deleteExtension(extensionName) {
  */
 async function getExtensionVersion(extensionName, abortSignal) {
     try {
-        const response = await fetch('/api/extensions/version', {
-            method: 'POST',
+        const response = await fetch("/api/extensions/version", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
-                global: getExtensionType(extensionName) === 'global',
+                global: getExtensionType(extensionName) === "global",
             }),
             signal: abortSignal,
         });
@@ -1179,7 +1379,7 @@ async function getExtensionVersion(extensionName, abortSignal) {
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
     }
 }
 
@@ -1196,8 +1396,8 @@ async function getExtensionVersion(extensionName, abortSignal) {
  */
 async function getExtensionBranches(extensionName, isGlobal) {
     try {
-        const response = await fetch('/api/extensions/branches', {
-            method: 'POST',
+        const response = await fetch("/api/extensions/branches", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
@@ -1207,14 +1407,22 @@ async function getExtensionBranches(extensionName, isGlobal) {
 
         if (!response.ok) {
             const text = await response.text();
-            toastr.error(text || response.statusText, t`Extension branches fetch failed`);
-            console.error('Extension branches fetch failed', response.status, response.statusText, text);
+            toastr.error(
+                text || response.statusText,
+                t`Extension branches fetch failed`,
+            );
+            console.error(
+                "Extension branches fetch failed",
+                response.status,
+                response.statusText,
+                text,
+            );
             return [];
         }
 
         return await response.json();
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
         return [];
     }
 }
@@ -1228,8 +1436,8 @@ async function getExtensionBranches(extensionName, isGlobal) {
  */
 async function switchExtensionBranch(extensionName, isGlobal, branch) {
     try {
-        const response = await fetch('/api/extensions/switch', {
-            method: 'POST',
+        const response = await fetch("/api/extensions/switch", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
@@ -1240,8 +1448,16 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
 
         if (!response.ok) {
             const text = await response.text();
-            toastr.error(text || response.statusText, t`Extension branch switch failed`);
-            console.error('Extension branch switch failed', response.status, response.statusText, text);
+            toastr.error(
+                text || response.statusText,
+                t`Extension branch switch failed`,
+            );
+            console.error(
+                "Extension branch switch failed",
+                response.status,
+                response.statusText,
+                text,
+            );
             return;
         }
 
@@ -1249,7 +1465,7 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
         await loadExtensionSettings({}, false, false);
         void showExtensionsDetails();
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
     }
 }
 
@@ -1259,13 +1475,13 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
  * @param {boolean} global Is the extension global?
  * @returns {Promise<void>}
  */
-export async function installExtension(url, global, branch = '') {
-    console.debug('Extension installation started', url);
+export async function installExtension(url, global, branch = "") {
+    console.debug("Extension installation started", url);
 
     toastr.info(t`Please wait...`, t`Installing extension`);
 
-    const request = await fetch('/api/extensions/install', {
-        method: 'POST',
+    const request = await fetch("/api/extensions/install", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({
             url,
@@ -1276,14 +1492,28 @@ export async function installExtension(url, global, branch = '') {
 
     if (!request.ok) {
         const text = await request.text();
-        toastr.warning(text || request.statusText, t`Extension installation failed`, { timeOut: 5000 });
-        console.error('Extension installation failed', request.status, request.statusText, text);
+        toastr.warning(
+            text || request.statusText,
+            t`Extension installation failed`,
+            { timeOut: 5000 },
+        );
+        console.error(
+            "Extension installation failed",
+            request.status,
+            request.statusText,
+            text,
+        );
         return;
     }
 
     const response = await request.json();
-    toastr.success(t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`, t`Extension installation successful`);
-    console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
+    toastr.success(
+        t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`,
+        t`Extension installation successful`,
+    );
+    console.debug(
+        `Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`,
+    );
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
 }
@@ -1294,21 +1524,33 @@ export async function installExtension(url, global, branch = '') {
  * @param {boolean} versionChanged Is this a version change?
  * @param {boolean} enableAutoUpdate Enable auto-update
  */
-export async function loadExtensionSettings(settings, versionChanged, enableAutoUpdate) {
+export async function loadExtensionSettings(
+    settings,
+    versionChanged,
+    enableAutoUpdate,
+) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
 
-    $('#extensions_url').val(extension_settings.apiUrl);
-    $('#extensions_api_key').val(extension_settings.apiKey);
-    $('#extensions_autoconnect').prop('checked', extension_settings.autoConnect);
-    $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
+    $("#extensions_url").val(extension_settings.apiUrl);
+    $("#extensions_api_key").val(extension_settings.apiKey);
+    $("#extensions_autoconnect").prop(
+        "checked",
+        extension_settings.autoConnect,
+    );
+    $("#extensions_notify_updates").prop(
+        "checked",
+        extension_settings.notifyUpdates,
+    );
 
     // Activate offline extensions
     await eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     const extensions = await discoverExtensions();
-    extensionNames = extensions.map(x => x.name);
-    extensionTypes = Object.fromEntries(extensions.map(x => [x.name, x.type]));
+    extensionNames = extensions.map((x) => x.name);
+    extensionTypes = Object.fromEntries(
+        extensions.map((x) => [x.name, x.type]),
+    );
     manifests = await getManifests(extensionNames);
 
     if (versionChanged && enableAutoUpdate) {
@@ -1341,7 +1583,10 @@ function enqueueVersionCheck(fn) {
 }
 
 function processVersionCheckQueue() {
-    if (activeRequestsCount >= concurrencyLimit || versionCheckQueue.length === 0) {
+    if (
+        activeRequestsCount >= concurrencyLimit ||
+        versionCheckQueue.length === 0
+    ) {
         return;
     }
     activeRequestsCount++;
@@ -1360,49 +1605,60 @@ function processVersionCheckQueue() {
  */
 async function checkForUpdatesManual(sortFn, abortSignal) {
     const promises = [];
-    for (const id of Object.keys(manifests).filter(x => x.startsWith('third-party')).sort((a, b) => sortFn(manifests[a], manifests[b]))) {
-        const externalId = id.replace('third-party', '');
+    for (const id of Object.keys(manifests)
+        .filter((x) => x.startsWith("third-party"))
+        .sort((a, b) => sortFn(manifests[a], manifests[b]))) {
+        const externalId = id.replace("third-party", "");
         const promise = enqueueVersionCheck(async () => {
             try {
                 const data = await getExtensionVersion(externalId, abortSignal);
-                const extensionBlock = document.querySelector(`.extension_block[data-name="${externalId}"]`);
+                const extensionBlock = document.querySelector(
+                    `.extension_block[data-name="${externalId}"]`,
+                );
                 if (extensionBlock && data) {
                     if (data.isUpToDate === false) {
-                        const buttonElement = extensionBlock.querySelector('.btn_update');
+                        const buttonElement =
+                            extensionBlock.querySelector(".btn_update");
                         if (buttonElement) {
-                            buttonElement.classList.remove('displayNone');
+                            buttonElement.classList.remove("displayNone");
                         }
-                        const nameElement = extensionBlock.querySelector('.extension_name');
+                        const nameElement =
+                            extensionBlock.querySelector(".extension_name");
                         if (nameElement) {
-                            nameElement.classList.add('update_available');
+                            nameElement.classList.add("update_available");
                         }
                     }
                     let branch = data.currentBranchName;
                     let commitHash = data.currentCommitHash;
                     let origin = data.remoteUrl;
 
-                    const originLink = extensionBlock.querySelector('a');
+                    const originLink = extensionBlock.querySelector("a");
                     if (originLink) {
                         try {
                             const url = new URL(origin);
-                            if (!['https:', 'http:'].includes(url.protocol)) {
-                                throw new Error('Invalid protocol');
+                            if (!["https:", "http:"].includes(url.protocol)) {
+                                throw new Error("Invalid protocol");
                             }
                             originLink.href = url.href;
-                            originLink.target = '_blank';
-                            originLink.rel = 'noopener noreferrer';
+                            originLink.target = "_blank";
+                            originLink.rel = "noopener noreferrer";
                         } catch (error) {
-                            console.log('Error setting origin link', originLink, error);
+                            console.log(
+                                "Error setting origin link",
+                                originLink,
+                                error,
+                            );
                         }
                     }
 
-                    const versionElement = extensionBlock.querySelector('.extension_version');
+                    const versionElement =
+                        extensionBlock.querySelector(".extension_version");
                     if (versionElement) {
                         versionElement.textContent += ` (${branch}-${commitHash.substring(0, 7)})`;
                     }
                 }
             } catch (error) {
-                console.error('Error checking for extension updates', error);
+                console.error("Error checking for extension updates", error);
             }
         });
         promises.push(promise);
@@ -1417,7 +1673,7 @@ async function checkForUpdatesManual(sortFn, abortSignal) {
  */
 async function checkForExtensionUpdates(force) {
     if (!force) {
-        const STORAGE_NAG_KEY = 'extension_update_nag';
+        const STORAGE_NAG_KEY = "extension_update_nag";
         const currentDate = new Date().toDateString();
 
         // Don't nag more than once a day
@@ -1435,24 +1691,33 @@ async function checkForExtensionUpdates(force) {
     for (const [id, manifest] of Object.entries(manifests)) {
         const isDisabled = extension_settings.disabledExtensions.includes(id);
         if (isDisabled) {
-            console.debug(`Skipping extension: ${manifest.display_name} (${id}) for non-admin user`);
+            console.debug(
+                `Skipping extension: ${manifest.display_name} (${id}) for non-admin user`,
+            );
             continue;
         }
-        const isGlobal = getExtensionType(id) === 'global';
+        const isGlobal = getExtensionType(id) === "global";
         if (isGlobal && !isCurrentUserAdmin) {
-            console.debug(`Skipping global extension: ${manifest.display_name} (${id}) for non-admin user`);
+            console.debug(
+                `Skipping global extension: ${manifest.display_name} (${id}) for non-admin user`,
+            );
             continue;
         }
 
-        if (manifest.auto_update && id.startsWith('third-party')) {
+        if (manifest.auto_update && id.startsWith("third-party")) {
             const promise = enqueueVersionCheck(async () => {
                 try {
-                    const data = await getExtensionVersion(id.replace('third-party', ''));
+                    const data = await getExtensionVersion(
+                        id.replace("third-party", ""),
+                    );
                     if (!data.isUpToDate) {
                         updatesAvailable.push(manifest.display_name);
                     }
                 } catch (error) {
-                    console.error('Error checking for extension updates', error);
+                    console.error(
+                        "Error checking for extension updates",
+                        error,
+                    );
                 }
             });
             promises.push(promise);
@@ -1462,7 +1727,10 @@ async function checkForExtensionUpdates(force) {
     await Promise.allSettled(promises);
 
     if (updatesAvailable.length > 0) {
-        toastr.info(`${updatesAvailable.map(x => `• ${x}`).join('\n')}`, t`Extension updates available`);
+        toastr.info(
+            `${updatesAvailable.map((x) => `• ${x}`).join("\n")}`,
+            t`Extension updates available`,
+        );
     }
 }
 
@@ -1472,27 +1740,40 @@ async function checkForExtensionUpdates(force) {
  * @returns {Promise<void>}
  */
 async function autoUpdateExtensions(forceAll) {
-    if (!Object.values(manifests).some(x => x.auto_update)) {
+    if (!Object.values(manifests).some((x) => x.auto_update)) {
         return;
     }
 
-    const banner = toastr.info(t`Auto-updating extensions. This may take several minutes.`, t`Please wait...`, { timeOut: 10000, extendedTimeOut: 10000 });
+    const banner = toastr.info(
+        t`Auto-updating extensions. This may take several minutes.`,
+        t`Please wait...`,
+        { timeOut: 10000, extendedTimeOut: 10000 },
+    );
     const isCurrentUserAdmin = isAdmin();
     const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
         const isDisabled = extension_settings.disabledExtensions.includes(id);
         if (!forceAll && isDisabled) {
-            console.debug(`Skipping extension: ${manifest.display_name} (${id}) for non-admin user`);
+            console.debug(
+                `Skipping extension: ${manifest.display_name} (${id}) for non-admin user`,
+            );
             continue;
         }
-        const isGlobal = getExtensionType(id) === 'global';
+        const isGlobal = getExtensionType(id) === "global";
         if (isGlobal && !isCurrentUserAdmin) {
-            console.debug(`Skipping global extension: ${manifest.display_name} (${id}) for non-admin user`);
+            console.debug(
+                `Skipping global extension: ${manifest.display_name} (${id}) for non-admin user`,
+            );
             continue;
         }
-        if ((forceAll || manifest.auto_update) && id.startsWith('third-party')) {
-            console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
-            promises.push(updateExtension(id.replace('third-party', ''), true));
+        if (
+            (forceAll || manifest.auto_update) &&
+            id.startsWith("third-party")
+        ) {
+            console.debug(
+                `Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`,
+            );
+            promises.push(updateExtension(id.replace("third-party", ""), true));
         }
     }
     await Promise.allSettled(promises);
@@ -1515,13 +1796,23 @@ export async function runGenerationInterceptors(chat, contextSize, type) {
         exitImmediately = immediately;
     };
 
-    for (const manifest of Object.values(manifests).filter(x => x.generate_interceptor).sort((a, b) => sortManifestsByOrder(a, b))) {
+    for (const manifest of Object.values(manifests)
+        .filter((x) => x.generate_interceptor)
+        .sort((a, b) => sortManifestsByOrder(a, b))) {
         const interceptorKey = manifest.generate_interceptor;
-        if (typeof globalThis[interceptorKey] === 'function') {
+        if (typeof globalThis[interceptorKey] === "function") {
             try {
-                await globalThis[interceptorKey](chat, contextSize, abort, type);
+                await globalThis[interceptorKey](
+                    chat,
+                    contextSize,
+                    abort,
+                    type,
+                );
             } catch (e) {
-                console.error(`Failed running interceptor for ${manifest.display_name}`, e);
+                console.error(
+                    `Failed running interceptor for ${manifest.display_name}`,
+                    e,
+                );
             }
         }
 
@@ -1544,7 +1835,7 @@ export async function writeExtensionField(characterId, key, value) {
     const context = getContext();
     const character = context.characters[characterId];
     if (!character) {
-        console.warn('Character not found', characterId);
+        console.warn("Character not found", characterId);
         return;
     }
     const path = `data.extensions.${key}`;
@@ -1558,7 +1849,7 @@ export async function writeExtensionField(characterId, key, value) {
 
         // Make sure the data doesn't get lost when saving the current character
         if (Number(characterId) === Number(context.characterId)) {
-            $('#character_json_data').val(character.json_data);
+            $("#character_json_data").val(character.json_data);
         }
     }
 
@@ -1571,14 +1862,17 @@ export async function writeExtensionField(characterId, key, value) {
             },
         },
     };
-    const mergeResponse = await fetch('/api/characters/merge-attributes', {
-        method: 'POST',
+    const mergeResponse = await fetch("/api/characters/merge-attributes", {
+        method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify(saveDataRequest),
     });
 
     if (!mergeResponse.ok) {
-        console.error('Failed to save extension field', mergeResponse.statusText);
+        console.error(
+            "Failed to save extension field",
+            mergeResponse.statusText,
+        );
     }
 }
 
@@ -1591,9 +1885,11 @@ export async function writeExtensionField(characterId, key, value) {
  * @param {string} [suggestUrl] Suggested URL to install
  * @returns {Promise<void>}
  */
-export async function openThirdPartyExtensionMenu(suggestUrl = '') {
+export async function openThirdPartyExtensionMenu(suggestUrl = "") {
     const isCurrentUserAdmin = isAdmin();
-    const html = await renderTemplateAsync('installExtension', { isCurrentUserAdmin });
+    const html = await renderTemplateAsync("installExtension", {
+        isCurrentUserAdmin,
+    });
     const okButton = isCurrentUserAdmin ? t`Install just for me` : t`Install`;
 
     let global = false;
@@ -1607,46 +1903,78 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     };
     /** @type {import('./popup.js').CustomPopupInput} */
     const branchNameInput = {
-        id: 'extension_branch_name',
+        id: "extension_branch_name",
         label: t`Branch or tag name (optional)`,
-        type: 'text',
-        tooltip: 'e.g. main, dev, v1.0.0',
+        type: "text",
+        tooltip: "e.g. main, dev, v1.0.0",
     };
 
     const customButtons = isCurrentUserAdmin ? [installForAllButton] : [];
     const customInputs = [branchNameInput];
-    const popup = new Popup(html, POPUP_TYPE.INPUT, suggestUrl ?? '', { okButton, customButtons, customInputs });
+    const popup = new Popup(html, POPUP_TYPE.INPUT, suggestUrl ?? "", {
+        okButton,
+        customButtons,
+        customInputs,
+    });
     const input = await popup.show();
 
     if (!input) {
-        console.debug('Extension install cancelled');
+        console.debug("Extension install cancelled");
         return;
     }
 
     const url = String(input).trim();
-    const branchName = String(popup.inputResults.get('extension_branch_name') ?? '').trim();
+    const branchName = String(
+        popup.inputResults.get("extension_branch_name") ?? "",
+    ).trim();
     await installExtension(url, global, branchName);
 }
 
 export async function initExtensions() {
     await addExtensionsButtonAndMenu();
-    $('#extensionsMenuButton').css('display', 'flex');
+    $("#extensionsMenuButton").css("display", "flex");
 
-    $('#extensions_connect').on('click', connectClickHandler);
-    $('#extensions_autoconnect').on('input', autoConnectInputHandler);
-    $('#extensions_details').on('click', showExtensionsDetails);
-    $('#extensions_notify_updates').on('input', notifyUpdatesInputHandler);
-    $(document).on('click', '.extensions_info .extension_block .toggle_disable', onDisableExtensionClick);
-    $(document).on('click', '.extensions_info .extension_block .toggle_enable', onEnableExtensionClick);
-    $(document).on('click', '.extensions_info .extension_block .btn_update', onUpdateClick);
-    $(document).on('click', '.extensions_info .extension_block .btn_delete', onDeleteClick);
-    $(document).on('click', '.extensions_info .extension_block .btn_move', onMoveClick);
-    $(document).on('click', '.extensions_info .extension_block .btn_branch', onBranchClick);
+    $("#extensions_connect").on("click", connectClickHandler);
+    $("#extensions_autoconnect").on("input", autoConnectInputHandler);
+    $("#extensions_details").on("click", showExtensionsDetails);
+    $("#extensions_notify_updates").on("input", notifyUpdatesInputHandler);
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .toggle_disable",
+        onDisableExtensionClick,
+    );
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .toggle_enable",
+        onEnableExtensionClick,
+    );
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .btn_update",
+        onUpdateClick,
+    );
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .btn_delete",
+        onDeleteClick,
+    );
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .btn_move",
+        onMoveClick,
+    );
+    $(document).on(
+        "click",
+        ".extensions_info .extension_block .btn_branch",
+        onBranchClick,
+    );
 
     /**
      * Handles the click event for the third-party extension import button.
      *
      * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
      */
-    $('#third_party_extension_button').on('click', () => openThirdPartyExtensionMenu());
+    $("#third_party_extension_button").on("click", () =>
+        openThirdPartyExtensionMenu(),
+    );
 }

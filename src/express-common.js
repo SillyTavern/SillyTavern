@@ -1,4 +1,4 @@
-import ipaddr from 'ipaddr.js';
+import ipaddr from "ipaddr.js";
 
 const noopMiddleware = (_req, _res, next) => next();
 /** @deprecated Do not use. A global middleware is provided at the application level. */
@@ -14,11 +14,15 @@ export const urlencodedParser = noopMiddleware;
 export function getIpFromRequest(req) {
     let clientIp = req.socket.remoteAddress;
     if (!clientIp) {
-        return 'unknown';
+        return "unknown";
     }
     let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
-    if (ip.kind() === 'ipv6' && ip instanceof ipaddr.IPv6 && ip.isIPv4MappedAddress()) {
+    if (
+        ip.kind() === "ipv6" &&
+        ip instanceof ipaddr.IPv6 &&
+        ip.isIPv4MappedAddress()
+    ) {
         const ipv4 = ip.toIPv4Address().toString();
         clientIp = ipv4;
     } else {
@@ -34,8 +38,8 @@ export function getIpFromRequest(req) {
  * @returns {string} IP address of the client
  */
 export function getRealIpFromHeader(req) {
-    if (req.headers['x-real-ip']) {
-        return req.headers['x-real-ip'].toString();
+    if (req.headers["x-real-ip"]) {
+        return req.headers["x-real-ip"].toString();
     }
 
     return getIpFromRequest(req);

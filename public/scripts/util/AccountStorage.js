@@ -1,6 +1,6 @@
-import { saveSettingsDebounced } from '../../script.js';
+import { saveSettingsDebounced } from "../../script.js";
 
-const MIGRATED_MARKER = '__migrated';
+const MIGRATED_MARKER = "__migrated";
 const MIGRATABLE_KEYS = [
     /^AlertRegex_/,
     /^AlertWI_/,
@@ -54,7 +54,7 @@ class AccountStorage {
             localStorageKeys.push(globalThis.localStorage.key(i));
         }
         for (const key of localStorageKeys) {
-            if (MIGRATABLE_KEYS.some(k => k.test(key))) {
+            if (MIGRATABLE_KEYS.some((k) => k.test(key))) {
                 const value = globalThis.localStorage.getItem(key);
                 this.#state[key] = value;
                 globalThis.localStorage.removeItem(key);
@@ -67,13 +67,13 @@ class AccountStorage {
      * @param {Object} state Initial state
      */
     init(state) {
-        if (state && typeof state === 'object') {
+        if (state && typeof state === "object") {
             this.#state = Object.assign(this.#state, state);
         }
 
         if (!Object.hasOwn(this.#state, MIGRATED_MARKER)) {
             this.#migrateLocalStorage();
-            this.#state[MIGRATED_MARKER] = '1';
+            this.#state[MIGRATED_MARKER] = "1";
             saveSettingsDebounced();
         }
 
@@ -87,10 +87,14 @@ class AccountStorage {
      */
     getItem(key) {
         if (!this.#ready) {
-            console.warn(`AccountStorage not ready (trying to read from ${key})`);
+            console.warn(
+                `AccountStorage not ready (trying to read from ${key})`,
+            );
         }
 
-        return Object.hasOwn(this.#state, key) ? String(this.#state[key]) : null;
+        return Object.hasOwn(this.#state, key)
+            ? String(this.#state[key])
+            : null;
     }
 
     /**
@@ -100,7 +104,9 @@ class AccountStorage {
      */
     setItem(key, value) {
         if (!this.#ready) {
-            console.warn(`AccountStorage not ready (trying to write to ${key})`);
+            console.warn(
+                `AccountStorage not ready (trying to write to ${key})`,
+            );
         }
 
         this.#state[key] = String(value);

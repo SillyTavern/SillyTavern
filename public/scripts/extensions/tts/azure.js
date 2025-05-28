@@ -1,7 +1,12 @@
-import { getRequestHeaders } from '../../../script.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
-import { SECRET_KEYS, findSecret, secret_state, writeSecret } from '../../secrets.js';
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
+import { getRequestHeaders } from "../../../script.js";
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from "../../popup.js";
+import {
+    SECRET_KEYS,
+    findSecret,
+    secret_state,
+    writeSecret,
+} from "../../secrets.js";
+import { getPreviewString, saveTtsProviderSettings } from "./index.js";
 export { AzureTtsProvider };
 
 class AzureTtsProvider {
@@ -11,11 +16,11 @@ class AzureTtsProvider {
 
     settings;
     voices = [];
-    separator = ' . ';
-    audioElement = document.createElement('audio');
+    separator = " . ";
+    audioElement = document.createElement("audio");
 
     defaultSettings = {
-        region: '',
+        region: "",
         voiceMap: {},
     };
 
@@ -41,7 +46,7 @@ class AzureTtsProvider {
 
     onSettingsChange() {
         // Update dynamically
-        this.settings.region = String($('#azure_tts_region').val());
+        this.settings.region = String($("#azure_tts_region").val());
         // Reset voices
         this.voices = [];
         saveTtsProviderSettings();
@@ -50,7 +55,7 @@ class AzureTtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings');
+            console.info("Using default TTS Provider settings");
         }
 
         // Only accept keys defined in defaultSettings
@@ -64,25 +69,42 @@ class AzureTtsProvider {
             }
         }
 
-        $('#azure_tts_region').val(this.settings.region).on('input', () => this.onSettingsChange());
-        $('#azure_tts_key').toggleClass('success', secret_state[SECRET_KEYS.AZURE_TTS]);
-        $('#azure_tts_key').on('click', async () => {
-            const popupText = 'Azure TTS API Key';
-            const savedKey = secret_state[SECRET_KEYS.AZURE_TTS] ? await findSecret(SECRET_KEYS.AZURE_TTS) : '';
+        $("#azure_tts_region")
+            .val(this.settings.region)
+            .on("input", () => this.onSettingsChange());
+        $("#azure_tts_key").toggleClass(
+            "success",
+            secret_state[SECRET_KEYS.AZURE_TTS],
+        );
+        $("#azure_tts_key").on("click", async () => {
+            const popupText = "Azure TTS API Key";
+            const savedKey = secret_state[SECRET_KEYS.AZURE_TTS]
+                ? await findSecret(SECRET_KEYS.AZURE_TTS)
+                : "";
 
-            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
-                customButtons: [{
-                    text: 'Remove Key',
-                    appendAtEnd: true,
-                    result: POPUP_RESULT.NEGATIVE,
-                    action: async () => {
-                        await writeSecret(SECRET_KEYS.AZURE_TTS, '');
-                        $('#azure_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.AZURE_TTS]);
-                        toastr.success('API Key removed');
-                        await this.onRefreshClick();
-                    },
-                }],
-            });
+            const key = await callGenericPopup(
+                popupText,
+                POPUP_TYPE.INPUT,
+                savedKey,
+                {
+                    customButtons: [
+                        {
+                            text: "Remove Key",
+                            appendAtEnd: true,
+                            result: POPUP_RESULT.NEGATIVE,
+                            action: async () => {
+                                await writeSecret(SECRET_KEYS.AZURE_TTS, "");
+                                $("#azure_tts_key").toggleClass(
+                                    "success",
+                                    !!secret_state[SECRET_KEYS.AZURE_TTS],
+                                );
+                                toastr.success("API Key removed");
+                                await this.onRefreshClick();
+                            },
+                        },
+                    ],
+                },
+            );
 
             if (!key) {
                 return;
@@ -90,16 +112,16 @@ class AzureTtsProvider {
 
             await writeSecret(SECRET_KEYS.AZURE_TTS, String(key));
 
-            toastr.success('API Key saved');
-            $('#azure_tts_key').addClass('success');
+            toastr.success("API Key saved");
+            $("#azure_tts_key").addClass("success");
             await this.onRefreshClick();
         });
 
         try {
             await this.checkReady();
-            console.debug('Azure: Settings loaded');
+            console.debug("Azure: Settings loaded");
         } catch {
-            console.debug('Azure: Settings loaded, but not ready');
+            console.debug("Azure: Settings loaded, but not ready");
         }
     }
 
@@ -124,9 +146,7 @@ class AzureTtsProvider {
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceObjects();
         }
-        const match = this.voices.filter(
-            voice => voice.name == voiceName,
-        )[0];
+        const match = this.voices.filter((voice) => voice.name == voiceName)[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
         }
@@ -143,17 +163,17 @@ class AzureTtsProvider {
     //###########//
     async fetchTtsVoiceObjects() {
         if (!secret_state[SECRET_KEYS.AZURE_TTS]) {
-            console.warn('Azure TTS API Key not set');
+            console.warn("Azure TTS API Key not set");
             return [];
         }
 
         if (!this.settings.region) {
-            console.warn('Azure TTS region not set');
+            console.warn("Azure TTS region not set");
             return [];
         }
 
-        const response = await fetch('/api/azure/list', {
-            method: 'POST',
+        const response = await fetch("/api/azure/list", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 region: this.settings.region,
@@ -161,12 +181,23 @@ class AzureTtsProvider {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
         let responseJson = await response.json();
         responseJson = responseJson
-            .sort((a, b) => a.Locale.localeCompare(b.Locale) || a.ShortName.localeCompare(b.ShortName))
-            .map(x => ({ name: x.ShortName, voice_id: x.ShortName, preview_url: false, lang: x.Locale }));
+            .sort(
+                (a, b) =>
+                    a.Locale.localeCompare(b.Locale) ||
+                    a.ShortName.localeCompare(b.ShortName),
+            )
+            .map((x) => ({
+                name: x.ShortName,
+                voice_id: x.ShortName,
+                preview_url: false,
+                lang: x.Locale,
+            }));
         return responseJson;
     }
 
@@ -181,7 +212,9 @@ class AzureTtsProvider {
         const text = getPreviewString(voice.lang);
         const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         const audio = await response.blob();
@@ -193,15 +226,15 @@ class AzureTtsProvider {
 
     async fetchTtsGeneration(text, voiceId) {
         if (!secret_state[SECRET_KEYS.AZURE_TTS]) {
-            throw new Error('Azure TTS API Key not set');
+            throw new Error("Azure TTS API Key not set");
         }
 
         if (!this.settings.region) {
-            throw new Error('Azure TTS region not set');
+            throw new Error("Azure TTS region not set");
         }
 
-        const response = await fetch('/api/azure/generate', {
-            method: 'POST',
+        const response = await fetch("/api/azure/generate", {
+            method: "POST",
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 text: text,
@@ -211,8 +244,10 @@ class AzureTtsProvider {
         });
 
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`,
+            );
         }
 
         return response;

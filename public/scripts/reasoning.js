@@ -1,21 +1,59 @@
+import { moment } from "../lib.js";
 import {
-    moment,
-} from '../lib.js';
-import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
-import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { getCurrentLocale, t, translate } from './i18n.js';
-import { MacrosParser } from './macros.js';
-import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
-import { Popup } from './popup.js';
-import { performFuzzySearch, power_user } from './power-user.js';
-import { getPresetManager } from './preset-manager.js';
-import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+    chat,
+    closeMessageEditor,
+    event_types,
+    eventSource,
+    main_api,
+    messageFormatting,
+    saveChatConditional,
+    saveChatDebounced,
+    saveSettingsDebounced,
+    substituteParams,
+    syncMesToSwipe,
+    updateMessageBlock,
+} from "../script.js";
+import {
+    getRegexedString,
+    regex_placement,
+} from "./extensions/regex/engine.js";
+import { getCurrentLocale, t, translate } from "./i18n.js";
+import { MacrosParser } from "./macros.js";
+import {
+    chat_completion_sources,
+    getChatCompletionModel,
+    oai_settings,
+} from "./openai.js";
+import { Popup } from "./popup.js";
+import { performFuzzySearch, power_user } from "./power-user.js";
+import { getPresetManager } from "./preset-manager.js";
+import { SlashCommand } from "./slash-commands/SlashCommand.js";
+import {
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument,
+} from "./slash-commands/SlashCommandArgument.js";
+import {
+    commonEnumProviders,
+    enumIcons,
+} from "./slash-commands/SlashCommandCommonEnumsProvider.js";
+import {
+    enumTypes,
+    SlashCommandEnumValue,
+} from "./slash-commands/SlashCommandEnumValue.js";
+import { SlashCommandParser } from "./slash-commands/SlashCommandParser.js";
+import {
+    textgen_types,
+    textgenerationwebui_settings,
+} from "./textgen-settings.js";
+import {
+    copyText,
+    escapeRegex,
+    isFalseBoolean,
+    isTrueBoolean,
+    setDatasetProperty,
+    trimSpaces,
+} from "./utils.js";
 
 /**
  * @typedef {object} ReasoningTemplate
@@ -30,22 +68,22 @@ import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetPropert
  */
 export const reasoning_templates = [];
 
-export const DEFAULT_REASONING_TEMPLATE = 'DeepSeek';
+export const DEFAULT_REASONING_TEMPLATE = "DeepSeek";
 
 /**
  * @type {Record<string, JQuery<HTMLElement>>} List of UI elements for reasoning settings
  * @readonly
  */
 const UI = {
-    $select: $('#reasoning_select'),
-    $suffix: $('#reasoning_suffix'),
-    $prefix: $('#reasoning_prefix'),
-    $separator: $('#reasoning_separator'),
-    $autoParse: $('#reasoning_auto_parse'),
-    $autoExpand: $('#reasoning_auto_expand'),
-    $showHidden: $('#reasoning_show_hidden'),
-    $addToPrompts: $('#reasoning_add_to_prompts'),
-    $maxAdditions: $('#reasoning_max_additions'),
+    $select: $("#reasoning_select"),
+    $suffix: $("#reasoning_suffix"),
+    $prefix: $("#reasoning_prefix"),
+    $separator: $("#reasoning_separator"),
+    $autoParse: $("#reasoning_auto_parse"),
+    $autoExpand: $("#reasoning_auto_expand"),
+    $showHidden: $("#reasoning_show_hidden"),
+    $addToPrompts: $("#reasoning_add_to_prompts"),
+    $maxAdditions: $("#reasoning_max_additions"),
 };
 
 /**
@@ -54,10 +92,10 @@ const UI = {
  * @readonly
  */
 export const ReasoningType = {
-    Model: 'model',
-    Parsed: 'parsed',
-    Manual: 'manual',
-    Edited: 'edited',
+    Model: "model",
+    Parsed: "parsed",
+    Manual: "manual",
+    Edited: "edited",
 };
 
 /**
@@ -66,8 +104,8 @@ export const ReasoningType = {
  * @returns {{messageId: number, message: object, messageBlock: JQuery<HTMLElement>}}
  */
 function getMessageFromJquery(element) {
-    const messageBlock = $(element).closest('.mes');
-    const messageId = Number(messageBlock.attr('mesid'));
+    const messageBlock = $(element).closest(".mes");
+    const messageId = Number(messageBlock.attr("mesid"));
     const message = chat[messageId];
     return { messageId: messageId, message, messageBlock };
 }
@@ -76,7 +114,9 @@ function getMessageFromJquery(element) {
  * Toggles the auto-expand state of reasoning blocks.
  */
 function toggleReasoningAutoExpand() {
-    const reasoningBlocks = document.querySelectorAll('details.mes_reasoning_details');
+    const reasoningBlocks = document.querySelectorAll(
+        "details.mes_reasoning_details",
+    );
     reasoningBlocks.forEach((block) => {
         if (block instanceof HTMLDetailsElement) {
             block.open = power_user.reasoning.auto_expand;
@@ -89,45 +129,61 @@ function toggleReasoningAutoExpand() {
  * @param {object} data Response data
  * @returns {string} Extracted reasoning
  */
-export function extractReasoningFromData(data, {
-    mainApi = null,
-    ignoreShowThoughts = false,
-    textGenType = null,
-    chatCompletionSource = null,
-} = {}) {
+export function extractReasoningFromData(
+    data,
+    {
+        mainApi = null,
+        ignoreShowThoughts = false,
+        textGenType = null,
+        chatCompletionSource = null,
+    } = {},
+) {
     switch (mainApi ?? main_api) {
-        case 'textgenerationwebui':
+        case "textgenerationwebui":
             switch (textGenType ?? textgenerationwebui_settings.type) {
                 case textgen_types.OPENROUTER:
-                    return data?.choices?.[0]?.reasoning ?? '';
+                    return data?.choices?.[0]?.reasoning ?? "";
             }
             break;
 
-        case 'openai':
+        case "openai":
             if (!ignoreShowThoughts && !oai_settings.show_thoughts) break;
 
-            switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
+            switch (
+                chatCompletionSource ??
+                oai_settings.chat_completion_source
+            ) {
                 case chat_completion_sources.DEEPSEEK:
-                    return data?.choices?.[0]?.message?.reasoning_content ?? '';
+                    return data?.choices?.[0]?.message?.reasoning_content ?? "";
                 case chat_completion_sources.XAI:
-                    return data?.choices?.[0]?.message?.reasoning_content ?? '';
+                    return data?.choices?.[0]?.message?.reasoning_content ?? "";
                 case chat_completion_sources.OPENROUTER:
-                    return data?.choices?.[0]?.message?.reasoning ?? '';
+                    return data?.choices?.[0]?.message?.reasoning ?? "";
                 case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.VERTEXAI:
-                    return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
+                    return (
+                        data?.responseContent?.parts
+                            ?.filter((part) => part.thought)
+                            ?.map((part) => part.text)
+                            ?.join("\n\n") ?? ""
+                    );
                 case chat_completion_sources.CLAUDE:
-                    return data?.content?.find(part => part.type === 'thinking')?.thinking ?? '';
+                    return (
+                        data?.content?.find((part) => part.type === "thinking")
+                            ?.thinking ?? ""
+                    );
                 case chat_completion_sources.CUSTOM: {
-                    return data?.choices?.[0]?.message?.reasoning_content
-                        ?? data?.choices?.[0]?.message?.reasoning
-                        ?? '';
+                    return (
+                        data?.choices?.[0]?.message?.reasoning_content ??
+                        data?.choices?.[0]?.message?.reasoning ??
+                        ""
+                    );
                 }
             }
             break;
     }
 
-    return '';
+    return "";
 }
 
 /**
@@ -135,29 +191,33 @@ export function extractReasoningFromData(data, {
  * @returns {boolean} True if the model supports reasoning
  */
 export function isHiddenReasoningModel() {
-    if (main_api !== 'openai') {
+    if (main_api !== "openai") {
         return false;
     }
 
     /** @typedef {{ (currentModel: string, supportedModel: string): boolean }} MatchingFunc */
     /** @type {Record.<string, MatchingFunc>} */
     const FUNCS = {
-        equals: (currentModel, supportedModel) => currentModel === supportedModel,
-        startsWith: (currentModel, supportedModel) => currentModel.startsWith(supportedModel),
+        equals: (currentModel, supportedModel) =>
+            currentModel === supportedModel,
+        startsWith: (currentModel, supportedModel) =>
+            currentModel.startsWith(supportedModel),
     };
 
     /** @type {{ name: string; func: MatchingFunc; }[]} */
     const hiddenReasoningModels = [
-        { name: 'gpt-4.5', func: FUNCS.startsWith },
-        { name: 'o1', func: FUNCS.startsWith },
-        { name: 'o3', func: FUNCS.startsWith },
-        { name: 'gemini-2.0-flash-thinking-exp', func: FUNCS.startsWith },
-        { name: 'gemini-2.0-pro-exp', func: FUNCS.startsWith },
+        { name: "gpt-4.5", func: FUNCS.startsWith },
+        { name: "o1", func: FUNCS.startsWith },
+        { name: "o3", func: FUNCS.startsWith },
+        { name: "gemini-2.0-flash-thinking-exp", func: FUNCS.startsWith },
+        { name: "gemini-2.0-pro-exp", func: FUNCS.startsWith },
     ];
 
-    const model = getChatCompletionModel() || '';
+    const model = getChatCompletionModel() || "";
 
-    const isHidden = hiddenReasoningModels.some(({ name, func }) => func(model, name));
+    const isHidden = hiddenReasoningModels.some(({ name, func }) =>
+        func(model, name),
+    );
     return isHidden;
 }
 
@@ -172,17 +232,16 @@ export function updateReasoningUI(messageIdOrElement, { reset = false } = {}) {
     handler.initHandleMessage(messageIdOrElement, { reset });
 }
 
-
 /**
  * Enum for representing the state of reasoning
  * @enum {string}
  * @readonly
  */
 export const ReasoningState = {
-    None: 'none',
-    Thinking: 'thinking',
-    Done: 'done',
-    Hidden: 'hidden',
+    None: "none",
+    Thinking: "thinking",
+    Done: "done",
+    Hidden: "hidden",
 };
 
 /**
@@ -206,7 +265,7 @@ export class ReasoningHandler {
         /** @type {ReasoningType?} The type of the reasoning (where it came from) */
         this.type = null;
         /** @type {string} The reasoning output */
-        this.reasoning = '';
+        this.reasoning = "";
         /** @type {string?} The reasoning output display in case of translate or other */
         this.reasoningDisplayText = null;
         /** @type {Date} When the reasoning started */
@@ -236,9 +295,15 @@ export class ReasoningHandler {
      */
     initContinue(promptReasoning) {
         this.reasoning = promptReasoning.prefixReasoning;
-        this.state = promptReasoning.prefixIncomplete ? ReasoningState.None : ReasoningState.Done;
+        this.state = promptReasoning.prefixIncomplete
+            ? ReasoningState.None
+            : ReasoningState.Done;
         this.startTime = this.initialTime;
-        this.endTime = promptReasoning.prefixDuration ? new Date(this.initialTime.getTime() + promptReasoning.prefixDuration) : null;
+        this.endTime = promptReasoning.prefixDuration
+            ? new Date(
+                  this.initialTime.getTime() + promptReasoning.prefixDuration,
+              )
+            : null;
     }
 
     /**
@@ -254,12 +319,15 @@ export class ReasoningHandler {
      */
     initHandleMessage(messageIdOrElement, { reset = false } = {}) {
         /** @type {HTMLElement} */
-        const messageElement = typeof messageIdOrElement === 'number'
-            ? document.querySelector(`#chat [mesid="${messageIdOrElement}"]`)
-            : messageIdOrElement instanceof HTMLElement
-                ? messageIdOrElement
-                : $(messageIdOrElement)[0];
-        const messageId = Number(messageElement.getAttribute('mesid'));
+        const messageElement =
+            typeof messageIdOrElement === "number"
+                ? document.querySelector(
+                      `#chat [mesid="${messageIdOrElement}"]`,
+                  )
+                : messageIdOrElement instanceof HTMLElement
+                  ? messageIdOrElement
+                  : $(messageIdOrElement)[0];
+        const messageId = Number(messageElement.getAttribute("mesid"));
 
         if (isNaN(messageId) || !chat[messageId]) return;
 
@@ -275,13 +343,15 @@ export class ReasoningHandler {
         }
 
         this.type = extra?.reasoning_type;
-        this.reasoning = extra?.reasoning ?? '';
+        this.reasoning = extra?.reasoning ?? "";
         this.reasoningDisplayText = extra?.reasoning_display_text ?? null;
 
         if (this.state !== ReasoningState.None) {
             this.initialTime = new Date(chat[messageId].gen_started);
             this.startTime = this.initialTime;
-            this.endTime = new Date(this.startTime.getTime() + (extra?.reasoning_duration ?? 0));
+            this.endTime = new Date(
+                this.startTime.getTime() + (extra?.reasoning_duration ?? 0),
+            );
         }
 
         // Prefill main dom element, as message might not have been rendered yet
@@ -289,9 +359,11 @@ export class ReasoningHandler {
 
         // Make sure reset correctly clears all relevant states
         if (reset) {
-            this.state = this.#isHiddenReasoningModel ? ReasoningState.Thinking : ReasoningState.None;
+            this.state = this.#isHiddenReasoningModel
+                ? ReasoningState.Thinking
+                : ReasoningState.None;
             this.type = null;
-            this.reasoning = '';
+            this.reasoning = "";
             this.reasoningDisplayText = null;
             this.initialTime = new Date();
             this.startTime = null;
@@ -300,7 +372,10 @@ export class ReasoningHandler {
 
         this.updateDom(messageId);
 
-        if (power_user.reasoning.auto_expand && this.state !== ReasoningState.Hidden) {
+        if (
+            power_user.reasoning.auto_expand &&
+            this.state !== ReasoningState.Hidden
+        ) {
             this.messageReasoningDetailsDom.open = true;
         }
     }
@@ -327,12 +402,18 @@ export class ReasoningHandler {
      * @param {boolean} [options.allowReset=false] - Whether to allow empty reasoning provided to reset the reasoning, instead of just taking the existing one
      * @returns {boolean} - Returns true if the reasoning was changed, otherwise false
      */
-    updateReasoning(messageId, reasoning = null, { persist = false, allowReset = false } = {}) {
+    updateReasoning(
+        messageId,
+        reasoning = null,
+        { persist = false, allowReset = false } = {},
+    ) {
         if (messageId == -1 || !chat[messageId]) {
             return false;
         }
 
-        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
+        reasoning = allowReset
+            ? (reasoning ?? this.reasoning)
+            : reasoning || this.reasoning;
         reasoning = trimSpaces(reasoning);
 
         // Ensure the chat extra exists
@@ -342,20 +423,28 @@ export class ReasoningHandler {
         const extra = chat[messageId].extra;
 
         const reasoningChanged = extra.reasoning !== reasoning;
-        this.reasoning = getRegexedString(reasoning ?? '', regex_placement.REASONING);
+        this.reasoning = getRegexedString(
+            reasoning ?? "",
+            regex_placement.REASONING,
+        );
 
-        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+        this.type =
+            this.#isParsingReasoning || this.#parsingReasoningMesStartIndex
+                ? ReasoningType.Parsed
+                : ReasoningType.Model;
 
         if (persist) {
             // Build and save the reasoning data to message extras
             extra.reasoning = this.reasoning;
             extra.reasoning_duration = this.getDuration();
-            extra.reasoning_type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+            extra.reasoning_type =
+                this.#isParsingReasoning || this.#parsingReasoningMesStartIndex
+                    ? ReasoningType.Parsed
+                    : ReasoningType.Model;
         }
 
         return reasoningChanged;
     }
-
 
     /**
      * Handles processing of reasoning for a message.
@@ -368,19 +457,31 @@ export class ReasoningHandler {
      * @returns {Promise<void>}
      */
     async process(messageId, mesChanged, promptReasoning) {
-        mesChanged = this.#autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning);
+        mesChanged = this.#autoParseReasoningFromMessage(
+            messageId,
+            mesChanged,
+            promptReasoning,
+        );
 
-        if (!this.reasoning && !this.#isHiddenReasoningModel)
-            return;
+        if (!this.reasoning && !this.#isHiddenReasoningModel) return;
 
         // Ensure reasoning string is updated and regexes are applied correctly
-        const reasoningChanged = this.updateReasoning(messageId, null, { persist: true });
+        const reasoningChanged = this.updateReasoning(messageId, null, {
+            persist: true,
+        });
 
-        if ((this.#isHiddenReasoningModel || reasoningChanged) && this.state === ReasoningState.None) {
+        if (
+            (this.#isHiddenReasoningModel || reasoningChanged) &&
+            this.state === ReasoningState.None
+        ) {
             this.state = ReasoningState.Thinking;
             this.startTime = this.initialTime;
         }
-        if ((this.#isHiddenReasoningModel || !reasoningChanged) && mesChanged && this.state === ReasoningState.Thinking) {
+        if (
+            (this.#isHiddenReasoningModel || !reasoningChanged) &&
+            mesChanged &&
+            this.state === ReasoningState.Thinking
+        ) {
             this.endTime = new Date();
             await this.finish(messageId);
         }
@@ -394,8 +495,7 @@ export class ReasoningHandler {
      * @returns {boolean} Whether the message has changed after reasoning parsing
      */
     #autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning) {
-        if (!power_user.reasoning.auto_parse)
-            return;
+        if (!power_user.reasoning.auto_parse) return;
         if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
             return mesChanged;
 
@@ -403,17 +503,27 @@ export class ReasoningHandler {
         const message = chat[messageId];
         if (!message) return mesChanged;
 
-        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
+        const parseTarget = promptReasoning?.prefixIncomplete
+            ? promptReasoning.prefixReasoningFormatted + message.mes
+            : message.mes;
 
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {
-            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
+            message.mes = trimSpaces(
+                parseTarget.slice(this.#parsingReasoningMesStartIndex),
+            );
             return mesChanged;
         }
 
-        if (this.state === ReasoningState.None || this.#isHiddenReasoningModel) {
+        if (
+            this.state === ReasoningState.None ||
+            this.#isHiddenReasoningModel
+        ) {
             // If streamed message starts with the opening, cut it out and put all inside reasoning
-            if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
+            if (
+                parseTarget.startsWith(power_user.reasoning.prefix) &&
+                parseTarget.length > power_user.reasoning.prefix.length
+            ) {
                 this.#isParsingReasoning = true;
 
                 // Manually set starting state here, as we might already have received the ending suffix
@@ -423,18 +533,24 @@ export class ReasoningHandler {
             }
         }
 
-        if (!this.#isParsingReasoning)
-            return mesChanged;
+        if (!this.#isParsingReasoning) return mesChanged;
 
         // If we are in manual parsing mode, all currently streaming mes tokens will go the the reasoning block
         this.reasoning = parseTarget.slice(power_user.reasoning.prefix.length);
-        message.mes = '';
+        message.mes = "";
 
         // If the reasoning contains the ending suffix, we cut that off and continue as message streaming
         if (this.reasoning.includes(power_user.reasoning.suffix)) {
-            this.reasoning = this.reasoning.slice(0, this.reasoning.indexOf(power_user.reasoning.suffix));
-            this.#parsingReasoningMesStartIndex = parseTarget.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
-            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
+            this.reasoning = this.reasoning.slice(
+                0,
+                this.reasoning.indexOf(power_user.reasoning.suffix),
+            );
+            this.#parsingReasoningMesStartIndex =
+                parseTarget.indexOf(power_user.reasoning.suffix) +
+                power_user.reasoning.suffix.length;
+            message.mes = trimSpaces(
+                parseTarget.slice(this.#parsingReasoningMesStartIndex),
+            );
             this.#isParsingReasoning = false;
         }
 
@@ -460,9 +576,17 @@ export class ReasoningHandler {
         }
 
         if (this.state === ReasoningState.Thinking) {
-            this.state = this.#isHiddenReasoningModel ? ReasoningState.Hidden : ReasoningState.Done;
+            this.state = this.#isHiddenReasoningModel
+                ? ReasoningState.Hidden
+                : ReasoningState.Done;
             this.updateReasoning(messageId, null, { persist: true });
-            await eventSource.emit(event_types.STREAM_REASONING_DONE, this.reasoning, this.getDuration(), messageId, this.state);
+            await eventSource.emit(
+                event_types.STREAM_REASONING_DONE,
+                this.reasoning,
+                this.getDuration(),
+                messageId,
+                this.state,
+            );
         }
 
         this.updateDom(messageId);
@@ -479,22 +603,46 @@ export class ReasoningHandler {
         this.#checkDomElements(messageId);
 
         // Main CSS class to show this message includes reasoning
-        this.messageDom.classList.toggle('reasoning', this.state !== ReasoningState.None);
+        this.messageDom.classList.toggle(
+            "reasoning",
+            this.state !== ReasoningState.None,
+        );
 
         // Update states to the relevant DOM elements
-        setDatasetProperty(this.messageDom, 'reasoningState', this.state !== ReasoningState.None ? this.state : null);
-        setDatasetProperty(this.messageReasoningDetailsDom, 'state', this.state);
-        setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
+        setDatasetProperty(
+            this.messageDom,
+            "reasoningState",
+            this.state !== ReasoningState.None ? this.state : null,
+        );
+        setDatasetProperty(
+            this.messageReasoningDetailsDom,
+            "state",
+            this.state,
+        );
+        setDatasetProperty(this.messageReasoningDetailsDom, "type", this.type);
 
         // Update the reasoning message
-        const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
-        const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
+        const reasoning = trimSpaces(
+            this.reasoningDisplayText ?? this.reasoning,
+        );
+        const displayReasoning = messageFormatting(
+            reasoning,
+            "",
+            false,
+            false,
+            messageId,
+            {},
+            true,
+        );
         this.messageReasoningContentDom.innerHTML = displayReasoning;
 
         // Update tooltip for hidden reasoning edit
         /** @type {HTMLElement} */
-        const button = this.messageDom.querySelector('.mes_edit_add_reasoning');
-        button.title = this.state === ReasoningState.Hidden ? t`Hidden reasoning - Add reasoning block` : t`Add reasoning block`;
+        const button = this.messageDom.querySelector(".mes_edit_add_reasoning");
+        button.title =
+            this.state === ReasoningState.Hidden
+                ? t`Hidden reasoning - Add reasoning block`
+                : t`Add reasoning block`;
 
         // Make sure that hidden reasoning headers are collapsed by default, to not show a useless edit button
         if (this.state === ReasoningState.Hidden) {
@@ -512,23 +660,34 @@ export class ReasoningHandler {
      */
     #checkDomElements(messageId) {
         // Make sure we reset dom elements if we are checking for a different message (shouldn't happen, but be sure)
-        if (this.messageDom !== null && this.messageDom.getAttribute('mesid') !== messageId.toString()) {
+        if (
+            this.messageDom !== null &&
+            this.messageDom.getAttribute("mesid") !== messageId.toString()
+        ) {
             this.messageDom = null;
         }
 
         // Cache the DOM elements once
         if (this.messageDom === null) {
-            this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
-            if (this.messageDom === null) throw new Error('message dom does not exist');
+            this.messageDom = document.querySelector(
+                `#chat .mes[mesid="${messageId}"]`,
+            );
+            if (this.messageDom === null)
+                throw new Error("message dom does not exist");
         }
         if (this.messageReasoningDetailsDom === null) {
-            this.messageReasoningDetailsDom = this.messageDom.querySelector('.mes_reasoning_details');
+            this.messageReasoningDetailsDom = this.messageDom.querySelector(
+                ".mes_reasoning_details",
+            );
         }
         if (this.messageReasoningContentDom === null) {
-            this.messageReasoningContentDom = this.messageDom.querySelector('.mes_reasoning');
+            this.messageReasoningContentDom =
+                this.messageDom.querySelector(".mes_reasoning");
         }
         if (this.messageReasoningHeaderDom === null) {
-            this.messageReasoningHeaderDom = this.messageDom.querySelector('.mes_reasoning_header_title');
+            this.messageReasoningHeaderDom = this.messageDom.querySelector(
+                ".mes_reasoning_header_title",
+            );
         }
     }
 
@@ -542,17 +701,22 @@ export class ReasoningHandler {
         const element = this.messageReasoningHeaderDom;
         const duration = this.getDuration();
         let data = null;
-        let title = '';
+        let title = "";
         if (duration) {
             const seconds = moment.duration(duration).asSeconds();
 
-            const durationStr = moment.duration(duration).locale(getCurrentLocale()).humanize({ s: 50, ss: 3 });
+            const durationStr = moment
+                .duration(duration)
+                .locale(getCurrentLocale())
+                .humanize({ s: 50, ss: 3 });
             element.textContent = t`Thought for ${durationStr}`;
             data = String(seconds);
             title = `${seconds} seconds`;
-        } else if ([ReasoningState.Done, ReasoningState.Hidden].includes(this.state)) {
+        } else if (
+            [ReasoningState.Done, ReasoningState.Hidden].includes(this.state)
+        ) {
             element.textContent = t`Thought for some time`;
-            data = 'unknown';
+            data = "unknown";
         } else {
             element.textContent = t`Thinking...`;
             data = null;
@@ -564,8 +728,8 @@ export class ReasoningHandler {
         }
         element.title = title;
 
-        setDatasetProperty(this.messageReasoningDetailsDom, 'duration', data);
-        setDatasetProperty(element, 'duration', data);
+        setDatasetProperty(this.messageReasoningDetailsDom, "duration", data);
+        setDatasetProperty(element, "duration", data);
     }
 }
 
@@ -582,8 +746,8 @@ export class PromptReasoning {
     /**
      * @readonly Zero-width space character used as a placeholder for reasoning.
      * @type {string}
-    */
-    static REASONING_PLACEHOLDER = '\u200B';
+     */
+    static REASONING_PLACEHOLDER = "\u200B";
 
     /**
      * Returns the latest formatted reasoning prefix if the prefix is incomplete.
@@ -591,11 +755,11 @@ export class PromptReasoning {
      */
     static getLatestPrefix() {
         if (!PromptReasoning.#LATEST) {
-            return '';
+            return "";
         }
 
         if (!PromptReasoning.#LATEST.prefixIncomplete) {
-            return '';
+            return "";
         }
 
         return PromptReasoning.#LATEST.prefixReasoningFormatted;
@@ -617,9 +781,9 @@ export class PromptReasoning {
         /** @type {number} */
         this.prefixLength = -1;
         /** @type {string} */
-        this.prefixReasoning = '';
+        this.prefixReasoning = "";
         /** @type {string} */
-        this.prefixReasoningFormatted = '';
+        this.prefixReasoningFormatted = "";
         /** @type {number?} */
         this.prefixDuration = null;
         /** @type {boolean} */
@@ -648,7 +812,11 @@ export class PromptReasoning {
      */
     addToMessage(content, reasoning, isPrefix, duration) {
         // Disabled or reached limit of additions
-        if (!isPrefix && (!power_user.reasoning.add_to_prompts || this.counter >= power_user.reasoning.max_additions)) {
+        if (
+            !isPrefix &&
+            (!power_user.reasoning.add_to_prompts ||
+                this.counter >= power_user.reasoning.max_additions)
+        ) {
             return content;
         }
 
@@ -661,9 +829,11 @@ export class PromptReasoning {
         this.counter++;
 
         // Substitute macros in variable parts
-        const prefix = substituteParams(power_user.reasoning.prefix || '');
-        const separator = substituteParams(power_user.reasoning.separator || '');
-        const suffix = substituteParams(power_user.reasoning.suffix || '');
+        const prefix = substituteParams(power_user.reasoning.prefix || "");
+        const separator = substituteParams(
+            power_user.reasoning.separator || "",
+        );
+        const suffix = substituteParams(power_user.reasoning.suffix || "");
 
         // Combine parts with reasoning only
         if (isPrefix && !content) {
@@ -704,61 +874,67 @@ export class PromptReasoning {
 }
 
 function loadReasoningSettings() {
-    UI.$addToPrompts.prop('checked', power_user.reasoning.add_to_prompts);
-    UI.$addToPrompts.on('change', function () {
-        power_user.reasoning.add_to_prompts = !!$(this).prop('checked');
+    UI.$addToPrompts.prop("checked", power_user.reasoning.add_to_prompts);
+    UI.$addToPrompts.on("change", function () {
+        power_user.reasoning.add_to_prompts = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
     UI.$prefix.val(power_user.reasoning.prefix);
-    UI.$prefix.on('input', function () {
+    UI.$prefix.on("input", function () {
         power_user.reasoning.prefix = String($(this).val());
         saveSettingsDebounced();
     });
 
     UI.$suffix.val(power_user.reasoning.suffix);
-    UI.$suffix.on('input', function () {
+    UI.$suffix.on("input", function () {
         power_user.reasoning.suffix = String($(this).val());
         saveSettingsDebounced();
     });
 
     UI.$separator.val(power_user.reasoning.separator);
-    UI.$separator.on('input', function () {
+    UI.$separator.on("input", function () {
         power_user.reasoning.separator = String($(this).val());
         saveSettingsDebounced();
     });
 
     UI.$maxAdditions.val(power_user.reasoning.max_additions);
-    UI.$maxAdditions.on('input', function () {
+    UI.$maxAdditions.on("input", function () {
         power_user.reasoning.max_additions = Number($(this).val());
         saveSettingsDebounced();
     });
 
-    UI.$autoParse.prop('checked', power_user.reasoning.auto_parse);
-    UI.$autoParse.on('change', function () {
-        power_user.reasoning.auto_parse = !!$(this).prop('checked');
+    UI.$autoParse.prop("checked", power_user.reasoning.auto_parse);
+    UI.$autoParse.on("change", function () {
+        power_user.reasoning.auto_parse = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
-    UI.$autoExpand.prop('checked', power_user.reasoning.auto_expand);
-    UI.$autoExpand.on('change', function () {
-        power_user.reasoning.auto_expand = !!$(this).prop('checked');
+    UI.$autoExpand.prop("checked", power_user.reasoning.auto_expand);
+    UI.$autoExpand.on("change", function () {
+        power_user.reasoning.auto_expand = !!$(this).prop("checked");
         toggleReasoningAutoExpand();
         saveSettingsDebounced();
     });
     toggleReasoningAutoExpand();
 
-    UI.$showHidden.prop('checked', power_user.reasoning.show_hidden);
-    UI.$showHidden.on('change', function () {
-        power_user.reasoning.show_hidden = !!$(this).prop('checked');
-        $('#chat').attr('data-show-hidden-reasoning', power_user.reasoning.show_hidden ? 'true' : null);
+    UI.$showHidden.prop("checked", power_user.reasoning.show_hidden);
+    UI.$showHidden.on("change", function () {
+        power_user.reasoning.show_hidden = !!$(this).prop("checked");
+        $("#chat").attr(
+            "data-show-hidden-reasoning",
+            power_user.reasoning.show_hidden ? "true" : null,
+        );
         saveSettingsDebounced();
     });
-    $('#chat').attr('data-show-hidden-reasoning', power_user.reasoning.show_hidden ? 'true' : null);
+    $("#chat").attr(
+        "data-show-hidden-reasoning",
+        power_user.reasoning.show_hidden ? "true" : null,
+    );
 
-    UI.$select.on('change', async function () {
+    UI.$select.on("change", async function () {
         const name = String($(this).val());
-        const template = reasoning_templates.find(p => p.name === name);
+        const template = reasoning_templates.find((p) => p.name === name);
         if (!template) {
             return;
         }
@@ -778,192 +954,258 @@ function loadReasoningSettings() {
 
 function selectReasoningTemplateCallback(args, name) {
     if (!name) {
-        return power_user.reasoning.name ?? '';
+        return power_user.reasoning.name ?? "";
     }
 
     const quiet = isTrueBoolean(args?.quiet);
-    const templateNames = reasoning_templates.map(preset => preset.name);
-    let foundName = templateNames.find(x => x.toLowerCase() === name.toLowerCase());
+    const templateNames = reasoning_templates.map((preset) => preset.name);
+    let foundName = templateNames.find(
+        (x) => x.toLowerCase() === name.toLowerCase(),
+    );
 
     if (!foundName) {
-        const result = performFuzzySearch('reasoning-templates', templateNames, [], name);
+        const result = performFuzzySearch(
+            "reasoning-templates",
+            templateNames,
+            [],
+            name,
+        );
 
         if (result.length === 0) {
             !quiet && toastr.warning(`Reasoning template "${name}" not found`);
-            return '';
+            return "";
         }
 
         foundName = result[0].item;
     }
 
-    UI.$select.val(foundName).trigger('change');
+    UI.$select.val(foundName).trigger("change");
     !quiet && toastr.success(`Reasoning template "${foundName}" selected`);
     return foundName;
-
 }
 
 function registerReasoningSlashCommands() {
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'reasoning-get',
-        aliases: ['get-reasoning'],
-        returns: ARGUMENT_TYPE.STRING,
-        helpString: t`Get the contents of a reasoning block of a message. Returns an empty string if the message does not have a reasoning block.`,
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Message ID. If not provided, the message ID of the last message is used.',
-                typeList: ARGUMENT_TYPE.NUMBER,
-                enumProvider: commonEnumProviders.messages(),
-            }),
-        ],
-        callback: (_args, value) => {
-            const messageId = !isNaN(parseInt(value.toString())) ? parseInt(value.toString()) : chat.length - 1;
-            const message = chat[messageId];
-            const reasoning = String(message?.extra?.reasoning ?? '');
-            return reasoning;
-        },
-    }));
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "reasoning-get",
+            aliases: ["get-reasoning"],
+            returns: ARGUMENT_TYPE.STRING,
+            helpString: t`Get the contents of a reasoning block of a message. Returns an empty string if the message does not have a reasoning block.`,
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description:
+                        "Message ID. If not provided, the message ID of the last message is used.",
+                    typeList: ARGUMENT_TYPE.NUMBER,
+                    enumProvider: commonEnumProviders.messages(),
+                }),
+            ],
+            callback: (_args, value) => {
+                const messageId = !isNaN(parseInt(value.toString()))
+                    ? parseInt(value.toString())
+                    : chat.length - 1;
+                const message = chat[messageId];
+                const reasoning = String(message?.extra?.reasoning ?? "");
+                return reasoning;
+            },
+        }),
+    );
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'reasoning-set',
-        aliases: ['set-reasoning'],
-        returns: ARGUMENT_TYPE.STRING,
-        helpString: t`Set the reasoning block of a message. Returns the reasoning block content.`,
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'at',
-                description: 'Message ID. If not provided, the message ID of the last message is used.',
-                typeList: ARGUMENT_TYPE.NUMBER,
-                enumProvider: commonEnumProviders.messages(),
-            }),
-            SlashCommandNamedArgument.fromProps({
-                name: 'collapse',
-                description: 'Whether to collapse the reasoning block. (If not provided, uses the default expand setting)',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Reasoning block content.',
-                typeList: ARGUMENT_TYPE.STRING,
-            }),
-        ],
-        callback: async (args, value) => {
-            const messageId = !isNaN(Number(args.at)) ? Number(args.at) : chat.length - 1;
-            const message = chat[messageId];
-            if (!message) {
-                return '';
-            }
-            // Make sure the message has an extra object
-            if (!message.extra || typeof message.extra !== 'object') {
-                message.extra = {};
-            }
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "reasoning-set",
+            aliases: ["set-reasoning"],
+            returns: ARGUMENT_TYPE.STRING,
+            helpString: t`Set the reasoning block of a message. Returns the reasoning block content.`,
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: "at",
+                    description:
+                        "Message ID. If not provided, the message ID of the last message is used.",
+                    typeList: ARGUMENT_TYPE.NUMBER,
+                    enumProvider: commonEnumProviders.messages(),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: "collapse",
+                    description:
+                        "Whether to collapse the reasoning block. (If not provided, uses the default expand setting)",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    enumList: commonEnumProviders.boolean("trueFalse")(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: "Reasoning block content.",
+                    typeList: ARGUMENT_TYPE.STRING,
+                }),
+            ],
+            callback: async (args, value) => {
+                const messageId = !isNaN(Number(args.at))
+                    ? Number(args.at)
+                    : chat.length - 1;
+                const message = chat[messageId];
+                if (!message) {
+                    return "";
+                }
+                // Make sure the message has an extra object
+                if (!message.extra || typeof message.extra !== "object") {
+                    message.extra = {};
+                }
 
-            message.extra.reasoning = String(value ?? '');
-            message.extra.reasoning_type = ReasoningType.Manual;
-            await saveChatConditional();
+                message.extra.reasoning = String(value ?? "");
+                message.extra.reasoning_type = ReasoningType.Manual;
+                await saveChatConditional();
 
-            closeMessageEditor('reasoning');
-            updateMessageBlock(messageId, message);
+                closeMessageEditor("reasoning");
+                updateMessageBlock(messageId, message);
 
-            if (isTrueBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).removeAttr('open');
-            if (isFalseBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).attr('open', '');
-            return message.extra.reasoning;
-        },
-    }));
+                if (isTrueBoolean(String(args.collapse)))
+                    $(
+                        `#chat [mesid="${messageId}"] .mes_reasoning_details`,
+                    ).removeAttr("open");
+                if (isFalseBoolean(String(args.collapse)))
+                    $(
+                        `#chat [mesid="${messageId}"] .mes_reasoning_details`,
+                    ).attr("open", "");
+                return message.extra.reasoning;
+            },
+        }),
+    );
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'reasoning-parse',
-        aliases: ['parse-reasoning'],
-        returns: 'reasoning string',
-        helpString: t`Extracts the reasoning block from a string using the Reasoning Formatting settings.`,
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'regex',
-                description: 'Whether to apply regex scripts to the reasoning content.',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'true',
-                isRequired: false,
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-            SlashCommandNamedArgument.fromProps({
-                name: 'return',
-                description: 'Whether to return the parsed reasoning or the content without reasoning',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'reasoning',
-                isRequired: false,
-                enumList: [
-                    new SlashCommandEnumValue('reasoning', null, enumTypes.enum, enumIcons.reasoning),
-                    new SlashCommandEnumValue('content', null, enumTypes.enum, enumIcons.message),
-                ],
-            }),
-            SlashCommandNamedArgument.fromProps({
-                name: 'strict',
-                description: 'Whether to require the reasoning block to be at the beginning of the string (excluding whitespaces).',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'true',
-                isRequired: false,
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'input string',
-                typeList: [ARGUMENT_TYPE.STRING],
-            }),
-        ],
-        callback: (args, value) => {
-            if (!value || typeof value !== 'string') {
-                return '';
-            }
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "reasoning-parse",
+            aliases: ["parse-reasoning"],
+            returns: "reasoning string",
+            helpString: t`Extracts the reasoning block from a string using the Reasoning Formatting settings.`,
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: "regex",
+                    description:
+                        "Whether to apply regex scripts to the reasoning content.",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: "true",
+                    isRequired: false,
+                    enumList: commonEnumProviders.boolean("trueFalse")(),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: "return",
+                    description:
+                        "Whether to return the parsed reasoning or the content without reasoning",
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    defaultValue: "reasoning",
+                    isRequired: false,
+                    enumList: [
+                        new SlashCommandEnumValue(
+                            "reasoning",
+                            null,
+                            enumTypes.enum,
+                            enumIcons.reasoning,
+                        ),
+                        new SlashCommandEnumValue(
+                            "content",
+                            null,
+                            enumTypes.enum,
+                            enumIcons.message,
+                        ),
+                    ],
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: "strict",
+                    description:
+                        "Whether to require the reasoning block to be at the beginning of the string (excluding whitespaces).",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: "true",
+                    isRequired: false,
+                    enumList: commonEnumProviders.boolean("trueFalse")(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: "input string",
+                    typeList: [ARGUMENT_TYPE.STRING],
+                }),
+            ],
+            callback: (args, value) => {
+                if (!value || typeof value !== "string") {
+                    return "";
+                }
 
-            if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
-                toastr.warning(t`Both prefix and suffix must be set in the Reasoning Formatting settings.`, t`Reasoning Parse`);
-                return value;
-            }
-            if (typeof args.return !== 'string' || !['reasoning', 'content'].includes(args.return)) {
-                toastr.warning(t`Invalid return type '${args.return}', defaulting to 'reasoning'.`, t`Reasoning Parse`);
-            }
+                if (
+                    !power_user.reasoning.prefix ||
+                    !power_user.reasoning.suffix
+                ) {
+                    toastr.warning(
+                        t`Both prefix and suffix must be set in the Reasoning Formatting settings.`,
+                        t`Reasoning Parse`,
+                    );
+                    return value;
+                }
+                if (
+                    typeof args.return !== "string" ||
+                    !["reasoning", "content"].includes(args.return)
+                ) {
+                    toastr.warning(
+                        t`Invalid return type '${args.return}', defaulting to 'reasoning'.`,
+                        t`Reasoning Parse`,
+                    );
+                }
 
-            const returnMessage = args.return === 'content';
+                const returnMessage = args.return === "content";
 
-            const parsedReasoning = parseReasoningFromString(value, { strict: !isFalseBoolean(String(args.strict ?? '')) });
-            if (!parsedReasoning) {
-                return returnMessage ? value : '';
-            }
+                const parsedReasoning = parseReasoningFromString(value, {
+                    strict: !isFalseBoolean(String(args.strict ?? "")),
+                });
+                if (!parsedReasoning) {
+                    return returnMessage ? value : "";
+                }
 
-            if (returnMessage) {
-                return parsedReasoning.content;
-            }
+                if (returnMessage) {
+                    return parsedReasoning.content;
+                }
 
-            const applyRegex = !isFalseBoolean(String(args.regex ?? ''));
-            return applyRegex
-                ? getRegexedString(parsedReasoning.reasoning, regex_placement.REASONING)
-                : parsedReasoning.reasoning;
-        },
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'reasoning-template',
-        aliases: ['reasoning-formatting', 'reasoning-preset'],
-        callback: selectReasoningTemplateCallback,
-        returns: 'template name',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message on template change',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'reasoning template name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => reasoning_templates.map(x => new SlashCommandEnumValue(x.name, null, enumTypes.enum, enumIcons.preset)),
-            }),
-        ],
-        helpString: `
+                const applyRegex = !isFalseBoolean(String(args.regex ?? ""));
+                return applyRegex
+                    ? getRegexedString(
+                          parsedReasoning.reasoning,
+                          regex_placement.REASONING,
+                      )
+                    : parsedReasoning.reasoning;
+            },
+        }),
+    );
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "reasoning-template",
+            aliases: ["reasoning-formatting", "reasoning-preset"],
+            callback: selectReasoningTemplateCallback,
+            returns: "template name",
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: "quiet",
+                    description:
+                        "Suppress the toast message on template change",
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: "false",
+                    enumList: commonEnumProviders.boolean("trueFalse")(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: "reasoning template name",
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: () =>
+                        reasoning_templates.map(
+                            (x) =>
+                                new SlashCommandEnumValue(
+                                    x.name,
+                                    null,
+                                    enumTypes.enum,
+                                    enumIcons.preset,
+                                ),
+                        ),
+                }),
+            ],
+            helpString: `
             <div>
                 Selects a reasoning template by name, using fuzzy search to find the closest match.
                 Gets the current template if no name is provided.
@@ -977,13 +1219,26 @@ function registerReasoningSlashCommands() {
                 </ul>
             </div>
             `,
-    }));
+        }),
+    );
 }
 
 function registerReasoningMacros() {
-    MacrosParser.registerMacro('reasoningPrefix', () => power_user.reasoning.prefix, t`Reasoning Prefix`);
-    MacrosParser.registerMacro('reasoningSuffix', () => power_user.reasoning.suffix, t`Reasoning Suffix`);
-    MacrosParser.registerMacro('reasoningSeparator', () => power_user.reasoning.separator, t`Reasoning Separator`);
+    MacrosParser.registerMacro(
+        "reasoningPrefix",
+        () => power_user.reasoning.prefix,
+        t`Reasoning Prefix`,
+    );
+    MacrosParser.registerMacro(
+        "reasoningSuffix",
+        () => power_user.reasoning.suffix,
+        t`Reasoning Suffix`,
+    );
+    MacrosParser.registerMacro(
+        "reasoningSeparator",
+        () => power_user.reasoning.separator,
+        t`Reasoning Separator`,
+    );
 }
 
 function setReasoningEventHandlers() {
@@ -993,42 +1248,49 @@ function setReasoningEventHandlers() {
      * @param {string} value Reasoning value
      */
     function updateReasoningFromValue(message, value) {
-        const reasoning = getRegexedString(value, regex_placement.REASONING, { isEdit: true });
+        const reasoning = getRegexedString(value, regex_placement.REASONING, {
+            isEdit: true,
+        });
         message.extra.reasoning = reasoning;
-        message.extra.reasoning_type = message.extra.reasoning_type ? ReasoningType.Edited : ReasoningType.Manual;
+        message.extra.reasoning_type = message.extra.reasoning_type
+            ? ReasoningType.Edited
+            : ReasoningType.Manual;
     }
 
-    $(document).on('click', '.mes_reasoning_details', function (e) {
-        if (!e.target.closest('.mes_reasoning_actions') && !e.target.closest('.mes_reasoning_header')) {
+    $(document).on("click", ".mes_reasoning_details", function (e) {
+        if (
+            !e.target.closest(".mes_reasoning_actions") &&
+            !e.target.closest(".mes_reasoning_header")
+        ) {
             e.preventDefault();
         }
     });
 
-    $(document).on('click', '.mes_reasoning_header', function (e) {
-        const details = $(this).closest('.mes_reasoning_details');
+    $(document).on("click", ".mes_reasoning_header", function (e) {
+        const details = $(this).closest(".mes_reasoning_details");
         // Along with the CSS rules to mark blocks not toggle-able when they are empty, prevent them from actually being toggled, or being edited
-        if (details.find('.mes_reasoning').is(':empty')) {
+        if (details.find(".mes_reasoning").is(":empty")) {
             e.preventDefault();
             return;
         }
 
         // If we are in message edit mode and reasoning area is closed, a click opens and edits it
-        const mes = $(this).closest('.mes');
-        const mesEditArea = mes.find('#curEditTextarea');
+        const mes = $(this).closest(".mes");
+        const mesEditArea = mes.find("#curEditTextarea");
         if (mesEditArea.length) {
-            const summary = $(mes).find('.mes_reasoning_summary');
-            if (!summary.attr('open')) {
-                summary.find('.mes_reasoning_edit').trigger('click');
+            const summary = $(mes).find(".mes_reasoning_summary");
+            if (!summary.attr("open")) {
+                summary.find(".mes_reasoning_edit").trigger("click");
             }
         }
     });
 
-    $(document).on('click', '.mes_reasoning_copy', (e) => {
+    $(document).on("click", ".mes_reasoning_copy", (e) => {
         e.stopPropagation();
         e.preventDefault();
     });
 
-    $(document).on('click', '.mes_reasoning_edit', function (e) {
+    $(document).on("click", ".mes_reasoning_edit", function (e) {
         e.stopPropagation();
         e.preventDefault();
         const { message, messageBlock } = getMessageFromJquery(this);
@@ -1036,28 +1298,31 @@ function setReasoningEventHandlers() {
             return;
         }
 
-        const reasoning = String(message?.extra?.reasoning ?? '');
-        const chatElement = document.getElementById('chat');
-        const textarea = document.createElement('textarea');
-        const reasoningBlock = messageBlock.find('.mes_reasoning');
-        textarea.classList.add('reasoning_edit_textarea');
+        const reasoning = String(message?.extra?.reasoning ?? "");
+        const chatElement = document.getElementById("chat");
+        const textarea = document.createElement("textarea");
+        const reasoningBlock = messageBlock.find(".mes_reasoning");
+        textarea.classList.add("reasoning_edit_textarea");
         textarea.value = reasoning;
         $(textarea).insertBefore(reasoningBlock);
 
-        if (!CSS.supports('field-sizing', 'content')) {
+        if (!CSS.supports("field-sizing", "content")) {
             const resetHeight = function () {
                 const scrollTop = chatElement.scrollTop;
-                textarea.style.height = '0px';
+                textarea.style.height = "0px";
                 textarea.style.height = `${textarea.scrollHeight}px`;
                 chatElement.scrollTop = scrollTop;
             };
 
-            textarea.addEventListener('input', resetHeight);
+            textarea.addEventListener("input", resetHeight);
             resetHeight();
         }
 
         textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        textarea.setSelectionRange(
+            textarea.value.length,
+            textarea.value.length,
+        );
 
         const textareaRect = textarea.getBoundingClientRect();
         const chatRect = chatElement.getBoundingClientRect();
@@ -1069,7 +1334,7 @@ function setReasoningEventHandlers() {
         }
     });
 
-    $(document).on('click', '.mes_reasoning_edit_done', async function (e) {
+    $(document).on("click", ".mes_reasoning_edit_done", async function (e) {
         e.stopPropagation();
         e.preventDefault();
         const { message, messageId, messageBlock } = getMessageFromJquery(this);
@@ -1077,7 +1342,7 @@ function setReasoningEventHandlers() {
             return;
         }
 
-        const textarea = messageBlock.find('.reasoning_edit_textarea');
+        const textarea = messageBlock.find(".reasoning_edit_textarea");
         const newReasoning = String(textarea.val());
         textarea.remove();
         if (newReasoning === message.extra.reasoning) {
@@ -1087,24 +1352,26 @@ function setReasoningEventHandlers() {
         await saveChatConditional();
         updateMessageBlock(messageId, message);
 
-        messageBlock.find('.mes_edit_done:visible').trigger('click');
+        messageBlock.find(".mes_edit_done:visible").trigger("click");
         await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
     });
 
-    $(document).on('click', '.mes_reasoning_edit_cancel', function (e) {
+    $(document).on("click", ".mes_reasoning_edit_cancel", function (e) {
         e.stopPropagation();
         e.preventDefault();
 
         const { messageBlock } = getMessageFromJquery(this);
-        const textarea = messageBlock.find('.reasoning_edit_textarea');
+        const textarea = messageBlock.find(".reasoning_edit_textarea");
         textarea.remove();
 
-        messageBlock.find('.mes_reasoning_edit_cancel:visible').trigger('click');
+        messageBlock
+            .find(".mes_reasoning_edit_cancel:visible")
+            .trigger("click");
 
         updateReasoningUI(messageBlock);
     });
 
-    $(document).on('click', '.mes_edit_add_reasoning', async function () {
+    $(document).on("click", ".mes_edit_add_reasoning", async function () {
         const { message, messageBlock } = getMessageFromJquery(this);
         if (!message?.extra) {
             return;
@@ -1115,25 +1382,30 @@ function setReasoningEventHandlers() {
             return;
         }
 
-        messageBlock.addClass('reasoning');
+        messageBlock.addClass("reasoning");
 
         // To make hidden reasoning blocks editable, we just set them to "Done" here already.
         // They will be done on save anyway - and on cancel the reasoning block gets rerendered too.
-        if (messageBlock.attr('data-reasoning-state') === ReasoningState.Hidden) {
-            messageBlock.attr('data-reasoning-state', ReasoningState.Done);
+        if (
+            messageBlock.attr("data-reasoning-state") === ReasoningState.Hidden
+        ) {
+            messageBlock.attr("data-reasoning-state", ReasoningState.Done);
         }
 
         // Open the reasoning area so we can actually edit it
-        messageBlock.find('.mes_reasoning_details').attr('open', '');
-        messageBlock.find('.mes_reasoning_edit').trigger('click');
+        messageBlock.find(".mes_reasoning_details").attr("open", "");
+        messageBlock.find(".mes_reasoning_edit").trigger("click");
         await saveChatConditional();
     });
 
-    $(document).on('click', '.mes_reasoning_delete', async function (e) {
+    $(document).on("click", ".mes_reasoning_delete", async function (e) {
         e.stopPropagation();
         e.preventDefault();
 
-        const confirm = await Popup.show.confirm(t`Remove Reasoning`, t`Are you sure you want to clear the reasoning?<br />Visible message contents will stay intact.`);
+        const confirm = await Popup.show.confirm(
+            t`Remove Reasoning`,
+            t`Are you sure you want to clear the reasoning?<br />Visible message contents will stay intact.`,
+        );
 
         if (!confirm) {
             return;
@@ -1143,29 +1415,32 @@ function setReasoningEventHandlers() {
         if (!message?.extra) {
             return;
         }
-        message.extra.reasoning = '';
+        message.extra.reasoning = "";
         delete message.extra.reasoning_type;
         delete message.extra.reasoning_duration;
         await saveChatConditional();
         updateMessageBlock(messageId, message);
-        const textarea = messageBlock.find('.reasoning_edit_textarea');
+        const textarea = messageBlock.find(".reasoning_edit_textarea");
         textarea.remove();
-        await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
+        await eventSource.emit(
+            event_types.MESSAGE_REASONING_DELETED,
+            messageId,
+        );
     });
 
-    $(document).on('pointerup', '.mes_reasoning_copy', async function () {
+    $(document).on("pointerup", ".mes_reasoning_copy", async function () {
         const { message } = getMessageFromJquery(this);
-        const reasoning = String(message?.extra?.reasoning ?? '');
+        const reasoning = String(message?.extra?.reasoning ?? "");
 
         if (!reasoning) {
             return;
         }
 
         await copyText(reasoning);
-        toastr.info(t`Copied!`, '', { timeOut: 2000 });
+        toastr.info(t`Copied!`, "", { timeOut: 2000 });
     });
 
-    $(document).on('input', '.reasoning_edit_textarea', function () {
+    $(document).on("input", ".reasoning_edit_textarea", function () {
         if (!power_user.auto_save_msg_edits) {
             return;
         }
@@ -1212,14 +1487,17 @@ export function parseReasoningFromString(str, { strict = true } = {}) {
     }
 
     try {
-        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(power_user.reasoning.prefix)}(.*?)${escapeRegex(power_user.reasoning.suffix)}`, 's');
+        const regex = new RegExp(
+            `${strict ? "^\\s*?" : ""}${escapeRegex(power_user.reasoning.prefix)}(.*?)${escapeRegex(power_user.reasoning.suffix)}`,
+            "s",
+        );
 
         let didReplace = false;
-        let reasoning = '';
+        let reasoning = "";
         let content = String(str).replace(regex, (_match, captureGroup) => {
             didReplace = true;
             reasoning = captureGroup;
-            return '';
+            return "";
         });
 
         if (didReplace) {
@@ -1229,7 +1507,7 @@ export function parseReasoningFromString(str, { strict = true } = {}) {
 
         return { reasoning, content };
     } catch (error) {
-        console.error('[Reasoning] Error parsing reasoning block', error);
+        console.error("[Reasoning] Error parsing reasoning block", error);
         return null;
     }
 }
@@ -1250,14 +1528,21 @@ export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     }
 
     // Something ain't right, don't parse
-    if (!Array.isArray(swipes) || !Array.isArray(swipeInfoArray) || swipes.length !== swipeInfoArray.length) {
+    if (
+        !Array.isArray(swipes) ||
+        !Array.isArray(swipeInfoArray) ||
+        swipes.length !== swipeInfoArray.length
+    ) {
         return;
     }
 
     for (let index = 0; index < swipes.length; index++) {
         const parsedReasoning = parseReasoningFromString(swipes[index]);
         if (parsedReasoning) {
-            swipes[index] = getRegexedString(parsedReasoning.content, regex_placement.REASONING);
+            swipes[index] = getRegexedString(
+                parsedReasoning.content,
+                regex_placement.REASONING,
+            );
             swipeInfoArray[index].extra.reasoning = parsedReasoning.reasoning;
             swipeInfoArray[index].extra.reasoning_duration = duration;
             swipeInfoArray[index].extra.reasoning_type = ReasoningType.Parsed;
@@ -1266,27 +1551,39 @@ export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
 }
 
 function registerReasoningAppEvents() {
-    const eventHandler = (/** @type {string} */ type, /** @type {number} */ idx) => {
+    const eventHandler = (
+        /** @type {string} */ type,
+        /** @type {number} */ idx,
+    ) => {
         if (!power_user.reasoning.auto_parse) {
             return;
         }
 
-        console.debug('[Reasoning] Auto-parsing reasoning block for message', idx);
-        const prefix = type === event_types.MESSAGE_RECEIVED ? PromptReasoning.getLatestPrefix() : '';
+        console.debug(
+            "[Reasoning] Auto-parsing reasoning block for message",
+            idx,
+        );
+        const prefix =
+            type === event_types.MESSAGE_RECEIVED
+                ? PromptReasoning.getLatestPrefix()
+                : "";
         const message = chat[idx];
 
         if (!message) {
-            console.warn('[Reasoning] Message not found', idx);
+            console.warn("[Reasoning] Message not found", idx);
             return null;
         }
 
-        if (!message.mes || message.mes === '...') {
-            console.debug('[Reasoning] Message content is empty or a placeholder', idx);
+        if (!message.mes || message.mes === "...") {
+            console.debug(
+                "[Reasoning] Message content is empty or a placeholder",
+                idx,
+            );
             return null;
         }
 
         if (message.extra?.reasoning && !prefix) {
-            console.debug('[Reasoning] Message already has reasoning', idx);
+            console.debug("[Reasoning] Message already has reasoning", idx);
             return null;
         }
 
@@ -1298,15 +1595,20 @@ function registerReasoningAppEvents() {
         }
 
         // Make sure the message has an extra object
-        if (!message.extra || typeof message.extra !== 'object') {
+        if (!message.extra || typeof message.extra !== "object") {
             message.extra = {};
         }
 
-        const contentUpdated = !!parsedReasoning.reasoning || parsedReasoning.content !== message.mes;
+        const contentUpdated =
+            !!parsedReasoning.reasoning ||
+            parsedReasoning.content !== message.mes;
 
         // If reasoning was found, add it to the message
         if (parsedReasoning.reasoning) {
-            message.extra.reasoning = getRegexedString(parsedReasoning.reasoning, regex_placement.REASONING);
+            message.extra.reasoning = getRegexedString(
+                parsedReasoning.reasoning,
+                regex_placement.REASONING,
+            );
             message.extra.reasoning_type = ReasoningType.Parsed;
         }
 
@@ -1320,19 +1622,29 @@ function registerReasoningAppEvents() {
             saveChatDebounced();
 
             // Find if a message already exists in DOM and must be updated
-            const messageRendered = document.querySelector(`.mes[mesid="${idx}"]`) !== null;
+            const messageRendered =
+                document.querySelector(`.mes[mesid="${idx}"]`) !== null;
             if (messageRendered) {
-                console.debug('[Reasoning] Updating message block', idx);
+                console.debug("[Reasoning] Updating message block", idx);
                 updateMessageBlock(idx, message);
             }
         }
     };
 
-    for (const event of [event_types.MESSAGE_RECEIVED, event_types.MESSAGE_UPDATED]) {
-        eventSource.on(event, (/** @type {number} */ idx) => eventHandler(event, idx));
+    for (const event of [
+        event_types.MESSAGE_RECEIVED,
+        event_types.MESSAGE_UPDATED,
+    ]) {
+        eventSource.on(event, (/** @type {number} */ idx) =>
+            eventHandler(event, idx),
+        );
     }
 
-    for (const event of [event_types.GENERATION_STOPPED, event_types.GENERATION_ENDED, event_types.CHAT_CHANGED]) {
+    for (const event of [
+        event_types.GENERATION_STOPPED,
+        event_types.GENERATION_ENDED,
+        event_types.CHAT_CHANGED,
+    ]) {
         eventSource.on(event, () => PromptReasoning.clearLatest());
     }
 }
@@ -1345,34 +1657,50 @@ function registerReasoningAppEvents() {
  */
 export async function loadReasoningTemplates(data) {
     if (data.reasoning !== undefined) {
-        reasoning_templates.splice(0, reasoning_templates.length, ...data.reasoning);
+        reasoning_templates.splice(
+            0,
+            reasoning_templates.length,
+            ...data.reasoning,
+        );
     }
 
     for (const template of reasoning_templates) {
-        $('<option>').val(template.name).text(template.name).appendTo(UI.$select);
+        $("<option>")
+            .val(template.name)
+            .text(template.name)
+            .appendTo(UI.$select);
     }
 
     // No template name, need to migrate
     if (power_user.reasoning.name === undefined) {
-        const defaultTemplate = reasoning_templates.find(p => p.name === DEFAULT_REASONING_TEMPLATE);
+        const defaultTemplate = reasoning_templates.find(
+            (p) => p.name === DEFAULT_REASONING_TEMPLATE,
+        );
         if (defaultTemplate) {
             // If the reasoning settings were modified - migrate them to a custom template
-            if (power_user.reasoning.prefix !== defaultTemplate.prefix || power_user.reasoning.suffix !== defaultTemplate.suffix || power_user.reasoning.separator !== defaultTemplate.separator) {
+            if (
+                power_user.reasoning.prefix !== defaultTemplate.prefix ||
+                power_user.reasoning.suffix !== defaultTemplate.suffix ||
+                power_user.reasoning.separator !== defaultTemplate.separator
+            ) {
                 /** @type {ReasoningTemplate} */
                 const data = {
-                    name: '[Migrated] Custom',
+                    name: "[Migrated] Custom",
                     prefix: power_user.reasoning.prefix,
                     suffix: power_user.reasoning.suffix,
                     separator: power_user.reasoning.separator,
                 };
-                await getPresetManager('reasoning')?.savePreset(data.name, data);
+                await getPresetManager("reasoning")?.savePreset(
+                    data.name,
+                    data,
+                );
                 power_user.reasoning.name = data.name;
             } else {
                 power_user.reasoning.name = defaultTemplate.name;
             }
         } else {
             // Template not found (deleted or content check skipped - leave blank)
-            power_user.reasoning.name = '';
+            power_user.reasoning.name = "";
         }
 
         saveSettingsDebounced();

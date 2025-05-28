@@ -7,40 +7,44 @@ let ready = false;
 let voices = [];
 
 // Handle messages from the main thread
-self.onmessage = async function(e) {
+self.onmessage = async function (e) {
     const { action, data } = e.data;
 
     switch (action) {
-        case 'initialize':
+        case "initialize":
             try {
                 const result = await initializeTts(data);
                 self.postMessage({
-                    action: 'initialized',
+                    action: "initialized",
                     success: result,
                     voices,
                 });
             } catch (error) {
                 self.postMessage({
-                    action: 'initialized',
+                    action: "initialized",
                     success: false,
                     error: error.message,
                 });
             }
             break;
 
-        case 'generateTts':
+        case "generateTts":
             try {
-                const audioBlob = await generateTts(data.text, data.voice, data.speakingRate);
+                const audioBlob = await generateTts(
+                    data.text,
+                    data.voice,
+                    data.speakingRate,
+                );
                 const blobUrl = URL.createObjectURL(audioBlob);
                 self.postMessage({
-                    action: 'generatedTts',
+                    action: "generatedTts",
                     success: true,
                     blobUrl,
                     requestId: data.requestId,
                 });
             } catch (error) {
                 self.postMessage({
-                    action: 'generatedTts',
+                    action: "generatedTts",
                     success: false,
                     error: error.message,
                     requestId: data.requestId,
@@ -48,8 +52,8 @@ self.onmessage = async function(e) {
             }
             break;
 
-        case 'checkReady':
-            self.postMessage({ action: 'readyStatus', ready });
+        case "checkReady":
+            self.postMessage({ action: "readyStatus", ready });
             break;
     }
 };
@@ -57,9 +61,9 @@ self.onmessage = async function(e) {
 // Initialize the TTS engine
 async function initializeTts(settings) {
     try {
-        const { KokoroTTS } = await import('./lib/kokoro.web.js');
+        const { KokoroTTS } = await import("./lib/kokoro.web.js");
 
-        console.log('Worker: Initializing Kokoro TTS with settings:', {
+        console.log("Worker: Initializing Kokoro TTS with settings:", {
             modelId: settings.modelId,
             dtype: settings.dtype,
             device: settings.device,
@@ -75,15 +79,15 @@ async function initializeTts(settings) {
         voices = Object.keys(tts.voices);
 
         // Check if generate method exists
-        if (typeof tts.generate !== 'function') {
-            throw new Error('TTS instance does not have generate method');
+        if (typeof tts.generate !== "function") {
+            throw new Error("TTS instance does not have generate method");
         }
 
-        console.log('Worker: TTS initialized successfully');
+        console.log("Worker: TTS initialized successfully");
         ready = true;
         return true;
     } catch (error) {
-        console.error('Worker: Kokoro TTS initialization failed:', error);
+        console.error("Worker: Kokoro TTS initialization failed:", error);
         ready = false;
         throw error;
     }
@@ -92,11 +96,11 @@ async function initializeTts(settings) {
 // Generate TTS audio
 async function generateTts(text, voiceId, speakingRate) {
     if (!ready || !tts) {
-        throw new Error('TTS engine not initialized');
+        throw new Error("TTS engine not initialized");
     }
 
     if (text.trim().length === 0) {
-        throw new Error('Empty text');
+        throw new Error("Empty text");
     }
 
     try {
@@ -107,7 +111,7 @@ async function generateTts(text, voiceId, speakingRate) {
 
         return audio.toBlob();
     } catch (error) {
-        console.error('Worker: TTS generation failed:', error);
+        console.error("Worker: TTS generation failed:", error);
         throw error;
     }
 }

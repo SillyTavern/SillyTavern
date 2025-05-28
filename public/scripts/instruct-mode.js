@@ -1,13 +1,15 @@
-'use strict';
+"use strict";
 
-import { name1, name2, saveSettingsDebounced, substituteParams } from '../script.js';
-import { selected_group } from './group-chats.js';
-import { parseExampleIntoIndividual } from './openai.js';
 import {
-    power_user,
-    context_presets,
-} from './power-user.js';
-import { regexFromString, resetScrollHeight } from './utils.js';
+    name1,
+    name2,
+    saveSettingsDebounced,
+    substituteParams,
+} from "../script.js";
+import { selected_group } from "./group-chats.js";
+import { parseExampleIntoIndividual } from "./openai.js";
+import { power_user, context_presets } from "./power-user.js";
+import { regexFromString, resetScrollHeight } from "./utils.js";
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -15,36 +17,117 @@ import { regexFromString, resetScrollHeight } from './utils.js';
 export let instruct_presets = [];
 
 export const names_behavior_types = {
-    NONE: 'none',
-    FORCE: 'force',
-    ALWAYS: 'always',
+    NONE: "none",
+    FORCE: "force",
+    ALWAYS: "always",
 };
 
 const controls = [
-    { id: 'instruct_enabled', property: 'enabled', isCheckbox: true },
-    { id: 'instruct_wrap', property: 'wrap', isCheckbox: true },
-    { id: 'instruct_macro', property: 'macro', isCheckbox: true },
-    { id: 'instruct_system_sequence_prefix', property: 'system_sequence_prefix', isCheckbox: false },
-    { id: 'instruct_system_sequence_suffix', property: 'system_sequence_suffix', isCheckbox: false },
-    { id: 'instruct_input_sequence', property: 'input_sequence', isCheckbox: false },
-    { id: 'instruct_input_suffix', property: 'input_suffix', isCheckbox: false },
-    { id: 'instruct_output_sequence', property: 'output_sequence', isCheckbox: false },
-    { id: 'instruct_output_suffix', property: 'output_suffix', isCheckbox: false },
-    { id: 'instruct_system_sequence', property: 'system_sequence', isCheckbox: false },
-    { id: 'instruct_system_suffix', property: 'system_suffix', isCheckbox: false },
-    { id: 'instruct_last_system_sequence', property: 'last_system_sequence', isCheckbox: false },
-    { id: 'instruct_user_alignment_message', property: 'user_alignment_message', isCheckbox: false },
-    { id: 'instruct_stop_sequence', property: 'stop_sequence', isCheckbox: false },
-    { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
-    { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
-    { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
-    { id: 'instruct_last_input_sequence', property: 'last_input_sequence', isCheckbox: false },
-    { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
-    { id: 'instruct_derived', property: 'derived', isCheckbox: true },
-    { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
-    { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
-    { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
-    { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
+    { id: "instruct_enabled", property: "enabled", isCheckbox: true },
+    { id: "instruct_wrap", property: "wrap", isCheckbox: true },
+    { id: "instruct_macro", property: "macro", isCheckbox: true },
+    {
+        id: "instruct_system_sequence_prefix",
+        property: "system_sequence_prefix",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_system_sequence_suffix",
+        property: "system_sequence_suffix",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_input_sequence",
+        property: "input_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_input_suffix",
+        property: "input_suffix",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_output_sequence",
+        property: "output_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_output_suffix",
+        property: "output_suffix",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_system_sequence",
+        property: "system_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_system_suffix",
+        property: "system_suffix",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_last_system_sequence",
+        property: "last_system_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_user_alignment_message",
+        property: "user_alignment_message",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_stop_sequence",
+        property: "stop_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_first_output_sequence",
+        property: "first_output_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_last_output_sequence",
+        property: "last_output_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_first_input_sequence",
+        property: "first_input_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_last_input_sequence",
+        property: "last_input_sequence",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_activation_regex",
+        property: "activation_regex",
+        isCheckbox: false,
+    },
+    { id: "instruct_derived", property: "derived", isCheckbox: true },
+    {
+        id: "instruct_bind_to_context",
+        property: "bind_to_context",
+        isCheckbox: true,
+    },
+    {
+        id: "instruct_skip_examples",
+        property: "skip_examples",
+        isCheckbox: true,
+    },
+    {
+        id: "instruct_names_behavior",
+        property: "names_behavior",
+        isCheckbox: false,
+    },
+    {
+        id: "instruct_system_same_as_user",
+        property: "system_same_as_user",
+        isCheckbox: true,
+        trigger: true,
+    },
 ];
 
 /**
@@ -55,7 +138,7 @@ const controls = [
 function migrateInstructModeSettings(settings) {
     // Separator sequence => Output suffix
     if (settings.separator_sequence !== undefined) {
-        settings.output_suffix = settings.separator_sequence || '';
+        settings.output_suffix = settings.separator_sequence || "";
         delete settings.separator_sequence;
     }
 
@@ -63,19 +146,21 @@ function migrateInstructModeSettings(settings) {
     if (settings.names !== undefined) {
         settings.names_behavior = settings.names
             ? names_behavior_types.ALWAYS
-            : (settings.names_force_groups ? names_behavior_types.FORCE : names_behavior_types.NONE);
+            : settings.names_force_groups
+              ? names_behavior_types.FORCE
+              : names_behavior_types.NONE;
         delete settings.names;
         delete settings.names_force_groups;
     }
 
     const defaults = {
-        input_suffix: '',
-        system_sequence: '',
-        system_suffix: '',
-        user_alignment_message: '',
-        last_system_sequence: '',
-        first_input_sequence: '',
-        last_input_sequence: '',
+        input_suffix: "",
+        system_sequence: "",
+        system_suffix: "",
+        user_alignment_message: "",
+        last_system_sequence: "",
+        first_input_sequence: "",
+        last_input_sequence: "",
         names_force_groups: true,
         skip_examples: false,
         system_same_as_user: false,
@@ -100,44 +185,61 @@ export async function loadInstructMode(data) {
 
     migrateInstructModeSettings(power_user.instruct);
 
-    $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
-    $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
-    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
-    $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
+    $("#instruct_enabled")
+        .parent()
+        .find("i")
+        .toggleClass("toggleEnabled", !!power_user.instruct.enabled);
+    $("#instructSettingsBlock, #InstructSequencesColumn").toggleClass(
+        "disabled",
+        !power_user.instruct.enabled,
+    );
+    $("#instruct_derived")
+        .parent()
+        .find("i")
+        .toggleClass("toggleEnabled", !!power_user.instruct.derived);
+    $("#instruct_bind_to_context")
+        .parent()
+        .find("i")
+        .toggleClass("toggleEnabled", !!power_user.instruct.bind_to_context);
 
-    controls.forEach(control => {
+    controls.forEach((control) => {
         const $element = $(`#${control.id}`);
 
         if (control.isCheckbox) {
-            $element.prop('checked', power_user.instruct[control.property]);
-        } else if ($element.is('select')) {
+            $element.prop("checked", power_user.instruct[control.property]);
+        } else if ($element.is("select")) {
             const value = power_user.instruct[control.property];
             $element.val(value);
-            $element.filter(`[value="${value}"]`).prop('checked', true);
+            $element.filter(`[value="${value}"]`).prop("checked", true);
         } else {
             $element.val(power_user.instruct[control.property]);
         }
 
-        $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
-            if (!CSS.supports('field-sizing', 'content') && $(this).is('textarea')) {
+        $element.on("input", async function () {
+            power_user.instruct[control.property] = control.isCheckbox
+                ? !!$(this).prop("checked")
+                : $(this).val();
+            if (
+                !CSS.supports("field-sizing", "content") &&
+                $(this).is("textarea")
+            ) {
                 await resetScrollHeight($(this));
             }
             saveSettingsDebounced();
         });
 
         if (control.trigger) {
-            $element.trigger('input');
+            $element.trigger("input");
         }
     });
 
     instruct_presets.forEach((preset) => {
         const name = preset.name;
-        const option = document.createElement('option');
+        const option = document.createElement("option");
         option.value = name;
         option.innerText = name;
         option.selected = name === power_user.instruct.preset;
-        $('#instruct_presets').append(option);
+        $("#instruct_presets").append(option);
     });
 }
 
@@ -148,8 +250,11 @@ export async function loadInstructMode(data) {
  * @param {boolean} [options.quiet=false] Suppress toast messages.
  * @param {boolean} [options.isAuto=false] Is auto-select.
  */
-export function selectContextPreset(preset, { quiet = false, isAuto = false } = {}) {
-    const presetExists = context_presets.some(x => x.name === preset);
+export function selectContextPreset(
+    preset,
+    { quiet = false, isAuto = false } = {},
+) {
+    const presetExists = context_presets.some((x) => x.name === preset);
     if (!presetExists) {
         console.warn(`Context template "${preset}" not found`);
         return;
@@ -157,8 +262,11 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
 
     // If context template is not already selected, select it
     if (preset !== power_user.context.preset) {
-        $('#context_presets').val(preset).trigger('change');
-        !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
+        $("#context_presets").val(preset).trigger("change");
+        !quiet &&
+            toastr.info(
+                `Context Template: "${preset}" ${isAuto ? "auto-" : ""}selected`,
+            );
     }
 
     saveSettingsDebounced();
@@ -171,8 +279,11 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
  * @param {boolean} [options.quiet=false] Suppress toast messages.
  * @param {boolean} [options.isAuto=false] Is auto-select.
  */
-export function selectInstructPreset(preset, { quiet = false, isAuto = false } = {}) {
-    const presetExists = instruct_presets.some(x => x.name === preset);
+export function selectInstructPreset(
+    preset,
+    { quiet = false, isAuto = false } = {},
+) {
+    const presetExists = instruct_presets.some((x) => x.name === preset);
     if (!presetExists) {
         console.warn(`Instruct template "${preset}" not found`);
         return;
@@ -180,15 +291,18 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
 
     // If instruct preset is not already selected, select it
     if (preset !== power_user.instruct.preset) {
-        $('#instruct_presets').val(preset).trigger('change');
-        !quiet && toastr.info(`Instruct Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
+        $("#instruct_presets").val(preset).trigger("change");
+        !quiet &&
+            toastr.info(
+                `Instruct Template: "${preset}" ${isAuto ? "auto-" : ""}selected`,
+            );
     }
 
     // If instruct mode is disabled, enable it
     if (!power_user.instruct.enabled) {
         power_user.instruct.enabled = true;
-        $('#instruct_enabled').prop('checked', true).trigger('change');
-        !quiet && toastr.info('Instruct Mode enabled');
+        $("#instruct_enabled").prop("checked", true).trigger("change");
+        !quiet && toastr.info("Instruct Mode enabled");
     }
 
     saveSettingsDebounced();
@@ -223,7 +337,9 @@ export function autoSelectInstructPreset(modelId) {
                 }
             } catch {
                 // If regex is invalid, ignore it
-                console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
+                console.warn(
+                    `Invalid instruct activation regex in preset "${preset.name}"`,
+                );
             }
         }
     }
@@ -250,7 +366,10 @@ export function autoSelectInstructPreset(modelId) {
  * @param {boolean?} [options.useStopStrings] - Decides whether to use "Chat Start" and "Example Separator"
  * @returns {string[]} Array of instruct mode stopping strings.
  */
-export function getInstructStoppingSequences({ customInstruct = null, useStopStrings = null } = {}) {
+export function getInstructStoppingSequences({
+    customInstruct = null,
+    useStopStrings = null,
+} = {}) {
     const instruct = structuredClone(customInstruct ?? power_user.instruct);
 
     /**
@@ -261,15 +380,17 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
     function addInstructSequence(sequence) {
         // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
         // But it's a problem for Metharme which doesn't use newlines to separate them.
-        const wrap = (s) => instruct.wrap ? '\n' + s : s;
+        const wrap = (s) => (instruct.wrap ? "\n" + s : s);
         // Sequence must be a non-empty string
-        if (typeof sequence === 'string' && sequence.length > 0) {
+        if (typeof sequence === "string" && sequence.length > 0) {
             // If sequence is just a whitespace or newline - we don't want to make it a stopping string
             // User can always add it as a custom stop string if really needed
             if (sequence.trim().length > 0) {
                 const wrappedSequence = wrap(sequence);
                 // Need to respect "insert macro" setting
-                const stopString = instruct.macro ? substituteParams(wrappedSequence) : wrappedSequence;
+                const stopString = instruct.macro
+                    ? substituteParams(wrappedSequence)
+                    : wrappedSequence;
                 result.push(stopString);
             }
         }
@@ -279,13 +400,20 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
 
     // Since preset's don't have "enabled", we assume it's always enabled
     if (customInstruct ?? instruct.enabled) {
-        const stop_sequence = instruct.stop_sequence || '';
-        const input_sequence = instruct.input_sequence?.replace(/{{name}}/gi, name1) || '';
-        const output_sequence = instruct.output_sequence?.replace(/{{name}}/gi, name2) || '';
-        const first_output_sequence = instruct.first_output_sequence?.replace(/{{name}}/gi, name2) || '';
-        const last_output_sequence = instruct.last_output_sequence?.replace(/{{name}}/gi, name2) || '';
-        const system_sequence = instruct.system_sequence?.replace(/{{name}}/gi, 'System') || '';
-        const last_system_sequence = instruct.last_system_sequence?.replace(/{{name}}/gi, 'System') || '';
+        const stop_sequence = instruct.stop_sequence || "";
+        const input_sequence =
+            instruct.input_sequence?.replace(/{{name}}/gi, name1) || "";
+        const output_sequence =
+            instruct.output_sequence?.replace(/{{name}}/gi, name2) || "";
+        const first_output_sequence =
+            instruct.first_output_sequence?.replace(/{{name}}/gi, name2) || "";
+        const last_output_sequence =
+            instruct.last_output_sequence?.replace(/{{name}}/gi, name2) || "";
+        const system_sequence =
+            instruct.system_sequence?.replace(/{{name}}/gi, "System") || "";
+        const last_system_sequence =
+            instruct.last_system_sequence?.replace(/{{name}}/gi, "System") ||
+            "";
 
         const combined_sequence = [
             stop_sequence,
@@ -295,9 +423,12 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
             last_output_sequence,
             system_sequence,
             last_system_sequence,
-        ].join('\n');
+        ].join("\n");
 
-        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
+        combined_sequence
+            .split("\n")
+            .filter((line, index, self) => self.indexOf(line) === index)
+            .forEach(addInstructSequence);
     }
 
     if (useStopStrings ?? power_user.context.use_stop_strings) {
@@ -306,7 +437,9 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
         }
 
         if (power_user.context.example_separator) {
-            result.push(`\n${substituteParams(power_user.context.example_separator)}`);
+            result.push(
+                `\n${substituteParams(power_user.context.example_separator)}`,
+            );
         }
     }
 
@@ -331,17 +464,35 @@ export const force_output_sequence = {
  * @param {InstructSettings} customInstruct Custom instruct mode settings.
  * @returns {string} Formatted instruct mode chat message.
  */
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence, customInstruct = null) {
+export function formatInstructModeChat(
+    name,
+    mes,
+    isUser,
+    isNarrator,
+    forceAvatar,
+    name1,
+    name2,
+    forceOutputSequence,
+    customInstruct = null,
+) {
     const instruct = structuredClone(customInstruct ?? power_user.instruct);
-    let includeNames = isNarrator ? false : instruct.names_behavior === names_behavior_types.ALWAYS;
+    let includeNames = isNarrator
+        ? false
+        : instruct.names_behavior === names_behavior_types.ALWAYS;
 
-    if (!isNarrator && instruct.names_behavior === names_behavior_types.FORCE && ((selected_group && name !== name1) || (forceAvatar && name !== name1))) {
+    if (
+        !isNarrator &&
+        instruct.names_behavior === names_behavior_types.FORCE &&
+        ((selected_group && name !== name1) || (forceAvatar && name !== name1))
+    ) {
         includeNames = true;
     }
 
     function getPrefix() {
         if (isNarrator) {
-            return instruct.system_same_as_user ? instruct.input_sequence : instruct.system_sequence;
+            return instruct.system_same_as_user
+                ? instruct.input_sequence
+                : instruct.system_sequence;
         }
 
         if (isUser) {
@@ -369,7 +520,9 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 
     function getSuffix() {
         if (isNarrator) {
-            return instruct.system_same_as_user ? instruct.input_suffix : instruct.system_suffix;
+            return instruct.system_same_as_user
+                ? instruct.input_suffix
+                : instruct.system_suffix;
         }
 
         if (isUser) {
@@ -379,26 +532,29 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
         return instruct.output_suffix;
     }
 
-    let prefix = getPrefix() || '';
-    let suffix = getSuffix() || '';
+    let prefix = getPrefix() || "";
+    let suffix = getSuffix() || "";
 
     if (instruct.macro) {
         prefix = substituteParams(prefix, name1, name2);
-        prefix = prefix.replace(/{{name}}/gi, name || 'System');
+        prefix = prefix.replace(/{{name}}/gi, name || "System");
 
         suffix = substituteParams(suffix, name1, name2);
-        suffix = suffix.replace(/{{name}}/gi, name || 'System');
+        suffix = suffix.replace(/{{name}}/gi, name || "System");
     }
 
     if (!suffix && instruct.wrap) {
-        suffix = '\n';
+        suffix = "\n";
     }
 
-    const separator = instruct.wrap ? '\n' : '';
+    const separator = instruct.wrap ? "\n" : "";
 
     // Don't include the name if it's empty
-    const textArray = includeNames && name ? [prefix, `${name}: ${mes}` + suffix] : [prefix, mes + suffix];
-    const text = textArray.filter(x => x).join(separator);
+    const textArray =
+        includeNames && name
+            ? [prefix, `${name}: ${mes}` + suffix]
+            : [prefix, mes + suffix];
+    const text = textArray.filter((x) => x).join(separator);
 
     return text;
 }
@@ -409,23 +565,30 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
  * @param {InstructSettings} customInstruct Custom instruct mode settings.
  * @returns {string} Formatted instruct mode system prompt.
  */
-export function formatInstructModeSystemPrompt(systemPrompt, customInstruct = null) {
+export function formatInstructModeSystemPrompt(
+    systemPrompt,
+    customInstruct = null,
+) {
     if (!systemPrompt) {
-        return '';
+        return "";
     }
 
     const instruct = structuredClone(customInstruct ?? power_user.instruct);
 
-    const separator = instruct.wrap ? '\n' : '';
+    const separator = instruct.wrap ? "\n" : "";
 
     if (instruct.system_sequence_prefix) {
         // TODO: Replace with a proper 'System' prompt entity name input
-        const prefix = instruct.system_sequence_prefix.replace(/{{name}}/gi, 'System');
+        const prefix = instruct.system_sequence_prefix.replace(
+            /{{name}}/gi,
+            "System",
+        );
         systemPrompt = prefix + separator + systemPrompt;
     }
 
     if (instruct.system_sequence_suffix) {
-        systemPrompt = systemPrompt + separator + instruct.system_sequence_suffix;
+        systemPrompt =
+            systemPrompt + separator + instruct.system_sequence_suffix;
     }
 
     return systemPrompt;
@@ -439,19 +602,28 @@ export function formatInstructModeSystemPrompt(systemPrompt, customInstruct = nu
  * @returns {string[]} Formatted example messages string.
  */
 export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
-    const blockHeading = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+    const blockHeading = power_user.context.example_separator
+        ? `${substituteParams(power_user.context.example_separator)}\n`
+        : "";
 
     if (power_user.instruct.skip_examples) {
-        return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
+        return mesExamplesArray.map((x) =>
+            x.replace(/<START>\n/i, blockHeading),
+        );
     }
 
-    const includeNames = power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
-    const includeGroupNames = selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
+    const includeNames =
+        power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
+    const includeGroupNames =
+        selected_group &&
+        [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(
+            power_user.instruct.names_behavior,
+        );
 
-    let inputPrefix = power_user.instruct.input_sequence || '';
-    let outputPrefix = power_user.instruct.output_sequence || '';
-    let inputSuffix = power_user.instruct.input_suffix || '';
-    let outputSuffix = power_user.instruct.output_suffix || '';
+    let inputPrefix = power_user.instruct.input_sequence || "";
+    let outputPrefix = power_user.instruct.output_sequence || "";
+    let inputSuffix = power_user.instruct.input_suffix || "";
+    let outputSuffix = power_user.instruct.output_suffix || "";
 
     if (power_user.instruct.macro) {
         inputPrefix = substituteParams(inputPrefix, name1, name2);
@@ -465,20 +637,25 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         outputSuffix = outputSuffix.replace(/{{name}}/gi, name2);
 
         if (!inputSuffix && power_user.instruct.wrap) {
-            inputSuffix = '\n';
+            inputSuffix = "\n";
         }
 
         if (!outputSuffix && power_user.instruct.wrap) {
-            outputSuffix = '\n';
+            outputSuffix = "\n";
         }
     }
 
-    const separator = power_user.instruct.wrap ? '\n' : '';
+    const separator = power_user.instruct.wrap ? "\n" : "";
     const formattedExamples = [];
 
     for (const item of mesExamplesArray) {
-        const cleanedItem = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
-        const blockExamples = parseExampleIntoIndividual(cleanedItem, includeGroupNames);
+        const cleanedItem = item
+            .replace(/<START>/i, "{Example Dialogue:}")
+            .replace(/\r/gm, "");
+        const blockExamples = parseExampleIntoIndividual(
+            cleanedItem,
+            includeGroupNames,
+        );
 
         if (blockExamples.length === 0) {
             continue;
@@ -491,19 +668,32 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         for (const example of blockExamples) {
             // If group names were included, we don't want to add any additional prefix as it already was applied.
             // Otherwise, if force group/persona names is set, we should override the include names for the user placeholder
-            const includeThisName = !includeGroupNames && (includeNames || (power_user.instruct.names_behavior === names_behavior_types.FORCE && example.name == 'example_user'));
+            const includeThisName =
+                !includeGroupNames &&
+                (includeNames ||
+                    (power_user.instruct.names_behavior ===
+                        names_behavior_types.FORCE &&
+                        example.name == "example_user"));
 
-            const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
-            const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
-            const name = example.name == 'example_user' ? name1 : name2;
-            const messageContent = includeThisName ? `${name}: ${example.content}` : example.content;
-            const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
+            const prefix =
+                example.name == "example_user" ? inputPrefix : outputPrefix;
+            const suffix =
+                example.name == "example_user" ? inputSuffix : outputSuffix;
+            const name = example.name == "example_user" ? name1 : name2;
+            const messageContent = includeThisName
+                ? `${name}: ${example.content}`
+                : example.content;
+            const formattedMessage = [prefix, messageContent + suffix]
+                .filter((x) => x)
+                .join(separator);
             formattedExamples.push(formattedMessage);
         }
     }
 
     if (formattedExamples.length === 0) {
-        return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
+        return mesExamplesArray.map((x) =>
+            x.replace(/<START>\n/i, blockHeading),
+        );
     }
     return formattedExamples;
 }
@@ -520,9 +710,23 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
  * @param {InstructSettings} customInstruct Custom instruct settings.
  * @returns {string} Formatted instruct mode last prompt line.
  */
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud, customInstruct = null) {
+export function formatInstructModePrompt(
+    name,
+    isImpersonate,
+    promptBias,
+    name1,
+    name2,
+    isQuiet,
+    isQuietToLoud,
+    customInstruct = null,
+) {
     const instruct = structuredClone(customInstruct ?? power_user.instruct);
-    const includeNames = name && (instruct.names_behavior === names_behavior_types.ALWAYS || (!!selected_group && instruct.names_behavior === names_behavior_types.FORCE)) && !(isQuiet && !isQuietToLoud);
+    const includeNames =
+        name &&
+        (instruct.names_behavior === names_behavior_types.ALWAYS ||
+            (!!selected_group &&
+                instruct.names_behavior === names_behavior_types.FORCE)) &&
+        !(isQuiet && !isQuietToLoud);
 
     function getSequence() {
         // User impersonation prompt
@@ -545,8 +749,8 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         return instruct.last_output_sequence || instruct.output_sequence;
     }
 
-    let sequence = getSequence() || '';
-    let nameFiller = '';
+    let sequence = getSequence() || "";
+    let nameFiller = "";
 
     // A hack for Mistral's formatting that has a normal output sequence ending with a space
     if (
@@ -562,11 +766,13 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
 
     if (instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
-        sequence = sequence.replace(/{{name}}/gi, name || 'System');
+        sequence = sequence.replace(/{{name}}/gi, name || "System");
     }
 
-    const separator = instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + nameFiller + `${name}:`) : (separator + sequence);
+    const separator = instruct.wrap ? "\n" : "";
+    let text = includeNames
+        ? separator + sequence + separator + nameFiller + `${name}:`
+        : separator + sequence;
 
     // Quiet prompt already has a newline at the end
     if (isQuiet && separator) {
@@ -574,10 +780,13 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     }
 
     if (!isImpersonate && promptBias) {
-        text += (includeNames ? promptBias : (separator + promptBias.trimStart()));
+        text += includeNames ? promptBias : separator + promptBias.trimStart();
     }
 
-    return (instruct.wrap ? text.trimEnd() : text) + (includeNames ? '' : separator);
+    return (
+        (instruct.wrap ? text.trimEnd() : text) +
+        (includeNames ? "" : separator)
+    );
 }
 
 /**
@@ -605,99 +814,110 @@ export function getInstructMacros(env) {
     const instructMacros = [
         // Instruct template macros
         {
-            key: 'instructSystemPromptPrefix',
+            key: "instructSystemPromptPrefix",
             value: power_user.instruct.system_sequence_prefix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSystemPromptSuffix',
+            key: "instructSystemPromptSuffix",
             value: power_user.instruct.system_sequence_suffix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructInput|instructUserPrefix',
+            key: "instructInput|instructUserPrefix",
             value: power_user.instruct.input_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructUserSuffix',
+            key: "instructUserSuffix",
             value: power_user.instruct.input_suffix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructOutput|instructAssistantPrefix',
+            key: "instructOutput|instructAssistantPrefix",
             value: power_user.instruct.output_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSeparator|instructAssistantSuffix',
+            key: "instructSeparator|instructAssistantSuffix",
             value: power_user.instruct.output_suffix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSystemPrefix',
+            key: "instructSystemPrefix",
             value: power_user.instruct.system_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSystemSuffix',
+            key: "instructSystemSuffix",
             value: power_user.instruct.system_suffix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructFirstOutput|instructFirstAssistantPrefix',
-            value: power_user.instruct.first_output_sequence || power_user.instruct.output_sequence,
+            key: "instructFirstOutput|instructFirstAssistantPrefix",
+            value:
+                power_user.instruct.first_output_sequence ||
+                power_user.instruct.output_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructLastOutput|instructLastAssistantPrefix',
-            value: power_user.instruct.last_output_sequence || power_user.instruct.output_sequence,
+            key: "instructLastOutput|instructLastAssistantPrefix",
+            value:
+                power_user.instruct.last_output_sequence ||
+                power_user.instruct.output_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructStop',
+            key: "instructStop",
             value: power_user.instruct.stop_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructUserFiller',
+            key: "instructUserFiller",
             value: power_user.instruct.user_alignment_message,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSystemInstructionPrefix',
+            key: "instructSystemInstructionPrefix",
             value: power_user.instruct.last_system_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructFirstInput|instructFirstUserPrefix',
-            value: power_user.instruct.first_input_sequence || power_user.instruct.input_sequence,
+            key: "instructFirstInput|instructFirstUserPrefix",
+            value:
+                power_user.instruct.first_input_sequence ||
+                power_user.instruct.input_sequence,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructLastInput|instructLastUserPrefix',
-            value: power_user.instruct.last_input_sequence || power_user.instruct.input_sequence,
+            key: "instructLastInput|instructLastUserPrefix",
+            value:
+                power_user.instruct.last_input_sequence ||
+                power_user.instruct.input_sequence,
             enabled: power_user.instruct.enabled,
         },
         // System prompt macros
         {
-            key: 'systemPrompt',
-            value: power_user.prefer_character_prompt && env.charPrompt ? env.charPrompt : power_user.sysprompt.content,
+            key: "systemPrompt",
+            value:
+                power_user.prefer_character_prompt && env.charPrompt
+                    ? env.charPrompt
+                    : power_user.sysprompt.content,
             enabled: power_user.sysprompt.enabled,
         },
         {
-            key: 'defaultSystemPrompt|instructSystem|instructSystemPrompt',
+            key: "defaultSystemPrompt|instructSystem|instructSystemPrompt",
             value: power_user.sysprompt.content,
             enabled: power_user.sysprompt.enabled,
         },
         // Context template macros
         {
-            key: 'chatSeparator',
+            key: "chatSeparator",
             value: power_user.context.example_separator,
             enabled: true,
         },
         {
-            key: 'chatStart',
+            key: "chatStart",
             value: power_user.context.chat_start,
             enabled: true,
         },
@@ -706,8 +926,8 @@ export function getInstructMacros(env) {
     const macros = [];
 
     for (const { key, value, enabled } of instructMacros) {
-        const regex = new RegExp(`{{(${key})}}`, 'gi');
-        const replace = () => enabled ? value : '';
+        const regex = new RegExp(`{{(${key})}}`, "gi");
+        const replace = () => (enabled ? value : "");
         macros.push({ regex, replace });
     }
 
@@ -715,26 +935,31 @@ export function getInstructMacros(env) {
 }
 
 jQuery(() => {
-    $('#instruct_system_same_as_user').on('input', function () {
-        const state = !!$(this).prop('checked');
+    $("#instruct_system_same_as_user").on("input", function () {
+        const state = !!$(this).prop("checked");
         if (state) {
-            $('#instruct_system_sequence_block').addClass('disabled');
-            $('#instruct_system_suffix_block').addClass('disabled');
-            $('#instruct_system_sequence').prop('readOnly', true);
-            $('#instruct_system_suffix').prop('readOnly', true);
+            $("#instruct_system_sequence_block").addClass("disabled");
+            $("#instruct_system_suffix_block").addClass("disabled");
+            $("#instruct_system_sequence").prop("readOnly", true);
+            $("#instruct_system_suffix").prop("readOnly", true);
         } else {
-            $('#instruct_system_sequence_block').removeClass('disabled');
-            $('#instruct_system_suffix_block').removeClass('disabled');
-            $('#instruct_system_sequence').prop('readOnly', false);
-            $('#instruct_system_suffix').prop('readOnly', false);
+            $("#instruct_system_sequence_block").removeClass("disabled");
+            $("#instruct_system_suffix_block").removeClass("disabled");
+            $("#instruct_system_sequence").prop("readOnly", false);
+            $("#instruct_system_suffix").prop("readOnly", false);
         }
-
     });
 
-    $('#instruct_enabled').on('change', function () {
+    $("#instruct_enabled").on("change", function () {
         //color toggle for the main switch
-        $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
-        $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
+        $("#instruct_enabled")
+            .parent()
+            .find("i")
+            .toggleClass("toggleEnabled", !!power_user.instruct.enabled);
+        $("#instructSettingsBlock, #InstructSequencesColumn").toggleClass(
+            "disabled",
+            !power_user.instruct.enabled,
+        );
 
         if (!power_user.instruct.bind_to_context) {
             return;
@@ -746,17 +971,26 @@ jQuery(() => {
         }
     });
 
-    $('#instruct_derived').on('change', function () {
-        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
+    $("#instruct_derived").on("change", function () {
+        $("#instruct_derived")
+            .parent()
+            .find("i")
+            .toggleClass("toggleEnabled", !!power_user.instruct.derived);
     });
 
-    $('#instruct_bind_to_context').on('change', function () {
-        $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
+    $("#instruct_bind_to_context").on("change", function () {
+        $("#instruct_bind_to_context")
+            .parent()
+            .find("i")
+            .toggleClass(
+                "toggleEnabled",
+                !!power_user.instruct.bind_to_context,
+            );
     });
 
-    $('#instruct_presets').on('change', function () {
-        const name = String($(this).find(':selected').val());
-        const preset = instruct_presets.find(x => x.name === name);
+    $("#instruct_presets").on("change", function () {
+        const name = String($(this).find(":selected").val());
+        const preset = instruct_presets.find((x) => x.name === name);
 
         if (!preset) {
             return;
@@ -765,20 +999,26 @@ jQuery(() => {
         migrateInstructModeSettings(preset);
 
         power_user.instruct.preset = String(name);
-        controls.forEach(control => {
+        controls.forEach((control) => {
             if (preset[control.property] !== undefined) {
-                power_user.instruct[control.property] = preset[control.property];
+                power_user.instruct[control.property] =
+                    preset[control.property];
                 const $element = $(`#${control.id}`);
 
                 if (control.isCheckbox) {
-                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else if ($element.is('select')) {
+                    $element
+                        .prop("checked", power_user.instruct[control.property])
+                        .trigger("input");
+                } else if ($element.is("select")) {
                     const value = power_user.instruct[control.property];
                     $element.val(value);
-                    $element.filter(`[value="${value}"]`).prop('checked', true).trigger('input');
+                    $element
+                        .filter(`[value="${value}"]`)
+                        .prop("checked", true)
+                        .trigger("input");
                 } else {
                     $element.val(power_user.instruct[control.property]);
-                    $element.trigger('input');
+                    $element.trigger("input");
                 }
             }
         });
@@ -789,10 +1029,10 @@ jQuery(() => {
         }
     });
 
-    if (!CSS.supports('field-sizing', 'content')) {
-        $('#InstructSequencesColumn details').on('toggle', function () {
-            if ($(this).prop('open')) {
-                resetScrollHeight($(this).find('textarea'));
+    if (!CSS.supports("field-sizing", "content")) {
+        $("#InstructSequencesColumn details").on("toggle", function () {
+            if ($(this).prop("open")) {
+                resetScrollHeight($(this).find("textarea"));
             }
         });
     }

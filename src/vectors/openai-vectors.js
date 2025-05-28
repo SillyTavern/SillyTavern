@@ -1,21 +1,21 @@
-import fetch from 'node-fetch';
-import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
+import fetch from "node-fetch";
+import { SECRET_KEYS, readSecret } from "../endpoints/secrets.js";
 
 const SOURCES = {
-    'togetherai': {
+    togetherai: {
         secretKey: SECRET_KEYS.TOGETHERAI,
-        url: 'api.together.xyz',
-        model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+        url: "api.together.xyz",
+        model: "togethercomputer/m2-bert-80M-32k-retrieval",
     },
-    'mistral': {
+    mistral: {
         secretKey: SECRET_KEYS.MISTRALAI,
-        url: 'api.mistral.ai',
-        model: 'mistral-embed',
+        url: "api.mistral.ai",
+        model: "mistral-embed",
     },
-    'openai': {
+    openai: {
         secretKey: SECRET_KEYS.OPENAI,
-        url: 'api.openai.com',
-        model: 'text-embedding-ada-002',
+        url: "api.openai.com",
+        model: "text-embedding-ada-002",
     },
 };
 
@@ -27,26 +27,31 @@ const SOURCES = {
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-export async function getOpenAIBatchVector(texts, source, directories, model = '') {
+export async function getOpenAIBatchVector(
+    texts,
+    source,
+    directories,
+    model = "",
+) {
     const config = SOURCES[source];
 
     if (!config) {
-        console.error('Unknown source', source);
-        throw new Error('Unknown source');
+        console.error("Unknown source", source);
+        throw new Error("Unknown source");
     }
 
     const key = readSecret(directories, config.secretKey);
 
     if (!key) {
-        console.warn('No API key found');
-        throw new Error('No API key found');
+        console.warn("No API key found");
+        throw new Error("No API key found");
     }
 
     const url = config.url;
     const response = await fetch(`https://${url}/v1/embeddings`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${key}`,
         },
         body: JSON.stringify({
@@ -57,22 +62,22 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
 
     if (!response.ok) {
         const text = await response.text();
-        console.warn('API request failed', response.statusText, text);
-        throw new Error('API request failed');
+        console.warn("API request failed", response.statusText, text);
+        throw new Error("API request failed");
     }
 
     /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.data)) {
-        console.warn('API response was not an array');
-        throw new Error('API response was not an array');
+        console.warn("API response was not an array");
+        throw new Error("API response was not an array");
     }
 
     // Sort data by x.index to ensure the order is correct
     data.data.sort((a, b) => a.index - b.index);
 
-    const vectors = data.data.map(x => x.embedding);
+    const vectors = data.data.map((x) => x.embedding);
     return vectors;
 }
 
@@ -84,7 +89,12 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[]>} - The vector for the text
  */
-export async function getOpenAIVector(text, source, directories, model = '') {
-    const vectors = await getOpenAIBatchVector([text], source, directories, model);
+export async function getOpenAIVector(text, source, directories, model = "") {
+    const vectors = await getOpenAIBatchVector(
+        [text],
+        source,
+        directories,
+        model,
+    );
     return vectors[0];
 }

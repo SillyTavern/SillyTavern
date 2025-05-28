@@ -122,6 +122,9 @@
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
+        "prettier": "npx prettier \"src/**/*.{js,html}\" \"public/**/*.{js,html}\" ./*.{js,html}",
+        "prettier:fix": "npx prettier \"src/**/*.{js,html}\" \"public/**/*.{js,html}\" ./*.{js,html} --write",
+        "prettier:check": "npx prettier \"src/**/*.{js,html}\" \"public/**/*.{js,html}\" ./*.{js,html} --check",
         "plugins:update": "node plugins update",
         "plugins:install": "node plugins install"
     },
@@ -161,6 +164,8 @@
         "@types/yargs": "^17.0.33",
         "@types/yauzl": "^2.10.3",
         "eslint": "^8.57.1",
-        "eslint-plugin-jsdoc": "^48.10.0"
+        "eslint-config-prettier": "^10.1.5",
+        "eslint-plugin-jsdoc": "^48.10.0",
+        "prettier": "3.5.3"
     }
 }
