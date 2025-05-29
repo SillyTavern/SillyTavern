@@ -333,6 +333,11 @@ let power_user = {
     external_media_forbidden_overrides: [],
     pin_styles: true,
     click_to_edit: false,
+
+    // UI Performance Optimizations
+    enableUiOptimizations: true,
+    enableMessageVirtualization: true, // Depends on enableUiOptimizations
+    enableThrottledStreamingUpdates: true, // Depends on enableUiOptimizations
 };
 
 let themes = [];

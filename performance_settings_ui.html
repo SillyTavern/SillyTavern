@@ -1,0 +1,21 @@
+<div class="power_user_settings_group">
+    <h4>UI Performance Optimizations</h4>
+    <div class="flex-container">
+        <input type="checkbox" id="enable_ui_optimizations" />
+        <label for="enable_ui_optimizations" class="wide_label">Enable UI Performance Optimizations
+            <span class="tooltip"><i class="fa-solid fa-circle-info"></i><span class="tooltiptext">Master toggle for all UI performance enhancements. Disabling this will revert to older rendering methods, which might be significantly slower for large chats. A page reload may be required for changes to take full effect.</span></span>
+        </label>
+    </div>
+    <div id="enable_message_virtualization_div" class="flex-container sub_setting">
+        <input type="checkbox" id="enable_message_virtualization" />
+        <label for="enable_message_virtualization" class="wide_label">Enable Message Virtualization (Windowing)
+            <span class="tooltip"><i class="fa-solid fa-circle-info"></i><span class="tooltiptext">Only renders visible messages in the chat window, improving performance for very long chats. Depends on "Enable UI Performance Optimizations". A page reload may be required for changes to take full effect.</span></span>
+        </label>
+    </div>
+    <div id="enable_throttled_streaming_updates_div" class="flex-container sub_setting">
+        <input type="checkbox" id="enable_throttled_streaming_updates" />
+        <label for="enable_throttled_streaming_updates" class="wide_label">Enable Optimized Streaming Updates
+            <span class="tooltip"><i class="fa-solid fa-circle-info"></i><span class="tooltiptext">Optimizes how message heights and layout are updated during text streaming, especially for virtualized messages. Depends on "Enable UI Performance Optimizations".</span></span>
+        </label>
+    </div>
+</div>
