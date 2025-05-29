@@ -2316,7 +2316,7 @@ export function deleteWIOriginalDataValue(data, uid) {
 /**
  * Splits a given input string that contains one or more keywords or regexes, separated by commas.
  *
- * Each part can be a valid regex following the pattern `/myregex/flags` with optional flags. Commmas inside the regex are allowed, slashes have to be escaped like this: `\/`
+ * Each part can be a valid regex following the pattern `/myregex/flags` with optional flags. Commas inside the regex are allowed, slashes have to be escaped like this: `\/`
  * If a regex doesn't stand alone, it is not treated as a regex.
  *
  * @param {string} input - One or multiple keywords or regexes, separated by commas

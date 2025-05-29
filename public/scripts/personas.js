@@ -132,7 +132,7 @@ function reloadUserAvatar(force = false) {
 /**
  * Sort the given personas
  * @param {string[]} personas - The persona names to sort
- * @returns {string[]} The sorted persona names arrray, same reference as passed in
+ * @returns {string[]} The sorted persona names array, same reference as passed in
  */
 function sortPersonas(personas) {
     const option = $('#persona_sort_order').find(':selected');
@@ -1821,7 +1821,7 @@ function registerPersonaSlashCommands() {
                 defaultValue: 'chat',
                 enumList: [
                     new SlashCommandEnumValue('chat', 'Lock the persona to the current chat.'),
-                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, mutliple personas can be locked to the same character.'),
+                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.'),
                     new SlashCommandEnumValue('default', 'Lock this persona as the default persona for all new chats.'),
                 ],
             }),
@@ -1857,7 +1857,7 @@ function registerPersonaSlashCommands() {
                 defaultValue: 'chat',
                 enumList: [
                     new SlashCommandEnumValue('chat', 'Lock the persona to the current chat.'),
-                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, mutliple personas can be locked to the same character.'),
+                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.'),
                     new SlashCommandEnumValue('default', 'Lock this persona as the default persona for all new chats.'),
                 ],
             }),

@@ -279,9 +279,9 @@ export class TextCompletionService {
                                     instructPreset,
                                 );
                             } else { // e.g. "<|im_start|>assistant: Hello, my name is"
-                                const overridenInstructPreset = structuredClone(instructPreset);
-                                overridenInstructPreset.output_suffix = '';
-                                overridenInstructPreset.wrap = false;
+                                const overriddenInstructPreset = structuredClone(instructPreset);
+                                overriddenInstructPreset.output_suffix = '';
+                                overriddenInstructPreset.wrap = false;
                                 messageContent = formatInstructModeChat(
                                     message.role,
                                     message.content,
@@ -291,7 +291,7 @@ export class TextCompletionService {
                                     undefined,
                                     undefined,
                                     undefined,
-                                    overridenInstructPreset,
+                                    overriddenInstructPreset,
                                 );
                             }
                         }

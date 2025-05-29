@@ -1049,7 +1049,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
         return response.sendStatus(200);
     }
     catch {
-        console.error('An error occured, character edit invalidated.');
+        console.error('An error occurred, character edit invalidated.');
     }
 });
 
@@ -1095,7 +1095,7 @@ router.post('/edit-attribute', validateAvatarUrlMiddleware, async function (requ
         await writeCharacterData(avatarPath, newCharJSON, targetFile, request);
         return response.sendStatus(200);
     } catch (err) {
-        console.error('An error occured, character edit invalidated.', err);
+        console.error('An error occurred, character edit invalidated.', err);
     }
 });
 

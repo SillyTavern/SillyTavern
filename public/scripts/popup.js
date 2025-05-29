@@ -315,7 +315,7 @@ export class Popup {
         if (defaultButton) defaultButton.classList.add('menu_button_default');
 
         // Styling differences depending on the popup type
-        // General styling for all types first, that might be overriden for specific types below
+        // General styling for all types first, that might be overridden for specific types below
         this.mainInput.style.display = 'none';
         this.inputControls.style.display = customInputs ? 'block' : 'none';
         this.closeButton.style.display = 'none';

@@ -8566,7 +8566,7 @@ export function showSwipeButtons() {
 
     //had to add this to make the swipe counter work
     //(copied from the onclick functions for swipe buttons..
-    //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
+    //don't know why the array isn't set for non-swipe messages in Generate or addOneMessage..)
     if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
         chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
         chat[chat.length - 1]['swipes'] = [];                         // empty the array

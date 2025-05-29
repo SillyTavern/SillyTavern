@@ -426,7 +426,7 @@ export class ReasoningHandler {
         if (!this.#isParsingReasoning)
             return mesChanged;
 
-        // If we are in manual parsing mode, all currently streaming mes tokens will go the the reasoning block
+        // If we are in manual parsing mode, all currently streaming mes tokens will go to the reasoning block
         this.reasoning = parseTarget.slice(power_user.reasoning.prefix.length);
         message.mes = '';
 

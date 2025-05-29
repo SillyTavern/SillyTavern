@@ -584,7 +584,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
     };
 }
 
-// Check if the prefix needs to be overriden to use instruct mode
+// Check if the prefix needs to be overridden to use instruct mode
 function selectPrefix(selected_prefix, finalPrompt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
