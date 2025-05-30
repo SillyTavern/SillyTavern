@@ -1644,6 +1644,16 @@ async function loadPowerUserSettings(settings, data) {
     $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
+
+    // UI Performance Optimizations
+    power_user.enableUiOptimizations = isTrueBoolean(power_user.enableUiOptimizations);
+    power_user.enableMessageVirtualization = isTrueBoolean(power_user.enableMessageVirtualization);
+    power_user.enableThrottledStreamingUpdates = isTrueBoolean(power_user.enableThrottledStreamingUpdates);
+
+    $('#enableUiOptimizations').prop('checked', power_user.enableUiOptimizations);
+    $('#enableMessageVirtualization').prop('checked', power_user.enableMessageVirtualization);
+    $('#enableThrottledStreamingUpdates').prop('checked', power_user.enableThrottledStreamingUpdates);
+    updateDependentPerformanceSettingsVisibility();
     $('#aux_field').val(power_user.aux_field);
     $('#tag_import_setting').val(power_user.tag_import_setting);
 
@@ -1731,6 +1741,15 @@ async function loadPowerUserSettings(settings, data) {
     loadCharListState();
     toggleMDHotkeyIconDisplay();
     applyToastrPosition();
+}
+
+function updateDependentPerformanceSettingsVisibility() {
+    const dependentSettings = $('#dependent-performance-settings');
+    if (power_user.enableUiOptimizations) {
+        dependentSettings.show();
+    } else {
+        dependentSettings.hide();
+    }
 }
 
 function toggleMDHotkeyIconDisplay() {
@@ -4017,6 +4036,26 @@ $(document).ready(() => {
 
     $('#ui_preset_export_button').on('click', async function () {
         await exportTheme();
+    });
+
+    // UI Performance Optimizations
+    $('#enableUiOptimizations').on('input', function () {
+        power_user.enableUiOptimizations = !!$(this).prop('checked');
+        updateDependentPerformanceSettingsVisibility();
+        saveSettingsDebounced();
+        toastr.info('UI performance settings changed. A page reload may be required to apply all changes.');
+    });
+
+    $('#enableMessageVirtualization').on('input', function () {
+        power_user.enableMessageVirtualization = !!$(this).prop('checked');
+        saveSettingsDebounced();
+        toastr.info('Message virtualization setting changed. A page reload may be required to apply all changes.');
+    });
+
+    $('#enableThrottledStreamingUpdates').on('input', function () {
+        power_user.enableThrottledStreamingUpdates = !!$(this).prop('checked');
+        saveSettingsDebounced();
+        toastr.info('Optimized streaming updates setting changed. A page reload may be required to apply all changes.');
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
