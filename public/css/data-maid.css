@@ -30,7 +30,6 @@
     font-family: var(--monoFontFamily);
     resize: none;
     font-size: 0.95em;
-    line-height: 1.2;
 }
 
 .dataMaidImageView {
@@ -50,7 +49,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.1em;
+    font-size: 1.05em;
+}
+
+.dataMaidResultsList:empty {
+    display: none;
 }
 
 .dataMaidResultsList {
