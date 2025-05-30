@@ -677,7 +677,7 @@ router.get('/view', async (req, res) => {
         }
 
         const fileBuffer = await fs.promises.readFile(pathToFile);
-        const mimeType = mime.lookup(pathToFile) || 'application/octet-stream';
+        const mimeType = mime.lookup(pathToFile) || 'text/plain';
         res.setHeader('Content-Type', mimeType);
         return res.send(fileBuffer);
     } catch (error) {
@@ -692,8 +692,8 @@ router.post('/delete', async (req, res) => {
             return res.sendStatus(403);
         }
 
-        const { token, hash } = req.body;
-        if (!token || !hash) {
+        const { token, hashes } = req.body;
+        if (!token || !Array.isArray(hashes) || hashes.length === 0) {
             return res.sendStatus(400);
         }
 
@@ -706,24 +706,27 @@ router.post('/delete', async (req, res) => {
             return res.sendStatus(403);
         }
 
-        const fileEntry = tokenEntry.paths.find(entry => entry.hash === hash);
-        if (!fileEntry) {
-            return res.sendStatus(404);
+        for (const hash of hashes) {
+            const fileEntry = tokenEntry.paths.find(entry => entry.hash === hash);
+            if (!fileEntry) {
+                return res.sendStatus(404);
+            }
+
+            if (!isPathUnderParent(req.user.directories.root, fileEntry.path)) {
+                console.warn('[Data Maid] Attempted deletion of a file outside of the user directory:', fileEntry.path);
+                return res.sendStatus(403);
+            }
+
+            const pathToFile = fileEntry.path;
+            const fileExists = fs.existsSync(pathToFile);
+
+            if (!fileExists) {
+                return res.sendStatus(404);
+            }
+
+            await fs.promises.unlink(pathToFile);
         }
 
-        if (!isPathUnderParent(req.user.directories.root, fileEntry.path)) {
-            console.warn('[Data Maid] Attempted deletion of a file outside of the user directory:', fileEntry.path);
-            return res.sendStatus(403);
-        }
-
-        const pathToFile = fileEntry.path;
-        const fileExists = fs.existsSync(pathToFile);
-
-        if (!fileExists) {
-            return res.sendStatus(404);
-        }
-
-        await fs.promises.unlink(pathToFile);
         return res.sendStatus(204);
     } catch (error) {
         console.error('[Data Maid] Error deleting files:', error);
