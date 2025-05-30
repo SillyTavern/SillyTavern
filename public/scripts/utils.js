@@ -887,7 +887,14 @@ export function countOccurrences(string, character) {
  * @returns {boolean} True if the string is true, false otherwise.
  */
 export function isTrueBoolean(arg) {
-    return ['on', 'true', '1'].includes(arg?.trim()?.toLowerCase());
+    if (typeof arg === 'boolean') {
+        return arg;
+    }
+    if (typeof arg === 'string') {
+        return ['on', 'true', '1'].includes(arg.trim().toLowerCase());
+    }
+    // For null, undefined, numbers, or any other type, treat as false.
+    return false;
 }
 
 /**
