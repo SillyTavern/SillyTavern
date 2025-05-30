@@ -4885,6 +4885,26 @@
                                     <input id="pin_styles" type="checkbox" />
                                     <small data-i18n="Pin greeting message styles">Pin greeting message styles</small>
                                 </label>
+                                <div id="performance-settings-block">
+                                    <h5 data-i18n="UI Performance Optimizations">UI Performance Optimizations</h5>
+                                    <label class="checkbox_label" for="enableUiOptimizations" title="Master toggle for all UI performance optimizations. Reload recommended.">
+                                        <input id="enableUiOptimizations" type="checkbox" />
+                                        <small data-i18n="Enable UI Performance Optimizations">Enable UI Performance Optimizations</small>
+                                        <i class="fa-solid fa-fw fa-triangle-exclamation warning" title="Reload page to apply changes" data-i18n="[title]Reload page to apply changes"></i>
+                                    </label>
+                                    <div id="dependent-performance-settings" class="indent_left">
+                                        <label class="checkbox_label" for="enableMessageVirtualization" title="Render only visible messages to improve performance with long chat histories. Reload recommended.">
+                                            <input id="enableMessageVirtualization" type="checkbox" />
+                                            <small data-i18n="Enable Message Virtualization">Enable Message Virtualization</small>
+                                            <i class="fa-solid fa-fw fa-triangle-exclamation warning" title="Reload page to apply changes" data-i18n="[title]Reload page to apply changes"></i>
+                                        </label>
+                                        <label class="checkbox_label" for="enableThrottledStreamingUpdates" title="Optimize UI updates during message streaming for better responsiveness. Reload recommended.">
+                                            <input id="enableThrottledStreamingUpdates" type="checkbox" />
+                                            <small data-i18n="Enable Optimized Streaming Updates">Enable Optimized Streaming Updates</small>
+                                            <i class="fa-solid fa-fw fa-triangle-exclamation warning" title="Reload page to apply changes" data-i18n="[title]Reload page to apply changes"></i>
+                                        </label>
+                                    </div>
+                                </div>
                                 <div class="inline-drawer wide100p flexFlowColumn">
                                     <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria">
                                         <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
