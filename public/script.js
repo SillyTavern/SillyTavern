@@ -283,6 +283,7 @@ import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
+import { initDataMaid } from './scripts/data-maid.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -1026,6 +1027,7 @@ async function firstLoadInit() {
     initWelcomeScreen();
     await initScrapers();
     initCustomSelectedSamplers();
+    initDataMaid();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();

@@ -24,8 +24,11 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
 
 /**
  * @typedef {object} DataMaidSanitizedRecord - The entry excluding the sensitive paths.
- * @property {string} name - The name of the file or directory.
- * @property {string} hash - The SHA-256 hash of the file or directory path.
+ * @property {string} name - The name of the file.
+ * @property {string} hash - The SHA-256 hash of the file path.
+ * @property {string} [parent] - The name of the parent directory, if applicable.
+ * @property {number} [size] - The size of the file in bytes, if available.
+ * @property {number} [mtime] - The last modification time of the file, if available.
  */
 
 /**
@@ -69,6 +72,10 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
  * @property {{path: string, hash: string}[]} paths - The list of file paths and their hashes that can be cleaned up.
  */
 
+/**
+ * Service for detecting and managing loose user data files.
+ * Helps identify orphaned files that are no longer referenced by the application.
+ */
 export class DataMaidService {
     /**
      * @type {Map<string, DataMaidTokenEntry>} Map clean-up tokens to user IDs
@@ -76,7 +83,7 @@ export class DataMaidService {
     static TOKENS = new Map();
 
     /**
-     *
+     * Creates a new DataMaidService instance for a specific user.
      * @param {string} handle - The user's handle.
      * @param {import('../users.js').UserDirectoryList} directories - List of user directories to scan for loose data.
      */
@@ -93,7 +100,7 @@ export class DataMaidService {
         /** @type {DataMaidRawReport} */
         const report = {
             images: await this.#collectImages(),
-            files: await this.#collectFiles (),
+            files: await this.#collectFiles(),
             chats: await this.#collectChats(),
             groupChats: await this.#collectGroupChats(),
             avatarThumbnails: await this.#collectAvatarThumbnails(),
@@ -105,27 +112,40 @@ export class DataMaidService {
         return report;
     }
 
+
+    /**
+     * Sanitizes a record by hashing the file name and removing sensitive information.
+     * Additionally, adds metadata like size and modification time.
+     * @param {string} name The file or directory name to sanitize.
+     * @param {boolean} withParent If the model should include the parent directory name.
+     * @returns {DataMaidSanitizedRecord} A sanitized record with the file name, hash, parent directory name, size, and modification time.
+     */
+    #sanitizeRecord(name, withParent) {
+        const stat = fs.existsSync(name) ? fs.statSync(name) : null;
+        return {
+            name: path.basename(name),
+            hash: sha256(name),
+            parent: withParent ? path.basename(path.dirname(name)) : void 0,
+            size: stat?.size,
+            mtime: stat?.mtimeMs,
+        };
+    }
+
     /**
      * Sanitizes the report by hashing the file paths and removing sensitive information.
      * @param {DataMaidRawReport} report - The raw report containing loose user data.
      * @returns {DataMaidSanitizedReport} A sanitized report with sensitive paths removed.
      */
     sanitizeReport(report) {
-        const sanitizeRecord = (name, withParent) => ({
-            name: path.basename(name),
-            hash: sha256(name),
-            parent: withParent ? path.basename(path.dirname(name)) : void 0,
-        });
-
         const sanitizedReport = {
-            images: report.images.map(i => sanitizeRecord(i, true)),
-            files: report.files.map(i => sanitizeRecord(i, false)),
-            chats: report.chats.map(i => sanitizeRecord(i, true)),
-            groupChats: report.groupChats.map(i => sanitizeRecord(i, true)),
-            avatarThumbnails: report.avatarThumbnails.map(i => sanitizeRecord(i, false)),
-            backgroundThumbnails: report.backgroundThumbnails.map(i => sanitizeRecord(i, false)),
-            chatBackups: report.chatBackups.map(i => sanitizeRecord(i, false)),
-            settingsBackups: report.settingsBackups.map(i => sanitizeRecord(i, false)),
+            images: report.images.map(i => this.#sanitizeRecord(i, true)),
+            files: report.files.map(i => this.#sanitizeRecord(i, false)),
+            chats: report.chats.map(i => this.#sanitizeRecord(i, true)),
+            groupChats: report.groupChats.map(i => this.#sanitizeRecord(i, false)),
+            avatarThumbnails: report.avatarThumbnails.map(i => this.#sanitizeRecord(i, false)),
+            backgroundThumbnails: report.backgroundThumbnails.map(i => this.#sanitizeRecord(i, false)),
+            chatBackups: report.chatBackups.map(i => this.#sanitizeRecord(i, false)),
+            settingsBackups: report.settingsBackups.map(i => this.#sanitizeRecord(i, false)),
         };
 
         return sanitizedReport;
@@ -133,6 +153,8 @@ export class DataMaidService {
 
     /**
      * Collects loose user images from the provided directories.
+     * Images are considered loose if they exist in the user images directory
+     * but are not referenced in any chat messages.
      * @returns {Promise<string[]>} List of paths to loose user images
      */
     async #collectImages() {
@@ -183,6 +205,8 @@ export class DataMaidService {
 
     /**
      * Collects loose user files from the provided directories.
+     * Files are considered loose if they exist in the files directory
+     * but are not referenced in chat messages, metadata, or settings.
      * @returns {Promise<string[]>} List of paths to loose user files
      */
     async #collectFiles() {
@@ -254,6 +278,7 @@ export class DataMaidService {
 
     /**
      * Collects loose character chats from the provided directories.
+     * Chat folders are considered loose if they don't have corresponding character files.
      * @returns {Promise<string[]>} List of paths to loose character chats
      */
     async #collectChats() {
@@ -287,6 +312,7 @@ export class DataMaidService {
 
     /**
      * Collects loose group chats from the provided directories.
+     * Group chat files are considered loose if they're not referenced by any group definition.
      * @returns {Promise<string[]>} List of paths to loose group chats
      */
     async #collectGroupChats() {
@@ -431,16 +457,15 @@ export class DataMaidService {
 
     /**
      * Parses all chat files and returns an array of chat messages.
+     * Searches both individual character chats and group chats.
      * @param {function(DataMaidMessage): boolean} filterFn - Filter function to apply to each message.
      * @returns {Promise<DataMaidMessage[]>} Array of chat messages
      */
     async #parseAllChats(filterFn) {
         try {
-            const groupChats = await fs.promises.readdir(this.directories.groupChats, { withFileTypes: true });
-            const chatDirectories = await fs.promises.readdir(this.directories.chats, { withFileTypes: true });
-
             const allChats = [];
 
+            const groupChats = await fs.promises.readdir(this.directories.groupChats, { withFileTypes: true });
             for (const file of groupChats) {
                 if (file.isFile() && path.parse(file.name).ext === '.jsonl') {
                     const chatMessages = await this.#parseChatFile(path.join(this.directories.groupChats, file.name));
@@ -448,6 +473,7 @@ export class DataMaidService {
                 }
             }
 
+            const chatDirectories = await fs.promises.readdir(this.directories.chats, { withFileTypes: true });
             for (const directory of chatDirectories) {
                 if (directory.isDirectory()) {
                     const chatFiles = await fs.promises.readdir(path.join(this.directories.chats, directory.name), { withFileTypes: true });
@@ -468,17 +494,16 @@ export class DataMaidService {
     }
 
     /**
-     * Parses all metadata from the chat files.
+     * Parses all metadata from chat files and group definitions.
+     * Extracts metadata from both active and historical chat data.
      * @param {function(DataMaidChatMetadata): boolean} filterFn - Filter function to apply to each metadata entry.
      * @returns {Promise<DataMaidChatMetadata[]>} Parsed chat metadata as an array.
      */
     async #parseAllMetadata(filterFn) {
         try {
-            const groups = await fs.promises.readdir(this.directories.groups, { withFileTypes: true });
-            const chatDirectories = await fs.promises.readdir(this.directories.chats, { withFileTypes: true });
-
             const allMetadata = [];
 
+            const groups = await fs.promises.readdir(this.directories.groups, { withFileTypes: true });
             for (const file of groups) {
                 if (file.isFile() && path.parse(file.name).ext === '.json') {
                     try {
@@ -497,6 +522,7 @@ export class DataMaidService {
                 }
             }
 
+            const chatDirectories = await fs.promises.readdir(this.directories.chats, { withFileTypes: true });
             for (const directory of chatDirectories) {
                 if (directory.isDirectory()) {
                     const chatFiles = await fs.promises.readdir(path.join(this.directories.chats, directory.name), { withFileTypes: true });
@@ -512,7 +538,7 @@ export class DataMaidService {
                 }
             }
 
-            return allMetadata.filter(x => x && typeof x === 'object' && Object.keys(x).length > 0);
+            return allMetadata;
         } catch (error) {
             console.error('[Data Maid] Error parsing chats:', error);
             return [];
@@ -520,7 +546,8 @@ export class DataMaidService {
     }
 
     /**
-     * Parses a chat file and returns an array of chat messages.
+     * Parses a single chat file and returns an array of chat messages.
+     * Each line in the JSONL file represents one message.
      * @param {string} filePath Path to the chat file to parse.
      * @returns {Promise<DataMaidMessage[]>} Parsed chat messages as an array.
      */
@@ -537,14 +564,15 @@ export class DataMaidService {
 
     /**
      * Generates a unique token for the user to clean up their data.
+     * Replaces any existing token for the same user.
      * @param {string} handle - The user's handle or identifier.
      * @param {DataMaidRawReport} report - The report containing loose user data.
      * @returns {string} A unique token.
      */
     static generateToken(handle, report) {
+        // Remove any existing token for this user
         for (const [token, entry] of this.TOKENS.entries()) {
             if (entry.handle === handle) {
-                // If a token already exists for this user, remove it
                 this.TOKENS.delete(token);
             }
         }
@@ -562,11 +590,11 @@ export class DataMaidService {
 export const router = express.Router();
 
 router.post('/report', async (req, res) => {
-    if (!req.user || !req.user.directories) {
-        return res.sendStatus(403);
-    }
-
     try {
+        if (!req.user || !req.user.directories) {
+            return res.sendStatus(403);
+        }
+
         const dataMaid = new DataMaidService(req.user.profile.handle, req.user.directories);
         const rawReport = await dataMaid.generateReport();
 
@@ -576,6 +604,35 @@ router.post('/report', async (req, res) => {
         return res.json({ report, token });
     } catch (error) {
         console.error('[Data Maid] Error generating data maid report:', error);
+        return res.sendStatus(500);
+    }
+});
+
+router.post('/finalize', async (req, res) => {
+    try {
+        if (!req.user || !req.user.directories) {
+            return res.sendStatus(403);
+        }
+
+        if (!req.body.token) {
+            return res.sendStatus(400);
+        }
+
+        const token = req.body.token.toString();
+        if (!DataMaidService.TOKENS.has(token)) {
+            return res.sendStatus(403);
+        }
+
+        const tokenEntry = DataMaidService.TOKENS.get(token);
+        if (!tokenEntry || tokenEntry.handle !== req.user.profile.handle) {
+            return res.sendStatus(403);
+        }
+
+        // Remove the token after finalization
+        DataMaidService.TOKENS.delete(token);
+        return res.sendStatus(204);
+    } catch (error) {
+        console.error('[Data Maid] Error finalizing the token:', error);
         return res.sendStatus(500);
     }
 });

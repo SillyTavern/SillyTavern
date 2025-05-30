@@ -11,6 +11,7 @@
 @import url(css/tags.css);
 @import url(css/scrollable-button.css);
 @import url(css/welcome.css);
+@import url(css/data-maid.css);
 
 :root {
     --doc-height: 100%;
