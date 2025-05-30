@@ -28,14 +28,20 @@ if exist cloudflared.exe (
 )
 echo Downloading cloudflared.exe version %CLOUDFLARED_VERSION% from %CLOUDFLARED_URL%
 curl -Lo cloudflared.exe "%CLOUDFLARED_URL%"
+
+REM Check download error
 if errorlevel 1 (
+    echo.
     echo ERROR: Failed to download cloudflared.exe. Curl errorlevel %errorlevel%.
-    goto :cleanup_and_exit
+    echo Please check your internet connection and the URL.
+    goto :cleanup_and_exit_with_pause
 )
 if not exist cloudflared.exe (
+    echo.
     echo ERROR: cloudflared.exe not found after download attempt.
-    goto :cleanup_and_exit
+    goto :cleanup_and_exit_with_pause
 )
+echo Download complete.
 
 REM Compute SHA256 Hash
 echo Computing SHA256 hash for downloaded cloudflared.exe...
@@ -44,9 +50,16 @@ for /f "skip=1 tokens=*" %%a in ('certutil -hashfile cloudflared.exe SHA256') do
     if not defined COMPUTED_CHECKSUM set "COMPUTED_CHECKSUM=%%a"
 )
 
-REM Clean up spaces from COMPUTED_CHECKSUM if any (certutil output might have them)
+REM Clean up spaces from COMPUTED_CHECKSUM
 if defined COMPUTED_CHECKSUM (
     set "COMPUTED_CHECKSUM=%COMPUTED_CHECKSUM: =%"
+)
+
+REM Verify COMPUTED_CHECKSUM is not empty (extra safety)
+if not defined COMPUTED_CHECKSUM (
+    echo.
+    echo ERROR: Failed to compute checksum. Certutil might have failed or produced no output.
+    goto :cleanup_and_exit_with_pause
 )
 
 echo Expected SHA256: %EXPECTED_CHECKSUM%
@@ -54,27 +67,29 @@ echo Computed SHA256: %COMPUTED_CHECKSUM%
 
 REM Compare Hashes
 if not "%COMPUTED_CHECKSUM%"=="%EXPECTED_CHECKSUM%" (
+    echo.
     echo =================================================================
     echo ^!^!^! CHECKSUM VERIFICATION FAILED ^!^!^!
     echo The downloaded cloudflared.exe may be compromised or corrupted.
-    echo Deleting the downloaded file. Please try again later or
-    echo download cloudflared.exe (version %CLOUDFLARED_VERSION%) manually
-    echo from the official Cloudflare releases page and verify its
-    echo checksum yourself.
+    echo Deleting the downloaded file.
+    echo Please try again later or download manually from official sources.
     echo =================================================================
-    goto :cleanup_and_exit
+    goto :cleanup_and_exit_with_pause
 )
 
 echo Checksum verified successfully.
 echo Starting Cloudflare tunnel...
 cloudflared.exe tunnel --url localhost:8000
-goto :eof
 
-:cleanup_and_exit
+goto :final_exit_label 
+
+:cleanup_and_exit_with_pause
 if exist cloudflared.exe (
-    echo Deleting downloaded cloudflared.exe due to error or failed verification...
+    echo Deleting downloaded cloudflared.exe...
     del cloudflared.exe
 )
+echo.
+echo Script aborted due to error or failed verification.
+pause
 
-:eof
-endlocal
+:final_exit_label
