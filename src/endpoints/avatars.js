@@ -50,12 +50,29 @@ router.post('/upload', async (request, response) => {
         rawImg.cover({ w: AVATAR_WIDTH, h: AVATAR_HEIGHT });
         const image = await rawImg.getBuffer(JimpMime.png);
 
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(request.user.directories.avatars, filename);
+        let finalFilename;
+        if (request.body.overwrite_name) {
+            // Sanitize overwrite_name:
+            // 1. Extract only the filename part (stripping any path)
+            const baseName = path.basename(request.body.overwrite_name);
+            // 2. Sanitize the extracted filename for problematic characters
+            let sanitizedBaseName = sanitize(baseName);
+            // 3. Ensure it has a .png extension as the output is always PNG
+            if (sanitizedBaseName.toLowerCase().endsWith('.png')) {
+                finalFilename = sanitizedBaseName;
+            } else {
+                finalFilename = `${path.parse(sanitizedBaseName).name}.png`;
+            }
+        } else {
+            finalFilename = `${Date.now()}.png`;
+        }
+
+        const pathToNewFile = path.join(request.user.directories.avatars, finalFilename);
         writeFileAtomicSync(pathToNewFile, image);
         fs.unlinkSync(pathToUpload);
-        return response.send({ path: filename });
+        return response.send({ path: finalFilename });
     } catch (err) {
-        return response.status(400).send('Is not a valid image');
+        console.error(err); // Log the actual error for server-side debugging
+        return response.status(400).send('Is not a valid image or filename error.');
     }
 });

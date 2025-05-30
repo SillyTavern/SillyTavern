@@ -146,10 +146,11 @@ router.post('/caption-image', async (request, response) => {
             const { authHeader, authType } = await getVertexAIAuth(request);
 
             if (authType === 'express') {
-                // Express mode: use API key parameter
+                // Express mode: use API key in header
                 const keyParam = authHeader.replace('Bearer ', '');
                 const apiUrl = new URL(request.body.reverse_proxy || API_VERTEX_AI);
-                url = `${apiUrl.origin}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
+                url = `${apiUrl.origin}/v1/publishers/google/models/${model}:generateContent`;
+                headers['x-goog-api-key'] = keyParam;
             } else if (authType === 'full') {
                 // Full mode: use project-specific URL with Authorization header
                 // Get project ID from Service Account JSON
@@ -185,7 +186,8 @@ router.post('/caption-image', async (request, response) => {
             // Google AI Studio
             const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
             const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-            url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            url = `${apiUrl.origin}/v1beta/models/${model}:generateContent`;
+            headers['x-goog-api-key'] = apiKey;
         }
         const body = {
             contents: [{

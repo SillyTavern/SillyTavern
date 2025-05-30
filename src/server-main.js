@@ -48,6 +48,8 @@ import {
     verifySecuritySettings,
     loginPageMiddleware,
 } from './users.js';
+import { getConfigValue } from './util.js';
+
 
 import getWebpackServeMiddleware from './middleware/webpack-serve.js';
 import basicAuthMiddleware from './middleware/basicAuth.js';
@@ -380,6 +382,19 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
+    .then(async () => {
+        // Check for basic auth with default credentials
+        if (cliArgs.basicAuthMode &&
+            !getConfigValue('perUserBasicAuth', false, 'boolean') &&
+            getConfigValue('basicAuthUser.username') === 'user' &&
+            getConfigValue('basicAuthUser.password') === 'password') {
+            console.warn(color.red('*****************************************************************'));
+            console.warn(color.red('* WARNING: Basic authentication is enabled with default         *'));
+            console.warn(color.red('* credentials (user:password). This is a SERIOUS security risk. *'));
+            console.warn(color.red('* Please change the username and password in your config.yaml.  *'));
+            console.warn(color.red('*****************************************************************'));
+        }
+    })
     .then(preSetupTasks)
     .then(apply404Middleware)
     .then(() => new ServerStartup(app, cliArgs).start())
