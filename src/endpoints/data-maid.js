@@ -118,10 +118,10 @@ export class DataMaidService {
      * Additionally, adds metadata like size and modification time.
      * @param {string} name The file or directory name to sanitize.
      * @param {boolean} withParent If the model should include the parent directory name.
-     * @returns {DataMaidSanitizedRecord} A sanitized record with the file name, hash, parent directory name, size, and modification time.
+     * @returns {Promise<DataMaidSanitizedRecord>} A sanitized record with the file name, hash, parent directory name, size, and modification time.
      */
-    #sanitizeRecord(name, withParent) {
-        const stat = fs.existsSync(name) ? fs.statSync(name) : null;
+    async #sanitizeRecord(name, withParent) {
+        const stat = fs.existsSync(name) ? await fs.promises.stat(name) : null;
         return {
             name: path.basename(name),
             hash: sha256(name),
@@ -134,18 +134,18 @@ export class DataMaidService {
     /**
      * Sanitizes the report by hashing the file paths and removing sensitive information.
      * @param {DataMaidRawReport} report - The raw report containing loose user data.
-     * @returns {DataMaidSanitizedReport} A sanitized report with sensitive paths removed.
+     * @returns {Promise<DataMaidSanitizedReport>} A sanitized report with sensitive paths removed.
      */
-    sanitizeReport(report) {
+    async sanitizeReport(report) {
         const sanitizedReport = {
-            images: report.images.map(i => this.#sanitizeRecord(i, true)),
-            files: report.files.map(i => this.#sanitizeRecord(i, false)),
-            chats: report.chats.map(i => this.#sanitizeRecord(i, true)),
-            groupChats: report.groupChats.map(i => this.#sanitizeRecord(i, false)),
-            avatarThumbnails: report.avatarThumbnails.map(i => this.#sanitizeRecord(i, false)),
-            backgroundThumbnails: report.backgroundThumbnails.map(i => this.#sanitizeRecord(i, false)),
-            chatBackups: report.chatBackups.map(i => this.#sanitizeRecord(i, false)),
-            settingsBackups: report.settingsBackups.map(i => this.#sanitizeRecord(i, false)),
+            images: await Promise.all(report.images.map(i => this.#sanitizeRecord(i, true))),
+            files: await Promise.all(report.files.map(i => this.#sanitizeRecord(i, false))),
+            chats: await Promise.all(report.chats.map(i => this.#sanitizeRecord(i, true))),
+            groupChats: await Promise.all(report.groupChats.map(i => this.#sanitizeRecord(i, false))),
+            avatarThumbnails: await Promise.all(report.avatarThumbnails.map(i => this.#sanitizeRecord(i, false))),
+            backgroundThumbnails: await Promise.all(report.backgroundThumbnails.map(i => this.#sanitizeRecord(i, false))),
+            chatBackups: await Promise.all(report.chatBackups.map(i => this.#sanitizeRecord(i, false))),
+            settingsBackups: await Promise.all(report.settingsBackups.map(i => this.#sanitizeRecord(i, false))),
         };
 
         return sanitizedReport;
@@ -598,7 +598,7 @@ router.post('/report', async (req, res) => {
         const dataMaid = new DataMaidService(req.user.profile.handle, req.user.directories);
         const rawReport = await dataMaid.generateReport();
 
-        const report = dataMaid.sanitizeReport(rawReport);
+        const report = await dataMaid.sanitizeReport(rawReport);
         const token = DataMaidService.generateToken(req.user.profile.handle, rawReport);
 
         return res.json({ report, token });

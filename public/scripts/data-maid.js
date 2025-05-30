@@ -27,10 +27,16 @@ async function getDataMaidReport() {
     return await response.json();
 }
 
-async function finalizeDataMaid() {
+/**
+ * Finalizes the Data Maid process by sending a request to the server.
+ * @param {string} token The token to use for the Data Maid report.
+ * @returns {Promise<void>}
+ */
+async function finalizeDataMaid(token) {
     const response = await fetch('/api/data-maid/finalize', {
         method: 'POST',
         headers: getRequestHeaders(),
+        body: JSON.stringify({ token }),
     });
 
     if (!response.ok) {
@@ -39,6 +45,7 @@ async function finalizeDataMaid() {
 }
 
 async function openDataMaidDialog() {
+    let token = null;
     const template = await renderTemplateAsync('dataMaidDialog');
     const parentElement = document.createElement('div');
     parentElement.classList.add('dataMaidDialogContainer');
@@ -49,11 +56,16 @@ async function openDataMaidDialog() {
             const spinner = parentElement.querySelector('.dataMaidSpinner');
             const placeholder = parentElement.querySelector('.dataMaidPlaceholder');
             const resultsList = parentElement.querySelector('.dataMaidResultsList');
+            if (!spinner.classList.contains('displayNone')) {
+                toastr.warning(t`The scan is already running. Please wait for it to finish.`);
+                return;
+            }
             placeholder.classList.add('displayNone');
             spinner.classList.remove('displayNone');
             const report = await getDataMaidReport();
             spinner.classList.add('displayNone');
             await renderDataMaidReport(report, resultsList);
+            token = report.token;
         } catch (error) {
             toastr.error(t`An error has occurred. Check the console for details.`);
             console.error('Error generating Data Maid report:', error);
@@ -62,7 +74,9 @@ async function openDataMaidDialog() {
 
     await callGenericPopup(parentElement, POPUP_TYPE.TEXT, '', { wide: true, large: true });
 
-    await finalizeDataMaid();
+    if (token) {
+        await finalizeDataMaid(token);
+    }
 }
 
 /**
