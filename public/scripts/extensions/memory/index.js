@@ -731,69 +731,38 @@ async function summarizeChatMain(context, force, skipWIAN) {
  * @returns {Promise<{rawPrompt: string, lastUsedIndex: number}>} Raw summarization prompt
  */
 async function getRawSummaryPrompt(context, prompt) {
-    /**
-     * Get the memory string from the chat buffer.
-     * @param {boolean} includeSystem Include prompt into the memory string
-     * @returns {string} Memory string
-     */
-    function getMemoryString(includeSystem) {
-        const delimiter = '\n\n';
-        const stringBuilder = [];
-        const bufferString = chatBuffer.slice().join(delimiter);
+    const summarizerWorker = new Worker('extensions/memory/summarizer-worker.js');
 
-        if (includeSystem) {
-            stringBuilder.push(prompt);
-        }
+    // latestSummaryIndex needs to be determined before filtering messagesToProcess
+    const latestSummaryIndex = getIndexOfLatestChatSummary(context.chat);
 
-        if (latestSummary) {
-            stringBuilder.push(latestSummary);
-        }
+    const messagesToProcess = context.chat
+        .map((msg, originalIndex) => ({ ...msg, originalIndex })) // Add originalIndex
+        .filter((msg, idx) => idx > latestSummaryIndex && idx < context.chat.length -1 ); // Messages after last summary and before current message
 
-        stringBuilder.push(bufferString);
+    const latestSummary = getLatestMemoryFromChat(context.chat);
+    const workerConfig = {
+        prompt,
+        maxMessagesPerRequest: extension_settings.memory.maxMessagesPerRequest,
+        averageCharsPerToken: 4, // Estimate, can be refined
+        promptSizeLimit: await getSourceContextSize(),
+        padding: 64,
+        delimiter: '\n\n',
+    };
 
-        return stringBuilder.join(delimiter).trim();
-    }
+    summarizerWorker.postMessage({ chatMessages: messagesToProcess, latestSummary, config: workerConfig });
 
-    const chat = context.chat.slice();
-    const latestSummary = getLatestMemoryFromChat(chat);
-    const latestSummaryIndex = getIndexOfLatestChatSummary(chat);
-    chat.pop(); // We always exclude the last message from the buffer
-    const chatBuffer = [];
-    const PADDING = 64;
-    const PROMPT_SIZE = await getSourceContextSize();
-    let latestUsedMessage = null;
-
-    for (let index = latestSummaryIndex + 1; index < chat.length; index++) {
-        const message = chat[index];
-
-        if (!message) {
-            break;
-        }
-
-        if (message.is_system || !message.mes) {
-            continue;
-        }
-
-        const entry = `${message.name}:\n${message.mes}`;
-        chatBuffer.push(entry);
-
-        const tokens = await countSourceTokens(getMemoryString(true), PADDING);
-
-        if (tokens > PROMPT_SIZE) {
-            chatBuffer.pop();
-            break;
-        }
-
-        latestUsedMessage = message;
-
-        if (extension_settings.memory.maxMessagesPerRequest > 0 && chatBuffer.length >= extension_settings.memory.maxMessagesPerRequest) {
-            break;
-        }
-    }
-
-    const lastUsedIndex = context.chat.indexOf(latestUsedMessage);
-    const rawPrompt = getMemoryString(false);
-    return { rawPrompt, lastUsedIndex };
+    return new Promise((resolve, reject) => {
+        summarizerWorker.onmessage = (e) => {
+            resolve(e.data); // { rawPrompt, lastUsedIndex }
+            summarizerWorker.terminate();
+        };
+        summarizerWorker.onerror = (e) => {
+            console.error('Error in summarizer worker:', e);
+            reject(e);
+            summarizerWorker.terminate();
+        };
+    });
 }
 
 async function summarizeChatExtras(context) {

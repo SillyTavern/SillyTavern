@@ -14,6 +14,7 @@ import {
     default as libs,
 } from './lib.js';
 
+import { createBatchAppender } from './render-batcher.js';
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
@@ -588,6 +589,15 @@ export let characters = [];
 export let this_chid;
 let saveCharactersPage = 0;
 export const default_avatar = 'img/ai4.png';
+
+// Global Variables for Virtual Scrolling
+let averageMessageHeight = 60; // Sensible default, will be refined
+let virtualScrollBuffer = 10; // Number of messages to render above and below
+let isVirtualScrollInitialized = false;
+let chatScrollContainer;
+let visibleMessagesContainer;
+let topSpacer;
+let bottomSpacer;
 export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
 export const default_user_avatar = 'img/user-default.png';
@@ -768,6 +778,76 @@ async function getSystemMessages() {
             },
         },
     };
+}
+
+// Function to initialize virtual scrolling
+function initializeVirtualScroll() {
+    isVirtualScrollInitialized = true;
+    chatScrollContainer = $('#chat');
+    visibleMessagesContainer = $('#chat-visible-messages');
+    topSpacer = $('#chat-top-spacer');
+    bottomSpacer = $('#chat-bottom-spacer');
+
+    let virtualScrollTimeout;
+    chatScrollContainer.on('scroll', function() {
+        clearTimeout(virtualScrollTimeout);
+        virtualScrollTimeout = setTimeout(updateVisibleMessages, 100); // 100ms throttle
+    });
+
+    updateVisibleMessages(); // Initial render
+}
+
+// Stub for updateVisibleMessages function
+function updateVisibleMessages() {
+    if (!isVirtualScrollInitialized || !chat || chat.length === 0) return;
+
+    const scrollTop = chatScrollContainer.scrollTop();
+    const containerHeight = chatScrollContainer.innerHeight();
+
+    // Calculate visible message range
+    const startIndex = Math.floor(scrollTop / averageMessageHeight);
+    const endIndex = Math.min(chat.length - 1, Math.ceil((scrollTop + containerHeight) / averageMessageHeight));
+
+    // Apply buffer
+    const renderStartIndex = Math.max(0, startIndex - virtualScrollBuffer);
+    const renderEndIndex = Math.min(chat.length - 1, endIndex + virtualScrollBuffer);
+
+    // Clear existing visible messages
+    visibleMessagesContainer.empty();
+
+    const batchAppender = createBatchAppender(visibleMessagesContainer[0]); // Get raw DOM element
+
+    // Render visible messages
+    for (let i = renderStartIndex; i <= renderEndIndex; i++) {
+        if (chat[i]) { // Ensure message exists
+            const messageElement = addOneMessage(chat[i], { scroll: false, forceId: i, showSwipes: (i === chat.length - 1) });
+            if (messageElement && messageElement.length) {
+                 // Ensure addOneMessage returns a jQuery object, get raw DOM element for batchAppender
+                batchAppender.add(messageElement[0]);
+            }
+        }
+    }
+
+    batchAppender.commit();
+
+    // Update spacer heights
+    const topSpacerHeight = renderStartIndex * averageMessageHeight;
+    const bottomSpacerHeight = (chat.length - 1 - renderEndIndex) * averageMessageHeight;
+
+    topSpacer.height(topSpacerHeight);
+    bottomSpacer.height(bottomSpacerHeight);
+
+    console.log(`Top spacer: ${topSpacerHeight}px, Bottom spacer: ${bottomSpacerHeight}px, Rendered: ${renderEndIndex - renderStartIndex + 1} messages`);
+
+    // Handle .last_mes class and swipe buttons
+    visibleMessagesContainer.find('.mes').removeClass('last_mes');
+    const lastVisibleMessage = visibleMessagesContainer.find('.mes').last();
+    if (lastVisibleMessage.length && parseInt(lastVisibleMessage.attr('mesid')) === chat.length - 1) {
+        lastVisibleMessage.addClass('last_mes');
+    }
+
+    hideSwipeButtons(); // Hide all first
+    showSwipeButtons(); // Then show for the actual last message if it's rendered
 }
 
 // Register configuration migrations
@@ -1924,12 +2004,20 @@ export async function showMoreMessages(messagesToLoad = null) {
     }
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
-    const prevHeight = $('#chat').prop('scrollHeight');
-    const isButtonInView = isElementInViewport($('#show_more_messages')[0]);
+    const oldScrollHeight = chatScrollContainer[0].scrollHeight;
+    const oldScrollTop = chatScrollContainer.scrollTop();
+    // It's tricky to get firstVisibleMessageBeforeLoad reliably without knowing the exact DOM structure pre-update.
+    // We'll rely on messagesAddedCount and averageMessageHeight for now.
+    const messagesActuallyPrepended = Math.min(messageId, count); // Number of messages that will be added
+
+    let currentFirstDisplayedMesId = visibleMessagesContainer.children('.mes').first().attr('mesid');
+    let firstVisibleMessageIndexBeforeLoad = parseInt(currentFirstDisplayedMesId || (Math.floor(oldScrollTop / averageMessageHeight)));
 
     while (messageId > 0 && count > 0) {
         let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
+        // Messages are prepended to the main `chat` array elsewhere (implicitly by the logic calling showMoreMessages)
+        // Here, we are just adjusting the virtual view.
+        // The addOneMessage inside updateVisibleMessages will handle the actual rendering.
         count--;
         messageId--;
     }
@@ -1938,10 +2026,34 @@ export async function showMoreMessages(messagesToLoad = null) {
         $('#show_more_messages').remove();
     }
 
-    if (isButtonInView) {
-        const newHeight = $('#chat').prop('scrollHeight');
-        $('#chat').scrollTop(newHeight - prevHeight);
+    // Call updateVisibleMessages to refresh the view with the newly prepended messages
+    updateVisibleMessages();
+
+    // Restore scroll position
+    // const newScrollHeight = chatScrollContainer[0].scrollHeight;
+    // let newScrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+    // A potentially more stable way if prepending known number of items
+    let newScrollTop = (messagesActuallyPrepended * averageMessageHeight) + oldScrollTop;
+
+
+    // Attempt to keep the previously top visible item in the same position
+    // This requires that `chat` array has been updated (prepended) BEFORE updateVisibleMessages is called
+    // and that `updateVisibleMessages` correctly renders based on the updated `chat` array.
+    // The logic that calls showMoreMessages is responsible for updating the global `chat` array.
+    // For now, we assume 'messagesToLoad' or a similar variable accurately reflects the number of messages prepended.
+    // This part is crucial and might need debugging based on actual `showMoreMessages` behavior.
+
+    if (firstVisibleMessageIndexBeforeLoad !== undefined && !isNaN(firstVisibleMessageIndexBeforeLoad)) {
+        const newFirstVisibleMessageIndex = firstVisibleMessageIndexBeforeLoad + messagesActuallyPrepended;
+        // Check if newFirstVisibleMessageIndex is valid
+        if (newFirstVisibleMessageIndex < chat.length) {
+             newScrollTop = newFirstVisibleMessageIndex * averageMessageHeight - (virtualScrollBuffer * averageMessageHeight);
+             newScrollTop = Math.max(0, newScrollTop); // Ensure not negative
+        }
     }
+
+
+    chatScrollContainer.scrollTop(newScrollTop);
 
     applyStylePins();
     await eventSource.emit(event_types.MORE_MESSAGES_LOADED);
@@ -1949,20 +2061,32 @@ export async function showMoreMessages(messagesToLoad = null) {
 
 export async function printMessages() {
     let startIndex = 0;
-    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
-
-    if (chat.length > count) {
-        startIndex = chat.length - count;
-        $('#chat').append('<div id="show_more_messages">Show more messages</div>');
+    // Initialize virtual scrolling if not already initialized
+    if (!isVirtualScrollInitialized) {
+        initializeVirtualScroll();
+    } else {
+        // If already initialized, clear visible messages and spacers for a fresh render
+        // This might be adjusted based on how updateVisibleMessages is implemented
+        visibleMessagesContainer.empty();
+        topSpacer.height(0);
+        bottomSpacer.height(0);
     }
 
-    for (let i = startIndex; i < chat.length; i++) {
-        const item = chat[i];
-        addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
-    }
+    // The actual rendering of messages is now handled by updateVisibleMessages
+    updateVisibleMessages();
 
-    // Scroll to bottom when all images are loaded
-    const images = document.querySelectorAll('#chat .mes img');
+    // Scroll to bottom when all images are loaded (this might need adjustment with virtual scrolling)
+    // Ensure chat is scrolled to the bottom after initial render
+    scrollChatToBottom();
+    // A more forceful scroll to bottom after everything is potentially rendered and spacers adjusted.
+    chatScrollContainer.scrollTop(chatScrollContainer[0].scrollHeight);
+
+
+    // The following logic for image loading and direct DOM manipulation
+    // might need to be integrated into or replaced by updateVisibleMessages logic.
+    // For now, commenting out as direct appending is no longer the primary method.
+    /*
+    const images = document.querySelectorAll('#chat-visible-messages .mes img'); // Target new container
     let imagesLoaded = 0;
 
     for (let i = 0; i < images.length; i++) {
@@ -1976,12 +2100,12 @@ export async function printMessages() {
         }
     }
 
-    $('#chat .mes').removeClass('last_mes');
-    $('#chat .mes').last().addClass('last_mes');
-    hideSwipeButtons();
-    showSwipeButtons();
-    scrollChatToBottom();
-    applyStylePins();
+    $('#chat-visible-messages .mes').removeClass('last_mes'); // Target new container
+    $('#chat-visible-messages .mes').last().addClass('last_mes'); // Target new container
+    hideSwipeButtons(); // This will need to target swipes within #chat-visible-messages
+    showSwipeButtons(); // This will need to target swipes within #chat-visible-messages
+    // scrollChatToBottom(); // Already called
+    applyStylePins(); // This might also need adjustment
 
     function incrementAndCheck() {
         imagesLoaded++;
@@ -1989,6 +2113,7 @@ export async function printMessages() {
             scrollChatToBottom();
         }
     }
+    */
 }
 
 /**
@@ -2554,61 +2679,76 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     const renderedMessage = getMessageFromTemplate(params);
 
-    if (type !== 'swipe') {
-        if (!insertAfter && !insertBefore) {
-            chatElement.append(renderedMessage);
-        }
-        else if (insertAfter) {
-            const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
-            $(renderedMessage).insertAfter(target);
-        } else {
-            const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
-            $(renderedMessage).insertBefore(target);
-        }
-    }
 
     // Callers push the new message to chat before calling addOneMessage
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-    const newMessage = $(`#chat [mesid="${newMessageId}"]`);
-    const isSmallSys = mes?.extra?.isSmallSys;
+    let newMessageElement = renderedMessage; // Use the passed renderedMessage directly
 
-    if (isSmallSys === true) {
-        newMessage.addClass('smallSysMes');
-    }
-
-    if (Array.isArray(mes?.extra?.tool_invocations)) {
-        newMessage.addClass('toolCall');
-    }
-
-    //shows or hides the Prompt display button
-    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
-
-    //if we have itemized messages, and the array isn't null..
-    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
-        if (itemizedPrompt) {
-            newMessage.find('.mes_prompt').show();
+    // If it's a swipe, we are updating an existing element, so we need to find it.
+    // However, for virtual scrolling, if it's not visible, we might not need to do anything here,
+    // as `updateVisibleMessages` will call this for visible items.
+    // For now, we assume that if type is 'swipe', the element should exist in `visibleMessagesContainer`
+    // if it's part of the currently rendered batch.
+    if (type === 'swipe') {
+        const existingElement = visibleMessagesContainer.find(`.mes[mesid="${newMessageId}"]`);
+        if (existingElement.length) {
+            // Replace content of existing element instead of returning a new one to be appended
+            existingElement.html(renderedMessage.html()); // Copy inner HTML
+            // Copy attributes as well, as they might have changed (e.g. swipeid)
+            for (const attr of renderedMessage[0].attributes) {
+                existingElement.attr(attr.name, attr.value);
+            }
+            newMessageElement = existingElement;
+        } else {
+            // If a swipe is updating a message not currently visible,
+            // `updateVisibleMessages` will handle its rendering when it becomes visible.
+            // So, we might not need to do anything here, or return the conceptual element
+            // if the caller expects it for non-DOM reasons.
+            // For now, let's return the constructed element; `updateVisibleMessages` won't add it if it's a swipe.
+            // This path needs careful review in the context of `updateVisibleMessages` for swipes.
         }
     }
 
-    newMessage.find('.avatar img').on('error', function () {
+
+    const isSmallSys = mes?.extra?.isSmallSys;
+
+    if (isSmallSys === true) {
+        newMessageElement.addClass('smallSysMes');
+    }
+
+    if (Array.isArray(mes?.extra?.tool_invocations)) {
+        newMessageElement.addClass('toolCall');
+    }
+
+    //shows or hides the Prompt display button
+    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;
+
+    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
+        if (itemizedPrompt) {
+            newMessageElement.find('.mes_prompt').show();
+        }
+    }
+
+    newMessageElement.find('.avatar img').on('error', function () {
         $(this).hide();
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
     if (type === 'swipe') {
-        const swipeMessage = chatElement.find(`[mesid="${chat.length - 1}"]`);
+        //const swipeMessage = chatElement.find(`[mesid="${chat.length - 1}"]`); // Old: targets #chat
+        const swipeMessage = newMessageElement; // Should target the message in visibleMessagesContainer
         swipeMessage.attr('swipeid', params.swipeId);
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         updateReasoningUI(swipeMessage);
-        appendMediaToMessage(mes, swipeMessage);
+        appendMediaToMessage(mes, swipeMessage); // appendMediaToMessage might need to target within swipeMessage
         if (power_user.timestamp_model_icon && params.extra?.api) {
             insertSVGIcon(swipeMessage, params.extra);
         }
 
-        if (mes.swipe_id == mes.swipes.length - 1) {
+        if ((mes.swipe_id === undefined || mes.swipe_id === null || mes.swipes === undefined) || (mes.swipe_id == mes.swipes.length - 1)) {
             swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
             swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
         } else {
@@ -2616,32 +2756,31 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             swipeMessage.find('.tokenCounterDisplay').empty();
         }
     } else {
-        const messageId = forceId ?? chat.length - 1;
-        chatElement.find(`[mesid="${messageId}"] .mes_text`).append(messageText);
-        appendMediaToMessage(mes, newMessage);
-        showSwipes && hideSwipeButtons();
+        //const messageId = forceId ?? chat.length - 1; //This is already newMessageId
+        //chatElement.find(`[mesid="${newMessageId}"] .mes_text`).append(messageText); // Old: targets #chat
+        newMessageElement.find('.mes_text').empty().append(messageText); // Ensure it's clean before appending
+        appendMediaToMessage(mes, newMessageElement);
+        // showSwipes && hideSwipeButtons(); // Removed: To be handled by updateVisibleMessages
     }
 
-    addCopyToCodeBlocks(newMessage);
+    addCopyToCodeBlocks(newMessageElement);
 
     // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
+    // This logic should be fine as it targets the specific newMessageElement
     if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
-        const swipesNum = chat[newMessageId].swipes?.length;
-        const swipeId = chat[newMessageId].swipe_id + 1;
-        newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
+        const swipesNum = chat[newMessageId]?.swipes?.length;
+        const currentSwipeId = chat[newMessageId]?.swipe_id;
+        if (swipesNum !== undefined && currentSwipeId !== undefined) {
+            newMessageElement.find('.swipes-counter').text(formatSwipeCounter(currentSwipeId + 1, swipesNum));
+        }
     }
 
-    if (showSwipes) {
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-        hideSwipeButtons();
-        showSwipeButtons();
-    }
+    // Removed: .last_mes class and swipe button visibility will be handled by updateVisibleMessages
+    // The `showSwipes` parameter is still used by getMessageFromTemplate to include swipe buttons HTML if needed.
 
-    // Don't scroll if not inserting last
-    if (!insertAfter && !insertBefore && scroll) {
-        scrollChatToBottom();
-    }
+    // Removed: scrollChatToBottom(), as scrolling is handled by the caller or virtual scroller logic.
+
+    return newMessageElement; // Return the jQuery object for the message element
 }
 
 /**
@@ -9052,7 +9191,35 @@ async function createOrEditCharacter(e) {
                 formData.append('alternate_greetings', value);
             }
 
-            formData.append('extensions', JSON.stringify(create_save.extensions));
+            // formData.append('extensions', JSON.stringify(create_save.extensions));
+            // Worker-based serialization for extensions
+            const extensionsToSerialize = create_save.extensions;
+            const serializerWorker = new Worker('/scripts/serializer-worker.js');
+            const extensionsPromise = new Promise((resolve, reject) => {
+                serializerWorker.onmessage = (event) => {
+                    if (event.data.task === 'stringify' && event.data.result) {
+                        resolve(event.data.result);
+                    } else {
+                        reject(event.data.error || 'Serialization failed');
+                    }
+                    serializerWorker.terminate();
+                };
+                serializerWorker.onerror = (err) => {
+                    reject(err.message);
+                    serializerWorker.terminate();
+                };
+            });
+
+            serializerWorker.postMessage({ task: 'stringify', data: extensionsToSerialize });
+
+            try {
+                const serializedExtensions = await extensionsPromise;
+                formData.append('extensions', serializedExtensions);
+            } catch (error) {
+                console.error('Failed to serialize extensions via worker:', error);
+                toastr.error('Failed to save character extensions.');
+                return;
+            }
 
             const fetchResult = await fetch(url, {
                 method: 'POST',

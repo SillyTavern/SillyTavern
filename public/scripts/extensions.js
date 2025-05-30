@@ -16,6 +16,24 @@ export {
     getApiUrl,
 };
 
+const EXTENSION_UI_PANELS = {
+    'sd': '#sd_container',
+    'tts': '#tts_container',
+    'expressions': '#expressions_container',
+    'live2d': '#live2d_container',
+    'vrm': '#vrm_container',
+    // Assuming '#gallery_container' for gallery-like extensions.
+    // This might need adjustment if the actual ID is different or if multiple extensions use similar panel names.
+    'gallery': '#gallery_container',
+    'imagegeneration': '#imagegeneration_container', // Example, if there's a generic image gen panel
+    'audio': '#audio_container',
+    // Add other extensions as needed, e.g.:
+    // 'websearch': '#websearch_container',
+    // 'summarize': '#summarize_container',
+    // 'vectors': '#vectors_container',
+    // 'chromadb': '#chromadb_container',
+};
+
 /** @type {string[]} */
 export let extensionNames = [];
 
@@ -395,16 +413,61 @@ async function activateExtensions() {
 
         if (meetsModuleRequirements && !isDisabled) {
             try {
-                console.debug('Activating extension', name);
-                const promise = addExtensionLocale(name, manifest).finally(() => Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]));
-                await promise
-                    .then(() => activeExtensions.add(name))
-                    .catch(err => console.log('Could not activate extension', name, err));
-                promises.push(promise);
+                console.debug('Preparing extension', name);
+                // Load locale and style first as these don't involve heavy JS execution
+                await addExtensionLocale(name, manifest);
+                await addExtensionStyle(name, manifest);
+
+                if (!manifest.js) {
+                    console.debug(`Extension '${name}' has no JS file defined in manifest.`);
+                    // If no JS, but CSS/Locale might be useful, consider it "active" in a limited sense
+                                        // However, typically activeExtensions implies JS activity.
+                                        // For now, let's not add it to activeExtensions if there's no JS.
+                    continue;
+                }
+
+                addExtensionScript(name, manifest); // This now defines manifest.loadModule
+
+                const panelSelector = EXTENSION_UI_PANELS[name];
+                const panelElement = panelSelector ? document.querySelector(panelSelector) : null;
+
+                if (panelElement) {
+                    const observer = new IntersectionObserver((entries, obs) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                console.log(`Panel for extension '${name}' is now visible. Loading module.`);
+                                if (manifests[name] && typeof manifests[name].loadModule === 'function') {
+                                    manifests[name].loadModule().then(module => {
+                                        console.log(`Extension '${name}' loaded successfully.`);
+                                        activeExtensions.add(name); // Mark as active after successful load
+                                        // Optional: if extensions export an init function, call it here.
+                                        // if (module && typeof module.init === 'function') { module.init(); }
+                                    }).catch(err => {
+                                        console.error(`Error loading extension '${name}':`, err);
+                                    });
+                                }
+                                obs.unobserve(panelElement);
+                                obs.disconnect();
+                            }
+                        });
+                    }, { threshold: 0.1 });
+                    observer.observe(panelElement);
+                    promises.push(Promise.resolve()); // Placeholder, actual async work is in observer
+                } else {
+                    console.log(`No specific UI panel for '${name}', or panel not found. Loading module immediately.`);
+                    if (manifests[name] && typeof manifests[name].loadModule === 'function') {
+                        const promise = manifests[name].loadModule().then(module => {
+                            console.log(`Extension '${name}' loaded successfully.`);
+                            activeExtensions.add(name);
+                        }).catch(err => {
+                            console.error(`Error loading extension '${name}':`, err);
+                        });
+                        promises.push(promise);
+                    }
+                }
             }
             catch (error) {
-                console.error('Could not activate extension', name);
-                console.error(error);
+                console.error('Could not prepare or load extension', name, error);
             }
         }
     }
@@ -562,30 +625,9 @@ function addExtensionScript(name, manifest) {
     if (!manifest.js) {
         return Promise.resolve();
     }
-
-    return new Promise((resolve, reject) => {
-        const url = `/scripts/extensions/${name}/${manifest.js}`;
-        const id = sanitizeSelector(`${name}-js`);
-        let ready = false;
-
-        if ($(`script[id="${id}"]`).length === 0) {
-            const script = document.createElement('script');
-            script.id = id;
-            script.type = 'module';
-            script.src = url;
-            script.async = true;
-            script.onerror = function (err) {
-                reject(err);
-            };
-            script.onload = function () {
-                if (!ready) {
-                    ready = true;
-                    resolve();
-                }
-            };
-            document.body.appendChild(script);
-        }
-    });
+    // Store a loader function on the manifest object
+    manifests[name].loadModule = () => import(`/scripts/extensions/${name}/${manifest.js}`);
+    return Promise.resolve(); // Resolve immediately as loading is deferred
 }
 
 /**

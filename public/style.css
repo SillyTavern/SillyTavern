@@ -901,6 +901,20 @@ body .panelControlBar {
     flex-grow: 1;
 }
 
+#chat {
+    /* Adjust height as needed, could be vh or fixed px */
+    height: 75vh;
+    overflow-y: scroll;
+    position: relative; /* For absolute positioning of spacers if needed, though flex might be better */
+}
+.chat-spacer {
+    width: 100%;
+    /* background-color: rgba(255,0,0,0.1); /* Optional: for debugging */
+}
+#chat-visible-messages {
+    /* Contains the actual messages */
+}
+
 #form_sheld {
     white-space: nowrap;
     width: 100%;
