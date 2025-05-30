@@ -44,6 +44,9 @@ async function finalizeDataMaid(token) {
     }
 }
 
+/**
+ * Opens the Data Maid dialog and handles the interaction.
+ */
 async function openDataMaidDialog() {
     let token = null;
     const template = await renderTemplateAsync('dataMaidDialog');
@@ -132,7 +135,7 @@ async function renderDataMaidReport(report, resultsList) {
 }
 
 /**
- *
+ * Renders a single Data Maid category into a DOM element.
  * @param {string} name Name of the category
  * @param {string} description Description of the category
  * @param {import('../../src/endpoints/data-maid.js').DataMaidSanitizedRecord[]} items List of items in the category
