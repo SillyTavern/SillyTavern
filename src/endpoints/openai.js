@@ -148,6 +148,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'pollinations') {
+            headers = { Authorization: '' };
             apiUrl = 'https://text.pollinations.ai/openai/chat/completions';
         }
 

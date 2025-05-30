@@ -2270,10 +2270,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isPollinations) {
-        delete generate_data.temperature;
-        delete generate_data.top_p;
-        delete generate_data.frequency_penalty;
-        delete generate_data.presence_penalty;
         delete generate_data.max_tokens;
     }
 

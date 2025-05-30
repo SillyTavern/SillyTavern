@@ -1340,11 +1340,14 @@ router.post('/generate', function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = API_POLLINATIONS;
         apiKey = 'NONE';
-        headers = {};
+        headers = {
+            'Authorization': '',
+        };
         bodyParams = {
             reasoning_effort: request.body.reasoning_effort,
             private: true,
             referrer: 'sillytavern',
+            seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
         };
     } else {
         console.warn('This chat completion source is not supported yet.');
