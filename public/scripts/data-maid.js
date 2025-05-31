@@ -259,6 +259,10 @@ class DataMaidDialog {
                     if (await this.delete([hash])) {
                         item.remove();
                         items.splice(items.findIndex(i => i.hash === hash), 1);
+                        if (items.length === 0) {
+                            categoryElement.remove();
+                            this.displayEmptyPlaceholder();
+                        }
                     }
                 }
             });
