@@ -5,6 +5,7 @@
                 <div class="dataMaidCategoryName" data-i18n="{{name}}">
                     {{name}}
                 </div>
+                <small>{{description}}</small>
                 <div class="dataMaidCategoryInfo">
                     <small>
                         <i class="fa-solid fa-file-alt fa-sm"></i>
@@ -24,7 +25,6 @@
         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
     </div>
     <div class="dataMaidCategoryContent inline-drawer-content">
-        <div class="info-block hint marginTopBot5">{{description}}</div>
         <div class="flex-container">
             {{#each items}}
             {{#with this}}

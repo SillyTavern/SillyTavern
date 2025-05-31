@@ -168,6 +168,11 @@ class DataMaidDialog {
             }
             resultsList.appendChild(category);
         }
+        if (resultsList.children.length === 0) {
+            const placeholder = this.container.querySelector('.dataMaidPlaceholder');
+            placeholder.classList.remove('displayNone');
+            placeholder.textContent = t`No items found to clean up. Come back later!`;
+        }
     }
 
     /**
