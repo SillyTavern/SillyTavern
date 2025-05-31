@@ -2809,11 +2809,12 @@ class Message {
         ];
 
         try {
-            // Simple token estimation for videos (can be refined later)
-            const tokens = Message.tokensPerImage; // Use same as image for now
+            // Convservative estimate for video token cost without knowing duration
+            // Using Gemini calculation (263 tokens per second)
+            const tokens = 10000 // ~40 second video (60 seconds max)
             this.tokens += tokens;
         } catch (error) {
-            this.tokens += Message.tokensPerImage;
+            this.tokens += 10000;
             console.error('Failed to get video token cost', error);
         }
     }
