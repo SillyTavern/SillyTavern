@@ -1247,7 +1247,7 @@ async function openAttachmentManager() {
 
         return () => {
             modalButtonData.forEach(p => {
-                const { popper,bodyListener } = p;
+                const { popper, bodyListener } = p;
                 popper.destroy();
                 document.body.removeEventListener('click', bodyListener);
             });
