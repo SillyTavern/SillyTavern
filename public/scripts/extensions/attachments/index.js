@@ -229,9 +229,24 @@ function cleanUpCharacterAttachments(data) {
     }
 }
 
+/**
+ * Handle character rename event to update character attachments.
+ * @param {string} oldAvatar Old avatar name
+ * @param {string} newAvatar New avatar name
+ */
+function handleCharacterRename(oldAvatar, newAvatar) {
+    if (!oldAvatar || !newAvatar) return;
+    if (Array.isArray(extension_settings?.character_attachments?.[oldAvatar])) {
+        extension_settings.character_attachments[newAvatar] = extension_settings.character_attachments[oldAvatar];
+        delete extension_settings.character_attachments[oldAvatar];
+        saveSettingsDebounced();
+    }
+}
+
 jQuery(async () => {
     eventSource.on(event_types.APP_READY, cleanUpAttachments);
     eventSource.on(event_types.CHARACTER_DELETED, cleanUpCharacterAttachments);
+    eventSource.on(event_types.CHARACTER_RENAMED, handleCharacterRename);
     const manageButton = await renderExtensionTemplateAsync('attachments', 'manage-button', {});
     const attachButton = await renderExtensionTemplateAsync('attachments', 'attach-button', {});
     $('#data_bank_wand_container').append(manageButton);
