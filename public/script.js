@@ -2471,6 +2471,36 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         }
     }
 
+    // Add video to message
+    if (mes.extra?.video) {
+        const container = messageElement.find('.mes_img_container'); // Reuse image container
+        const chatHeight = $('#chat').prop('scrollHeight');
+        const text = messageElement.find('.mes_text');
+        const isInline = !!mes.extra?.inline_video;
+
+        // Create video element if it doesn't exist
+        let video = messageElement.find('.mes_video');
+        if (video.length === 0) {
+            video = $('<video class="mes_video" controls preload="metadata"></video>');
+            container.append(video);
+        }
+
+        video.off('loadedmetadata').on('loadedmetadata', function () {
+            if (adjustScroll) {
+                const scrollPosition = $('#chat').scrollTop();
+                const newChatHeight = $('#chat').prop('scrollHeight');
+                const diff = newChatHeight - chatHeight;
+                $('#chat').scrollTop(scrollPosition + diff);
+            }
+        });
+
+        video.attr('src', mes.extra?.video);
+        video.attr('title', mes.extra?.title || mes.title || '');
+        container.addClass('img_extra'); // Reuse existing styling
+        video.toggleClass('img_inline', isInline); // Reuse existing styling
+        text.toggleClass('displayNone', !isInline);
+    }
+
     // Add file to message
     if (mes.extra?.file) {
         messageElement.find('.mes_file_container').remove();
@@ -6328,6 +6358,27 @@ async function processImageAttachment(message, { imageUrl }) {
 }
 
 /**
+ * Adds a video to the message.
+ * @param {object} message Message object
+ * @param {object} sources Video sources
+ * @param {string} [sources.videoUrl] Video URL
+ * @returns {Promise<void>}
+ */
+async function processVideoAttachment(message, { videoUrl }) {
+    if (!videoUrl) {
+        return;
+    }
+
+    let url = videoUrl;
+    if (isDataURL(url)) {
+        const fileName = `inline_video_${Date.now().toString()}`;
+        const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(videoUrl).slice(1);
+        url = await saveBase64AsFile(base64, message.name, fileName, mime.split('/')[1]);
+    }
+    saveVideoToMessage({ video: url, inline: true }, message);
+}
+
+/**
  * Saves a resulting message to the chat.
  * @param {SaveReplyParams} params
  * @returns {Promise<SaveReplyResult>} Promise when the message is saved
@@ -6656,6 +6707,23 @@ function saveImageToMessage(img, mes) {
         mes.extra.image = img.image;
         mes.extra.title = img.title;
         mes.extra.inline_image = img.inline;
+    }
+}
+
+/**
+ * Saves the video to the message object.
+ * @param {ParsedVideo} vid Video object
+ * @param {object} mes Chat message object
+ * @typedef {{ video?: string, title?: string, inline?: boolean }} ParsedVideo
+ */
+function saveVideoToMessage(vid, mes) {
+    if (mes && vid.video) {
+        if (!mes.extra || typeof mes.extra !== 'object') {
+            mes.extra = {};
+        }
+        mes.extra.video = vid.video;
+        mes.extra.title = vid.title;
+        mes.extra.inline_video = vid.inline;
     }
 }
 

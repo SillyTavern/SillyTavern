@@ -5197,6 +5197,29 @@ body:not(.sd) .mes_img_swipes {
     max-width: 100% !important;
 }
 
+/* Video message styling */
+.mes_video {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.mes_video.img_inline {
+    max-height: 200px;
+    float: left;
+    margin: 0 10px 10px 0;
+}
+
+/* Ensure video controls are visible */
+.mes_video::-webkit-media-controls {
+    display: flex !important;
+}
+
+.mes_video::-webkit-media-controls-panel {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
 /* Align the content of this span to the right */
 .delete-button {
     margin-right: 10px;

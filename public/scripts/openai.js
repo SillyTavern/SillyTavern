@@ -593,8 +593,9 @@ function setOpenAIMessages(chat) {
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const image = chat[j]?.extra?.image;
+        const video = chat[j]?.extra?.video;
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'invocations': invocations };
+        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'video': video, 'invocations': invocations };
         j++;
     }
 
@@ -906,6 +907,10 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (imageInlining && chatPrompt.image) {
             await chatMessage.addImage(chatPrompt.image);
+        }
+
+        if (imageInlining && chatPrompt.video) {
+            await chatMessage.addVideo(chatPrompt.video);
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
@@ -2778,6 +2783,37 @@ class Message {
         } catch (error) {
             this.tokens += Message.tokensPerImage;
             console.error('Failed to get image token cost', error);
+        }
+    }
+
+    async addVideo(video) {
+        const textContent = this.content;
+        const isDataUrl = isDataURL(video);
+        if (!isDataUrl) {
+            try {
+                const response = await fetch(video, { method: 'GET', cache: 'force-cache' });
+                if (!response.ok) throw new Error('Failed to fetch video');
+                const blob = await response.blob();
+                video = await getBase64Async(blob);
+            } catch (error) {
+                console.error('Video adding skipped', error);
+                return;
+            }
+        }
+
+        // Note: No compression for videos (unlike images)
+        this.content = [
+            { type: 'text', text: textContent },
+            { type: 'video_url', video_url: { 'url': video } },
+        ];
+
+        try {
+            // Simple token estimation for videos (can be refined later)
+            const tokens = Message.tokensPerImage; // Use same as image for now
+            this.tokens += tokens;
+        } catch (error) {
+            this.tokens += Message.tokensPerImage;
+            console.error('Failed to get video token cost', error);
         }
     }
 
