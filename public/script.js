@@ -6358,27 +6358,6 @@ async function processImageAttachment(message, { imageUrl }) {
 }
 
 /**
- * Adds a video to the message.
- * @param {object} message Message object
- * @param {object} sources Video sources
- * @param {string} [sources.videoUrl] Video URL
- * @returns {Promise<void>}
- */
-async function processVideoAttachment(message, { videoUrl }) {
-    if (!videoUrl) {
-        return;
-    }
-
-    let url = videoUrl;
-    if (isDataURL(url)) {
-        const fileName = `inline_video_${Date.now().toString()}`;
-        const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(videoUrl).slice(1);
-        url = await saveBase64AsFile(base64, message.name, fileName, mime.split('/')[1]);
-    }
-    saveVideoToMessage({ video: url, inline: true }, message);
-}
-
-/**
  * Saves a resulting message to the chat.
  * @param {SaveReplyParams} params
  * @returns {Promise<SaveReplyResult>} Promise when the message is saved
