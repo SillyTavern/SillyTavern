@@ -595,7 +595,7 @@ async function sendMakerSuiteRequest(request, response) {
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
             console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
-          const responseText = typeof responseContent === 'string' ? responseContent : (responseContent?.parts?.filter(p => p.text)?.[1]?.text || responseContent?.parts?.filter(p => p.text)?.[0]?.text || '');
+            const responseText = typeof responseContent === 'string' ? responseContent : (responseContent?.parts?.filter(p => p.text)?.[1]?.text || responseContent?.parts?.filter(p => p.text)?.[0]?.text || '');
 
 
             if (!responseText && !functionCall && !inlineData) {
