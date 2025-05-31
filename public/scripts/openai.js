@@ -313,6 +313,7 @@ export const settingsToUpdate = {
     squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true, false],
     image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
+    video_inlining: ['#openai_video_inlining', 'video_inlining', true, false],
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
@@ -396,6 +397,7 @@ const default_settings = {
     squash_system_messages: false,
     image_inlining: false,
     inline_image_quality: 'low',
+    video_inlining: false,
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
@@ -482,6 +484,7 @@ const oai_settings = {
     squash_system_messages: false,
     image_inlining: false,
     inline_image_quality: 'low',
+    video_inlining: false,
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
@@ -3436,6 +3439,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.assistant_impersonation = settings.assistant_impersonation ?? default_settings.assistant_impersonation;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
     oai_settings.inline_image_quality = settings.inline_image_quality ?? default_settings.inline_image_quality;
+    oai_settings.video_inlining = settings.video_inlining ?? default_settings.video_inlining;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
     oai_settings.reasoning_effort = settings.reasoning_effort ?? default_settings.reasoning_effort;
@@ -3485,6 +3489,8 @@ function loadOpenAISettings(data, settings) {
 
     $('#openai_inline_image_quality').val(oai_settings.inline_image_quality);
     $(`#openai_inline_image_quality option[value="${oai_settings.inline_image_quality}"]`).prop('selected', true);
+
+    $('#openai_video_inlining').prop('checked', oai_settings.video_inlining);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).prop('selected', true);
@@ -3862,6 +3868,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
         inline_image_quality: settings.inline_image_quality,
+        video_inlining: settings.video_inlining,
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         continue_postfix: settings.continue_postfix,
@@ -5434,7 +5441,7 @@ export function isVideoInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.image_inlining) {
+    if (!oai_settings.video_inlining) {
         return false;
     }
 
@@ -6010,6 +6017,11 @@ export function initOpenAI() {
 
     $('#openai_inline_image_quality').on('input', function () {
         oai_settings.inline_image_quality = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_video_inlining').on('input', function () {
+        oai_settings.video_inlining = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
