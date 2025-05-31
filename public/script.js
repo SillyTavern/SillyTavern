@@ -6689,23 +6689,6 @@ function saveImageToMessage(img, mes) {
     }
 }
 
-/**
- * Saves the video to the message object.
- * @param {ParsedVideo} vid Video object
- * @param {object} mes Chat message object
- * @typedef {{ video?: string, title?: string, inline?: boolean }} ParsedVideo
- */
-function saveVideoToMessage(vid, mes) {
-    if (mes && vid.video) {
-        if (!mes.extra || typeof mes.extra !== 'object') {
-            mes.extra = {};
-        }
-        mes.extra.video = vid.video;
-        mes.extra.title = vid.title;
-        mes.extra.inline_video = vid.inline;
-    }
-}
-
 export function getGeneratingApi() {
     switch (main_api) {
         case 'openai':
