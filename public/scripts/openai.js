@@ -887,6 +887,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     const imageInlining = isImageInliningSupported();
+    const videoInlining = isVideoInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
 
     // Insert chat messages as long as there is budget available
@@ -909,7 +910,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             await chatMessage.addImage(chatPrompt.image);
         }
 
-        if (imageInlining && chatPrompt.video) {
+        if (videoInlining && chatPrompt.video) {
             await chatMessage.addVideo(chatPrompt.video);
         }
 
@@ -5418,6 +5419,36 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.POLLINATIONS:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
+        default:
+            return false;
+    }
+}
+
+/**
+ * Check if the model supports video inlining
+ * @returns {boolean} True if the model supports video inlining
+ */
+export function isVideoInliningSupported() {
+    if (main_api !== 'openai') {
+        return false;
+    }
+
+    if (!oai_settings.image_inlining) {
+        return false;
+    }
+
+    // Only Gemini models support video for now
+    const videoSupportedModels = [
+        'gemini-2.0',
+        'gemini-2.5',
+        'gemini-exp-1206',
+    ];
+
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.MAKERSUITE:
+            return videoSupportedModels.some(model => oai_settings.google_model.includes(model));
+        case chat_completion_sources.VERTEXAI:
+            return videoSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
         default:
             return false;
     }
