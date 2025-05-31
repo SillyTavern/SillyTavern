@@ -168,6 +168,15 @@ class DataMaidDialog {
             }
             resultsList.appendChild(category);
         }
+        this.displayEmptyPlaceholder();
+    }
+
+    /**
+     * Displays a placeholder message if no items are found in the results list.
+     * @private
+     */
+    displayEmptyPlaceholder() {
+        const resultsList = this.container.querySelector('.dataMaidResultsList');
         if (resultsList.children.length === 0) {
             const placeholder = this.container.querySelector('.dataMaidPlaceholder');
             placeholder.classList.remove('displayNone');
@@ -234,6 +243,7 @@ class DataMaidDialog {
                 await this.delete(hashes);
 
                 categoryElement.remove();
+                this.displayEmptyPlaceholder();
             });
 
         });
