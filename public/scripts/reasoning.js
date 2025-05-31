@@ -596,7 +596,7 @@ export class PromptReasoning {
 
         if (!PromptReasoning.#LATEST.prefixIncomplete) {
             return '';
-        }
+        }}
 
         return PromptReasoning.#LATEST.prefixReasoningFormatted;
     }
