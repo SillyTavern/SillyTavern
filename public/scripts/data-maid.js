@@ -22,11 +22,11 @@ class DataMaidDialog {
         this.DATA_MAID_CATEGORIES = {
             files: {
                 name: t`Files`,
-                description: t`Files that are not associated with chat messages or Data Bank.\nWILL DELETE MANUAL UPLOADS!`,
+                description: t`Files that are not associated with chat messages or Data Bank. WILL DELETE MANUAL UPLOADS!`,
             },
             images: {
                 name: t`Images`,
-                description: t`Images that are not associated with chat messages.\nWILL DELETE MANUAL UPLOADS!`,
+                description: t`Images that are not associated with chat messages. WILL DELETE MANUAL UPLOADS!`,
             },
             chats: {
                 name: t`Chats`,
