@@ -2811,7 +2811,7 @@ class Message {
         try {
             // Convservative estimate for video token cost without knowing duration
             // Using Gemini calculation (263 tokens per second)
-            const tokens = 10000 // ~40 second video (60 seconds max)
+            const tokens = 10000; // ~40 second video (60 seconds max)
             this.tokens += tokens;
         } catch (error) {
             this.tokens += 10000;
