@@ -216,8 +216,22 @@ function cleanUpAttachments() {
     }
 }
 
+/**
+ * Clean up character attachments when a character is deleted.
+ * @param {{character: import('../../char-data.js').v1CharData}} data Event data
+ */
+function cleanUpCharacterAttachments(data) {
+    const avatar = data?.character?.avatar;
+    if (!avatar) return;
+    if (Array.isArray(extension_settings?.character_attachments?.[avatar])) {
+        delete extension_settings.character_attachments[avatar];
+        saveSettingsDebounced();
+    }
+}
+
 jQuery(async () => {
     eventSource.on(event_types.APP_READY, cleanUpAttachments);
+    eventSource.on(event_types.CHARACTER_DELETED, cleanUpCharacterAttachments);
     const manageButton = await renderExtensionTemplateAsync('attachments', 'manage-button', {});
     const attachButton = await renderExtensionTemplateAsync('attachments', 'attach-button', {});
     $('#data_bank_wand_container').append(manageButton);
