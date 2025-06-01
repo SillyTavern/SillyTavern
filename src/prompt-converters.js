@@ -471,6 +471,19 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
                         data: base64Data,
                     },
                 });
+            } else if (part.type === 'video_url') {
+                const videoUrl = part.video_url?.url;
+                if (videoUrl && videoUrl.startsWith('data:')) {
+                    const [header, data] = videoUrl.split(',');
+                    const mimeType = header.match(/data:([^;]+)/)?.[1] || 'video/mp4';
+
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: data,
+                        },
+                    });
+                }
             }
         });
 

@@ -1146,3 +1146,54 @@ export function setPermissionsSync(targetPath) {
         console.error(`Error setting write permissions for ${targetPath}:`, error);
     }
 }
+
+/**
+ * Checks if a child path is under a parent path.
+ * @param {string} parentPath Parent path
+ * @param {string} childPath Child path
+ * @returns {boolean} Returns true if the child path is under the parent path, false otherwise
+ */
+export function isPathUnderParent(parentPath, childPath) {
+    const normalizedParent = path.normalize(parentPath);
+    const normalizedChild = path.normalize(childPath);
+
+    const relativePath = path.relative(normalizedParent, normalizedChild);
+
+    return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+}
+
+/**
+ * Checks if the given request is a file URL.
+ * @param {string | URL | Request} request The request to check
+ * @return {boolean} Returns true if the request is a file URL, false otherwise
+ */
+export function isFileURL(request) {
+    if (typeof request === 'string') {
+        return request.startsWith('file://');
+    }
+    if (request instanceof URL) {
+        return request.protocol === 'file:';
+    }
+    if (request instanceof Request) {
+        return request.url.startsWith('file://');
+    }
+    return false;
+}
+
+/**
+ * Gets the URL from the request.
+ * @param {string | URL | Request} request The request to get the URL from
+ * @return {string} The URL of the request
+ */
+export function getRequestURL(request) {
+    if (typeof request === 'string') {
+        return request;
+    }
+    if (request instanceof URL) {
+        return request.href;
+    }
+    if (request instanceof Request) {
+        return request.url;
+    }
+    throw new TypeError('Invalid request type');
+}

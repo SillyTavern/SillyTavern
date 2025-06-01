@@ -33,6 +33,7 @@ import {
     removeMacros,
     renameCharacter,
     saveChatConditional,
+    saveSettingsDebounced,
     sendMessageAsUser,
     sendSystemMessage,
     setActiveCharacter,
@@ -2361,6 +2362,56 @@ export function initDefaultSlashCommands() {
             }),
         ],
         helpString: 'Copies the provided text to the OS clipboard. Returns an empty string.',
+    }));
+
+
+    const promptPostProcessingEnumProvider = () => Array
+        .from(document.getElementById('custom_prompt_post_processing').querySelectorAll('option'))
+        .map(option => new SlashCommandEnumValue(option.value || 'none', option.textContent, enumTypes.enum));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'prompt-post-processing',
+        aliases: ['ppp'],
+        helpString: `
+            <div>
+                Sets a "Prompt Post-Processing" type. Gets the current selection if no value is provided.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+            </div>
+            <ul>
+                <li><pre><code class="language-stscript">/prompt-post-processing | /echo</code></pre></li>
+                <li><pre><code class="language-stscript">/prompt-post-processing single</code></pre></li>
+            </ul>
+        `,
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.STRING],
+                acceptsMultiple: false,
+                isRequired: true,
+                forceEnum: true,
+                enumProvider: promptPostProcessingEnumProvider,
+            }),
+        ],
+        callback: (_args, value) => {
+            const stringValue = String(value ?? '').trim().toLowerCase();
+            if (!stringValue) {
+                return oai_settings.custom_prompt_post_processing || 'none';
+            }
+
+            const validValues = promptPostProcessingEnumProvider().map(option => option.value);
+            if (!validValues.includes(stringValue)) {
+                throw new Error(`Invalid value "${stringValue}". Valid values are: ${validValues.join(', ')}`);
+            }
+
+            // 'none' value must be coerced to an empty string
+            oai_settings.custom_prompt_post_processing = stringValue === 'none' ? '' : stringValue;
+            $('#custom_prompt_post_processing').val(oai_settings.custom_prompt_post_processing);
+            saveSettingsDebounced();
+
+            return oai_settings.custom_prompt_post_processing;
+        },
     }));
 
     registerVariableCommands();

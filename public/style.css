@@ -11,6 +11,7 @@
 @import url(css/tags.css);
 @import url(css/scrollable-button.css);
 @import url(css/welcome.css);
+@import url(css/data-maid.css);
 
 :root {
     --doc-height: 100%;
@@ -5195,6 +5196,24 @@ body:not(.sd) .mes_img_swipes {
 
 .cropper-container {
     max-width: 100% !important;
+}
+
+/* Video message styling */
+.mes_video {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    background: #000;
+    margin: 0.5rem;
+}
+
+/* Ensure video controls are visible */
+.mes_video::-webkit-media-controls {
+    display: flex !important;
+}
+
+.mes_video::-webkit-media-controls-panel {
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Align the content of this span to the right */

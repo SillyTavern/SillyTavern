@@ -40,6 +40,7 @@ const CC_COMMANDS = [
     'stop-strings',
     'start-reply-with',
     'reasoning-template',
+    'prompt-post-processing',
 ];
 
 const TC_COMMANDS = [
@@ -73,6 +74,7 @@ const FANCY_NAMES = {
     'stop-strings': 'Custom Stopping Strings',
     'start-reply-with': 'Start Reply With',
     'reasoning-template': 'Reasoning Template',
+    'prompt-post-processing': 'Prompt Post-Processing',
 };
 
 /**

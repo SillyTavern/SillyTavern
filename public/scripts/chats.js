@@ -211,6 +211,12 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
             const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
+        }
+        // If file is video
+        else if (file.type.startsWith('video/')) {
+            const extension = file.type.split('/')[1];
+            const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+            message.extra.video = videoUrl;
         } else {
             const uniqueFileName = `${fileNamePrefix}.txt`;
 
@@ -1240,7 +1246,7 @@ async function openAttachmentManager() {
 
         return () => {
             modalButtonData.forEach(p => {
-                const { popper,bodyListener } = p;
+                const { popper, bodyListener } = p;
                 popper.destroy();
                 document.body.removeEventListener('click', bodyListener);
             });

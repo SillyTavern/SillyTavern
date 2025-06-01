@@ -556,6 +556,10 @@ textarea:disabled {
     min-width: fit-content;
 }
 
+.flexGap2 {
+    gap: 2px;
+}
+
 .flexGap5 {
     gap: 5px;
 }

@@ -1,0 +1,149 @@
+.dataMaidDialogContainer {
+    height: 100%;
+    overflow: hidden;
+}
+
+.dataMaidDialog {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.dataMaidDialogHeader {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    text-align: left;
+}
+
+.dataMaidHeaderInfo {
+    flex: 1;
+    margin: 0;
+    padding: 5px 10px;
+}
+
+.dataMaidTextView {
+    width: 100%;
+    height: 100%;
+    font-family: var(--monoFontFamily);
+    resize: none;
+    font-size: 0.95em;
+}
+
+.dataMaidImageView {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.dataMaidSpinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.dataMaidPlaceholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.05em;
+}
+
+.dataMaidResultsList:empty {
+    display: none;
+}
+
+.dataMaidResultsList {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    height: 100%;
+    flex-grow: 1;
+}
+
+.dataMaidCategory {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 0 10px;
+}
+
+.dataMaidCategoryHeader {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-right: 5px;
+    padding: 0 5px;
+}
+
+.dataMaidCategoryDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.dataMaidCategoryName {
+    flex: 3;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.dataMaidCategoryInfo {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.dataMaidCategoryContent {
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    border-radius: 10px;
+    background-color: var(--black30a);
+    margin: 10px 0;
+}
+
+.dataMaidCategoryContent>.info-block {
+    white-space: pre-wrap;
+}
+
+.dataMaidItem {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    width: 100%;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+.dataMaidItem:last-child {
+    border-bottom: none;
+}
+
+.dataMaidItemHeader {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dataMaidItemName {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: 2px;
+    word-break: break-all;
+}
+
+.dataMaidItemActions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dataMaidItemActions>button {
+    font-size: 0.9em;
+}

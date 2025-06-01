@@ -46,7 +46,7 @@ router.post('/upload', async (request, response) => {
         const splitParts = request.body.image.split(',');
         const format = splitParts[0].split(';')[0].split('/')[1];
         const base64Data = splitParts[1];
-        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
+        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'].includes(format);
         if (!validFormat) {
             return response.status(400).send({ error: 'Invalid image format' });
         }

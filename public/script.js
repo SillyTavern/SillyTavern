@@ -283,6 +283,7 @@ import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
+import { initDataMaid } from './scripts/data-maid.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -1026,6 +1027,7 @@ async function firstLoadInit() {
     initWelcomeScreen();
     await initScrapers();
     initCustomSelectedSamplers();
+    initDataMaid();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
@@ -2469,6 +2471,31 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
                 eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
             });
         }
+    }
+
+    // Add video to message
+    if (mes.extra?.video) {
+        const container = messageElement.find('.mes_block');
+        const chatHeight = $('#chat').prop('scrollHeight');
+
+        // Create video element if it doesn't exist
+        let video = messageElement.find('.mes_video');
+        if (video.length === 0) {
+            video = $('<video class="mes_video" controls preload="metadata"></video>');
+            container.append(video);
+        }
+
+        video.off('loadedmetadata').on('loadedmetadata', function () {
+            if (!adjustScroll) {
+                return;
+            }
+            const scrollPosition = $('#chat').scrollTop();
+            const newChatHeight = $('#chat').prop('scrollHeight');
+            const diff = newChatHeight - chatHeight;
+            $('#chat').scrollTop(scrollPosition + diff);
+        });
+
+        video.attr('src', mes.extra?.video);
     }
 
     // Add file to message
