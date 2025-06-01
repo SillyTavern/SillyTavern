@@ -2494,7 +2494,6 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         });
 
         video.attr('src', mes.extra?.video);
-        video.attr('title', mes.extra?.title || mes.title || '');
     }
 
     // Add file to message
