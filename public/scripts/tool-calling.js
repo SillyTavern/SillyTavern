@@ -296,6 +296,16 @@ export class ToolManager {
         this.#tools.delete(name);
         console.log(`[ToolManager] Unregistered function tool: ${name}`);
     }
+    /**
+    * Parse tool call parameters -- they're usually JSON, but they can
+    * also be empty strings (which are not valid JSON apparently).
+    * @param {scalar} the parameters for a tool call, usually a string with JSON inside
+    * @returns {object} The parsed parameters
+    */
+    static #parseParameters (parameters) {
+        return parameters === '' ? {} : typeof parameters === 'string'
+            ? JSON.parse(parameters) : parameters;
+    }
 
     /**
      * Invokes a tool by name. Returns the result of the tool's action function.
@@ -309,7 +319,7 @@ export class ToolManager {
                 throw new Error(`No tool with the name "${name}" has been registered.`);
             }
 
-            const invokeParameters = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
+            const invokeParameters = this.#parseParameters(parameters);
             const tool = this.#tools.get(name);
             const result = await tool.invoke(invokeParameters);
             return typeof result === 'string' ? result : JSON.stringify(result);
@@ -352,7 +362,7 @@ export class ToolManager {
 
         try {
             const tool = this.#tools.get(name);
-            const formatParameters = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
+            const formatParameters = this.#parseParameters(parameters);
             return await tool.formatMessage(formatParameters);
         } catch (error) {
             console.error(`[ToolManager] An error occurred while formatting the tool call message for "${name}":`, error);
