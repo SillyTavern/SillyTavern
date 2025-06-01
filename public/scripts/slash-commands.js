@@ -4927,7 +4927,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     const parser = new SlashCommandParser();
     const ac = new AutoComplete(
         textarea,
-        () => ac.text[0] == '/',
+        () => power_user.stscript.autocomplete.enabled && ac.text[0] == '/',
         async (text, index) => await parser.getNameAt(text, index),
         isFloating,
     );

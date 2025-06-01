@@ -254,8 +254,7 @@ export class AutoComplete {
             + this.parserResult.name.length
             + (this.startQuote ? 1 : 0)
             + (this.endQuote ? 1 : 0)
-            + 1
-            ;
+            + 1;
     }
 
     /**
@@ -280,11 +279,6 @@ export class AutoComplete {
 
         // disable force-hide if trigger was forced
         if (isForced) this.isForceHidden = false;
-
-        const minInputReqPattern = /^\/[A-Za-z]{2}/;
-        if (!minInputReqPattern.test(this.text) && !isForced) {
-            return this.hide();
-        }
 
         // request provider to get name result (potentially "incomplete", i.e. not an actual existing name) for
         // cursor position
@@ -392,8 +386,7 @@ export class AutoComplete {
                 return option;
             })
             // sort by fuzzy score or alphabetical
-            .toSorted(this.matchType == 'fuzzy' ? this.fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name))
-            ;
+            .toSorted(this.matchType == 'fuzzy' ? this.fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name));
 
 
 

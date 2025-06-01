@@ -306,6 +306,7 @@ let power_user = {
     stscript: {
         matching: 'fuzzy',
         autocomplete: {
+            enabled: true,
             autoHide: false,
             style: 'theme',
             font: {
@@ -1505,6 +1506,9 @@ async function loadPowerUserSettings(settings, data) {
         if (power_user.stscript.autocomplete === undefined) {
             power_user.stscript.autocomplete = defaultStscript.autocomplete;
         } else {
+            if (power_user.stscript.autocomplete.enabled === undefined) {
+                power_user.stscript.autocomplete.enabled = defaultStscript.autocomplete.enabled;
+            }
             if (power_user.stscript.autocomplete.width === undefined) {
                 power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
             }
@@ -1642,6 +1646,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#aux_field').val(power_user.aux_field);
     $('#tag_import_setting').val(power_user.tag_import_setting);
 
+    $('#stscript_autocomplete_enabled').prop('checked', power_user.stscript.autocomplete.enabled ?? true).trigger('input');
     $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
@@ -3868,6 +3873,11 @@ $(document).ready(() => {
     $('#tag_import_setting').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.tag_import_setting = Number(value);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_enabled').on('input', function () {
+        power_user.stscript.autocomplete.enabled = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
