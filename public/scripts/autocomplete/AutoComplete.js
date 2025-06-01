@@ -21,6 +21,14 @@ export const AUTOCOMPLETE_SELECT_KEY = {
     'ENTER': 2, // 2^1
 };
 
+/** @readonly */
+/** @enum {Number} */
+export const AUTOCOMPLETE_STATE = {
+    DISABLED: 0,
+    MIN_LENGTH: 1,
+    ALWAYS: 2,
+};
+
 export class AutoComplete {
     /**@type {HTMLTextAreaElement|HTMLInputElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;

@@ -49,7 +49,7 @@ import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
+import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_STATE, AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './popup.js';
@@ -306,7 +306,7 @@ let power_user = {
     stscript: {
         matching: 'fuzzy',
         autocomplete: {
-            enabled: true,
+            state: AUTOCOMPLETE_STATE.ALWAYS,
             autoHide: false,
             style: 'theme',
             font: {
@@ -1506,8 +1506,8 @@ async function loadPowerUserSettings(settings, data) {
         if (power_user.stscript.autocomplete === undefined) {
             power_user.stscript.autocomplete = defaultStscript.autocomplete;
         } else {
-            if (power_user.stscript.autocomplete.enabled === undefined) {
-                power_user.stscript.autocomplete.enabled = defaultStscript.autocomplete.enabled;
+            if (power_user.stscript.autocomplete.state === undefined) {
+                power_user.stscript.autocomplete.state = defaultStscript.autocomplete.state;
             }
             if (power_user.stscript.autocomplete.width === undefined) {
                 power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
@@ -1646,7 +1646,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#aux_field').val(power_user.aux_field);
     $('#tag_import_setting').val(power_user.tag_import_setting);
 
-    $('#stscript_autocomplete_enabled').prop('checked', power_user.stscript.autocomplete.enabled ?? true).trigger('input');
+    $('#stscript_autocomplete_state').val(power_user.stscript.autocomplete.state).trigger('input');
     $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
@@ -3876,8 +3876,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#stscript_autocomplete_enabled').on('input', function () {
-        power_user.stscript.autocomplete.enabled = !!$(this).prop('checked');
+    $('#stscript_autocomplete_state').on('input', function () {
+        power_user.stscript.autocomplete.state = Number($(this).val());
         saveSettingsDebounced();
     });
 
