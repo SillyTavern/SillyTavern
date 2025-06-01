@@ -217,7 +217,6 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
             const extension = file.type.split('/')[1];
             const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.video = videoUrl;
-            message.extra.inline_video = true;
         } else {
             const uniqueFileName = `${fileNamePrefix}.txt`;
 

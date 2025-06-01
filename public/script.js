@@ -2473,10 +2473,8 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
 
     // Add video to message
     if (mes.extra?.video) {
-        const container = messageElement.find('.mes_img_container'); // Reuse image container
+        const container = messageElement.find('.mes_block');
         const chatHeight = $('#chat').prop('scrollHeight');
-        const text = messageElement.find('.mes_text');
-        const isInline = !!mes.extra?.inline_video;
 
         // Create video element if it doesn't exist
         let video = messageElement.find('.mes_video');
@@ -2486,19 +2484,17 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         }
 
         video.off('loadedmetadata').on('loadedmetadata', function () {
-            if (adjustScroll) {
-                const scrollPosition = $('#chat').scrollTop();
-                const newChatHeight = $('#chat').prop('scrollHeight');
-                const diff = newChatHeight - chatHeight;
-                $('#chat').scrollTop(scrollPosition + diff);
+            if (!adjustScroll) {
+                return;
             }
+            const scrollPosition = $('#chat').scrollTop();
+            const newChatHeight = $('#chat').prop('scrollHeight');
+            const diff = newChatHeight - chatHeight;
+            $('#chat').scrollTop(scrollPosition + diff);
         });
 
         video.attr('src', mes.extra?.video);
         video.attr('title', mes.extra?.title || mes.title || '');
-        container.addClass('img_extra'); // Reuse existing styling
-        video.toggleClass('img_inline', isInline); // Reuse existing styling
-        text.toggleClass('displayNone', !isInline);
     }
 
     // Add file to message
