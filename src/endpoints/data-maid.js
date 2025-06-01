@@ -709,19 +709,19 @@ router.post('/delete', async (req, res) => {
         for (const hash of hashes) {
             const fileEntry = tokenEntry.paths.find(entry => entry.hash === hash);
             if (!fileEntry) {
-                return res.sendStatus(404);
+                continue;
             }
 
             if (!isPathUnderParent(req.user.directories.root, fileEntry.path)) {
                 console.warn('[Data Maid] Attempted deletion of a file outside of the user directory:', fileEntry.path);
-                return res.sendStatus(403);
+                continue;
             }
 
             const pathToFile = fileEntry.path;
             const fileExists = fs.existsSync(pathToFile);
 
             if (!fileExists) {
-                return res.sendStatus(404);
+                continue;
             }
 
             await fs.promises.unlink(pathToFile);
