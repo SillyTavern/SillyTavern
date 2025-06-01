@@ -5212,7 +5212,7 @@ body:not(.sd) .mes_img_swipes {
 }
 
 .mes_video::-webkit-media-controls-panel {
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Align the content of this span to the right */
