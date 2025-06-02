@@ -4,16 +4,38 @@ import { extension_settings } from '../../extensions.js';
 
 export { DiaTtsProvider };
 
+/**
+ * @typedef {Object} Toastr
+ * @property {function(string): void} success - Display success message
+ * @property {function(string): void} error - Display error message
+ * @property {function(string): void} info - Display info message
+ * @property {function(string): void} warning - Display warning message
+ */
+
+/** @type {Toastr} */
+// @ts-ignore
+const toastr = window.toastr;
+
+/**
+ * @typedef {Object} DiaTtsSettings
+ * @property {string} endpoint - API endpoint URL
+ * @property {string} apiKey - API authentication key
+ * @property {Object.<string, string>} voiceMappings - Character to voice ID mappings
+ * @property {string[]} customVoices - List of custom voice IDs
+ * @property {number} temperature - Generation randomness (0.1-2.0)
+ * @property {number} cfg_scale - Classifier-free guidance scale (1.0-10.0)
+ * @property {number} top_p - Nucleus sampling threshold (0.0-1.0)
+ * @property {number} max_tokens - Maximum tokens to generate (100-10000)
+ * @property {number} speed - Speech speed (0.25-4.0)
+ * @property {boolean} asyncMode - Use async mode for long texts
+ */
+
 // Constants
 const DIA_CONSTANTS = {
     LOG_PREFIX: 'DiaTTS:',
     POLL_INTERVAL: 1000,
     MAX_RETRIES: 2,
-    SUPPORTED_FORMATS: /\.(wav|mp3|ogg|m4a|flac|aac)$/i,
-    DEFAULT_SPEAKER_TAG: '[S2]',
-    USER_SPEAKER_TAG: '[S1]',
-    ASSISTANT_SPEAKER_TAG: '[S2]',
-    SYSTEM_SPEAKER_TAG: '[S2]',
+    SUPPORTED_FORMATS: /\.(wav|mp3|ogg|m4a|flac|aac)$/i
 };
 
 const PRESET_CONFIGS = {
@@ -22,134 +44,152 @@ const PRESET_CONFIGS = {
         cfg_scale: 4.0,
         top_p: 0.8,
         max_tokens: 2000,
+        speed: 1.0
     },
     natural: {
         temperature: 1.4,
         cfg_scale: 2.5,
         top_p: 0.95,
         max_tokens: 2000,
+        speed: 1.0
     },
     fast: {
         temperature: 1.0,
         cfg_scale: 2.0,
         top_p: 0.9,
         max_tokens: 1000,
+        speed: 1.2
     },
     default: {
         temperature: 1.2,
         cfg_scale: 3.0,
         top_p: 0.95,
         max_tokens: 2000,
+        speed: 1.0
     },
 };
 
-const BUILT_IN_VOICES = [
-    { name: 'Alloy', voice_id: 'alloy', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-    { name: 'Echo', voice_id: 'echo', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-    { name: 'Fable', voice_id: 'fable', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-    { name: 'Nova', voice_id: 'nova', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-    { name: 'Onyx', voice_id: 'onyx', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-    { name: 'Shimmer', voice_id: 'shimmer', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-];
+// Note: Built-in voices are now fetched dynamically from the server
+// No hardcoded voices needed as the server provides the available voice list
 
 /**
  * Dia TTS Provider implementation
- * Supports both synchronous and asynchronous TTS generation with voice cloning
+ * Supports text-to-speech generation with voice cloning and role-based input
  */
 class DiaTtsProvider {
-    /**
-     * @typedef {Object} DiaTtsSettings
-     * @property {Object} voiceMap - Voice mapping configuration
-     * @property {string} endpoint - API endpoint URL
-     * @property {string} apiKey - API authentication key
-     * @property {Object} voiceMappings - Character to voice ID mappings
-     * @property {Object} audioPrompts - Audio prompt storage
-     * @property {string[]} customVoices - List of custom voice IDs
-     * @property {number} temperature - Generation randomness (0.1-2.0)
-     * @property {number} cfg_scale - Classifier-free guidance scale (1.0-10.0)
-     * @property {number} top_p - Nucleus sampling threshold (0.0-1.0)
-     * @property {number} max_tokens - Maximum tokens to generate (100-10000)
-     * @property {boolean} use_async_mode - Enable async processing
-     * @property {number} async_timeout - Async job timeout in milliseconds
-     */
+    //########//
+    // Config //
+    //########//
 
     /** @type {DiaTtsSettings} */
-    settings = null;
+    settings;
 
+    constructor() {
+        // Initialize with default settings
+        this.settings = {
+            endpoint: 'http://localhost:7860',
+            apiKey: 'sk-anything',
+            voiceMappings: {},
+            customVoices: [],
+            temperature: 1.2,
+            cfg_scale: 3.0,
+            top_p: 0.95,
+            max_tokens: 2000,
+            speed: 1.0,
+            asyncMode: false
+        };
+    }
+
+    ready = false;
     voices = [];
     separator = ' ... ';
     audioElement = document.createElement('audio');
 
-    defaultSettings = {
-        voiceMap: {},
-        endpoint: 'http://localhost:7860',
-        apiKey: 'sk-anything',
-        voiceMappings: {},
-        audioPrompts: {},
-        customVoices: [],
-        temperature: 1.2,
-        cfg_scale: 3.0,
-        top_p: 0.95,
-        max_tokens: 2000,
-        use_async_mode: true,
-        async_timeout: 30000,
-    };
+    //######//
+    // HTML //
+    //######//
 
-    // UI Template Helpers
-    _renderConnectionSettings(settings) {
+    get settingsHtml() {
+        let html = `<div class="dia-tts-settings">`;
+
+        // Connection Settings
+        html += this._renderConnectionSettings();
+        html += `<hr>`;
+
+        // Model Parameters
+        html += this._renderModelParameters();
+        html += `<hr>`;
+
+        // Voice Cloning
+        html += this._renderVoiceCloning();
+
+        // Server Management
+        html += this._renderServerManagement();
+        html += `<hr>`;
+
+        // Debug and Help
+        html += `<input id="dia-debug-tts" class="menu_button" type="button" value="Debug TTS Settings" style="margin-top:10px;" />`;
+        html += `<input id="dia-repair-voices" class="menu_button" type="button" value="Repair Voice Mappings" style="margin-top:5px; background: var(--SmartThemeQuoteColor);" />`;
+        html += this._renderHelpText();
+
+        html += `</div>`;
+        return html;
+    }
+
+    _renderConnectionSettings() {
         return `
-            <label for="dia-tts-endpoint">Endpoint URL</label>
-            <input id="dia-tts-endpoint" type="text" class="text_pole" placeholder="http://localhost:7860" value="${settings.endpoint || this.defaultSettings.endpoint}" />
-            <small>Base URL for the Dia FastAPI server</small>
+            <div class="dia-connection-settings">
+                <span style="font-weight:bold;">Connection</span><br>
+                <label for="dia-tts-endpoint">Endpoint URL</label>
+                <input id="dia-tts-endpoint" type="text" class="text_pole" placeholder="http://localhost:7860" value="${this.settings.endpoint}" />
+                <small><strong>Default:</strong> http://localhost:7860 (NOT 8000). Ensure Dia server is running.</small>
 
-            <label for="dia-tts-apikey">API Key</label>
-            <input id="dia-tts-apikey" type="text" class="text_pole" placeholder="sk-anything" value="${settings.apiKey || this.defaultSettings.apiKey}" />
-            <small>API key (any string works with Dia)</small>
+                <label for="dia-tts-apikey">API Key</label>
+                <input id="dia-tts-apikey" type="text" class="text_pole" placeholder="sk-anything" value="${this.settings.apiKey}" />
+                <small>API key (any string works with Dia)</small>
+
+                <div style="margin-top:10px;">
+                    <button id="dia-test-connection" class="menu_button" style="background: var(--SmartThemeQuoteColor); color: white; border: none; padding: 5px 10px; border-radius: 3px;">
+                        Test Connection
+                    </button>
+                    <small id="dia-connection-status" style="margin-left: 10px; font-weight: bold;"></small>
+                </div>
+            </div>
         `;
     }
 
-    _renderParameterSlider(id, label, value, min, max, step, description) {
+    _renderModelParameters() {
         return `
-            <label for="${id}">${label}: <span id="${id}-output">${value}</span></label>
-            <input id="${id}" type="range" value="${value}" min="${min}" max="${max}" step="${step}" />
-            <small>${description}</small>
-        `;
-    }
-
-    _renderModelParameters(settings) {
-        return `
-            <div class="dia_model_params">
+            <div class="dia-model-params">
                 <span style="font-weight:bold;">Model Parameters</span><br>
 
-                ${this._renderParameterSlider('dia-temperature', 'Temperature',
-        settings.temperature || this.defaultSettings.temperature,
-        0.1, 2.0, 0.1,
-        'Controls randomness in generation (0.1 = consistent, 2.0 = creative)')}
+                <label for="dia-temperature">Temperature: <span id="dia-temperature-output">${this.settings.temperature}</span></label>
+                <input id="dia-temperature" type="range" value="${this.settings.temperature}" min="0.1" max="2.0" step="0.1" />
+                <small>Controls randomness in generation (0.1 = consistent, 2.0 = creative)</small>
 
-                ${this._renderParameterSlider('dia-cfg-scale', 'CFG Scale',
-        settings.cfg_scale || this.defaultSettings.cfg_scale,
-        1.0, 10.0, 0.5,
-        'Classifier-free guidance strength (1.0 = weak, 10.0 = strong conditioning)')}
+                <label for="dia-cfg-scale">CFG Scale: <span id="dia-cfg-scale-output">${this.settings.cfg_scale}</span></label>
+                <input id="dia-cfg-scale" type="range" value="${this.settings.cfg_scale}" min="1.0" max="10.0" step="0.5" />
+                <small>Classifier-free guidance strength (1.0 = weak, 10.0 = strong conditioning)</small>
 
-                ${this._renderParameterSlider('dia-top-p', 'Top P',
-        settings.top_p || this.defaultSettings.top_p,
-        0.1, 1.0, 0.05,
-        'Nucleus sampling threshold (0.1 = focused, 1.0 = diverse)')}
+                <label for="dia-top-p">Top P: <span id="dia-top-p-output">${this.settings.top_p}</span></label>
+                <input id="dia-top-p" type="range" value="${this.settings.top_p}" min="0.1" max="1.0" step="0.05" />
+                <small>Nucleus sampling threshold (0.1 = focused, 1.0 = diverse)</small>
 
-                ${this._renderParameterSlider('dia-max-tokens', 'Max Tokens',
-        settings.max_tokens || this.defaultSettings.max_tokens,
-        100, 10000, 100,
-        'Maximum tokens to generate (100 = short, 10000 = very long)')}
+                <label for="dia-max-tokens">Max Tokens: <span id="dia-max-tokens-output">${this.settings.max_tokens}</span></label>
+                <input id="dia-max-tokens" type="range" value="${this.settings.max_tokens}" min="100" max="10000" step="100" />
+                <small>Maximum tokens to generate (100 = short, 10000 = very long)</small>
 
-                <label for="dia-async-mode">
-                    <input id="dia-async-mode" type="checkbox" ${(settings.use_async_mode || this.defaultSettings.use_async_mode) ? 'checked' : ''} />
-                    Use Worker Queue for Processing
-                </label>
-                <small>Enable async processing for better performance</small>
+                <label for="dia-speed">Speed: <span id="dia-speed-output">${this.settings.speed}</span></label>
+                <input id="dia-speed" type="range" value="${this.settings.speed}" min="0.25" max="4.0" step="0.25" />
+                <small>Speech speed (0.25 = very slow, 4.0 = very fast)</small>
 
-                <label for="dia-async-timeout">Async Timeout: <span id="dia-async-timeout-output">${Math.round((settings.async_timeout || this.defaultSettings.async_timeout) / 1000)}s</span></label>
-                <input id="dia-async-timeout" type="range" value="${settings.async_timeout || this.defaultSettings.async_timeout}" min="10000" max="120000" step="5000" />
-                <small>Maximum time to wait for async jobs to complete (10-120 seconds)</small>
+                <div style="margin-top:10px;">
+                    <label for="dia-async-mode" style="display: flex; align-items: center; gap: 5px;">
+                        <input id="dia-async-mode" type="checkbox" ${this.settings.asyncMode ? 'checked' : ''} />
+                        <span>Use Async Mode for long texts</span>
+                    </label>
+                    <small>Recommended for texts longer than 1000 characters</small>
+                </div>
 
                 ${this._renderPresetButtons()}
             </div>
@@ -172,8 +212,9 @@ class DiaTtsProvider {
 
     _renderVoiceCloning() {
         return `
-            <div class="dia_voice_cloning">
-                <span>Voice Cloning</span><br>
+            <div class="dia-voice-cloning">
+                <span style="font-weight:bold;">Voice Creation</span><br>
+
                 <label for="dia-tts-char-select">Character</label>
                 <div style="display: flex; gap: 5px; align-items: center;">
                     <select id="dia-tts-char-select" class="text_pole" style="flex: 1;">
@@ -189,21 +230,98 @@ class DiaTtsProvider {
                 <input id="dia-tts-voice-name" type="text" class="text_pole" placeholder="Custom voice name" />
                 <small>Name for the custom voice (auto-generated if empty)</small>
 
-                <div class="menu_button menu_button_icon" id="dia-upload-voice-sample">
-                    <i class="fa-solid fa-file-import"></i>
-                    <span>Upload Voice Sample</span>
+                <!-- Voice Creation Method Selection -->
+                <div style="margin-top:15px; padding:10px; background:var(--SmartThemeBlurTintColor); border-radius:5px;">
+                    <label style="font-weight:bold; color:var(--SmartThemeQuoteColor);">Voice Creation Method:</label><br>
+                    <div style="margin-top:8px;">
+                        <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+                            <input type="radio" name="dia-voice-method" value="audio" id="dia-method-audio" checked />
+                            <span>Audio Sample (Voice Cloning)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="dia-voice-method" value="seed" id="dia-method-seed" />
+                            <span>Voice Seed (Random Generation)</span>
+                        </label>
+                    </div>
                 </div>
-                <input id="dia-tts-char-upload" type="file" accept="audio/*" style="display:none;" />
-                <small>Upload 3-10 seconds of clean voice sample (.wav, .mp3, etc.)</small>
 
-                <label for="dia-tts-transcript">Audio Transcript (Optional)</label>
-                <textarea id="dia-tts-transcript" class="text_pole" rows="2" placeholder="[S1] What is said in the audio sample."></textarea>
-                <small>What's being said in the audio (improves voice quality)</small>
+                <!-- Audio Sample Method -->
+                <div id="dia-audio-method" class="dia-voice-method-section">
+                    <div class="menu_button menu_button_icon" id="dia-upload-voice-sample" style="margin-top:10px;">
+                        <i class="fa-solid fa-file-import"></i>
+                        <span>Upload Voice Sample</span>
+                    </div>
+                    <input id="dia-tts-char-upload" type="file" accept="audio/*" style="display:none;" />
+                    <small>Upload 3-10 seconds of clean voice sample (.wav, .mp3, etc.)</small>
+                </div>
 
-                <input id="dia-tts-char-save" class="menu_button" type="button" value="Create Custom Voice" />
+                <!-- Voice Seed Method -->
+                <div id="dia-seed-method" class="dia-voice-method-section" style="display:none;">
+                    <label for="dia-voice-seed" style="margin-top:10px;">Voice Seed</label>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <input id="dia-voice-seed" type="number" class="text_pole" placeholder="Enter number (1-999999)" min="1" max="999999" style="flex: 1;" />
+                        <div class="menu_button menu_button_icon" id="dia-random-seed" title="Generate random seed">
+                            <i class="fa-solid fa-dice"></i>
+                        </div>
+                    </div>
+                    <small>Enter a number to generate a consistent voice. Same seed = same voice.</small>
+                </div>
+
+                <input id="dia-tts-char-save" class="menu_button" type="button" value="Create Custom Voice" style="margin-top:15px;" />
 
                 <div id="dia-tts-char-list" style="margin-top:15px; border-top:1px solid var(--SmartThemeBorderColor); padding-top:10px;">
                     <small><i>Custom voices will appear in the main voice selection dropdown above.</i></small>
+                </div>
+
+                <!-- Audio Prompt Management -->
+                <div style="margin-top:15px; padding:10px; background:var(--SmartThemeBlurTintColor); border-radius:5px;">
+                    <span style="font-weight:bold; color:var(--SmartThemeQuoteColor);">Audio Prompt Management</span><br>
+
+                    <div style="display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap;">
+                        <button id="dia-view-prompts" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                            View Audio Prompts
+                        </button>
+                        <button id="dia-transcribe-prompts" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                            Re-transcribe All
+                        </button>
+                        <button id="dia-whisper-status" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                            Whisper Status
+                        </button>
+                    </div>
+
+                    <div id="dia-prompts-info" style="margin-top:8px; font-size:11px; color:var(--SmartThemeQuoteColor); max-height:150px; overflow-y:auto;">
+                        <span>Audio prompt information will appear here...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    _renderServerManagement() {
+        return `
+            <div class="dia-server-management" style="margin-top:15px; padding:10px; background:var(--SmartThemeBlurTintColor); border-radius:5px;">
+                <span style="font-weight:bold; color:var(--SmartThemeQuoteColor);">Server Management</span><br>
+
+                <div style="display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap;">
+                    <button id="dia-server-status" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                        Server Status
+                    </button>
+                    <button id="dia-queue-stats" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                        Queue Status
+                    </button>
+                    <button id="dia-generation-logs" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                        View Logs
+                    </button>
+                    <button id="dia-discover-prompts" class="menu_button" style="font-size:11px; padding:4px 8px;">
+                        Discover Audio
+                    </button>
+                    <button id="dia-cleanup-server" class="menu_button" style="font-size:11px; padding:4px 8px; background: var(--SmartThemeQuoteColor);">
+                        Cleanup Server
+                    </button>
+                </div>
+
+                <div id="dia-server-info" style="margin-top:10px; font-size:11px; color:var(--SmartThemeQuoteColor);">
+                    <span>Server information will appear here...</span>
                 </div>
             </div>
         `;
@@ -212,245 +330,310 @@ class DiaTtsProvider {
     _renderHelpText() {
         return `
             <small style="margin-top:10px; display:block; color: var(--SmartThemeQuoteColor);">
-                <strong>Note:</strong> Dia TTS uses speaker tags [S1] and [S2]. The provider automatically adds appropriate tags based on character context.
+                <strong>Server Connection:</strong> Voices are fetched dynamically from the Dia server.
+                <br>• Ensure the Dia server is running at the configured endpoint
+                <br>• Available voices will appear in the main TTS voice selection dropdown
+                <br>• If no voices appear, check the server connection and click "Refresh"
                 <br><br>
-                <strong>Role-Based Input:</strong> Characters are automatically mapped to roles:
-                <br>• User messages → [S1] tag (user role)
-                <br>• Character messages → [S2] tag (assistant role)
-                <br>• System/Narrator → [S2] tag (system role)
+                <strong>Role Mapping:</strong> The provider automatically maps character context:
+                <br>• User messages → 'user' role
+                <br>• Character messages → 'assistant' role
+                <br>• System/Narrator → 'system' role
                 <br><br>
-                <strong>Voice Cloning:</strong> For best results when cloning voices:
-                <br>• Use 3-10 seconds of clear audio (no background noise/music)
-                <br>• Add a transcript of what's said in the audio file
-                <br>• Include speaker tags in the transcript ([S1] for user voices)
-                <br>• Voice cloning works best with similar text content
-                <br><br>
-                <strong>Worker Queue:</strong> When enabled, requests are processed asynchronously using the server's worker pool for better performance.
+                <strong>Voice Creation Methods:</strong>
+                <br>• <strong>Audio Sample:</strong> Upload 3-10 seconds of clear audio for voice cloning
+                <br>&nbsp;&nbsp;- Audio will be automatically transcribed using Whisper if available
+                <br>&nbsp;&nbsp;- Works best with similar text content to the sample
+                <br>&nbsp;&nbsp;- Supported formats: WAV, MP3, OGG, M4A, FLAC, AAC
+                <br>• <strong>Voice Seed:</strong> Use a number (1-999999) to generate a consistent voice
+                <br>&nbsp;&nbsp;- Same seed always produces the same voice characteristics
+                <br>&nbsp;&nbsp;- No audio upload required - purely generated
+                <br>&nbsp;&nbsp;- Good for consistent characters without reference audio
                 <br><br>
                 <strong>Troubleshooting:</strong> If TTS only plays the first message, check that:
                 <br>• Auto Generation is enabled in TTS settings
                 <br>• Narrate User Messages is enabled (if you want user messages read)
-                <br>• No content filters are blocking subsequent messages
-                <br>• Click "Debug TTS Settings" above for detailed diagnostics
+                <br>• Server is running at the correct endpoint URL (default: http://localhost:7860)
+                <br>• Click "Debug TTS Settings" for detailed diagnostics
+                <br>• Click "Repair Voice Mappings" if voices are missing after server restart
             </small>
         `;
     }
 
-    // Logging helper
-    log(...args) {
-        console.log(`${DIA_CONSTANTS.LOG_PREFIX}`, ...args);
-    }
+    //##################//
+    // Settings Loading //
+    //##################//
 
-    warn(...args) {
-        console.warn(`${DIA_CONSTANTS.LOG_PREFIX}`, ...args);
-    }
-
-    error(...args) {
-        console.error(`${DIA_CONSTANTS.LOG_PREFIX}`, ...args);
-    }
-
-    /**
-     * Handle API errors consistently
-     * @param {Response} response - The fetch response
-     * @param {string} operation - Description of the operation
-     * @returns {Promise<string>} Error message
-     * @private
-     */
-    async _handleApiError(response, operation) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        let errorDetail = errorText;
-
-        try {
-            const errorJson = JSON.parse(errorText);
-            errorDetail = errorJson.detail || errorText;
-        } catch (e) {
-            // If not JSON, use the raw text
-        }
-
-        this.error(`${operation} failed - HTTP ${response.status}: ${errorDetail}`);
-        return errorDetail;
-    }
-
-    get settingsHtml() {
-        const settings = this.settings || this.defaultSettings;
-        this.log('Generating settings HTML', settings);
-
-        return `
-            <div class="dia_tts_settings">
-                ${this._renderConnectionSettings(settings)}
-                <hr>
-                ${this._renderModelParameters(settings)}
-                <hr>
-                ${this._renderVoiceCloning()}
-                <input id="dia-debug-tts" class="menu_button" type="button" value="Debug TTS Settings" style="margin-top:10px;" />
-                ${this._renderHelpText()}
-            </div>
-        `;
-    }
-
-    /**
-     * Load and initialize settings
-     * @param {DiaTtsSettings} settingsFromMainExtension - Settings from the main TTS extension
-     */
     async loadSettings(settingsFromMainExtension) {
+        console.log('=== DIA TTS LOAD SETTINGS DEBUG ===');
+        console.log('Settings from main extension:', settingsFromMainExtension);
+        console.log('Current settings before merge:', this.settings);
+
         if (!settingsFromMainExtension) {
-            this.warn('No settings object provided by main extension.');
-            this.settings = JSON.parse(JSON.stringify(this.defaultSettings));
+            console.warn('No settings object provided by main extension.');
+            this.settings = { ...this.settings }; // Use defaults
         } else {
-            this.settings = settingsFromMainExtension;
+            // Merge settings but protect against incorrect endpoint defaults
+            this.settings = { ...this.settings, ...settingsFromMainExtension };
+
+            // If the endpoint is the problematic default 8000, reset to correct default
+            if (this.settings.endpoint === 'http://localhost:8000' || this.settings.endpoint === 'http://127.0.0.1:8000') {
+                console.warn('Detected incorrect default endpoint 8000, resetting to 7860');
+                this.settings.endpoint = 'http://localhost:7860';
+
+                // Save the corrected settings immediately
+                setTimeout(() => {
+                    this.onSettingsChange();
+                    toastr.info('Corrected endpoint from 8000 to 7860');
+                }, 200);
+            }
         }
 
-        // Ensure all default keys exist
-        this._mergeDefaultSettings();
+        console.log('Final merged settings:', this.settings);
+        console.log('=== END DEBUG ===');
 
-        this.log('Provider configured with settings:', this.settings);
-
-        // Setup UI event handlers
+        // Setup UI after a delay to ensure DOM is ready
         setTimeout(() => {
-            this.setupEventHandlers();
-            this.renderCharMappingList();
-            this.loadCustomVoices();
-        }, 0);
+            console.log('Setting up UI components...');
+            this.setupEventListeners();
+            this.applySettingsToHTML();
+            this.populateCharacterDropdown();
+            this.renderCustomVoicesList();
+        }, 100);
 
         await this.checkReady();
     }
 
-    /**
-     * Merge default settings with loaded settings
-     * @private
-     */
-    _mergeDefaultSettings() {
-        for (const key in this.defaultSettings) {
-            if (this.settings[key] === undefined) {
-                if (typeof this.defaultSettings[key] === 'object' && this.defaultSettings[key] !== null) {
-                    this.settings[key] = JSON.parse(JSON.stringify(this.defaultSettings[key]));
-                } else {
-                    this.settings[key] = this.defaultSettings[key];
+    applySettingsToHTML() {
+        console.log('Applying settings to HTML, endpoint:', this.settings.endpoint);
+
+        // Apply settings to HTML elements
+        const elements = [
+            { id: 'dia-tts-endpoint', value: this.settings.endpoint },
+            { id: 'dia-tts-apikey', value: this.settings.apiKey },
+            { id: 'dia-temperature', value: this.settings.temperature },
+            { id: 'dia-cfg-scale', value: this.settings.cfg_scale },
+            { id: 'dia-top-p', value: this.settings.top_p },
+            { id: 'dia-max-tokens', value: this.settings.max_tokens },
+            { id: 'dia-speed', value: this.settings.speed }
+        ];
+
+        elements.forEach(({ id, value }) => {
+            const element = document.getElementById(id);
+            if (element instanceof HTMLInputElement) {
+                if (id === 'dia-tts-endpoint') {
+                    console.log(`Setting endpoint input to: ${value}`);
                 }
+                element.value = String(value);
+            } else {
+                console.warn(`Element ${id} not found or not an input element:`, element);
             }
+        });
+
+        // Apply async mode checkbox
+        const asyncModeCheckbox = document.getElementById('dia-async-mode');
+        if (asyncModeCheckbox instanceof HTMLInputElement) {
+            asyncModeCheckbox.checked = this.settings.asyncMode;
         }
+
+        this.updateSliderOutputs();
     }
 
-    /**
-     * Setup all event handlers for the UI
-     */
-    setupEventHandlers() {
-        this._setupConnectionHandlers();
-        this._setupParameterHandlers();
-        this._setupPresetHandlers();
-        this._setupVoiceCloningHandlers();
-        this._setupUtilityHandlers();
+    updateSliderOutputs() {
+        const sliders = [
+            { id: 'dia-temperature', key: 'temperature', output: 'dia-temperature-output' },
+            { id: 'dia-cfg-scale', key: 'cfg_scale', output: 'dia-cfg-scale-output' },
+            { id: 'dia-top-p', key: 'top_p', output: 'dia-top-p-output' },
+            { id: 'dia-max-tokens', key: 'max_tokens', output: 'dia-max-tokens-output' },
+            { id: 'dia-speed', key: 'speed', output: 'dia-speed-output' }
+        ];
 
-        // Populate character dropdown
-        this.populateCharacterDropdown();
-
-        // Refresh dropdown after a delay to ensure context is loaded
-        setTimeout(() => {
-            this.populateCharacterDropdown();
-        }, 1000);
+        sliders.forEach(({ output, key }) => {
+            const outputElement = document.getElementById(output);
+            if (outputElement && this.settings[key] !== undefined) {
+                outputElement.textContent = String(this.settings[key]);
+            }
+        });
     }
 
-    /**
-     * Setup handlers for connection settings
-     * @private
-     */
-    _setupConnectionHandlers() {
+    //#################//
+    // Event Listeners //
+    //#################//
+
+    setupEventListeners() {
+        this.setupConnectionHandlers();
+        this.setupParameterHandlers();
+        this.setupPresetHandlers();
+        this.setupVoiceCloningHandlers();
+        this.setupUtilityHandlers();
+    }
+
+    setupConnectionHandlers() {
         const endpointInput = document.getElementById('dia-tts-endpoint');
         const apiKeyInput = document.getElementById('dia-tts-apikey');
+        const testButton = document.getElementById('dia-test-connection');
 
         if (endpointInput instanceof HTMLInputElement) {
+            console.log('Endpoint input element found, current value:', endpointInput.value, 'settings value:', this.settings.endpoint);
             endpointInput.addEventListener('change', (e) => {
-                if (e.target instanceof HTMLInputElement) this.settings.endpoint = e.target.value;
-                saveTtsProviderSettings();
+                if (e.target instanceof HTMLInputElement) {
+                    console.log('Endpoint changed from UI:', e.target.value);
+                    this.settings.endpoint = e.target.value;
+                    this.onSettingsChange();
+
+                    // Clear connection status
+                    this.updateConnectionStatus('', '');
+
+                    // Trigger health check with new endpoint
+                    setTimeout(() => {
+                        this.checkReady().then(isReady => {
+                            if (isReady) {
+                                toastr.success(`Connected to Dia server at ${this.settings.endpoint}`);
+                                this.updateConnectionStatus('✅ Connected', '#4CAF50');
+                            } else {
+                                toastr.warning(`Could not connect to ${this.settings.endpoint}`);
+                                this.updateConnectionStatus('❌ Failed', '#f44336');
+                            }
+                        });
+                    }, 100);
+                }
             });
         }
 
         if (apiKeyInput instanceof HTMLInputElement) {
             apiKeyInput.addEventListener('change', (e) => {
-                if (e.target instanceof HTMLInputElement) this.settings.apiKey = e.target.value;
-                saveTtsProviderSettings();
-            });
-        }
-    }
-
-    /**
-     * Setup handlers for model parameters
-     * @private
-     */
-    _setupParameterHandlers() {
-        const temperatureSlider = document.getElementById('dia-temperature');
-        const cfgScaleSlider = document.getElementById('dia-cfg-scale');
-        const topPSlider = document.getElementById('dia-top-p');
-        const maxTokensSlider = document.getElementById('dia-max-tokens');
-        const asyncModeCheckbox = document.getElementById('dia-async-mode');
-        const asyncTimeoutSlider = document.getElementById('dia-async-timeout');
-
-        // Setup model parameter sliders
-        this.setupParameterSlider(temperatureSlider, 'temperature', 'dia-temperature-output');
-        this.setupParameterSlider(cfgScaleSlider, 'cfg_scale', 'dia-cfg-scale-output');
-        this.setupParameterSlider(topPSlider, 'top_p', 'dia-top-p-output');
-        this.setupParameterSlider(maxTokensSlider, 'max_tokens', 'dia-max-tokens-output');
-
-        // Setup async timeout slider (with custom handler for seconds conversion)
-        if (asyncTimeoutSlider) {
-            const timeoutOutput = document.getElementById('dia-async-timeout-output');
-            asyncTimeoutSlider.addEventListener('input', (e) => {
                 if (e.target instanceof HTMLInputElement) {
-                    const value = parseInt(e.target.value);
-                    this.settings.async_timeout = value;
-                    if (timeoutOutput) {
-                        timeoutOutput.textContent = `${Math.round(value / 1000)}s`;
-                    }
-                    saveTtsProviderSettings();
+                    this.settings.apiKey = e.target.value;
+                    this.onSettingsChange();
                 }
             });
         }
 
-        // Setup async mode checkbox
+        if (testButton instanceof HTMLButtonElement) {
+            testButton.addEventListener('click', async () => {
+                testButton.disabled = true;
+                testButton.textContent = 'Testing...';
+                this.updateConnectionStatus('⏳ Testing...', '#FF9800');
+
+                try {
+                    const isReady = await this.checkReady();
+                    if (isReady) {
+                        // Also test voice fetching
+                        const voices = await this.fetchTtsVoiceObjects();
+                        toastr.success(`Connected! Found ${voices.length} voices on server.`);
+                        this.updateConnectionStatus(`✅ Connected (${voices.length} voices)`, '#4CAF50');
+                    } else {
+                        toastr.error('Connection test failed. Check endpoint and server status.');
+                        this.updateConnectionStatus('❌ Connection Failed', '#f44336');
+                    }
+                } catch (error) {
+                    console.error('Connection test error:', error);
+                    toastr.error(`Connection test failed: ${error.message}`);
+                    this.updateConnectionStatus('❌ Error', '#f44336');
+                }
+
+                testButton.disabled = false;
+                testButton.textContent = 'Test Connection';
+            });
+        }
+    }
+
+    updateConnectionStatus(text, color) {
+        const statusElement = document.getElementById('dia-connection-status');
+        if (statusElement) {
+            statusElement.textContent = text;
+            statusElement.style.color = color;
+        }
+    }
+
+    setupParameterHandlers() {
+        const sliders = ['temperature', 'cfg_scale', 'top_p', 'max_tokens', 'speed'];
+
+        sliders.forEach(param => {
+            this.setupParameterSlider(`dia-${param.replace('_', '-')}`, param, `dia-${param.replace('_', '-')}-output`);
+        });
+
+        // Async mode checkbox
+        const asyncModeCheckbox = document.getElementById('dia-async-mode');
         if (asyncModeCheckbox instanceof HTMLInputElement) {
             asyncModeCheckbox.addEventListener('change', (e) => {
                 if (e.target instanceof HTMLInputElement) {
-                    this.settings.use_async_mode = e.target.checked;
-                    saveTtsProviderSettings();
-                    this.log(`Async mode ${e.target.checked ? 'enabled' : 'disabled'}`);
+                    this.settings.asyncMode = e.target.checked;
+                    this.onSettingsChange();
                 }
             });
         }
     }
 
-    /**
-     * Setup handlers for preset buttons
-     * @private
-     */
-    _setupPresetHandlers() {
-        const presetButtons = {
-            'dia-preset-quality': 'quality',
-            'dia-preset-natural': 'natural',
-            'dia-preset-fast': 'fast',
-            'dia-preset-default': 'default',
-        };
+    setupParameterSlider(sliderId, settingKey, outputId) {
+        const slider = document.getElementById(sliderId);
+        const output = document.getElementById(outputId);
 
-        Object.entries(presetButtons).forEach(([id, preset]) => {
-            const button = document.getElementById(id);
+        if (slider instanceof HTMLInputElement) {
+            slider.addEventListener('input', (e) => {
+                if (e.target instanceof HTMLInputElement) {
+                    const value = parseFloat(e.target.value);
+                    this.settings[settingKey] = value;
+
+                    if (output) {
+                        output.textContent = String(value);
+                    }
+
+                    this.onSettingsChange();
+                }
+            });
+        }
+    }
+
+    setupPresetHandlers() {
+        const presets = ['quality', 'natural', 'fast', 'default'];
+
+        presets.forEach(preset => {
+            const button = document.getElementById(`dia-preset-${preset}`);
             if (button) {
                 button.addEventListener('click', () => this.applyPreset(preset));
             }
         });
     }
 
-    /**
-     * Setup handlers for voice cloning
-     * @private
-     */
-    _setupVoiceCloningHandlers() {
-        const charSelect = document.getElementById('dia-tts-char-select');
-        const voiceNameInput = document.getElementById('dia-tts-voice-name');
+    setupVoiceCloningHandlers() {
         const uploadBtn = document.getElementById('dia-upload-voice-sample');
         const upload = document.getElementById('dia-tts-char-upload');
         const saveBtn = document.getElementById('dia-tts-char-save');
         const refreshBtn = document.getElementById('dia-refresh-characters');
+        const randomSeedBtn = document.getElementById('dia-random-seed');
+        const seedInput = document.getElementById('dia-voice-seed');
 
-        // Handle refresh button click
+        // Method switching
+        const audioMethodRadio = document.getElementById('dia-method-audio');
+        const seedMethodRadio = document.getElementById('dia-method-seed');
+        const audioMethodSection = document.getElementById('dia-audio-method');
+        const seedMethodSection = document.getElementById('dia-seed-method');
+
+        if (audioMethodRadio instanceof HTMLInputElement && seedMethodRadio instanceof HTMLInputElement && audioMethodSection && seedMethodSection) {
+            const toggleMethods = () => {
+                if (audioMethodRadio.checked) {
+                    audioMethodSection.style.display = 'block';
+                    seedMethodSection.style.display = 'none';
+                } else {
+                    audioMethodSection.style.display = 'none';
+                    seedMethodSection.style.display = 'block';
+                }
+            };
+
+            audioMethodRadio.addEventListener('change', toggleMethods);
+            seedMethodRadio.addEventListener('change', toggleMethods);
+            toggleMethods(); // Initial state
+        }
+
+        // Random seed generation
+        if (randomSeedBtn && seedInput instanceof HTMLInputElement) {
+            randomSeedBtn.addEventListener('click', () => {
+                const randomSeed = Math.floor(Math.random() * 999999) + 1;
+                seedInput.value = String(randomSeed);
+            });
+        }
+
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 this.populateCharacterDropdown();
@@ -458,15 +641,9 @@ class DiaTtsProvider {
             });
         }
 
-        // Handle upload button click
         if (uploadBtn && upload) {
-            uploadBtn.addEventListener('click', () => {
-                upload.click();
-            });
-        }
+            uploadBtn.addEventListener('click', () => upload.click());
 
-        // Handle file selection
-        if (upload instanceof HTMLInputElement) {
             upload.addEventListener('change', (e) => {
                 const target = e.target;
                 const file = (target instanceof HTMLInputElement && target.files) ? target.files[0] : null;
@@ -475,45 +652,540 @@ class DiaTtsProvider {
                         <i class="fa-solid fa-file-check"></i>
                         <span>${file.name}</span>
                     `;
-                } else {
-                    uploadBtn.innerHTML = `
-                        <i class="fa-solid fa-file-import"></i>
-                        <span>Upload Voice Sample</span>
-                    `;
                 }
             });
         }
 
-        // Handle save custom voice
-        if (saveBtn && charSelect instanceof HTMLSelectElement && voiceNameInput instanceof HTMLInputElement && upload instanceof HTMLInputElement) {
-            saveBtn.onclick = async () => {
-                await this._handleCustomVoiceSave(charSelect, voiceNameInput, upload, uploadBtn, saveBtn);
-            };
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.handleCustomVoiceSave());
+        }
+
+        this.setupAudioPromptHandlers();
+        this.populateCharacterDropdown();
+    }
+
+    setupAudioPromptHandlers() {
+        const viewPromptsBtn = document.getElementById('dia-view-prompts');
+        const transcribePromptsBtn = document.getElementById('dia-transcribe-prompts');
+        const whisperStatusBtn = document.getElementById('dia-whisper-status');
+
+        if (viewPromptsBtn) {
+            viewPromptsBtn.addEventListener('click', () => this.viewAudioPrompts());
+        }
+
+        if (transcribePromptsBtn) {
+            transcribePromptsBtn.addEventListener('click', () => this.retranscribeAllPrompts());
+        }
+
+        if (whisperStatusBtn) {
+            whisperStatusBtn.addEventListener('click', () => this.showWhisperStatus());
         }
     }
 
-    /**
-     * Setup utility button handlers
-     * @private
-     */
-    _setupUtilityHandlers() {
+    setupUtilityHandlers() {
         const debugBtn = document.getElementById('dia-debug-tts');
+        const repairBtn = document.getElementById('dia-repair-voices');
 
         if (debugBtn) {
-            debugBtn.addEventListener('click', () => {
-                this.debugTtsSettings();
+            debugBtn.addEventListener('click', () => this.debugTtsSettings());
+        }
+
+        if (repairBtn instanceof HTMLInputElement) {
+            repairBtn.addEventListener('click', async () => {
+                repairBtn.disabled = true;
+                repairBtn.value = 'Repairing...';
+
+                try {
+                    await this.repairVoiceMappings();
+                } catch (error) {
+                    console.error('Repair failed:', error);
+                    toastr.error('Voice repair failed: ' + error.message);
+                }
+
+                repairBtn.disabled = false;
+                repairBtn.value = 'Repair Voice Mappings';
             });
+        }
+
+        this.setupServerManagementHandlers();
+    }
+
+    setupServerManagementHandlers() {
+        const serverStatusBtn = document.getElementById('dia-server-status');
+        const queueStatsBtn = document.getElementById('dia-queue-stats');
+        const generationLogsBtn = document.getElementById('dia-generation-logs');
+        const discoverPromptsBtn = document.getElementById('dia-discover-prompts');
+        const cleanupServerBtn = document.getElementById('dia-cleanup-server');
+
+        if (serverStatusBtn) {
+            serverStatusBtn.addEventListener('click', () => this.showServerStatus());
+        }
+
+        if (queueStatsBtn) {
+            queueStatsBtn.addEventListener('click', () => this.showQueueStats());
+        }
+
+        if (generationLogsBtn) {
+            generationLogsBtn.addEventListener('click', () => this.showGenerationLogs());
+        }
+
+        if (discoverPromptsBtn) {
+            discoverPromptsBtn.addEventListener('click', () => this.discoverAudioPrompts());
+        }
+
+        if (cleanupServerBtn) {
+            cleanupServerBtn.addEventListener('click', () => this.cleanupServer());
         }
     }
 
-    /**
-     * Handle custom voice save operation
-     * @private
-     */
-    async _handleCustomVoiceSave(charSelect, voiceNameInput, upload, uploadBtn, saveBtn) {
+    //###################//
+    // Settings Changes  //
+    //###################//
+
+    onSettingsChange() {
+        saveTtsProviderSettings();
+    }
+
+    applyPreset(presetName) {
+        const preset = PRESET_CONFIGS[presetName];
+        if (!preset) return;
+
+        Object.assign(this.settings, preset);
+        this.onSettingsChange();
+        this.applySettingsToHTML();
+
+        toastr.success(`Applied ${presetName} preset`);
+    }
+
+    //#################//
+    // Server Readiness//
+    //#################//
+
+    async checkReady() {
+        if (!this.settings?.endpoint) {
+            console.warn('Settings not initialized, skipping health check');
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${this.settings.endpoint}/health`, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (response.ok) {
+                const healthData = await response.json();
+                console.log('Server health check:', healthData);
+                this.ready = true;
+                return true;
+            }
+        } catch (error) {
+            console.warn('Server health check failed:', error.message);
+        }
+
+        this.ready = false;
+        return false;
+    }
+
+    async onRefreshClick() {
+        try {
+            await this.checkReady();
+            if (this.ready) {
+                await this.cleanupVoiceMappings();
+            }
+            await this.loadSettings(this.settings);
+            toastr.info(this.ready ? 'Server is ready' : 'Server is offline');
+        } catch (error) {
+            console.error('Error during refresh:', error);
+            toastr.error('Refresh failed');
+        }
+    }
+
+    //##############//
+    // Voice Objects//
+    //##############//
+
+    async fetchTtsVoiceObjects() {
+        const voices = [];
+
+        try {
+            // Fetch voices from API
+            const response = await fetch(`${this.settings.endpoint}/voices`, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Raw API response from /voices:', result);
+
+                const apiVoices = result.voices || [];
+                console.log('API voices array:', apiVoices);
+
+                // Convert API voices to our format
+                apiVoices.forEach(voice => {
+                    console.log('Processing API voice:', voice);
+                    voices.push({
+                        name: voice.name || voice.voice_id,
+                        voice_id: voice.voice_id,
+                        preview_url: false, // Disable direct preview URLs, use TTS generation instead
+                        lang: voice.lang || 'en-US',
+                        description: voice.description || 'Voice from server'
+                    });
+                });
+
+                console.log(`Fetched ${apiVoices.length} voices from API`);
+            } else {
+                console.warn('Could not fetch voices from API, status:', response.status);
+                console.warn('Response text:', await response.text());
+
+                // If API is not available, provide a fallback message
+                toastr.warning('Could not fetch voices from server. Please check if the Dia server is running.');
+            }
+        } catch (error) {
+            console.warn('Error fetching voices from API:', error);
+            toastr.warning(`Could not connect to Dia server: ${error.message}`);
+        }
+
+        // Add custom voices from local settings that might not be on server yet
+        const customVoices = this.settings?.customVoices || [];
+        console.log('Adding local custom voices:', customVoices);
+
+        customVoices.forEach(voiceId => {
+            // Only add if not already in the list from API
+            if (!voices.find(v => v.voice_id === voiceId)) {
+                voices.push({
+                    name: `${voiceId} (Local)`,
+                    voice_id: voiceId,
+                    preview_url: false, // Disable direct preview URLs
+                    lang: 'en-US',
+                    description: 'Custom cloned voice (local)'
+                });
+            }
+        });
+
+        console.log(`Returning ${voices.length} total voices:`, voices);
+        return voices;
+    }
+
+    async getVoice(voiceName) {
+        const voices = await this.fetchTtsVoiceObjects();
+        return voices.find(voice => voice.name === voiceName || voice.voice_id === voiceName) || voices[0];
+    }
+
+    //##################//
+    // Voice Preview    //
+    //##################//
+
+    async previewTtsVoice(voiceId) {
+        try {
+            // Check if server is ready first
+            if (!this.ready) {
+                const isReady = await this.checkReady();
+                if (!isReady) {
+                    toastr.error('Dia server is not available. Please check the endpoint configuration.');
+                    return;
+                }
+            }
+
+            // Validate voice ID
+            if (!voiceId) {
+                toastr.error('No voice ID provided for preview');
+                return;
+            }
+
+            this.audioElement.pause();
+            this.audioElement.currentTime = 0;
+
+            // Show loading message
+            toastr.info('Generating voice preview...');
+
+            const text = getPreviewString('en-US');
+            console.log(`Generating preview for voice: ${voiceId} with text: "${text}"`);
+
+            const response = await this.generateTts(text, voiceId);
+
+            if (!response || !response.ok) {
+                throw new Error(`Server returned ${response?.status || 'unknown error'}`);
+            }
+
+            const audio = await response.blob();
+
+            if (!audio || audio.size === 0) {
+                throw new Error('Received empty audio data');
+            }
+
+            const url = URL.createObjectURL(audio);
+
+            this.audioElement.onerror = (e) => {
+                console.error('Audio playback error:', e);
+                URL.revokeObjectURL(url);
+                toastr.error('Failed to play audio preview');
+            };
+
+            this.audioElement.onended = () => {
+                URL.revokeObjectURL(url);
+            };
+
+            this.audioElement.src = url;
+            await this.audioElement.play();
+
+            // Clear the "generating" message
+            this.clearToastrMessage('Generating voice preview...');
+            console.log(`Preview successful for voice: ${voiceId}`);
+
+        } catch (error) {
+            console.error('Preview failed:', error);
+            this.clearToastrMessage('Generating voice preview...');
+
+            let errorMessage = 'Preview failed';
+            if (error.message.includes('404')) {
+                errorMessage = `Voice "${voiceId}" not found on server`;
+            } else if (error.message.includes('connection')) {
+                errorMessage = 'Cannot connect to Dia server';
+            } else {
+                errorMessage = `Preview failed: ${error.message}`;
+            }
+
+            toastr.error(errorMessage);
+        }
+    }
+
+    //##################//
+    // TTS Generation   //
+    //##################//
+
+        async generateTts(text, voiceId, char) {
+        // Determine voice to use - check character mapping first
+        let selectedVoice = voiceId;
+        if (char && this.settings.voiceMappings?.[char]) {
+            selectedVoice = this.settings.voiceMappings[char];
+        }
+
+        // Clean up voice ID if it has "(Local)" or other suffixes
+        if (selectedVoice && selectedVoice.includes('(')) {
+            selectedVoice = selectedVoice.split('(')[0].trim();
+        }
+
+        console.log(`TTS Generation - Original voiceId: ${voiceId}, Character: ${char}, Selected voice: ${selectedVoice}`);
+
+        // Validate voice ID
+        if (!selectedVoice) {
+            throw new Error('No voice ID specified');
+        }
+
+        // Map character to role for API
+        let role = "assistant";
+        if (char) {
+            const c = char.toLowerCase();
+            if (c === 'user' || c === 'you') {
+                role = "user";
+            } else if (c === 'system' || c === 'narrator') {
+                role = "system";
+            }
+        }
+
+        const requestBody = {
+            text: text,
+            voice_id: selectedVoice,
+            role: role,
+            response_format: 'wav',
+            speed: this.settings.speed,
+            temperature: this.settings.temperature,
+            cfg_scale: this.settings.cfg_scale,
+            top_p: this.settings.top_p,
+            max_tokens: this.settings.max_tokens
+        };
+
+        // Add voice_seed if this is a seed-based voice (check if voice mapping has a seed)
+        try {
+            const mappingsResponse = await fetch(`${this.settings.endpoint}/voice_mappings`);
+            if (mappingsResponse.ok) {
+                const mappingsData = await mappingsResponse.json();
+                const voiceMapping = mappingsData[selectedVoice];
+                if (voiceMapping && voiceMapping.voice_seed) {
+                    requestBody.voice_seed = voiceMapping.voice_seed;
+                    console.log(`Using voice seed ${voiceMapping.voice_seed} for voice ${selectedVoice}`);
+                }
+            }
+        } catch (error) {
+            console.warn('Could not check voice mappings for seed:', error);
+        }
+
+        console.log('TTS Request payload:', requestBody);
+
+        try {
+            // Check if we should use async mode for long texts
+            const useAsync = this.settings.asyncMode && text.length > 1000;
+
+            if (useAsync) {
+                return await this.generateTtsAsync(requestBody);
+            } else {
+                return await this.generateTtsSync(requestBody);
+            }
+
+        } catch (error) {
+            this.clearToastrMessage('Generating audio...');
+
+            if (error.name === 'AbortError') {
+                toastr.error('TTS generation timed out after 3 minutes');
+                throw new Error('TTS generation timed out');
+            }
+
+            console.error('TTS Generation Error:', error);
+            toastr.error(`TTS generation failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async generateTtsSync(requestBody) {
+        toastr.info('Generating audio...');
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
+
+        const response = await fetch(`${this.settings.endpoint}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'audio/wav, audio/mpeg, audio/*, */*'
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('TTS Server Error Response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        this.clearToastrMessage('Generating audio...');
+        return response;
+    }
+
+    async generateTtsAsync(requestBody) {
+        toastr.info('Queuing audio generation...');
+
+        // Submit async job
+        const jobResponse = await fetch(`${this.settings.endpoint}/generate?async_mode=true`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!jobResponse.ok) {
+            throw new Error(`Job submission failed: ${await jobResponse.text()}`);
+        }
+
+        const jobData = await jobResponse.json();
+        const jobId = jobData.job_id;
+
+        this.clearToastrMessage('Queuing audio generation...');
+        toastr.info('Audio generation queued, polling for completion...');
+
+        // Poll for completion
+        return await this.pollJobCompletion(jobId);
+    }
+
+    async pollJobCompletion(jobId) {
+        const maxWaitTime = 300000; // 5 minutes
+        const pollInterval = 2000; // 2 seconds
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            try {
+                const status = await this.fetchEndpoint(`/jobs/${jobId}`);
+
+                if (status.status === 'completed') {
+                    toastr.success('Audio generation completed!');
+                    this.clearToastrMessage('Audio generation queued, polling for completion...');
+
+                    // Fetch the result
+                    const resultResponse = await fetch(`${this.settings.endpoint}/jobs/${jobId}/result`);
+                    if (!resultResponse.ok) {
+                        throw new Error('Failed to fetch job result');
+                    }
+                    return resultResponse;
+
+                } else if (status.status === 'failed') {
+                    throw new Error(`Generation failed: ${status.error_message || 'Unknown error'}`);
+
+                } else if (status.status === 'cancelled') {
+                    throw new Error('Generation was cancelled');
+                }
+
+                // Still processing, wait and poll again
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+            } catch (error) {
+                if (error.message.includes('404')) {
+                    // Job not found, might have been cleaned up
+                    throw new Error('Job not found - may have been cleaned up');
+                }
+                throw error;
+            }
+        }
+
+                 // Timeout reached
+         throw new Error('Job polling timed out after 5 minutes');
+     }
+
+    clearToastrMessage(message) {
+        const toasts = document.querySelectorAll('#toast-container .toast');
+        toasts.forEach(toast => {
+            if (toast.textContent.includes(message)) {
+                toast.remove();
+            }
+        });
+    }
+
+    //##################//
+    // Voice Cloning    //
+    //##################//
+
+    async handleCustomVoiceSave() {
+        const charSelect = document.getElementById('dia-tts-char-select');
+        const voiceNameInput = document.getElementById('dia-tts-voice-name');
+        const audioMethodRadio = document.getElementById('dia-method-audio');
+        const seedMethodRadio = document.getElementById('dia-method-seed');
+
+        if (!(charSelect instanceof HTMLSelectElement) ||
+            !(voiceNameInput instanceof HTMLInputElement) ||
+            !(audioMethodRadio instanceof HTMLInputElement) ||
+            !(seedMethodRadio instanceof HTMLInputElement)) {
+            return;
+        }
+
         const charName = charSelect.value;
         if (!charName) {
             toastr.error('Please select a character');
+            return;
+        }
+
+        // Generate voice name if not provided
+        let voiceName = voiceNameInput.value.trim();
+        if (!voiceName) {
+            voiceName = `${charName}_voice`;
+        }
+        const customVoiceId = voiceName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+        // Handle different creation methods
+        if (audioMethodRadio.checked) {
+            await this.handleAudioSampleVoice(charName, customVoiceId);
+        } else if (seedMethodRadio.checked) {
+            await this.handleSeedBasedVoice(charName, customVoiceId);
+        }
+    }
+
+    async handleAudioSampleVoice(charName, customVoiceId) {
+        const upload = document.getElementById('dia-tts-char-upload');
+
+        if (!(upload instanceof HTMLInputElement)) {
             return;
         }
 
@@ -528,167 +1200,788 @@ class DiaTtsProvider {
             return;
         }
 
-        // Get transcript if available
-        const transcriptTextarea = document.getElementById('dia-tts-transcript');
-        let transcript = '';
-        if (transcriptTextarea instanceof HTMLTextAreaElement) {
-            transcript = transcriptTextarea.value.trim();
-        }
-        // Add default speaker tag if not present and not empty
-        if (transcript && !transcript.startsWith('[S1]') && !transcript.startsWith('[S2]')) {
-            transcript = `[S1] ${transcript}`;
-        }
-
         try {
-            // Disable button and show progress
-            if (saveBtn instanceof HTMLButtonElement) {
-                saveBtn.disabled = true;
-            } else if (saveBtn instanceof HTMLInputElement) {
-                saveBtn.value = 'Creating Voice...';
-            }
 
-            // Generate voice name
-            let voiceName = voiceNameInput.value.trim();
-            if (!voiceName) {
-                voiceName = `${charName}_voice`;
-            }
-            const customVoiceId = voiceName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-            // Upload audio prompt
+            // Step 1: Upload audio prompt
             toastr.info('Uploading voice sample...');
-            const promptId = await this.uploadAudioPrompt(customVoiceId, file);
 
-            // Create voice mapping
+            const formData = new FormData();
+            formData.append('prompt_id', customVoiceId);
+            formData.append('audio_file', file);
+
+            const uploadResponse = await fetch(`${this.settings.endpoint}/audio_prompts/upload`, {
+                method: 'POST',
+                body: formData,
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!uploadResponse.ok) {
+                const error = await uploadResponse.text();
+                throw new Error(`Upload failed: ${error}`);
+            }
+
+            const uploadResult = await uploadResponse.json();
+            console.log('Audio prompt uploaded:', uploadResult);
+
+            // Step 2: Wait a moment for transcription if available
+            if (uploadResult.transcript) {
+                console.log('Auto-generated transcript:', uploadResult.transcript);
+            } else {
+                // Try to get transcript after a delay
+                setTimeout(async () => {
+                    try {
+                        const metadataResponse = await fetch(`${this.settings.endpoint}/audio_prompts/metadata/${customVoiceId}`, {
+                            mode: 'cors',
+                            credentials: 'omit'
+                        });
+                        if (metadataResponse.ok) {
+                            const metadata = await metadataResponse.json();
+                            if (metadata.transcript) {
+                                console.log('Retrieved transcript:', metadata.transcript);
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Could not retrieve transcript:', error);
+                    }
+                }, 2000);
+            }
+
+                        // Step 3: Create voice mapping
             toastr.info('Creating voice mapping...');
-            await this.createVoiceMapping(customVoiceId, promptId, transcript || null);
 
-            // Add to custom voices list
+            const voiceMappingResponse = await fetch(`${this.settings.endpoint}/voice_mappings`, {
+                method: 'POST',
+                    headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    voice_id: customVoiceId,
+                    style: 'conversational',
+                    primary_speaker: 'S1',
+                    audio_prompt: customVoiceId,
+                    audio_prompt_transcript: uploadResult.transcript || null
+                }),
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!voiceMappingResponse.ok) {
+                const error = await voiceMappingResponse.text();
+                console.error('Voice mapping creation failed:', error);
+                throw new Error(`Voice mapping failed: ${error}`);
+            }
+
+            const mappingResult = await voiceMappingResponse.json();
+            console.log('Voice mapping created:', mappingResult);
+
+            // Initialize mappings if needed
+            if (!this.settings.customVoices) {
+                this.settings.customVoices = [];
+            }
+            if (!this.settings.voiceMappings) {
+                this.settings.voiceMappings = {};
+            }
+
+            // Add to custom voices list if not already present
             if (!this.settings.customVoices.includes(customVoiceId)) {
                 this.settings.customVoices.push(customVoiceId);
             }
 
-            saveTtsProviderSettings();
-            this.renderCharMappingList();
+            // Map character to voice
+            this.settings.voiceMappings[charName] = customVoiceId;
+
+            this.onSettingsChange();
+            this.renderCustomVoicesList();
             toastr.success(`Custom voice "${customVoiceId}" created successfully`);
 
             // Clear inputs
-            charSelect.value = '';
-            voiceNameInput.value = '';
-            upload.value = '';
-            if (transcriptTextarea instanceof HTMLTextAreaElement) {
-                transcriptTextarea.value = '';
-            }
+            const charSelect = document.getElementById('dia-tts-char-select');
+            const voiceNameInput = document.getElementById('dia-tts-voice-name');
+            const upload = document.getElementById('dia-tts-char-upload');
+
+            if (charSelect instanceof HTMLSelectElement) charSelect.value = '';
+            if (voiceNameInput instanceof HTMLInputElement) voiceNameInput.value = '';
+            if (upload instanceof HTMLInputElement) upload.value = '';
+
+            const uploadBtn = document.getElementById('dia-upload-voice-sample');
             if (uploadBtn) {
                 uploadBtn.innerHTML = `
                     <i class="fa-solid fa-file-import"></i>
                     <span>Upload Voice Sample</span>
                 `;
             }
+
         } catch (error) {
-            this.error('Error creating custom voice:', error);
+            console.error('Error creating custom voice:', error);
             toastr.error(`Failed to create custom voice: ${error.message}`);
-        } finally {
-            // Re-enable button
-            if (saveBtn instanceof HTMLButtonElement) {
-                saveBtn.disabled = false;
-            } else if (saveBtn instanceof HTMLInputElement) {
-                saveBtn.value = 'Create Custom Voice';
-            }
         }
     }
 
-    /**
-     * Setup parameter slider with output display
-     * @param {HTMLElement} slider - The slider element
-     * @param {string} settingKey - The setting key to update
-     * @param {string} outputElementId - The output element ID
-     */
-    setupParameterSlider(slider, settingKey, outputElementId) {
-        if (!slider) return;
+    async handleSeedBasedVoice(charName, customVoiceId) {
+        const seedInput = document.getElementById('dia-voice-seed');
 
-        const outputElement = document.getElementById(outputElementId);
+        if (!(seedInput instanceof HTMLInputElement)) {
+            return;
+        }
 
-        slider.addEventListener('input', (e) => {
-            if (e.target instanceof HTMLInputElement) {
-                const value = parseFloat(e.target.value);
-                this.settings[settingKey] = value;
+        const seed = parseInt(seedInput.value);
+        if (!seed || seed < 1 || seed > 999999) {
+            toastr.error('Please enter a valid seed number (1-999999)');
+            return;
+        }
 
-                if (outputElement) {
-                    outputElement.textContent = String(value);
+        try {
+            toastr.info('Creating seed-based voice...');
+
+            // Create voice mapping directly with seed
+            const voiceMappingResponse = await fetch(`${this.settings.endpoint}/voice_mappings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    voice_id: customVoiceId,
+                    style: 'seed_based',
+                    primary_speaker: 'S1',
+                    voice_seed: seed,
+                    audio_prompt: null,
+                    audio_prompt_transcript: null
+                }),
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!voiceMappingResponse.ok) {
+                const error = await voiceMappingResponse.text();
+                throw new Error(`Voice mapping failed: ${error}`);
+            }
+
+            const mappingResult = await voiceMappingResponse.json();
+            console.log('Seed-based voice mapping created:', mappingResult);
+
+            // Initialize mappings if needed
+            if (!this.settings.customVoices) {
+                this.settings.customVoices = [];
+            }
+            if (!this.settings.voiceMappings) {
+                this.settings.voiceMappings = {};
+            }
+
+            // Add to custom voices list if not already present
+            if (!this.settings.customVoices.includes(customVoiceId)) {
+                this.settings.customVoices.push(customVoiceId);
+            }
+
+            // Map character to voice
+            this.settings.voiceMappings[charName] = customVoiceId;
+
+            this.onSettingsChange();
+            this.renderCustomVoicesList();
+            toastr.success(`Seed-based voice "${customVoiceId}" created with seed ${seed}`);
+
+            // Clear inputs
+            const charSelect = document.getElementById('dia-tts-char-select');
+            const voiceNameInput = document.getElementById('dia-tts-voice-name');
+
+            if (charSelect instanceof HTMLSelectElement) charSelect.value = '';
+            if (voiceNameInput instanceof HTMLInputElement) voiceNameInput.value = '';
+            if (seedInput instanceof HTMLInputElement) seedInput.value = '';
+
+        } catch (error) {
+            console.error('Error creating seed-based voice:', error);
+            toastr.error(`Failed to create seed-based voice: ${error.message}`);
+        }
+    }
+
+    renderCustomVoicesList() {
+        const listDiv = document.getElementById('dia-tts-char-list');
+        if (!listDiv) return;
+
+        const customVoices = this.settings.customVoices || [];
+
+        if (customVoices.length === 0) {
+            listDiv.innerHTML = '<small><i>No custom voices created yet. Custom voices will appear in the main voice selection dropdown above.</i></small>';
+            return;
+        }
+
+        listDiv.innerHTML = '<small><strong>Custom Voices Created:</strong></small><br>';
+
+        customVoices.forEach(voiceId => {
+            const voiceDiv = document.createElement('div');
+            voiceDiv.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; justify-content:space-between; padding:2px 5px; background:var(--SmartThemeBlurTintColor); border-radius:3px;';
+
+            const nameSpan = document.createElement('small');
+            nameSpan.textContent = voiceId;
+            voiceDiv.appendChild(nameSpan);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            deleteButton.style.cssText = 'border:none; background:transparent; color:var(--SmartThemeQuoteColor); cursor:pointer;';
+            deleteButton.title = `Delete custom voice ${voiceId}`;
+            deleteButton.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await this.removeCustomVoice(voiceId);
+            };
+
+            voiceDiv.appendChild(deleteButton);
+            listDiv.appendChild(voiceDiv);
+        });
+
+        const note = document.createElement('small');
+        note.innerHTML = '<br><i>Use the Voice Map section above to assign these custom voices to characters.</i>';
+        listDiv.appendChild(note);
+    }
+
+    async removeCustomVoice(voiceId) {
+        if (!this.settings.customVoices) return;
+
+        try {
+            // Remove voice mapping from server
+            const voiceMappingResponse = await fetch(`${this.settings.endpoint}/voice_mappings/${voiceId}`, {
+                method: 'DELETE',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!voiceMappingResponse.ok) {
+                console.warn(`Could not delete voice mapping from server: ${voiceMappingResponse.status}`);
+            }
+
+            // Remove audio prompt from server
+            const audioPromptResponse = await fetch(`${this.settings.endpoint}/audio_prompts/${voiceId}`, {
+                method: 'DELETE',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!audioPromptResponse.ok) {
+                console.warn(`Could not delete audio prompt from server: ${audioPromptResponse.status}`);
+            }
+
+            // Remove from local settings
+            const index = this.settings.customVoices.indexOf(voiceId);
+            if (index > -1) {
+                this.settings.customVoices.splice(index, 1);
+
+                // Also remove any character mappings using this voice
+                if (this.settings.voiceMappings) {
+                    for (const [char, voice] of Object.entries(this.settings.voiceMappings)) {
+                        if (voice === voiceId) {
+                            delete this.settings.voiceMappings[char];
+                        }
+                    }
                 }
 
-                saveTtsProviderSettings();
+                this.onSettingsChange();
+                this.renderCustomVoicesList();
+                toastr.success(`Deleted custom voice: ${voiceId}`);
             }
-        });
+        } catch (error) {
+            console.error('Error deleting voice:', error);
+            toastr.error(`Failed to delete voice: ${error.message}`);
+        }
+    }
+
+    //##################//
+    // Character Utils  //
+    //##################//
+
+    populateCharacterDropdown() {
+        const charSelect = document.getElementById('dia-tts-char-select');
+        if (!charSelect) return;
+
+        charSelect.innerHTML = '<option value="">Select Character...</option>';
+
+        try {
+            const context = getContext();
+            let characters = [];
+
+            if (context.groupId === null) {
+                // Single character chat
+                if (context.name2) characters.push(context.name2);
+                if (context.name1) characters.push(context.name1);
+            } else {
+                // Group chat
+                if (context.name1) characters.push(context.name1);
+
+                const group = context.groups?.find(group => context.groupId == group.id);
+                if (group && group.members) {
+                    for (let member of group.members) {
+                        const character = context.characters?.find(char => char.avatar === member);
+                        if (character && character.name) {
+                            characters.push(character.name);
+                        }
+                    }
+                }
+            }
+
+            // Add all available characters
+            if (context.characters && context.characters.length > 0) {
+                const allCharNames = context.characters.map(char => char.name).filter(name => name);
+                characters = [...characters, ...allCharNames].filter((name, index, arr) => arr.indexOf(name) === index);
+            }
+
+            // Remove duplicates and add to dropdown
+            characters = characters.filter((name, index, arr) => name && arr.indexOf(name) === index);
+
+            characters.forEach(charName => {
+                const option = document.createElement('option');
+                option.value = charName;
+                option.textContent = charName;
+                charSelect.appendChild(option);
+            });
+
+            console.log(`Populated character dropdown with ${characters.length} characters:`, characters);
+        } catch (error) {
+            console.warn('Could not populate character dropdown:', error.message);
+        }
     }
 
     /**
-     * Apply a preset configuration
-     * @param {string} presetName - The name of the preset to apply
+     * Clean up voice mappings to remove invalid voices
      */
-    applyPreset(presetName) {
-        const preset = PRESET_CONFIGS[presetName];
-        if (!preset) return;
+    async cleanupVoiceMappings() {
+        try {
+            const availableVoices = await this.fetchTtsVoiceObjects();
+            const validVoiceIds = availableVoices.map(v => v.voice_id);
 
-        // Apply preset values
-        Object.assign(this.settings, preset);
-        saveTtsProviderSettings();
+            console.log('Available voice IDs:', validVoiceIds);
+            console.log('Current voice mappings:', this.settings.voiceMappings);
 
-        // Update sliders and output displays
-        this.updateSliderValues();
+            let cleaned = false;
+            for (const [char, voiceId] of Object.entries(this.settings.voiceMappings || {})) {
+                // Clean up voice ID (remove suffixes like "(Local)")
+                const cleanVoiceId = voiceId.includes('(') ? voiceId.split('(')[0].trim() : voiceId;
 
-        toastr.success(`Applied ${presetName} preset`);
-    }
-
-    updateSliderValues() {
-        const sliders = [
-            { id: 'dia-temperature', key: 'temperature', output: 'dia-temperature-output' },
-            { id: 'dia-cfg-scale', key: 'cfg_scale', output: 'dia-cfg-scale-output' },
-            { id: 'dia-top-p', key: 'top_p', output: 'dia-top-p-output' },
-            { id: 'dia-max-tokens', key: 'max_tokens', output: 'dia-max-tokens-output' },
-        ];
-
-        sliders.forEach(({ id, key, output }) => {
-            const slider = document.getElementById(id);
-            const outputElement = document.getElementById(output);
-
-            if (slider instanceof HTMLInputElement && this.settings[key] !== undefined) {
-                slider.value = String(this.settings[key]);
+                if (!validVoiceIds.includes(cleanVoiceId)) {
+                    console.warn(`Removing invalid voice mapping: ${char} -> ${voiceId}`);
+                    delete this.settings.voiceMappings[char];
+                    cleaned = true;
+                } else if (cleanVoiceId !== voiceId) {
+                    console.log(`Cleaning voice ID: ${voiceId} -> ${cleanVoiceId}`);
+                    this.settings.voiceMappings[char] = cleanVoiceId;
+                    cleaned = true;
+                }
             }
-            if (outputElement && this.settings[key] !== undefined) {
-                outputElement.textContent = String(this.settings[key]);
+
+            if (cleaned) {
+                this.onSettingsChange();
+                console.log('Cleaned voice mappings:', this.settings.voiceMappings);
             }
-        });
-
-        // Handle async timeout slider separately (with seconds conversion)
-        const asyncTimeoutSlider = document.getElementById('dia-async-timeout');
-        const asyncTimeoutOutput = document.getElementById('dia-async-timeout-output');
-        if (asyncTimeoutSlider instanceof HTMLInputElement && this.settings.async_timeout !== undefined) {
-            asyncTimeoutSlider.value = String(this.settings.async_timeout);
-        }
-        if (asyncTimeoutOutput && this.settings.async_timeout !== undefined) {
-            asyncTimeoutOutput.textContent = `${Math.round(this.settings.async_timeout / 1000)}s`;
-        }
-
-        // Handle async mode checkbox
-        const asyncModeCheckbox = document.getElementById('dia-async-mode');
-        if (asyncModeCheckbox instanceof HTMLInputElement && this.settings.use_async_mode !== undefined) {
-            asyncModeCheckbox.checked = this.settings.use_async_mode;
+        } catch (error) {
+            console.warn('Could not clean up voice mappings:', error);
         }
     }
 
-    /**
-     * Debug TTS settings and configuration
-     */
+    //######################//
+    // Server Management    //
+    //######################//
+
+    async showServerStatus() {
+        try {
+            const [health, gpu, config] = await Promise.all([
+                this.fetchEndpoint('/health'),
+                this.fetchEndpoint('/gpu/status'),
+                this.fetchEndpoint('/config')
+            ]);
+
+            const infoDiv = document.getElementById('dia-server-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Server Status:</strong><br>';
+            info += `• Health: ${health.status || 'Unknown'}<br>`;
+            info += `• Model Loaded: ${health.model_loaded ? '✅' : '❌'}<br>`;
+
+            if (gpu.gpu_mode) {
+                info += `• GPU Mode: ${gpu.gpu_mode} (${gpu.gpu_count} GPUs)<br>`;
+                info += `• Multi-GPU: ${gpu.use_multi_gpu ? 'Enabled' : 'Disabled'}<br>`;
+            }
+
+            if (config.debug_mode !== undefined) {
+                info += `• Debug Mode: ${config.debug_mode ? 'On' : 'Off'}<br>`;
+                info += `• Save Outputs: ${config.save_outputs ? 'On' : 'Off'}<br>`;
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success('Server status updated');
+
+        } catch (error) {
+            console.error('Failed to get server status:', error);
+            toastr.error('Failed to get server status');
+        }
+    }
+
+    async showQueueStats() {
+        try {
+            const stats = await this.fetchEndpoint('/queue/stats');
+
+            const infoDiv = document.getElementById('dia-server-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Queue Statistics:</strong><br>';
+            info += `• Pending Jobs: ${stats.pending_jobs}<br>`;
+            info += `• Processing Jobs: ${stats.processing_jobs}<br>`;
+            info += `• Completed Jobs: ${stats.completed_jobs}<br>`;
+            info += `• Failed Jobs: ${stats.failed_jobs}<br>`;
+            info += `• Active Workers: ${stats.active_workers}/${stats.total_workers}<br>`;
+
+            if (stats.memory_pressure && Object.keys(stats.memory_pressure).length > 0) {
+                info += '<br><strong>GPU Memory:</strong><br>';
+                for (const [gpu, pressure] of Object.entries(stats.memory_pressure)) {
+                    const status = pressure.status === 'high' ? '⚠️' : '✅';
+                    info += `• ${gpu}: ${status} ${(pressure.pressure * 100).toFixed(1)}%<br>`;
+                }
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success('Queue stats updated');
+
+        } catch (error) {
+            console.error('Failed to get queue stats:', error);
+            toastr.error('Failed to get queue stats');
+        }
+    }
+
+    async showGenerationLogs() {
+        try {
+            const logs = await this.fetchEndpoint('/logs?limit=10');
+
+            const infoDiv = document.getElementById('dia-server-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Recent Generations:</strong><br>';
+
+            if (logs.logs && logs.logs.length > 0) {
+                logs.logs.forEach((log, index) => {
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const text = log.text.length > 30 ? log.text.substring(0, 30) + '...' : log.text;
+                    info += `• ${time} - ${log.voice}: "${text}" (${log.generation_time?.toFixed(2)}s)<br>`;
+                });
+            } else {
+                info += '• No recent generations found<br>';
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success('Generation logs updated');
+
+        } catch (error) {
+            console.error('Failed to get generation logs:', error);
+            toastr.error('Failed to get generation logs');
+        }
+    }
+
+    async discoverAudioPrompts() {
+        try {
+            toastr.info('Discovering audio prompts...');
+
+            const result = await this.fetchEndpoint('/audio_prompts/discover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force_retranscribe: false })
+            });
+
+            const infoDiv = document.getElementById('dia-server-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Audio Prompt Discovery:</strong><br>';
+            info += `• Total Prompts: ${result.total_prompts}<br>`;
+            info += `• Newly Discovered: ${result.discovered?.length || 0}<br>`;
+
+            if (result.discovered && result.discovered.length > 0) {
+                info += '<br><strong>New Prompts:</strong><br>';
+                result.discovered.forEach(prompt => {
+                    const hasTranscript = prompt.transcript ? '📝' : '❌';
+                    info += `• ${prompt.prompt_id}: ${hasTranscript} ${prompt.duration}s<br>`;
+                });
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success(`Discovered ${result.total_prompts} audio prompts`);
+
+            // Refresh voices since new prompts might create new voices
+            setTimeout(() => this.fetchTtsVoiceObjects(), 1000);
+
+        } catch (error) {
+            console.error('Failed to discover audio prompts:', error);
+            toastr.error('Failed to discover audio prompts');
+        }
+    }
+
+    async cleanupServer() {
+        try {
+            toastr.info('Cleaning up server...');
+
+            await this.fetchEndpoint('/cleanup', { method: 'POST' });
+
+            const infoDiv = document.getElementById('dia-server-info');
+            if (!infoDiv) return;
+
+            infoDiv.innerHTML = '<strong>Server Cleanup:</strong><br>• Cleaned up old files and jobs<br>• Memory freed';
+            toastr.success('Server cleanup completed');
+
+        } catch (error) {
+            console.error('Failed to cleanup server:', error);
+            toastr.error('Failed to cleanup server');
+        }
+    }
+
+                async fetchEndpoint(path, options = {}) {
+        const url = `${this.settings.endpoint}${path}`;
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        return await response.json();
+    }
+
+    async viewAudioPrompts() {
+        try {
+            const metadata = await this.fetchEndpoint('/audio_prompts/metadata');
+
+            const infoDiv = document.getElementById('dia-prompts-info');
+            if (!infoDiv) return;
+
+            if (!metadata || Object.keys(metadata).length === 0) {
+                infoDiv.innerHTML = '<strong>No audio prompts found</strong><br>Upload audio samples to create voice clones.';
+                return;
+            }
+
+            let info = '<strong>Audio Prompts:</strong><br>';
+
+            for (const [promptId, meta] of Object.entries(metadata)) {
+                const hasTranscript = meta.transcript ? '📝' : '❌';
+                const source = meta.transcript_source ? `(${meta.transcript_source})` : '';
+                const duration = meta.duration ? `${meta.duration}s` : 'Unknown';
+
+                info += `• <strong>${promptId}</strong>: ${hasTranscript} ${duration} ${source}<br>`;
+
+                if (meta.transcript) {
+                    const preview = meta.transcript.length > 50 ?
+                        meta.transcript.substring(0, 50) + '...' : meta.transcript;
+                    info += `&nbsp;&nbsp;"${preview}"<br>`;
+                }
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success(`Found ${Object.keys(metadata).length} audio prompts`);
+
+        } catch (error) {
+            console.error('Failed to view audio prompts:', error);
+            toastr.error('Failed to view audio prompts');
+        }
+    }
+
+    async retranscribeAllPrompts() {
+        try {
+            toastr.info('Re-transcribing all audio prompts...');
+
+            const result = await this.fetchEndpoint('/audio_prompts/discover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force_retranscribe: true })
+            });
+
+            const infoDiv = document.getElementById('dia-prompts-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Re-transcription Results:</strong><br>';
+            info += `• Total Prompts: ${result.total_prompts}<br>`;
+            info += `• Processed: ${result.discovered?.length || 0}<br>`;
+
+            if (result.discovered && result.discovered.length > 0) {
+                info += '<br><strong>Updated Transcripts:</strong><br>';
+                result.discovered.forEach(prompt => {
+                    const status = prompt.transcript ? '✅' : '❌';
+                    info += `• ${prompt.prompt_id}: ${status}<br>`;
+                });
+            }
+
+            infoDiv.innerHTML = info;
+            toastr.success('Re-transcription completed');
+
+        } catch (error) {
+            console.error('Failed to re-transcribe prompts:', error);
+            toastr.error('Failed to re-transcribe prompts');
+        }
+    }
+
+    async showWhisperStatus() {
+        try {
+            const status = await this.fetchEndpoint('/whisper/status');
+
+            const infoDiv = document.getElementById('dia-prompts-info');
+            if (!infoDiv) return;
+
+            let info = '<strong>Whisper Status:</strong><br>';
+            info += `• Available: ${status.available ? '✅' : '❌'}<br>`;
+            info += `• Model Loaded: ${status.model_loaded ? '✅' : '❌'}<br>`;
+
+            if (status.model_size) {
+                info += `• Model Size: ${status.model_size}<br>`;
+            }
+
+            info += `• Auto-transcribe: ${status.auto_transcribe ? 'Enabled' : 'Disabled'}<br>`;
+
+            if (!status.available) {
+                info += '<br><small>Install Whisper: pip install openai-whisper</small>';
+            } else if (!status.model_loaded) {
+                info += '<br><button id="dia-load-whisper" class="menu_button" style="font-size:11px; margin-top:5px;">Load Whisper Model</button>';
+            }
+
+            infoDiv.innerHTML = info;
+
+            // Add handler for load button if it exists
+            const loadBtn = document.getElementById('dia-load-whisper');
+            if (loadBtn) {
+                loadBtn.addEventListener('click', async () => {
+                    try {
+                        toastr.info('Loading Whisper model...');
+                        await this.fetchEndpoint('/whisper/load', { method: 'POST' });
+                        toastr.success('Whisper model loaded');
+                        this.showWhisperStatus(); // Refresh status
+                    } catch (error) {
+                        toastr.error('Failed to load Whisper model');
+                    }
+                });
+            }
+
+            toastr.success('Whisper status updated');
+
+        } catch (error) {
+            console.error('Failed to get Whisper status:', error);
+            toastr.error('Failed to get Whisper status');
+        }
+    }
+
+    //##################//
+    // Debug Utilities  //
+    //##################//
+
+    async runFullDiagnostics() {
+        try {
+            // Basic cleanup first
+            await this.cleanupVoiceMappings();
+
+            // Now run full diagnostics
+            console.log('🔍 === FULL DIA TTS DIAGNOSTICS ===');
+
+            // Check server status
+            const health = await fetch(`${this.settings.endpoint}/health`);
+            const healthData = await health.json();
+            console.log('🏥 Server Health:', healthData);
+
+            // Check voices on server
+            const voicesResponse = await fetch(`${this.settings.endpoint}/voices`);
+            const voicesData = await voicesResponse.json();
+            console.log('🎤 Server Voices:', voicesData);
+
+            // Check audio prompts on server
+            try {
+                const promptsResponse = await fetch(`${this.settings.endpoint}/audio_prompts`);
+                const promptsData = await promptsResponse.json();
+                console.log('🎧 Server Audio Prompts:', promptsData);
+
+                // If we have local custom voices but no server voices, try to repair
+                if (this.settings.customVoices?.length > 0 && voicesData.voices.length === 0) {
+                    console.log('🔧 REPAIR NEEDED: Local voices exist but server has none');
+                    await this.repairVoiceMappings();
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not check audio prompts:', error);
+            }
+
+            // Check voice mappings on server
+            try {
+                const mappingsResponse = await fetch(`${this.settings.endpoint}/voice_mappings`);
+                const mappingsData = await mappingsResponse.json();
+                console.log('🗺️ Server Voice Mappings:', mappingsData);
+            } catch (error) {
+                console.warn('⚠️ Could not check voice mappings:', error);
+            }
+
+            console.log('🔍 === END DIAGNOSTICS ===');
+        } catch (error) {
+            console.error('❌ Diagnostics failed:', error);
+        }
+    }
+
+    async repairVoiceMappings() {
+        console.log('🔧 === STARTING VOICE MAPPING REPAIR ===');
+
+        for (const voiceId of this.settings.customVoices || []) {
+            try {
+                console.log(`🔧 Attempting to repair voice: ${voiceId}`);
+
+                // Check if audio prompt exists
+                const promptCheck = await fetch(`${this.settings.endpoint}/audio_prompts/metadata/${voiceId}`);
+                if (promptCheck.ok) {
+                    const promptData = await promptCheck.json();
+                    console.log(`✅ Audio prompt exists for ${voiceId}:`, promptData);
+
+                    // Create voice mapping
+                    const mappingResponse = await fetch(`${this.settings.endpoint}/voice_mappings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            voice_id: voiceId,
+                            style: 'conversational',
+                            primary_speaker: 'S1',
+                            audio_prompt: voiceId,
+                            audio_prompt_transcript: promptData.transcript || null
+                        }),
+                        mode: 'cors',
+                        credentials: 'omit'
+                    });
+
+                    if (mappingResponse.ok) {
+                        const result = await mappingResponse.json();
+                        console.log(`✅ Repaired voice mapping for ${voiceId}:`, result);
+                        toastr.success(`Repaired voice mapping for ${voiceId}`);
+                    } else {
+                        const error = await mappingResponse.text();
+                        console.error(`❌ Failed to create mapping for ${voiceId}:`, error);
+                    }
+                } else {
+                    console.warn(`⚠️ Audio prompt not found for ${voiceId}`);
+                    console.log(`🔧 Removing ${voiceId} from local custom voices list`);
+
+                    // Remove from local list if audio prompt doesn't exist
+                    const index = this.settings.customVoices.indexOf(voiceId);
+                    if (index > -1) {
+                        this.settings.customVoices.splice(index, 1);
+                        this.onSettingsChange();
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Error repairing voice ${voiceId}:`, error);
+            }
+        }
+
+        console.log('🔧 === REPAIR COMPLETED ===');
+
+        // Refresh voice list
+        setTimeout(() => {
+            this.fetchTtsVoiceObjects().then(voices => {
+                console.log(`🔄 After repair, found ${voices.length} voices:`, voices);
+                toastr.info(`Voice repair completed. Found ${voices.length} voices.`);
+            });
+        }, 1000);
+    }
+
     debugTtsSettings() {
-        // For debugging, we use console.log directly for better visibility
-        console.log('🔍 === DIA TTS DEBUG INFO ===');
+                console.log('🔍 === DIA TTS DEBUG INFO ===');
         console.log('🎵 Dia Provider Settings:', this.settings);
+        console.log('🌐 Server Endpoint:', this.settings.endpoint);
+        console.log('🔗 Server Ready:', this.ready);
+
+        // Run cleanup and diagnostics
+        this.runFullDiagnostics();
 
         if (typeof extension_settings !== 'undefined' && extension_settings.tts) {
             console.log('🔧 TTS Extension Settings:', extension_settings.tts);
 
-            // Check critical settings
             const issues = [];
             if (!extension_settings.tts.enabled) {
                 issues.push('❌ TTS is disabled - enable it in TTS settings');
@@ -719,7 +2012,7 @@ class DiaTtsProvider {
         }
 
         // Check custom voices
-        console.log('👥 Custom Voices:');
+        console.log('🔊 Custom Voices:');
         if (this.settings.customVoices && this.settings.customVoices.length > 0) {
             this.settings.customVoices.forEach(voice => {
                 console.log(`  - ${voice}`);
@@ -728,554 +2021,92 @@ class DiaTtsProvider {
             console.log('  - No custom voices created');
         }
 
-        // Call the global debug function if available
-        if (typeof window['debugTtsPlayback'] === 'function') {
-            console.log('📊 Full TTS Debug Info:');
-            window['debugTtsPlayback']();
-        }
+                // Test server connection and voice fetching
+        console.log('🔄 Testing server connection...');
+        this.checkReady().then(isReady => {
+            console.log('🌐 Server Health Check:', isReady ? '✅ Connected' : '❌ Failed');
+
+            if (isReady) {
+                return this.fetchTtsVoiceObjects();
+            } else {
+                console.log('❌ Cannot fetch voices - server not ready');
+                return [];
+            }
+        }).then(voices => {
+            console.log('🎤 Available Voices from Server:');
+            if (voices && voices.length > 0) {
+                voices.forEach(voice => {
+                    console.log(`  - ${voice.name} (${voice.voice_id}): ${voice.description}`);
+                });
+
+                // Test a simple generation with the first available voice
+                const testVoice = voices[0].voice_id;
+                console.log(`🧪 Testing generation with voice: ${testVoice}`);
+                return this.generateTts('Test message', testVoice);
+            } else {
+                console.log('  - No voices available from server');
+                return null;
+            }
+        }).then(response => {
+            if (response) {
+                console.log('✅ Test generation successful');
+            }
+        }).catch(error => {
+            console.error('❌ Error during debug test:', error);
+        });
 
         console.log('🔍 === END DEBUG INFO ===');
         toastr.info('TTS debug info logged to console (F12)');
     }
 
-    /**
-     * Populate character dropdown with available characters
-     */
-    populateCharacterDropdown() {
-        const charSelect = document.getElementById('dia-tts-char-select');
-        if (!charSelect) return;
+    //##################//
+    // Whisper Support  //
+    //##################//
 
-        // Clear existing options except the first one
-        charSelect.innerHTML = '<option value="">Select Character...</option>';
-
+    async transcribeAudioPrompt(promptId) {
         try {
-            const context = getContext();
-            this.log('Context object:', context);
-
-            let characters = [];
-
-            if (context.groupId === null) {
-                // Single character chat
-                if (context.name2) {
-                    characters.push(context.name2); // Character name
-                }
-                if (context.name1) {
-                    characters.push(context.name1); // User name
-                }
-            } else {
-                // Group chat
-                if (context.name1) {
-                    characters.push(context.name1); // User name
-                }
-
-                // Get group members
-                const group = context.groups?.find(group => context.groupId == group.id);
-                if (group && group.members) {
-                    for (let member of group.members) {
-                        const character = context.characters?.find(char => char.avatar === member);
-                        if (character && character.name) {
-                            characters.push(character.name);
-                        }
-                    }
-                }
-            }
-
-            // Also try to get all characters if available
-            if (context.characters && context.characters.length > 0) {
-                const allCharNames = context.characters.map(char => char.name).filter(name => name);
-                characters = [...characters, ...allCharNames].filter((name, index, arr) => arr.indexOf(name) === index);
-            }
-
-            // Remove duplicates and filter out empty names
-            characters = characters.filter((name, index, arr) => name && arr.indexOf(name) === index);
-
-            // Add characters to dropdown
-            characters.forEach(charName => {
-                const option = document.createElement('option');
-                option.value = charName;
-                option.textContent = charName;
-                charSelect.appendChild(option);
-            });
-
-            this.log(`Populated character dropdown with ${characters.length} characters:`, characters);
-        } catch (error) {
-            this.warn('Could not populate character dropdown:', error.message);
-        }
-    }
-
-    async uploadAudioPrompt(promptId, file, retryCount = 0) {
-        const formData = new FormData();
-        formData.append('prompt_id', promptId);
-        formData.append('audio_file', file);
-
-        try {
-            const response = await fetch(`${this.settings.endpoint}/audio_prompts/upload`, {
+            const response = await fetch(`${this.settings.endpoint}/audio_prompts/${promptId}/transcribe`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`,
-                },
-                body: formData,
+                mode: 'cors',
+                credentials: 'omit'
             });
 
             if (!response.ok) {
-                const errorDetail = await this._handleApiError(response, 'Audio prompt upload');
-
-                // Check if it's a file lock error that might be retryable
-                if (errorDetail.includes('being used by another process') && retryCount < DIA_CONSTANTS.MAX_RETRIES) {
-                    this.warn(`File lock error, retrying in ${(retryCount + 1) * 1000}ms... (attempt ${retryCount + 1}/${DIA_CONSTANTS.MAX_RETRIES + 1})`);
-
-                    // Wait before retrying
-                    await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
-                    return this.uploadAudioPrompt(promptId, file, retryCount + 1);
-                }
-
-                // More user-friendly error messages
-                if (errorDetail.includes('being used by another process')) {
-                    throw new Error('Audio file is temporarily locked. Please try again in a few moments, or try using a different audio file.');
-                } else if (errorDetail.includes('Failed to process audio file')) {
-                    throw new Error('Failed to process audio file. Please ensure it\'s a valid audio format (.wav, .mp3, .ogg, .m4a, .flac, .aac).');
-                } else {
-                    throw new Error(`Upload failed: ${errorDetail}`);
-                }
+                throw new Error(`Transcription failed: ${await response.text()}`);
             }
 
             const result = await response.json();
-            this.log('Audio prompt uploaded successfully:', result);
-            return promptId;
-
+            return result.transcript;
         } catch (error) {
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error('Cannot connect to Dia server. Please check if the server is running and the endpoint URL is correct.');
-            }
+            console.error('Error transcribing audio prompt:', error);
             throw error;
         }
     }
 
-    async createVoiceMapping(voiceId, audioPrompt, transcript) {
-        const response = await fetch(`${this.settings.endpoint}/voice_mappings`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.settings.apiKey}`,
-            },
-            body: JSON.stringify({
-                voice_id: voiceId,
-                style: 'natural',
-                primary_speaker: 'S1',
-                audio_prompt: audioPrompt,
-                audio_prompt_transcript: transcript || `[S1] This is a voice sample for ${voiceId}.`,
-            }),
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Failed to create voice mapping: ${error}`);
-        }
-
-        const result = await response.json();
-        this.log('Voice mapping created:', result);
-        return result;
-    }
-
-    async loadCustomVoices() {
-        if (!this.settings || !this.settings.endpoint) {
-            this.warn('Settings not initialized, skipping custom voice loading');
-            return;
-        }
-
+    async getWhisperStatus() {
         try {
-            const response = await fetch(`${this.settings.endpoint}/voice_mappings`, {
-                headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`,
-                },
-            });
-
-            if (response.ok) {
-                const voiceMappings = await response.json();
-                const voiceSelect = document.getElementById('dia-tts-voice-select');
-
-                if (voiceSelect instanceof HTMLSelectElement) {
-                    // Add custom voices to dropdown
-                    for (const mapping of voiceMappings) {
-                        if (!Array.from(voiceSelect.options).some(opt => opt.value === mapping.voice_id)) {
-                            const option = document.createElement('option');
-                            option.value = mapping.voice_id;
-                            option.textContent = `${mapping.voice_id} (Custom)`;
-                            voiceSelect.appendChild(option);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            this.warn('Could not load custom voices:', error.message);
-        }
-    }
-
-    async checkReady() {
-        if (!this.settings || !this.settings.endpoint) {
-            this.warn('Settings not initialized, skipping health check');
-            return false;
-        }
-
-        try {
-            const response = await fetch(`${this.settings.endpoint}/health`);
-            if (response.ok) {
-                this.log('Server is ready');
-                return true;
-            } else {
-                this.warn(`Server health check returned ${response.status}`);
-            }
-        } catch (error) {
-            this.warn('Server health check failed:', error.message);
-        }
-        return false;
-    }
-
-    async onRefreshClick() {
-        await this.checkReady();
-        await this.loadCustomVoices();
-    }
-
-    async getVoice(voiceName) {
-        return {
-            name: voiceName,
-            voice_id: voiceName,
-            preview_url: '',
-        };
-    }
-
-    /**
-     * Fetch available TTS voice objects
-     * @returns {Promise<Array>} Array of voice objects
-     */
-    async fetchTtsVoiceObjects() {
-        this.log('Fetching available voices');
-
-        const voices = [...BUILT_IN_VOICES];
-
-        // Add custom voices if settings are available
-        if (this.settings?.customVoices && Array.isArray(this.settings.customVoices)) {
-            for (const customVoice of this.settings.customVoices) {
-                voices.push({
-                    name: `${customVoice} (Custom)`,
-                    voice_id: customVoice,
-                    preview_url: '',
-                    lang: 'en-US',
-                    description: 'Custom cloned voice',
-                });
-            }
-        }
-
-        this.log(`Returning ${voices.length} voice objects:`, voices);
-        return voices;
-    }
-
-    async generateTts(text, voiceId, char) {
-        if (!this.settings) {
-            this.warn('Settings not initialized, using defaults');
-            this.settings = { ...this.defaultSettings };
-        }
-
-        this.log('🎵 generateTts() called!');
-        this.log(`📝 Text: "${text}"`);
-        this.log(`🎙️ Voice ID: "${voiceId}"`);
-        this.log(`👤 Character: "${char}"`);
-        this.log('⚙️ Dia Settings:', this.settings);
-
-        // Check TTS extension settings
-        if (typeof extension_settings !== 'undefined' && extension_settings.tts) {
-            this.log('🔧 TTS Extension Settings:', {
-                enabled: extension_settings.tts.enabled,
-                auto_generation: extension_settings.tts.auto_generation,
-                narrate_user: extension_settings.tts.narrate_user,
-                narrate_dialogues_only: extension_settings.tts.narrate_dialogues_only,
-                narrate_quoted_only: extension_settings.tts.narrate_quoted_only,
-                currentProvider: extension_settings.tts.currentProvider,
-            });
-        }
-
-        // Determine voice to use - check character mapping first
-        let selectedVoice = voiceId;
-        if (char && this.settings.voiceMappings && this.settings.voiceMappings[char]) {
-            selectedVoice = this.settings.voiceMappings[char];
-            this.log(`🔄 Using mapped voice "${selectedVoice}" for character "${char}"`);
-        }
-
-        // Map character to role
-        let role = 'assistant';
-        if (char) {
-            const c = char.toLowerCase();
-            if (c === 'user' || c === 'you') {
-                role = 'user';
-            } else if (c === 'system' || c === 'narrator') {
-                role = 'system';
-            }
-        }
-
-        // Add speaker tags based on role
-        let speakerTag = DIA_CONSTANTS.ASSISTANT_SPEAKER_TAG;
-        if (role === 'user') {
-            speakerTag = DIA_CONSTANTS.USER_SPEAKER_TAG;
-        } else if (role === 'system') {
-            speakerTag = DIA_CONSTANTS.SYSTEM_SPEAKER_TAG;
-        }
-        const formattedText = `${speakerTag} ${text} ${speakerTag}`;
-
-        try {
-            // Check if async mode is enabled
-            const useAsync = this.settings.use_async_mode;
-
-            if (useAsync) {
-                this.log('Using async worker queue mode');
-                return await this.generateTtsAsync(formattedText, selectedVoice, role);
-            } else {
-                this.log('Using synchronous mode');
-                return await this.generateTtsSync(formattedText, selectedVoice, role);
-            }
-
-        } catch (error) {
-            this.error('Error in generateTts:', error);
-            throw error;
-        }
-    }
-
-    async generateTtsSync(formattedText, selectedVoice, role) {
-        const endpoint = `${this.settings.endpoint}/generate`;
-
-        const payload = {
-            text: formattedText,
-            voice_id: selectedVoice,
-            temperature: this.settings.temperature || this.defaultSettings.temperature,
-            cfg_scale: this.settings.cfg_scale || this.defaultSettings.cfg_scale,
-            top_p: this.settings.top_p || this.defaultSettings.top_p,
-            max_tokens: this.settings.max_tokens || this.defaultSettings.max_tokens,
-            role: role || 'assistant',
-        };
-
-        this.log(`Sending sync request to ${endpoint}`, payload);
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.settings.apiKey}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text().catch(() => 'Unknown error');
-            this.error(`HTTP ${response.status}: ${errorText}`);
-            throw new Error(`Dia TTS: HTTP ${response.status} - ${errorText}`);
-        }
-
-        this.log('Successfully received sync audio response');
-        return response;
-    }
-
-    async generateTtsAsync(formattedText, selectedVoice, role) {
-        const endpoint = `${this.settings.endpoint}/generate`;
-
-        const payload = {
-            text: formattedText,
-            voice_id: selectedVoice,
-            temperature: this.settings.temperature || this.defaultSettings.temperature,
-            cfg_scale: this.settings.cfg_scale || this.defaultSettings.cfg_scale,
-            top_p: this.settings.top_p || this.defaultSettings.top_p,
-            max_tokens: this.settings.max_tokens || this.defaultSettings.max_tokens,
-            role: role || 'assistant',
-        };
-
-        this.log(`Sending async request to ${endpoint}?async_mode=true`, payload);
-
-        // Step 1: Submit job to worker queue
-        const jobResponse = await fetch(`${endpoint}?async_mode=true`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.settings.apiKey}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!jobResponse.ok) {
-            const errorText = await jobResponse.text().catch(() => 'Unknown error');
-            this.error(`Async job submission failed ${jobResponse.status}: ${errorText}`);
-            throw new Error(`Dia TTS: Async job submission failed ${jobResponse.status} - ${errorText}`);
-        }
-
-        const jobInfo = await jobResponse.json();
-        const jobId = jobInfo.job_id;
-        this.log(`Job submitted successfully, job_id: ${jobId}`);
-
-        // Step 2: Poll for job completion
-        const timeout = this.settings.async_timeout || this.defaultSettings.async_timeout;
-        const startTime = Date.now();
-        const pollInterval = 1000; // Poll every 1 second
-
-        while (Date.now() - startTime < timeout) {
-            this.log(`Polling job status for ${jobId}`);
-
-            const statusResponse = await fetch(`${this.settings.endpoint}/jobs/${jobId}`, {
+            const response = await fetch(`${this.settings.endpoint}/whisper/status`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`,
-                },
+                mode: 'cors',
+                credentials: 'omit'
             });
 
-            if (!statusResponse.ok) {
-                const errorText = await statusResponse.text().catch(() => 'Unknown error');
-                this.error(`Job status check failed ${statusResponse.status}: ${errorText}`);
-                throw new Error(`Dia TTS: Job status check failed ${statusResponse.status} - ${errorText}`);
+            if (response.ok) {
+                return await response.json();
             }
-
-            const status = await statusResponse.json();
-            this.log(`Job ${jobId} status:`, status);
-
-            if (status.status === 'completed') {
-                this.log(`Job ${jobId} completed successfully`);
-
-                // Step 3: Retrieve the result
-                const resultResponse = await fetch(`${this.settings.endpoint}/jobs/${jobId}/result`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${this.settings.apiKey}`,
-                    },
-                });
-
-                if (!resultResponse.ok) {
-                    const errorText = await resultResponse.text().catch(() => 'Unknown error');
-                    this.error(`Job result retrieval failed ${resultResponse.status}: ${errorText}`);
-                    throw new Error(`Dia TTS: Job result retrieval failed ${resultResponse.status} - ${errorText}`);
-                }
-
-                this.log('Successfully retrieved async audio response');
-                return resultResponse;
-
-            } else if (status.status === 'failed') {
-                const errorMsg = status.error || 'Job failed with unknown error';
-                this.error(`Job ${jobId} failed:`, errorMsg);
-                throw new Error(`Dia TTS: Job failed - ${errorMsg}`);
-            }
-
-            // Job is still pending/running, wait before next poll
-            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            return null;
+        } catch (error) {
+            console.warn('Could not get Whisper status:', error);
+            return null;
         }
-
-        // Timeout reached
-        this.error(`Job ${jobId} timed out after ${timeout}ms`);
-        throw new Error(`Dia TTS: Job timed out after ${timeout / 1000} seconds`);
     }
 
-    async previewTtsVoice(id) {
-        if (!this.settings) {
-            this.warn('Settings not initialized for preview, using defaults');
-            this.settings = { ...this.defaultSettings };
-        }
-        this.audioElement.pause();
-        this.audioElement.currentTime = 0;
-
-        const text = getPreviewString('en-US');
-        const response = await this.generateTts(text, id);
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const audio = await response.blob();
-        const url = URL.createObjectURL(audio);
-        this.audioElement.src = url;
-        this.audioElement.play();
-        this.audioElement.onended = () => URL.revokeObjectURL(url);
-    }
+    //##################//
+    // Cleanup          //
+    //##################//
 
     dispose() {
         this.audioElement.pause();
         this.audioElement.src = '';
-    }
-
-    renderCharMappingList() {
-        const listDiv = document.getElementById('dia-tts-char-list');
-        if (!listDiv) return;
-
-        const customVoices = this.settings.customVoices || [];
-
-        if (customVoices.length === 0) {
-            listDiv.innerHTML = '<small><i>No custom voices created yet. Custom voices will appear in the main voice selection dropdown above.</i></small>';
-            return;
-        }
-
-        listDiv.innerHTML = '<small><strong>Custom Voices Created:</strong></small><br>';
-
-        customVoices.forEach(voiceId => {
-            const voiceDiv = document.createElement('div');
-            voiceDiv.style.display = 'flex';
-            voiceDiv.style.alignItems = 'center';
-            voiceDiv.style.marginBottom = '5px';
-            voiceDiv.style.justifyContent = 'space-between';
-            voiceDiv.style.padding = '2px 5px';
-            voiceDiv.style.background = 'var(--SmartThemeBlurTintColor)';
-            voiceDiv.style.borderRadius = '3px';
-
-            const nameSpan = document.createElement('small');
-            nameSpan.textContent = voiceId;
-            voiceDiv.appendChild(nameSpan);
-
-            const deleteButton = document.createElement('button');
-            deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            deleteButton.style.border = 'none';
-            deleteButton.style.background = 'transparent';
-            deleteButton.style.color = 'var(--SmartThemeQuoteColor)';
-            deleteButton.style.cursor = 'pointer';
-            deleteButton.title = `Delete custom voice ${voiceId}`;
-            deleteButton.onclick = () => this.removeCustomVoice(voiceId);
-
-            voiceDiv.appendChild(deleteButton);
-            listDiv.appendChild(voiceDiv);
-        });
-
-        const note = document.createElement('small');
-        note.innerHTML = '<br><i>Use the Voice Map section above to assign these custom voices to characters.</i>';
-        listDiv.appendChild(note);
-    }
-
-    async removeCustomVoice(voiceId) {
-        if (!this.settings.customVoices) return;
-
-        try {
-            // Remove from server if possible
-            const response = await fetch(`${this.settings.endpoint}/voice_mappings/${voiceId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`,
-                },
-            });
-
-            if (!response.ok) {
-                this.warn(`Could not delete voice from server: ${response.status}`);
-            }
-        } catch (error) {
-            this.warn('Error deleting voice from server:', error.message);
-        }
-
-        // Remove from local settings
-        const index = this.settings.customVoices.indexOf(voiceId);
-        if (index > -1) {
-            this.settings.customVoices.splice(index, 1);
-            saveTtsProviderSettings();
-            this.renderCharMappingList();
-            toastr.success(`Deleted custom voice: ${voiceId}`);
-        }
-    }
-
-    removeCharacterVoiceMapping(charName) {
-        if (!this.settings.voiceMappings) return;
-
-        if (this.settings.voiceMappings[charName]) {
-            delete this.settings.voiceMappings[charName];
-            saveTtsProviderSettings();
-            this.renderCharMappingList();
-            toastr.success(`Removed voice mapping for ${charName}`);
-        }
     }
 }
