@@ -60,6 +60,9 @@ function assignNestedVariables(scope, arg, prefix) {
     Object.entries(arg).forEach(([key, value]) => {
         const newPrefix = `${prefix}.${key}`;
         if (typeof value === 'object' && value !== null) {
+            if (Array.isArray(value)) {
+                scope.letVariable(newPrefix, JSON.stringify(value));
+            }
             assignNestedVariables(scope, value, newPrefix);
         } else {
             scope.letVariable(newPrefix, value);
