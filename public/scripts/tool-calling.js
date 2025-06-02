@@ -296,15 +296,18 @@ export class ToolManager {
         this.#tools.delete(name);
         console.log(`[ToolManager] Unregistered function tool: ${name}`);
     }
+
     /**
-    * Parse tool call parameters -- they're usually JSON, but they can
-    * also be empty strings (which are not valid JSON apparently).
-    * @param {scalar} the parameters for a tool call, usually a string with JSON inside
+    * Parse tool call parameters -- they're usually JSON, but they can also be empty strings (which are not valid JSON apparently).
+    * @param {object} parameters The parameters for a tool call, usually a string with JSON inside
     * @returns {object} The parsed parameters
     */
-    static #parseParameters (parameters) {
-        return parameters === '' ? {} : typeof parameters === 'string'
-            ? JSON.parse(parameters) : parameters;
+    static #parseParameters(parameters) {
+        return parameters === ''
+            ? {}
+            : typeof parameters === 'string'
+                ? JSON.parse(parameters)
+                : parameters;
     }
 
     /**
