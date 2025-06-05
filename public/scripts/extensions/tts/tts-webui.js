@@ -20,7 +20,7 @@ class TtsWebuiProvider {
         model: 'chatterbox',
         speed: 1,
         volume: 1.0,
-        available_voices: ['random', 'echo'],
+        available_voices: ['random'],
         provider_endpoint: 'http://127.0.0.1:7778/v1/audio/speech',
         streaming: false,
         stream_chunk_size: 100,
@@ -186,7 +186,8 @@ class TtsWebuiProvider {
     }
 
     async onRefreshClick() {
-        return;
+        await this.fetchTtsVoiceObjects();
+        console.info('TTS voices refreshed');
     }
 
     async getVoice(voiceName) {
@@ -278,9 +279,41 @@ class TtsWebuiProvider {
     }
 
     async fetchTtsVoiceObjects() {
-        return this.settings.available_voices.map(v => {
-            return { name: v, voice_id: v, lang: 'en-US' };
-        });
+        // Try to fetch voices from the provider endpoint
+        try {
+            const voicesEndpoint = this.settings.provider_endpoint.replace('/speech', '/voices/' + this.settings.model);
+            
+            const response = await fetch(voicesEndpoint, {
+                headers: {
+                    'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const responseJson = await response.json();
+            console.info('Discovered voices from provider:', responseJson);
+            
+            // Handle chatterbox format: {"voices":["Alice.wav","Emmett.wav",...]}
+            this.voices = responseJson.voices.map(voiceFile => ({
+                name: voiceFile.replace(/\.wav$/, ''),
+                voice_id: `voices/chatterbox/${voiceFile}`,
+                lang: 'en-US'
+            }));
+            
+            return this.voices;
+        } catch (error) {
+            console.warn('Voice discovery failed, using configured voices:', error);
+        }
+
+        // Fallback to configured voices
+        this.voices = this.settings.available_voices.map(name => ({
+            name, voice_id: name, lang: 'en-US'
+        }));
+        
+        return this.voices;
     }
 
     async initAudioWorklet(wavSampleRate) {
