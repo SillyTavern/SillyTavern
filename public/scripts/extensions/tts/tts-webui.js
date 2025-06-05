@@ -168,16 +168,16 @@ class TtsWebuiProvider {
         this.settings.desired_length = Number($('#openai_compatible_desired_length').val());
         this.settings.max_length = Number($('#openai_compatible_max_length').val());
         this.settings.halve_first_chunk = $('#openai_compatible_halve_first_chunk').is(':checked');
-        
+
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
         $('#openai_compatible_tts_volume_output').text(this.settings.volume);
         $('#openai_compatible_stream_chunk_size_output').text(this.settings.stream_chunk_size);
         $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
         $('#openai_compatible_max_length_output').text(this.settings.max_length);
-        
+
         // Apply volume change immediately
         this.setVolume(this.settings.volume);
-        
+
         saveTtsProviderSettings();
     }
 
@@ -205,11 +205,11 @@ class TtsWebuiProvider {
 
     async generateTts(text, voiceId) {
         const response = await this.fetchTtsGeneration(text, voiceId);
-        
+
         if (this.settings.streaming) {
             // Stream audio in real-time
             await this.processStreamingAudio(response);
-            
+
             // Return a silent WAV file as dummy to prevent overlapping audio
             const silentWavHeader = new Uint8Array([
                 0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -224,19 +224,19 @@ class TtsWebuiProvider {
                 0x02, 0x00,             // BlockAlign
                 0x10, 0x00,             // BitsPerSample (16)
                 0x64, 0x61, 0x74, 0x61, // "data"
-                0x00, 0x00, 0x00, 0x00  // Subchunk2Size (0 - no audio data)
+                0x00, 0x00, 0x00, 0x00,  // Subchunk2Size (0 - no audio data)
             ]);
-            
+
             const silentBlob = new Blob([silentWavHeader], { type: 'audio/wav' });
             return new Response(silentBlob, {
                 status: 200,
                 headers: {
                     'Content-Type': 'audio/wav',
-                    'Content-Length': silentBlob.size.toString()
-                }
+                    'Content-Length': silentBlob.size.toString(),
+                },
             });
         }
-        
+
         return response;
     }
 
@@ -244,11 +244,11 @@ class TtsWebuiProvider {
         // Try to fetch voices from the provider endpoint
         try {
             const voicesEndpoint = this.settings.provider_endpoint.replace('/speech', '/voices/' + this.settings.model);
-            
+
             const response = await fetch(voicesEndpoint, {
                 headers: {
                     'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
-                }
+                },
             });
 
             if (!response.ok) {
@@ -257,14 +257,14 @@ class TtsWebuiProvider {
 
             const responseJson = await response.json();
             console.info('Discovered voices from provider:', responseJson);
-            
+
             // Handle chatterbox format: {"voices":["Alice.wav","Emmett.wav",...]}
             this.voices = responseJson.voices.map(voiceFile => ({
                 name: voiceFile.replace(/\.wav$/, ''),
                 voice_id: `voices/chatterbox/${voiceFile}`,
-                lang: 'en-US'
+                lang: 'en-US',
             }));
-            
+
             return this.voices;
         } catch (error) {
             console.warn('Voice discovery failed, using configured voices:', error);
@@ -272,15 +272,15 @@ class TtsWebuiProvider {
 
         // Fallback to configured voices
         this.voices = this.settings.available_voices.map(name => ({
-            name, voice_id: name, lang: 'en-US'
+            name, voice_id: name, lang: 'en-US',
         }));
-        
+
         return this.voices;
     }
 
     async initAudioWorklet(wavSampleRate) {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: wavSampleRate });
-        
+
         // Simple AudioWorklet processor for PCM streaming
         const processorCode = `
 class PCMProcessor extends AudioWorkletProcessor {
@@ -356,14 +356,14 @@ class PCMProcessor extends AudioWorkletProcessor {
 }
 registerProcessor('pcm-processor', PCMProcessor);
 `;
-        
+
         const blob = new Blob([processorCode], { type: 'application/javascript' });
         const processorUrl = URL.createObjectURL(blob);
-        
+
         await this.audioContext.audioWorklet.addModule(processorUrl);
         this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'pcm-processor');
         this.audioWorkletNode.connect(this.audioContext.destination);
-        
+
         URL.revokeObjectURL(processorUrl);
     }
 
@@ -375,7 +375,7 @@ registerProcessor('pcm-processor', PCMProcessor);
         const channels = view.getUint16(22, true);
         // Bits per sample is at bytes 34-35 (little endian)
         const bitsPerSample = view.getUint16(34, true);
-        
+
         return { sampleRate, channels, bitsPerSample };
     }
 
@@ -397,15 +397,15 @@ registerProcessor('pcm-processor', PCMProcessor);
                 // Parse WAV header to get sample rate
                 wavInfo = this.parseWavHeader(value.buffer);
                 console.log('WAV Info:', wavInfo);
-                
+
                 // Initialize AudioWorklet with correct sample rate
                 await this.initAudioWorklet(wavInfo.sampleRate);
-                
+
                 // Skip WAV header (first 44 bytes typically)
                 const pcmData = value.slice(44);
                 this.audioWorkletNode.port.postMessage({ pcmData });
                 headerParsed = true;
-                
+
                 const next = await reader.read();
                 return processStream(next);
             }
@@ -426,7 +426,7 @@ registerProcessor('pcm-processor', PCMProcessor);
 
         const text = getPreviewString('en-US');
         const response = await this.fetchTtsGeneration(text, voiceId);
-        
+
         if (this.settings.streaming) {
             // Use shared streaming method
             await this.processStreamingAudio(response);
@@ -446,7 +446,7 @@ registerProcessor('pcm-processor', PCMProcessor);
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
-        
+
         const requestBody = {
             model: this.settings.model,
             voice: voiceId,
@@ -471,7 +471,7 @@ registerProcessor('pcm-processor', PCMProcessor);
         }
 
         let response;
-        
+
         if (this.settings.streaming) {
             // For streaming mode, make a direct request to the provider endpoint
             response = await fetch(this.settings.provider_endpoint, {
@@ -486,7 +486,7 @@ registerProcessor('pcm-processor', PCMProcessor);
                 headers: { ...getRequestHeaders() },
                 body: JSON.stringify({
                     provider_endpoint: this.settings.provider_endpoint,
-                    ...requestBody
+                    ...requestBody,
                 }),
             });
         }
@@ -502,10 +502,10 @@ registerProcessor('pcm-processor', PCMProcessor);
     setVolume(volume) {
         // Clamp volume between 0.0 and 2.0 (0% to 200%)
         this.currentVolume = Math.max(0, Math.min(2.0, volume));
-        
+
         // Set volume for regular audio element (non-streaming)
         this.audioElement.volume = Math.min(this.currentVolume, 1.0); // HTML audio element max is 1.0
-        
+
         // Set volume for AudioWorklet (streaming)
         if (this.audioWorkletNode) {
             this.audioWorkletNode.port.postMessage({ volume: this.currentVolume });
