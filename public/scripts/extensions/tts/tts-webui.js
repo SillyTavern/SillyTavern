@@ -13,15 +13,20 @@ class TtsWebuiProvider {
     audioElement = document.createElement('audio');
     audioContext = null;
     audioWorkletNode = null;
+    currentVolume = 1.0; // Track current volume
 
     defaultSettings = {
         voiceMap: {},
         model: 'chatterbox',
         speed: 1,
+        volume: 1.0,
         available_voices: ['random', 'echo'],
         provider_endpoint: 'http://127.0.0.1:7778/v1/audio/speech',
         streaming: false,
         stream_chunk_size: 100,
+        desired_length: 80,
+        max_length: 200,
+        halve_first_chunk: true,
     };
 
     get settingsHtml() {
@@ -46,8 +51,16 @@ class TtsWebuiProvider {
         </label>
         <label for="openai_compatible_tts_speed">Speed: <span id="openai_compatible_tts_speed_output"></span></label>
         <input type="range" id="openai_compatible_tts_speed" value="1" min="0.25" max="4" step="0.05">
-        <label for="openai_compatible_stream_chunk_size">Stream Chunk Size: <span id="openai_compatible_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
-        <input id="openai_compatible_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="50" max="500" step="10" />`;
+        <label for="openai_compatible_tts_volume">Volume: <span id="openai_compatible_tts_volume_output">${this.defaultSettings.volume}</span></label>
+        <input type="range" id="openai_compatible_tts_volume" value="${this.defaultSettings.volume}" min="0" max="2" step="0.1">
+        <label for="openai_compatible_desired_length">Desired Length: <span id="openai_compatible_desired_length_output">${this.defaultSettings.desired_length}</span></label>
+        <input id="openai_compatible_desired_length" type="range" value="${this.defaultSettings.desired_length}" min="50" max="1000" step="10" />
+        <label for="openai_compatible_max_length">Max Length: <span id="openai_compatible_max_length_output">${this.defaultSettings.max_length}</span></label>
+        <input id="openai_compatible_max_length" type="range" value="${this.defaultSettings.max_length}" min="100" max="1500" step="10" />
+        <label for="openai_compatible_halve_first_chunk" class="checkbox_label">
+            <input id="openai_compatible_halve_first_chunk" type="checkbox" />
+            <span>Halve First Chunk</span>
+        </label>`;
         return html;
     }
 
@@ -85,11 +98,28 @@ class TtsWebuiProvider {
             this.onSettingsChange();
         });
 
+        $('#openai_compatible_tts_volume').val(this.settings.volume);
+        $('#openai_compatible_tts_volume').on('input', () => {
+            this.onSettingsChange();
+        });
+
         $('#openai_compatible_stream_chunk_size').val(this.settings.stream_chunk_size);
         $('#openai_compatible_stream_chunk_size').on('input', () => { this.onSettingsChange(); });
 
+        $('#openai_compatible_desired_length').val(this.settings.desired_length);
+        $('#openai_compatible_desired_length').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_max_length').val(this.settings.max_length);
+        $('#openai_compatible_max_length').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_halve_first_chunk').prop('checked', this.settings.halve_first_chunk);
+        $('#openai_compatible_halve_first_chunk').on('change', () => { this.onSettingsChange(); });
+
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
+        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
         $('#openai_compatible_stream_chunk_size_output').text(this.settings.stream_chunk_size);
+        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
+        $('#openai_compatible_max_length_output').text(this.settings.max_length);
 
         $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
         $('#openai_compatible_tts_key').on('click', async () => {
@@ -132,11 +162,21 @@ class TtsWebuiProvider {
         this.settings.model = String($('#openai_compatible_model').val());
         this.settings.available_voices = String($('#openai_compatible_tts_voices').val()).split(',');
         this.settings.speed = Number($('#openai_compatible_tts_speed').val());
+        this.settings.volume = Number($('#openai_compatible_tts_volume').val());
         this.settings.streaming = $('#openai_compatible_tts_streaming').is(':checked');
         this.settings.stream_chunk_size = Number($('#openai_compatible_stream_chunk_size').val());
+        this.settings.desired_length = Number($('#openai_compatible_desired_length').val());
+        this.settings.max_length = Number($('#openai_compatible_max_length').val());
+        this.settings.halve_first_chunk = $('#openai_compatible_halve_first_chunk').is(':checked');
         
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
+        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
         $('#openai_compatible_stream_chunk_size_output').text(this.settings.stream_chunk_size);
+        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
+        $('#openai_compatible_max_length_output').text(this.settings.max_length);
+        
+        // Apply volume change immediately
+        this.setVolume(this.settings.volume);
         
         saveTtsProviderSettings();
     }
@@ -206,8 +246,32 @@ class TtsWebuiProvider {
             const firstChunk = await reader.read();
             await processStream(firstChunk);
             
-            // Return a dummy response since audio is already playing
-            return new Response(new Blob(), { status: 200 });
+            // Return a silent WAV file as dummy to prevent overlapping audio
+            // This creates a minimal valid WAV file with no audio data
+            const silentWavHeader = new Uint8Array([
+                0x52, 0x49, 0x46, 0x46, // "RIFF"
+                0x24, 0x00, 0x00, 0x00, // File size (36 bytes)
+                0x57, 0x41, 0x56, 0x45, // "WAVE"
+                0x66, 0x6D, 0x74, 0x20, // "fmt "
+                0x10, 0x00, 0x00, 0x00, // Subchunk1Size (16)
+                0x01, 0x00,             // AudioFormat (PCM)
+                0x01, 0x00,             // NumChannels (1)
+                0x44, 0xAC, 0x00, 0x00, // SampleRate (44100)
+                0x88, 0x58, 0x01, 0x00, // ByteRate
+                0x02, 0x00,             // BlockAlign
+                0x10, 0x00,             // BitsPerSample (16)
+                0x64, 0x61, 0x74, 0x61, // "data"
+                0x00, 0x00, 0x00, 0x00  // Subchunk2Size (0 - no audio data)
+            ]);
+            
+            const silentBlob = new Blob([silentWavHeader], { type: 'audio/wav' });
+            return new Response(silentBlob, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'audio/wav',
+                    'Content-Length': silentBlob.size.toString()
+                }
+            });
         }
         
         return response;
@@ -224,60 +288,79 @@ class TtsWebuiProvider {
         
         // Simple AudioWorklet processor for PCM streaming
         const processorCode = `
-        
-        class PCMProcessor extends AudioWorkletProcessor {
-            constructor() {
-                super();
-                this.buffer = [];
-                this.pendingBytes = new Uint8Array(0); // Buffer for incomplete samples
-                this.port.onmessage = (event) => {
-                    if (event.data.pcmData) {
-                        // Combine any pending bytes with new data
-                        const newData = new Uint8Array(event.data.pcmData);
-                        const combined = new Uint8Array(this.pendingBytes.length + newData.length);
-                        combined.set(this.pendingBytes);
-                        combined.set(newData, this.pendingBytes.length);
-                        
-                        // Calculate how many complete 16-bit samples we have
-                        const completeSamples = Math.floor(combined.length / 2);
-                        const bytesToProcess = completeSamples * 2;
-                        
-                        if (completeSamples > 0) {
-                            // Process complete samples
-                            const int16Array = new Int16Array(combined.buffer.slice(0, bytesToProcess));
-                            const float32Data = new Float32Array(int16Array.length);
-                            for (let i = 0; i < int16Array.length; i++) {
-                                float32Data[i] = int16Array[i] / 32768.0; // Convert 16-bit to float
+class PCMProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        this.buffer = new Float32Array(24000 * 30); // Pre-allocate buffer for ~30 seconds at 24kHz
+        this.writeIndex = 0;
+        this.readIndex = 0;
+        this.pendingBytes = new Uint8Array(0); // Buffer for incomplete samples
+        this.volume = 1.0; // Default volume (1.0 = 100%, 0.5 = 50%, etc.)
+        this.port.onmessage = (event) => {
+            if (event.data.pcmData) {
+                // Combine any pending bytes with new data
+                const newData = new Uint8Array(event.data.pcmData);
+                const combined = new Uint8Array(this.pendingBytes.length + newData.length);
+                combined.set(this.pendingBytes);
+                combined.set(newData, this.pendingBytes.length);
+                
+                // Calculate how many complete 16-bit samples we have
+                const completeSamples = Math.floor(combined.length / 2);
+                const bytesToProcess = completeSamples * 2;
+                
+                if (completeSamples > 0) {
+                    // Process complete samples
+                    const int16Array = new Int16Array(combined.buffer.slice(0, bytesToProcess));
+                    
+                    // Write directly to circular buffer
+                    for (let i = 0; i < int16Array.length; i++) {
+                        // Expand buffer if needed
+                        if (this.writeIndex >= this.buffer.length) {
+                            const newBuffer = new Float32Array(this.buffer.length * 2);
+                            // Copy existing data maintaining order
+                            let sourceIndex = this.readIndex;
+                            let targetIndex = 0;
+                            while (sourceIndex !== this.writeIndex) {
+                                newBuffer[targetIndex++] = this.buffer[sourceIndex];
+                                sourceIndex = (sourceIndex + 1) % this.buffer.length;
                             }
-                            // Use a loop instead of spread operator to avoid call stack overflow
-                            for (let i = 0; i < float32Data.length; i++) {
-                                this.buffer.push(float32Data[i]);
-                            }
+                            this.buffer = newBuffer;
+                            this.readIndex = 0;
+                            this.writeIndex = targetIndex;
                         }
                         
-                        // Store any remaining incomplete bytes
-                        if (combined.length > bytesToProcess) {
-                            this.pendingBytes = combined.slice(bytesToProcess);
-                        } else {
-                            this.pendingBytes = new Uint8Array(0);
-                        }
-                    }
-                };
-            }
-            
-            process(inputs, outputs, parameters) {
-                const output = outputs[0];
-                if (output.length > 0 && this.buffer.length > 0) {
-                    const channelData = output[0];
-                    for (let i = 0; i < channelData.length && this.buffer.length > 0; i++) {
-                        channelData[i] = this.buffer.shift() || 0;
+                        this.buffer[this.writeIndex] = int16Array[i] / 32768.0; // Convert 16-bit to float
+                        this.writeIndex = (this.writeIndex + 1) % this.buffer.length;
                     }
                 }
-                return true;
+                
+                // Store any remaining incomplete bytes
+                if (combined.length > bytesToProcess) {
+                    this.pendingBytes = combined.slice(bytesToProcess);
+                } else {
+                    this.pendingBytes = new Uint8Array(0);
+                }
+            } else if (event.data.volume !== undefined) {
+                // Set volume (0.0 to 1.0, can go higher for amplification)
+                this.volume = Math.max(0, event.data.volume);
+            }
+        };
+    }
+    
+    process(inputs, outputs, parameters) {
+        const output = outputs[0];
+        if (output.length > 0 && this.readIndex !== this.writeIndex) {
+            const channelData = output[0];
+            for (let i = 0; i < channelData.length && this.readIndex !== this.writeIndex; i++) {
+                channelData[i] = this.buffer[this.readIndex] * this.volume;
+                this.readIndex = (this.readIndex + 1) % this.buffer.length;
             }
         }
-        registerProcessor('pcm-processor', PCMProcessor);
-    `;
+        return true;
+    }
+}
+registerProcessor('pcm-processor', PCMProcessor);
+`;
         
         const blob = new Blob([processorCode], { type: 'application/javascript' });
         const processorUrl = URL.createObjectURL(blob);
@@ -382,8 +465,9 @@ class TtsWebuiProvider {
                     speed: this.settings.speed,
                     stream: true,
                     params: {
-                        desired_length: this.settings.stream_chunk_size - 5,
-                        max_length: this.settings.stream_chunk_size,
+                        desired_length: this.settings.desired_length,
+                        max_length: this.settings.max_length,
+                        halve_first_chunk: this.settings.halve_first_chunk,
                     },
                 }),
             });
@@ -417,5 +501,30 @@ class TtsWebuiProvider {
         }
 
         return response;
+    }
+
+    setVolume(volume) {
+        // Clamp volume between 0.0 and 2.0 (0% to 200%)
+        this.currentVolume = Math.max(0, Math.min(2.0, volume));
+        
+        // Set volume for regular audio element (non-streaming)
+        this.audioElement.volume = Math.min(this.currentVolume, 1.0); // HTML audio element max is 1.0
+        
+        // Set volume for AudioWorklet (streaming)
+        if (this.audioWorkletNode) {
+            this.audioWorkletNode.port.postMessage({ volume: this.currentVolume });
+        }
+    }
+
+    getVolume() {
+        return this.currentVolume;
+    }
+
+    mute() {
+        this.setVolume(0);
+    }
+
+    unmute() {
+        this.setVolume(1.0);
     }
 }
