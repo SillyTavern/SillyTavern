@@ -207,48 +207,10 @@ class TtsWebuiProvider {
         const response = await this.fetchTtsGeneration(text, voiceId);
         
         if (this.settings.streaming) {
-            // Stream audio in real-time like previewTtsVoice
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const reader = response.body.getReader();
-            let headerParsed = false;
-            let wavInfo = null;
-
-            const processStream = async ({ done, value }) => {
-                if (done) {
-                    return;
-                }
-
-                if (!headerParsed) {
-                    // Parse WAV header to get sample rate
-                    wavInfo = this.parseWavHeader(value.buffer);
-                    console.log('WAV Info:', wavInfo);
-                    
-                    // Initialize AudioWorklet with correct sample rate
-                    await this.initAudioWorklet(wavInfo.sampleRate);
-                    
-                    // Skip WAV header (first 44 bytes typically)
-                    const pcmData = value.slice(44);
-                    this.audioWorkletNode.port.postMessage({ pcmData });
-                    headerParsed = true;
-                    
-                    const next = await reader.read();
-                    return processStream(next);
-                }
-
-                // Send PCM data to AudioWorklet for immediate playback
-                this.audioWorkletNode.port.postMessage({ pcmData: value });
-                const next = await reader.read();
-                return processStream(next);
-            };
-
-            const firstChunk = await reader.read();
-            await processStream(firstChunk);
+            // Stream audio in real-time
+            await this.processStreamingAudio(response);
             
             // Return a silent WAV file as dummy to prevent overlapping audio
-            // This creates a minimal valid WAV file with no audio data
             const silentWavHeader = new Uint8Array([
                 0x52, 0x49, 0x46, 0x46, // "RIFF"
                 0x24, 0x00, 0x00, 0x00, // File size (36 bytes)
@@ -417,6 +379,47 @@ registerProcessor('pcm-processor', PCMProcessor);
         return { sampleRate, channels, bitsPerSample };
     }
 
+    async processStreamingAudio(response) {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        let headerParsed = false;
+        let wavInfo = null;
+
+        const processStream = async ({ done, value }) => {
+            if (done) {
+                return;
+            }
+
+            if (!headerParsed) {
+                // Parse WAV header to get sample rate
+                wavInfo = this.parseWavHeader(value.buffer);
+                console.log('WAV Info:', wavInfo);
+                
+                // Initialize AudioWorklet with correct sample rate
+                await this.initAudioWorklet(wavInfo.sampleRate);
+                
+                // Skip WAV header (first 44 bytes typically)
+                const pcmData = value.slice(44);
+                this.audioWorkletNode.port.postMessage({ pcmData });
+                headerParsed = true;
+                
+                const next = await reader.read();
+                return processStream(next);
+            }
+
+            // Send PCM data to AudioWorklet for immediate playback
+            this.audioWorkletNode.port.postMessage({ pcmData: value });
+            const next = await reader.read();
+            return processStream(next);
+        };
+
+        const firstChunk = await reader.read();
+        await processStream(firstChunk);
+    }
+
     async previewTtsVoice(voiceId) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
@@ -425,45 +428,8 @@ registerProcessor('pcm-processor', PCMProcessor);
         const response = await this.fetchTtsGeneration(text, voiceId);
         
         if (this.settings.streaming) {
-            // For streaming WAV audio using AudioWorklet
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const reader = response.body.getReader();
-            let headerParsed = false;
-            let wavInfo = null;
-
-            const processStream = async ({ done, value }) => {
-                if (done) {
-                    return;
-                }
-
-                if (!headerParsed) {
-                    // Parse WAV header to get sample rate
-                    wavInfo = this.parseWavHeader(value.buffer);
-                    console.log('WAV Info:', wavInfo);
-                    
-                    // Initialize AudioWorklet with correct sample rate
-                    await this.initAudioWorklet(wavInfo.sampleRate);
-                    
-                    // Skip WAV header (first 44 bytes typically)
-                    const pcmData = value.slice(44);
-                    this.audioWorkletNode.port.postMessage({ pcmData });
-                    headerParsed = true;
-                    
-                    const next = await reader.read();
-                    return processStream(next);
-                }
-
-                // Send PCM data to AudioWorklet
-                this.audioWorkletNode.port.postMessage({ pcmData: value });
-                const next = await reader.read();
-                return processStream(next);
-            };
-
-            const firstChunk = await reader.read();
-            await processStream(firstChunk);
+            // Use shared streaming method
+            await this.processStreamingAudio(response);
         } else {
             // For non-streaming, response is a fetch Response object
             if (!response.ok) {
@@ -481,52 +447,49 @@ registerProcessor('pcm-processor', PCMProcessor);
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
         
+        const requestBody = {
+            model: this.settings.model,
+            voice: voiceId,
+            input: inputText,
+            response_format: 'wav',
+            speed: this.settings.speed,
+            stream: this.settings.streaming,
+            params: {
+                desired_length: this.settings.desired_length,
+                max_length: this.settings.max_length,
+                halve_first_chunk: this.settings.halve_first_chunk,
+            },
+        };
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
+        };
+
         if (this.settings.streaming) {
-            // For streaming mode, make a direct request to the provider endpoint
-            const response = await fetch(this.settings.provider_endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
-                    'Cache-Control': 'no-cache',
-                },
-                body: JSON.stringify({
-                    model: this.settings.model,
-                    voice: voiceId,
-                    input: inputText,
-                    response_format: 'wav', // Changed from 'mp3' to 'wav' for streaming
-                    speed: this.settings.speed,
-                    stream: true,
-                    params: {
-                        desired_length: this.settings.desired_length,
-                        max_length: this.settings.max_length,
-                        halve_first_chunk: this.settings.halve_first_chunk,
-                    },
-                }),
-            });
-
-            if (!response.ok) {
-                toastr.error(response.statusText, 'TTS Generation Failed');
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-            }
-
-            // For streaming, return the response directly so it can be consumed as a stream
-            return response;
+            headers['Cache-Control'] = 'no-cache';
         }
 
-        // Non-streaming request (existing code)
-        const response = await fetch('/api/openai/custom/generate-voice', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                provider_endpoint: this.settings.provider_endpoint,
-                model: this.settings.model,
-                input: inputText,
-                voice: voiceId,
-                response_format: 'mp3',
-                speed: this.settings.speed,
-            }),
-        });
+        let response;
+        
+        if (this.settings.streaming) {
+            // For streaming mode, make a direct request to the provider endpoint
+            response = await fetch(this.settings.provider_endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(requestBody),
+            });
+        } else {
+            // Non-streaming request
+            response = await fetch('/api/openai/custom/generate-voice', {
+                method: 'POST',
+                headers: { ...getRequestHeaders() },
+                body: JSON.stringify({
+                    provider_endpoint: this.settings.provider_endpoint,
+                    ...requestBody
+                }),
+            });
+        }
 
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
