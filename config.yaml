@@ -1,0 +1,7 @@
+server:
+  port: 5000
+  listen: true
+  cors: true
+  disable_csrf: true
+  basic_auth: false
+  autorun: true
