@@ -282,10 +282,10 @@ class TtsWebuiProvider {
         $('#openai_compatible_seed').val(this.settings.seed);
         $('#openai_compatible_seed').on('input', () => { this.onSettingsChange(); });
 
-        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.TTS_WEBUI]);
         $('#openai_compatible_tts_key').on('click', async () => {
-            const popupText = 'OpenAI-compatible TTS API Key';
-            const savedKey = secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS) : '';
+            const popupText = 'TTS WebUI API Key';
+            const savedKey = secret_state[SECRET_KEYS.TTS_WEBUI] ? await findSecret(SECRET_KEYS.TTS_WEBUI) : '';
 
             const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
                 customButtons: [{
@@ -293,8 +293,8 @@ class TtsWebuiProvider {
                     appendAtEnd: true,
                     result: POPUP_RESULT.NEGATIVE,
                     action: async () => {
-                        await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, '');
-                        $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+                        await writeSecret(SECRET_KEYS.TTS_WEBUI, '');
+                        $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.TTS_WEBUI]);
                         toastr.success('API Key removed');
                         await this.onRefreshClick();
                     },
@@ -305,10 +305,10 @@ class TtsWebuiProvider {
                 return;
             }
 
-            await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, String(key));
+            await writeSecret(SECRET_KEYS.TTS_WEBUI, String(key));
 
             toastr.success('API Key saved');
-            $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+            $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.TTS_WEBUI]);
             await this.onRefreshClick();
         });
 
@@ -435,7 +435,7 @@ class TtsWebuiProvider {
 
             const response = await fetch(voicesEndpoint, {
                 headers: {
-                    'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
+                    'Authorization': secret_state[SECRET_KEYS.TTS_WEBUI] ? `Bearer ${await findSecret(SECRET_KEYS.TTS_WEBUI)}` : '',
                 },
             });
 
@@ -664,7 +664,7 @@ registerProcessor('pcm-processor', PCMProcessor);
 
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? `Bearer ${await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS)}` : '',
+            'Authorization': secret_state[SECRET_KEYS.TTS_WEBUI] ? `Bearer ${await findSecret(SECRET_KEYS.TTS_WEBUI)}` : '',
         };
 
         if (this.settings.streaming) {
