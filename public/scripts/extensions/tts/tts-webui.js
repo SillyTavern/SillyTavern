@@ -27,40 +27,176 @@ class TtsWebuiProvider {
         desired_length: 80,
         max_length: 200,
         halve_first_chunk: true,
+        exaggeration: 0.5,
+        cfg_weight: 0.5,
+        temperature: 0.8,
+        device: 'auto',
+        dtype: 'float32',
+        cpu_offload: false,
+        chunked: true,
+        cache_voice: false,
+        tokens_per_slice: 1000,
+        remove_milliseconds: 45,
+        remove_milliseconds_start: 25,
+        chunk_overlap_method: 'zero',
+        seed: -1,
     };
 
     get settingsHtml() {
         let html = `
-        <label for="openai_compatible_tts_endpoint">Provider Endpoint:</label>
-        <div class="flex-container alignItemsCenter">
-            <div class="flex1">
+        <h4 class="textAlignCenter">TTS WebUI Settings</h4>
+        
+        <div class="flex gap10px marginBot10 alignItemsFlexEnd">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_tts_endpoint">Provider Endpoint:</label>
                 <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.provider_endpoint}"/>
             </div>
-            <div id="openai_compatible_tts_key" class="menu_button menu_button_icon">
+            <div id="openai_compatible_tts_key" class="menu_button menu_button_icon padding10">
                 <i class="fa-solid fa-key"></i>
                 <span>API Key</span>
             </div>
         </div>
-        <label for="openai_compatible_model">Model:</label>
-        <input id="openai_compatible_model" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.model}"/>
-        <label for="openai_compatible_tts_voices">Available Voices (comma separated):</label>
-        <input id="openai_compatible_tts_voices" type="text" class="text_pole" value="${this.defaultSettings.available_voices.join()}"/>
-        <label for="openai_compatible_tts_streaming" class="checkbox_label">
-            <input id="openai_compatible_tts_streaming" type="checkbox" />
-            <span>Streaming</span>
-        </label>
-        <label for="openai_compatible_tts_speed">Speed: <span id="openai_compatible_tts_speed_output"></span></label>
-        <input type="range" id="openai_compatible_tts_speed" value="1" min="0.25" max="4" step="0.05">
-        <label for="openai_compatible_tts_volume">Volume: <span id="openai_compatible_tts_volume_output">${this.defaultSettings.volume}</span></label>
-        <input type="range" id="openai_compatible_tts_volume" value="${this.defaultSettings.volume}" min="0" max="2" step="0.1">
-        <label for="openai_compatible_desired_length">Desired Length: <span id="openai_compatible_desired_length_output">${this.defaultSettings.desired_length}</span></label>
-        <input id="openai_compatible_desired_length" type="range" value="${this.defaultSettings.desired_length}" min="50" max="1000" step="10" />
-        <label for="openai_compatible_max_length">Max Length: <span id="openai_compatible_max_length_output">${this.defaultSettings.max_length}</span></label>
-        <input id="openai_compatible_max_length" type="range" value="${this.defaultSettings.max_length}" min="100" max="1500" step="10" />
-        <label for="openai_compatible_halve_first_chunk" class="checkbox_label">
-            <input id="openai_compatible_halve_first_chunk" type="checkbox" />
-            <span>Halve First Chunk</span>
-        </label>`;
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_model">Model:</label>
+                <input id="openai_compatible_model" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.model}"/>
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_tts_voices">Available Voices (comma separated):</label>
+                <input id="openai_compatible_tts_voices" type="text" class="text_pole" value="${this.defaultSettings.available_voices.join()}"/>
+            </div>
+        </div>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_tts_streaming" class="checkbox_label alignItemsCenter flexGap5">
+                    <input id="openai_compatible_tts_streaming" type="checkbox" />
+                    <span>Streaming</span>
+                </label>
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_tts_volume">Volume: <span id="openai_compatible_tts_volume_output">${this.defaultSettings.volume}</span></label>
+                <input type="range" id="openai_compatible_tts_volume" value="${this.defaultSettings.volume}" min="0" max="2" step="0.1">
+            </div>
+        </div>
+        
+        <hr>
+        <h4 class="textAlignCenter">Generation Settings</h4>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_exaggeration">Exaggeration: <span id="openai_compatible_exaggeration_output">${this.defaultSettings.exaggeration}</span></label>
+                <input id="openai_compatible_exaggeration" type="range" value="${this.defaultSettings.exaggeration}" min="0" max="2" step="0.1" />
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_cfg_weight">CFG Weight: <span id="openai_compatible_cfg_weight_output">${this.defaultSettings.cfg_weight}</span></label>
+                <input id="openai_compatible_cfg_weight" type="range" value="${this.defaultSettings.cfg_weight}" min="0" max="2" step="0.1" />
+            </div>
+        </div>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_temperature">Temperature: <span id="openai_compatible_temperature_output">${this.defaultSettings.temperature}</span></label>
+                <input id="openai_compatible_temperature" type="range" value="${this.defaultSettings.temperature}" min="0" max="2" step="0.1" />
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_seed">Seed (-1 for random):</label>
+                <input id="openai_compatible_seed" type="text" class="text_pole" value="${this.defaultSettings.seed}"/>
+            </div>
+        </div>
+        
+        <hr>
+        <h4 class="textAlignCenter">Chunking</h4>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_chunked" class="checkbox_label alignItemsCenter flexGap5">
+                    <input id="openai_compatible_chunked" type="checkbox" />
+                    <span>Split prompt into chunks</span>
+                </label>
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_halve_first_chunk" class="checkbox_label alignItemsCenter flexGap5">
+                    <input id="openai_compatible_halve_first_chunk" type="checkbox" />
+                    <span>Halve First Chunk</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_desired_length">Desired Length: <span id="openai_compatible_desired_length_output">${this.defaultSettings.desired_length}</span></label>
+                <input id="openai_compatible_desired_length" type="range" value="${this.defaultSettings.desired_length}" min="25" max="300" step="5" />
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_max_length">Max Length: <span id="openai_compatible_max_length_output">${this.defaultSettings.max_length}</span></label>
+                <input id="openai_compatible_max_length" type="range" value="${this.defaultSettings.max_length}" min="50" max="450" step="5" />
+            </div>
+        </div>
+        
+        <hr>
+        <h4 class="textAlignCenter">Model</h4>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_device">Device:</label>
+                <select id="openai_compatible_device">
+                    <option value="auto" ${this.defaultSettings.device === 'auto' ? 'selected' : ''}>Auto</option>
+                    <option value="cuda" ${this.defaultSettings.device === 'cuda' ? 'selected' : ''}>CUDA</option>
+                    <option value="mps" ${this.defaultSettings.device === 'mps' ? 'selected' : ''}>MPS</option>
+                    <option value="cpu" ${this.defaultSettings.device === 'cpu' ? 'selected' : ''}>CPU</option>
+                </select>
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_dtype">Data Type:</label>
+                <select id="openai_compatible_dtype">
+                    <option value="float32" ${this.defaultSettings.dtype === 'float32' ? 'selected' : ''}>Float32</option>
+                    <option value="float16" ${this.defaultSettings.dtype === 'float16' ? 'selected' : ''}>Float16</option>
+                    <option value="bfloat16" ${this.defaultSettings.dtype === 'bfloat16' ? 'selected' : ''}>BFloat16</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_cpu_offload" class="checkbox_label alignItemsCenter flexGap5">
+                    <input id="openai_compatible_cpu_offload" type="checkbox" />
+                    <span>CPU Offload</span>
+                </label>
+            </div>
+            <div class="flex1">
+                <!-- Empty for spacing -->
+            </div>
+        </div>
+        
+        <hr>
+        <h4 class="textAlignCenter">Streaming (Advanced Settings)</h4>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_tokens_per_slice">Tokens Per Slice: <span id="openai_compatible_tokens_per_slice_output">${this.defaultSettings.tokens_per_slice}</span></label>
+                <input id="openai_compatible_tokens_per_slice" type="range" value="${this.defaultSettings.tokens_per_slice}" min="15" max="1000" step="1" />
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_chunk_overlap_method">Chunk Overlap Method:</label>
+                <select id="openai_compatible_chunk_overlap_method">
+                    <option value="zero" ${this.defaultSettings.chunk_overlap_method === 'zero' ? 'selected' : ''}>Zero</option>
+                    <option value="full" ${this.defaultSettings.chunk_overlap_method === 'full' ? 'selected' : ''}>Full</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="flex gap10px marginBot10">
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_remove_milliseconds">Remove Milliseconds: <span id="openai_compatible_remove_milliseconds_output">${this.defaultSettings.remove_milliseconds}</span></label>
+                <input id="openai_compatible_remove_milliseconds" type="range" value="${this.defaultSettings.remove_milliseconds}" min="0" max="100" step="1" />
+            </div>
+            <div class="flex1 flexFlowColumn">
+                <label for="openai_compatible_remove_milliseconds_start">Remove Milliseconds Start: <span id="openai_compatible_remove_milliseconds_start_output">${this.defaultSettings.remove_milliseconds_start}</span></label>
+                <input id="openai_compatible_remove_milliseconds_start" type="range" value="${this.defaultSettings.remove_milliseconds_start}" min="0" max="100" step="1" />
+            </div>
+        </div>`;
         return html;
     }
 
@@ -93,11 +229,6 @@ class TtsWebuiProvider {
         $('#openai_compatible_tts_streaming').prop('checked', this.settings.streaming);
         $('#openai_compatible_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
-        $('#openai_compatible_tts_speed').val(this.settings.speed);
-        $('#openai_compatible_tts_speed').on('input', () => {
-            this.onSettingsChange();
-        });
-
         $('#openai_compatible_tts_volume').val(this.settings.volume);
         $('#openai_compatible_tts_volume').on('input', () => {
             this.onSettingsChange();
@@ -115,11 +246,41 @@ class TtsWebuiProvider {
         $('#openai_compatible_halve_first_chunk').prop('checked', this.settings.halve_first_chunk);
         $('#openai_compatible_halve_first_chunk').on('change', () => { this.onSettingsChange(); });
 
-        $('#openai_compatible_tts_speed_output').text(this.settings.speed);
-        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
-        $('#openai_compatible_stream_chunk_size_output').text(this.settings.stream_chunk_size);
-        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
-        $('#openai_compatible_max_length_output').text(this.settings.max_length);
+        $('#openai_compatible_exaggeration').val(this.settings.exaggeration);
+        $('#openai_compatible_exaggeration').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_cfg_weight').val(this.settings.cfg_weight);
+        $('#openai_compatible_cfg_weight').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_temperature').val(this.settings.temperature);
+        $('#openai_compatible_temperature').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_device').val(this.settings.device);
+        $('#openai_compatible_device').on('change', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_dtype').val(this.settings.dtype);
+        $('#openai_compatible_dtype').on('change', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_cpu_offload').prop('checked', this.settings.cpu_offload);
+        $('#openai_compatible_cpu_offload').on('change', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_chunked').prop('checked', this.settings.chunked);
+        $('#openai_compatible_chunked').on('change', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_tokens_per_slice').val(this.settings.tokens_per_slice);
+        $('#openai_compatible_tokens_per_slice').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_remove_milliseconds').val(this.settings.remove_milliseconds);
+        $('#openai_compatible_remove_milliseconds').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_remove_milliseconds_start').val(this.settings.remove_milliseconds_start);
+        $('#openai_compatible_remove_milliseconds_start').on('input', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_chunk_overlap_method').val(this.settings.chunk_overlap_method);
+        $('#openai_compatible_chunk_overlap_method').on('change', () => { this.onSettingsChange(); });
+
+        $('#openai_compatible_seed').val(this.settings.seed);
+        $('#openai_compatible_seed').on('input', () => { this.onSettingsChange(); });
 
         $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
         $('#openai_compatible_tts_key').on('click', async () => {
@@ -151,6 +312,17 @@ class TtsWebuiProvider {
             await this.onRefreshClick();
         });
 
+        // Update output labels
+        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
+        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
+        $('#openai_compatible_max_length_output').text(this.settings.max_length);
+        $('#openai_compatible_exaggeration_output').text(this.settings.exaggeration);
+        $('#openai_compatible_cfg_weight_output').text(this.settings.cfg_weight);
+        $('#openai_compatible_temperature_output').text(this.settings.temperature);
+        $('#openai_compatible_tokens_per_slice_output').text(this.settings.tokens_per_slice);
+        $('#openai_compatible_remove_milliseconds_output').text(this.settings.remove_milliseconds);
+        $('#openai_compatible_remove_milliseconds_start_output').text(this.settings.remove_milliseconds_start);
+
         await this.checkReady();
 
         console.debug('OpenAI Compatible TTS: Settings loaded');
@@ -161,22 +333,38 @@ class TtsWebuiProvider {
         this.settings.provider_endpoint = String($('#openai_compatible_tts_endpoint').val());
         this.settings.model = String($('#openai_compatible_model').val());
         this.settings.available_voices = String($('#openai_compatible_tts_voices').val()).split(',');
-        this.settings.speed = Number($('#openai_compatible_tts_speed').val());
         this.settings.volume = Number($('#openai_compatible_tts_volume').val());
         this.settings.streaming = $('#openai_compatible_tts_streaming').is(':checked');
         this.settings.stream_chunk_size = Number($('#openai_compatible_stream_chunk_size').val());
         this.settings.desired_length = Number($('#openai_compatible_desired_length').val());
         this.settings.max_length = Number($('#openai_compatible_max_length').val());
         this.settings.halve_first_chunk = $('#openai_compatible_halve_first_chunk').is(':checked');
-
-        $('#openai_compatible_tts_speed_output').text(this.settings.speed);
-        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
-        $('#openai_compatible_stream_chunk_size_output').text(this.settings.stream_chunk_size);
-        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
-        $('#openai_compatible_max_length_output').text(this.settings.max_length);
+        this.settings.exaggeration = Number($('#openai_compatible_exaggeration').val());
+        this.settings.cfg_weight = Number($('#openai_compatible_cfg_weight').val());
+        this.settings.temperature = Number($('#openai_compatible_temperature').val());
+        this.settings.device = String($('#openai_compatible_device').val());
+        this.settings.dtype = String($('#openai_compatible_dtype').val());
+        this.settings.cpu_offload = $('#openai_compatible_cpu_offload').is(':checked');
+        this.settings.chunked = $('#openai_compatible_chunked').is(':checked');
+        this.settings.tokens_per_slice = Number($('#openai_compatible_tokens_per_slice').val());
+        this.settings.remove_milliseconds = Number($('#openai_compatible_remove_milliseconds').val());
+        this.settings.remove_milliseconds_start = Number($('#openai_compatible_remove_milliseconds_start').val());
+        this.settings.chunk_overlap_method = String($('#openai_compatible_chunk_overlap_method').val());
+        this.settings.seed = parseInt($('#openai_compatible_seed').val()) || -1;
 
         // Apply volume change immediately
         this.setVolume(this.settings.volume);
+
+        // Update output labels
+        $('#openai_compatible_tts_volume_output').text(this.settings.volume);
+        $('#openai_compatible_desired_length_output').text(this.settings.desired_length);
+        $('#openai_compatible_max_length_output').text(this.settings.max_length);
+        $('#openai_compatible_exaggeration_output').text(this.settings.exaggeration);
+        $('#openai_compatible_cfg_weight_output').text(this.settings.cfg_weight);
+        $('#openai_compatible_temperature_output').text(this.settings.temperature);
+        $('#openai_compatible_tokens_per_slice_output').text(this.settings.tokens_per_slice);
+        $('#openai_compatible_remove_milliseconds_output').text(this.settings.remove_milliseconds);
+        $('#openai_compatible_remove_milliseconds_start_output').text(this.settings.remove_milliseconds_start);
 
         saveTtsProviderSettings();
     }
@@ -458,6 +646,19 @@ registerProcessor('pcm-processor', PCMProcessor);
                 desired_length: this.settings.desired_length,
                 max_length: this.settings.max_length,
                 halve_first_chunk: this.settings.halve_first_chunk,
+                exaggeration: this.settings.exaggeration,
+                cfg_weight: this.settings.cfg_weight,
+                temperature: this.settings.temperature,
+                device: this.settings.device,
+                dtype: this.settings.dtype,
+                cpu_offload: this.settings.cpu_offload,
+                chunked: this.settings.chunked,
+                cache_voice: this.settings.cache_voice,
+                tokens_per_slice: this.settings.tokens_per_slice,
+                remove_milliseconds: this.settings.remove_milliseconds,
+                remove_milliseconds_start: this.settings.remove_milliseconds_start,
+                chunk_overlap_method: this.settings.chunk_overlap_method,
+                seed: this.settings.seed,
             },
         };
 
