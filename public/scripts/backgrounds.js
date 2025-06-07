@@ -21,7 +21,7 @@ export let background_settings = {
 
 export function loadBackgroundSettings(settings) {
     let backgroundSettings = settings.background;
-    if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.name) {
+    if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.url) {
         backgroundSettings = background_settings;
     }
     if (!backgroundSettings.fitting) {
