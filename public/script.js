@@ -3986,7 +3986,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         is_send_press = false;
         return Promise.resolve();
     }
-    
+
     let textareaText;
     if ((type == undefined || type == 'normal' || type == 'continue' || type == 'ask_command') && !dryRun) {
         is_send_press = true;
