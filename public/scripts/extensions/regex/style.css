@@ -24,7 +24,7 @@
 
 #scoped_scripts_block {
     opacity: 1;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
 }
 
 #scoped_scripts_block .move_to_scoped {
@@ -78,7 +78,7 @@ input.enable_scoped {
     cursor: pointer;
     opacity: 0.5;
     filter: grayscale(0.5);
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
 }
 
 .regex-toggle-off:hover {

@@ -23,7 +23,7 @@ body.login .userSelect {
     width: 30%;
     cursor: pointer;
     margin: 5px 0;
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color var(--animation-duration) ease-in-out;
     display: flex;
     align-items: center;
     justify-content: center;

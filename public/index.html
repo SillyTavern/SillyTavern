@@ -140,7 +140,7 @@
                                         <div data-preset-manager-import="novel" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
                                             <i class="fa-fw fa-solid fa-file-import"></i>
                                         </div>
-                                        <div data-preset-manager-export="novel"  class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
+                                        <div data-preset-manager-export="novel" class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
                                             <i class="fa-fw fa-solid fa-file-export"></i>
                                         </div>
                                         <div data-preset-manager-delete="novel" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
@@ -663,7 +663,7 @@
                                 <div data-source="openrouter" class="range-block">
                                     <div class="range-block-title" title="Allow compressing requests by removing messages from the middle of the prompt.">
                                         <span data-i18n="Middle-out Transform">Middle-out Transform</span>
-                                        <a href="https://openrouter.ai/docs/transforms" target="_blank" rel="noreferrer noopener"  class="note-link-span fa-solid fa-circle-question"></a>
+                                        <a href="https://openrouter.ai/docs/transforms" target="_blank" rel="noreferrer noopener" class="note-link-span fa-solid fa-circle-question"></a>
                                     </div>
                                     <div class="wide100p">
                                         <select id="openrouter_middleout" class="text_pole">
@@ -3236,6 +3236,7 @@
                                     <optgroup label="LearnLM">
                                         <option value="learnlm-2.0-flash-experimental">learnlm-2.0-flash-experimental</option>
                                     </optgroup>
+                                    <optgroup id="google_other_models" label="Other"></optgroup>
                                 </select>
                             </div>
                         </form>
@@ -3301,16 +3302,16 @@
                                         <span id="vertexai_service_account_info"></span>
                                     </div>
                                     <textarea id="vertexai_service_account_json" class="text_pole textarea_compact" rows="4" placeholder='Paste your Service Account JSON content here, e.g.:
-{
-  "type": "service_account",
-  "project_id": "your-project-id",
-  "private_key_id": "...",
-  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
-  "client_email": "...",
-  "client_id": "...",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token"
-}'></textarea>
+                {
+                "type": "service_account",
+                "project_id": "your-project-id",
+                "private_key_id": "...",
+                "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+                "client_email": "...",
+                "client_id": "...",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token"
+                }'></textarea>
                                     <div data-for="vertexai_service_account_json" class="neutral_warning" data-i18n="For privacy reasons, your Service Account JSON content will be hidden after you reload the page.">
                                         For privacy reasons, your Service Account JSON content will be hidden after you reload the page.
                                     </div>
@@ -3827,7 +3828,7 @@
                                     <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
                                     <small><i class="fa-solid fa-link menu_button margin0"></i></small>
                                 </label>
-                                <label id="instruct_enabled_label"for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
+                                <label id="instruct_enabled_label" for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
                                     <input id="instruct_enabled" type="checkbox" style="display:none;" />
                                     <small><i class="fa-solid fa-power-off menu_button togglable margin0"></i></small>
                                 </label>
@@ -4271,8 +4272,8 @@
                                                 <small>
                                                     <span data-i18n="Scan Depth">Scan Depth</span>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="100" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_depth" id="world_info_depth_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="1000" step="1">
+                                                <input class="neo-range-input" type="number" min="0" max="1000" step="1" data-for="world_info_depth" id="world_info_depth_counter">
                                             </div>
 
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
@@ -4741,6 +4742,10 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
+                           <label for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
+                               <input id="background_thumbnails_animation" type="checkbox" />
+                               <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
+                           </label>
                             <label class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <small data-i18n="Show avatar filenames">Show avatar filenames</small>
@@ -5286,7 +5291,7 @@
                 <div class="flex-container wide100p alignitemscenter spaceBetween flexNoGap">
                     <div class="flex-container alignItemsBaseline wide100p">
                         <div class="flex1 flex-container alignItemsBaseline">
-                            <h3 class="margin0" >
+                            <h3 class="margin0">
                                 <span data-i18n="Persona Management">Persona Management</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/personas/" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -5457,10 +5462,12 @@
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
+                        <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps">
+                        </div>
+                        <hr class="wide100p">
                     </div>
                 </div>
-                <hr>
+
                 <!-- this div structure must be preserved until group peeking can adjust -->
                 <div id="rm_PinAndTabs">
                     <div id="right-nav-panel-tabs" class="">
@@ -5485,340 +5492,343 @@
                     </div>
                 </div>
                 <!-- end group peeking cope structure-->
-                <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
-                    <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <div id="avatar-and-name-block">
-                            <div id="name_div">
-                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" value="" autocomplete="off">
-                                <div class="extension_token_counter">
-                                    <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
-                                </div>
-                            </div>
-                            <div class="flex-container flexFlowColumn expander flexNoGap">
-                                <div id="avatar_div" class="avatar_div buttons_block alignitemsflexstart justifySpaceBetween flexnowrap">
-                                    <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
-                                        <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
-                                        <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
-                                    </label>
-                                    <div class="flex-container" id="avatar_controls">
-                                        <div class="form_create_bottom_buttons_block buttons_block">
-                                            <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
-                                            <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
-                                            <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
-                                            <input type="hidden" id="fav_checkbox" name="fav" />
-                                            <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
-                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
-                                            <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Chat Lore Alt+Click to open the lorebook"></div>
-                                            <div id="char_connections_button" class="menu_button fa-solid fa-face-smile" title="Connected Personas" data-i18n="[title]Connected Personas"></div>
-                                            <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
-                                            <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
-                                            <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
-                                            <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character"></div>
-                                            <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
-                                                <input type="submit" id="create_button" name="create_button">
-                                            </label>
-                                            <div id="delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Character" data-i18n="[title]Delete Character"></div>
-                                        </div>
-                                        <label class="flex1 height100p" for="char-management-dropdown">
-                                            <select id="char-management-dropdown" class="text_pole">
-                                                <option value="default" disabled selected data-i18n="More...">More...</option>
-                                                <option id="set_character_world" data-i18n="Link to World Info">
-                                                    Link to World Info
-                                                </option>
-                                                <option id="import_character_info" data-i18n="Import Card Lore">
-                                                    Import Card Lore
-                                                </option>
-                                                <option id="set_chat_scenario" data-i18n="Scenario Override">
-                                                    Scenario Override
-                                                </option>
-                                                <option id="convert_to_persona" data-i18n="Convert to Persona">
-                                                    Convert to Persona
-                                                </option>
-                                                <option id="renameCharButton" data-i18n="Rename">
-                                                    Rename
-                                                </option>
-                                                <option id="character_source" data-i18n="Link to Source">
-                                                    Link to Source
-                                                </option>
-                                                <option id="replace_update" data-i18n="Replace / Update">
-                                                    Replace / Update
-                                                </option>
-                                                <option id="import_tags" data-i18n="Import Tags">
-                                                    Import Tags
-                                                </option>
-                                                <option id="set_as_assistant" data-i18n="Set / Unset as Welcome Page Assistant">
-                                                    Set / Unset as Welcome Page Assistant
-                                                </option>
-                                                <!--<option id="dupe_button">
-                                                        Duplicate
-                                                    </option>
-                                                    <option id="export_button">
-                                                        Export
-                                                    </option>
-                                                    <option id="delete_button">
-                                                        Delete
-                                                    </option>-->
-                                            </select>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div id="tags_div">
-                                    <div class="tag_controls">
-                                        <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
-                                        <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
-                                    </div>
-                                    <div id="tagList" class="tags"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <hr>
-                        <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
-                            <div id="creators_notes_div" class="title_restorable flexGap5">
-                                <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
-                                <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
-                                <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
-                                <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
-                            </div>
-                            <div id="creator_notes_spoiler" class="flex1"></div>
-                            <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
-                        </div>
-                        <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
-                            <hr>
-                            <div id="description_div" class="title_restorable">
-                                <div class="flex-container alignitemscenter">
-                                    <span data-i18n="Character Description" class="mdhotkey_location">Description</span>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div id="character_open_media_overrides" class="menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this character." data-i18n="[title]Click to allow/forbid the use of external media for this character.">
-                                    <i id="character_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
-                                    <i id="character_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
-                                    <span data-i18n="Ext. Media">
-                                        Ext. Media
-                                    </span>
-                                </div>
-                            </div>
-                            <textarea id="description_textarea" class="mdHotkeys" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
-                            <div class="extension_token_counter">
-                                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
-                            </div>
-                        </div>
-                        <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
-                            <div id="first_message_div" class="title_restorable">
-                                <div class="flex-container alignitemscenter flex1">
-                                    <span data-i18n="First message" class="mdhotkey_location">First message</span>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                    <span data-i18n="Alt. Greetings">
-                                        Alt. Greetings
-                                    </span>
-                                </div>
-                            </div>
-                            <textarea class="mdHotkeys" id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
-                            <div class="extension_token_counter">
-                                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
-                            </div>
-                        </div>
-                        <!-- these divs are invisible and used for server communication purposes -->
-                        <div id="hidden-divs">
-                            <input id="character_json_data" name="json_data" type="hidden">
-                            <input id="avatar_url_pole" name="avatar_url" type="hidden">
-                            <input id="selected_chat_pole" name="chat" type="hidden">
-                            <input id="create_date_pole" name="create_date" type="hidden">
-                            <input id="last_mes_pole" name="last_mes" type="hidden">
-                            <input id="character_world" name="world" type="hidden">
-                        </div>
-                        <!-- now back to normal divs for display purposes-->
-                    </form>
-                </div>
-                <div name="Group Chat Edit Panel" id="rm_group_chats_block" class="right_menu flex-container flexNoGap">
-                    <div class="inline-drawer wide100p flexFlowColumn">
-                        <div id="groupControlsToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span>
-                                <span data-i18n="Group Controls">Group Controls</span>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
-                            </span>
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <div id="group-metadata-controls" class="marginTopBot5">
-                                <div class="flex-container wide100p">
-                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" />
-                                    <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
-                                </div>
-                                <div id="group_tags_div" class="wide100p">
-                                    <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole textarea_compact tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
-                                        <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags" data-i18n="[title]View all tags"></div>
-                                    </div>
-                                    <div id="groupTagList" class="tags paddingTopBot5"></div>
-                                </div>
-                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p fontsize80p">
-                                    <div>
-                                        <label class="add_avatar avatar flex-container justifyCenter" for="group_avatar_button" title="Click to select a new avatar for this group" data-i18n="[title]Click to select a new avatar for this group">
-                                            <div id="group_avatar_preview">
-                                                <div class="avatar">
-                                                    <img src="img/ai4.png" alt="avatar">
-                                                </div>
-                                            </div>
-                                            <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                        </label>
-                                    </div>
-                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="flex-container paddingLeftRight5 flex2">
-                                        <div class="flex1 flexGap5">
-                                            <label for="rm_group_activation_strategy" class="flexnowrap width100p whitespacenowrap">
-                                                <span data-i18n="Group reply strategy">Group reply strategy</span>
-                                            </label>
-                                            <select id="rm_group_activation_strategy">
-                                                <option value="2" data-i18n="Manual">Manual</option>
-                                                <option value="0" data-i18n="Natural order">Natural order</option>
-                                                <option value="1" data-i18n="List order">List order</option>
-                                                <option value="3" data-i18n="Pooled order">Pooled order</option>
-                                            </select>
-                                        </div>
-                                        <div class="flex1 flexGap5">
-                                            <label for="rm_group_generation_mode" class="flexnowrap width100p whitespacenowrap">
-                                                <span data-i18n="Group generation handling mode">Group generation handling mode</span>
-                                            </label>
-                                            <select id="rm_group_generation_mode">
-                                                <option value="0" data-i18n="Swap character cards">Swap character cards</option>
-                                                <option value="1" data-i18n="Join character cards (exclude muted)">Join character cards (exclude muted)</option>
-                                                <option value="2" data-i18n="Join character cards (include muted)">Join character cards (include muted)</option>
-                                            </select>
-                                        </div>
-                                        <div class="flex1 flexGap5" title="Inserted before each part of the joined fields." data-i18n="[title]Inserted before each part of the joined fields.">
-                                            <label for="rm_group_generation_mode_join_prefix" class="flexnowrap width100p whitespacenowrap">
-                                                <span data-i18n="Join Prefix">Join Prefix</span>
-                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
-                                                </div>
-                                            </label>
-                                            <textarea id="rm_group_generation_mode_join_prefix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
-                                        </div>
-                                        <div class="flex1 flexGap5" title="Inserted after each part of the joined fields." data-i18n="[title]Inserted after each part of the joined fields.">
-                                            <label for="rm_group_generation_mode_join_suffix" class="flexnowrap width100p whitespacenowrap">
-                                                <span data-i18n="Join Suffix">Join Suffix</span>
-                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
-                                                </div>
-                                            </label>
-                                            <textarea id="rm_group_generation_mode_join_suffix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
-                                        </div>
-                                    </div>
-                                    <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
-                                        <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long"></div>
-                                        <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
-                                        <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
-                                        <input id="rm_group_fav" type="hidden" />
-                                        <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
-                                            <i id="group_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
-                                            <i id="group_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
-                                        </div>
-                                        <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-check" title="Create" data-i18n="[title]Create"></div>
-                                        <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
-                                        <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
-                                        <div class="flex1">
-                                            <label class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_allow_self_responses" type="checkbox" />
-                                                <span data-i18n="Allow self responses">Allow self responses</span>
-                                            </label>
-                                            <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_automode" type="checkbox" />
-                                                <span data-i18n="Auto Mode">Auto Mode</span>
-                                                <input id="rm_group_automode_delay" class="text_pole textarea_compact widthUnset" type="number" min="1" max="999" step="1" value="5" title="Auto Mode delay" data-i18n="[title]Auto Mode delay" />
-                                            </label>
-                                            <label id="rm_group_hidemutedsprites_label" class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_hidemutedsprites" type="checkbox" />
-                                                <span data-i18n="Hide Muted Member Sprites">Hide Muted Member Sprites</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="inline-drawer wide100p flexFlowColumn">
-                        <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span data-i18n="Current Members">Current Members </span><i id="groupCurrentMemberPopoutButton" class="fa-solid fa-window-restore menu_button"></i>
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
-                                <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container" group_empty_text="Group is empty." data-i18n="[group_empty_text]Group is empty."></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="inline-drawer wide100p flexFlowColumn">
-                        <div id="groupAddMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span data-i18n="Add Members">Add Members</span>
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
-                                </div>
-                                <div class="rm_tag_controls">
-                                    <div class="tags rm_tag_filter"></div>
-                                </div>
-                                <div id="rm_group_add_members_pagination" class="group_pagination"></div>
-                                <div id="rm_group_add_members" class="overflowYAuto flex-container" no_characters_text="No characters available" data-i18n="[no_characters_text]No characters available"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="rm_character_import" class="right_menu" style="display: none;">
-                    <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
-                        <input id="character_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off">
-                    </form>
-                    <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
-                </div>
-                <div name="Character List Panel" id="rm_characters_block" class="right_menu">
-                    <div id="charListFixedTop">
-                        <form id="form_character_search_form" action="javascript:void(null);">
-                            <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus "></div>
-                            <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
-                            <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
-                            <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
-                            <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
-                                <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
-                                <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
-                                <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
-                                <option data-field="create_date" data-order="desc" data-i18n="Newest">Newest</option>
-                                <option data-field="create_date" data-order="asc" data-i18n="Oldest">Oldest</option>
-                                <option data-field="fav" data-order="desc" data-rule="boolean" data-i18n="Favorites">Favorites</option>
-                                <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
-                                <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
-                                <option data-field="chat_size" data-order="asc" data-i18n="Least chats">Least chats</option>
-                                <option data-field="data_size" data-order="desc" data-i18n="Most tokens">Most tokens</option>
-                                <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
-                                <option data-field="name" data-order="random" data-i18n="Random">Random</option>
-                            </select>
-                        </form>
-                        <div class="rm_tag_controls">
-                            <div class="tags rm_tag_filter"></div>
-                            <div class="tags rm_tag_bogus_drilldown"></div>
-                        </div>
-                        <hr>
-                    </div>
 
-                    <div id="rm_print_characters_pagination">
-                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view" data-i18n="[title]Toggle character grid view"></i>
-                        <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters&#13;&#13;Click to toggle characters&#13;Shift + Click to select/deselect a range of characters&#13;Right-click for actions" data-i18n="[title]Bulk_edit_characters"></i>
-                        <div id="bulkSelectedCount" class="bulkEditOptionElement paginationjs-nav"></div>
-                        <i id="bulkSelectAllButton" class="fa-solid fa-check-double menu_button bulkEditOptionElement bulkSelectAllButton" title="Bulk select all characters" data-i18n="[title]Bulk select all characters" style="display: none;"></i>
-                        <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkEditOptionElement bulkDeleteButton" title="Bulk delete characters" data-i18n="[title]Bulk delete characters" style="display: none;"></i>
+                <div class="scrollableInner">
+                    <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
+                        <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <div id="avatar-and-name-block">
+                                <div id="name_div">
+                                    <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" value="" autocomplete="off">
+                                    <div class="extension_token_counter">
+                                        <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
+                                    </div>
+                                </div>
+                                <div class="flex-container flexFlowColumn expander flexNoGap">
+                                    <div id="avatar_div" class="avatar_div buttons_block alignitemsflexstart justifySpaceBetween flexnowrap">
+                                        <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
+                                            <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
+                                            <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
+                                        </label>
+                                        <div class="flex-container" id="avatar_controls">
+                                            <div class="form_create_bottom_buttons_block buttons_block">
+                                                <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+                                                <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
+                                                <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
+                                                <input type="hidden" id="fav_checkbox" name="fav" />
+                                                <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
+                                                <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
+                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Chat Lore Alt+Click to open the lorebook"></div>
+                                                <div id="char_connections_button" class="menu_button fa-solid fa-face-smile" title="Connected Personas" data-i18n="[title]Connected Personas"></div>
+                                                <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
+                                                <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
+                                                <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
+                                                <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character"></div>
+                                                <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
+                                                    <input type="submit" id="create_button" name="create_button">
+                                                </label>
+                                                <div id="delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Character" data-i18n="[title]Delete Character"></div>
+                                            </div>
+                                            <label class="flex1 height100p" for="char-management-dropdown">
+                                                <select id="char-management-dropdown" class="text_pole">
+                                                    <option value="default" disabled selected data-i18n="More...">More...</option>
+                                                    <option id="set_character_world" data-i18n="Link to World Info">
+                                                        Link to World Info
+                                                    </option>
+                                                    <option id="import_character_info" data-i18n="Import Card Lore">
+                                                        Import Card Lore
+                                                    </option>
+                                                    <option id="set_chat_scenario" data-i18n="Scenario Override">
+                                                        Scenario Override
+                                                    </option>
+                                                    <option id="convert_to_persona" data-i18n="Convert to Persona">
+                                                        Convert to Persona
+                                                    </option>
+                                                    <option id="renameCharButton" data-i18n="Rename">
+                                                        Rename
+                                                    </option>
+                                                    <option id="character_source" data-i18n="Link to Source">
+                                                        Link to Source
+                                                    </option>
+                                                    <option id="replace_update" data-i18n="Replace / Update">
+                                                        Replace / Update
+                                                    </option>
+                                                    <option id="import_tags" data-i18n="Import Tags">
+                                                        Import Tags
+                                                    </option>
+                                                    <option id="set_as_assistant" data-i18n="Set / Unset as Welcome Page Assistant">
+                                                        Set / Unset as Welcome Page Assistant
+                                                    </option>
+                                                    <!--<option id="dupe_button">
+                                                            Duplicate
+                                                        </option>
+                                                        <option id="export_button">
+                                                            Export
+                                                        </option>
+                                                        <option id="delete_button">
+                                                            Delete
+                                                        </option>-->
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="tags_div">
+                                        <div class="tag_controls">
+                                            <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
+                                            <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
+                                        </div>
+                                        <div id="tagList" class="tags"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
+                                <div id="creators_notes_div" class="title_restorable flexGap5">
+                                    <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
+                                    <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
+                                    <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
+                                    <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                                </div>
+                                <div id="creator_notes_spoiler" class="flex1"></div>
+                                <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                            </div>
+                            <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
+                                <hr>
+                                <div id="description_div" class="title_restorable">
+                                    <div class="flex-container alignitemscenter">
+                                        <span data-i18n="Character Description" class="mdhotkey_location">Description</span>
+                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </div>
+                                    <div id="character_open_media_overrides" class="menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this character." data-i18n="[title]Click to allow/forbid the use of external media for this character.">
+                                        <i id="character_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                        <i id="character_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                        <span data-i18n="Ext. Media">
+                                            Ext. Media
+                                        </span>
+                                    </div>
+                                </div>
+                                <textarea id="description_textarea" class="mdHotkeys" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
+                                <div class="extension_token_counter">
+                                    <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
+                                </div>
+                            </div>
+                            <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
+                                <div id="first_message_div" class="title_restorable">
+                                    <div class="flex-container alignitemscenter flex1">
+                                        <span data-i18n="First message" class="mdhotkey_location">First message</span>
+                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </div>
+                                    <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                        <span data-i18n="Alt. Greetings">
+                                            Alt. Greetings
+                                        </span>
+                                    </div>
+                                </div>
+                                <textarea class="mdHotkeys" id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
+                                <div class="extension_token_counter">
+                                    <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
+                                </div>
+                            </div>
+                            <!-- these divs are invisible and used for server communication purposes -->
+                            <div id="hidden-divs">
+                                <input id="character_json_data" name="json_data" type="hidden">
+                                <input id="avatar_url_pole" name="avatar_url" type="hidden">
+                                <input id="selected_chat_pole" name="chat" type="hidden">
+                                <input id="create_date_pole" name="create_date" type="hidden">
+                                <input id="last_mes_pole" name="last_mes" type="hidden">
+                                <input id="character_world" name="world" type="hidden">
+                            </div>
+                            <!-- now back to normal divs for display purposes-->
+                        </form>
                     </div>
-                    <div id="rm_print_characters_block" class="flexFlowColumn"></div>
+                    <div name="Group Chat Edit Panel" id="rm_group_chats_block" class="right_menu flex-container flexNoGap">
+                        <div class="inline-drawer wide100p flexFlowColumn">
+                            <div id="groupControlsToggle" class="inline-drawer-toggle inline-drawer-header">
+                                <span>
+                                    <span data-i18n="Group Controls">Group Controls</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </span>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            </div>
+                            <div class="inline-drawer-content">
+                                <div id="group-metadata-controls" class="marginTopBot5">
+                                    <div class="flex-container wide100p">
+                                        <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" />
+                                        <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
+                                    </div>
+                                    <div id="group_tags_div" class="wide100p">
+                                        <div class="tag_controls">
+                                            <input id="groupTagInput" class="text_pole textarea_compact tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
+                                            <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags" data-i18n="[title]View all tags"></div>
+                                        </div>
+                                        <div id="groupTagList" class="tags paddingTopBot5"></div>
+                                    </div>
+                                    <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p fontsize80p">
+                                        <div>
+                                            <label class="add_avatar avatar flex-container justifyCenter" for="group_avatar_button" title="Click to select a new avatar for this group" data-i18n="[title]Click to select a new avatar for this group">
+                                                <div id="group_avatar_preview">
+                                                    <div class="avatar">
+                                                        <img src="img/ai4.png" alt="avatar">
+                                                    </div>
+                                                </div>
+                                                <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                            </label>
+                                        </div>
+                                        <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="flex-container paddingLeftRight5 flex2">
+                                            <div class="flex1 flexGap5">
+                                                <label for="rm_group_activation_strategy" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Group reply strategy">Group reply strategy</span>
+                                                </label>
+                                                <select id="rm_group_activation_strategy">
+                                                    <option value="2" data-i18n="Manual">Manual</option>
+                                                    <option value="0" data-i18n="Natural order">Natural order</option>
+                                                    <option value="1" data-i18n="List order">List order</option>
+                                                    <option value="3" data-i18n="Pooled order">Pooled order</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex1 flexGap5">
+                                                <label for="rm_group_generation_mode" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Group generation handling mode">Group generation handling mode</span>
+                                                </label>
+                                                <select id="rm_group_generation_mode">
+                                                    <option value="0" data-i18n="Swap character cards">Swap character cards</option>
+                                                    <option value="1" data-i18n="Join character cards (exclude muted)">Join character cards (exclude muted)</option>
+                                                    <option value="2" data-i18n="Join character cards (include muted)">Join character cards (include muted)</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex1 flexGap5" title="Inserted before each part of the joined fields." data-i18n="[title]Inserted before each part of the joined fields.">
+                                                <label for="rm_group_generation_mode_join_prefix" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Join Prefix">Join Prefix</span>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
+                                                    </div>
+                                                </label>
+                                                <textarea id="rm_group_generation_mode_join_prefix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                            <div class="flex1 flexGap5" title="Inserted after each part of the joined fields." data-i18n="[title]Inserted after each part of the joined fields.">
+                                                <label for="rm_group_generation_mode_join_suffix" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Join Suffix">Join Suffix</span>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
+                                                    </div>
+                                                </label>
+                                                <textarea id="rm_group_generation_mode_join_suffix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
+                                            <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long"></div>
+                                            <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
+                                            <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
+                                            <input id="rm_group_fav" type="hidden" />
+                                            <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
+                                                <i id="group_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                                <i id="group_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                            </div>
+                                            <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-check" title="Create" data-i18n="[title]Create"></div>
+                                            <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
+                                            <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                                            <div class="flex1">
+                                                <label class="checkbox_label whitespacenowrap">
+                                                    <input id="rm_group_allow_self_responses" type="checkbox" />
+                                                    <span data-i18n="Allow self responses">Allow self responses</span>
+                                                </label>
+                                                <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
+                                                    <input id="rm_group_automode" type="checkbox" />
+                                                    <span data-i18n="Auto Mode">Auto Mode</span>
+                                                    <input id="rm_group_automode_delay" class="text_pole textarea_compact widthUnset" type="number" min="1" max="999" step="1" value="5" title="Auto Mode delay" data-i18n="[title]Auto Mode delay" />
+                                                </label>
+                                                <label id="rm_group_hidemutedsprites_label" class="checkbox_label whitespacenowrap">
+                                                    <input id="rm_group_hidemutedsprites" type="checkbox" />
+                                                    <span data-i18n="Hide Muted Member Sprites">Hide Muted Member Sprites</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inline-drawer wide100p flexFlowColumn">
+                            <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                                <span data-i18n="Current Members">Current Members </span><i id="groupCurrentMemberPopoutButton" class="fa-solid fa-window-restore menu_button"></i>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            </div>
+                            <div class="inline-drawer-content">
+                                <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                    <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
+                                    <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container" group_empty_text="Group is empty." data-i18n="[group_empty_text]Group is empty."></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inline-drawer wide100p flexFlowColumn">
+                            <div id="groupAddMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                                <span data-i18n="Add Members">Add Members</span>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            </div>
+                            <div class="inline-drawer-content">
+                                <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                    <div id="rm_group_add_members_header">
+                                        <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                                    </div>
+                                    <div class="rm_tag_controls">
+                                        <div class="tags rm_tag_filter"></div>
+                                    </div>
+                                    <div id="rm_group_add_members_pagination" class="group_pagination"></div>
+                                    <div id="rm_group_add_members" class="overflowYAuto flex-container" no_characters_text="No characters available" data-i18n="[no_characters_text]No characters available"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rm_character_import" class="right_menu" style="display: none;">
+                        <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
+                            <input id="character_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off">
+                        </form>
+                        <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
+                    </div>
+                    <div name="Character List Panel" id="rm_characters_block" class="right_menu">
+                        <div id="charListFixedTop">
+                            <form id="form_character_search_form" action="javascript:void(null);">
+                                <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus "></div>
+                                <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
+                                <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
+                                <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
+                                <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                                <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
+                                    <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
+                                    <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
+                                    <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
+                                    <option data-field="create_date" data-order="desc" data-i18n="Newest">Newest</option>
+                                    <option data-field="create_date" data-order="asc" data-i18n="Oldest">Oldest</option>
+                                    <option data-field="fav" data-order="desc" data-rule="boolean" data-i18n="Favorites">Favorites</option>
+                                    <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
+                                    <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
+                                    <option data-field="chat_size" data-order="asc" data-i18n="Least chats">Least chats</option>
+                                    <option data-field="data_size" data-order="desc" data-i18n="Most tokens">Most tokens</option>
+                                    <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
+                                    <option data-field="name" data-order="random" data-i18n="Random">Random</option>
+                                </select>
+                            </form>
+                            <div class="rm_tag_controls">
+                                <div class="tags rm_tag_filter"></div>
+                                <div class="tags rm_tag_bogus_drilldown"></div>
+                            </div>
+                            <hr>
+                        </div>
+
+                        <div id="rm_print_characters_pagination">
+                            <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view" data-i18n="[title]Toggle character grid view"></i>
+                            <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters&#13;&#13;Click to toggle characters&#13;Shift + Click to select/deselect a range of characters&#13;Right-click for actions" data-i18n="[title]Bulk_edit_characters"></i>
+                            <div id="bulkSelectedCount" class="bulkEditOptionElement paginationjs-nav"></div>
+                            <i id="bulkSelectAllButton" class="fa-solid fa-check-double menu_button bulkEditOptionElement bulkSelectAllButton" title="Bulk select all characters" data-i18n="[title]Bulk select all characters" style="display: none;"></i>
+                            <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkEditOptionElement bulkDeleteButton" title="Bulk delete characters" data-i18n="[title]Bulk delete characters" style="display: none;"></i>
+                        </div>
+                        <div id="rm_print_characters_block" class="flexFlowColumn"></div>
+                    </div>
                 </div>
             </nav>
         </div>
@@ -6195,6 +6205,298 @@
             </div>
         </div>
         <div id="entry_edit_template" class="template_element">
+            <div class="world_entry_edit">
+                <div class="flex-container wide100p alignitemscenter">
+                    <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
+                        <div class="world_entry_form_control keyprimary flex1">
+                            <small class="displayNone">
+                                <span data-i18n="Comma separated (required)">
+                                    Comma separated (required)
+                                </span>
+                            </small>
+                            <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
+                            <select class="keyprimaryselect keyselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
+                            <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" style="display: none;"></textarea>
+                            <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
+                                ⌨️
+                            </button>
+                        </div>
+                        <div class="world_entry_form_control">
+                            <small class="textAlignCenter" data-i18n="Logic">Logic</small>
+                            <select name="entryLogicType" class="text_pole widthFitContent margin0">
+                                <option value="0" data-i18n="AND ANY">AND ANY</option>
+                                <option value="3" data-i18n="AND ALL">AND ALL</option>
+                                <option value="1" data-i18n="NOT ALL">NOT ALL</option>
+                                <option value="2" data-i18n="NOT ANY">NOT ANY</option>
+                            </select>
+                        </div>
+                        <div class="world_entry_form_control keysecondary flex1">
+                            <small class="displayNone">
+                                <span data-i18n="(ignored if empty)">
+                                    (ignored if empty)
+                                </span>
+                            </small>
+                            <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
+                            <select class="keysecondaryselect keyselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
+                            <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" style="display: none;"></textarea>
+                            <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
+                                ⌨️
+                            </button>
+                        </div>
+                    </div>
+                    <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
+                        <div class="world_entry_form_control flex1">
+                            <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
+                            <input class="text_pole margin0" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="1000">
+                        </div>
+                        <div class="world_entry_form_control flex1">
+                            <small class="textAlignCenter" data-i18n="Case-Sensitive">Case-Sensitive</small>
+                            <select name="caseSensitive" class="text_pole widthNatural margin0">
+                                <option value="null" data-i18n="Use global">Use global</option>
+                                <option value="true" data-i18n="Yes">Yes</option>
+                                <option value="false" data-i18n="No">No</option>
+                            </select>
+                        </div>
+                        <div class="world_entry_form_control flex1">
+                            <small class="textAlignCenter" data-i18n="Whole Words">Whole Words</small>
+                            <select name="matchWholeWords" class="text_pole widthNatural margin0">
+                                <option value="null" data-i18n="Use global">Use global</option>
+                                <option value="true" data-i18n="Yes">Yes</option>
+                                <option value="false" data-i18n="No">No</option>
+                            </select>
+                        </div>
+                        <div class="world_entry_form_control flex1">
+                            <small class="textAlignCenter" data-i18n="Group Scoring">Group Scoring</small>
+                            <select name="useGroupScoring" class="text_pole widthNatural margin0">
+                                <option value="null" data-i18n="Use global">Use global</option>
+                                <option value="true" data-i18n="Yes">Yes</option>
+                                <option value="false" data-i18n="No">No</option>
+                            </select>
+                        </div>
+                        <div class="world_entry_form_control flex1" title="Can be used to automatically activate Quick Replies" data-i18n="[title]Can be used to automatically activate Quick Replies">
+                            <small class="textAlignCenter" data-i18n="Automation ID">Automation ID</small>
+                            <input class="text_pole margin0" name="automationId" type="text" placeholder="( None )" data-i18n="[placeholder]( None )">
+                        </div>
+                        <div class="world_entry_form_control flex1" title="Defines delay levels for recursive scans.&#13;&#13;Initially, only the first level (smallest number) will match.&#13;Once no matches are found, the next level becomes eligible for matching.&#13;This repeats until all levels are checked.&#13;&#13;Tied to the &quot;Delay until recursion&quot; setting." data-i18n="[title]delay_until_recursion_level">
+                            <small class="textAlignCenter">
+                                <span data-i18n="Recursion Level">Recursion Level</span>
+                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                            </small>
+                            <input class="text_pole margin0" name="delayUntilRecursionLevel" type="text" placeholder="1">
+                        </div>
+                    </div>
+                    <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
+                        <div class="world_entry_form_control flex1">
+                            <label for="content ">
+                                <small>
+                                    <span class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
+                                        <span class="alignitemscenter flex-container">
+                                            <span data-i18n="Content" class="mdhotkey_location">
+                                                Content
+                                            </span>
+                                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                        </span>
+                                        <span>
+                                            (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
+                                            <span class="world_entry_form_uid_value" data-first-run="true"></span>
+                                        </span>
+                                        <div>
+                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                <input type="checkbox" name="excludeRecursion" />
+                                                <span data-i18n="Non-recursable (will not be activated by another)">
+                                                    Non-recursable (will not be activated by another)
+                                                </span>
+                                            </label>
+                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                <input type="checkbox" name="preventRecursion" />
+                                                <span data-i18n="Prevent further recursion (this entry will not activate others)">
+                                                    Prevent further recursion (will not activate others)
+                                                </span>
+                                            </label>
+                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                <input type="checkbox" name="delay_until_recursion" />
+                                                <span data-i18n="Delay until recursion (can only be activated on recursive checking)">
+                                                    Delay until recursion (can only be activated on recursive checking)
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </span>
+                                </small>
+                                <small class="displayNone">
+                                    <span data-i18n="What this keyword should mean to the AI, sent verbatim">
+                                        What this keyword should mean to the AI, sent verbatim
+                                    </span>
+                                </small>
+                            </label>
+                            <textarea class="text_pole mdHotkeys" name="content" rows="8" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
+                        </div>
+                    </div>
+                    <div class="world_entry_thin_controls commentContainer">
+                    </div>
+                </div>
+                <div class="flex-container wide100p flexGap10">
+                    <div class="flex4 flex-container flexFlowColumn flexNoGap">
+                        <div class="flex-container justifySpaceBetween">
+                            <small for="group">
+                                <span data-i18n="Inclusion Group">Inclusion Group</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;Supports multiple comma-separated groups.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.Documentation: World Info - Inclusion Group">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </small>
+                            <label class="checkbox_label flexNoGap margin-r5" for="groupOverride">
+                                <input type="checkbox" name="groupOverride" />
+                                <span>
+                                    <small title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.If multiple are prioritized, the one with the highest 'Order' is chosen.">
+                                        <span data-i18n="Prioritize">Prioritize</span>
+                                        <div class="fa-solid fa-circle-info opacity50p"></div>
+                                    </small>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="range-block-range">
+                            <input type="text" class="text_pole margin0" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
+                        </div>
+                    </div>
+                    <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
+                        <div class="flex-container justifySpaceBetween marginBot5">
+                            <small for="groupWeight" data-i18n="Group Weight">
+                                Group Weight
+                            </small>
+                        </div>
+                        <div class="range-block-range">
+                            <input type="number" class="text_pole margin0" name="groupWeight" rows="1" placeholder="100" min="1" max="999999">
+                        </div>
+                    </div>
+                    <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Sticky entries will stay active for N messages after being triggered." title="Sticky entries will stay active for N messages after being triggered.">
+                        <div class="flex-container justifySpaceBetween marginBot5">
+                            <small class="flex-container alignItemsBaseline" for="sticky">
+                                <span data-i18n="Sticky">
+                                    Sticky
+                                </span>
+                                <i class="fa-solid fa-comments fa-xs"></i>
+                            </small>
+                        </div>
+                        <div class="range-block-range">
+                            <input class="text_pole margin0" name="sticky" type="number" data-i18n="[placeholder]Non-sticky" placeholder="Non-sticky" min="0" max="999999">
+                        </div>
+                    </div>
+                    <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a cooldown can't be activated N messages after being triggered." title="Entries with a cooldown can't be activated N messages after being triggered.">
+                        <div class="flex-container justifySpaceBetween marginBot5">
+                            <small class="flex-container alignItemsBaseline" for="cooldown">
+                                <span data-i18n="Cooldown">
+                                    Cooldown
+                                </span>
+                                <i class="fa-solid fa-comments fa-xs"></i>
+                            </small>
+                        </div>
+                        <div class="range-block-range">
+                            <input class="text_pole margin0" name="cooldown" type="number" data-i18n="[placeholder]No cooldown" placeholder="No cooldown" min="0" max="999999">
+                        </div>
+                    </div>
+                    <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a delay can't be activated until there are N messages present in the chat." title="Entries with a delay can't be activated until there are N messages present in the chat.">
+                        <div class="flex-container justifySpaceBetween marginBot5">
+                            <small class="flex-container alignItemsBaseline" for="delay">
+                                <span data-i18n="Delay">
+                                    Delay
+                                </span>
+                                <i class="fa-solid fa-comments fa-xs"></i>
+                            </small>
+                        </div>
+                        <div class="range-block-range">
+                            <input class="text_pole margin0" name="delay" type="number" data-i18n="[placeholder]No delay" placeholder="No delay" min="0" max="999999">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-container wide100p flexGap10">
+                    <div class="flex4 flex-container flexFlowColumn flexNoGap">
+                        <div class="flex-container justifySpaceBetween">
+                            <small for="characterFilter" data-i18n="Filter to Characters or Tags">
+                                Filter to Characters or Tags
+                            </small>
+                            <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
+                                <input type="checkbox" name="character_exclusion" />
+                                <span>
+                                    <small title="Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry" data-i18n="[title]Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry">
+                                        <span data-i18n="Exclude">Exclude</span>
+                                        <div class="fa-solid fa-circle-info opacity50p"></div>
+                                    </small>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="range-block-range">
+                            <select name="characterFilter" class="select2_multi_sameline" multiple>
+                                <option value="" data-i18n="-- Characters not found --">
+                                    -- Characters not found --
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
+                    <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text">
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="selective" />
+                            <span data-i18n="Selective">Selective</span>
+                        </label>
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="useProbability" />
+                            <span data-i18n="Use Probability">Use Probability</span>
+                        </label>
+                        <label class="checkbox flex-container">
+                            <input type="checkbox" name="addMemo">
+                            <span data-i18n="Add Memo">Add Memo</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="inline-drawer wide100p flexFlowColumn">
+                    <div class="inline-drawer-toggle inline-drawer-header inline-drawer-header-pointer userSettingsInnerExpandable">
+                        <strong data-i18n="Additional Matching Sources">Additional Matching Sources</strong>
+                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                    </div>
+                    <div class="inline-drawer-content flex-container flexFlowRow flexGap10 paddingBottom5px">
+                        <small class="flex-container flex1 flexFlowColumn">
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchCharacterDescription" />
+                                <span data-i18n="Character Description">
+                                    Character Description
+                                </span>
+                            </label>
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchCharacterPersonality" />
+                                <span data-i18n="Character Personality">
+                                    Character Personality
+                                </span>
+                            </label>
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchScenario" />
+                                <span data-i18n="Scenario">
+                                    Scenario
+                                </span>
+                            </label>
+                        </small>
+                        <small class="flex-container flex1 flexFlowColumn">
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchPersonaDescription" />
+                                <span data-i18n="Persona Description">
+                                    Persona Description
+                                </span>
+                            </label>
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchCharacterDepthPrompt" />
+                                <span data-i18n="Character's Note">
+                                    Character's Note
+                                </span>
+                            </label>
+                            <label class="checkbox flex-container alignItemsCenter flexNoGap">
+                                <input type="checkbox" name="matchCreatorNotes" />
+                                <span data-i18n="Creator's Notes">
+                                    Creator's Notes
+                                </span>
+                            </label>
+                        </small>
+                    </div>
+                </div>
+            </div>
             <div class="world_entry">
                 <form class="world_entry_form  wi-card-entry">
                     <div class="inline-drawer wide100p">
@@ -6267,297 +6569,8 @@
                             <i class="menu_button duplicate_entry_button fa-solid fa-paste" title="Duplicate world info entry" data-i18n="[title]Duplicate world info entry" type="submit" value=""></i>
                             <i class="menu_button delete_entry_button fa-solid fa-trash-can" title="Delete world info entry" data-i18n="[title]Delete world info entry" type="submit" value=""></i>
                         </div>
-                        <div class="inline-drawer-content flex-container paddingBottom5px wide100p">
-                            <div class="flex-container wide100p alignitemscenter">
-                                <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
-                                    <div class="world_entry_form_control keyprimary flex1">
-                                        <small class="displayNone">
-                                            <span data-i18n="Comma separated (required)">
-                                                Comma separated (required)
-                                            </span>
-                                        </small>
-                                        <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
-                                        <select class="keyprimaryselect keyselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
-                                        <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" style="display: none;"></textarea>
-                                        <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
-                                            ⌨️
-                                        </button>
-                                    </div>
-                                    <div class="world_entry_form_control">
-                                        <small class="textAlignCenter" data-i18n="Logic">Logic</small>
-                                        <select name="entryLogicType" class="text_pole widthFitContent margin0">
-                                            <option value="0" data-i18n="AND ANY">AND ANY</option>
-                                            <option value="3" data-i18n="AND ALL">AND ALL</option>
-                                            <option value="1" data-i18n="NOT ALL">NOT ALL</option>
-                                            <option value="2" data-i18n="NOT ANY">NOT ANY</option>
-                                        </select>
-                                    </div>
-                                    <div class="world_entry_form_control keysecondary flex1">
-                                        <small class="displayNone">
-                                            <span data-i18n="(ignored if empty)">
-                                                (ignored if empty)
-                                            </span>
-                                        </small>
-                                        <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
-                                        <select class="keysecondaryselect keyselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
-                                        <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" style="display: none;"></textarea>
-                                        <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
-                                            ⌨️
-                                        </button>
-                                    </div>
-                                </div>
-                                <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
-                                    <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
-                                        <input class="text_pole margin0" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="1000">
-                                    </div>
-                                    <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Case-Sensitive">Case-Sensitive</small>
-                                        <select name="caseSensitive" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global">Use global</option>
-                                            <option value="true" data-i18n="Yes">Yes</option>
-                                            <option value="false" data-i18n="No">No</option>
-                                        </select>
-                                    </div>
-                                    <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Whole Words">Whole Words</small>
-                                        <select name="matchWholeWords" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global">Use global</option>
-                                            <option value="true" data-i18n="Yes">Yes</option>
-                                            <option value="false" data-i18n="No">No</option>
-                                        </select>
-                                    </div>
-                                    <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Group Scoring">Group Scoring</small>
-                                        <select name="useGroupScoring" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global">Use global</option>
-                                            <option value="true" data-i18n="Yes">Yes</option>
-                                            <option value="false" data-i18n="No">No</option>
-                                        </select>
-                                    </div>
-                                    <div class="world_entry_form_control flex1" title="Can be used to automatically activate Quick Replies" data-i18n="[title]Can be used to automatically activate Quick Replies">
-                                        <small class="textAlignCenter" data-i18n="Automation ID">Automation ID</small>
-                                        <input class="text_pole margin0" name="automationId" type="text" placeholder="( None )" data-i18n="[placeholder]( None )">
-                                    </div>
-                                    <div class="world_entry_form_control flex1" title="Defines delay levels for recursive scans.&#13;&#13;Initially, only the first level (smallest number) will match.&#13;Once no matches are found, the next level becomes eligible for matching.&#13;This repeats until all levels are checked.&#13;&#13;Tied to the &quot;Delay until recursion&quot; setting." data-i18n="[title]delay_until_recursion_level">
-                                        <small class="textAlignCenter">
-                                            <span data-i18n="Recursion Level">Recursion Level</span>
-                                            <div class="fa-solid fa-circle-info opacity50p"></div>
-                                        </small>
-                                        <input class="text_pole margin0" name="delayUntilRecursionLevel" type="text" placeholder="1">
-                                    </div>
-                                </div>
-                                <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
-                                    <div class="world_entry_form_control flex1">
-                                        <label for="content ">
-                                            <small>
-                                                <span class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
-                                                    <span class="alignitemscenter flex-container">
-                                                        <span data-i18n="Content" class="mdhotkey_location">
-                                                            Content
-                                                        </span>
-                                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                                    </span>
-                                                    <span>
-                                                        (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
-                                                        <span class="world_entry_form_uid_value" data-first-run="true"></span>
-                                                    </span>
-                                                    <div>
-                                                        <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                            <input type="checkbox" name="exclude_recursion" />
-                                                            <span data-i18n="Non-recursable (will not be activated by another)">
-                                                                Non-recursable (will not be activated by another)
-                                                            </span>
-                                                        </label>
-                                                        <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                            <input type="checkbox" name="prevent_recursion" />
-                                                            <span data-i18n="Prevent further recursion (this entry will not activate others)">
-                                                                Prevent further recursion (will not activate others)
-                                                            </span>
-                                                        </label>
-                                                        <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                            <input type="checkbox" name="delay_until_recursion" />
-                                                            <span data-i18n="Delay until recursion (can only be activated on recursive checking)">
-                                                                Delay until recursion (can only be activated on recursive checking)
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                </span>
-                                            </small>
-                                            <small class="displayNone">
-                                                <span data-i18n="What this keyword should mean to the AI, sent verbatim">
-                                                    What this keyword should mean to the AI, sent verbatim
-                                                </span>
-                                            </small>
-                                        </label>
-                                        <textarea class="text_pole mdHotkeys" name="content" rows="8" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
-                                    </div>
-                                </div>
-                                <div class="world_entry_thin_controls commentContainer">
-                                </div>
-                            </div>
-                            <div class="flex-container wide100p flexGap10">
-                                <div class="flex4 flex-container flexFlowColumn flexNoGap">
-                                    <div class="flex-container justifySpaceBetween">
-                                        <small for="group">
-                                            <span data-i18n="Inclusion Group">Inclusion Group</span>
-                                            <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;Supports multiple comma-separated groups.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.Documentation: World Info - Inclusion Group">
-                                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                                            </a>
-                                        </small>
-                                        <label class="checkbox_label flexNoGap margin-r5" for="groupOverride">
-                                            <input type="checkbox" name="groupOverride" />
-                                            <span>
-                                                <small title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.If multiple are prioritized, the one with the highest 'Order' is chosen.">
-                                                    <span data-i18n="Prioritize">Prioritize</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p"></div>
-                                                </small>
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="text" class="text_pole margin0" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
-                                    </div>
-                                </div>
-                                <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
-                                    <div class="flex-container justifySpaceBetween marginBot5">
-                                        <small for="groupWeight" data-i18n="Group Weight">
-                                            Group Weight
-                                        </small>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="number" class="text_pole margin0" name="groupWeight" rows="1" placeholder="100" min="1" max="999999">
-                                    </div>
-                                </div>
-                                <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Sticky entries will stay active for N messages after being triggered." title="Sticky entries will stay active for N messages after being triggered.">
-                                    <div class="flex-container justifySpaceBetween marginBot5">
-                                        <small class="flex-container alignItemsBaseline" for="sticky">
-                                            <span data-i18n="Sticky">
-                                                Sticky
-                                            </span>
-                                            <i class="fa-solid fa-comments fa-xs"></i>
-                                        </small>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input class="text_pole margin0" name="sticky" type="number" data-i18n="[placeholder]Non-sticky" placeholder="Non-sticky" min="0" max="999999">
-                                    </div>
-                                </div>
-                                <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a cooldown can't be activated N messages after being triggered." title="Entries with a cooldown can't be activated N messages after being triggered.">
-                                    <div class="flex-container justifySpaceBetween marginBot5">
-                                        <small class="flex-container alignItemsBaseline" for="cooldown">
-                                            <span data-i18n="Cooldown">
-                                                Cooldown
-                                            </span>
-                                            <i class="fa-solid fa-comments fa-xs"></i>
-                                        </small>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input class="text_pole margin0" name="cooldown" type="number" data-i18n="[placeholder]No cooldown" placeholder="No cooldown" min="0" max="999999">
-                                    </div>
-                                </div>
-                                <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a delay can't be activated until there are N messages present in the chat." title="Entries with a delay can't be activated until there are N messages present in the chat.">
-                                    <div class="flex-container justifySpaceBetween marginBot5">
-                                        <small class="flex-container alignItemsBaseline" for="delay">
-                                            <span data-i18n="Delay">
-                                                Delay
-                                            </span>
-                                            <i class="fa-solid fa-comments fa-xs"></i>
-                                        </small>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input class="text_pole margin0" name="delay" type="number" data-i18n="[placeholder]No delay" placeholder="No delay" min="0" max="999999">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-container wide100p flexGap10">
-                                <div class="flex4 flex-container flexFlowColumn flexNoGap">
-                                    <div class="flex-container justifySpaceBetween">
-                                        <small for="characterFilter" data-i18n="Filter to Characters or Tags">
-                                            Filter to Characters or Tags
-                                        </small>
-                                        <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
-                                            <input type="checkbox" name="character_exclusion" />
-                                            <span>
-                                                <small title="Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry" data-i18n="[title]Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry">
-                                                    <span data-i18n="Exclude">Exclude</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p"></div>
-                                                </small>
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <select name="characterFilter" class="select2_multi_sameline" multiple>
-                                            <option value="" data-i18n="-- Characters not found --">
-                                                -- Characters not found --
-                                            </option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
-                                <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
-                                    <label class="checkbox flex-container">
-                                        <input type="checkbox" name="selective" />
-                                        <span data-i18n="Selective">Selective</span>
-                                    </label>
-                                    <label class="checkbox flex-container">
-                                        <input type="checkbox" name="useProbability" />
-                                        <span data-i18n="Use Probability">Use Probability</span>
-                                    </label>
-                                    <label class="checkbox flex-container">
-                                        <input type="checkbox" name="addMemo">
-                                        <span data-i18n="Add Memo">Add Memo</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="inline-drawer wide100p flexFlowColumn">
-                                <div class="inline-drawer-toggle inline-drawer-header inline-drawer-header-pointer userSettingsInnerExpandable">
-                                    <strong data-i18n="Additional Matching Sources">Additional Matching Sources</strong>
-                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                                </div>
-                                <div class="inline-drawer-content flex-container flexFlowRow flexGap10 paddingBottom5px">
-                                    <small class="flex-container flex1 flexFlowColumn">
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchCharacterDescription" />
-                                            <span data-i18n="Character Description">
-                                                Character Description
-                                            </span>
-                                        </label>
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchCharacterPersonality" />
-                                            <span data-i18n="Character Personality">
-                                                Character Personality
-                                            </span>
-                                        </label>
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchScenario" />
-                                            <span data-i18n="Scenario">
-                                                Scenario
-                                            </span>
-                                        </label>
-                                    </small>
-                                    <small class="flex-container flex1 flexFlowColumn">
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchPersonaDescription" />
-                                            <span data-i18n="Persona Description">
-                                                Persona Description
-                                            </span>
-                                        </label>
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchCharacterDepthPrompt" />
-                                            <span data-i18n="Character's Note">
-                                                Character's Note
-                                            </span>
-                                        </label>
-                                        <label class="checkbox flex-container alignItemsCenter flexNoGap">
-                                            <input type="checkbox" name="matchCreatorNotes" />
-                                            <span data-i18n="Creator's Notes">
-                                                Creator's Notes
-                                            </span>
-                                        </label>
-                                    </small>
-                                </div>
-                            </div>
+                        <div class="inline-drawer-content inline-drawer-outlet flex-container paddingBottom5px wide100p ">
+                            <!-- Outlet for world_entry_edit -->
                         </div>
                     </div>
                 </form>

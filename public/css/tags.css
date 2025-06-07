@@ -167,7 +167,7 @@
 }
 
 .rm_tag_filter .tag.actionable {
-    transition: opacity 200ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .rm_tag_filter .tag:hover {

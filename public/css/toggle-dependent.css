@@ -19,6 +19,7 @@ body:not(.tts) #ttsExtensionNarrateAll {
 }
 
 body.no-hotswap .hotswap,
+body.no-hotswap .hotswap~hr,
 body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
 body.no-tokenCount .tokenCounterDisplay,
@@ -26,6 +27,12 @@ body.no-mesIDDisplay .mesIDDisplay,
 body.no-modelIcons .icon-svg,
 body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
+}
+
+body.no-hotswap #CharListButtonAndHotSwaps .flex-container {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    flex-flow: row;
 }
 
 body.hideChatAvatars .last_mes:not(.smallSysMes) {
