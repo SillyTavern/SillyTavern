@@ -471,10 +471,9 @@ function generateUrlParameter(bg, isCustom) {
  */
 async function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    const url = generateUrlParameter(bg, isCustom); // Original URL for click handler
+    const url = generateUrlParameter(bg, isCustom);
     const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
-
     const fileExtension = bg.split('.').pop().toLowerCase();
     const isAnimated = ['mp4', 'webp'].includes(fileExtension);
     const thumbnailUrl = isAnimated && !background_settings.animation
@@ -482,13 +481,12 @@ async function getBackgroundFromTemplate(bg, isCustom) {
         : isCustom
             ? bg
             : getThumbnailUrl('bg', bg);
-
     const thumbnailCssUrl = `url('${thumbnailUrl}')`;
 
     template.attr('title', title);
-    template.attr('bgfile', bg); // Original file path for click handler logic
+    template.attr('bgfile', bg);
     template.attr('custom', String(isCustom));
-    template.data('url', url); // Original URL for getUrlParameter, used by click handler
+    template.data('url', url);
     template.css('background-image', thumbnailCssUrl);
     template.find('.BGSampleTitle').text(friendlyTitle);
     return template;
