@@ -12453,6 +12453,21 @@ jQuery(async function () {
         await eventSource.emit(event_types.OPEN_CHARACTER_LIBRARY);
     });
 
+    $('#loadAnimatedBackgroundThumbnails').on('change', function () {
+        power_user.loadAnimatedBackgroundThumbnails = $(this).prop('checked');
+        saveSettingsDebounced();
+        // Refresh background thumbnails
+        if (typeof getBackgrounds === 'function') {
+            getBackgrounds(); // For system backgrounds
+            // For custom backgrounds linked to the current chat
+            // CHAT_CHANGED event triggers getChatBackgroundsList in backgrounds.js
+            const currentChatId = getCurrentChatId();
+            if (currentChatId || $('#bg_custom_content').children().length > 0) {
+                eventSource.emit(event_types.CHAT_CHANGED, currentChatId);
+            }
+        }
+    });
+
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     await firstLoadInit();
 

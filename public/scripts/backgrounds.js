@@ -409,9 +409,17 @@ function generateUrlParameter(bg, isCustom) {
  */
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
+    let thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
     const url = generateUrlParameter(bg, isCustom);
     const title = isCustom ? bg.split('/').pop() : bg;
+
+    // Check if power_user settings exist and loadAnimatedBackgroundThumbnails is false
+    if (typeof power_user !== 'undefined' && power_user.loadAnimatedBackgroundThumbnails === false) {
+        const fileExtension = bg.split('.').pop().toLowerCase();
+        if (['gif', 'mp4', 'webp'].includes(fileExtension)) {
+            thumbPath = 'backgrounds/__transparent.png';
+        }
+    }
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
     template.attr('title', title);
     template.attr('bgfile', bg);
