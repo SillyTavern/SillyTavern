@@ -4,15 +4,16 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { invalidateThumbnail } from './thumbnails.js';
+import { dimensions, invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
 router.post('/all', function (request, response) {
-    var images = getImages(request.user.directories.backgrounds);
-    response.send(JSON.stringify(images));
+    const images = getImages(request.user.directories.backgrounds);
+    const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
+    response.json({ images, config });
 });
 
 router.post('/delete', getFileNameValidationFunction('bg'), function (request, response) {
