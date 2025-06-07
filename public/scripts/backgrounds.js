@@ -419,10 +419,10 @@ function getBackgroundFromTemplate(bg, isCustom, loadAnimatedThumbnailsSettingFr
     const isAnimated = ['gif', 'mp4', 'webp'].includes(fileExtension);
 
     const loadSetting = (loadAnimatedThumbnailsSettingFromParam !== undefined)
-                        ? loadAnimatedThumbnailsSettingFromParam
-                        : (typeof power_user !== 'undefined' && Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails')
-                            ? power_user.loadAnimatedBackgroundThumbnails
-                            : true);
+        ? loadAnimatedThumbnailsSettingFromParam
+        : (typeof power_user !== 'undefined' && Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails')
+            ? power_user.loadAnimatedBackgroundThumbnails
+            : true);
 
     // Log the state for debugging
     console.log('AnimatedThumbToggle (resolved):', loadSetting, 'File:', bg, 'isAnimated:', isAnimated, 'Param:', loadAnimatedThumbnailsSettingFromParam);
