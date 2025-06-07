@@ -1,5 +1,5 @@
 import { Fuse } from '../lib.js';
-
+import { power_user } from './power-user.js';
 import { chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
 import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -420,7 +420,7 @@ function getBackgroundFromTemplate(bg, isCustom, loadAnimatedThumbnailsSettingFr
 
     const loadSetting = (loadAnimatedThumbnailsSettingFromParam !== undefined)
                         ? loadAnimatedThumbnailsSettingFromParam
-                        : (typeof power_user !== 'undefined' && power_user.hasOwnProperty('loadAnimatedBackgroundThumbnails')
+                        : (typeof power_user !== 'undefined' && Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails')
                             ? power_user.loadAnimatedBackgroundThumbnails
                             : true);
 

@@ -1498,7 +1498,7 @@ async function loadPowerUserSettings(settings, data) {
             settings.power_user.click_to_edit = true;
         }
         Object.assign(power_user, settings.power_user);
-        if (!power_user.hasOwnProperty('loadAnimatedBackgroundThumbnails')) {
+        if (!Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails')) {
             power_user.loadAnimatedBackgroundThumbnails = true; // Default to true
         }
     }
@@ -1637,7 +1637,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
     $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
-    const loadAnimatedThumbnails = power_user.hasOwnProperty('loadAnimatedBackgroundThumbnails') ? power_user.loadAnimatedBackgroundThumbnails : true;
+    const loadAnimatedThumbnails = Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails') ? power_user.loadAnimatedBackgroundThumbnails : true;
     $('#loadAnimatedBackgroundThumbnails').prop('checked', loadAnimatedThumbnails);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
