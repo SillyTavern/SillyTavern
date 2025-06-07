@@ -23,7 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { isAdmin, getCurrentUserHandle } from './user.js';
-import { getConfigValue } from '../../src/util.js';
+import { getConfigValue } from './util.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,

@@ -13,7 +13,7 @@ import { Popup } from './popup.js';
 import { t } from './i18n.js';
 import { isMobile } from './RossAscends-mods.js';
 import { isAdmin } from './user.js';
-import { getConfigValue } from '../../src/util.js';
+import { getConfigValue } from './util.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
