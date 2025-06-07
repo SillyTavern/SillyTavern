@@ -2803,7 +2803,6 @@ input[type="file"] {
 #rm_ch_create_block {
     display: none;
     overflow-y: auto;
-    padding: 4px;
     height: 100%;
 }
 
@@ -3374,7 +3373,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    padding: 1px;
+    padding: 0 2px;
 }
 
 .avatar_div {
@@ -5399,7 +5398,10 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     height: auto;
     height: calc-size(auto, size);
     overflow-y: auto;
-    animation: hide-scroll var(--animation-duration-2x) backwards;
+
+    @supports selector(::-webkit-scrollbar-thumb) {
+        animation: hide-scroll var(--animation-duration-2x) backwards;
+    }
 
     @starting-style {
         height: 0;
@@ -5427,34 +5429,7 @@ body:not(.movingUI) .drawer-content.maximized {
     position: fixed;
 }
 
-.fillLeft {
-    width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
-    height: 0;
-    max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100dvh - var(--topBarBlockSize));
-    position: fixed;
-    top: 0;
-    margin: 0;
-    left: 0;
-    right: auto;
-    border-radius: 10px;
-    box-shadow: none;
-    overflow: hidden;
-    border: 1px solid var(--SmartThemeBorderColor);
-}
-
-.fillLeft.openDrawer {
-    overflow-y: hidden;
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    height: calc-size((100dvh - var(--topBarBlockSize)), size);
-
-    @starting-style {
-        height: 0;
-    }
-}
-
+.fillLeft,
 .fillRight {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100dvw - var(--sheldWidth) - 2px) /2);
@@ -5464,29 +5439,27 @@ body:not(.movingUI) .drawer-content.maximized {
     position: fixed;
     top: 0;
     margin: 0;
-    right: 0;
-    left: calc(100% - var(--sheldWidth) /2 + var(--sheldWidth) +1px);
-    padding: 5px;
-    margin-bottom: 5px;
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    z-index: 3000;
-
-    border: 1px solid var(--SmartThemeBorderColor);
-
     box-shadow: none;
-    border-radius: 10px;
     overflow: hidden;
     flex-flow: column;
     min-width: 100px;
 }
 
+.fillLeft {
+    left: 0;
+    right: auto;
+}
+
+.fillRight {
+    right: 0;
+    left: calc(100% - var(--sheldWidth) /2 + var(--sheldWidth) +1px);
+    z-index: 3000;
+}
+
+.fillLeft.openDrawer,
 .fillRight.openDrawer {
     display: flex;
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    height: calc-size((100dvh - var(--topBarBlockSize)), size);
+    height: 100%;
 
     @starting-style {
         height: 0;
@@ -5506,7 +5479,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .scrollableInner {
     overflow-x: hidden;
-    height: calc(100% - 30px);
+    height: 100%;
 }
 
 .scrollableInnerFull {
