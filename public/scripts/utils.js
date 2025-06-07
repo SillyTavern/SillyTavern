@@ -2424,3 +2424,10 @@ export function clearInfoBlock(target) {
         infoBlock.innerHTML = '';
     }
 }
+
+// Check if Aikobots is enabled 
+export async function getAikobotsEnabled() {
+    const response = await fetch('/api/settings/config');
+    const config = await response.json();
+    return config.aikobotsEnabled;
+}

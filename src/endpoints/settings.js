@@ -280,6 +280,20 @@ router.post('/get', (request, response) => {
     });
 });
 
+// Aikobots config endpoint (just provides a true/false value for aikobotsEnabled from config.yaml)
+router.get('/config', (request, response) => {
+    try {
+        const config = {
+            aikobotsEnabled: getConfigValue('enableAikobots', false, 'boolean'),
+            // Add other frontend configs as needed
+        };
+        return response.send(config);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/get-snapshots', async (request, response) => {
     try {
         const snapshots = fs.readdirSync(request.user.directories.backups);

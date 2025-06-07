@@ -13,7 +13,7 @@ import { Popup } from './popup.js';
 import { t } from './i18n.js';
 import { isMobile } from './RossAscends-mods.js';
 import { isAdmin } from './user.js';
-import { getConfigValue } from './util.js';
+import { getAikobotsEnabled } from './utils.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -31,7 +31,9 @@ function debouncePromise(func, delay) {
 }
 
 const DEFAULT_DEPTH = 4;
-const aikobotsEnabled = getConfigValue('enableAikobots', false, 'boolean');
+
+// Check if Aikobots is enabled 
+const aikobotsEnabled = await getAikobotsEnabled();
 
 /**
  * @enum {number}
@@ -332,7 +334,7 @@ class PromptManager {
      * @param {Object} moduleConfiguration - Configuration object for the PromptManager.
      * @param {Object} serviceSettings - Service settings object for the PromptManager.
      */
-    init(moduleConfiguration, serviceSettings) {
+    init(moduleConfiguration, serviceSettings) {        
         this.configuration = Object.assign(this.configuration, moduleConfiguration);
         this.tokenHandler = this.tokenHandler || new TokenHandler(() => { throw new Error('Token handler not set'); });
         this.serviceSettings = serviceSettings;
@@ -356,10 +358,6 @@ class PromptManager {
 
         // Open edit form and load selected prompt
         this.handleEdit = (event) => {
-            // If Aikobots is enabled and user is not admin, disable this function
-            if (aikobotsEnabled && !isAdmin){
-                return;
-            } 
             this.clearEditForm();
             this.clearInspectForm();
 
@@ -374,7 +372,7 @@ class PromptManager {
         // Open edit form and load selected prompt
         this.handleInspect = (event) => {
             // If Aikobots is enabled and user is not admin, disable this function
-            if (aikobotsEnabled && !isAdmin){
+            if (aikobotsEnabled && !isAdmin()){
                 return;
             } 
             this.clearEditForm();
@@ -514,7 +512,7 @@ class PromptManager {
         // Create new prompt, then save it to settings and close form.
         this.handleNewPrompt = (event) => {
             // If Aikobots is enabled and user is not admin, disable this function
-            if (aikobotsEnabled && !isAdmin){
+            if (aikobotsEnabled && !isAdmin()){
                 return;
             } 
             const prompt = {
@@ -530,6 +528,10 @@ class PromptManager {
 
         // Export all user prompts
         this.handleFullExport = () => {
+            // If Aikobots is enabled and user is not admin, disable this function
+            if (aikobotsEnabled && !isAdmin()){
+                return;
+            } 
             const prompts = this.serviceSettings.prompts.reduce((userPrompts, prompt) => {
                 if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
                 return userPrompts;
@@ -554,6 +556,10 @@ class PromptManager {
 
         // Export user prompts and order for this character
         this.handleCharacterExport = () => {
+            // If Aikobots is enabled and user is not admin, disable this function
+            if (aikobotsEnabled && !isAdmin()){
+                return;
+            } 
             const characterPrompts = this.getPromptsForCharacter(this.activeCharacter).reduce((userPrompts, prompt) => {
                 if (false === prompt.system_prompt && !prompt.marker) userPrompts.push(prompt);
                 return userPrompts;
@@ -1239,9 +1245,6 @@ class PromptManager {
      */
     loadPromptIntoEditForm(prompt) {
         // If Aikobots is enabled and user is not admin, disable this function
-        if (aikobotsEnabled && !isAdmin){
-            return;
-        } 
         const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
         const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
         const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
@@ -1312,6 +1315,7 @@ class PromptManager {
      * @param {MessageCollection} messages - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
      */
     loadMessagesIntoInspectForm(messages) {
+        
         if (!messages) return;
 
         const createInlineDrawer = (message) => {

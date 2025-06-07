@@ -23,7 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { isAdmin, getCurrentUserHandle } from './user.js';
-import { getConfigValue } from './util.js';
+import { getAikobotsEnabled } from './utils.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -61,7 +61,9 @@ export const scan_state = {
 };
 
 const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
-const aikobotsEnabled = getConfigValue('enableAikobots', false, 'boolean');
+
+// Check if Aikobots is enabled 
+const aikobotsEnabled = await getAikobotsEnabled();
 
 export let world_info = {};
 export let selected_world_info = [];
@@ -918,7 +920,7 @@ export function setWorldInfoSettings(settings, data) {
     world_names = data.world_names?.length ? data.world_names : [];
 
     // Aikobots Lorebooks User-Access Filter Functionality
-    if (aikobotsEnabled && !isAdmin){
+    if (aikobotsEnabled && !isAdmin()){
     	// only admins can see ZZZZ files
         let filteredNames = world_names.filter(name => !name.includes('ZZZZ'));
         
@@ -1830,7 +1832,7 @@ export async function updateWorldInfoList() {
         $('#world_editor_select').find('option[value!=""]').remove();
 
         // Aikobots Lorebooks User-Access Filter Functionality
-        if (aikobotsEnabled && !isAdmin){
+        if (aikobotsEnabled && !isAdmin()){
             // only admins can see ZZZZ files
             let filteredNames = world_names.filter(name => !name.includes('ZZZZ'));
         
