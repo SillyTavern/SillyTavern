@@ -1498,9 +1498,6 @@ async function loadPowerUserSettings(settings, data) {
             settings.power_user.click_to_edit = true;
         }
         Object.assign(power_user, settings.power_user);
-        if (!Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails')) {
-            power_user.loadAnimatedBackgroundThumbnails = true; // Default to true
-        }
     }
 
     if (power_user.stscript === undefined) {
@@ -1637,13 +1634,10 @@ async function loadPowerUserSettings(settings, data) {
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
     $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
-    const loadAnimatedThumbnails = Object.prototype.hasOwnProperty.call(power_user, 'loadAnimatedBackgroundThumbnails') ? power_user.loadAnimatedBackgroundThumbnails : true;
-    $('#loadAnimatedBackgroundThumbnails').prop('checked', loadAnimatedThumbnails);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
     $('#enableLabMode').prop('checked', power_user.enableLabMode).trigger('input', { fromInit: true });
-    $('#loadAnimatedBackgroundThumbnails').prop('checked', settings.loadAnimatedBackgroundThumbnails);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop('checked', true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr('selected', true).trigger('change');
     $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true).trigger('change');

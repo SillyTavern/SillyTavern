@@ -203,8 +203,7 @@
                     "2": true
                 }
             }
-        },
-        "loadAnimatedBackgroundThumbnails": true
+        }
     },
     "extension_settings": {
         "apiUrl": "http://localhost:5100",
