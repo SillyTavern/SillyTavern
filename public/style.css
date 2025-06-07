@@ -2803,7 +2803,6 @@ input[type="file"] {
 #rm_ch_create_block {
     display: none;
     overflow-y: auto;
-    padding: 4px;
     height: 100%;
 }
 
@@ -3374,7 +3373,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    padding: 1px;
+    padding: 0 2px;
 }
 
 .avatar_div {
@@ -5446,9 +5445,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft.openDrawer {
     overflow-y: hidden;
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    height: calc-size((100dvh - var(--topBarBlockSize)), size);
+    height: 100%;
 
     @starting-style {
         height: 0;
@@ -5484,9 +5481,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillRight.openDrawer {
     display: flex;
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    height: calc-size((100dvh - var(--topBarBlockSize)), size);
+    height: 100%;
 
     @starting-style {
         height: 0;
@@ -5506,7 +5501,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .scrollableInner {
     overflow-x: hidden;
-    height: calc(100% - 30px);
+    height: 100%;
 }
 
 .scrollableInnerFull {
