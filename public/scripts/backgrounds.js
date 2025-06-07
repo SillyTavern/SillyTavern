@@ -27,6 +27,12 @@ const THUMBNAIL_STORAGE = localforage.createInstance({ name: 'SillyTavern_Thumbn
  */
 const THUMBNAIL_BLOBS = new Map();
 
+/**
+ * Global IntersectionObserver instance for lazy loading backgrounds
+ * @type {IntersectionObserver|null}
+ */
+let lazyLoadObserver = null;
+
 export let background_settings = {
     name: '__transparent.png',
     url: generateUrlParameter('__transparent.png', false),
@@ -450,6 +456,12 @@ export async function getBackgrounds() {
 }
 
 function activateLazyLoader() {
+    // Disconnect previous observer to prevent memory leaks
+    if (lazyLoadObserver) {
+        lazyLoadObserver.disconnect();
+        lazyLoadObserver = null;
+    }
+
     const lazyLoadElements = document.querySelectorAll('.lazy-load-background');
 
     const options = {
@@ -458,7 +470,7 @@ function activateLazyLoader() {
         threshold: 0.01,
     };
 
-    const observer = new IntersectionObserver((entries, observer) => {
+    lazyLoadObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.target instanceof HTMLElement && entry.isIntersecting) {
                 const imageUrl = entry.target.dataset.bgSrc;
@@ -472,7 +484,7 @@ function activateLazyLoader() {
     }, options);
 
     lazyLoadElements.forEach(element => {
-        observer.observe(element);
+        lazyLoadObserver.observe(element);
     });
 }
 
