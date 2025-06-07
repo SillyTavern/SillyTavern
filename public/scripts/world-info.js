@@ -22,6 +22,8 @@ import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { isAdmin, getCurrentUserHandle } from './user.js';
+import { getConfigValue } from '../../src/util.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -59,6 +61,7 @@ export const scan_state = {
 };
 
 const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
+const aikobotsEnabled = getConfigValue('enableAikobots', false, 'boolean');
 
 export let world_info = {};
 export let selected_world_info = [];
@@ -913,6 +916,24 @@ export function setWorldInfoSettings(settings, data) {
     $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
 
     world_names = data.world_names?.length ? data.world_names : [];
+
+    // Aikobots Lorebooks User-Access Filter Functionality
+    if (aikobotsEnabled && !isAdmin){
+    	// only admins can see ZZZZ files
+        let filteredNames = world_names.filter(name => !name.includes('ZZZZ'));
+        
+        // for other users filter lorebooks by file names to control viewership
+        const currentUserHandle = getCurrentUserHandle();
+        world_names = filteredNames.filter(name => {
+            // Check if the filename matches Z-(handle)
+            const userHandleMatch = name.match(/^Z-([^-]+)/);
+            if (userHandleMatch) {
+            // If it has a user pattern, only keep if it matches current user
+              return userHandleMatch[1] === currentUserHandle;
+            }
+            return true;
+        })
+    } 
 
     // Add to existing selected WI if it exists
     selected_world_info = selected_world_info.concat(settings.world_info?.globalSelect?.filter((e) => world_names.includes(e)) ?? []);
@@ -1807,6 +1828,24 @@ export async function updateWorldInfoList() {
         world_names = data.world_names?.length ? data.world_names : [];
         $('#world_info').find('option[value!=""]').remove();
         $('#world_editor_select').find('option[value!=""]').remove();
+
+        // Aikobots Lorebooks User-Access Filter Functionality
+        if (aikobotsEnabled && !isAdmin){
+            // only admins can see ZZZZ files
+            let filteredNames = world_names.filter(name => !name.includes('ZZZZ'));
+        
+            // for other users filter lorebooks by file names to control viewership
+            const currentUserHandle = getCurrentUserHandle();
+            world_names = filteredNames.filter(name => {
+                // Check if the filename matches Z-(handle)
+                const userHandleMatch = name.match(/^Z-([^-]+)/);
+                if (userHandleMatch) {
+                // If it has a user pattern, only keep if it matches current user
+                return userHandleMatch[1] === currentUserHandle;
+                }
+                return true;
+            })
+        }
 
         world_names.forEach((item, i) => {
             $('#world_info').append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
