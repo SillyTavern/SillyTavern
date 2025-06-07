@@ -409,23 +409,29 @@ function generateUrlParameter(bg, isCustom) {
  */
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    let thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
-    const url = generateUrlParameter(bg, isCustom);
+    const url = generateUrlParameter(bg, isCustom); // Original URL for click handler
     const title = isCustom ? bg.split('/').pop() : bg;
-
-    // Check if power_user settings exist and loadAnimatedBackgroundThumbnails is false
-    if (typeof power_user !== 'undefined' && power_user.loadAnimatedBackgroundThumbnails === false) {
-        const fileExtension = bg.split('.').pop().toLowerCase();
-        if (['gif', 'mp4', 'webp'].includes(fileExtension)) {
-            thumbPath = 'backgrounds/__transparent.png';
-        }
-    }
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
+
+    let finalThumbCssUrl;
+    const fileExtension = bg.split('.').pop().toLowerCase();
+    const isAnimated = ['gif', 'mp4', 'webp'].includes(fileExtension);
+
+    // Log the state for debugging
+    console.log('AnimatedThumbToggle:', power_user?.loadAnimatedBackgroundThumbnails, 'File:', bg, 'isAnimated:', isAnimated);
+
+    if (typeof power_user !== 'undefined' && power_user.loadAnimatedBackgroundThumbnails === false && isAnimated) {
+        finalThumbCssUrl = 'url("backgrounds/__transparent.png")'; // Direct path for CSS
+    } else {
+        const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg); // Path for server-side thumbnail or custom direct path
+        finalThumbCssUrl = `url('${thumbPath}')`;
+    }
+
     template.attr('title', title);
-    template.attr('bgfile', bg);
+    template.attr('bgfile', bg); // Original file path for click handler logic
     template.attr('custom', String(isCustom));
-    template.data('url', url);
-    template.css('background-image', `url('${thumbPath}')`);
+    template.data('url', url); // Original URL for getUrlParameter, used by click handler
+    template.css('background-image', finalThumbCssUrl);
     template.find('.BGSampleTitle').text(friendlyTitle);
     return template;
 }
