@@ -3572,7 +3572,7 @@ async function _save(name, data) {
  * @param {number} intervalTime - Time in miliseconds to await for each check of isSaveWorldInfoDisabled (def = 100)
  * @return {Promise<void>} A promise that resolves when lorebooks can be saved
  */
-export async function waitForWIDisabled(intervalTime = 100) {
+export async function waitDuringWIDisabled(intervalTime = 100) {
     if (!isSaveWorldInfoDisabled) return;
 
     await new Promise(resolve => {
