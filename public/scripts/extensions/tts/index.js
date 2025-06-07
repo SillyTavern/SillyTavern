@@ -106,7 +106,7 @@ const ttsProviders = {
     System: SystemTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
-    'TTS WebUI (Unofficial)': TtsWebuiProvider,
+    'TTS WebUI': TtsWebuiProvider,
 };
 let ttsProvider;
 let ttsProviderName;
