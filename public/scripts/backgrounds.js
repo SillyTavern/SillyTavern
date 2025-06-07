@@ -368,7 +368,7 @@ async function autoBackgroundCommand() {
     return '';
 }
 
-export async function getBackgrounds() {
+export async function getBackgrounds(loadAnimatedThumbnailsSetting) {
     const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -382,7 +382,7 @@ export async function getBackgrounds() {
         //console.log(getData.length);
         $('#bg_menu_content').children('div').remove();
         for (const bg of getData) {
-            const template = getBackgroundFromTemplate(bg, false);
+            const template = getBackgroundFromTemplate(bg, false, loadAnimatedThumbnailsSetting);
             $('#bg_menu_content').append(template);
         }
     }
@@ -405,9 +405,10 @@ function generateUrlParameter(bg, isCustom) {
  * Instantiates a background template
  * @param {string} bg Path to background
  * @param {boolean} isCustom Whether the background is custom
+ * @param {boolean} [loadAnimatedThumbnailsSettingFromParam] Optional override for the thumbnail setting
  * @returns {JQuery<HTMLElement>} Background template
  */
-function getBackgroundFromTemplate(bg, isCustom) {
+function getBackgroundFromTemplate(bg, isCustom, loadAnimatedThumbnailsSettingFromParam) {
     const template = $('#background_template .bg_example').clone();
     const url = generateUrlParameter(bg, isCustom); // Original URL for click handler
     const title = isCustom ? bg.split('/').pop() : bg;
@@ -417,10 +418,16 @@ function getBackgroundFromTemplate(bg, isCustom) {
     const fileExtension = bg.split('.').pop().toLowerCase();
     const isAnimated = ['gif', 'mp4', 'webp'].includes(fileExtension);
 
-    // Log the state for debugging
-    console.log('AnimatedThumbToggle:', power_user?.loadAnimatedBackgroundThumbnails, 'File:', bg, 'isAnimated:', isAnimated);
+    const loadSetting = (loadAnimatedThumbnailsSettingFromParam !== undefined)
+                        ? loadAnimatedThumbnailsSettingFromParam
+                        : (typeof power_user !== 'undefined' && power_user.hasOwnProperty('loadAnimatedBackgroundThumbnails')
+                            ? power_user.loadAnimatedBackgroundThumbnails
+                            : true);
 
-    if (typeof power_user !== 'undefined' && power_user.loadAnimatedBackgroundThumbnails === false && isAnimated) {
+    // Log the state for debugging
+    console.log('AnimatedThumbToggle (resolved):', loadSetting, 'File:', bg, 'isAnimated:', isAnimated, 'Param:', loadAnimatedThumbnailsSettingFromParam);
+
+    if (loadSetting === false && isAnimated) {
         finalThumbCssUrl = 'url("backgrounds/__transparent.png")'; // Direct path for CSS
     } else {
         const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg); // Path for server-side thumbnail or custom direct path

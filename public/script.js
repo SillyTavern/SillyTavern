@@ -1008,7 +1008,7 @@ async function firstLoadInit() {
     initMacros();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
-    await getBackgrounds();
+    await getBackgrounds(power_user.loadAnimatedBackgroundThumbnails);
     await initTokenizers();
     initBackgrounds();
     initAuthorsNote();
@@ -12458,7 +12458,7 @@ jQuery(async function () {
         saveSettingsDebounced();
         // Refresh background thumbnails
         if (typeof getBackgrounds === 'function') {
-            getBackgrounds(); // For system backgrounds
+            getBackgrounds(power_user.loadAnimatedBackgroundThumbnails); // For system backgrounds
             // For custom backgrounds linked to the current chat
             // CHAT_CHANGED event triggers getChatBackgroundsList in backgrounds.js
             const currentChatId = getCurrentChatId();
