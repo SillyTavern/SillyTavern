@@ -61,6 +61,9 @@ async function onChatChanged() {
 }
 
 function getChatBackgroundsList() {
+    if ($('#bg_custom_content').children('.bg_example').length > 0) {
+        return;
+    }
     const list = chat_metadata[LIST_METADATA_KEY];
     const listEmpty = !Array.isArray(list) || list.length === 0;
 
@@ -75,11 +78,7 @@ function getChatBackgroundsList() {
         const template = getBackgroundFromTemplate(bg, true);
         $('#bg_custom_content').append(template);
     }
-<<<<<<< HEAD
-=======
-    console.log('Calling activateLazyLoader from getChatBackgroundsList');
-    activateLazyLoader();
->>>>>>> a7e749524 (debug: Enhance logging for IntersectionObserver and root element)
+activateLazyLoader();
 }
 
 function getBackgroundPath(fileUrl) {
@@ -379,6 +378,9 @@ async function autoBackgroundCommand() {
  * @returns {string} URL of the background
  */
 export async function getBackgrounds() {
+    if ($('#bg_menu_content').children('.bg_example').length > 0) {
+        return;
+    }
     const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -395,42 +397,16 @@ export async function getBackgrounds() {
             const template = getBackgroundFromTemplate(bg, false);
             $('#bg_menu_content').append(template);
         }
-        console.log('Calling activateLazyLoader from getBackgrounds');
-        activateLazyLoader();
-    }
+    activateLazyLoader();
 }
 
 function activateLazyLoader() {
-    console.log('activateLazyLoader function started.');
     const lazyLoadElements = document.querySelectorAll('.lazy-load-background');
-    console.log('activateLazyLoader called. Found elements:', lazyLoadElements.length);
-
-    const rootElement = document.getElementById('Backgrounds');
-    if (!rootElement) {
-        console.error('#Backgrounds element not found!');
-        // Fallback to viewport if #Backgrounds is not found, or handle error
-        // For now, we'll let it proceed and potentially fail in observer creation if null,
-        // or you could default to `root: null` to use the viewport.
-    } else {
-        console.log('#Backgrounds element found:', rootElement);
-    }
-
-    const options = {
-      root: rootElement, // This will be null if not found, defaulting to viewport
-      rootMargin: '0px',
-      threshold: 0.1 // Trigger when 10% of the item is visible
-    };
-    console.log('IntersectionObserver options:', options);
 
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
-            console.log('IntersectionObserver callback triggered for:', entry.target, 'Is intersecting:', entry.isIntersecting);
             if (entry.isIntersecting) {
                 const imageUrl = entry.target.dataset.bgSrc;
-                if (!imageUrl) {
-                    console.warn('No bgSrc found for', entry.target);
-                }
-                console.log('Loading image for:', entry.target, 'with URL:', imageUrl);
                 if (imageUrl) {
                     entry.target.style.backgroundImage = `url('${imageUrl}')`;
                 }
@@ -438,7 +414,7 @@ function activateLazyLoader() {
                 observer.unobserve(entry.target);
             }
         });
-    }, options);
+    });
 
     lazyLoadElements.forEach(element => {
         observer.observe(element);
@@ -474,7 +450,9 @@ function getBackgroundFromTemplate(bg, isCustom) {
     template.attr('bgfile', bg);
     template.attr('custom', String(isCustom));
     template.data('url', url);
-    template.css('background-image', `url('${thumbPath}')`);
+    template.attr('data-bg-src', thumbPath);
+    template.addClass('lazy-load-background');
+    template.css('background-image', 'none');
     template.find('.BGSampleTitle').text(friendlyTitle);
     return template;
 }
