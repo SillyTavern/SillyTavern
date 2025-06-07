@@ -12,6 +12,8 @@ import { renderTemplateAsync } from './templates.js';
 import { Popup } from './popup.js';
 import { t } from './i18n.js';
 import { isMobile } from './RossAscends-mods.js';
+import { isAdmin } from './user.js';
+import { getConfigValue } from '../../src/util.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -29,6 +31,7 @@ function debouncePromise(func, delay) {
 }
 
 const DEFAULT_DEPTH = 4;
+const aikobotsEnabled = getConfigValue('enableAikobots', false, 'boolean');
 
 /**
  * @enum {number}
@@ -353,6 +356,10 @@ class PromptManager {
 
         // Open edit form and load selected prompt
         this.handleEdit = (event) => {
+            // If Aikobots is enabled and user is not admin, disable this function
+            if (aikobotsEnabled && !isAdmin){
+                return;
+            } 
             this.clearEditForm();
             this.clearInspectForm();
 
@@ -366,6 +373,10 @@ class PromptManager {
 
         // Open edit form and load selected prompt
         this.handleInspect = (event) => {
+            // If Aikobots is enabled and user is not admin, disable this function
+            if (aikobotsEnabled && !isAdmin){
+                return;
+            } 
             this.clearEditForm();
             this.clearInspectForm();
 
@@ -502,6 +513,10 @@ class PromptManager {
 
         // Create new prompt, then save it to settings and close form.
         this.handleNewPrompt = (event) => {
+            // If Aikobots is enabled and user is not admin, disable this function
+            if (aikobotsEnabled && !isAdmin){
+                return;
+            } 
             const prompt = {
                 identifier: this.getUuidv4(),
                 name: '',
@@ -1223,6 +1238,10 @@ class PromptManager {
      * @param {Object} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
      */
     loadPromptIntoEditForm(prompt) {
+        // If Aikobots is enabled and user is not admin, disable this function
+        if (aikobotsEnabled && !isAdmin){
+            return;
+        } 
         const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
         const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
         const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');

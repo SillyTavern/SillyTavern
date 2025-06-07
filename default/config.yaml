@@ -61,9 +61,9 @@ requestProxy:
     - localhost
     - 127.0.0.1
 # Enable multi-user mode
-enableUserAccounts: false
+enableUserAccounts: true
 # Enable discreet login mode: hides user list on the login screen
-enableDiscreetLogin: false
+enableDiscreetLogin: true
 # Enable's authlia based auto login. Only enable this if you
 # have setup and installed Authelia as a middle-ware on your
 # reverse proxy
@@ -246,3 +246,5 @@ gemini:
 enableServerPlugins: false
 # Attempt to automatically update server plugins on startup
 enableServerPluginsAutoUpdate: true
+# Enable Aikobots variant 
+enableAikobots: false
