@@ -16,6 +16,7 @@ import {
     getMaxContextSize,
     setExtensionPrompt,
     streamingProcessor,
+    animation_easing,
 } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -972,6 +973,7 @@ function doPopout(e) {
     </div>`;
         const newElement = $(template);
         newElement.attr('id', 'summaryExtensionPopout')
+            .css('opacity', 0)
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
@@ -980,13 +982,13 @@ function doPopout(e) {
         originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
         $('body').append(newElement);
+        newElement.transition({ opacity: 1, duration: animation_duration, easing: animation_easing });
         $('#summaryExtensionDrawerContents').addClass('scrollableInnerFull');
         setMemoryContext(prevSummaryBoxContents, false); //paste prev summary box contents into popout box
         setupListeners();
         loadSettings();
         loadMovingUIState();
 
-        $('#summaryExtensionPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         //setup listener for close button to restore extensions menu

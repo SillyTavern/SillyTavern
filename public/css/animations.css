@@ -55,6 +55,7 @@
 
 /* Flashing for highlighting animation */
 @keyframes flash {
+
     0%,
     50%,
     100% {
@@ -120,5 +121,14 @@
 
     50% {
         border-top-color: var(--progFlashColor);
+    }
+}
+
+/* Scroll delay animations */
+@keyframes hide-scroll {
+
+    from,
+    to {
+        overflow-y: hidden;
     }
 }

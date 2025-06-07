@@ -14,6 +14,7 @@
 @import url(css/data-maid.css);
 
 :root {
+    interpolate-size: allow-keywords;
     --doc-height: 100%;
     --transparent: rgba(0, 0, 0, 0);
 
@@ -122,7 +123,9 @@
     --inline-avatar-small-factor: 0.6;
 
     --animation-duration: 125ms;
-    --animation-duration-slow: calc(var(--animation-duration) * 3);
+    --animation-duration-2x: calc(var(--animation-duration) * 2);
+    --animation-duration-3x: calc(var(--animation-duration) * 3);
+    --animation-duration-slow: var(--animation-duration-3x);
 }
 
 * {
@@ -719,7 +722,7 @@ hr {
     position: absolute;
     width: 100%;
     height: 100%;
-    transition: background-image 0.5s ease-in-out;
+    transition: background-image var(--animation-duration-3x) ease-in-out;
 }
 
 /* Background fitting options */
@@ -835,7 +838,7 @@ body.reduced-motion #bg_custom {
     cursor: -webkit-grab;
     display: none;
     filter: drop-shadow(0px 0px 0px black);
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
     font-size: calc(var(--mainFontSize)*1.3);
 }
 
@@ -851,7 +854,7 @@ body .panelControlBar {
     min-width: 55px;
     justify-content: flex-end;
     gap: 0px;
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
 }
 
 .zoomed_avatar .panelControlBar {
@@ -973,7 +976,7 @@ body .panelControlBar {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 300ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 #rightSendForm>div:hover,
@@ -1000,7 +1003,7 @@ body .panelControlBar {
     padding-right: 2px;
     place-self: center;
     cursor: pointer;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
     opacity: 0.7;
 }
 
@@ -1047,7 +1050,7 @@ body .panelControlBar {
         padding-right: 2px;
         place-self: center;
         cursor: pointer;
-        transition: 0.3s;
+        transition: var(--animation-duration-2x);
         opacity: 1;
         display: none;
 
@@ -1094,7 +1097,7 @@ body .panelControlBar {
     z-index: 2001;
     margin-left: 10px;
     padding: 0;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
     display: flex;
     align-items: center;
     order: 2;
@@ -1337,7 +1340,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     border: var(--avatar-base-border-radius) solid var(--SmartThemeBodyColor);
     margin: var(--avatar-base-border-radius);
     cursor: pointer;
-    transition: filter 0.2s ease-in-out;
+    transition: filter var(--animation-duration) ease-in-out;
 }
 
 .add_avatar:hover {
@@ -1350,7 +1353,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     border-radius: var(--avatar-base-border-radius-round);
     border-style: none;
     flex: 1;
-    transition: 250ms;
+    transition: var(--animation-duration-2x);
 }
 
 .last_mes .mesAvatarWrapper {
@@ -1542,7 +1545,7 @@ button {
             100% var(--progWidthClip),
             100% 100%,
             0% 100%);
-    transition: clip-path 200ms;
+    transition: clip-path var(--animation-duration-2x);
 }
 
 #send_textarea:placeholder-shown {
@@ -2493,8 +2496,8 @@ body[data-stscript-style] .hljs.language-stscript {
     margin: 3px;
     opacity: 0.75;
     filter: grayscale(1);
-    -webkit-transition: all 250ms ease-in-out;
-    transition: all 250ms ease-in-out;
+    -webkit-transition: all var(--animation-duration-2x) ease-in-out;
+    transition: all var(--animation-duration-2x) ease-in-out;
 }
 
 #character_popup .editor_maximize:hover {
@@ -2648,8 +2651,8 @@ input[type="file"] {
     margin-top: 0;
     padding: 1px;
     filter: grayscale(1) brightness(75%);
-    -webkit-transition: all 0.5s ease-in-out;
-    transition: all 0.5s ease-in-out;
+    -webkit-transition: all var(--animation-duration-3x) ease-in-out;
+    transition: all var(--animation-duration-3x) ease-in-out;
 }
 
 .right_menu_button:hover {
@@ -2669,7 +2672,7 @@ input[type="file"] {
 #lm_button_panel_pin_div,
 #WI_button_panel_pin_div {
     opacity: 0.5;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
 }
 
 #rm_button_panel_pin_div:hover,
@@ -2805,7 +2808,6 @@ input[type="file"] {
 }
 
 #rm_extensions_block {
-    display: none;
     overflow-y: auto;
 }
 
@@ -2830,6 +2832,7 @@ input[type="file"] {
     margin: 0;
     right: unset;
     width: calc(((100dvw - var(--sheldWidth)) / 2) - 1px);
+    height: unset;
 
 }
 
@@ -2871,7 +2874,7 @@ input[type="file"] {
     aspect-ratio: 1 / 1;
     font-size: 20px;
     opacity: 0.5;
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
 }
 
 .floating_panel_maximize:hover,
@@ -2885,7 +2888,7 @@ input[type="file"] {
     aspect-ratio: 1 / 1;
     font-size: calc(var(--mainFontSize)*1.3);
     opacity: 0.5;
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
     filter: drop-shadow(0px 0px 2px black);
     text-shadow: none;
 }
@@ -2934,7 +2937,6 @@ select option:not(:checked) {
 /*#######################################################################*/
 
 #rm_api_block {
-    display: none;
     overflow-y: auto;
 }
 
@@ -3021,7 +3023,7 @@ select option:not(:checked) {
 
 #rm_characters_block {
     display: flex;
-    overflow-y: auto;
+    overflow-y: hidden;
     flex-direction: column;
     height: 100%;
 }
@@ -3321,7 +3323,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     text-shadow: none;
     margin: 0;
     filter: drop-shadow(0px 0px 3px white);
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
     display: none;
 }
 
@@ -3474,7 +3476,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: var(--animation-duration-2x);
 }
 
 .avatar-container {
@@ -3769,7 +3771,7 @@ grammarly-extension {
     width: min-content;
     cursor: pointer;
     margin: 5px 0;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3835,7 +3837,7 @@ grammarly-extension {
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     cursor: grab;
-    transition: background-color 200ms ease-in-out;
+    transition: background-color var(--animation-duration-2x) ease-in-out;
     position: relative;
     user-select: none;
     display: flex;
@@ -4009,7 +4011,7 @@ input[type="checkbox"]::before {
     width: 0.65em;
     height: 0.65em;
     transform: scale(0);
-    transition: 120ms transform ease-in-out;
+    transition: var(--animation-duration) transform ease-in-out;
     box-shadow: inset 1em 1em var(--SmartThemeCheckboxTickColor);
     transform-origin: bottom left;
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
@@ -4181,6 +4183,13 @@ input[type='checkbox'].del_checkbox {
     background-repeat: no-repeat !important;
     box-shadow: inset 0 0 2px var(--black50a) !important;
     cursor: ew-resize !important;
+}
+
+/*
+ * Setting a z-index will allow scrollbar to display properly in Firefox,
+ * while constraining to open drawers fixes a single frame linger in Chrome.
+ */
+.drawer-content.openDrawer .neo-range-slider {
     z-index: 1;
 }
 
@@ -4345,7 +4354,7 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 100%;
     box-shadow: 0 0 3px black;
     */
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
 }
 
 .topRightInset {
@@ -4365,7 +4374,7 @@ input[type="range"]::-webkit-slider-thumb {
     font-weight: 400;
     text-decoration: none;
     border-bottom: 2px dashed red;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
 }
 
 .whitespacenowrap {
@@ -4398,7 +4407,7 @@ input[type="range"]::-webkit-slider-thumb {
     gap: 4px;
     flex-wrap: nowrap;
     justify-content: flex-end;
-    transition: all 200ms;
+    transition: all var(--animation-duration-2x);
     overflow-x: hidden;
     padding: 1px;
 }
@@ -4410,7 +4419,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_button,
 .extraMesButtons>div {
     cursor: pointer;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
     opacity: 0.3;
     padding: 1px 3px;
@@ -4441,7 +4450,7 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     padding-bottom: 5px;
     filter: drop-shadow(0px 0px 2px black);
-    transition: 0.3s ease-in-out;
+    transition: var(--animation-duration-2x) ease-in-out;
 }
 
 .mes_reasoning_actions {
@@ -4776,7 +4785,7 @@ body .ui-slider-handle {
     text-align: center;
     margin-left: 0;
     opacity: 1 !important;
-    transition: filter 200ms;
+    transition: filter var(--animation-duration-2x);
     filter: brightness(1.2);
 }
 
@@ -4834,7 +4843,7 @@ body .ui-widget-content li {
     align-items: center;
     cursor: pointer;
     opacity: 0.5;
-    transition: opacity 200ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 body .ui-widget-content li:hover {
@@ -4996,34 +5005,6 @@ a:hover {
 /*           Right nav panel and nav-toggle */
 /* ############################################################# */
 
-#right-nav-panel {
-    width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
-    max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100dvh - var(--topBarBlockSize));
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    position: fixed;
-    top: 0;
-    margin: 0;
-    right: 0;
-    left: calc(100% - var(--sheldWidth) /2 + var(--sheldWidth) +1px);
-    padding: 5px;
-    margin-bottom: 5px;
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    z-index: 3000;
-
-    border: 1px solid var(--SmartThemeBorderColor);
-
-    box-shadow: none;
-    border-radius: 10px;
-    overflow: hidden;
-    flex-flow: column;
-    min-width: 100px;
-}
-
 #nav-toggle {
     position: fixed;
     right: 13px;
@@ -5047,7 +5028,7 @@ a:hover {
     display: none;
     position: relative;
     width: fit-content;
-    transition: all 0.1s;
+    transition: all var(--animation-duration);
     padding: 0.5rem;
 }
 
@@ -5239,7 +5220,7 @@ body:not(.sd) .mes_img_swipes {
     border-radius: 10px;
     padding: 2px 5px;
     border: 1px solid var(--SmartThemeBorderColor);
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
 }
 
 .standoutHeader.inline-drawer-header {
@@ -5322,12 +5303,12 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
 }
 
 .drawer-icon.openIcon {
-    transition: all 0.275s;
+    transition: all var(--animation-duration-2x);
 }
 
 .drawer-icon.closedIcon {
     opacity: 0.3;
-    transition: all 0.275s;
+    transition: all var(--animation-duration-2x);
 }
 
 .drawer-icon.closedIcon:hover {
@@ -5390,7 +5371,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     border: 1px solid var(--SmartThemeBorderColor);
     min-width: 450px;
     width: var(--sheldWidth);
-    overflow-y: auto;
+    overflow-y: hidden;
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     display: none;
@@ -5399,9 +5380,30 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     left: 0;
     right: 0;
     margin: 0 auto;
+    height: 0;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     /* z-index: 1000 !important; */
+    transition-property: height, display;
+    transition-duration: var(--animation-duration-2x);
+    transition-timing-function: ease-in-out;
+    transition-behavior: allow-discrete;
+}
+
+#movingDivs>.drawer-content {
+    height: unset;
+}
+
+.drawer-content.openDrawer {
+    display: block;
+    height: auto;
+    height: calc-size(auto, size);
+    overflow-y: auto;
+    animation: hide-scroll var(--animation-duration-2x) backwards;
+
+    @starting-style {
+        height: 0;
+    }
 }
 
 body.movingUI .inline-drawer-maximize {
@@ -5428,8 +5430,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .fillLeft {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100dvw - var(--sheldWidth) - 2px) /2);
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
+    height: 0;
     max-height: calc(100vh - var(--topBarBlockSize));
     max-height: calc(100dvh - var(--topBarBlockSize));
     position: fixed;
@@ -5442,6 +5443,66 @@ body:not(.movingUI) .drawer-content.maximized {
     overflow: hidden;
     border: 1px solid var(--SmartThemeBorderColor);
 }
+
+.fillLeft.openDrawer {
+    overflow-y: hidden;
+    height: calc(100vh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
+    height: calc-size((100dvh - var(--topBarBlockSize)), size);
+
+    @starting-style {
+        height: 0;
+    }
+}
+
+.fillRight {
+    width: calc((100vw - var(--sheldWidth) - 2px) /2);
+    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
+    max-height: calc(100vh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
+    height: 0;
+    position: fixed;
+    top: 0;
+    margin: 0;
+    right: 0;
+    left: calc(100% - var(--sheldWidth) /2 + var(--sheldWidth) +1px);
+    padding: 5px;
+    margin-bottom: 5px;
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    background-color: var(--SmartThemeBlurTintColor);
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    z-index: 3000;
+
+    border: 1px solid var(--SmartThemeBorderColor);
+
+    box-shadow: none;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-flow: column;
+    min-width: 100px;
+}
+
+.fillRight.openDrawer {
+    display: flex;
+    height: calc(100vh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
+    height: calc-size((100dvh - var(--topBarBlockSize)), size);
+
+    @starting-style {
+        height: 0;
+    }
+}
+
+/*
+.fillRight #rm_print_characters_block {
+    overflow-y: hidden;
+}
+
+.fillRight.openDrawer #rm_print_characters_block {
+    overflow-y: auto;
+    animation: hide-scroll var(--animation-duration-2x) backwards;
+}
+*/
 
 .scrollableInner {
     overflow-x: hidden;
@@ -5709,7 +5770,7 @@ body:not(.movingUI) .drawer-content.maximized {
     aspect-ratio: 1 / 1;
     font-size: 20px;
     opacity: 0.5;
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
 }
 
 /* #groupMemberListPopout,
@@ -5796,7 +5857,7 @@ body:not(.movingUI) .drawer-content.maximized {
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
-    transition: opacity 0.2s;
+    transition: opacity var(--animation-duration-2x);
     opacity: 0.8;
     cursor: pointer;
 }
@@ -5988,7 +6049,7 @@ body:not(.movingUI) .drawer-content.maximized {
     margin: 7px;
     width: calc(100% - 7px);
     box-sizing: border-box;
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, border 0.2s ease-in-out;
+    transition: transform var(--animation-duration-2x) ease-in-out, background-color var(--animation-duration-2x) ease-in-out, border var(--animation-duration-2x) ease-in-out;
 }
 
 .model-card .details-container {
@@ -6000,7 +6061,7 @@ body:not(.movingUI) .drawer-content.maximized {
     transform: scale(1.01);
     background-color: #444;
     /* Smooth transition */
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    transition: transform var(--animation-duration-2x) ease-in-out, background-color var(--animation-duration-2x) ease-in-out;
 }
 
 .model-card.selected {

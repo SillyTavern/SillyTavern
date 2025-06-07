@@ -125,7 +125,7 @@
     background-color: unset;
     color: var(--SmartThemeBodyColor);
     opacity: 0.5;
-    transition: opacity 200ms ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
     position: relative;
 }
 
@@ -203,7 +203,7 @@
 /* Styling for choice remove icon */
 span.select2.select2-container .select2-selection__choice__remove {
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color var(--animation-duration-2x);
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
 }
@@ -220,7 +220,7 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 
 .select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display {
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color var(--animation-duration-2x);
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     white-space: break-spaces;

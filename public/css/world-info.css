@@ -198,7 +198,11 @@
 }
 
 .world_entry {
-    transition: opacity 500ms;
+    transition: opacity var(--animation-duration-3x);
+}
+
+.world_entry_edit {
+    display: contents;
 }
 
 .disabledWIEntry {
@@ -267,7 +271,7 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 
     opacity: 0.5;
     color: var(--SmartThemeBodyColor);
-    transition: opacity 0.3s;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .switch_input_type_icon:hover {
