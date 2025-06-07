@@ -3986,18 +3986,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         is_send_press = false;
         return Promise.resolve();
     }
-
+    
     let textareaText;
-    if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
+    if ((type == undefined || type == 'normal' || type == 'continue' || type == 'ask_command') && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
         $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     } else {
         textareaText = '';
-        if (chat.length && chat[chat.length - 1]['is_user']) {
-            //do nothing? why does this check exist?
-        }
-        else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
+
+        if (type == 'regenerate' && chat.length && !chat[chat.length - 1]['is_user']){
             chat.length = chat.length - 1;
             await removeLastMessage();
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
