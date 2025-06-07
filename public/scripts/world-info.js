@@ -1943,11 +1943,14 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
 function clearEntryList($list) {
     console.time('clearEntryList');
 
+    // List already empty, skipping cleanup
     if (!$list.children().length) {
-        console.debug('List already empty, skipping cleanup.');
         console.timeEnd('clearEntryList');
         return;
     }
+
+    // Unsubscribe from toggle events, so that mass open won't create new drawers
+    $list.find('.inline-drawer').off('inline-drawer-toggle');
 
     // Step 1: Clean all <option> elements within <select>
     $list.find('option').each(function () {
@@ -2873,6 +2876,9 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, setWI
 
 /**
  * Main function to build the WI entry editor template.
+ * @param {string} name - The name of the world info file.
+ * @param {object} data - The world info data object.
+ * @param {object} entry - The entry object to be edited.
  */
 export async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) return;

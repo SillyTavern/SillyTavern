@@ -2157,6 +2157,11 @@ export function toggleDrawer(drawer, expand = true) {
     /** @type {HTMLElement} */
     const content = drawer.querySelector(':scope > .inline-drawer-content');
 
+    if (!icon || !content) {
+        console.debug('toggleDrawer: No icon or content found in the drawer element.');
+        return;
+    }
+
     if (expand) {
         icon.classList.remove('down', 'fa-circle-chevron-down');
         icon.classList.add('up', 'fa-circle-chevron-up');
