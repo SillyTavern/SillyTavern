@@ -1,5 +1,7 @@
 import { Fuse } from '../lib.js';
 
+const DEBUG_BACKGROUND_LOADING = false;
+
 import { chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
 import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -78,7 +80,8 @@ function getChatBackgroundsList() {
         const template = getBackgroundFromTemplate(bg, true);
         $('#bg_custom_content').append(template);
     }
-activateLazyLoader();
+    if (DEBUG_BACKGROUND_LOADING) console.log('Calling activateLazyLoader from getChatBackgroundsList');
+    activateLazyLoader();
 }
 
 function getBackgroundPath(fileUrl) {
@@ -397,28 +400,42 @@ export async function getBackgrounds() {
             const template = getBackgroundFromTemplate(bg, false);
             $('#bg_menu_content').append(template);
         }
-    activateLazyLoader();
+        if (DEBUG_BACKGROUND_LOADING) console.log('Calling activateLazyLoader from getBackgrounds');
+        activateLazyLoader();
+    }
 }
 
 function activateLazyLoader() {
+    if (DEBUG_BACKGROUND_LOADING) console.log('activateLazyLoader function started.');
     const lazyLoadElements = document.querySelectorAll('.lazy-load-background');
-    console.log('activateLazyLoader called. Found elements:', lazyLoadElements.length);
+    if (DEBUG_BACKGROUND_LOADING) console.log('activateLazyLoader called. Found elements:', lazyLoadElements.length);
+
+    const rootElement = document.getElementById('Backgrounds');
+    if (!rootElement) {
+        if (DEBUG_BACKGROUND_LOADING) console.error('#Backgrounds element not found!');
+        // Fallback to viewport if #Backgrounds is not found, or handle error
+        // For now, we'll let it proceed and potentially fail in observer creation if null,
+        // or you could default to `root: null` to use the viewport.
+    } else {
+        if (DEBUG_BACKGROUND_LOADING) console.log('#Backgrounds element found:', rootElement);
+    }
 
     const options = {
       root: document.getElementById('Backgrounds'), // Assuming 'Backgrounds' is the ID of the scrollable container
       rootMargin: '0px',
       threshold: 0.1 // Trigger when 10% of the item is visible
     };
+    if (DEBUG_BACKGROUND_LOADING) console.log('IntersectionObserver options:', options);
 
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
-            console.log('IntersectionObserver callback triggered for:', entry.target, 'Is intersecting:', entry.isIntersecting);
+            if (DEBUG_BACKGROUND_LOADING) console.log('IntersectionObserver callback triggered for:', entry.target, 'Is intersecting:', entry.isIntersecting);
             if (entry.isIntersecting) {
                 const imageUrl = entry.target.dataset.bgSrc;
                 if (!imageUrl) {
-                    console.warn('No bgSrc found for', entry.target);
+                    if (DEBUG_BACKGROUND_LOADING) console.warn('No bgSrc found for', entry.target);
                 }
-                console.log('Loading image for:', entry.target, 'with URL:', imageUrl);
+                if (DEBUG_BACKGROUND_LOADING) console.log('Loading image for:', entry.target, 'with URL:', imageUrl);
                 if (imageUrl) {
                     entry.target.style.backgroundImage = `url('${imageUrl}')`;
                 }
@@ -640,4 +657,48 @@ export function initBackgrounds() {
         setFittingClass(background_settings.fitting);
         saveSettingsDebounced();
     });
+
+    // START MutationObserver for #Backgrounds
+    const backgroundsElement = document.getElementById('Backgrounds');
+
+    if (backgroundsElement) {
+        const observer = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    const isOpened = !backgroundsElement.classList.contains('closedDrawer');
+                    handleBackgroundMenuToggle(isOpened);
+                }
+            }
+        });
+
+        observer.observe(backgroundsElement, { attributes: true });
+    } else {
+        if (DEBUG_BACKGROUND_LOADING) console.error('#Backgrounds element not found for MutationObserver');
+    }
+    // END MutationObserver for #Backgrounds
+}
+
+// New function to handle background menu toggle
+function handleBackgroundMenuToggle(isOpened) {
+    if (isOpened) {
+        if (DEBUG_BACKGROUND_LOADING) console.log('Background menu opened. Repopulating background lists.');
+        getBackgrounds();
+        getChatBackgroundsList();
+    } else {
+        if (DEBUG_BACKGROUND_LOADING) console.log('Background menu closed. Unloading unused images.');
+        const bgMenuContent = document.querySelectorAll('#bg_menu_content > div.bg_example');
+        const bgCustomContent = document.querySelectorAll('#bg_custom_content > div.bg_example');
+        const backgroundElements = [...bgMenuContent, ...bgCustomContent];
+
+        const currentMainBgUrl = background_settings.url;
+        const currentChatBgUrl = chat_metadata[BG_METADATA_KEY];
+
+        backgroundElements.forEach(element => {
+            const elementUrl = element.dataset.url;
+
+            if (elementUrl !== currentMainBgUrl && elementUrl !== currentChatBgUrl) {
+                element.style.backgroundImage = 'none';
+            }
+        });
+    }
 }
