@@ -400,9 +400,9 @@ function activateLazyLoader() {
     if (DEBUG_BACKGROUND_LOADING) console.log('activateLazyLoader called. Found elements:', lazyLoadElements.length);
 
     const options = {
-      root: null,
-      rootMargin: '200px',
-      threshold: 0.01
+        root: null,
+        rootMargin: '200px',
+        threshold: 0.01,
     };
     if (DEBUG_BACKGROUND_LOADING) console.log('IntersectionObserver options:', options);
 
