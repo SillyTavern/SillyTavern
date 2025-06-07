@@ -54,7 +54,7 @@ export function loadBackgroundSettings(settings) {
  * Sets the background for the current chat and adds it to the list of custom backgrounds.
  * @param {{url: string, path:string}} backgroundInfo
  */
-function forceSetBackground(backgroundInfo) {
+async function forceSetBackground(backgroundInfo) {
     saveBackgroundMetadata(backgroundInfo.url);
     setCustomBackground();
 
@@ -63,7 +63,7 @@ function forceSetBackground(backgroundInfo) {
     list.push(bg);
     chat_metadata[LIST_METADATA_KEY] = list;
     saveMetadataDebounced();
-    getChatBackgroundsList();
+    await getChatBackgroundsList();
     highlightNewBackground(bg);
     highlightLockedBackground();
 }
@@ -244,7 +244,7 @@ async function onCopyToSystemBackgroundClick(e) {
     const index = list.indexOf(bgNames.oldBg);
     list.splice(index, 1);
     saveMetadataDebounced();
-    getChatBackgroundsList();
+    await getChatBackgroundsList();
 }
 
 /**
@@ -389,7 +389,7 @@ async function onDeleteBackgroundClick(e) {
         }
 
         if (isCustom) {
-            getChatBackgroundsList();
+            await getChatBackgroundsList();
             saveMetadataDebounced();
         }
     }
