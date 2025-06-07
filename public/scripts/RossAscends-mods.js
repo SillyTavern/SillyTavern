@@ -1,4 +1,4 @@
-import { DOMPurify, Bowser, slideToggle } from '../lib.js';
+import { DOMPurify, Bowser } from '../lib.js';
 
 import {
     characters,
@@ -19,7 +19,7 @@ import {
     menu_type,
     substituteParams,
     sendTextareaMessage,
-    getSlideToggleOptions,
+    doNavbarIconClick,
 } from '../script.js';
 
 import {
@@ -473,54 +473,72 @@ const saveUserInputDebounced = debounce(saveUserInput);
 
 // Make the DIV element draggable:
 
-export function dragElement(elmnt) {
-    var isHeaderBeingDragged = false;
-    var isMouseDown = false;
+/**
+ * Make the given element draggable. This is used for Moving UI.
+ * @param {JQuery} $elmnt - The element to make draggable.
+ */
+export function dragElement($elmnt) {
+    let actionType = null; // "drag" or "resize"
+    let isMouseDown = false;
 
-    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    var height, width, top, left, right, bottom,
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let height, width, top, left, right, bottom,
         maxX, maxY, winHeight, winWidth,
         topbar, topBarFirstX, topBarLastY;
 
-    var elmntName = elmnt.attr('id');
-    console.debug(`dragElement called for ${elmntName}`);
+    const elmntName = $elmnt.attr('id');
     const elmntNameEscaped = $.escapeSelector(elmntName);
-    const elmntHeader = $(`#${elmntNameEscaped}header`);
+    const $elmntHeader = $(`#${elmntNameEscaped}header`);
 
-    if (elmntHeader.length) {
-        elmntHeader.off('mousedown').on('mousedown', (e) => { //listener for drag handle repositioning
-            isHeaderBeingDragged = true;
-            isMouseDown = true;
-            observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
-            dragMouseDown(e);
-        });
-        $(elmnt).off('mousedown').on('mousedown', () => { //listener for resize
-            isMouseDown = true;
-            observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
-        });
+    // Helper: Save position/size to state and emit events
+    function savePositionAndSize() {
+        if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
+        power_user.movingUIState[elmntName].top = top;
+        power_user.movingUIState[elmntName].left = left;
+        power_user.movingUIState[elmntName].right = right;
+        power_user.movingUIState[elmntName].bottom = bottom;
+        power_user.movingUIState[elmntName].margin = 'unset';
+        if (actionType === 'resize') {
+            power_user.movingUIState[elmntName].width = width;
+            power_user.movingUIState[elmntName].height = height;
+            eventSource.emit('resizeUI', elmntName);
+        }
+        saveSettingsDebounced();
     }
 
+    // Helper: Clamp element within viewport
+    function clampToViewport() {
+        if (top <= 0) $elmnt.css('top', '0px');
+        else if (maxY >= winHeight) $elmnt.css('top', winHeight - maxY + top - 1 + 'px');
+        if (left <= 0) $elmnt.css('left', '0px');
+        else if (maxX >= winWidth) $elmnt.css('left', winWidth - maxX + left - 1 + 'px');
+    }
+
+    // Observer for style changes (position/size)
     const observer = new MutationObserver((mutations) => {
-        const target = mutations[0].target;
-        if (!$(target).is(':visible') //abort if element is invisible
-            || $(target).hasClass('resizing') //being auto-resized by other JS code
-            || Number((String(target.height).replace('px', ''))) < 50 //too short
-            || Number((String(target.width).replace('px', ''))) < 50 //too narrow
-            || power_user.movingUI === false // if MUI is not turned on
-            || isMobile() // if it's a mobile screen
+        const $target = $(mutations[0].target);
+        if (
+            !$target.is(':visible') ||
+            $target.hasClass('resizing') ||
+            $target.height() < 50 ||
+            $target.width() < 50 ||
+            power_user.movingUI === false ||
+            isMobile() ||
+            !isMouseDown
         ) {
+            observer.disconnect();
             return;
         }
 
-        const style = getComputedStyle(target);
+        const style = getComputedStyle($target[0]);
         height = parseInt(style.height);
         width = parseInt(style.width);
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
         bottom = parseInt(style.bottom);
-        maxX = parseInt(width + left);
-        maxY = parseInt(height + top);
+        maxX = width + left;
+        maxY = height + top;
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
 
@@ -529,182 +547,119 @@ export function dragElement(elmnt) {
         topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
 
-        //prepare an empty poweruser object for the item being altered if we don't have one already
-        if (!power_user.movingUIState[elmntName]) {
-            console.debug(`adding config property for ${elmntName}`);
-            power_user.movingUIState[elmntName] = {};
-        }
+        // Prepare state object if missing
+        if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
 
-        //handle resizing
-        if (!isHeaderBeingDragged && isMouseDown) { //if user is dragging the resize handle (not in header)
-            let imgHeight, imgWidth, imageAspectRatio;
+        if (actionType === 'resize') {
             let containerAspectRatio = height / width;
-
-            //force aspect ratio for zoomed avatars
-            if ($(elmnt).attr('id').startsWith('zoomFor_')) {
-                let zoomedAvatarImage = $(elmnt).find('.zoomed_avatar_img');
-                imgHeight = zoomedAvatarImage.height();
-                imgWidth = zoomedAvatarImage.width();
-                imageAspectRatio = imgHeight / imgWidth;
-
-                // Maintain aspect ratio
+            if ($elmnt.attr('id').startsWith('zoomFor_')) {
+                const zoomedAvatarImage = $elmnt.find('.zoomed_avatar_img');
+                const imgHeight = zoomedAvatarImage.height();
+                const imgWidth = zoomedAvatarImage.width();
+                const imageAspectRatio = imgHeight / imgWidth;
                 if (containerAspectRatio !== imageAspectRatio) {
-                    elmnt.css('width', elmnt.width());
-                    elmnt.css('height', elmnt.width() * imageAspectRatio);
+                    $elmnt.css('width', $elmnt.width());
+                    $elmnt.css('height', $elmnt.width() * imageAspectRatio);
                 }
-
-                // Prevent resizing offscreen
-                if (top + elmnt.height() >= winHeight) {
-                    elmnt.css('height', winHeight - top - 1 + 'px');
-                    elmnt.css('width', (winHeight - top - 1) / imageAspectRatio + 'px');
+                if (top + $elmnt.height() >= winHeight) {
+                    $elmnt.css('height', winHeight - top - 1 + 'px');
+                    $elmnt.css('width', (winHeight - top - 1) / imageAspectRatio + 'px');
                 }
-
-                if (left + elmnt.width() >= winWidth) {
-                    elmnt.css('width', winWidth - left - 1 + 'px');
-                    elmnt.css('height', (winWidth - left - 1) * imageAspectRatio + 'px');
+                if (left + $elmnt.width() >= winWidth) {
+                    $elmnt.css('width', winWidth - left - 1 + 'px');
+                    $elmnt.css('height', (winWidth - left - 1) * imageAspectRatio + 'px');
                 }
-            } else { //prevent divs that are not zoomedAvatars from resizing offscreen
-
-                if (top + elmnt.height() >= winHeight) {
-                    elmnt.css('height', winHeight - top - 1 + 'px');
-                }
-
-                if (left + elmnt.width() >= winWidth) {
-                    elmnt.css('width', winWidth - left - 1 + 'px');
-                }
+            } else {
+                if (top + $elmnt.height() >= winHeight) $elmnt.css('height', winHeight - top - 1 + 'px');
+                if (left + $elmnt.width() >= winWidth) $elmnt.css('width', winWidth - left - 1 + 'px');
             }
-
-            //prevent resizing from top left into the top bar
             if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
-                elmnt.css('width', width - 1 + 'px');
+                $elmnt.css('width', width - 1 + 'px');
             }
-
-            //set css to prevent weird resize behavior (does not save)
-            elmnt.css('left', left);
-            elmnt.css('top', top);
-
-            //set a listener for mouseup to save new width/height
-            $(window).off('mouseup').on('mouseup', () => {
-                console.log(`Saving ${elmntName} Height/Width`);
-                // check if the height or width actually changed
-                if (power_user.movingUIState[elmntName].width === elmnt.width() && power_user.movingUIState[elmntName].height === elmnt.height()) {
-                    console.log('no change detected, aborting save');
-                    return;
-                }
-
-                power_user.movingUIState[elmntName].width = width;
-                power_user.movingUIState[elmntName].height = height;
-                eventSource.emit('resizeUI', elmntName);
-                saveSettingsDebounced();
-                imgHeight = null;
-                imgWidth = null;
-                height = null;
-                width = null;
-
-                containerAspectRatio = null;
-                imageAspectRatio = null;
-                $(window).off('mouseup');
+            $elmnt.css({ left, top });
+            $elmnt.off('mouseup').on('mouseup', () => {
+                if (
+                    power_user.movingUIState[elmntName].width === $elmnt.width() &&
+                    power_user.movingUIState[elmntName].height === $elmnt.height()
+                ) return;
+                savePositionAndSize();
+                observer.disconnect();
             });
+        } else if (actionType === 'drag') {
+            clampToViewport();
         }
 
-        //only record position changes if header is being dragged
-        power_user.movingUIState[elmntName].top = top;
-        power_user.movingUIState[elmntName].left = left;
-        power_user.movingUIState[elmntName].right = right;
-        power_user.movingUIState[elmntName].bottom = bottom;
-        power_user.movingUIState[elmntName].margin = 'unset';
-
-        //handle dragging hit detection to prevent dragging offscreen
-        if (isHeaderBeingDragged && isMouseDown) {
-
-            if (top <= 0) {
-                elmnt.css('top', '0px');
-            } else if (maxY >= winHeight) {
-                elmnt.css('top', winHeight - maxY + top - 1 + 'px');
-            }
-
-            if (left <= 0) {
-                elmnt.css('left', '0px');
-            } else if (maxX >= winWidth) {
-                elmnt.css('left', winWidth - maxX + left - 1 + 'px');
-            }
-        }
-
-        // Check if the element header exists and set the reposition listener on the grabber in the header
-        if (elmntHeader.length) {
-            elmntHeader.off('mousedown').on('mousedown', (e) => {
-                dragMouseDown(e);
-            });
-        } else { //if no header, put the listener on the elmnt itself.
-            elmnt.off('mousedown').on('mousedown', dragMouseDown);
-        }
+        // Always update position in state
+        savePositionAndSize();
     });
 
+    // Mouse event handlers
     function dragMouseDown(e) {
-
         if (e) {
-            isHeaderBeingDragged = true;
+            actionType = 'drag';
+            isMouseDown = true;
             e.preventDefault();
-            pos3 = e.clientX; //mouse X at click
-            pos4 = e.clientY; //mouse Y at click
+            pos3 = e.clientX;
+            pos4 = e.clientY;
         }
         $(document).on('mouseup', closeDragElement);
         $(document).on('mousemove', elementDrag);
     }
 
     function elementDrag(e) {
-        if (!power_user.movingUIState[elmntName]) {
-            power_user.movingUIState[elmntName] = {};
-        }
-
-        e = e || window.event;
+        if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
         e.preventDefault();
-
-        pos1 = pos3 - e.clientX;    //X change amt (-1 or 1)
-        pos2 = pos4 - e.clientY;    //Y change amt (-1 or 1)
-        pos3 = e.clientX;   //new mouse X
-        pos4 = e.clientY;   //new mouse Y
-
-        elmnt.attr('data-dragged', 'true');
-
-        //first set css to computed values to avoid CSS NaN results from 'auto', etc
-        elmnt.css('left', (elmnt.offset().left) + 'px');
-        elmnt.css('top', (elmnt.offset().top) + 'px');
-
-        //then update element position styles to account for drag changes
-        elmnt.css('margin', 'unset');
-        elmnt.css('left', (elmnt.offset().left - pos1) + 'px');
-        elmnt.css('top', (elmnt.offset().top - pos2) + 'px');
-        /*         elmnt.css('right', ((winWidth - maxX) + 'px'));
-                elmnt.css('bottom', ((winHeight - maxY) + 'px')); */
-
-        // Height/Width here are for visuals only, and are not saved to settings.
-        // This is required because some divs do hot have a set width/height
-        // and will default to shrink to min value of 100px set in CSS file
-        elmnt.css('height', height);
-        elmnt.css('width', width);
-        return;
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        $elmnt.attr('data-dragged', 'true');
+        $elmnt.css('left', ($elmnt.offset().left - pos1) + 'px');
+        $elmnt.css('top', ($elmnt.offset().top - pos2) + 'px');
+        $elmnt.css('margin', 'unset');
+        $elmnt.css('height', height);
+        $elmnt.css('width', width);
     }
 
     function closeDragElement() {
-        console.debug('drag finished');
-        isHeaderBeingDragged = false;
         isMouseDown = false;
+        actionType = null;
         $(document).off('mouseup', closeDragElement);
         $(document).off('mousemove', elementDrag);
-        $('body').css('overflow', '');
-        // Clear the "data-dragged" attribute
-        elmnt.attr('data-dragged', 'false');
+        $elmnt.attr('data-dragged', 'false');
         observer.disconnect();
-        console.debug(`Saving ${elmntName} UI position`);
-        saveSettingsDebounced();
-        top = null;
-        left = null;
-        right = null;
-        bottom = null;
-        maxX = null;
-        maxY = null;
+        savePositionAndSize();
     }
+
+    // Setup event listeners
+    if ($elmntHeader.length) {
+        $elmntHeader.off('mousedown').on('mousedown', (e) => {
+            if ($(e.target).hasClass('drag-grabber')) {
+                actionType = 'drag';
+                isMouseDown = true;
+                observer.observe($elmnt[0], { attributes: true, attributeFilter: ['style'] });
+                dragMouseDown(e);
+            }
+        });
+    }
+
+    $elmnt.off('mousedown').on('mousedown', (e) => {
+        const rect = $elmnt[0].getBoundingClientRect();
+        const resizeMargin = 16;
+        const isNearRight = e.clientX > rect.right - resizeMargin;
+        const isNearBottom = e.clientY > rect.bottom - resizeMargin;
+        if (isNearRight && isNearBottom) {
+            actionType = 'resize';
+            isMouseDown = true;
+            observer.observe($elmnt[0], { attributes: true, attributeFilter: ['style'] });
+        }
+    });
+
+    $elmnt.off('mouseup').on('mouseup', () => {
+        isMouseDown = false;
+        actionType = null;
+        observer.disconnect();
+    });
 }
 
 export async function initMovingUI() {
@@ -775,9 +730,8 @@ export function initRossMods() {
             $(RightNavDrawerIcon).removeClass('drawerPinnedOpen');
 
             if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                slideToggle(RightNavPanel, getSlideToggleOptions());
-                $(RightNavDrawerIcon).toggleClass('closedIcon openIcon');
-                $(RightNavPanel).toggleClass('openDrawer closedDrawer');
+                const toggle = $('#unimportantYes');
+                doNavbarIconClick.call(toggle);
             }
         }
     });
@@ -793,14 +747,13 @@ export function initRossMods() {
             $(LeftNavDrawerIcon).removeClass('drawerPinnedOpen');
 
             if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                slideToggle(LeftNavPanel, getSlideToggleOptions());
-                $(LeftNavDrawerIcon).toggleClass('closedIcon openIcon');
-                $(LeftNavPanel).toggleClass('openDrawer closedDrawer');
+                const toggle = $('#ai-config-button>.drawer-toggle');
+                doNavbarIconClick.call(toggle);
             }
         }
     });
 
-    $(WIPanelPin).on('click', function () {
+    $(WIPanelPin).on('click', async function () {
         accountStorage.setItem('WINavLockOn', $(WIPanelPin).prop('checked'));
         if ($(WIPanelPin).prop('checked') == true) {
             console.debug('adding pin class to WI');
@@ -813,9 +766,8 @@ export function initRossMods() {
 
             if ($(WorldInfo).hasClass('openDrawer') && $('.openDrawer').length > 1) {
                 console.debug('closing WI after lock removal');
-                slideToggle(WorldInfo, getSlideToggleOptions());
-                $(WIDrawerIcon).toggleClass('closedIcon openIcon');
-                $(WorldInfo).toggleClass('openDrawer closedDrawer');
+                const toggle = $('#WI-SP-button>.drawer-toggle');
+                doNavbarIconClick.call(toggle);
             }
         }
     });

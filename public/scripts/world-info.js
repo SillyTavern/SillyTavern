@@ -58,7 +58,8 @@ export const scan_state = {
     MIN_ACTIVATIONS: 3,
 };
 
-const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
+const WI_ENTRY_HEADER_TEMPLATE = $('#entry_edit_template .world_entry');
+const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry_edit');
 
 export let world_info = {};
 export let selected_world_info = [];
@@ -85,6 +86,7 @@ const saveSettingsDebounced = debounce(() => {
 }, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
 let updateEditor = (navigation, flashOnNav = true) => { console.debug('Triggered WI navigation', navigation, flashOnNav); };
+let isSaveWorldInfoDisabled = false;
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 export const worldInfoFilter = new FilterHelper(() => updateEditor());
@@ -965,6 +967,7 @@ export function reloadEditor(file, loadIfNotSelected = false) {
     }
 }
 
+//MARK: regWISlashCommands
 function registerWorldInfoSlashCommands() {
     /**
      * Gets a *rough* approximation of the current chat context.
@@ -1754,12 +1757,12 @@ function registerWorldInfoSlashCommands() {
  */
 export async function showWorldEditor(name) {
     if (!name) {
-        hideWorldEditor();
+        await hideWorldEditor();
         return;
     }
 
     const wiData = await loadWorldInfo(name);
-    displayWorldEntries(name, wiData);
+    await displayWorldEntries(name, wiData);
 }
 
 /**
@@ -1815,8 +1818,8 @@ export async function updateWorldInfoList() {
     }
 }
 
-function hideWorldEditor() {
-    displayWorldEntries(null, null);
+async function hideWorldEditor() {
+    await displayWorldEntries(null, null);
 }
 
 function getWIElement(name) {
@@ -1937,15 +1940,72 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
     worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
-function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
-    updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
+function clearEntryList($list) {
+    console.time('clearEntryList');
+
+    if (!$list.children().length) {
+        console.debug('List already empty, skipping cleanup.');
+        console.timeEnd('clearEntryList');
+        return;
+    }
+
+    // Step 1: Clean all <option> elements within <select>
+    $list.find('option').each(function () {
+        const $option = $(this);
+        $option.off();
+        $.cleanData([$option[0]]);
+        $option.remove();
+    });
+
+    // Step 2: Clean all <select> elements
+    $list.find('select').each(function () {
+        const $select = $(this);
+        // Remove Select2-related data and container if present
+        if ($select.data('select2')) {
+            try {
+                $select.select2('destroy');
+            } catch (e) {
+                console.debug('Select2 destroy failed:', e);
+            }
+        }
+        const $container = $select.parent();
+        if ($container.length) {
+            $container.find('*').off();
+            $.cleanData($container.find('*').get());
+            $container.remove();
+        }
+
+        $select.off();
+        $.cleanData([$select[0]]);
+    });
+
+    // Step 3: Clean <div>, <span>, <input>
+    $list.find('div, span, input').each(function () {
+        const $elem = $(this);
+        $elem.off();
+        $.cleanData([$elem[0]]);
+        $elem.remove();
+    });
+
+    const totalElementsOfAnyKindLeftInList = $list.children().length;
+
+    // Final cleanup
+    if (totalElementsOfAnyKindLeftInList) {
+        console.time('empty');
+        $list.empty();
+        console.timeEnd('empty');
+    }
+
+    console.timeEnd('clearEntryList');
+}
+
+//MARK: displayWorldEntries
+async function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
+    updateEditor = async (navigation, flashOnNav = true) => await displayWorldEntries(name, data, navigation, flashOnNav);
 
     const worldEntriesList = $('#world_popup_entries_list');
-
-    // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
-    // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
-    worldEntriesList.find('*').off();
-    worldEntriesList.empty().show();
+    clearEntryList(worldEntriesList);
+    worldEntriesList.show();
 
     if (!data || !('entries' in data)) {
         $('#world_popup_new').off('click').on('click', nullWorldInfo);
@@ -2038,22 +2098,39 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: async function (/** @type {object[]} */ page) {
-            // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
-            // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
-            worldEntriesList.find('*').off();
-            worldEntriesList.empty();
+            try {
+                // Prevent saveWorldInfo from firing timeouts while rendering the list
+                isSaveWorldInfoDisabled = true;
+                clearEntryList(worldEntriesList);
 
-            const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
-            const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
-            const blocks = await Promise.all(blocksPromises);
-            const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
-            if (!isCustomOrder) {
-                blocks.forEach(block => {
-                    block.find('.drag-handle').remove();
-                });
+                const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
+                const blocks = [];
+
+                for (const entry of page) {
+                    try {
+                        const block = await getWorldEntry(name, data, entry);
+                        if (block) {
+                            blocks.push(block);
+                        }
+                    } catch (error) {
+                        console.error(`Error while processing entry ${entry.uid}:`, error);
+                    }
+                }
+
+                const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
+                if (!isCustomOrder) {
+                    blocks.forEach(block => {
+                        block.find('.drag-handle').remove();
+                    });
+                }
+
+                worldEntriesList.append(keywordHeaders);
+                worldEntriesList.append(blocks);
+            } catch (error) {
+                console.error('Error while rendering WI entries:', error);
+            } finally {
+                isSaveWorldInfoDisabled = false;
             }
-            worldEntriesList.append(keywordHeaders);
-            worldEntriesList.append(blocks);
         },
         afterSizeSelectorChange: function (e) {
             accountStorage.setItem(storageKey, e.target.value);
@@ -2173,7 +2250,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             if (selectedIndex !== -1) {
                 $('#world_editor_select').val(selectedIndex).trigger('change');
             } else {
-                hideWorldEditor();
+                await hideWorldEditor();
             }
         }
     });
@@ -2211,6 +2288,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             await saveWorldInfo(name, data);
         },
     });
+
     //$("#world_popup_entries_list").disableSelection();
 }
 
@@ -2453,208 +2531,137 @@ export function parseRegexFromString(input) {
     }
 }
 
-export async function getWorldEntry(name, data, entry) {
-    if (!data.entries[entry.uid]) {
-        return;
-    }
-
-    const template = WI_ENTRY_EDIT_TEMPLATE.clone();
-    template.data('uid', entry.uid);
-    template.attr('uid', entry.uid);
-
-    // Init default state of WI Key toggle (=> true)
-    if (typeof power_user.wi_key_input_plaintext === 'undefined') power_user.wi_key_input_plaintext = true;
-
-    /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
-    function enableKeysInput(entryPropName, originalDataValueName) {
-        const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
-        const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
-        input.data('uid', entry.uid);
-        input.on('click', function (event) {
-            // Prevent closing the drawer on clicking the input
-            event.stopPropagation();
-        });
-
-        function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
-            const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
-            const isRegex = isValidRegex(item.text);
-            if (isRegex) {
-                content.html(highlightRegex(item.text));
-                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
-            }
-
-            if (searchStyle && item.count) {
-                // Build a wrapping element
-                const wrapper = $('<span>').addClass('result_block')
-                    .append(content);
-                wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
-                return wrapper;
-            }
-
-            return content;
-        }
-
-        if (isFancyInput) {
-            // First initialize existing values as options, before initializing select2, to speed up performance
-            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
-
-            input.select2({
-                ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
-                tags: true,
-                tokenSeparators: [','],
-                tokenizer: customTokenizer,
-                placeholder: input.attr('placeholder'),
-                templateResult: item => templateStyling(item, { searchStyle: true }),
-                templateSelection: item => templateStyling(item),
-            });
-            input.on('change', async function (_, { skipReset, noSave } = {}) {
-                const uid = $(this).data('uid');
-                /** @type {string[]} */
-                const keys = ($(this).select2('data')).map(x => x.text);
-
-                !skipReset && await resetScrollHeight(this);
-                if (!noSave) {
-                    data.entries[uid][entryPropName] = keys;
-                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    await saveWorldInfo(name, data);
-                }
-                $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
-            });
-            input.toggleClass('empty', !entry[entryPropName].length);
-            input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
-            input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
-
-            select2ChoiceClickSubscribe(input, target => {
-                const key = $(target.closest('.regex-highlight, .item')).text();
-                console.debug('Editing WI key', key);
-
-                // Remove the current key from the actual selection
-                const selected = input.val();
-                if (!Array.isArray(selected)) return;
-                var index = selected.indexOf(getSelect2OptionId(key));
-                if (index > -1) selected.splice(index, 1);
-                input.val(selected).trigger('change');
-                // Manually update the cache, that change event is not gonna trigger it
-                updateWorldEntryKeyOptionsCache([key], { remove: true });
-
-                // We need to "hack" the actual text input into the currently open textarea
-                input.next('span.select2-container').find('textarea')
-                    .val(key).trigger('input');
-            }, { openDrawer: true });
-        }
-        else {
-            // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
-            template.find(`select[name="${entryPropName}"]`).hide();
-            input.show();
-
-            input.on('input', async function (_, { skipReset, noSave } = {}) {
-                const uid = $(this).data('uid');
-                const value = String($(this).val());
-                !skipReset && await resetScrollHeight(this);
-                if (!noSave) {
-                    data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
-                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    await saveWorldInfo(name, data);
-                    $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
-                }
-            });
-            input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
-        }
-        return { isFancy: isFancyInput, control: input };
-    }
-
-    // key
-    const keyInput = enableKeysInput('key', 'keys');
-
-    // keysecondary
-    const keySecondaryInput = enableKeysInput('keysecondary', 'secondary_keys');
-
-    // draw key input switch button
-    template.find('.switch_input_type_icon').on('click', function () {
-        power_user.wi_key_input_plaintext = !power_user.wi_key_input_plaintext;
-        saveSettingsDebounced();
-
-        // Just redraw the panel
-        const uid = ($(this).parents('.world_entry')).data('uid');
-        updateEditor(uid, false);
-
-        $(`.world_entry[uid="${uid}"] .inline-drawer-icon`).trigger('click');
-        // setTimeout(() => {
-        // }, debounce_timeout.standard);
-    }).each((_, icon) => {
-        $(icon).attr('title', $(icon).data(power_user.wi_key_input_plaintext ? 'tooltip-on' : 'tooltip-off'));
-        $(icon).text($(icon).data(power_user.wi_key_input_plaintext ? 'icon-on' : 'icon-off'));
-    });
-
-    // logic AND/NOT
-    const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
-    selectiveLogicDropdown.data('uid', entry.uid);
-
-    selectiveLogicDropdown.on('click', function (event) {
+//MARK: getWorldEntry
+function enableKeysInputHelper({ template, entry, entryPropName, originalDataValueName, name, data }) {
+    const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
+    const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
+    input.data('uid', entry.uid);
+    input.on('click', function (event) {
         event.stopPropagation();
     });
 
-    selectiveLogicDropdown.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-        data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ANY;
-        setWIOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
-        await saveWorldInfo(name, data);
-    });
+    function templateStyling(item, { searchStyle = false } = {}) {
+        const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
+        const isRegex = isValidRegex(item.text);
+        if (isRegex) {
+            content.html(highlightRegex(item.text));
+            content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
+        }
+        if (searchStyle && item.count) {
+            const wrapper = $('<span>').addClass('result_block').append(content);
+            wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
+            return wrapper;
+        }
+        return content;
+    }
 
-    template
-        .find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`)
-        .prop('selected', true)
-        .trigger('input');
+    if (isFancyInput) {
+        select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+        input.select2({
+            ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
+            tags: true,
+            tokenSeparators: [','],
+            tokenizer: customTokenizer,
+            placeholder: input.attr('placeholder'),
+            templateResult: item => templateStyling(item, { searchStyle: true }),
+            templateSelection: item => templateStyling(item),
+        });
 
-    // Character filter
-    const characterFilterLabel = template.find('label[for="characterFilter"] > small');
-    characterFilterLabel.text(entry.characterFilter?.isExclude ? 'Exclude Character(s)' : 'Filter to Character(s)');
+        // TypeScript-safe event handler
+        /**
+         * @param {Event} _event
+         * @param {{ skipReset?: boolean, noSave?: boolean }} [arg]
+         */
+        input.on('change', async function (_event, arg) {
+            const uid = $(this).data('uid');
+            const keys = ($(this).select2('data')).map(x => x.text);
+            const skipReset = arg?.skipReset ?? false;
+            const noSave = arg?.noSave ?? false;
+            if (!skipReset) await resetScrollHeight(this);
+            if (!noSave) {
+                data.entries[uid][entryPropName] = keys;
+                setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                await saveWorldInfo(name, data);
+            }
+            $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+        });
 
-    // exclude characters checkbox
-    const characterExclusionInput = template.find('input[name="character_exclusion"]');
-    characterExclusionInput.data('uid', entry.uid);
-    characterExclusionInput.on('input', async function () {
+        input.toggleClass('empty', !entry[entryPropName].length);
+        input.on('select2:select', event => updateWorldEntryKeyOptionsCache([event.params.data]));
+        input.on('select2:unselect', event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
+
+        select2ChoiceClickSubscribe(input, target => {
+            const key = $(target.closest('.regex-highlight, .item')).text();
+            const selected = input.val();
+            if (!Array.isArray(selected)) return;
+            var index = selected.indexOf(getSelect2OptionId(key));
+            if (index > -1) selected.splice(index, 1);
+            input.val(selected).trigger('change');
+            updateWorldEntryKeyOptionsCache([key], { remove: true });
+            input.next('span.select2-container').find('textarea').val(key).trigger('input');
+        }, { openDrawer: true });
+    } else {
+        template.find(`select[name="${entryPropName}"]`).hide();
+        input.show();
+        /**
+        * @param {Event} _event
+        * @param {{ skipReset?: boolean, noSave?: boolean }} [arg]
+        */
+        input.on('change', async function (_event, arg) {
+            const uid = $(this).data('uid');
+            const value = String($(this).val());
+            const skipReset = arg?.skipReset ?? false;
+            const noSave = arg?.noSave ?? false;
+            if (!skipReset) await resetScrollHeight(this);
+            if (!noSave) {
+                data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
+                setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                await saveWorldInfo(name, data);
+                $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            }
+        });
+        input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
+    }
+    return { isFancy: isFancyInput, control: input };
+}
+
+/**
+ * Helper to handle match checkboxes for WI entries.
+ */
+function handleMatchCheckboxHelper({ template, entry, fieldName, data, name }) {
+    const key = originalWIDataKeyMap[fieldName];
+    const checkBoxElem = template.find(`input[type="checkbox"][name="${fieldName}"]`);
+    checkBoxElem.data('uid', entry.uid);
+    checkBoxElem.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
-        characterFilterLabel.text(value ? 'Exclude Character(s)' : 'Filter to Character(s)');
-        if (data.entries[uid].characterFilter) {
-            if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
-                delete data.entries[uid].characterFilter;
-            } else {
-                data.entries[uid].characterFilter.isExclude = value;
-            }
-        } else if (value) {
-            Object.assign(
-                data.entries[uid],
-                {
-                    characterFilter: {
-                        isExclude: true,
-                        names: [],
-                        tags: [],
-                    },
-                },
-            );
-        }
-
-        // Verify names to exist in the system
-        if (data.entries[uid]?.characterFilter?.names?.length > 0) {
-            for (const name of [...data.entries[uid].characterFilter.names]) {
-                if (!getContext().characters.find(x => x.avatar.replace(/\.[^/.]+$/, '') === name)) {
-                    console.warn(`World Info: Character ${name} not found. Removing from the entry filter.`, entry);
-                    data.entries[uid].characterFilter.names = data.entries[uid].characterFilter.names.filter(x => x !== name);
-                }
-            }
-        }
-
-        setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
+        data.entries[uid][fieldName] = value;
+        setWIOriginalDataValue(data, uid, key, data.entries[uid][fieldName]);
         await saveWorldInfo(name, data);
     });
-    characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input');
+    checkBoxElem.prop('checked', !!entry[fieldName]).trigger('input');
+}
 
-    const characterFilter = template.find('select[name="characterFilter"]');
-    characterFilter.data('uid', entry.uid);
+/**
+ * Helper to update position/order display.
+ */
+function updatePosOrdDisplayHelper({ template, data, uid }) {
+    let entry = data.entries[uid];
+    let posText = entry.position;
+    switch (entry.position) {
+        case 0: posText = '↑CD'; break;
+        case 1: posText = 'CD↓'; break;
+        case 2: posText = '↑AN'; break;
+        case 3: posText = 'AN↓'; break;
+        case 4: posText = `@D${entry.depth}`; break;
+    }
+    template.find('.world_entry_form_position_value').text(`(${posText} ${entry.order})`);
+}
 
+/**
+ * Helper to initialize character filter select2.
+ */
+function initCharacterFilterSelect2Helper(characterFilter, t) {
     if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
@@ -2663,7 +2670,12 @@ export async function getWorldEntry(name, data, entry) {
             closeOnSelect: false,
         });
     }
+}
 
+/**
+ * Helper to fill character and tag options for character filter.
+ */
+function fillCharacterAndTagOptionsHelper({ characterFilter, entry, getContext }) {
     const characters = getContext().characters;
     characters.forEach((character) => {
         const option = document.createElement('option');
@@ -2673,7 +2685,6 @@ export async function getWorldEntry(name, data, entry) {
         option.setAttribute('data-type', 'character');
         characterFilter.append(option);
     });
-
     const tags = getContext().tags;
     tags.forEach((tag) => {
         const option = document.createElement('option');
@@ -2683,14 +2694,17 @@ export async function getWorldEntry(name, data, entry) {
         option.setAttribute('data-type', 'tag');
         characterFilter.append(option);
     });
+}
 
+/**
+ * Helper to handle character filter changes.
+ */
+function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name, world_names, getContext, setWIOriginalDataValue, saveWorldInfo, t }) {
     characterFilter.on('mousedown change', async function (e) {
-        // If there's no world names, don't do anything
         if (world_names.length === 0) {
             e.preventDefault();
             return;
         }
-
         const uid = $(this).data('uid');
         const selected = $(this).find(':selected');
         if ((!selected || selected?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
@@ -2712,361 +2726,99 @@ export async function getWorldEntry(name, data, entry) {
         setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
         await saveWorldInfo(name, data);
     });
+}
 
-    // comment
-    const commentInput = template.find('textarea[name="comment"]');
-    const commentToggle = template.find('input[name="addMemo"]');
-    commentInput.data('uid', entry.uid);
-    commentInput.on('input', async function (_, { skipReset } = {}) {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
-        !skipReset && await resetScrollHeight(this);
-        data.entries[uid].comment = value;
-
-        setWIOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
-        await saveWorldInfo(name, data);
-    });
-    commentToggle.data('uid', entry.uid);
-    commentToggle.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
-        //console.log(value)
-        const commentContainer = $(this)
-            .closest('.world_entry')
-            .find('.commentContainer');
-        data.entries[uid].addMemo = value;
-        await saveWorldInfo(name, data);
-        value ? commentContainer.show() : commentContainer.hide();
-    });
-
-    commentInput.val(entry.comment).trigger('input', { skipReset: true });
-    //initScrollHeight(commentInput);
-    commentToggle.prop('checked', true /* entry.addMemo */).trigger('input');
-    commentToggle.parent().hide();
-
-    // content
-    const counter = template.find('.world_entry_form_token_counter');
-    const countTokensDebounced = debounce(async function (counter, value) {
-        const numberOfTokens = await getTokenCountAsync(value);
-        $(counter).text(numberOfTokens);
-    }, debounce_timeout.relaxed);
-
-    const contentInputId = `world_entry_content_${entry.uid}`;
-    const contentInput = template.find('textarea[name="content"]');
-    contentInput.data('uid', entry.uid);
-    contentInput.attr('id', contentInputId);
-    contentInput.on('input', async function (_, { skipCount } = {}) {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
-        data.entries[uid].content = value;
-
-        setWIOriginalDataValue(data, uid, 'content', data.entries[uid].content);
-        await saveWorldInfo(name, data);
-
-        if (skipCount) {
-            return;
-        }
-
-        // count tokens
-        countTokensDebounced(counter, value);
-    });
-    contentInput.val(entry.content).trigger('input', { skipCount: true });
-
-    const contentExpandButton = template.find('.editor_maximize');
-    contentExpandButton.attr('data-for', contentInputId);
-
-    template.find('.inline-drawer-toggle').on('click', function () {
-        if (counter.data('first-run')) {
-            counter.data('first-run', false);
-            countTokensDebounced(counter, contentInput.val());
-            if (!keyInput.isFancy) initScrollHeight(keyInput.control);
-            if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
-        }
-    });
-
-    // selective
-    const selectiveInput = template.find('input[name="selective"]');
-    selectiveInput.data('uid', entry.uid);
-    selectiveInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
-        data.entries[uid].selective = value;
-
-        setWIOriginalDataValue(data, uid, 'selective', data.entries[uid].selective);
-        await saveWorldInfo(name, data);
-
-        const keysecondary = $(this)
-            .closest('.world_entry')
-            .find('.keysecondary');
-
-        const keysecondarytextpole = $(this)
-            .closest('.world_entry')
-            .find('.keysecondarytextpole');
-
-        const keyprimaryselect = $(this)
-            .closest('.world_entry')
-            .find('.keyprimaryselect');
-
-        const keyprimaryHeight = keyprimaryselect.outerHeight();
-        keysecondarytextpole.css('height', keyprimaryHeight + 'px');
-
-        value ? keysecondary.show() : keysecondary.hide();
-
-    });
-    //forced on, ignored if empty
-    selectiveInput.prop('checked', true /* entry.selective */).trigger('input');
-    selectiveInput.parent().hide();
-
-
-    // constant
-    /*
-    const constantInput = template.find('input[name="constant"]');
-    constantInput.data("uid", entry.uid);
-    constantInput.on("input", async function () {
-        const uid = $(this).data("uid");
-        const value = $(this).prop("checked");
-        data.entries[uid].constant = value;
-        setOriginalDataValue(data, uid, "constant", data.entries[uid].constant);
-        await saveWorldInfo(name, data);
-    });
-    constantInput.prop("checked", entry.constant).trigger("input");
-    */
-
-    // order
-    const orderInput = template.find('input[name="order"]');
-    orderInput.data('uid', entry.uid);
-    orderInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-
-        data.entries[uid].order = !isNaN(value) ? value : 0;
-        updatePosOrdDisplay(uid);
-        setWIOriginalDataValue(data, uid, 'insertion_order', data.entries[uid].order);
-        await saveWorldInfo(name, data);
-    });
-    orderInput.val(entry.order).trigger('input');
-    orderInput.css('width', 'calc(3em + 15px)');
-
-    // group
-    const groupInput = template.find('input[name="group"]');
-    groupInput.data('uid', entry.uid);
-    groupInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = String($(this).val()).trim();
-
-        data.entries[uid].group = value;
-        setWIOriginalDataValue(data, uid, 'extensions.group', data.entries[uid].group);
-        await saveWorldInfo(name, data);
-    });
-    groupInput.val(entry.group ?? '').trigger('input');
-    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
-
-    // inclusion priority
-    const groupOverrideInput = template.find('input[name="groupOverride"]');
-    groupOverrideInput.data('uid', entry.uid);
-    groupOverrideInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
-        data.entries[uid].groupOverride = value;
-        setWIOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
-        await saveWorldInfo(name, data);
-    });
-    groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
-
-    // group weight
-    const groupWeightInput = template.find('input[name="groupWeight"]');
-    groupWeightInput.data('uid', entry.uid);
-    groupWeightInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        let value = Number($(this).val());
-        const min = Number($(this).attr('min'));
-        const max = Number($(this).attr('max'));
-
-        // Clamp the value
-        if (value < min) {
-            value = min;
-            $(this).val(min);
-        } else if (value > max) {
-            value = max;
-            $(this).val(max);
-        }
-
-        data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 1;
-        setWIOriginalDataValue(data, uid, 'extensions.group_weight', data.entries[uid].groupWeight);
-        await saveWorldInfo(name, data);
-    });
-    groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
-
-    // sticky
-    const sticky = template.find('input[name="sticky"]');
-    sticky.data('uid', entry.uid);
-    sticky.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-        data.entries[uid].sticky = !isNaN(value) ? value : null;
-
-        setWIOriginalDataValue(data, uid, 'extensions.sticky', data.entries[uid].sticky);
-        await saveWorldInfo(name, data);
-    });
-    sticky.val(entry.sticky > 0 ? entry.sticky : '').trigger('input');
-
-    // cooldown
-    const cooldown = template.find('input[name="cooldown"]');
-    cooldown.data('uid', entry.uid);
-    cooldown.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-        data.entries[uid].cooldown = !isNaN(value) ? value : null;
-
-        setWIOriginalDataValue(data, uid, 'extensions.cooldown', data.entries[uid].cooldown);
-        await saveWorldInfo(name, data);
-    });
-    cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
-
-    // delay
-    const delay = template.find('input[name="delay"]');
-    delay.data('uid', entry.uid);
-    delay.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-        data.entries[uid].delay = !isNaN(value) ? value : null;
-
-        setWIOriginalDataValue(data, uid, 'extensions.delay', data.entries[uid].delay);
-        await saveWorldInfo(name, data);
-    });
-    delay.val(entry.delay > 0 ? entry.delay : '').trigger('input');
-
-    // probability
-    if (entry.probability === undefined) {
-        entry.probability = null;
-    }
-
-    // depth
-    const depthInput = template.find('input[name="depth"]');
-    depthInput.data('uid', entry.uid);
-
-    depthInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = Number($(this).val());
-
-        data.entries[uid].depth = !isNaN(value) ? value : 0;
-        updatePosOrdDisplay(uid);
-        setWIOriginalDataValue(data, uid, 'extensions.depth', data.entries[uid].depth);
-        await saveWorldInfo(name, data);
-    });
-    depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger('input');
-    depthInput.css('width', 'calc(3em + 15px)');
-
-    // Hide by default unless depth is specified
-    if (entry.position === world_info_position.atDepth) {
-        //depthInput.parent().hide();
-    }
-
-    const probabilityInput = template.find('input[name="probability"]');
+/**
+ * Helper to handle probability input.
+ */
+function handleProbabilityInputHelper({ probabilityInput, data, entry, name, setWIOriginalDataValue, saveWorldInfo }) {
     probabilityInput.data('uid', entry.uid);
     probabilityInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
-
         data.entries[uid].probability = !isNaN(value) ? value : null;
-
-        // Clamp probability to 0-100
         if (data.entries[uid].probability !== null) {
             data.entries[uid].probability = Math.min(100, Math.max(0, data.entries[uid].probability));
-
             if (data.entries[uid].probability !== value) {
                 $(this).val(data.entries[uid].probability);
             }
         }
-
         setWIOriginalDataValue(data, uid, 'extensions.probability', data.entries[uid].probability);
         await saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger('input');
     probabilityInput.css('width', 'calc(3em + 15px)');
+}
 
-    // probability toggle
-    if (entry.useProbability === undefined) {
-        entry.useProbability = false;
-    }
-
-    const probabilityToggle = template.find('input[name="useProbability"]');
+/**
+ * Helper to handle probability toggle.
+ */
+function handleProbabilityToggleHelper({ probabilityToggle, data, entry, name, probabilityInput, setWIOriginalDataValue, saveWorldInfo }) {
     probabilityToggle.data('uid', entry.uid);
     probabilityToggle.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].useProbability = value;
-        const probabilityContainer = $(this)
-            .closest('.world_entry')
-            .find('.probabilityContainer');
+        const probabilityContainer = $(this).closest('.world_entry').find('.probabilityContainer');
         await saveWorldInfo(name, data);
         value ? probabilityContainer.show() : probabilityContainer.hide();
-
         if (value && data.entries[uid].probability === null) {
             data.entries[uid].probability = 100;
         }
-
         if (!value) {
             data.entries[uid].probability = null;
         }
-
         probabilityInput.val(data.entries[uid].probability).trigger('input');
     });
-    //forced on, 100% by default
-    probabilityToggle.prop('checked', true /* entry.useProbability */).trigger('input');
+    probabilityToggle.prop('checked', true).trigger('input');
     probabilityToggle.parent().hide();
+}
 
-    // position
-    if (entry.position === undefined) {
-        entry.position = 0;
-    }
-
-    const positionInput = template.find('select[name="position"]');
-    //initScrollHeight(positionInput);
-    positionInput.data('uid', entry.uid);
-    positionInput.on('click', function (event) {
-        // Prevent closing the drawer on clicking the input
-        event.stopPropagation();
-    });
-    positionInput.on('input', async function () {
+/**
+ * Helper to handle select2 dropdowns for boolean selects.
+ */
+function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name, setWIOriginalDataValue, saveWorldInfo }) {
+    selectElem.data('uid', entry.uid);
+    selectElem.on('input', async function () {
         const uid = $(this).data('uid');
-        const value = Number($(this).val());
-        data.entries[uid].position = !isNaN(value) ? value : 0;
-        if (value === world_info_position.atDepth) {
-            depthInput.prop('disabled', false);
-            depthInput.css('visibility', 'visible');
-            //depthInput.parent().show();
-            const role = Number($(this).find(':selected').data('role'));
-            data.entries[uid].role = role;
-        } else {
-            depthInput.prop('disabled', true);
-            depthInput.css('visibility', 'hidden');
-            data.entries[uid].role = null;
-            //depthInput.parent().hide();
-        }
-        updatePosOrdDisplay(uid);
-        // Spec v2 only supports before_char and after_char
-        setWIOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
-        // Write the original value as extensions field
-        setWIOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
-        setWIOriginalDataValue(data, uid, 'extensions.role', data.entries[uid].role);
+        const value = $(this).val();
+        data.entries[uid][entryKey] = value === 'null' ? null : value === 'true';
+        setWIOriginalDataValue(data, uid, `extensions.${entryKey.replace(/[A-Z]/g, m => `_${m.toLowerCase()}`)}`, data.entries[uid][entryKey]);
         await saveWorldInfo(name, data);
     });
+    selectElem.val((entry[entryKey] === null || entry[entryKey] === undefined) ? 'null' : entry[entryKey] ? 'true' : 'false').trigger('input');
+}
 
-    const roleValue = entry.position === world_info_position.atDepth ? String(entry.role ?? extension_prompt_roles.SYSTEM) : '';
-    template
-        .find(`select[name="position"] option[value="${entry.position}"][data-role="${roleValue}"]`)
-        .prop('selected', true)
-        .trigger('input');
+/**
+ * Helper to handle input fields for numbers.
+ */
+function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, setWIOriginalDataValue, saveWorldInfo, min, max, clamp = false }) {
+    inputElem.data('uid', entry.uid);
+    inputElem.on('input', async function () {
+        const uid = $(this).data('uid');
+        let value = Number($(this).val());
+        if (clamp) {
+            if (value < min) {
+                value = min;
+                $(this).val(min);
+            } else if (value > max) {
+                value = max;
+                $(this).val(max);
+            }
+        }
+        data.entries[uid][entryKey] = !isNaN(value) ? value : null;
+        setWIOriginalDataValue(data, uid, `extensions.${entryKey.replace(/[A-Z]/g, m => `_${m.toLowerCase()}`)}`, data.entries[uid][entryKey]);
+        await saveWorldInfo(name, data);
+    });
+    inputElem.val(entry[entryKey] ?? (clamp ? min : '')).trigger('input');
+}
 
-    //add UID above content box (less important doesn't need to be always visible)
-    template.find('.world_entry_form_uid_value').text(`(UID: ${entry.uid})`);
-
-    //new tri-state selector for constant/normal/vectorized
-    const entryStateSelector = template.find('select[name="entryStateSelector"]');
+/**
+ * Helper to handle tri-state selector for constant/normal/vectorized.
+ */
+function handleEntryStateSelectorHelper({ entryStateSelector, entry, data, name, setWIOriginalDataValue, saveWorldInfo }) {
     entryStateSelector.data('uid', entry.uid);
     entryStateSelector.on('click', function (event) {
-        // Prevent closing the drawer on clicking the input
         event.stopPropagation();
     });
     entryStateSelector.on('input', async function () {
@@ -3093,12 +2845,17 @@ export async function getWorldEntry(name, data, entry) {
                 break;
         }
         await saveWorldInfo(name, data);
-
     });
+    const entryState = () => entry.constant === true ? 'constant' : entry.vectorized === true ? 'vectorized' : 'normal';
+    entryStateSelector.find(`option[value=${entryState()}]`).prop('selected', true).trigger('input');
+}
 
-    const entryKillSwitch = template.find('div[name="entryKillSwitch"]');
+/**
+ * Helper to handle kill switch toggle.
+ */
+function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, setWIOriginalDataValue, saveWorldInfo, template }) {
     entryKillSwitch.data('uid', entry.uid);
-    entryKillSwitch.on('click', async function (event) {
+    entryKillSwitch.on('click', async function () {
         const uid = entry.uid;
         data.entries[uid].disable = !data.entries[uid].disable;
         const isActive = !data.entries[uid].disable;
@@ -3107,104 +2864,114 @@ export async function getWorldEntry(name, data, entry) {
         entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
         entryKillSwitch.toggleClass('fa-toggle-on', isActive);
         await saveWorldInfo(name, data);
-
     });
-
-    const entryState = function () {
-        if (entry.constant === true) {
-            return 'constant';
-        } else if (entry.vectorized === true) {
-            return 'vectorized';
-        } else {
-            return 'normal';
-        }
-    };
-
     const isActive = !entry.disable;
     template.toggleClass('disabledWIEntry', !isActive);
     entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
     entryKillSwitch.toggleClass('fa-toggle-on', isActive);
+}
 
-    template
-        .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
-        .prop('selected', true)
-        .trigger('input');
+/**
+ * Main function to build the WI entry editor template.
+ */
+export async function getWorldEntry(name, data, entry) {
+    if (!data.entries[entry.uid]) return;
 
-    // exclude recursion
-    const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
-    excludeRecursionInput.data('uid', entry.uid);
-    excludeRecursionInput.on('input', async function () {
+    const headerTemplate = WI_ENTRY_HEADER_TEMPLATE.clone();
+    headerTemplate.data('uid', entry.uid);
+    headerTemplate.attr('uid', entry.uid);
+
+    if (typeof power_user.wi_key_input_plaintext === 'undefined') power_user.wi_key_input_plaintext = true;
+
+    // Comment
+    const commentInput = headerTemplate.find('textarea[name="comment"]');
+    commentInput.data('uid', entry.uid);
+    commentInput.on('input', async function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
-        data.entries[uid].excludeRecursion = value;
-        setWIOriginalDataValue(data, uid, 'extensions.exclude_recursion', data.entries[uid].excludeRecursion);
+        const value = $(this).val();
+        !skipReset && await resetScrollHeight(this);
+        data.entries[uid].comment = value;
+        setWIOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
         await saveWorldInfo(name, data);
     });
-    excludeRecursionInput.prop('checked', entry.excludeRecursion).trigger('input');
+    commentInput.val(entry.comment).trigger('input', { skipReset: true });
 
-    // prevent recursion
-    const preventRecursionInput = template.find('input[name="prevent_recursion"]');
-    preventRecursionInput.data('uid', entry.uid);
-    preventRecursionInput.on('input', async function () {
+    // Order
+    const orderInput = headerTemplate.find('input[name="order"]');
+    orderInput.data('uid', entry.uid);
+    orderInput.on('input', async function () {
         const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
-        data.entries[uid].preventRecursion = value;
-        setWIOriginalDataValue(data, uid, 'extensions.prevent_recursion', data.entries[uid].preventRecursion);
+        const value = Number($(this).val());
+        data.entries[uid].order = !isNaN(value) ? value : 0;
+        updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });
+        setWIOriginalDataValue(data, uid, 'insertion_order', data.entries[uid].order);
         await saveWorldInfo(name, data);
     });
-    preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
+    orderInput.val(entry.order).trigger('input');
+    orderInput.css('width', 'calc(3em + 15px)');
 
-    // delay until recursion
-    // delay until recursion level
-    const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
-    delayUntilRecursionInput.data('uid', entry.uid);
-    const delayUntilRecursionLevelInput = template.find('input[name="delayUntilRecursionLevel"]');
-    delayUntilRecursionLevelInput.data('uid', entry.uid);
-    delayUntilRecursionInput.on('input', async function () {
+    // Probability
+    handleProbabilityInputHelper({ probabilityInput: headerTemplate.find('input[name="probability"]'), data, entry, name, setWIOriginalDataValue, saveWorldInfo });
+
+    // Depth
+    handleNumberInputHelper({
+        inputElem: headerTemplate.find('input[name="depth"]'),
+        entry, entryKey: 'depth', data, name, setWIOriginalDataValue, saveWorldInfo,
+        min: 0, max: MAX_SCAN_DEPTH, clamp: false,
+    });
+    headerTemplate.find('input[name="depth"]').css('width', 'calc(3em + 15px)');
+
+    // Position
+    if (entry.position === undefined) entry.position = 0;
+    const positionInput = headerTemplate.find('select[name="position"]');
+    positionInput.data('uid', entry.uid);
+    positionInput.on('click', e => e.stopPropagation());
+    positionInput.on('input', async function () {
         const uid = $(this).data('uid');
-        const toggled = $(this).prop('checked');
-
-        // If the value contains a number, we'll take that one (set by the level input), otherwise we can use true/false switch
-        const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
-
-        if (!toggled) delayUntilRecursionLevelInput.val('');
-
-        data.entries[uid].delayUntilRecursion = value;
-        setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        const value = Number($(this).val());
+        data.entries[uid].position = !isNaN(value) ? value : 0;
+        const depthInput = headerTemplate.find('input[name="depth"]');
+        if (value === world_info_position.atDepth) {
+            depthInput.prop('disabled', false);
+            depthInput.css('visibility', 'visible');
+            const role = Number($(this).find(':selected').data('role'));
+            data.entries[uid].role = role;
+        } else {
+            depthInput.prop('disabled', true);
+            depthInput.css('visibility', 'hidden');
+            data.entries[uid].role = null;
+        }
+        updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });
+        setWIOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
+        setWIOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
+        setWIOriginalDataValue(data, uid, 'extensions.role', data.entries[uid].role);
         await saveWorldInfo(name, data);
     });
-    delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
-    delayUntilRecursionLevelInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const content = $(this).val();
-        const value = content === '' ? (typeof data.entries[uid].delayUntilRecursion === 'boolean' ? data.entries[uid].delayUntilRecursion : true)
-            : content === 1 ? true
-                : !isNaN(Number(content)) ? Number(content)
-                    : false;
+    const roleValue = entry.position === world_info_position.atDepth ? String(entry.role ?? extension_prompt_roles.SYSTEM) : '';
+    headerTemplate.find(`select[name="position"] option[value="${entry.position}"][data-role="${roleValue}"]`).prop('selected', true).trigger('input');
 
-        data.entries[uid].delayUntilRecursion = value;
-        setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
-        await saveWorldInfo(name, data);
+    // Tri-state selector
+    handleEntryStateSelectorHelper({
+        entryStateSelector: headerTemplate.find('select[name="entryStateSelector"]'),
+        entry, data, name, setWIOriginalDataValue, saveWorldInfo,
     });
-    // No need to retrigger inpout event, we'll just set the curret current value. It was edited/saved above already
-    delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
 
-    // duplicate button
-    const duplicateButton = template.find('.duplicate_entry_button');
-    duplicateButton.data('uid', entry.uid);
-    duplicateButton.on('click', async function () {
+    // Kill switch
+    handleEntryKillSwitchHelper({
+        entryKillSwitch: headerTemplate.find('div[name="entryKillSwitch"]'),
+        entry, data, name, setWIOriginalDataValue, saveWorldInfo, template: headerTemplate,
+    });
+
+    // Duplicate/delete/move buttons
+    headerTemplate.find('.duplicate_entry_button').data('uid', entry.uid).on('click', async function () {
         const uid = $(this).data('uid');
-        const entry = duplicateWorldInfoEntry(data, uid);
-        if (entry) {
+        const entryDup = duplicateWorldInfoEntry(data, uid);
+        if (entryDup) {
             await saveWorldInfo(name, data);
-            updateEditor(entry.uid);
+            updateEditor(entryDup.uid);
         }
     });
-
-    // delete button
-    const deleteButton = template.find('.delete_entry_button');
-    deleteButton.data('uid', entry.uid);
-    deleteButton.on('click', async function (e) {
+    headerTemplate.find('.delete_entry_button').data('uid', entry.uid).on('click', async function (e) {
         e.stopPropagation();
         const uid = $(this).data('uid');
         const deleted = await deleteWorldInfoEntry(data, uid);
@@ -3213,36 +2980,24 @@ export async function getWorldEntry(name, data, entry) {
         await saveWorldInfo(name, data);
         updateEditor(navigation_option.previous);
     });
-
-    // move button
-    const moveButton = template.find('.move_entry_button');
-    moveButton.attr('data-uid', entry.uid);
-    moveButton.attr('data-current-world', name);
-    moveButton.on('click', async function (e) {
+    headerTemplate.find('.move_entry_button').attr('data-uid', entry.uid).attr('data-current-world', name).on('click', async function (e) {
         e.stopPropagation();
         const sourceUid = $(this).attr('data-uid');
         const sourceWorld = $(this).attr('data-current-world');
         const sourceWorldInfo = await loadWorldInfo(sourceWorld);
-        if (!sourceWorldInfo) {
-            return;
-        }
+        if (!sourceWorldInfo) return;
         const sourceName = sourceWorldInfo.entries[sourceUid]?.comment;
-        if (sourceName === undefined) {
-            return;
-        }
-
+        if (sourceName === undefined) return;
         const select = document.createElement('select');
         select.id = 'move_entry_target_select';
         select.classList.add('text_pole', 'wide100p', 'marginTop10');
-
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
         defaultOption.textContent = `-- ${t`Select Target Lorebook`} --`;
         select.appendChild(defaultOption);
-
         let selectableWorldCount = 0;
         world_names.forEach(worldName => {
-            if (worldName !== sourceWorld) { // Exclude current world
+            if (worldName !== sourceWorld) {
                 const option = document.createElement('option');
                 option.value = world_names.indexOf(worldName).toString();
                 option.textContent = worldName;
@@ -3250,177 +3005,343 @@ export async function getWorldEntry(name, data, entry) {
                 selectableWorldCount++;
             }
         });
-
         if (selectableWorldCount === 0) {
             toastr.warning(t`There are no other lorebooks to move to.`);
             return;
         }
-
-        // Create wrapper div
         const wrapper = document.createElement('div');
         wrapper.textContent = t`Move '${sourceName}' to:`;
-
-        // Create container and append elements
         const container = document.createElement('div');
         container.appendChild(wrapper);
         container.appendChild(select);
-
         let selectedWorldIndex = -1;
-        select.addEventListener('change', function() {
+        select.addEventListener('change', function () {
             selectedWorldIndex = this.value === '' ? -1 : Number(this.value);
         });
-
         const popupConfirm = await callGenericPopup(container, POPUP_TYPE.CONFIRM, '', {
             okButton: t`Move`,
             cancelButton: t`Cancel`,
         });
-        if (!popupConfirm) {
-            return;
-        }
-
-        if (selectedWorldIndex === -1) {
-            return;
-        }
-
+        if (!popupConfirm) return;
+        if (selectedWorldIndex === -1) return;
         const selectedValue = world_names[selectedWorldIndex];
-
         if (!selectedValue) {
             toastr.warning(t`Please select a target lorebook.`);
             return;
         }
-
         await moveWorldInfoEntry(sourceWorld, selectedValue, sourceUid);
     });
 
-    // scan depth
-    const scanDepthInput = template.find('input[name="scanDepth"]');
-    scanDepthInput.data('uid', entry.uid);
-    scanDepthInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const isEmpty = $(this).val() === '';
-        const value = Number($(this).val());
-
-        // Clamp if necessary
-        if (value < 0) {
-            $(this).val(0).trigger('input');
-            toastr.warning('Scan depth cannot be negative');
-            return;
+    let drawerInitialized = false;
+    let drawerDestroyTimeout = null;
+    headerTemplate.find('.inline-drawer').on('inline-drawer-toggle', function () {
+        if (drawerDestroyTimeout) {
+            clearTimeout(drawerDestroyTimeout);
+            drawerDestroyTimeout = null;
         }
-
-        if (value > MAX_SCAN_DEPTH) {
-            $(this).val(MAX_SCAN_DEPTH).trigger('input');
-            toastr.warning(`Scan depth cannot exceed ${MAX_SCAN_DEPTH}`);
-            return;
+        if (drawerInitialized) {
+            drawerDestroyTimeout = setTimeout(() => {
+                // Drawer was reopened, so we don't destroy it
+                if (editOutlet.is(':visible')) {
+                    return;
+                }
+                drawerInitialized = false;
+                clearEntryList(editOutlet);
+                drawerDestroyTimeout = null;
+            }, debounce_timeout.relaxed);
+        } else {
+            drawerInitialized = true;
+            addEditorDrawerContent();
         }
-
-        data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
-        setWIOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
-        await saveWorldInfo(name, data);
     });
-    scanDepthInput.val(entry.scanDepth ?? null).trigger('input');
 
-    // case sensitive select
-    const caseSensitiveSelect = template.find('select[name="caseSensitive"]');
-    caseSensitiveSelect.data('uid', entry.uid);
-    caseSensitiveSelect.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
+    const editOutlet = headerTemplate.find('.inline-drawer-outlet');
 
-        data.entries[uid].caseSensitive = value === 'null' ? null : value === 'true';
-        setWIOriginalDataValue(data, uid, 'extensions.case_sensitive', data.entries[uid].caseSensitive);
-        await saveWorldInfo(name, data);
-    });
-    caseSensitiveSelect.val((entry.caseSensitive === null || entry.caseSensitive === undefined) ? 'null' : entry.caseSensitive ? 'true' : 'false').trigger('input');
+    function addEditorDrawerContent() {
+        const editTemplate = WI_ENTRY_EDIT_TEMPLATE.clone();
 
-    // match whole words select
-    const matchWholeWordsSelect = template.find('select[name="matchWholeWords"]');
-    matchWholeWordsSelect.data('uid', entry.uid);
-    matchWholeWordsSelect.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
+        // UID display
+        editTemplate.find('.world_entry_form_uid_value').text(`(UID: ${entry.uid})`);
 
-        data.entries[uid].matchWholeWords = value === 'null' ? null : value === 'true';
-        setWIOriginalDataValue(data, uid, 'extensions.match_whole_words', data.entries[uid].matchWholeWords);
-        await saveWorldInfo(name, data);
-    });
-    matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
+        // Key inputs
+        const keyInput = enableKeysInputHelper({ template: editTemplate, entry, entryPropName: 'key', originalDataValueName: 'keys', name, data });
+        const keySecondaryInput = enableKeysInputHelper({ template: editTemplate, entry, entryPropName: 'keysecondary', originalDataValueName: 'secondary_keys', name, data });
+        if (!keyInput.isFancy) initScrollHeight(keyInput.control);
+        if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
 
-    // use group scoring select
-    const useGroupScoringSelect = template.find('select[name="useGroupScoring"]');
-    useGroupScoringSelect.data('uid', entry.uid);
-    useGroupScoringSelect.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
+        // Key input switch
+        editTemplate.find('.switch_input_type_icon').on('click', function () {
+            power_user.wi_key_input_plaintext = !power_user.wi_key_input_plaintext;
+            saveSettingsDebounced();
+            const uid = ($(this).parents('.world_entry')).data('uid');
+            updateEditor(uid, false);
+            $(`.world_entry[uid="${uid}"] .inline-drawer-icon`).trigger('click');
+        }).each((_, icon) => {
+            $(icon).attr('title', $(icon).data(power_user.wi_key_input_plaintext ? 'tooltip-on' : 'tooltip-off'));
+            $(icon).text($(icon).data(power_user.wi_key_input_plaintext ? 'icon-on' : 'icon-off'));
+        });
 
-        data.entries[uid].useGroupScoring = value === 'null' ? null : value === 'true';
-        setWIOriginalDataValue(data, uid, 'extensions.use_group_scoring', data.entries[uid].useGroupScoring);
-        await saveWorldInfo(name, data);
-    });
-    useGroupScoringSelect.val((entry.useGroupScoring === null || entry.useGroupScoring === undefined) ? 'null' : entry.useGroupScoring ? 'true' : 'false').trigger('input');
+        // Probability toggle
+        handleProbabilityToggleHelper({
+            probabilityToggle: editTemplate.find('input[name="useProbability"]'),
+            data, entry, name,
+            probabilityInput: headerTemplate.find('input[name="probability"]'),
+            setWIOriginalDataValue, saveWorldInfo,
+        });
 
-    function handleMatchCheckbox(fieldName) {
-        const key = originalWIDataKeyMap[fieldName];
-        const checkBoxElem = template.find(`input[type="checkbox"][name="${fieldName}"]`);
-        checkBoxElem.data('uid', entry.uid);
-        checkBoxElem.on('input', async function () {
+        // Comment toggle
+        const commentToggle = editTemplate.find('input[name="addMemo"]');
+        commentToggle.data('uid', entry.uid);
+        commentToggle.on('input', async function () {
             const uid = $(this).data('uid');
             const value = $(this).prop('checked');
+            const commentContainer = $(this).closest('.world_entry').find('.commentContainer');
+            data.entries[uid].addMemo = value;
+            await saveWorldInfo(name, data);
+            value ? commentContainer.show() : commentContainer.hide();
+        });
+        commentToggle.prop('checked', true).trigger('input');
+        commentToggle.parent().hide();
 
-            data.entries[uid][fieldName] = value;
-            setWIOriginalDataValue(data, uid, key, data.entries[uid][fieldName]);
+        // Logic AND/NOT
+        const selectiveLogicDropdown = editTemplate.find('select[name="entryLogicType"]');
+        selectiveLogicDropdown.data('uid', entry.uid);
+        selectiveLogicDropdown.on('click', e => e.stopPropagation());
+        selectiveLogicDropdown.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = Number($(this).val());
+            data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ANY;
+            setWIOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
             await saveWorldInfo(name, data);
         });
-        checkBoxElem.prop('checked', !!entry[fieldName]).trigger('input');
+        editTemplate.find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`).prop('selected', true).trigger('input');
+
+        // Selective
+        const selectiveInput = editTemplate.find('input[name="selective"]');
+        selectiveInput.data('uid', entry.uid);
+        selectiveInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            data.entries[uid].selective = value;
+            setWIOriginalDataValue(data, uid, 'selective', data.entries[uid].selective);
+            await saveWorldInfo(name, data);
+            const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
+            const keysecondarytextpole = $(this).closest('.world_entry').find('.keysecondarytextpole');
+            const keyprimaryselect = $(this).closest('.world_entry').find('.keyprimaryselect');
+            const keyprimaryHeight = keyprimaryselect.outerHeight();
+            keysecondarytextpole.css('height', keyprimaryHeight + 'px');
+            value ? keysecondary.show() : keysecondary.hide();
+        });
+        selectiveInput.prop('checked', true).trigger('input');
+        selectiveInput.parent().hide();
+
+        // Character filter
+        const characterFilterLabel = editTemplate.find('label[for="characterFilter"] > small');
+        characterFilterLabel.text(entry.characterFilter?.isExclude ? 'Exclude Character(s)' : 'Filter to Character(s)');
+        const characterExclusionInput = editTemplate.find('input[name="character_exclusion"]');
+        characterExclusionInput.data('uid', entry.uid);
+        characterExclusionInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            characterFilterLabel.text(value ? 'Exclude Character(s)' : 'Filter to Character(s)');
+            if (data.entries[uid].characterFilter) {
+                if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
+                    delete data.entries[uid].characterFilter;
+                } else {
+                    data.entries[uid].characterFilter.isExclude = value;
+                }
+            } else if (value) {
+                Object.assign(data.entries[uid], { characterFilter: { isExclude: true, names: [], tags: [] } });
+            }
+            if (data.entries[uid]?.characterFilter?.names?.length > 0) {
+                for (const name of [...data.entries[uid].characterFilter.names]) {
+                    if (!getContext().characters.find(x => x.avatar.replace(/\.[^/.]+$/, '') === name)) {
+                        data.entries[uid].characterFilter.names = data.entries[uid].characterFilter.names.filter(x => x !== name);
+                    }
+                }
+            }
+            setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
+            await saveWorldInfo(name, data);
+        });
+        characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input');
+
+        const characterFilter = editTemplate.find('select[name="characterFilter"]');
+        characterFilter.data('uid', entry.uid);
+        initCharacterFilterSelect2Helper(characterFilter, t);
+        fillCharacterAndTagOptionsHelper({ characterFilter, entry, getContext });
+        handleCharacterFilterChangeHelper({
+            characterFilter, data, entry, name, world_names, getContext, setWIOriginalDataValue, saveWorldInfo, t,
+        });
+
+        // Content
+        const counter = editTemplate.find('.world_entry_form_token_counter');
+        const countTokensDebounced = debounce(async function (counter, value) {
+            const numberOfTokens = await getTokenCountAsync(value);
+            $(counter).text(numberOfTokens);
+        }, debounce_timeout.relaxed);
+        const contentInputId = `world_entry_content_${entry.uid}`;
+        const contentInput = editTemplate.find('textarea[name="content"]');
+        contentInput.data('uid', entry.uid);
+        contentInput.attr('id', contentInputId);
+        contentInput.on('input', async function (_, { skipCount } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].content = value;
+            setWIOriginalDataValue(data, uid, 'content', data.entries[uid].content);
+            await saveWorldInfo(name, data);
+            if (!skipCount) countTokensDebounced(counter, value);
+        });
+        contentInput.val(entry.content).trigger('input', { skipCount: true });
+        editTemplate.find('.editor_maximize').attr('data-for', contentInputId);
+
+        // Scan depth
+        const scanDepthInput = editTemplate.find('input[name="scanDepth"]');
+        scanDepthInput.data('uid', entry.uid);
+        scanDepthInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const isEmpty = $(this).val() === '';
+            const value = Number($(this).val());
+            if (value < 0) {
+                $(this).val(0).trigger('input');
+                toastr.warning('Scan depth cannot be negative');
+                return;
+            }
+            if (value > MAX_SCAN_DEPTH) {
+                $(this).val(MAX_SCAN_DEPTH).trigger('input');
+                toastr.warning(`Scan depth cannot exceed ${MAX_SCAN_DEPTH}`);
+                return;
+            }
+            data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
+            setWIOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
+            await saveWorldInfo(name, data);
+        });
+        scanDepthInput.val(entry.scanDepth ?? null).trigger('input');
+
+        // Group
+        const groupInput = editTemplate.find('input[name="group"]');
+        groupInput.data('uid', entry.uid);
+        groupInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = String($(this).val()).trim();
+            data.entries[uid].group = value;
+            setWIOriginalDataValue(data, uid, 'extensions.group', data.entries[uid].group);
+            await saveWorldInfo(name, data);
+        });
+        groupInput.val(entry.group ?? '').trigger('input');
+        setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
+
+        // Inclusion priority
+        const groupOverrideInput = editTemplate.find('input[name="groupOverride"]');
+        groupOverrideInput.data('uid', entry.uid);
+        groupOverrideInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            data.entries[uid].groupOverride = value;
+            setWIOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
+            await saveWorldInfo(name, data);
+        });
+        groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
+
+        // Group weight
+        handleNumberInputHelper({
+            inputElem: editTemplate.find('input[name="groupWeight"]'),
+            entry, entryKey: 'groupWeight', data, name, setWIOriginalDataValue, saveWorldInfo,
+            min: 1, max: 10000, clamp: true,
+        });
+
+        // Sticky, cooldown, delay
+        handleNumberInputHelper({
+            inputElem: editTemplate.find('input[name="sticky"]'),
+            entry, entryKey: 'sticky', data, name, setWIOriginalDataValue, saveWorldInfo,
+            min: 1, max: 10000, clamp: false,
+        });
+        handleNumberInputHelper({
+            inputElem: editTemplate.find('input[name="cooldown"]'),
+            entry, entryKey: 'cooldown', data, name, setWIOriginalDataValue, saveWorldInfo,
+            min: 1, max: 10000, clamp: false,
+        });
+        handleNumberInputHelper({
+            inputElem: editTemplate.find('input[name="delay"]'),
+            entry, entryKey: 'delay', data, name, setWIOriginalDataValue, saveWorldInfo,
+            min: 1, max: 10000, clamp: false,
+        });
+
+        // Exclude/prevent recursion
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'excludeRecursion', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'preventRecursion', data, name });
+
+        // Delay until recursion
+        const delayUntilRecursionInput = editTemplate.find('input[name="delay_until_recursion"]');
+        delayUntilRecursionInput.data('uid', entry.uid);
+        const delayUntilRecursionLevelInput = editTemplate.find('input[name="delayUntilRecursionLevel"]');
+        delayUntilRecursionLevelInput.data('uid', entry.uid);
+        delayUntilRecursionInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const toggled = $(this).prop('checked');
+            const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
+            if (!toggled) delayUntilRecursionLevelInput.val('');
+            data.entries[uid].delayUntilRecursion = value;
+            setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+            await saveWorldInfo(name, data);
+        });
+        delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+        delayUntilRecursionLevelInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const content = $(this).val();
+            const value = content === '' ? (typeof data.entries[uid].delayUntilRecursion === 'boolean' ? data.entries[uid].delayUntilRecursion : true)
+                : content === 1 ? true
+                    : !isNaN(Number(content)) ? Number(content)
+                        : false;
+            data.entries[uid].delayUntilRecursion = value;
+            setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+            await saveWorldInfo(name, data);
+        });
+        delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
+
+        // Boolean selects
+        handleBooleanSelectHelper({
+            selectElem: editTemplate.find('select[name="caseSensitive"]'),
+            entry, entryKey: 'caseSensitive', data, name, setWIOriginalDataValue, saveWorldInfo,
+        });
+        handleBooleanSelectHelper({
+            selectElem: editTemplate.find('select[name="matchWholeWords"]'),
+            entry, entryKey: 'matchWholeWords', data, name, setWIOriginalDataValue, saveWorldInfo,
+        });
+        handleBooleanSelectHelper({
+            selectElem: editTemplate.find('select[name="useGroupScoring"]'),
+            entry, entryKey: 'useGroupScoring', data, name, setWIOriginalDataValue, saveWorldInfo,
+        });
+
+        // Match checkboxes
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchPersonaDescription', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchCharacterDescription', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchCharacterPersonality', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchCharacterDepthPrompt', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchScenario', data, name });
+        handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchCreatorNotes', data, name });
+
+        // Automation ID
+        const automationIdInput = editTemplate.find('input[name="automationId"]');
+        automationIdInput.data('uid', entry.uid);
+        automationIdInput.on('input', async function () {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].automationId = value;
+            setWIOriginalDataValue(data, uid, 'extensions.automation_id', data.entries[uid].automationId);
+            await saveWorldInfo(name, data);
+        });
+        automationIdInput.val(entry.automationId ?? '').trigger('input');
+        setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
+
+        countTokensDebounced(counter, contentInput.val());
+
+        editTemplate.find('.inline-drawer-content').css('display', 'none');
+        editOutlet.append(editTemplate);
     }
 
-    handleMatchCheckbox('matchPersonaDescription');
-    handleMatchCheckbox('matchCharacterDescription');
-    handleMatchCheckbox('matchCharacterPersonality');
-    handleMatchCheckbox('matchCharacterDepthPrompt');
-    handleMatchCheckbox('matchScenario');
-    handleMatchCheckbox('matchCreatorNotes');
+    headerTemplate.find('.inline-drawer-content').css('display', 'none');
 
-    // automation id
-    const automationIdInput = template.find('input[name="automationId"]');
-    automationIdInput.data('uid', entry.uid);
-    automationIdInput.on('input', async function () {
-        const uid = $(this).data('uid');
-        const value = $(this).val();
-
-        data.entries[uid].automationId = value;
-        setWIOriginalDataValue(data, uid, 'extensions.automation_id', data.entries[uid].automationId);
-        await saveWorldInfo(name, data);
-    });
-    automationIdInput.val(entry.automationId ?? '').trigger('input');
-    setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
-
-    template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
-
-    function updatePosOrdDisplay(uid) {
-        // display position/order info left of keyword box
-        let entry = data.entries[uid];
-        let posText = entry.position;
-        switch (entry.position) {
-            case 0:
-                posText = '↑CD';
-                break;
-            case 1:
-                posText = 'CD↓';
-                break;
-            case 2:
-                posText = '↑AN';
-                break;
-            case 3:
-                posText = 'AN↓';
-                break;
-            case 4:
-                posText = `@D${entry.depth}`;
-                break;
-        }
-        template.find('.world_entry_form_position_value').text(`(${posText} ${entry.order})`);
-    }
-
-    return template;
+    return headerTemplate;
 }
 
 /**
@@ -3661,6 +3582,11 @@ async function _save(name, data) {
  * @return {Promise<void>} A promise that resolves when the world info is saved
  */
 export async function saveWorldInfo(name, data, immediately = false) {
+    // Saving is temporarily disabled
+    if (isSaveWorldInfoDisabled) {
+        return;
+    }
+
     if (!name || !data) {
         return;
     }
@@ -3819,7 +3745,7 @@ export async function createNewWorldInfo(worldName, { interactive = false } = {}
     if (selectedIndex !== -1) {
         $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
-        hideWorldEditor();
+        await hideWorldEditor();
     }
 
     return true;
@@ -4067,6 +3993,8 @@ function parseDecorators(content) {
  * @property {Set<any>} allActivatedEntries All entries.
  * @returns {Promise<WIActivated>} The world info activated.
  */
+
+//MARK: checkWorldInfo
 export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat, globalScanData);
@@ -5385,7 +5313,7 @@ export function initWorldInfo() {
         const selectedIndex = String($('#world_editor_select').find(':selected').val());
 
         if (selectedIndex === '') {
-            hideWorldEditor();
+            await hideWorldEditor();
         } else {
             const worldName = world_names[selectedIndex];
             showWorldEditor(worldName);
@@ -5537,9 +5465,12 @@ export function initWorldInfo() {
         select2ChoiceClickSubscribe($('#world_info'), target => {
             const name = $(target).text();
             const selectedIndex = world_names.indexOf(name);
-            if (selectedIndex !== -1) {
+            const alreadySelectedInEditor = $('#world_editor_select option:selected').text() === name;
+            if (selectedIndex !== -1 && !alreadySelectedInEditor) {
                 $('#world_editor_select').val(selectedIndex).trigger('change');
                 console.log('Quick selection of world', name);
+            } else {
+                console.warn('lets not reload an already loaded list yes?');
             }
         }, { buttonStyle: true, closeDrawer: true });
     }

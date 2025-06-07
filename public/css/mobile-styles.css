@@ -237,6 +237,15 @@
         top: var(--topBarBlockSize) !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+
+        @starting-style {
+            height: 0;
+        }
+    }
+
+    #left-nav-panel:not(.openDrawer),
+    #right-nav-panel:not(.openDrawer) {
+        height: 0;
     }
 
     /*

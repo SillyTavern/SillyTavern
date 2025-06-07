@@ -43,7 +43,7 @@
     height: 25px;
     margin-left: 5px;
     opacity: 0.5;
-    transition: all 250ms;
+    transition: all var(--animation-duration-2x);
     position: unset !important;
 }
 

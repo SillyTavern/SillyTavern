@@ -25,7 +25,7 @@
     outline: none;
     border: none;
     cursor: pointer;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
     opacity: 0.7;
     align-items: center;
     justify-content: center;

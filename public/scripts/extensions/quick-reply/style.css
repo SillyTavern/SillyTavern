@@ -18,7 +18,7 @@
 #qr--bar {
   outline: none;
   margin: 0;
-  transition: 0.3s;
+  transition: var(--animation-duration-2x);
   opacity: 0.7;
   display: flex;
   align-items: center;
@@ -34,14 +34,12 @@
   right: 0.25em;
   top: 0;
 }
-
 /*hide QR popout for mobile*/
 @media screen and (max-width: 1000px) {
   #qr--bar > #qr--popoutTrigger {
- display:none;
+    display: none;
   }
 }
-
 #qr--bar.popoutVisible {
   padding-right: 2.5em;
 }
@@ -61,9 +59,8 @@
   aspect-ratio: 1 / 1;
   font-size: 20px;
   opacity: 0.5;
-  transition: all 250ms;
+  transition: all var(--animation-duration-2x);
 }
-
 #qr--popout > .qr--body {
   overflow-y: auto;
 }
@@ -124,7 +121,7 @@
   padding: 3px 5px;
   margin: 3px 0;
   cursor: pointer;
-  transition: 0.3s;
+  transition: var(--animation-duration-2x);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +172,7 @@
   overflow: visible;
 }
 .ctx-menu .ctx-item .qr--hidden {
-    display: none;
+  display: none;
 }
 .list-group .list-group-item.ctx-header {
   font-weight: bold;
@@ -248,7 +245,7 @@
   display: flex;
   align-items: center;
   opacity: 0;
-  transition: 100ms;
+  transition: var(--animation-duration);
   margin: -2px 0 -11px 0;
   position: relative;
 }
@@ -461,7 +458,7 @@
   cursor: not-allowed;
   opacity: 0.5;
   pointer-events: none;
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
   border-color: transparent;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
@@ -492,7 +489,7 @@
   width: 6px;
   background-color: var(--SmartThemeBorderColor);
   border: 2px solid var(--SmartThemeBlurTintColor);
-  transition: border-color 200ms, background-color 200ms;
+  transition: border-color var(--animation-duration-2x), background-color var(--animation-duration-2x);
   cursor: w-resize;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--resizeHandle:hover {
@@ -574,7 +571,7 @@
   gap: 1em;
   text-align: left;
   opacity: 0.75;
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
   cursor: pointer;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem:hover,
@@ -736,7 +733,7 @@
   display: flex;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute {
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
   filter: grayscale(0);
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute.qr--busy {
@@ -825,7 +822,7 @@
   position: absolute;
   inset: 0;
   right: calc(100% - var(--prog) * 1%);
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress.qr--paused:after {
   animation-name: qr--progressPulse;
@@ -1053,7 +1050,7 @@
   white-space: pre;
   font-weight: normal;
   box-shadow: 0 0 0;
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
 }
 .popup:has(.qr--transferModal) .popup-button-ok:after {
   content: 'Transfer';
@@ -1068,7 +1065,7 @@
   white-space: pre;
   font-weight: normal;
   box-shadow: 0 0 0;
-  transition: 200ms;
+  transition: var(--animation-duration-2x);
 }
 .popup:has(.qr--transferModal) .qr--copy:after {
   content: 'Copy';

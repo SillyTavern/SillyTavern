@@ -4,6 +4,8 @@ import {
     characters,
     getRequestHeaders,
     event_types,
+    animation_duration,
+    animation_easing,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
 import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename } from '../../utils.js';
@@ -32,7 +34,15 @@ let galleryMaxRows = 3;
 $('#movingDivs').on('click', '.dragClose', function () {
     const relatedId = $(this).data('related-id');
     if (!relatedId) return;
-    $(`#movingDivs > .draggable[id="${relatedId}"]`).remove();
+    const relatedElement = $(`#movingDivs > .draggable[id="${relatedId}"]`);
+    relatedElement.transition({
+        opacity: 0,
+        duration: animation_duration,
+        easing: animation_easing,
+        complete: () => {
+            relatedElement.remove();
+        },
+    });
 });
 
 const CUSTOM_GALLERY_REMOVED_EVENT = 'galleryRemoved';
@@ -373,7 +383,7 @@ async function makeMovable(url) {
     const id = 'gallery';
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
-    newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
+    newElement.css({ 'background-color': 'var(--SmartThemeBlurTintColor)', 'opacity': 0 });
     newElement.attr('forChar', id);
     newElement.attr('id', id);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
@@ -505,6 +515,11 @@ async function makeMovable(url) {
     loadMovingUIState();
     $(`.draggable[forChar="${id}"]`).css('display', 'block');
     dragElement(newElement);
+    newElement.transition({
+        opacity: 1,
+        duration: animation_duration,
+        easing: animation_easing,
+    });
 
     $(`.draggable[forChar="${id}"] img`).on('dragstart', (e) => {
         console.log('saw drag on avatar!');

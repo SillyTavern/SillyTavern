@@ -172,7 +172,7 @@
 #rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"] {
     opacity: 0.4;
     filter: brightness(0.5);
-    transition: all 0.2s ease-in-out;
+    transition: all var(--animation-duration-2x) ease-in-out;
 }
 
 /* #rm_group_members .right_menu_button[data-action="speak"]:hover, */

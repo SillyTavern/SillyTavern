@@ -332,6 +332,10 @@
     overflow: hidden;
 }
 
+.overflowYScroll {
+    overflow-y: scroll;
+}
+
 .padding0 {
     padding: 0;
 }
@@ -480,7 +484,7 @@
 }
 
 .hoverglow {
-    transition: opacity 200ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .hoverglow:hover {

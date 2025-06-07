@@ -1,9 +1,11 @@
 import {
+    MAX_INJECTION_DEPTH,
     animation_duration,
     chat_metadata,
     eventSource,
     event_types,
     extension_prompt_roles,
+    extension_prompt_types,
     saveSettingsDebounced,
     this_chid,
 } from '../script.js';
@@ -347,7 +349,7 @@ export function setFloatingPrompt() {
     }
 
     if (lastMessageNumber <= 0 || chat_metadata[metadata_keys.interval] <= 0) {
-        context.setExtensionPrompt(MODULE_NAME, '');
+        context.setExtensionPrompt(MODULE_NAME, '', extension_prompt_types.NONE, MAX_INJECTION_DEPTH);
         $('#extension_floating_counter').text('(disabled)');
         shouldWIAddPrompt = false;
         return;
@@ -380,7 +382,7 @@ export function setFloatingPrompt() {
     }
     context.setExtensionPrompt(
         MODULE_NAME,
-        prompt,
+        String(prompt),
         chat_metadata[metadata_keys.position],
         chat_metadata[metadata_keys.depth],
         extension_settings.note.allowWIScan,
@@ -396,37 +398,38 @@ function onANMenuItemClick() {
     }
 
     //show AN if it's hidden
-    if ($('#floatingPrompt').css('display') !== 'flex') {
-        $('#floatingPrompt').addClass('resizing');
-        $('#floatingPrompt').css('display', 'flex');
-        $('#floatingPrompt').css('opacity', 0.0);
-        $('#floatingPrompt').transition({
+    const $ANcontainer = $('#floatingPrompt');
+    if ($ANcontainer.css('display') !== 'flex') {
+        $ANcontainer.addClass('resizing');
+        $ANcontainer.css('display', 'flex');
+        $ANcontainer.css('opacity', 0.0);
+        $ANcontainer.transition({
             opacity: 1.0,
             duration: animation_duration,
         }, async function () {
             await delay(50);
-            $('#floatingPrompt').removeClass('resizing');
+            $ANcontainer.removeClass('resizing');
         });
 
         //auto-open the main AN inline drawer
         if ($('#ANBlockToggle')
             .siblings('.inline-drawer-content')
             .css('display') !== 'block') {
-            $('#floatingPrompt').addClass('resizing');
-            $('#ANBlockToggle').click();
+            $ANcontainer.addClass('resizing');
+            $('#ANBlockToggle').trigger('click');
         }
     } else {
         //hide AN if it's already displayed
-        $('#floatingPrompt').addClass('resizing');
-        $('#floatingPrompt').transition({
+        $ANcontainer.addClass('resizing');
+        $ANcontainer.transition({
             opacity: 0.0,
             duration: animation_duration,
         }, async function () {
             await delay(50);
-            $('#floatingPrompt').removeClass('resizing');
+            $ANcontainer.removeClass('resizing');
         });
         setTimeout(function () {
-            $('#floatingPrompt').hide();
+            $ANcontainer.hide();
         }, animation_duration);
     }
 
