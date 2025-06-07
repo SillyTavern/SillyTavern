@@ -86,7 +86,7 @@ const saveSettingsDebounced = debounce(() => {
 }, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
 let updateEditor = (navigation, flashOnNav = true) => { console.debug('Triggered WI navigation', navigation, flashOnNav); };
-let isSaveWorldInfoDisabled = false;
+export let isSaveWorldInfoDisabled = false;
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 export const worldInfoFilter = new FilterHelper(() => updateEditor());
@@ -3567,6 +3567,24 @@ async function _save(name, data) {
     await eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 
+/**
+ * Wait until lorebooks can be saved
+ * @param {number} intervalTime - Time in miliseconds to await for each check of isSaveWorldInfoDisabled (def = 100)
+ * @return {Promise<void>} A promise that resolves when lorebooks can be saved
+ */
+export async function waitForWIDisabled(intervalTime = 100) {
+    if (!isSaveWorldInfoDisabled) return;
+
+    await new Promise(resolve => {
+        const interval = setInterval(() => {
+            if (!isSaveWorldInfoDisabled) {
+                clearInterval(interval);
+                resolve();
+            }
+            console.debug('Waiting for isSaveWorldInfoDisabled to be false');
+        }, intervalTime);
+    });
+}
 
 /**
  * Saves the world info
