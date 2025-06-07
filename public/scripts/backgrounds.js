@@ -9,12 +9,11 @@ import { Popup } from './popup.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
-const DEBUG_BACKGROUND_LOADING = false;
-const PLACEHOLDER_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 // A single transparent PNG pixel used as a placeholder for errored backgrounds
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const PNG_PIXEL_BLOB = new Blob([Uint8Array.from(atob(PNG_PIXEL), c => c.charCodeAt(0))], { type: 'image/png' });
+const PLACEHOLDER_IMAGE = `url('data:image/png;base64,${PNG_PIXEL}')`;
 
 /**
  * Storage for frontend-generated background thumbnails.
@@ -97,7 +96,6 @@ async function getChatBackgroundsList() {
         const template = await getBackgroundFromTemplate(bg, true);
         $('#bg_custom_content').append(template);
     }
-    if (DEBUG_BACKGROUND_LOADING) console.log('Calling activateLazyLoader from getChatBackgroundsList');
     activateLazyLoader();
 }
 
@@ -438,45 +436,32 @@ export async function getBackgrounds() {
     const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({
-            '': '',
-        }),
+        body: JSON.stringify({}),
     });
     if (response.ok) {
         const getData = await response.json();
-        //background = getData;
-        //console.log(getData.length);
         $('#bg_menu_content').children('div').remove();
         for (const bg of getData) {
             const template = await getBackgroundFromTemplate(bg, false);
             $('#bg_menu_content').append(template);
         }
-        if (DEBUG_BACKGROUND_LOADING) console.log('Calling activateLazyLoader from getBackgrounds');
         activateLazyLoader();
     }
 }
 
 function activateLazyLoader() {
-    if (DEBUG_BACKGROUND_LOADING) console.log('activateLazyLoader function started.');
     const lazyLoadElements = document.querySelectorAll('.lazy-load-background');
-    if (DEBUG_BACKGROUND_LOADING) console.log('activateLazyLoader called. Found elements:', lazyLoadElements.length);
 
     const options = {
         root: null,
         rootMargin: '200px',
         threshold: 0.01,
     };
-    if (DEBUG_BACKGROUND_LOADING) console.log('IntersectionObserver options:', options);
 
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
-            if (DEBUG_BACKGROUND_LOADING) console.log('IntersectionObserver callback triggered for:', entry.target, 'Is intersecting:', entry.isIntersecting);
-            if (entry.isIntersecting) {
+            if (entry.target instanceof HTMLElement && entry.isIntersecting) {
                 const imageUrl = entry.target.dataset.bgSrc;
-                if (!imageUrl) {
-                    if (DEBUG_BACKGROUND_LOADING) console.warn('No bgSrc found for', entry.target);
-                }
-                if (DEBUG_BACKGROUND_LOADING) console.log('Loading image for:', entry.target, 'with URL:', imageUrl);
                 if (imageUrl) {
                     entry.target.style.backgroundImage = `url('${imageUrl}')`;
                 }
@@ -529,7 +514,7 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     template.data('url', url);
     template.attr('data-bg-src', thumbnailUrl);
     template.addClass('lazy-load-background');
-    template.css('background-image', `url('${PLACEHOLDER_IMAGE}')`);
+    template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
     return template;
 }
