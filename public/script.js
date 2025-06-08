@@ -10761,23 +10761,23 @@ jQuery(async function () {
 
     //menu buttons setup
 
-    $('#rm_button_settings').trigger('click', function () {
+    $('#rm_button_settings').on('click', function () {
         selected_button = 'settings';
         selectRightMenuWithAnimation('rm_api_block');
     });
-    $('#rm_button_characters').trigger('click', function () {
+    $('#rm_button_characters').on('click', function () {
         selected_button = 'characters';
         select_rm_characters();
     });
-    $('#rm_button_back').trigger('click', function () {
+    $('#rm_button_back').on('click', function () {
         selected_button = 'characters';
         select_rm_characters();
     });
-    $('#rm_button_create').trigger('click', function () {
+    $('#rm_button_create').on('click', function () {
         selected_button = 'create';
         select_rm_create();
     });
-    $('#rm_button_selected_ch').trigger('click', function () {
+    $('#rm_button_selected_ch').on('click', function () {
         if (selected_group) {
             select_group_chats(selected_group);
         } else {
@@ -10872,7 +10872,8 @@ jQuery(async function () {
         callPopup('<h3>' + t`Delete the Chat File?` + '</h3>', 'del_chat');
     });
 
-    $('#advanced_div').trigger('click', function () {
+    $('#advanced_div').on('click', function () {
+        console.warn('opening/closing advanced div');
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
             $('#character_popup').css({ 'display': 'flex', 'opacity': 0.0 }).addClass('open');
@@ -10887,7 +10888,7 @@ jQuery(async function () {
         }
     });
 
-    $('#character_cross').trigger('click', function () {
+    $('#character_cross').on('click', function () {
         is_advanced_char_open = false;
         $('#character_popup').transition({
             opacity: 0,
@@ -10897,7 +10898,7 @@ jQuery(async function () {
         setTimeout(function () { $('#character_popup').css('display', 'none'); }, animation_duration);
     });
 
-    $('#character_popup_ok').trigger('click', function () {
+    $('#character_popup_ok').on('click', function () {
         is_advanced_char_open = false;
         $('#character_popup').css('display', 'none');
     });
@@ -10954,7 +10955,7 @@ jQuery(async function () {
         }
     });
 
-    $('#dialogue_popup_cancel').trigger('click', function (e) {
+    $('#dialogue_popup_cancel').on('click', function (e) {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
@@ -11113,7 +11114,7 @@ jQuery(async function () {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    $('#api_button').trigger('click', function (e) {
+    $('#api_button').on('click', function (e) {
         if ($('#api_url_text').val() != '') {
             let value = formatKoboldUrl(String($('#api_url_text').val()).trim());
 
@@ -11358,7 +11359,7 @@ jQuery(async function () {
     //////////////////////////////////////////////////////////////////////////////////////////////
 
     //functionality for the cancel delete messages button, reverts to normal display of input form
-    $('#dialogue_del_mes_cancel').trigger('click', function () {
+    $('#dialogue_del_mes_cancel').on('click', function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -11498,7 +11499,7 @@ jQuery(async function () {
 
     //////////////////////////////////////////////////////////////
 
-    $('#select_chat_cross').trigger('click', function () {
+    $('#select_chat_cross').on('click', function () {
         $('#shadow_select_chat_popup').transition({
             opacity: 0,
             duration: animation_duration,
@@ -11845,7 +11846,7 @@ jQuery(async function () {
     //Select chat
 
     //**************************CHARACTER IMPORT EXPORT*************************//
-    $('#character_import_button').trigger('click', function () {
+    $('#character_import_button').on('click', function () {
         $('#character_import_file').trigger('click');
     });
 
@@ -11914,7 +11915,7 @@ jQuery(async function () {
         }
     });
     //**************************CHAT IMPORT EXPORT*************************//
-    $('#chat_import_button').trigger('click', function () {
+    $('#chat_import_button').on('click', function () {
         $('#chat_import_file').trigger('click');
     });
 
@@ -11952,12 +11953,12 @@ jQuery(async function () {
         }
     });
 
-    $('#rm_button_group_chats').trigger('click', function () {
+    $('#rm_button_group_chats').on('click', function () {
         selected_button = 'group_chats';
         select_group_chats();
     });
 
-    $('#rm_button_back_from_group').trigger('click', function () {
+    $('#rm_button_back_from_group').on('click', function () {
         selected_button = 'characters';
         select_rm_characters();
     });
