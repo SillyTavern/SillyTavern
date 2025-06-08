@@ -770,21 +770,6 @@ async function getSystemMessages() {
     };
 }
 
-// Register configuration migrations
-registerPromptManagerMigration();
-
-$(document).ajaxError(function myErrorHandler(_, xhr) {
-    // Cohee: CSRF doesn't error out in multiple tabs anymore, so this is unnecessary
-    /*
-    if (xhr.status == 403) {
-        toastr.warning(
-            'doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.',
-            'Looks like you\'ve opened SillyTavern in another browser tab',
-            { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
-        );
-    } */
-});
-
 async function getClientVersion() {
     try {
         const response = await fetch('/version');
@@ -982,6 +967,8 @@ async function firstLoadInit() {
     }
 
     showLoader();
+    registerPromptManagerMigration();
+    initStandaloneMode();
     initLibraryShims();
     addShowdownPatch(showdown);
     reloadMarkdownProcessor();
@@ -1038,6 +1025,13 @@ async function fixViewport() {
     document.body.style.position = 'absolute';
     await delay(1);
     document.body.style.position = '';
+}
+
+function initStandaloneMode() {
+    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches;
+    if (isPwaMode) {
+        $('body').addClass('PWA');
+    }
 }
 
 function cancelStatusCheck(reason = 'Manually cancelled status check') {
@@ -1395,7 +1389,6 @@ export function resultCheckStatus() {
     displayOnlineStatus();
     stopStatusLoading();
 }
-
 
 /**
  * Switches the currently selected character to the one with the given ID. (character index, not the character key!)
@@ -8513,6 +8506,8 @@ export function updateChatMetadata(newValues, reset) {
  * @param {boolean} state Whether the favorite button should be on or off.
  */
 function updateFavButtonState(state) {
+    // Update global state of the flag
+    // TODO: This is bad and needs to be refactored.
     fav_ch_checked = state;
     $('#fav_checkbox').prop('checked', state);
     $('#favorite_button').toggleClass('fav_on', state);
@@ -9084,7 +9079,7 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
  */
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
-    const formData = new FormData($('#form_create').get(0));
+    const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
     formData.set('fav', String(fav_ch_checked));
     const isNewChat = e instanceof CustomEvent && e.type === 'newChat';
 
@@ -10173,10 +10168,6 @@ export async function updateRemoteChatName(characterId, newName) {
 async function doGetChatName() {
     return getCurrentChatDetails().sessionName;
 }
-
-const isPwaMode = window.matchMedia('(display-mode: standalone)').matches;
-if (isPwaMode) { $('body').addClass('PWA'); }
-
 
 function doCharListDisplaySwitch() {
     power_user.charListGrid = !power_user.charListGrid;
