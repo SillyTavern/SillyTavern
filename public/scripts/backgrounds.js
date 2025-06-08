@@ -529,20 +529,40 @@ async function resolveImageUrl(bg, isCustom) {
 
 /**
  * Instantiates a background template
- * @param {string} bg Path to background
+ * @param {string|object} bg Path to background or background object for system backgrounds
  * @param {boolean} isCustom Whether the background is custom
  * @returns {Promise<JQuery<HTMLElement>>} Background template
  */
 async function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    const url = generateUrlParameter(bg, isCustom);
-    const title = isCustom ? bg.split('/').pop() : bg;
+    let fileNameForAttrsAndUrl, title, width, height;
+
+    if (isCustom) {
+        // bg is a string (path directly usable as URL part for custom, or needs processing for others)
+        fileNameForAttrsAndUrl = bg; // Used as 'bgfile' and for generateUrlParameter if custom
+        title = bg.split('/').pop(); // Extract filename for title
+        // For custom backgrounds, width/height are not available from server, set to 0 or fetch if needed separately
+        width = 0;
+        height = 0;
+    } else {
+        // bg is an object { name, type, path, width, height } for system backgrounds
+        fileNameForAttrsAndUrl = bg.name; // Use bg.name for system files
+        title = bg.name;
+        width = bg.width;
+        height = bg.height;
+    }
+
+    const url = generateUrlParameter(fileNameForAttrsAndUrl, isCustom);
+    // Use the raw title for the 'title' attribute for filtering consistency,
+    // and friendlyTitle for display in .BGSampleTitle
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
 
-    template.attr('title', title);
-    template.attr('bgfile', bg);
+    template.attr('title', title); // Use the full name/path for title to match filtering logic
+    template.attr('bgfile', fileNameForAttrsAndUrl); // Store the name/path used for URL generation and API calls
     template.attr('custom', String(isCustom));
     template.data('url', url);
+    template.data('width', width);
+    template.data('height', height);
     template.addClass('lazy-load-background');
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
@@ -681,16 +701,54 @@ function setFittingClass(fitting) {
     background_settings.fitting = fitting;
 }
 
-function onBackgroundFilterInput() {
-    const filterValue = String($(this).val()).toLowerCase();
-    $('#bg_menu_content > div').each(function () {
-        const $bgContent = $(this);
-        if ($bgContent.attr('title').toLowerCase().includes(filterValue)) {
-            $bgContent.show();
+function applyFilters() {
+    const textFilterValue = String($('#bg-filter').val()).toLowerCase();
+    const aspectRatioFilterValue = $('#bg_aspect_ratio_filter').val();
+
+    const portraitMax = 832 / 1216; // approx 0.684
+    const landscapeMin = 1216 / 832; // approx 1.461
+
+    $('#bg_menu_content > div, #bg_custom_content > div').each(function () {
+        const $bgElement = $(this);
+        const title = $bgElement.attr('title') || '';
+        const width = parseFloat($bgElement.data('width'));
+        const height = parseFloat($bgElement.data('height'));
+
+        // Text filter
+        const textMatch = title.toLowerCase().includes(textFilterValue);
+
+        // Aspect ratio filter
+        let aspectRatioMatch = false;
+        if (aspectRatioFilterValue === 'none') {
+            aspectRatioMatch = true;
+        } else if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
+            const currentRatio = width / height;
+            if (aspectRatioFilterValue === 'portrait') {
+                aspectRatioMatch = currentRatio <= portraitMax;
+            } else if (aspectRatioFilterValue === 'landscape') {
+                aspectRatioMatch = currentRatio >= landscapeMin;
+            } else if (aspectRatioFilterValue === 'square') {
+                aspectRatioMatch = currentRatio > portraitMax && currentRatio < landscapeMin;
+            }
         } else {
-            $bgContent.hide();
+            // If width/height are invalid, only show if filter is "none"
+            aspectRatioMatch = aspectRatioFilterValue === 'none';
+        }
+
+        if (textMatch && aspectRatioMatch) {
+            $bgElement.show();
+        } else {
+            $bgElement.hide();
         }
     });
+}
+
+function onBackgroundFilterInput() {
+    applyFilters();
+}
+
+function onAspectRatioFilterInput() {
+    applyFilters();
 }
 
 export function initBackgrounds() {
@@ -705,6 +763,7 @@ export function initBackgrounds() {
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
+    $('#bg_aspect_ratio_filter').on('input', onAspectRatioFilterInput);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),

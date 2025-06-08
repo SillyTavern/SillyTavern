@@ -4,14 +4,39 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
+import { jimpRead } from '../../jimp.js';
 import { dimensions, invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
-router.post('/all', function (request, response) {
-    const images = getImages(request.user.directories.backgrounds);
+router.post('/all', async function (request, response) {
+    const imageFiles = getImages(request.user.directories.backgrounds);
+    const images = [];
+    for (const file of imageFiles) {
+        const filePath = path.join(request.user.directories.backgrounds, file.name);
+        try {
+            const image = await jimpRead(filePath);
+            images.push({
+                name: file.name,
+                type: file.type,
+                path: file.path,
+                width: image.getWidth(),
+                height: image.getHeight(),
+            });
+        } catch (err) {
+            console.error(`Error reading dimensions for ${filePath}:`, err);
+            // Add the image even if dimensions can't be read, or skip it
+            images.push({
+                name: file.name,
+                type: file.type,
+                path: file.path,
+                width: 0, // Or some default / error indicator
+                height: 0, // Or some default / error indicator
+            });
+        }
+    }
     const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
     response.json({ images, config });
 });
