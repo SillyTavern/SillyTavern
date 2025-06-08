@@ -659,6 +659,15 @@ export function trimV1(str) {
 }
 
 /**
+ * Removes trailing slash from a string.
+ * @param {string} str Input string
+ * @returns {string} String with trailing slash removed
+ */
+export function trimTrailingSlash(str) {
+    return String(str ?? '').replace(/\/$/, '');
+}
+
+/**
  * Simple TTL memory cache.
  */
 export class Cache {

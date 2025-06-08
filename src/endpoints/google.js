@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { GEMINI_SAFETY } from '../constants.js';
-import { trimV1 } from '../util.js';
+import { trimTrailingSlash } from '../util.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
@@ -149,7 +149,7 @@ router.post('/caption-image', async (request, response) => {
             if (authType === 'express') {
                 // Express mode: use API key parameter
                 const keyParam = authHeader.replace('Bearer ', '');
-                const apiUrl = trimV1(request.body.reverse_proxy || API_VERTEX_AI);
+                const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_VERTEX_AI);
                 url = `${apiUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
             } else if (authType === 'full') {
                 // Full mode: use project-specific URL with Authorization header
@@ -178,14 +178,14 @@ router.post('/caption-image', async (request, response) => {
                 headers['Authorization'] = authHeader;
             } else {
                 // Proxy mode: use Authorization header
-                const apiUrl = trimV1(request.body.reverse_proxy || API_VERTEX_AI);
+                const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_VERTEX_AI);
                 url = `${apiUrl}/v1/publishers/google/models/${model}:generateContent`;
                 headers['Authorization'] = authHeader;
             }
         } else {
             // Google AI Studio
             const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
-            const apiUrl = trimV1(request.body.reverse_proxy || API_MAKERSUITE);
+            const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
             url = `${apiUrl}/v1beta/models/${model}:generateContent?key=${apiKey}`;
         }
         const body = {

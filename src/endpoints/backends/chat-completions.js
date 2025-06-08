@@ -16,7 +16,7 @@ import {
     mergeObjectWithYaml,
     excludeKeysByYaml,
     color,
-    trimV1,
+    trimTrailingSlash,
 } from '../../util.js';
 import {
     convertClaudeMessages,
@@ -1095,7 +1095,7 @@ router.post('/status', async function (request, statusResponse) {
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
-        apiUrl = trimV1(request.body.reverse_proxy || API_MAKERSUITE);
+        apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
         const modelsUrl = !apiKey && request.body.reverse_proxy
             ? `${apiUrl}/${apiVersion}/models`
