@@ -103,11 +103,25 @@ async function getChatBackgroundsList() {
         return;
     }
 
-    for (const bg of list) {
-        const template = await getBackgroundFromTemplate(bg, true);
-        $('#bg_custom_content').append(template);
+    for (const bgPath of list) {
+        const domElement = await getBackgroundFromTemplate(bgPath, true);
+        $('#bg_custom_content').append(domElement);
+
+        // Client-side dimension fetching for custom backgrounds
+        const imageUrl = bgPath; // For custom backgrounds, bgPath is the direct URL
+        const img = new Image();
+        img.onload = () => {
+            $(domElement).data('width', img.naturalWidth).data('height', img.naturalHeight);
+            applyFilters(); // Re-apply filters as new dimension data arrives
+        };
+        img.onerror = () => {
+            $(domElement).data('width', 0).data('height', 0);
+            applyFilters(); // Re-apply filters even on error
+        };
+        img.src = imageUrl;
     }
     activateLazyLoader();
+    applyFilters(); // Apply filters once after all custom images begin loading
 }
 
 function getBackgroundPath(fileUrl) {
@@ -453,11 +467,25 @@ export async function getBackgrounds() {
         const { images, config } = await response.json();
         Object.assign(THUMBNAIL_CONFIG, config);
         $('#bg_menu_content').children('div').remove();
-        for (const bg of images) {
-            const template = await getBackgroundFromTemplate(bg, false);
-            $('#bg_menu_content').append(template);
+        for (const bgItem of images) { // bgItem is an object like { name, type, path }
+            const domElement = await getBackgroundFromTemplate(bgItem, false);
+            $('#bg_menu_content').append(domElement);
+
+            // Client-side dimension fetching for system backgrounds
+            const imageUrl = getBackgroundPath(bgItem.name);
+            const img = new Image();
+            img.onload = () => {
+                $(domElement).data('width', img.naturalWidth).data('height', img.naturalHeight);
+                applyFilters(); // Re-apply filters as new dimension data arrives
+            };
+            img.onerror = () => {
+                $(domElement).data('width', 0).data('height', 0);
+                applyFilters(); // Re-apply filters even on error
+            };
+            img.src = imageUrl;
         }
         activateLazyLoader();
+        applyFilters(); // Apply filters once after all system images begin loading
     }
 }
 
@@ -535,34 +563,28 @@ async function resolveImageUrl(bg, isCustom) {
  */
 async function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    let fileNameForAttrsAndUrl, title, width, height;
+    let fileNameForAttrsAndUrl, title;
 
     if (isCustom) {
         // bg is a string (path directly usable as URL part for custom, or needs processing for others)
-        fileNameForAttrsAndUrl = bg; // Used as 'bgfile' and for generateUrlParameter if custom
-        title = bg.split('/').pop(); // Extract filename for title
-        // For custom backgrounds, width/height are not available from server, set to 0 or fetch if needed separately
-        width = 0;
-        height = 0;
+        fileNameForAttrsAndUrl = bg;
+        title = bg.split('/').pop();
     } else {
-        // bg is an object { name, type, path, width, height } for system backgrounds
-        fileNameForAttrsAndUrl = bg.name; // Use bg.name for system files
+        // bg is an object { name, type, path } for system backgrounds (no width/height from server now)
+        fileNameForAttrsAndUrl = bg.name;
         title = bg.name;
-        width = bg.width;
-        height = bg.height;
     }
 
     const url = generateUrlParameter(fileNameForAttrsAndUrl, isCustom);
-    // Use the raw title for the 'title' attribute for filtering consistency,
-    // and friendlyTitle for display in .BGSampleTitle
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
 
-    template.attr('title', title); // Use the full name/path for title to match filtering logic
-    template.attr('bgfile', fileNameForAttrsAndUrl); // Store the name/path used for URL generation and API calls
+    template.attr('title', title);
+    template.attr('bgfile', fileNameForAttrsAndUrl);
     template.attr('custom', String(isCustom));
     template.data('url', url);
-    template.data('width', width);
-    template.data('height', height);
+    // Initialize with 0,0 - will be updated by client-side fetching
+    template.data('width', 0);
+    template.data('height', 0);
     template.addClass('lazy-load-background');
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
