@@ -5461,10 +5461,17 @@
                         </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
-                    <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps">
+                    <!-- Favourite characters carousel replacement -->
+                    <div id="favorites_carousel_wrapper" class="alignitemscenter flex-container margin0auto wide100p">
+                        <div id="favorites_carousel_left" class="carousel-arrow" title="Scroll left">
+                            <i class="fa-solid fa-chevron-left"></i>
                         </div>
-                        <hr class="wide100p">
+
+                        <div id="favorites_carousel" class="favorites_carousel scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
+
+                        <div id="favorites_carousel_right" class="carousel-arrow" title="Scroll right">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
                     </div>
                 </div>
 

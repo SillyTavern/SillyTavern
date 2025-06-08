@@ -60,6 +60,13 @@ var connection_made = false;
 var retry_delay = 500;
 let counterNonce = Date.now();
 
+// Keeps the last horizontal scroll offset of the favourites carousel between
+// rebuilds so we can restore the position after the list is regenerated.
+// Stores how far the carousel was scrolled as a ratio (0..1) so that it can be
+// restored even if the panel width changes after a rebuild/selection.
+let favoritesCarouselScrollRatio = 0;
+let favoritesCarouselRestoring = false;
+
 const observerConfig = { childList: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
 const countTokensShortDebounced = debounce(RA_CountCharTokens, debounce_timeout.short);
@@ -314,7 +321,7 @@ async function RA_autoloadchat() {
 
 export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
-    const container = $('#right-nav-panel .hotswap');
+    const container = $('#favorites_carousel');
 
     // Hard limit is required because even if all hotswaps don't fit the screen, their images would still be loaded
     // 25 is roughly calculated as the maximum number of favs that can fit an ultrawide monitor with the default theme
@@ -327,7 +334,162 @@ export async function favsToHotswap() {
         return;
     }
 
+    const $carouselEl = $('#favorites_carousel');
+    const prevRatio = favoritesCarouselScrollRatio;
+
     buildAvatarList(container, favs, { interactable: true, highlightFavs: false });
+
+    // Re-attach carousel behaviour
+    setupFavoritesCarousel();
+
+    // Restore scroll position in next tick to account for any image loading/layout
+    function restoreScrollPosition() {
+        favoritesCarouselRestoring = true;
+        const maxScroll = $carouselEl[0].scrollWidth - $carouselEl.innerWidth();
+        let restoredPos = 0;
+        if (maxScroll > 0) {
+            restoredPos = Math.round(prevRatio * maxScroll);
+        }
+        $carouselEl.scrollLeft(restoredPos);
+        $carouselEl.trigger('scroll');
+        favoritesCarouselRestoring = false;
+    }
+
+    // First attempt on next tick (layout settled)
+    setTimeout(restoreScrollPosition, 0);
+
+    // Re-attempt after all avatar images load – in case scrollWidth grows
+    const $imgs = $carouselEl.find('img');
+    let pending = $imgs.length;
+    if (pending === 0) {
+        restoreScrollPosition();
+    } else {
+        $imgs.on('load.restoreScroll error.restoreScroll', function () {
+            pending -= 1;
+            if (pending === 0) {
+                // Give browser a moment to recalc layout
+                setTimeout(restoreScrollPosition, 0);
+                $imgs.off('.restoreScroll');
+            }
+        });
+    }
+}
+
+/**
+ * Attaches scrolling behaviour & arrow visibility to the favourite characters
+ * carousel.  It is idempotent – can be called multiple times safely (old
+ * handlers are removed first).
+ */
+function setupFavoritesCarousel() {
+    const $carousel = $('#favorites_carousel');
+    const $left = $('#favorites_carousel_left');
+    const $right = $('#favorites_carousel_right');
+
+    // Determine environment (mobile vs desktop) once – re-evaluate on resize if desired
+    const mobileEnv = isMobile();
+
+    // Add helper classes for environment; arrow visibility computed later
+    $carousel.toggleClass('mobile', mobileEnv).toggleClass('desktop', !mobileEnv);
+
+    if ($carousel.length === 0) {
+        return; // HTML not present (hotswap disabled?)
+    }
+
+    // Determine scroll step – width of first avatar (with margin) or 100 px (desktop only)
+    const firstItem = $carousel.find('.avatar').first();
+    const scrollStep = firstItem.length ? firstItem.outerWidth(true) : 100;
+
+    function updateArrowVisibility() {
+        if (mobileEnv) return; // arrows hidden on mobile
+
+        const contentWidth = $carousel[0].scrollWidth;
+        const viewWidth = $carousel.innerWidth();
+        const maxScroll = contentWidth - viewWidth;
+
+        const overflow = contentWidth > viewWidth + 1; // allow small rounding
+
+        // Always show arrows when overflow, but disable/hide left arrow when at start, right arrow when at end for clarity
+        $left.toggle(overflow);
+        $right.toggle(overflow);
+
+        // Optionally add disabled state via CSS class when cannot scroll in that direction
+        $left.toggleClass('disabled', $carousel.scrollLeft() <= 0);
+        $right.toggleClass('disabled', $carousel.scrollLeft() >= maxScroll - 1);
+    }
+
+    // Remove previous listeners to avoid stacking
+    $left.off('click.favCarousel');
+    $right.off('click.favCarousel');
+    $(window).off('resize.favCarousel');
+
+    $left.on('click.favCarousel', () => {
+        const newPos = Math.max(0, $carousel.scrollLeft() - scrollStep);
+        $carousel.animate({ scrollLeft: newPos }, 200, updateArrowVisibility);
+    });
+
+    $right.on('click.favCarousel', () => {
+        const maxScroll = $carousel[0].scrollWidth - $carousel.innerWidth();
+        const newPos = Math.min(maxScroll, $carousel.scrollLeft() + scrollStep);
+        $carousel.animate({ scrollLeft: newPos }, 200, updateArrowVisibility);
+    });
+
+    $(window).on('resize.favCarousel', updateArrowVisibility);
+    $carousel.on('scroll.favCarousel', updateArrowVisibility);
+    // keep latest scroll position for restoration after rebuilds
+    $carousel.on('scroll.favCarouselSave', () => {
+        if (favoritesCarouselRestoring) return;
+
+        const maxScroll = $carousel[0].scrollWidth - $carousel.innerWidth();
+        if (maxScroll <= 0) {
+            favoritesCarouselScrollRatio = 0;
+        } else {
+            favoritesCarouselScrollRatio = $carousel.scrollLeft() / maxScroll;
+        }
+    });
+
+    /**
+     * Custom wheel handler using requestAnimationFrame batching for smoother
+     * scrolling than the previous per-event updates, while still providing
+     * precise control (and allowing us to hide the scrollbar).
+     */
+    $carousel.off('wheel.favCarousel');
+
+    if (!mobileEnv) {
+        let wheelAccum = 0;
+        let wheelRafId = null;
+
+        function wheelStep() {
+            const maxScroll = $carousel[0].scrollWidth - $carousel.innerWidth();
+            if (wheelAccum !== 0) {
+                const newPos = Math.min(Math.max(0, $carousel.scrollLeft() + wheelAccum), maxScroll);
+                $carousel.scrollLeft(newPos);
+                wheelAccum = 0;
+                updateArrowVisibility();
+            }
+            wheelRafId = null;
+        }
+
+        $carousel.on('wheel.favCarousel', (e) => {
+            const oe = e.originalEvent;
+            const delta = oe.deltaX !== 0 ? oe.deltaX : oe.deltaY;
+
+            if (delta === 0) return;
+
+            e.preventDefault();
+
+            wheelAccum += delta;
+
+            if (wheelRafId === null) {
+                wheelRafId = requestAnimationFrame(wheelStep);
+            }
+        });
+    }
+
+    // Recheck when avatars finish loading (image dimensions may change width)
+    $carousel.find('img').on('load.favCarousel', updateArrowVisibility);
+
+    // Initial state
+    updateArrowVisibility();
 }
 
 //changes input bar and send button display depending on connection status

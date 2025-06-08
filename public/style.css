@@ -1366,7 +1366,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
 
 .hotswap {
     margin: 5px;
-    justify-content: space-evenly;
+    justify-content: flex-start;
 }
 
 #HotSwapWrapper {
@@ -1382,6 +1382,82 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     background-color: transparent !important;
     cursor: pointer;
 }
+
+/* ===== Favourites carousel ===== */
+#favorites_carousel_wrapper {
+    position: relative;
+    padding: 0 35px; /* leaves room for arrow buttons */
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#favorites_carousel {
+    overflow-y: hidden;
+    display: flex;
+    flex-wrap: nowrap; /* prevent wrapping */
+    scroll-behavior: smooth;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.favorites_carousel .avatar {
+    margin: calc(var(--avatar-base-border-radius));
+    flex: 0 0 auto;
+}
+
+/* Desktop vs mobile behaviour */
+#favorites_carousel.desktop {
+    overflow-x: auto; /* allow smooth native scrolling */
+    -ms-overflow-style: none; /* IE & Edge */
+    scrollbar-width: none; /* Firefox */
+}
+#favorites_carousel.desktop::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+#favorites_carousel.mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#favorites_carousel.favorites_carousel {
+    justify-content: flex-start;
+}
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    padding: 8px 12px;
+    z-index: 10;
+    user-select: none;
+    color: inherit;
+    background: var(--transparent);
+    /* Ensure the click lands on the wrapper div even when clicking the icon */
+}
+
+.carousel-arrow.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.carousel-arrow i {
+    pointer-events: none;
+}
+
+#favorites_carousel_left {
+    left: 0;
+}
+
+#favorites_carousel_right {
+    right: 0;
+}
+
+.carousel-arrow { display: none; }
 
 .avatar.avatar_collage img {
     width: 100%;
