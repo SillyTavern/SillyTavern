@@ -8513,6 +8513,7 @@ export function updateChatMetadata(newValues, reset) {
  * @param {boolean} state Whether the favorite button should be on or off.
  */
 function updateFavButtonState(state) {
+    fav_ch_checked = state;
     $('#fav_checkbox').prop('checked', state);
     $('#favorite_button').toggleClass('fav_on', state);
     $('#favorite_button').toggleClass('fav_off', !state);
