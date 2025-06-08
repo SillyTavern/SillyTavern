@@ -10865,7 +10865,6 @@ jQuery(async function () {
     });
 
     $('#advanced_div').on('click', function () {
-        console.warn('opening/closing advanced div');
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
             $('#character_popup').css({ 'display': 'flex', 'opacity': 0.0 }).addClass('open');
@@ -10895,7 +10894,7 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
-    $('#dialogue_popup_ok').click(async function (e, customData) {
+    $('#dialogue_popup_ok').on('click', async function (_e, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
@@ -10936,11 +10935,9 @@ jQuery(async function () {
             if (popup_type == 'input') {
                 dialogueResolve($('#dialogue_popup_input').val());
                 $('#dialogue_popup_input').val('');
-
             }
             else {
                 dialogueResolve(true);
-
             }
 
             dialogueResolve = null;
@@ -10960,21 +10957,19 @@ jQuery(async function () {
             $('#dialogue_popup').removeClass('large_dialogue_popup');
         }, animation_duration);
 
-        //$("#shadow_popup").css("opacity:", 0.0);
         popup_type = '';
 
         if (dialogueResolve) {
             dialogueResolve(false);
             dialogueResolve = null;
         }
-
     });
 
-    $('#add_avatar_button').change(function () {
+    $('#add_avatar_button').on('change', function () {
         read_avatar_load(this);
     });
 
-    $('#form_create').submit(createOrEditCharacter);
+    $('#form_create').on('submit', (e) => createOrEditCharacter(e.originalEvent));
 
     $('#delete_button').on('click', async function () {
         if (this_chid === undefined || !characters[this_chid]) {
@@ -10985,7 +10980,7 @@ jQuery(async function () {
         let deleteChats = false;
 
         const confirm = await Popup.show.confirm(t`Delete the character?`, await renderTemplateAsync('deleteConfirm'), {
-            onClose: () => deleteChats = !!$('#del_char_checkbox').prop('checked'),
+            onClose: () => { deleteChats = !!$('#del_char_checkbox').prop('checked'); },
         });
         if (!confirm) {
             return;
@@ -11247,7 +11242,7 @@ jQuery(async function () {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
                 const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
-                    onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
+                    onClose: () => { deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'); },
                 });
                 if (!result) {
                     return;
@@ -11585,8 +11580,10 @@ jQuery(async function () {
                 edit_textarea.height(0);
                 edit_textarea.height(edit_textarea[0].scrollHeight);
             }
-            edit_textarea.focus();
-            edit_textarea[0].setSelectionRange(     //this sets the cursor at the end of the text
+            edit_textarea.trigger('focus');
+            const textAreaElement = /** @type {HTMLTextAreaElement} */ (edit_textarea[0]);
+            // Sets the cursor at the end of the text
+            textAreaElement.setSelectionRange(
                 String(edit_textarea.val()).length,
                 String(edit_textarea.val()).length,
             );
