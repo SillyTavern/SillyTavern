@@ -30,6 +30,11 @@ declare global {
         izoomify(options?: any): JQuery;
     }
 
+    // NPM package doesn't have the 'queue' property in the type definition
+    interface JQueryTransitOptions {
+        queue?: boolean;
+    }
+
     namespace Select2 {
         interface Options<Result = DataFormat | GroupedDataFormat, RemoteResult = any> {
             /**

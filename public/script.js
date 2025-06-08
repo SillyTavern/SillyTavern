@@ -850,7 +850,8 @@ export let create_save = {
     creator: '',
     personality: '',
     first_message: '',
-    avatar: '',
+    /** @type {FileList|null} */
+    avatar: null,
     scenario: '',
     mes_example: '',
     world: '',
@@ -3753,6 +3754,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         if (responseLengthCustomized) {
             TempResponseLength.save(api, responseLength);
         }
+        /** @type {object|any[]} */
         let generateData = {};
 
         switch (api) {
@@ -7131,6 +7133,11 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     }
 }
 
+/**
+ * Processes the avatar image from the input element, allowing the user to crop it if necessary.
+ * @param {HTMLInputElement} input - The input element containing the avatar file.
+ * @returns {Promise<void>}
+ */
 async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
         if (selected_button == 'create') {
@@ -8370,11 +8377,10 @@ function select_rm_create({ switchMenu = true } = {}) {
     switchMenu && setMenuType('create');
 
     //console.log('select_rm_Create() -- selected button: '+selected_button);
-    if (selected_button == 'create') {
-        if (create_save.avatar != '') {
-            $('#add_avatar_button').get(0).files = create_save.avatar;
-            read_avatar_load($('#add_avatar_button').get(0));
-        }
+    if (selected_button == 'create' && create_save.avatar) {
+        const addAvatarInput = /** @type {HTMLInputElement} */ ($('#add_avatar_button').get(0));
+        addAvatarInput.files = create_save.avatar;
+        read_avatar_load(addAvatarInput);
     }
 
     switchMenu && selectRightMenuWithAnimation('rm_ch_create_block');
@@ -8916,7 +8922,8 @@ function openCharacterWorldPopup() {
     }
 
     function onExtraWorldInfoChanged() {
-        const selectedWorlds = $('.character_extra_world_info_selector').val();
+        const selectorFieldValue = $('.character_extra_world_info_selector').val();
+        const selectedWorlds = Array.isArray(selectorFieldValue) ? selectorFieldValue : [];
         let charLore = world_info.charLore ?? [];
 
         // TODO: Maybe make this utility function not use the window context?
@@ -8961,7 +8968,7 @@ function openCharacterWorldPopup() {
     // Apped to base dropdown
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
-        option.value = i;
+        option.value = String(i);
         option.innerText = item;
         option.selected = item === worldId;
         select.append(option);
@@ -8973,7 +8980,7 @@ function openCharacterWorldPopup() {
     }
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
-        option.value = i;
+        option.value = String(i);
         option.innerText = item;
 
         const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename());
@@ -9161,7 +9168,7 @@ async function createOrEditCharacter(e) {
 
             $('#character_popup-button-h3').text('Create character');
 
-            create_save.avatar = '';
+            create_save.avatar = null;
 
             $('#add_avatar_button').replaceWith(
                 $('#add_avatar_button').val('').clone(true),
@@ -10966,7 +10973,8 @@ jQuery(async function () {
     });
 
     $('#add_avatar_button').on('change', function () {
-        read_avatar_load(this);
+        const inputElement = /** @type {HTMLInputElement} */ (this);
+        read_avatar_load(inputElement);
     });
 
     $('#form_create').on('submit', (e) => createOrEditCharacter(e.originalEvent));
@@ -11909,7 +11917,11 @@ jQuery(async function () {
     });
 
     $('#chat_import_file').on('change', async function (e) {
-        const file = e.target.files[0];
+        const targetElement = /** @type {HTMLInputElement} */ (e.target);
+        if (!(targetElement instanceof HTMLInputElement)) {
+            return;
+        }
+        const file = targetElement.files[0];
 
         if (!file) {
             return;
@@ -11931,7 +11943,7 @@ jQuery(async function () {
         const format = ext[1].toLowerCase();
         $('#chat_import_file_type').val(format);
 
-        const formData = new FormData($('#form_import_chat').get(0));
+        const formData = new FormData(/** @type {HTMLFormElement} */($('#form_import_chat').get(0)));
         formData.append('user_name', name1);
         $('#select_chat_div').html('');
 
@@ -12168,7 +12180,8 @@ jQuery(async function () {
     });
 
     $('#char-management-dropdown').on('change', async (e) => {
-        let target = $(e.target.selectedOptions).attr('id');
+        const targetElement = /** @type {HTMLSelectElement} */ (e.target);
+        const target = $(targetElement.selectedOptions).attr('id');
         switch (target) {
             case 'set_character_world':
                 openCharacterWorldPopup();
