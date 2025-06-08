@@ -283,6 +283,8 @@ import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
+import { isAdmin, getCurrentUserHandle } from './scripts/user.js'; 
+import { getAikobotsEnabled } from './scripts/utils.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -301,6 +303,9 @@ export {
     countOccurrences,
     renderTemplate,
 };
+
+// Check if Aikobots is enabled 
+const aikobotsEnabled = await getAikobotsEnabled();
 
 /**
  * Wait for page to load before continuing the app initialization.
@@ -5797,6 +5802,10 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         diffPrevPrompt.style.display = 'none';
     }
     popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('pointerup', async function () {
+        // If Aikobots is enabled and user is not admin, disable this function
+        if (aikobotsEnabled && !isAdmin()){
+            return;
+        } 
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
         let rawPromptValues = rawPrompt;
 
@@ -5809,6 +5818,10 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     });
 
     popup.dlg.querySelector('#showRawPrompt').addEventListener('click', async function () {
+        // If Aikobots is enabled and user is not admin, disable this function
+        if (aikobotsEnabled && !isAdmin()){
+            return;
+        } 
         //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
         console.log(PromptArrayItemForRawPromptDisplay);
         console.log(itemizedPrompts);
