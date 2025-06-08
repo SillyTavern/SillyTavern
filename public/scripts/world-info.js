@@ -2699,7 +2699,7 @@ function fillCharacterAndTagOptionsHelper({ characterFilter, entry, getContext }
 /**
  * Helper to handle character filter changes.
  */
-function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name, world_names, getContext, setWIOriginalDataValue, saveWorldInfo, t }) {
+function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name, world_names, getContext, t }) {
     characterFilter.on('mousedown change', async function (e) {
         if (world_names.length === 0) {
             e.preventDefault();
@@ -2731,7 +2731,7 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name,
 /**
  * Helper to handle probability input.
  */
-function handleProbabilityInputHelper({ probabilityInput, data, entry, name, setWIOriginalDataValue, saveWorldInfo }) {
+function handleProbabilityInputHelper({ probabilityInput, data, entry, name }) {
     probabilityInput.data('uid', entry.uid);
     probabilityInput.on('input', async function () {
         const uid = $(this).data('uid');
@@ -2777,7 +2777,7 @@ function handleProbabilityToggleHelper({ probabilityToggle, data, entry, name, p
 /**
  * Helper to handle select2 dropdowns for boolean selects.
  */
-function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name, setWIOriginalDataValue, saveWorldInfo }) {
+function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name }) {
     selectElem.data('uid', entry.uid);
     selectElem.on('input', async function () {
         const uid = $(this).data('uid');
@@ -2792,7 +2792,7 @@ function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name, se
 /**
  * Helper to handle input fields for numbers.
  */
-function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, setWIOriginalDataValue, saveWorldInfo, min, max, clamp = false }) {
+function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, min, max, clamp = false }) {
     inputElem.data('uid', entry.uid);
     inputElem.on('input', async function () {
         const uid = $(this).data('uid');
@@ -2911,13 +2911,12 @@ export async function getWorldEntry(name, data, entry) {
     orderInput.css('width', 'calc(3em + 15px)');
 
     // Probability
-    handleProbabilityInputHelper({ probabilityInput: headerTemplate.find('input[name="probability"]'), data, entry, name, setWIOriginalDataValue, saveWorldInfo });
+    handleProbabilityInputHelper({ probabilityInput: headerTemplate.find('input[name="probability"]'), data, entry, name });
 
     // Depth
     handleNumberInputHelper({
         inputElem: headerTemplate.find('input[name="depth"]'),
-        entry, entryKey: 'depth', data, name, setWIOriginalDataValue, saveWorldInfo,
-        min: 0, max: MAX_SCAN_DEPTH, clamp: false,
+        entry, entryKey: 'depth', data, name, min: 0, max: MAX_SCAN_DEPTH, clamp: false,
     });
     headerTemplate.find('input[name="depth"]').css('width', 'calc(3em + 15px)');
 
@@ -3169,9 +3168,7 @@ export async function getWorldEntry(name, data, entry) {
         characterFilter.data('uid', entry.uid);
         initCharacterFilterSelect2Helper(characterFilter, t);
         fillCharacterAndTagOptionsHelper({ characterFilter, entry, getContext });
-        handleCharacterFilterChangeHelper({
-            characterFilter, data, entry, name, world_names, getContext, setWIOriginalDataValue, saveWorldInfo, t,
-        });
+        handleCharacterFilterChangeHelper({ characterFilter, data, entry, name, world_names, getContext, t });
 
         // Content
         const counter = editTemplate.find('.world_entry_form_token_counter');
@@ -3245,25 +3242,21 @@ export async function getWorldEntry(name, data, entry) {
         // Group weight
         handleNumberInputHelper({
             inputElem: editTemplate.find('input[name="groupWeight"]'),
-            entry, entryKey: 'groupWeight', data, name, setWIOriginalDataValue, saveWorldInfo,
-            min: 1, max: 10000, clamp: true,
+            entry, entryKey: 'groupWeight', data, name, min: 1, max: 10000, clamp: true,
         });
 
         // Sticky, cooldown, delay
         handleNumberInputHelper({
             inputElem: editTemplate.find('input[name="sticky"]'),
-            entry, entryKey: 'sticky', data, name, setWIOriginalDataValue, saveWorldInfo,
-            min: 1, max: 10000, clamp: false,
+            entry, entryKey: 'sticky', data, name, min: 1, max: 10000, clamp: false,
         });
         handleNumberInputHelper({
             inputElem: editTemplate.find('input[name="cooldown"]'),
-            entry, entryKey: 'cooldown', data, name, setWIOriginalDataValue, saveWorldInfo,
-            min: 1, max: 10000, clamp: false,
+            entry, entryKey: 'cooldown', data, name, min: 1, max: 10000, clamp: false,
         });
         handleNumberInputHelper({
             inputElem: editTemplate.find('input[name="delay"]'),
-            entry, entryKey: 'delay', data, name, setWIOriginalDataValue, saveWorldInfo,
-            min: 1, max: 10000, clamp: false,
+            entry, entryKey: 'delay', data, name, min: 1, max: 10000, clamp: false,
         });
 
         // Exclude/prevent recursion
@@ -3299,18 +3292,9 @@ export async function getWorldEntry(name, data, entry) {
         delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
 
         // Boolean selects
-        handleBooleanSelectHelper({
-            selectElem: editTemplate.find('select[name="caseSensitive"]'),
-            entry, entryKey: 'caseSensitive', data, name, setWIOriginalDataValue, saveWorldInfo,
-        });
-        handleBooleanSelectHelper({
-            selectElem: editTemplate.find('select[name="matchWholeWords"]'),
-            entry, entryKey: 'matchWholeWords', data, name, setWIOriginalDataValue, saveWorldInfo,
-        });
-        handleBooleanSelectHelper({
-            selectElem: editTemplate.find('select[name="useGroupScoring"]'),
-            entry, entryKey: 'useGroupScoring', data, name, setWIOriginalDataValue, saveWorldInfo,
-        });
+        handleBooleanSelectHelper({ selectElem: editTemplate.find('select[name="caseSensitive"]'), entry, entryKey: 'caseSensitive', data, name });
+        handleBooleanSelectHelper({ selectElem: editTemplate.find('select[name="matchWholeWords"]'), entry, entryKey: 'matchWholeWords', data, name });
+        handleBooleanSelectHelper({ selectElem: editTemplate.find('select[name="useGroupScoring"]'), entry, entryKey: 'useGroupScoring', data, name });
 
         // Match checkboxes
         handleMatchCheckboxHelper({ template: editTemplate, entry, fieldName: 'matchPersonaDescription', data, name });
