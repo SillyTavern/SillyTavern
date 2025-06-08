@@ -570,9 +570,14 @@ async function getBackgroundFromTemplate(bg, isCustom) {
         fileNameForAttrsAndUrl = bg;
         title = bg.split('/').pop();
     } else {
-        // bg is an object { name, type, path } for system backgrounds (no width/height from server now)
-        fileNameForAttrsAndUrl = bg.name;
-        title = bg.name;
+        // bg can be an object { name, type, path } or a string (filename)
+        if (typeof bg === 'string') {
+            fileNameForAttrsAndUrl = bg;
+            title = bg;
+        } else { // It's an object
+            fileNameForAttrsAndUrl = bg.name;
+            title = bg.name;
+        }
     }
 
     const url = generateUrlParameter(fileNameForAttrsAndUrl, isCustom);

@@ -291,6 +291,38 @@ describe('Background Filtering with Client-Side Dimension Fetching', () => {
         expect(findBgElement('error_dims.jpg').style.display).toBe('none');
     });
 
+    test('getBackgroundFromTemplate for system background with string input', async () => {
+        // This test specifically probes the scenario where bg is a string but isCustom is false.
+        // Based on current implementation, this might throw an error or behave unexpectedly.
+        // The goal is to ensure it handles this gracefully or that the function is robust.
+
+        const mockFilenameString = "system_bg.jpg";
+        let bgElementWrapper;
+        let errorThrown = null;
+
+        try {
+            // Ensure that getBackgroundFromTemplate is called in an environment where jQuery can find #background_template
+            // setupDOM() is called in beforeEach, so the template should exist.
+            bgElementWrapper = await getBackgroundFromTemplate(mockFilenameString, false);
+        } catch (e) {
+            errorThrown = e;
+        }
+
+        // Assertion: Crucially, ensure the test does not throw a "TypeError: Cannot read properties of undefined (reading 'slice')"
+        // If the function was modified to handle string input correctly for isCustom=false:
+        expect(errorThrown).toBeNull();
+
+        // If it didn't throw, check attributes. This part assumes the function was modified
+        // to handle `bg` as a string directly in the `isCustom = false` path.
+        if (!errorThrown && bgElementWrapper) {
+            const bgElement = bgElementWrapper[0]; // Get the DOM element from jQuery wrapper
+            expect($(bgElement).attr('bgfile')).toBe(mockFilenameString);
+            expect($(bgElement).attr('title')).toBe(mockFilenameString);
+            expect($(bgElement).find('.BGSampleTitle').text()).toBe("system_bg"); // Filename without extension
+            expect($(bgElement).data('width')).toBe(0); // Should default to 0 if not an object with width
+            expect($(bgElement).data('height')).toBe(0); // Should default to 0
+        }
+    });
 
     test('Full filter: Text filter only (after loads)', async () => {
         simulateImageLoad(findBgElement('portrait_image_1.jpg'), 800, 1200);
