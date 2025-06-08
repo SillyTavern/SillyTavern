@@ -86,7 +86,6 @@ const saveSettingsDebounced = debounce(() => {
 }, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
 let updateEditor = (navigation, flashOnNav = true) => { console.debug('Triggered WI navigation', navigation, flashOnNav); };
-let isSaveWorldInfoDisabled = false;
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 export const worldInfoFilter = new FilterHelper(() => updateEditor());
@@ -1943,11 +1942,14 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
 function clearEntryList($list) {
     console.time('clearEntryList');
 
+    // List already empty, skipping cleanup
     if (!$list.children().length) {
-        console.debug('List already empty, skipping cleanup.');
         console.timeEnd('clearEntryList');
         return;
     }
+
+    // Unsubscribe from toggle events, so that mass open won't create new drawers
+    $list.find('.inline-drawer').off('inline-drawer-toggle');
 
     // Step 1: Clean all <option> elements within <select>
     $list.find('option').each(function () {
@@ -2099,8 +2101,6 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         showNavigator: true,
         callback: async function (/** @type {object[]} */ page) {
             try {
-                // Prevent saveWorldInfo from firing timeouts while rendering the list
-                isSaveWorldInfoDisabled = true;
                 clearEntryList(worldEntriesList);
 
                 const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
@@ -2128,8 +2128,6 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
                 worldEntriesList.append(blocks);
             } catch (error) {
                 console.error('Error while rendering WI entries:', error);
-            } finally {
-                isSaveWorldInfoDisabled = false;
             }
         },
         afterSizeSelectorChange: function (e) {
@@ -2632,14 +2630,14 @@ function handleMatchCheckboxHelper({ template, entry, fieldName, data, name }) {
     const key = originalWIDataKeyMap[fieldName];
     const checkBoxElem = template.find(`input[type="checkbox"][name="${fieldName}"]`);
     checkBoxElem.data('uid', entry.uid);
-    checkBoxElem.on('input', async function () {
+    checkBoxElem.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid][fieldName] = value;
         setWIOriginalDataValue(data, uid, key, data.entries[uid][fieldName]);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    checkBoxElem.prop('checked', !!entry[fieldName]).trigger('input');
+    checkBoxElem.prop('checked', !!entry[fieldName]).trigger('input', { noSave: true });
 }
 
 /**
@@ -2733,7 +2731,7 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name,
  */
 function handleProbabilityInputHelper({ probabilityInput, data, entry, name }) {
     probabilityInput.data('uid', entry.uid);
-    probabilityInput.on('input', async function () {
+    probabilityInput.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].probability = !isNaN(value) ? value : null;
@@ -2744,9 +2742,9 @@ function handleProbabilityInputHelper({ probabilityInput, data, entry, name }) {
             }
         }
         setWIOriginalDataValue(data, uid, 'extensions.probability', data.entries[uid].probability);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    probabilityInput.val(entry.probability).trigger('input');
+    probabilityInput.val(entry.probability).trigger('input', { noSave: true });
     probabilityInput.css('width', 'calc(3em + 15px)');
 }
 
@@ -2755,12 +2753,12 @@ function handleProbabilityInputHelper({ probabilityInput, data, entry, name }) {
  */
 function handleProbabilityToggleHelper({ probabilityToggle, data, entry, name, probabilityInput, setWIOriginalDataValue, saveWorldInfo }) {
     probabilityToggle.data('uid', entry.uid);
-    probabilityToggle.on('input', async function () {
+    probabilityToggle.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].useProbability = value;
         const probabilityContainer = $(this).closest('.world_entry').find('.probabilityContainer');
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
         value ? probabilityContainer.show() : probabilityContainer.hide();
         if (value && data.entries[uid].probability === null) {
             data.entries[uid].probability = 100;
@@ -2768,9 +2766,9 @@ function handleProbabilityToggleHelper({ probabilityToggle, data, entry, name, p
         if (!value) {
             data.entries[uid].probability = null;
         }
-        probabilityInput.val(data.entries[uid].probability).trigger('input');
+        probabilityInput.val(data.entries[uid].probability).trigger('input', { noSave });
     });
-    probabilityToggle.prop('checked', true).trigger('input');
+    probabilityToggle.prop('checked', true).trigger('input', { noSave: true });
     probabilityToggle.parent().hide();
 }
 
@@ -2779,14 +2777,14 @@ function handleProbabilityToggleHelper({ probabilityToggle, data, entry, name, p
  */
 function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name }) {
     selectElem.data('uid', entry.uid);
-    selectElem.on('input', async function () {
+    selectElem.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
         data.entries[uid][entryKey] = value === 'null' ? null : value === 'true';
         setWIOriginalDataValue(data, uid, `extensions.${entryKey.replace(/[A-Z]/g, m => `_${m.toLowerCase()}`)}`, data.entries[uid][entryKey]);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    selectElem.val((entry[entryKey] === null || entry[entryKey] === undefined) ? 'null' : entry[entryKey] ? 'true' : 'false').trigger('input');
+    selectElem.val((entry[entryKey] === null || entry[entryKey] === undefined) ? 'null' : entry[entryKey] ? 'true' : 'false').trigger('input', { noSave: true });
 }
 
 /**
@@ -2794,7 +2792,7 @@ function handleBooleanSelectHelper({ selectElem, entry, entryKey, data, name }) 
  */
 function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, min, max, clamp = false }) {
     inputElem.data('uid', entry.uid);
-    inputElem.on('input', async function () {
+    inputElem.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         let value = Number($(this).val());
         if (clamp) {
@@ -2808,9 +2806,9 @@ function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, min, 
         }
         data.entries[uid][entryKey] = !isNaN(value) ? value : null;
         setWIOriginalDataValue(data, uid, `extensions.${entryKey.replace(/[A-Z]/g, m => `_${m.toLowerCase()}`)}`, data.entries[uid][entryKey]);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    inputElem.val(entry[entryKey] ?? (clamp ? min : '')).trigger('input');
+    inputElem.val(entry[entryKey] ?? (clamp ? min : '')).trigger('input', { noSave: true });
 }
 
 /**
@@ -2821,7 +2819,7 @@ function handleEntryStateSelectorHelper({ entryStateSelector, entry, data, name,
     entryStateSelector.on('click', function (event) {
         event.stopPropagation();
     });
-    entryStateSelector.on('input', async function () {
+    entryStateSelector.on('input', async function (_, { noSave = false } = {}) {
         const uid = entry.uid;
         const value = $(this).val();
         switch (value) {
@@ -2844,10 +2842,10 @@ function handleEntryStateSelectorHelper({ entryStateSelector, entry, data, name,
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
                 break;
         }
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
     const entryState = () => entry.constant === true ? 'constant' : entry.vectorized === true ? 'vectorized' : 'normal';
-    entryStateSelector.find(`option[value=${entryState()}]`).prop('selected', true).trigger('input');
+    entryStateSelector.find(`option[value=${entryState()}]`).prop('selected', true).trigger('input', { noSave: true });
 }
 
 /**
@@ -2873,6 +2871,9 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, setWI
 
 /**
  * Main function to build the WI entry editor template.
+ * @param {string} name - The name of the world info file.
+ * @param {object} data - The world info data object.
+ * @param {object} entry - The entry object to be edited.
  */
 export async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) return;
@@ -2886,28 +2887,28 @@ export async function getWorldEntry(name, data, entry) {
     // Comment
     const commentInput = headerTemplate.find('textarea[name="comment"]');
     commentInput.data('uid', entry.uid);
-    commentInput.on('input', async function (_, { skipReset } = {}) {
+    commentInput.on('input', async function (_, { skipReset = false, noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
         !skipReset && await resetScrollHeight(this);
         data.entries[uid].comment = value;
         setWIOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    commentInput.val(entry.comment).trigger('input', { skipReset: true });
+    commentInput.val(entry.comment).trigger('input', { skipReset: true, noSave: true });
 
     // Order
     const orderInput = headerTemplate.find('input[name="order"]');
     orderInput.data('uid', entry.uid);
-    orderInput.on('input', async function () {
+    orderInput.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].order = !isNaN(value) ? value : 0;
         updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });
         setWIOriginalDataValue(data, uid, 'insertion_order', data.entries[uid].order);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
-    orderInput.val(entry.order).trigger('input');
+    orderInput.val(entry.order).trigger('input', { noSave: true });
     orderInput.css('width', 'calc(3em + 15px)');
 
     // Probability
@@ -2925,7 +2926,7 @@ export async function getWorldEntry(name, data, entry) {
     const positionInput = headerTemplate.find('select[name="position"]');
     positionInput.data('uid', entry.uid);
     positionInput.on('click', e => e.stopPropagation());
-    positionInput.on('input', async function () {
+    positionInput.on('input', async function (_, { noSave = false } = {}) {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
@@ -2944,10 +2945,10 @@ export async function getWorldEntry(name, data, entry) {
         setWIOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         setWIOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
         setWIOriginalDataValue(data, uid, 'extensions.role', data.entries[uid].role);
-        await saveWorldInfo(name, data);
+        !noSave && await saveWorldInfo(name, data);
     });
     const roleValue = entry.position === world_info_position.atDepth ? String(entry.role ?? extension_prompt_roles.SYSTEM) : '';
-    headerTemplate.find(`select[name="position"] option[value="${entry.position}"][data-role="${roleValue}"]`).prop('selected', true).trigger('input');
+    headerTemplate.find(`select[name="position"] option[value="${entry.position}"][data-role="${roleValue}"]`).prop('selected', true).trigger('input', { noSave: true });
 
     // Tri-state selector
     handleEntryStateSelectorHelper({
@@ -3091,39 +3092,39 @@ export async function getWorldEntry(name, data, entry) {
         // Comment toggle
         const commentToggle = editTemplate.find('input[name="addMemo"]');
         commentToggle.data('uid', entry.uid);
-        commentToggle.on('input', async function () {
+        commentToggle.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).prop('checked');
             const commentContainer = $(this).closest('.world_entry').find('.commentContainer');
             data.entries[uid].addMemo = value;
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
             value ? commentContainer.show() : commentContainer.hide();
         });
-        commentToggle.prop('checked', true).trigger('input');
+        commentToggle.prop('checked', true).trigger('input', { noSave: true });
         commentToggle.parent().hide();
 
         // Logic AND/NOT
         const selectiveLogicDropdown = editTemplate.find('select[name="entryLogicType"]');
         selectiveLogicDropdown.data('uid', entry.uid);
         selectiveLogicDropdown.on('click', e => e.stopPropagation());
-        selectiveLogicDropdown.on('input', async function () {
+        selectiveLogicDropdown.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = Number($(this).val());
             data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ANY;
             setWIOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        editTemplate.find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`).prop('selected', true).trigger('input');
+        editTemplate.find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`).prop('selected', true).trigger('input', { noSave: true });
 
         // Selective
         const selectiveInput = editTemplate.find('input[name="selective"]');
         selectiveInput.data('uid', entry.uid);
-        selectiveInput.on('input', async function () {
+        selectiveInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).prop('checked');
             data.entries[uid].selective = value;
             setWIOriginalDataValue(data, uid, 'selective', data.entries[uid].selective);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
             const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
             const keysecondarytextpole = $(this).closest('.world_entry').find('.keysecondarytextpole');
             const keyprimaryselect = $(this).closest('.world_entry').find('.keyprimaryselect');
@@ -3131,7 +3132,7 @@ export async function getWorldEntry(name, data, entry) {
             keysecondarytextpole.css('height', keyprimaryHeight + 'px');
             value ? keysecondary.show() : keysecondary.hide();
         });
-        selectiveInput.prop('checked', true).trigger('input');
+        selectiveInput.prop('checked', true).trigger('input', { noSave: true });
         selectiveInput.parent().hide();
 
         // Character filter
@@ -3139,7 +3140,7 @@ export async function getWorldEntry(name, data, entry) {
         characterFilterLabel.text(entry.characterFilter?.isExclude ? 'Exclude Character(s)' : 'Filter to Character(s)');
         const characterExclusionInput = editTemplate.find('input[name="character_exclusion"]');
         characterExclusionInput.data('uid', entry.uid);
-        characterExclusionInput.on('input', async function () {
+        characterExclusionInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).prop('checked');
             characterFilterLabel.text(value ? 'Exclude Character(s)' : 'Filter to Character(s)');
@@ -3160,9 +3161,9 @@ export async function getWorldEntry(name, data, entry) {
                 }
             }
             setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input');
+        characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input', { noSave: true });
 
         const characterFilter = editTemplate.find('select[name="characterFilter"]');
         characterFilter.data('uid', entry.uid);
@@ -3180,21 +3181,21 @@ export async function getWorldEntry(name, data, entry) {
         const contentInput = editTemplate.find('textarea[name="content"]');
         contentInput.data('uid', entry.uid);
         contentInput.attr('id', contentInputId);
-        contentInput.on('input', async function (_, { skipCount } = {}) {
+        contentInput.on('input', async function (_, { skipCount, noSave } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).val();
             data.entries[uid].content = value;
             setWIOriginalDataValue(data, uid, 'content', data.entries[uid].content);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
             if (!skipCount) countTokensDebounced(counter, value);
         });
-        contentInput.val(entry.content).trigger('input', { skipCount: true });
+        contentInput.val(entry.content).trigger('input', { skipCount: true, noSave: true });
         editTemplate.find('.editor_maximize').attr('data-for', contentInputId);
 
         // Scan depth
         const scanDepthInput = editTemplate.find('input[name="scanDepth"]');
         scanDepthInput.data('uid', entry.uid);
-        scanDepthInput.on('input', async function () {
+        scanDepthInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const isEmpty = $(this).val() === '';
             const value = Number($(this).val());
@@ -3210,34 +3211,34 @@ export async function getWorldEntry(name, data, entry) {
             }
             data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
             setWIOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        scanDepthInput.val(entry.scanDepth ?? null).trigger('input');
+        scanDepthInput.val(entry.scanDepth ?? null).trigger('input', { noSave: true });
 
         // Group
         const groupInput = editTemplate.find('input[name="group"]');
         groupInput.data('uid', entry.uid);
-        groupInput.on('input', async function () {
+        groupInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = String($(this).val()).trim();
             data.entries[uid].group = value;
             setWIOriginalDataValue(data, uid, 'extensions.group', data.entries[uid].group);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        groupInput.val(entry.group ?? '').trigger('input');
+        groupInput.val(entry.group ?? '').trigger('input', { noSave: true });
         setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
 
         // Inclusion priority
         const groupOverrideInput = editTemplate.find('input[name="groupOverride"]');
         groupOverrideInput.data('uid', entry.uid);
-        groupOverrideInput.on('input', async function () {
+        groupOverrideInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).prop('checked');
             data.entries[uid].groupOverride = value;
             setWIOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
+        groupOverrideInput.prop('checked', entry.groupOverride).trigger('input', { noSave: true });
 
         // Group weight
         handleNumberInputHelper({
@@ -3268,17 +3269,17 @@ export async function getWorldEntry(name, data, entry) {
         delayUntilRecursionInput.data('uid', entry.uid);
         const delayUntilRecursionLevelInput = editTemplate.find('input[name="delayUntilRecursionLevel"]');
         delayUntilRecursionLevelInput.data('uid', entry.uid);
-        delayUntilRecursionInput.on('input', async function () {
+        delayUntilRecursionInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const toggled = $(this).prop('checked');
             const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
             if (!toggled) delayUntilRecursionLevelInput.val('');
             data.entries[uid].delayUntilRecursion = value;
             setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
-        delayUntilRecursionLevelInput.on('input', async function () {
+        delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input', { noSave: true });
+        delayUntilRecursionLevelInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const content = $(this).val();
             const value = content === '' ? (typeof data.entries[uid].delayUntilRecursion === 'boolean' ? data.entries[uid].delayUntilRecursion : true)
@@ -3287,9 +3288,9 @@ export async function getWorldEntry(name, data, entry) {
                         : false;
             data.entries[uid].delayUntilRecursion = value;
             setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
+        delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input', { noSave: true });
 
         // Boolean selects
         handleBooleanSelectHelper({ selectElem: editTemplate.find('select[name="caseSensitive"]'), entry, entryKey: 'caseSensitive', data, name });
@@ -3307,14 +3308,14 @@ export async function getWorldEntry(name, data, entry) {
         // Automation ID
         const automationIdInput = editTemplate.find('input[name="automationId"]');
         automationIdInput.data('uid', entry.uid);
-        automationIdInput.on('input', async function () {
+        automationIdInput.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).val();
             data.entries[uid].automationId = value;
             setWIOriginalDataValue(data, uid, 'extensions.automation_id', data.entries[uid].automationId);
-            await saveWorldInfo(name, data);
+            !noSave && await saveWorldInfo(name, data);
         });
-        automationIdInput.val(entry.automationId ?? '').trigger('input');
+        automationIdInput.val(entry.automationId ?? '').trigger('input', { noSave: true });
         setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
 
         countTokensDebounced(counter, contentInput.val());
@@ -3566,11 +3567,6 @@ async function _save(name, data) {
  * @return {Promise<void>} A promise that resolves when the world info is saved
  */
 export async function saveWorldInfo(name, data, immediately = false) {
-    // Saving is temporarily disabled
-    if (isSaveWorldInfoDisabled) {
-        return;
-    }
-
     if (!name || !data) {
         return;
     }

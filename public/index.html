@@ -2086,7 +2086,7 @@
                                             </label>
                                             <select id="openai_reasoning_effort">
                                                 <option data-i18n="openai_reasoning_effort_auto" value="auto">Auto</option>
-                                                <option data-i18n="openai_reasoning_effort_minimum" value="min">Mininum</option>
+                                                <option data-i18n="openai_reasoning_effort_minimum" value="min">Minimum</option>
                                                 <option data-i18n="openai_reasoning_effort_low" value="low">Low</option>
                                                 <option data-i18n="openai_reasoning_effort_medium" value="medium">Medium</option>
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
@@ -2098,8 +2098,8 @@
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
                                                 Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.
                                             </div>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai" data-i18n="Allocates a portion of the response length for thinking (min: 0 tokens, low: 10%, medium: 25%, high: 50%, max: 24576 tokens). Auto lets the model decide.">
-                                                Allocates a portion of the response length for thinking (min: 0 tokens, low: 10%, medium: 25%, high: 50%, max: 24576 tokens). Auto lets the model decide.
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai" data-i18n="Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.">
+                                                Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.
                                             </div>
                                         </div>
                                     </div>
@@ -3190,6 +3190,7 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
@@ -3226,6 +3227,7 @@
                                         <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b</option>
                                     </optgroup>
                                     <optgroup label="Gemma">
+                                        <option value="gemma-3n-e4b-it">gemma-3n-e4b-it</option>
                                         <option value="gemma-3-27b-it">gemma-3-27b-it</option>
                                         <option value="gemma-3-12b-it">gemma-3-12b-it</option>
                                         <option value="gemma-3-4b-it">gemma-3-4b-it</option>
@@ -3233,8 +3235,8 @@
                                     </optgroup>
                                     <optgroup label="LearnLM">
                                         <option value="learnlm-2.0-flash-experimental">learnlm-2.0-flash-experimental</option>
-                                        <option value="learnlm-1.5-pro-experimental">learnlm-1.5-pro-experimental</option>
                                     </optgroup>
+                                    <optgroup id="google_other_models" label="Other"></optgroup>
                                 </select>
                             </div>
                         </form>
@@ -3336,6 +3338,7 @@
 
                                     <!-- Full Version Models -->
                                     <optgroup id="vertexai_full_gemini_25" label="Gemini 2.5" data-mode="full">
+                                        <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
@@ -4269,8 +4272,8 @@
                                                 <small>
                                                     <span data-i18n="Scan Depth">Scan Depth</span>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="100" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_depth" id="world_info_depth_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="1000" step="1">
+                                                <input class="neo-range-input" type="number" min="0" max="1000" step="1" data-for="world_info_depth" id="world_info_depth_counter">
                                             </div>
 
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
@@ -4739,6 +4742,10 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
+                           <label for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
+                               <input id="background_thumbnails_animation" type="checkbox" />
+                               <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
+                           </label>
                             <label class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <small data-i18n="Show avatar filenames">Show avatar filenames</small>

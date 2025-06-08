@@ -15,7 +15,7 @@ const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.qu
 const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
 
 /** @type {Record<string, number[]>} */
-const dimensions = {
+export const dimensions = {
     'bg': getConfigValue('thumbnails.dimensions.bg', [160, 90]),
     'avatar': getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
 };

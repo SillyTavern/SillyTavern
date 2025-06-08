@@ -992,32 +992,73 @@ export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream) 
  * Calculate the Google budget tokens for a given reasoning effort.
  * @param {number} maxTokens Maximum tokens
  * @param {string} reasoningEffort Reasoning effort
+ * @param {string} model Model name
  * @returns {number?} Budget tokens
  */
-export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort) {
-    let budgetTokens = 0;
+export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
+    function getFlashBudget() {
+        let budgetTokens = 0;
 
-    switch (reasoningEffort) {
-        case REASONING_EFFORT.auto:
-            return null;
-        case REASONING_EFFORT.min:
-            budgetTokens = 0;
-            break;
-        case REASONING_EFFORT.low:
-            budgetTokens = Math.floor(maxTokens * 0.1);
-            break;
-        case REASONING_EFFORT.medium:
-            budgetTokens = Math.floor(maxTokens * 0.25);
-            break;
-        case REASONING_EFFORT.high:
-            budgetTokens = Math.floor(maxTokens * 0.5);
-            break;
-        case REASONING_EFFORT.max:
-            budgetTokens = maxTokens;
-            break;
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+                budgetTokens = 0;
+                break;
+            case REASONING_EFFORT.low:
+                budgetTokens = Math.floor(maxTokens * 0.1);
+                break;
+            case REASONING_EFFORT.medium:
+                budgetTokens = Math.floor(maxTokens * 0.25);
+                break;
+            case REASONING_EFFORT.high:
+                budgetTokens = Math.floor(maxTokens * 0.5);
+                break;
+            case REASONING_EFFORT.max:
+                budgetTokens = maxTokens;
+                break;
+        }
+
+        budgetTokens = Math.min(budgetTokens, 24576);
+
+        return budgetTokens;
     }
 
-    budgetTokens = Math.min(budgetTokens, 24576);
+    function getProBudget() {
+        let budgetTokens = 0;
 
-    return budgetTokens;
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+                budgetTokens = 128;
+                break;
+            case REASONING_EFFORT.low:
+                budgetTokens = Math.floor(maxTokens * 0.1);
+                break;
+            case REASONING_EFFORT.medium:
+                budgetTokens = Math.floor(maxTokens * 0.25);
+                break;
+            case REASONING_EFFORT.high:
+                budgetTokens = Math.floor(maxTokens * 0.5);
+                break;
+            case REASONING_EFFORT.max:
+                budgetTokens = maxTokens;
+                break;
+        }
+
+        budgetTokens = Math.max(Math.min(budgetTokens, 32768), 128);
+
+        return budgetTokens;
+    }
+
+    if (model.includes('flash')) {
+        return getFlashBudget();
+    }
+
+    if (model.includes('pro')) {
+        return getProBudget();
+    }
+
+    return null;
 }
