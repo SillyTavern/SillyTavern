@@ -4940,7 +4940,7 @@ const sendTextarea = document.querySelector('#send_textarea');
 setSlashCommandAutoComplete(sendTextarea);
 sendTextarea.addEventListener('input', () => {
     if (sendTextarea.value[0] == '/') {
-        sendTextarea.style.fontFamily = 'monospace';
+        sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
     } else {
         sendTextarea.style.fontFamily = null;
     }
