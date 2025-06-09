@@ -2568,6 +2568,7 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
             ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
             tags: true,
             tokenSeparators: [','],
+            // @ts-ignore
             tokenizer: customTokenizer,
             placeholder: input.attr('placeholder'),
             templateResult: item => templateStyling(item, { searchStyle: true }),

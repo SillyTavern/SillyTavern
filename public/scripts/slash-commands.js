@@ -777,7 +777,7 @@ export function initDefaultSlashCommands() {
             const isId = !isNaN(parseInt(arg));
             const groupMember = findGroupMemberId(arg, true);
             if (!groupMember) {
-                toastr.warn(`No group member found using ${isId ? 'id' : 'string'} ${arg}`);
+                toastr.warning(`No group member found using ${isId ? 'id' : 'string'} ${arg}`);
                 return '';
             }
             return groupMember[field];
@@ -2127,6 +2127,9 @@ export function initDefaultSlashCommands() {
             if (!pattern) {
                 throw new Error('Argument of \'pattern=\' cannot be empty');
             }
+            text = text.toString();
+            pattern = pattern.toString();
+            replacer = replacer.toString();
             switch (mode) {
                 case 'literal':
                     return text.replaceAll(pattern, replacer);
@@ -2914,7 +2917,7 @@ async function runCallback(args, name) {
  */
 function abortCallback({ _abortController, quiet }, reason) {
     if (quiet instanceof SlashCommandClosure) throw new Error('argument \'quiet\' cannot be a closure for command /abort');
-    _abortController.abort((reason ?? '').toString().length == 0 ? '/abort command executed' : reason, !isFalseBoolean(quiet ?? 'true'));
+    _abortController.abort((reason ?? '').toString().length == 0 ? '/abort command executed' : reason, !isFalseBoolean(quiet?.toString() ?? 'true'));
     return '';
 }
 
