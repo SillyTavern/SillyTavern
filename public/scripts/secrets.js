@@ -273,7 +273,7 @@ async function viewSecrets() {
 }
 
 /**
- * @type {Record<string, import('../../src/endpoints/secrets.js').SecretState[]|null>}
+ * @type {import('../../src/endpoints/secrets.js').SecretStateMap}
  */
 export let secret_state = {};
 

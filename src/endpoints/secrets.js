@@ -75,6 +75,10 @@ export const SECRET_KEYS = {
  */
 
 /**
+ * @typedef {Record<string, SecretState[]|null>} SecretStateMap
+ */
+
+/**
  * @typedef {{[key: string]: SecretValue[]}} SecretKeys
  * @typedef {{[key: string]: string}} FlatSecretKeys
  */
@@ -296,7 +300,6 @@ export class SecretManager {
      * @param {string} key Secret key to rename
      * @param {string} id ID of the secret to rename
      * @param {string} label New label for the secret
-     * @returns
      */
     renameSecret(key, id, label) {
         const secrets = this._readSecretsFile();
@@ -319,11 +322,11 @@ export class SecretManager {
 
     /**
      * Gets the state of all secrets (whether they exist or not)
-     * @returns {Record<string, SecretState[]|null>} Secret state
+     * @returns {SecretStateMap} Secret state
      */
     getSecretState() {
         const secrets = this._readSecretsFile();
-        /** @type {Record<string, SecretState[]|null>} */
+        /** @type {SecretStateMap} */
         const state = {};
 
         for (const key of Object.values(SECRET_KEYS)) {
@@ -438,6 +441,10 @@ export function readSecretState(directories) {
     const state = new SecretManager(directories).getSecretState();
     const result = /** @type {Record<string, boolean>} */ ({});
     for (const key of Object.values(SECRET_KEYS)) {
+        // Skip migration marker
+        if (key === SECRET_KEYS._MIGRATED) {
+            continue;
+        }
         result[key] = Array.isArray(state[key]) && state[key].length > 0;
     }
     return result;
