@@ -207,8 +207,11 @@ export const custom_prompt_post_processing_types = {
     /** @deprecated Use MERGE instead. */
     CLAUDE: 'claude',
     MERGE: 'merge',
+    MERGE_TOOLS: 'merge_tools',
     SEMI: 'semi',
+    SEMI_TOOLS: 'semi_tools',
     STRICT: 'strict',
+    STRICT_TOOLS: 'strict_tools',
     SINGLE: 'single',
 };
 
