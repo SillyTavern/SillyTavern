@@ -12,6 +12,21 @@ const REASONING_EFFORT = {
     max: 'max',
 };
 
+export const PROMPT_PROCESSING_TYPE = {
+    NONE: '',
+    /** @deprecated Use MERGE instead. */
+    CLAUDE: 'claude',
+    MERGE: 'merge',
+    MERGE_TOOLS: 'merge_tools',
+    SEMI: 'semi',
+    SEMI_TOOLS: 'semi_tools',
+    STRICT: 'strict',
+    STRICT_TOOLS: 'strict_tools',
+    SINGLE: 'single',
+    DEEPSEEK: 'deepseek',
+    DEEPSEEK_REASONER: 'deepseek-reasoner',
+};
+
 /**
  * @typedef {object} PromptNames
  * @property {string} charName Character name
@@ -34,6 +49,55 @@ export function getPromptNames(request) {
             return this.groupNames.some(name => message.startsWith(`${name}: `));
         },
     };
+}
+
+/**
+ * Adds an assistant prefix to the last message.
+ * @param {any[]} prompt Prompt messages array
+ * @returns {any[]} Transformed messages array
+ */
+function addAssistantPrefix(prompt) {
+    if (!prompt.length) {
+        return prompt;
+    }
+    const hasAnyToolMessages = prompt.some(x => x.role === 'tool');
+    if (!hasAnyToolMessages && prompt[prompt.length - 1].role === 'assistant') {
+        prompt[prompt.length - 1].prefix = true;
+    }
+    return prompt;
+}
+
+/**
+ * Applies a post-processing step to the generated messages.
+ * @param {object[]} messages Messages to post-process
+ * @param {string} type Prompt conversion type
+ * @param {PromptNames} names Prompt names
+ * @returns
+ */
+export function postProcessPrompt(messages, type, names) {
+    switch (type) {
+        case PROMPT_PROCESSING_TYPE.MERGE:
+        case PROMPT_PROCESSING_TYPE.CLAUDE:
+            return mergeMessages(messages, names, { strict: false, placeholders: false, single: false, tools: false });
+        case PROMPT_PROCESSING_TYPE.MERGE_TOOLS:
+            return mergeMessages(messages, names, { strict: false, placeholders: false, single: false, tools: true });
+        case PROMPT_PROCESSING_TYPE.SEMI:
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: false, tools: false });
+        case PROMPT_PROCESSING_TYPE.SEMI_TOOLS:
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: false, tools: true });
+        case PROMPT_PROCESSING_TYPE.STRICT:
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: false });
+        case PROMPT_PROCESSING_TYPE.STRICT_TOOLS:
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true });
+        case PROMPT_PROCESSING_TYPE.DEEPSEEK:
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: false, single: false, tools: true }));
+        case PROMPT_PROCESSING_TYPE.DEEPSEEK_REASONER:
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true }));
+        case PROMPT_PROCESSING_TYPE.SINGLE:
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: true, tools: false });
+        default:
+            return messages;
+    }
 }
 
 /**
@@ -712,9 +776,10 @@ export function convertXAIMessages(messages, names) {
  * @param {boolean} [options.strict] Enable strict mode: only allow one system message at the start, force user first message
  * @param {boolean} [options.placeholders] Add user placeholders to the messages in strict mode
  * @param {boolean} [options.single] Force every role to be user, merging all messages into one
+ * @param {boolean} [options.tools] Allow tool calls in the prompt. If false, tool call messages are removed.
  * @returns {any[]} Merged messages
  */
-export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false } = {}) {
+export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false, tools = false } = {}) {
     let mergedMessages = [];
 
     /** @type {Map<string,object>} */
@@ -756,7 +821,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                 message.content = `${message.name}: ${message.content}`;
             }
         }
-        if (message.role === 'tool') {
+        if (message.role === 'tool' && !tools) {
             message.role = 'user';
         }
         if (single) {
@@ -774,13 +839,15 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
             message.role = 'user';
         }
         delete message.name;
-        delete message.tool_calls;
-        delete message.tool_call_id;
+        if (!tools) {
+            delete message.tool_calls;
+            delete message.tool_call_id;
+        }
     });
 
     // Squash consecutive messages with the same role
     messages.forEach((message) => {
-        if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role && message.content) {
+        if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role && message.content && message.role !== 'tool') {
             mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
         } else {
             mergedMessages.push(message);
@@ -836,7 +903,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
-        return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false });
+        return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false, tools });
     }
 
     return mergedMessages;
