@@ -3433,9 +3433,8 @@ function getAutomationIdCallback(data) {
             }
         }
 
-        if ('quickReplyApi' in window) {
-            // @ts-ignore
-            for (const automationId of window['quickReplyApi'].listAutomationIds()) {
+        if ('quickReplyApi' in globalThis) {
+            for (const automationId of globalThis.quickReplyApi.listAutomationIds()) {
                 ids.add(String(automationId));
             }
         }
