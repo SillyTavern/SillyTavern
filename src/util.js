@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
 import os from 'node:os';
+import crypto from 'node:crypto';
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
@@ -371,9 +372,15 @@ export const color = chalk;
  * @returns {string} A UUIDv4 string
  */
 export function uuidv4() {
+    // Node v16.7.0+
     if ('crypto' in globalThis && 'randomUUID' in globalThis.crypto) {
         return globalThis.crypto.randomUUID();
     }
+    // Node v14.17.0+
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+    // Very insecure UUID generator, but it's better than nothing.
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
