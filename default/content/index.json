@@ -810,5 +810,13 @@
     {
         "filename": "presets/reasoning/Blank.json",
         "type": "reasoning"
+    },
+    {
+        "filename": "presets/instruct/Dots1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Dots1.json",
+        "type": "context"
     }
 ]
