@@ -13,6 +13,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
 import { t } from '../../i18n.js';
+import { getSecretLabelById } from '../../secrets.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -77,7 +78,7 @@ const FANCY_NAMES = {
     'start-reply-with': 'Start Reply With',
     'reasoning-template': 'Reasoning Template',
     'prompt-post-processing': 'Prompt Post-Processing',
-    'secret-id': 'Secret ID',
+    'secret-id': 'Secret',
 };
 
 /**
@@ -345,6 +346,15 @@ function makeFancyProfile(profile) {
                 acc[value] = EMPTY;
             }
             return acc;
+        }
+
+        // UUID is not very useful in the UI, so we replace it with a label (if available)
+        if (key === 'secret-id') {
+            const label = getSecretLabelById(profile[key]);
+            if (label) {
+                acc[value] = label;
+                return acc;
+            }
         }
 
         acc[value] = profile[key];

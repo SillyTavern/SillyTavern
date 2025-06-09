@@ -4,10 +4,12 @@ import { t } from './i18n.js';
 import { chat_completion_sources } from './openai.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { renderTemplateAsync } from './templates.js';
 import { textgen_types } from './textgen-settings.js';
 import { isTrueBoolean } from './utils.js';
@@ -139,6 +141,12 @@ const INPUT_MAP = {
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
 };
 
+const STATIC_PLACEHOLDER_KEYS = [
+    SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT,
+];
+
+const getLabel = () => moment().format('L LT');
+
 /**
  * Resolves the secret key based on the selected API, chat completion source, and text completion type.
  * @returns {string|null} The secret key corresponding to the selected API, or null if no key is found.
@@ -188,11 +196,24 @@ function resolveSecretKey() {
     return null;
 }
 
-const STATIC_PLACEHOLDER_KEYS = [
-    SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT,
-];
-
-const getLabel = () => moment().format('L LT');
+/**
+ * Gets the label of a secret by its ID.
+ * @param {string} id The ID of the secret to find.
+ * @returns {string} The label of the secret with the given ID, or an empty string if not found.
+ */
+export function getSecretLabelById(id) {
+    for (const key of Object.values(SECRET_KEYS)) {
+        const secrets = secret_state[key];
+        if (!Array.isArray(secrets)) {
+            continue;
+        }
+        const secret = secrets.find(s => s.id === id);
+        if (secret) {
+            return `${secret.label} (${secret.value})`;
+        }
+    }
+    return '';
+}
 
 export function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
@@ -239,7 +260,6 @@ async function viewSecrets() {
         return;
     }
 
-    $('#dialogue_popup').addClass('wide_dialogue_popup');
     const data = await response.json();
     const table = document.createElement('table');
     table.classList.add('responsiveTable');
@@ -262,12 +282,14 @@ export let secret_state = {};
  * @param {string} key Secret key
  * @param {string} value Secret value to write
  * @param {string} [label] (Optional) Label for the key. If not provided, generated automatically.
+ * @return {Promise<string?>} The ID of the newly created secret key, or null if no value is provided.
  */
 export async function writeSecret(key, value, label) {
     try {
         if (!value) {
             console.warn(`No value provided for ${key} in writeSecret, redirecting to deleteSecret`);
-            return deleteSecret(key);
+            await deleteSecret(key);
+            return null;
         }
 
         if (!label) {
@@ -280,13 +302,18 @@ export async function writeSecret(key, value, label) {
             body: JSON.stringify({ key, value, label }),
         });
 
-        if (response.ok) {
-            // Clear the input field
-            $(INPUT_MAP[key]).val('').trigger('input');
-            await readSecretState();
+        if (!response.ok) {
+            return null;
         }
+
+        const { id } = await response.json();
+        // Clear the input field
+        $(INPUT_MAP[key]).val('').trigger('input');
+        await readSecretState();
+        return id;
     } catch (error) {
         console.error(`Could not write secret value: ${key}`, error);
+        return null;
     }
 }
 
@@ -338,22 +365,26 @@ export async function readSecretState() {
 /**
  * Finds a secret value by key.
  * @param {string} key Secret key
- * @returns {Promise<string | undefined>} Secret value, or undefined if keys are not exposed
+ * @param {string} [id] ID of the secret to find. If not provided, will return the active secret.
+ * @returns {Promise<string?>} Secret value, or null if keys are not exposed
  */
-export async function findSecret(key) {
+export async function findSecret(key, id) {
     try {
         const response = await fetch('/api/secrets/find', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ key }),
+            body: JSON.stringify({ key, id }),
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            return data.value;
+        if (!response.ok) {
+            return null;
         }
+
+        const data = await response.json();
+        return data.value;
     } catch {
         console.error('Could not find secret value: ', key);
+        return null;
     }
 }
 
@@ -570,43 +601,22 @@ async function openKeyManagerDialog(key) {
     }
 }
 
-export async function initSecrets() {
-    $('#viewSecrets').on('click', viewSecrets);
-    $(document).on('click', '.manage-api-keys', async function () {
-        const key = $(this).data('key');
-        if (!key || !Object.values(SECRET_KEYS).includes(key)) {
-            console.error('Invalid key for manage-api-keys:', key);
-            return;
-        }
-        await openKeyManagerDialog(key);
-    });
-    $(document).on('input', Object.values(INPUT_MAP).join(','), function () {
-        const id = $(this).attr('id');
-        const value = $(this).val();
-
-        // Find the key based on the entered value
-        for (const [key, inputSelector] of Object.entries(INPUT_MAP)) {
-            if (!value || !this.matches(inputSelector)) {
-                continue;
-            }
-            const secrets = secret_state[key];
-            if (!Array.isArray(secrets)) {
-                continue;
-            }
-            const secretMatch = secrets.find(secret => secret.id === value);
-            if (secretMatch) {
-                $(this).val('');
-                return rotateSecret(key, secretMatch.id);
-            }
+function registerSecretSlashCommands() {
+    const secretKeyEnumProvider = () => Object.values(SECRET_KEYS).map(key => new SlashCommandEnumValue(key, FRIENDLY_NAMES[key] || key, enumTypes.name, enumIcons.key));
+    const secretIdEnumProvider = (/** @type {SlashCommandExecutor} */ executor, /** @type {SlashCommandScope} */ _scope) => {
+        const key = executor?.namedArgumentList?.find(x => x.name === 'key')?.value?.toString() || resolveSecretKey();
+        if (!key || !secret_state[key] || !Array.isArray(secret_state[key]) || secret_state[key].length === 0) {
+            return [];
         }
 
-        const warningElement = $(`[data-for="${id}"]`);
-        warningElement.toggle(value.length > 0);
-    });
-    $('.openrouter_authorize').on('click', authorizeOpenRouter);
+        return secret_state[key].map(secret => {
+            return new SlashCommandEnumValue(secret.id, `${secret.label} (${secret.value})`, enumTypes.name, enumIcons.key);
+        });
+    };
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'secret-id',
+        aliases: ['secret-rotate'],
         helpString: t`Sets the ID of a currently active secret key. Gets the ID of the secret key if no value is provided.`,
         returns: t`The ID of the secret key that is now active.`,
         namedArgumentList: [
@@ -614,31 +624,23 @@ export async function initSecrets() {
                 name: 'quiet',
                 description: t`Suppress toast message notifications.`,
                 isRequired: false,
+                defaultValue: String(false),
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'key',
                 description: t`The key to get the secret ID for. If not provided, will use the currently active API secrets.`,
                 isRequired: false,
-                enumProvider: () => Object.values(SECRET_KEYS).map(key => new SlashCommandEnumValue(key, FRIENDLY_NAMES[key] || key, enumTypes.name, enumIcons.key)),
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretKeyEnumProvider,
             }),
         ],
         unnamedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'id',
+            SlashCommandArgument.fromProps({
                 description: t`The ID or a label of the secret key to set as active. If not provided, will return the currently active secret ID.`,
                 isRequired: false,
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: (executor, _scope) => {
-                    const key = executor?.namedArgumentList?.find(x => x.name === 'key')?.value?.toString() || resolveSecretKey();
-                    if (!key || !secret_state[key] || !Array.isArray(secret_state[key]) || secret_state[key].length === 0) {
-                        return [];
-                    }
-
-                    return secret_state[key].map(secret => {
-                        return new SlashCommandEnumValue(secret.id, `${secret.label} (${secret.value})`, enumTypes.name, enumIcons.key);
-                    });
-                },
+                enumProvider: secretIdEnumProvider,
             }),
         ],
         callback: async (args, value) => {
@@ -689,4 +691,324 @@ export async function initSecrets() {
             return savedSecret.id;
         },
     }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'secret-delete',
+        helpString: t`Deletes a secret key by ID.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: t`Suppress toast message notifications.`,
+                isRequired: false,
+                defaultValue: String(false),
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: t`The key to delete the secret from. If not provided, will use the currently active API secrets.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretKeyEnumProvider,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`The ID or a label of the secret key to delete. If not provided, will delete the active secret.`,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretIdEnumProvider,
+            }),
+        ],
+        callback: async (args, value) => {
+            const quiet = isTrueBoolean(args?.quiet?.toString());
+            const id = value?.toString()?.trim();
+            const key = args?.key?.toString()?.trim() || resolveSecretKey();
+
+            if (!key) {
+                if (!quiet) {
+                    toastr.error(t`No secret key provided, and the key can't be resolved for the currently selected API type.`);
+                }
+                return '';
+            }
+
+            const secrets = secret_state[key];
+            if (!Array.isArray(secrets) || secrets.length === 0) {
+                if (!quiet) {
+                    toastr.error(t`No saved secrets found for the key: ${key}`);
+                }
+                return '';
+            }
+
+            const savedSecret = secrets.find(s => s.id === id) ?? secrets.find(s => s.label === id) ?? secrets.find(s => s.active);
+            if (!savedSecret) {
+                if (!quiet) {
+                    toastr.error(t`No secret found with ID: ${id} for the key: ${key}`);
+                }
+                return '';
+            }
+
+            // Delete the secret
+            await deleteSecret(key, savedSecret.id);
+            if (!quiet) {
+                toastr.success(t`Secret with ID: ${id} has been deleted for the key: ${key}`);
+            }
+
+            return savedSecret.id;
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'secret-write',
+        helpString: t`Writes a secret key with a value and an optional label.`,
+        returns: t`The ID of the newly created secret key.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: t`Suppress toast message notifications.`,
+                isRequired: false,
+                defaultValue: String(false),
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: t`The key to write the secret to. If not provided, will use the currently active API secrets.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretKeyEnumProvider,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'label',
+                description: t`The label for the secret key. If not provided, will use the current date and time.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`The value of the secret key to write.`,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        callback: async (args, value) => {
+            const quiet = isTrueBoolean(args?.quiet?.toString());
+            const key = args?.key?.toString()?.trim() || resolveSecretKey();
+
+            if (!key) {
+                if (!quiet) {
+                    toastr.error(t`No secret key provided, and the key can't be resolved for the currently selected API type.`);
+                }
+                return '';
+            }
+
+            const secrets = secret_state[key];
+            if (!Array.isArray(secrets) || secrets.length === 0) {
+                if (!quiet) {
+                    toastr.error(t`No saved secrets found for the key: ${key}`);
+                }
+                return '';
+            }
+
+            const valueStr = value?.toString()?.trim();
+            if (!valueStr) {
+                if (!quiet) {
+                    toastr.error(t`No value provided for the secret key: ${key}`);
+                }
+                return '';
+            }
+
+            const label = args?.label?.toString()?.trim() || getLabel();
+            const id = await writeSecret(key, valueStr, label);
+
+            if (!quiet) {
+                toastr.success(t`Secret has been written for the key: ${key}`);
+            }
+
+            return id || '';
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'secret-rename',
+        helpString: t`Renames a secret key by ID.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: t`Suppress toast message notifications.`,
+                isRequired: false,
+                defaultValue: String(false),
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: t`The key to rename the secret in. If not provided, will use the currently active API secrets.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretKeyEnumProvider,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'id',
+                description: t`The ID of the secret to rename. If not provided, will rename the active secret.`,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`The new label for the secret key.`,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        callback: async (args, value) => {
+            const quiet = isTrueBoolean(args?.quiet?.toString());
+            const key = args?.key?.toString()?.trim() || resolveSecretKey();
+            const id = args?.id?.toString()?.trim();
+
+            if (!key) {
+                if (!quiet) {
+                    toastr.error(t`No secret key provided, and the key can't be resolved for the currently selected API type.`);
+                }
+                return '';
+            }
+
+            const secrets = secret_state[key];
+            if (!Array.isArray(secrets) || secrets.length === 0) {
+                if (!quiet) {
+                    toastr.error(t`No saved secrets found for the key: ${key}`);
+                }
+                return '';
+            }
+
+            const newLabel = value?.toString()?.trim();
+            if (!newLabel) {
+                if (!quiet) {
+                    toastr.error(t`No new label provided for the secret key: ${key}`);
+                }
+                return '';
+            }
+
+            const savedSecret = secrets.find(s => s.id === id) ?? secrets.find(s => s.label === id) ?? secrets.find(s => s.active);
+            if (!savedSecret) {
+                if (!quiet) {
+                    toastr.error(t`No secret found with ID: ${id} for the key: ${key}`);
+                }
+                return '';
+            }
+
+            // Rename the secret
+            await renameSecret(key, savedSecret.id, newLabel);
+            if (!quiet) {
+                toastr.success(t`Secret with ID: ${id} has been renamed to "${newLabel}" for the key: ${key}`);
+            }
+
+            return savedSecret.id;
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'secret-read',
+        aliases: ['secret-find', 'secret-get'],
+        helpString: t`Reads a secret key by ID. If key exposure is disabled, this command will not work!`,
+        returns: t`The value of the secret key.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: t`Suppress toast message notifications.`,
+                isRequired: false,
+                defaultValue: String(false),
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: t`The key to read the secret from. If not provided, will use the currently active API secrets.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretKeyEnumProvider,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`The ID or a label of the secret key to read. If not provided, will return the currently active secret value.`,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: secretIdEnumProvider,
+            }),
+        ],
+        callback: async (args, value) => {
+            const quiet = isTrueBoolean(args?.quiet?.toString());
+            const key = args?.key?.toString()?.trim() || resolveSecretKey();
+            const id = value?.toString()?.trim();
+
+            if (!key) {
+                if (!quiet) {
+                    toastr.error(t`No secret key provided, and the key can't be resolved for the currently selected API type.`);
+                }
+                return '';
+            }
+
+            const secrets = secret_state[key];
+            if (!Array.isArray(secrets) || secrets.length === 0) {
+                if (!quiet) {
+                    toastr.error(t`No saved secrets found for the key: ${key}`);
+                }
+                return '';
+            }
+
+            const savedSecret = secrets.find(s => s.id === id) ?? secrets.find(s => s.label === id) ?? secrets.find(s => s.active);
+            if (!savedSecret) {
+                if (!quiet) {
+                    toastr.error(t`No secret found with ID: ${id} for the key: ${key}`);
+                }
+                return '';
+            }
+
+            const secretValue = await findSecret(key, savedSecret.id);
+            if (secretValue === null) {
+                if (!quiet) {
+                    toastr.error(t`Could not retrieve the secret value for key: ${key}. Key exposure might be disabled.`);
+                }
+                return '';
+            }
+
+            return secretValue;
+        },
+    }));
+}
+
+export async function initSecrets() {
+    $('#viewSecrets').on('click', viewSecrets);
+    $(document).on('click', '.manage-api-keys', async function () {
+        const key = $(this).data('key');
+        if (!key || !Object.values(SECRET_KEYS).includes(key)) {
+            console.error('Invalid key for manage-api-keys:', key);
+            return;
+        }
+        await openKeyManagerDialog(key);
+    });
+    $(document).on('input', Object.values(INPUT_MAP).join(','), function () {
+        const id = $(this).attr('id');
+        const value = $(this).val();
+
+        // Find the key based on the entered value
+        for (const [key, inputSelector] of Object.entries(INPUT_MAP)) {
+            if (!value || !this.matches(inputSelector)) {
+                continue;
+            }
+            const secrets = secret_state[key];
+            if (!Array.isArray(secrets)) {
+                continue;
+            }
+            const secretMatch = secrets.find(secret => secret.id === value);
+            if (secretMatch) {
+                $(this).val('');
+                return rotateSecret(key, secretMatch.id);
+            }
+        }
+
+        const warningElement = $(`[data-for="${id}"]`);
+        warningElement.toggle(value.length > 0);
+    });
+    $('.openrouter_authorize').on('click', authorizeOpenRouter);
+    registerSecretSlashCommands();
 }

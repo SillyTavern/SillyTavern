@@ -167,8 +167,9 @@ export class SecretManager {
         if (value.length <= 10) {
             return '*'.repeat(value.length);
         }
-        const visibleStart = value.slice(0, 4);
-        const visibleEnd = value.slice(-4);
+        const exposedChars = 3;
+        const visibleStart = value.slice(0, exposedChars);
+        const visibleEnd = value.slice(-exposedChars);
         const maskedMiddle = '...';
         return `${visibleStart}${maskedMiddle}${visibleEnd}`;
     }
@@ -178,6 +179,7 @@ export class SecretManager {
      * @param {string} key Secret key
      * @param {string} value Secret value
      * @param {string} label Label for the secret
+     * @returns {string} The ID of the newly created secret
      */
     writeSecret(key, value, label = 'Unlabeled') {
         const secrets = this._readSecretsFile();
@@ -188,14 +190,16 @@ export class SecretManager {
 
         this._deactivateAllSecrets(secrets[key]);
 
-        secrets[key].push({
+        const secret = {
             id: uuidv4(),
             value: value,
             label: label,
             active: true,
-        });
+        };
+        secrets[key].push(secret);
 
         this._writeSecretsFile(secrets);
+        return secret.id;
     }
 
     /**
@@ -238,9 +242,10 @@ export class SecretManager {
     /**
      * Reads the active secret value for a given key
      * @param {string} key Secret key
+     * @param {string?} id ID of the secret to read (optional)
      * @returns {string} Secret value or empty string if not found
      */
-    readSecret(key) {
+    readSecret(key, id) {
         if (!fs.existsSync(this.filePath)) {
             return '';
         }
@@ -249,7 +254,7 @@ export class SecretManager {
         const secretArray = secrets[key];
 
         if (Array.isArray(secretArray) && secretArray.length > 0) {
-            const activeSecret = secretArray.find(s => s.active);
+            const activeSecret = secretArray.find(s => id ? s.id === id : s.active);
             return activeSecret?.value || '';
         }
 
@@ -421,7 +426,7 @@ export function deleteSecret(directories, key) {
  * @returns {string} Secret value
  */
 export function readSecret(directories, key) {
-    return new SecretManager(directories).readSecret(key);
+    return new SecretManager(directories).readSecret(key, null);
 }
 
 /**
@@ -488,9 +493,9 @@ router.post('/write', (request, response) => {
         }
 
         const manager = new SecretManager(request.user.directories);
-        manager.writeSecret(key, value, label);
+        const id = manager.writeSecret(key, value, label);
 
-        return response.sendStatus(204);
+        return response.send({ id });
     } catch (error) {
         console.error('Error writing secret:', error);
         return response.sendStatus(500);
@@ -530,7 +535,7 @@ router.post('/view', (request, response) => {
 
 router.post('/find', (request, response) => {
     try {
-        const { key } = request.body;
+        const { key, id } = request.body;
 
         if (!key) {
             return response.status(400).send('Key is required');
@@ -542,13 +547,13 @@ router.post('/find', (request, response) => {
         }
 
         const manager = new SecretManager(request.user.directories);
-        const secret = manager.readSecret(key);
+        const secretValue = manager.readSecret(key, id);
 
-        if (!secret) {
+        if (!secretValue) {
             return response.sendStatus(404);
         }
 
-        return response.send({ value: secret });
+        return response.send({ value: secretValue });
     } catch (error) {
         console.error('Error finding secret:', error);
         return response.sendStatus(500);
