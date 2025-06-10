@@ -37,7 +37,6 @@ export const SECRET_KEYS = {
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
-    TTS_WEBUI: 'api_key_tts_webui',
     NANOGPT: 'api_key_nanogpt',
     TAVILY: 'api_key_tavily',
     BFL: 'api_key_bfl',
