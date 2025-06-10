@@ -1,4 +1,3 @@
-import { getRequestHeaders } from '../../../script.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { findSecret, SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
@@ -398,7 +397,7 @@ class TtsWebuiProvider {
             // Stream audio in real-time
             await this.processStreamingAudio(response);
             // Return empty string since audio is already played via AudioWorklet
-            return "";
+            return '';
         }
 
         return response;
@@ -530,58 +529,58 @@ class TtsWebuiProvider {
         const streaming = settings.streaming;
 
         const chatterboxParams = [
-            "desired_length",
-            "max_length",
-            "halve_first_chunk",
-            "exaggeration",
-            "cfg_weight",
-            "temperature",
-            "device",
-            "dtype",
-            "cpu_offload",
-            "chunked",
-            "cache_voice",
-            "tokens_per_slice",
-            "remove_milliseconds",
-            "remove_milliseconds_start",
-            "chunk_overlap_method",
-            "seed",
-        ]
+            'desired_length',
+            'max_length',
+            'halve_first_chunk',
+            'exaggeration',
+            'cfg_weight',
+            'temperature',
+            'device',
+            'dtype',
+            'cpu_offload',
+            'chunked',
+            'cache_voice',
+            'tokens_per_slice',
+            'remove_milliseconds',
+            'remove_milliseconds_start',
+            'chunk_overlap_method',
+            'seed',
+        ];
         const getParams = settings => Object.fromEntries(
             Object.entries(settings).filter(([key]) =>
-                chatterboxParams.includes(key)
-            )
+                chatterboxParams.includes(key),
+            ),
         );
 
         const requestBody = {
             model: settings.model,
             voice: voiceId,
             input: inputText,
-            response_format: "wav",
+            response_format: 'wav',
             speed: settings.speed,
             stream: streaming,
             params: getParams(settings),
         };
 
         const headers = {
-            "Content-Type": "application/json",
-            "Cache-Control": streaming ? "no-cache" : undefined,
+            'Content-Type': 'application/json',
+            'Cache-Control': streaming ? 'no-cache' : undefined,
         };
 
         if (streaming) {
-            headers["Cache-Control"] = "no-cache";
+            headers['Cache-Control'] = 'no-cache';
         }
 
         const response = await fetch(settings.provider_endpoint, {
-            method: "POST",
+            method: 'POST',
             headers,
             body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
-            toastr.error(response.statusText, "TTS Generation Failed");
+            toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(
-                `HTTP ${response.status}: ${await response.text()}`
+                `HTTP ${response.status}: ${await response.text()}`,
             );
         }
 
