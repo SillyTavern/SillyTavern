@@ -679,16 +679,4 @@ registerProcessor('pcm-processor', PCMProcessor);
             this.audioWorkletNode.port.postMessage({ volume: this.currentVolume });
         }
     }
-
-    getVolume() {
-        return this.currentVolume;
-    }
-
-    mute() {
-        this.setVolume(0);
-    }
-
-    unmute() {
-        this.setVolume(1.0);
-    }
 }
