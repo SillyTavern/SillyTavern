@@ -535,11 +535,22 @@ async function openKeyManagerDialog(key) {
     const name = FRIENDLY_NAMES[key] || key;
     const template = $(await renderTemplateAsync('secretKeyManager', { name, key }));
     template.find('button[data-action="add-secret"]').on('click', async function () {
-        const value = await Popup.show.input(t`Add Secret`, t`Enter the secret value:`);
+        let label = '';
+        const value = await Popup.show.input(t`Add Secret`, t`Enter the secret value:`, '', {
+            customInputs: [{
+                id: 'newSecretLabel',
+                type: 'text',
+                label: t`Enter a label for the secret (optional):`,
+            }],
+            onClose: popup => {
+                if (popup.result) {
+                    label = popup.inputResults.get('newSecretLabel').toString().trim();
+                }
+            },
+        });
         if (!value) {
             return;
         }
-        const label = await Popup.show.input(t`Add Secret`, t`Enter a label for the secret (optional):`, getLabel());
         await writeSecret(key, value, label);
         await renderSecretsList();
     });
