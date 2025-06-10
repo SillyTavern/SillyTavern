@@ -1,5 +1,3 @@
-import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
-import { findSecret, SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export { TtsWebuiProvider };
@@ -280,36 +278,6 @@ class TtsWebuiProvider {
 
         $('#tts_webui_seed').val(this.settings.seed);
         $('#tts_webui_seed').on('input', () => { this.onSettingsChange(); });
-
-        $('#tts_webui_key').toggleClass('success', secret_state[SECRET_KEYS.TTS_WEBUI]);
-        $('#tts_webui_key').on('click', async () => {
-            const popupText = 'TTS WebUI API Key';
-            const savedKey = secret_state[SECRET_KEYS.TTS_WEBUI] ? await findSecret(SECRET_KEYS.TTS_WEBUI) : '';
-
-            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
-                customButtons: [{
-                    text: 'Remove Key',
-                    appendAtEnd: true,
-                    result: POPUP_RESULT.NEGATIVE,
-                    action: async () => {
-                        await writeSecret(SECRET_KEYS.TTS_WEBUI, '');
-                        $('#tts_webui_key').toggleClass('success', !!secret_state[SECRET_KEYS.TTS_WEBUI]);
-                        toastr.success('API Key removed');
-                        await this.onRefreshClick();
-                    },
-                }],
-            });
-
-            if (!key) {
-                return;
-            }
-
-            await writeSecret(SECRET_KEYS.TTS_WEBUI, String(key));
-
-            toastr.success('API Key saved');
-            $('#tts_webui_key').toggleClass('success', secret_state[SECRET_KEYS.TTS_WEBUI]);
-            await this.onRefreshClick();
-        });
 
         // Update output labels
         $('#tts_webui_volume_output').text(this.settings.volume);
