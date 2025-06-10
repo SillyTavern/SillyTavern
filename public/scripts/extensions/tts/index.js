@@ -28,6 +28,7 @@ import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { GoogleTranslateTtsProvider } from './google-translate.js';
 import { KokoroTtsProvider } from './kokoro.js';
+import { TtsWebuiProvider } from './tts-webui.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -105,6 +106,7 @@ const ttsProviders = {
     System: SystemTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
+    'TTS WebUI': TtsWebuiProvider,
 };
 let ttsProvider;
 let ttsProviderName;
