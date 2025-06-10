@@ -20,7 +20,7 @@ class TtsWebuiProvider {
         model: 'chatterbox',
         speed: 1,
         volume: 1.0,
-        available_voices: ['random'],
+        available_voices: [''],
         provider_endpoint: 'http://127.0.0.1:7778/v1/audio/speech',
         streaming: false,
         stream_chunk_size: 100,
@@ -397,32 +397,8 @@ class TtsWebuiProvider {
         if (this.settings.streaming) {
             // Stream audio in real-time
             await this.processStreamingAudio(response);
-
-            // Return a silent WAV file as dummy to prevent overlapping audio
-            const silentWavHeader = new Uint8Array([
-                0x52, 0x49, 0x46, 0x46, // "RIFF"
-                0x24, 0x00, 0x00, 0x00, // File size (36 bytes)
-                0x57, 0x41, 0x56, 0x45, // "WAVE"
-                0x66, 0x6D, 0x74, 0x20, // "fmt "
-                0x10, 0x00, 0x00, 0x00, // Subchunk1Size (16)
-                0x01, 0x00,             // AudioFormat (PCM)
-                0x01, 0x00,             // NumChannels (1)
-                0x44, 0xAC, 0x00, 0x00, // SampleRate (44100)
-                0x88, 0x58, 0x01, 0x00, // ByteRate
-                0x02, 0x00,             // BlockAlign
-                0x10, 0x00,             // BitsPerSample (16)
-                0x64, 0x61, 0x74, 0x61, // "data"
-                0x00, 0x00, 0x00, 0x00,  // Subchunk2Size (0 - no audio data)
-            ]);
-
-            const silentBlob = new Blob([silentWavHeader], { type: 'audio/wav' });
-            return new Response(silentBlob, {
-                status: 200,
-                headers: {
-                    'Content-Type': 'audio/wav',
-                    'Content-Length': silentBlob.size.toString(),
-                },
-            });
+            // Return empty string since audio is already played via AudioWorklet
+            return "";
         }
 
         return response;
@@ -432,12 +408,7 @@ class TtsWebuiProvider {
         // Try to fetch voices from the provider endpoint
         try {
             const voicesEndpoint = this.settings.provider_endpoint.replace('/speech', '/voices/' + this.settings.model);
-
-            const response = await fetch(voicesEndpoint, {
-                headers: {
-                    'Authorization': secret_state[SECRET_KEYS.TTS_WEBUI] ? `Bearer ${await findSecret(SECRET_KEYS.TTS_WEBUI)}` : '',
-                },
-            });
+            const response = await fetch(voicesEndpoint);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
@@ -446,10 +417,9 @@ class TtsWebuiProvider {
             const responseJson = await response.json();
             console.info('Discovered voices from provider:', responseJson);
 
-            // Handle chatterbox format: {"voices":["Alice.wav","Emmett.wav",...]}
-            this.voices = responseJson.voices.map(voiceFile => ({
-                name: voiceFile.replace(/\.wav$/, ''),
-                voice_id: `voices/chatterbox/${voiceFile}`,
+            this.voices = responseJson.voices.map(({ value, label }) => ({
+                name: label,
+                voice_id: value,
                 lang: 'en-US',
             }));
 
@@ -635,66 +605,63 @@ registerProcessor('pcm-processor', PCMProcessor);
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
+        const settings = this.settings;
+        const streaming = settings.streaming;
+
+        const chatterboxParams = [
+            "desired_length",
+            "max_length",
+            "halve_first_chunk",
+            "exaggeration",
+            "cfg_weight",
+            "temperature",
+            "device",
+            "dtype",
+            "cpu_offload",
+            "chunked",
+            "cache_voice",
+            "tokens_per_slice",
+            "remove_milliseconds",
+            "remove_milliseconds_start",
+            "chunk_overlap_method",
+            "seed",
+        ]
+        const getParams = settings => Object.fromEntries(
+            Object.entries(settings).filter(([key]) =>
+                chatterboxParams.includes(key)
+            )
+        );
+
         const requestBody = {
-            model: this.settings.model,
+            model: settings.model,
             voice: voiceId,
             input: inputText,
-            response_format: 'wav',
-            speed: this.settings.speed,
-            stream: this.settings.streaming,
-            params: {
-                desired_length: this.settings.desired_length,
-                max_length: this.settings.max_length,
-                halve_first_chunk: this.settings.halve_first_chunk,
-                exaggeration: this.settings.exaggeration,
-                cfg_weight: this.settings.cfg_weight,
-                temperature: this.settings.temperature,
-                device: this.settings.device,
-                dtype: this.settings.dtype,
-                cpu_offload: this.settings.cpu_offload,
-                chunked: this.settings.chunked,
-                cache_voice: this.settings.cache_voice,
-                tokens_per_slice: this.settings.tokens_per_slice,
-                remove_milliseconds: this.settings.remove_milliseconds,
-                remove_milliseconds_start: this.settings.remove_milliseconds_start,
-                chunk_overlap_method: this.settings.chunk_overlap_method,
-                seed: this.settings.seed,
-            },
+            response_format: "wav",
+            speed: settings.speed,
+            stream: streaming,
+            params: getParams(settings),
         };
 
         const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': secret_state[SECRET_KEYS.TTS_WEBUI] ? `Bearer ${await findSecret(SECRET_KEYS.TTS_WEBUI)}` : '',
+            "Content-Type": "application/json",
+            "Cache-Control": streaming ? "no-cache" : undefined,
         };
 
-        if (this.settings.streaming) {
-            headers['Cache-Control'] = 'no-cache';
+        if (streaming) {
+            headers["Cache-Control"] = "no-cache";
         }
 
-        let response;
-
-        if (this.settings.streaming) {
-            // For streaming mode, make a direct request to the provider endpoint
-            response = await fetch(this.settings.provider_endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(requestBody),
-            });
-        } else {
-            // Non-streaming request
-            response = await fetch('/api/openai/custom/generate-voice', {
-                method: 'POST',
-                headers: { ...getRequestHeaders() },
-                body: JSON.stringify({
-                    provider_endpoint: this.settings.provider_endpoint,
-                    ...requestBody,
-                }),
-            });
-        }
+        const response = await fetch(settings.provider_endpoint, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(requestBody),
+        });
 
         if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(response.statusText, "TTS Generation Failed");
+            throw new Error(
+                `HTTP ${response.status}: ${await response.text()}`
+            );
         }
 
         return response;
