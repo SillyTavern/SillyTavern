@@ -1,5 +1,4 @@
-> [!IMPORTANT]  
-> 这里的信息可能已经过时或不完整，仅供您参考。请使用英文版本获取最新信息。
+<a name="readme-top"></a>
 
 ![][cover]
 
@@ -8,7 +7,7 @@
 [English](readme.md) | [German](readme-de_de.md) | 中文 | [繁體中文](readme-zh_tw.md) | [日本語](readme-ja_jp.md) | [Русский](readme-ru_ru.md) | [한국어](readme-ko_kr.md)
 
 [![GitHub Stars](https://img.shields.io/github/stars/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/network)
+[![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/forks)
 [![GitHub Issues](https://img.shields.io/github/issues/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/pulls)
 
@@ -16,307 +15,379 @@
 
 ---
 
-移动设备界面友好，多种人工智能服务或模型支持（KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale），类似 Galgame 的 老 婆 模 式，Horde SD，文本系统语音生成，世界信息（Lorebooks），可定制的界面，自动翻译，和比你所需要的更多的 Prompt。附带扩展服务，支持文本绘画生成与语音生成和基于向量数据库 的聊天信息总结。
+SillyTavern 为众多 LLM API（KoboldAI/CPP、Horde、NovelAI、Ooba、Tabby、OpenAI、OpenRouter、Claude、Mistral 等）提供统一界面，拥有移动设备友好的布局、视觉小说模式、Automatic1111 & ComfyUI API 图像生成集成、TTS、世界书（lorebooks）、可自定义的 UI、自动翻译、超乎您想象的丰富 Prompt 选项，以及通过第三方扩展实现的无限增长潜力。
 
-基于 TavernAI 1.2.8 的分叉版本
+我们有一个[文档网站](https://docs.sillytavern.app/)来回答您的大部分问题并帮助您入门。
 
-### 由 Cohee、RossAscends 和 SillyTavern 社区为您呈现
+## SillyTavern 是什么？
 
-注意：我们创建了一个 [帮助文档](https://docs.sillytavern.app/) 网站来回答各类问题与帮助您开始使用。
+SillyTavern（简称 ST）是一个本地安装的用户界面，允许您与文本生成 LLM、图像生成引擎和 TTS 语音模型进行交互。
 
-### SillyTavern 或 TavernAI 是什么？
+SillyTavern 于 2023 年 2 月作为 TavernAI 1.2.8 的一个分支开始，如今已拥有超过 200 名贡献者和 2 年的独立开发经验，并继续作为资深 AI 爱好者领先的软件。
 
-SillyTavern 是一个可以安装在电脑（和安卓手机）上的用户界面，让您可以与文本生成的人工智能互动，并与您或社区创建的角色聊天/玩角色扮演游戏。
+## 我们的愿景
 
-SillyTavern 是 TavernAI 1.2.8 的一个分支，正在进行更积极地开发，并添加了许多重要功能。在这一点上，它可以被视为完全独立的程序。
+1.  我们的目标是尽可能为用户提供 LLM Prompt 的最大效用和控制权。陡峭的学习曲线是乐趣的一部分！
+2.  我们不提供任何在线或托管服务，也不会以编程方式跟踪任何用户数据。
+3.  SillyTavern 是一个由专注的 LLM 爱好者社区为您带来的充满激情的项目，并且将永远是免费和开源的。
 
-### 分支
+## 分支
 
 SillyTavern 采用双分支进行开发，以确保所有用户都能获得流畅的使用体验。
 
-* release -🌟 **推荐给大多数用户。** 这是最稳定、最推荐的分支，只有在重大版本推送时才会更新。适合大多数用户使用。
-* staging - ⚠️ **不建议随意使用。** 该分支拥有最新功能，但要谨慎，因为它随时可能崩溃。仅适用于高级用户和爱好者。
+- `release` -🌟 **推荐给大多数用户。** 这是最稳定、最推荐的分支，只有在重大版本推送时才会更新。适合大多数用户使用。通常每月更新一次。
+- `staging` - ⚠️ **不建议随意使用。** 该分支拥有最新功能，但要谨慎，因为它随时可能崩溃。仅适用于高级用户和爱好者。每天更新数次。
 
-如果你不熟悉使用 Git 命令，或者不了解什么是分支，别担心！release 分支始终是您的首选。
+如果你不熟悉使用 git 命令行，或者不了解什么是分支，别担心！`release` 分支始终是您的首选。
 
-### 除了 SillyTavern，我还需要什么？
+## 除了 SillyTavern，我还需要什么？
 
-SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你必须接入一个能充当角色扮演的人工智能系统。支持的人工智能系统有多种：OpenAPI API (GPT)、KoboldAI（可在本地或 Google Colab 上运行）等。您可以在 [常见问题](https://docs.sillytavern.app/usage/faq/) 中阅读更多相关信息。
+由于 SillyTavern 只是一个界面，您需要接入一个 LLM 后端来进行推理。您可以使用 AI Horde 进行开箱即用的聊天。除此之外，我们还支持许多其他本地和基于云的 LLM 后端：OpenAI 兼容 API、KoboldAI、Tabby 等等。您可以在[文档](https://docs.sillytavern.app/usage/api-connections/)中阅读更多关于我们支持的 API 的信息。
 
 ### 我需要一台性能强大的电脑来运行 SillyTavern 吗？
 
-由于 SillyTavern 只是一个用户聊天界面，它对硬件性能的要求很低，可以在任何电脑上运行。需要强大性能的是人工智能系统。
+硬件要求很低：任何可以运行 NodeJS 18 或更高版本的设备都可以运行它。如果您打算在本地计算机上进行 LLM 推理，我们建议使用至少具有 6GB VRAM 的 3000 系列 NVIDIA 显卡。有关更多详细信息，请查看您后端的文档。
 
-### 移动设备支持
+### 建议的后端（非附属）
 
-> 注意
-
-> **此分叉可使用 Termux 在安卓手机上原生运行。请参考 ArroganceComplex#2659 编写的指南：**
-
-<https://rentry.org/STAI-Termux>
+- [AI Horde](https://aihorde.net/) - 使用志愿者托管的模型。无需进一步设置。
+- [KoboldCpp](https://github.com/LostRuins/koboldcpp) - 社区最喜欢的在本地运行 GGUF 模型的工具。
+- [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - 一款流行的、轻量级的、本地托管的 exl2 推理 API。
+- [OpenRouter](https://openrouter.ai) - 一个适用于许多云提供商（OpenAI、Claude、Meta Llama 等）以及流行社区模型的单一 API。
 
 ## 有问题或建议？
 
-### 我们现在有了 Discord 社区
+### Discord 服务器
 
-获取支持，或分享喜爱的角色和 Prompt：
+| [![][discord-shield-badge]][discord-link] | [加入我们的 Discord 社区！](https://discord.gg/sillytavern) 获取支持，分享喜爱的角色和 Prompt。 |
+| :---------------------------------------- | :---------------------------------------------------------------------------------------------- |
 
-### [加入 Discord 社区](https://discord.gg/sillytavern)
+或者直接与开发人员联系：
 
-***
+- Discord: cohee, rossascends, wolfsblvt
+- Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/), [/u/sillylossy](https://www.reddit.com/user/sillylossy/), [u/Wolfsblvt](https://www.reddit.com/user/Wolfsblvt/)
+- [提交 GitHub 问题](https://github.com/SillyTavern/SillyTavern/issues)
 
-直接与开发人员联系：
+### 我喜欢你的项目！我该如何贡献自己的力量？
 
-* Discord: cohee 或 rossascends
-* Reddit：/u/RossAscends 或 /u/sillylossy
-* [发布 GitHub 问题](https://github.com/SillyTavern/SillyTavern/issues)
-
-## 此版本包括
-
-* 经过大量修改的 TavernAI 1.2.8（超过 50% 的代码经过重写或优化）
-* 根据自定义规则自动重新生成消息
-* 群聊：多机器人房间，供角色与你或彼此交谈
-* 聊天书签/分支（复制当前状态下的对话）
-* 先进的 KoboldAI / TextGen 生成设置，包含大量社区预设
-* 支持世界信息（Lorebooks）：创建丰富的传说
-* 支持 Window AI 浏览器扩展（运行 Claude、GPT 4 等模型）：<https://windowai.io/>
-* [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API 连接
-* 连接 [AI Horde](https://aihorde.net/)
-* Prompt 生成格式调整
-* Webp 角色卡支持（PNG 仍是内部格式）
-
-## 扩展
-
-SillyTavern 支持扩展服务。
-
-* 角色情绪识别
-* 聊天记录自动摘要
-* 在聊天窗口发送图片，并由人工智能解释图片内容
-* 文本图像生成（5 预设，以及 "自由模式"）
-* 聊天信息的文字转语音（通过 ElevenLabs、Silero 或操作系统的语音生成）
-
-扩展服务的完整功能介绍和使用教程，请参阅 [Docs](https://docs.sillytavern.app/)。
-
-## 界面/CSS/性能，由 RossAscends 调整并优化
-
-* 针对 iOS 系统优化了界面，并支持将快捷方式保存到主屏幕，在全屏模式下打开。
-* 热键
-  * 上 = 编辑聊天中的最后一条信息
-  * Ctrl+P = 编辑聊天中最后一条用户信息
-  * 左 = 向左滑动
-  * 右 = 向右滑动（注意：当聊天窗口输入内容时，轻扫快捷键将被禁用）
-  * Ctrl+左 = 查看本地存储的变量（在浏览器控制台窗口中）
-  * 回车（选择聊天栏）= 向人工智能发送信息
-  * Ctrl+Enter = 重新生成人工智能最后的回复
-
-* 用户名更改和角色删除不再强制重新刷新页面。
-
-* 增加在页面加载时自动连接 API 的选项。
-* 增加选项，在页面加载时自动加载最近的聊天信息。
-* 更好的 Tokens 计算器 - 适用于未保存的文字，并显示永久和临时 Tokens 数量
-
-* 更好的聊天历史查询窗口
-  * 聊天的文件名以"（角色卡名称）+（创建时间）"的可读格式保存
-  * 聊天历史预览从 40 个字符增加到 300 个字符。
-  * 聊天历史排序有多种选择（按名称、创建日期、聊天记录大小）。
-
-* 默认情况下，左侧和右侧弹出的设置面板会在点击其他区域时自动关闭。
-* 点击导航面板上的 "锁按钮" 将保持弹出面板打开，并在不同聊天中记住此设置。
-* 导航面板的打开或关闭状态也会跨聊天保存。
-
-* 自定义聊天界面：
-  * 收到新消息时播放提示音
-  * 切换圆形或长方形头像样式
-  * 在台式电脑上拥有更宽的聊天窗口
-  * 可选的半透明玻璃效果聊天窗口
-  * 可定制 "主文本"、"引用文本 "和 "斜体文本 "的字体颜色。
-  * 可定制聊天界面的背景颜色和透明模糊程度
-
-## 安装
-
-*注意：SillyTavern 用于本地安装，尚未在 Colab 或其他云服务上进行全面测试。
-
-> **警告**
-
-> 切勿安装到任何受 Windows 控制的系统文件夹（Program Files, System32, etc）中。
-
-> 不要以管理员权限运行 start.bat
-
-### Windows
-
-通过 Git 安装（推荐使用，便于更新）
-
-附有精美图片示例的简易指南：
-<https://docs.sillytavern.app/installation/windows/>
-
-  1. 安装 [NodeJS](https://nodejs.org/en)（建议使用最新的 LTS 版本）
-  2. 安装 [GitHub 客户端](https://central.github.com/deployments/desktop/desktop/latest/win32)
-  3. 打开 Windows 资源管理器 (`Win+E`)
-  4. 浏览或创建一个不受 Windows 控制或监控的文件夹。(例如：C:\MySpecialFolder\)
-  5. 点击顶部的 "地址栏"，在该文件夹内打开命令提示符，输入 `cmd`，然后按回车。
-  6. 弹出黑框（CMD 命令提示符）后，键入以下其中一项并按 Enter：
-
-* 稳定分支：`git clone https://github.com/SillyTavern/SillyTavern -b release`
-* 开发分支： `git clone https://github.com/SillyTavern/SillyTavern -b staging`
-
-  7. 等待 Git 克隆完成后，双击文件夹中的 `Start.bat` 将启动 NodeJS 并开始自动安装需要的软件包。
-  8. 然后 SillyTavern 服务就会自动启动，同时在浏览器新标签页中自动打开。
-
-通过压缩包下载安装（不推荐）
-
-  1. 安装 [NodeJS](https://nodejs.org/en)（建议使用最新的 LTS 版本）
-  2. 从该 GitHub 仓库下载压缩包。(从 [Releases](https://github.com/SillyTavern/SillyTavern/releases/latest) 获取 "Source code（zip）"）。
-  3. 将压缩包解压到您选择的文件夹中
-  4. 双击或在命令行中运行 `Start.bat`。
-  5. SillyTavern 服务自动为你准备好一切后，会在你的浏览器中打开一个新标签页。
-
-### Linux
-
-  1.运行 `start.sh` 脚本。
-  2.等待自动完成，然后开始享受
-
-## API 密钥管理
-
-SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
-
-默认情况下，输入密钥并重新加载页面后，密钥会自动隐藏以保证安全。
-
-如果要想通过点击 API 输入框旁边的按钮来查看密钥，请按照以下设置：
-
-1. 打开 `config.yaml` 文件，将里面的 `allowKeysExposure` 设置为 `true`。
-2. 然后重启 SillyTavern 服务。
-
-## 远程访问
-
-这通常是为那些想在手机上使用 SillyTavern 的人准备的，而他们的电脑和手机在同一个局域网中。
-
-不过，SillyTavern 也可以被设置为允许从任何地方进行远程访问。
-
-**重要提示：SillyTavern 是单用户程序，因此任何人登录后都能看到所有的角色卡和聊天内容，并能更改任何设置。
-
-### 1.管理白名单 IP
-
-* 在你的 SillyTavern 文件夹中新建一个文本文件，名为 `whitelist.txt`。
-* 用文本编辑器打开该文件，添加你希望允许连接的 IP 地址列表。
-* 接受单个 IP 地址和 IP 范围，示例：
-
-```
-192.168.0.1
-192.168.0.20
-```
-
-或者
-
-```
-192.168.0.*
-```
-
-(上述 IP 范围将允许局域网中的任何设备连接）
-
-也接受子网掩码设置（如 10.0.0.0/24）。
-
-* 保存`whitelist.txt`文件。
-* 重启 SillyTavern 服务。
-
-然后，文件中设置的 IP 就可以访问 SillyTavern 了。
-
-*注意："config.yaml" 文件内也有一个 "whitelist" 设置，你可以用同样的方法设置它，但如果 "whitelist.txt" 文件存在，这个设置将被忽略。
-
-### 2.获取 SillyTavern 服务的 IP 地址
-
-白名单设置完成后，您需要 SillyTavern 服务的 IP 地址。
-
-如果 SillyTavern 服务设备在同一个局域网上，则使用安装 SillyTavern 服务的电脑的局域网 IP 地址：
-
-* Windows：Windows 按钮 > 在搜索栏中输入 `cmd.exe` > 在打开的控制台中输入 `ipconfig`，回车 > 然后在输出中查找 `IPv4` 地址。
-
-如果您（或其他人）想在互联网中访问你自己的 SillyTavern 服务，则需要运行 SillyTavern 服务的设备的互联网 IP 地址。
-
-* 使用运行 SillyTavern 的设备，访问 [this page](https://whatismyipaddress.com/) 并查找 `IPv4`。这是您从互联网访问时要用到的。
-
-### 3. 使用其他设备访问 SillyTavern 服务
-
-无论你最终使用的是什么 IP 地址，都要将该 IP 地址和端口号输入其他设备网络浏览器。
-
-同一局域网中的 SillyTavern 服务的典型默认地址如下：
-
-`http://192.168.0.5:8000`
-
-使用 http:// 而不是 https://
-
-### 向所有 IP 开放您的 SillyTavern 服务
-
-我们不建议这样做，但您可以打开 `config.yaml` 并将里面的 `whitelistMode` 设置改为 `false`。
-
-你必须删除（或重命名）SillyTavern 文件夹中的 `whitelist.txt` 文件（如果有的话）。
-
-这通常是不安全的做法，所以我们要求在这样做时必须设置用户名和密码。
-
-用户名和密码在`config.yaml`文件中设置。
-
-重启 SillyTavern 服务后，只要知道用户名和密码，任何设备都可以访问。
-
-### 还是无法访问？
-
-* 为 `config.yaml` 文件中的端口创建一条入站/出站防火墙规则。切勿将此误认为是路由器上的端口转发，否则，有人可能会发现你的聊天隐私，那就大错特错了。
-* 在 "设置" > "网络和 Internet" > "以太网" 中启用 "专用网络" 配置。这对 Windows 11 非常重要，否则即使添加了上述防火墙规则也无法连接。
-
-### 性能问题？
-
-尝试在用户设置面板上关闭模糊效果（快速用户界面）模式。
-
-## 我喜欢你的项目！我该如何贡献自己的力量？
-
-### 应该
-
-1. 发送 Fork 请求
-2. 使用规定的模板发送功能建议和问题报告
-3. 在提出任何问题之前，请先阅读 Readme 文件和文档
-
-#### 不应该
-
-1. 提供金钱捐赠
-2. 发送错误报告而不提供任何详细信息
-3. 提出已经回答过无数次的问题
-
-## 我在哪里可以找到以前的聊天背景图片？
-
-我们正在实行 100% 原创内容的政策，因此旧的背景图片已从该资源库中删除。
-
-不过你可以在这里找到它们的存档：
-
-<https://files.catbox.moe/1xevnc.zip>
+1.  发送 Pull Request。学习如何贡献：[CONTRIBUTING.md](../CONTRIBUTING.md)
+2.  使用提供的模板发送功能建议和问题报告。
+3.  请先阅读整个 readme 文件并查看文档网站，以避免提交重复的问题。
 
 ## 屏幕截图
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/9b5f32f0-c3b3-4102-b3f5-0e9213c0f50f">
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/913fdbaa-7d33-42f1-ae2c-89dca41c53d1">
 
-## 许可证和贡献
+## 角色卡
 
-**发布本程序是希望它能有所帮助，但不做任何保证；甚至没有明示的性能、稳定性和其他任何特定用途的可用性保证。更多详情，请参阅 GNU Affero 通用公共许可证。**
+SillyTavern 围绕“角色卡”的概念构建。角色卡是设定 LLM 行为的 Prompt 集合，是在 SillyTavern 中进行持久对话所必需的。它们的功能类似于 ChatGPT 的 GPTs 或 Poe 的 bots。角色卡的内容可以是任何东西：一个抽象的场景、一个为特定任务量身定制的助手、一个著名人物或一个虚构角色。
 
-**This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.**
+要在不选择角色卡的情况下进行快速对话或仅测试 LLM 连接，只需在打开 SillyTavern 后在欢迎屏幕的输入栏中键入您的 Prompt 输入。这将创建一个空的“助手”角色卡，您可以稍后自定义。
 
-* TAI Base by Humi: Unknown license
-* Cohee's modifications and derived code: AGPL v3
-* RossAscends' additions: AGPL v3
-* Portions of CncAnon's TavernAITurbo mod: Unknown license
-* kingbri's various commits and suggestions (<https://github.com/bdashore3>)
-* StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
-* Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
-* Thanks Pygmalion University for being awesome testers and suggesting cool features!
-* Thanks oobabooga for compiling presets for TextGen
-* KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
-* Noto Sans font by Google (OFL license)
-* Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-* AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
-* Linux startup script by AlpinDale
-* Thanks paniphons for providing a FAQ document
-* 10K Discord Users Celebratory Background by @kallmeflocc
-* Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
-* Korean translation by @doloroushyeonse
-* 中文翻译由 [@XXpE3](https://github.com/XXpE3) 完成，中文 ISSUES 可以联系 @XXpE3
+要大致了解如何定义角色卡，请参阅默认角色（Seraphina）或从“下载扩展和资源”菜单中下载选定的社区制作卡片。
+
+## 主要功能
+
+- 高级文本生成设置，包含许多社区制作的预设
+- 世界书支持：创建丰富的传说或节省角色卡上的 Token
+- 群聊：多机器人房间，供角色与您或彼此交谈
+- 丰富的 UI 自定义选项：主题颜色、背景图片、自定义 CSS 等
+- 用户角色：让 AI 了解一些关于您的信息，以获得更强的沉浸感
+- 内置 RAG 支持：将文档添加到您的聊天中供 AI 参考
+- 广泛的聊天命令子系统和自己的[脚本引擎](https://docs.sillytavern.app/usage/st-script/)
+
+## 扩展
+
+SillyTavern 支持扩展。
+
+- 角色情绪表达
+- 聊天记录自动摘要
+- 自动 UI 和聊天翻译
+- Stable Diffusion/FLUX/DALL-E 图像生成
+- AI 回复消息的文本转语音（通过 ElevenLabs、Silero 或操作系统的 TTS）
+- 网络搜索功能，为您的 Prompt 添加额外的现实世界背景信息
+- 更多扩展可从“下载扩展和资源”菜单中下载。
+
+有关如何使用它们的使用教程，请参阅[文档](https://docs.sillytavern.app/)。
+
+## ⌛ 安装
+
+### 🪟 Windows
+
+> \[!WARNING]
+>
+> - 请勿安装到任何受 Windows 控制的文件夹（Program Files、System32 等）中。
+> - 请勿以管理员权限运行 Start.bat
+> - 无法在 Windows 7 上安装，因为它无法运行 NodeJS 18.16
+
+#### 通过 Git 安装（推荐）
+
+1.  安装 [NodeJS](https://nodejs.org/en)（建议使用最新的 LTS 版本）
+2.  安装 [Git for Windows](https://gitforwindows.org/)
+3.  打开 Windows 资源管理器 (`Win+E`)
+4.  浏览或创建一个不受 Windows 控制或监控的文件夹（例如：C:\MySpecialFolder\)
+5.  通过点击顶部的“地址栏”，输入 `cmd`，然后按 Enter，在该文件夹内打开命令提示符。
+6.  弹出黑框（命令提示符）后，键入以下其中一项并按 Enter：
+
+- Release 分支：`git clone https://github.com/SillyTavern/SillyTavern -b release`
+- Staging 分支： `git clone https://github.com/SillyTavern/SillyTavern -b staging`
+
+7.  等待所有内容克隆完成后，双击 `Start.bat` 以使 NodeJS 安装其依赖项。
+8.  然后服务器将启动，SillyTavern 将在您的浏览器中弹出。
+
+#### 通过 GitHub Desktop 安装
+
+（这**仅**允许在 GitHub Desktop 中使用 git，如果您也想在命令行上使用 `git`，则还需要安装 [Git for Windows](https://gitforwindows.org/)）
+
+1. 安装 [NodeJS](https://nodejs.org/en)（建议使用最新的 LTS 版本）
+2. 安装 [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
+3. 安装 GitHub Desktop 后，点击 `Clone a repository from the internet....`（注意：此步骤**无需**创建 GitHub 帐户）
+4. 在菜单中，点击 URL 选项卡，输入此 URL `https://github.com/SillyTavern/SillyTavern`，然后点击 Clone。您可以更改本地路径以更改 SillyTavern 的下载位置。
+5. 要打开 SillyTavern，请使用 Windows 资源管理器浏览到克隆存储库的文件夹。默认情况下，存储库将克隆到此处：`C:\Users\[您的 Windows 用户名]\Documents\GitHub\SillyTavern`
+6. 双击 `start.bat` 文件。（注意：文件名的 `.bat` 部分可能被您的操作系统隐藏，在这种情况下，它将显示为一个名为“`Start`”的文件。双击此文件以运行 SillyTavern）
+7. 双击后，应打开一个大的黑色命令控制台窗口，SillyTavern 将开始安装其运行所需的组件。
+8. 安装过程完成后，如果一切正常，命令控制台窗口应如下所示，并且您的浏览器中应打开一个 SillyTavern 选项卡：
+9. 连接到任何[支持的 API](https://docs.sillytavern.app/usage/api-connections/) 并开始聊天！
+
+### 🐧 Linux & 🍎 MacOS
+
+对于 MacOS / Linux，所有这些都将在终端中完成。
+
+1.  安装 git 和 nodeJS（具体方法取决于您的操作系统）
+2.  克隆仓库
+
+- Release 分支：`git clone https://github.com/SillyTavern/SillyTavern -b release`
+- Staging 分支： `git clone https://github.com/SillyTavern/SillyTavern -b staging`
+
+3.  `cd SillyTavern` 导航到安装文件夹。
+4.  使用以下命令之一运行 `start.sh` 脚本：
+
+- `./start.sh`
+- `bash start.sh`
+
+## 🐋 通过 Docker 安装
+
+这些说明假定您已安装 Docker，能够访问命令行以安装容器，并熟悉其常规操作。
+
+### 使用 GitHub Container Registry
+
+#### Docker Compose (最简单)
+
+从 [GitHub 仓库](https://github.com/SillyTavern/SillyTavern/blob/release/docker/docker-compose.yml) 获取 `docker-compose.yml` 文件，并在文件所在目录中运行以下命令。这将从 GitHub Container Registry 中拉取最新的 release 镜像并启动容器，自动创建必要的卷。
+
+```shell
+docker-compose up
+```
+
+根据您的需求自定义 `docker-compose.yml` 文件。默认端口为 8000。如果您想使用环境变量调整服务器配置，请在此处阅读文档：[链接](https://docs.sillytavern.app/administration/config-yaml/#environment-variables)。
+
+#### Docker CLI (高级)
+
+您将需要两个强制性的目录映射和一个端口映射才能使 SillyTavern 正常运行。在命令中，替换以下位置中的选项：
+
+#### 容器变量
+
+##### 卷映射
+
+- `CONFIG_PATH` - SillyTavern 配置文件将存储在主机上的目录
+- `DATA_PATH` - SillyTavern 用户数据（包括角色）将存储在主机上的目录
+- `PLUGINS_PATH` - (可选) SillyTavern 服务器插件将存储在主机上的目录
+- `EXTENSIONS_PATH` - (可选) 全局 UI 扩展将存储在主机上的目录
+
+##### 端口映射
+
+- `PUBLIC_PORT` - 暴露流量的端口。这是强制性的，因为您将从其虚拟机容器外部访问实例。**在未实现单独的安全服务的情况下，请勿将其暴露给互联网。**
+
+##### 附加设置
+
+- `SILLYTAVERN_VERSION` - 在此 GitHub 页面的右侧，您会看到“Packages”。选择“sillytavern”包，您将看到镜像版本。镜像标签“latest”将使您与当前 release 保持同步。您还可以使用指向相应分支的每日镜像的“staging”标签。
+
+#### 运行容器
+
+1.  打开您的命令行
+2.  在您要存储配置和数据文件的文件夹中运行以下命令：
+
+```bash
+SILLYTAVERN_VERSION="latest"
+PUBLIC_PORT="8000"
+CONFIG_PATH="./config"
+DATA_PATH="./data"
+PLUGINS_PATH="./plugins"
+EXTENSIONS_PATH="./extensions"
+
+docker run \
+  --name="sillytavern" \
+  -p "$PUBLIC_PORT:8000/tcp" \
+  -v "$CONFIG_PATH:/home/node/app/config:rw" \
+  -v "$DATA_PATH:/home/node/app/data:rw" \
+  -v "$EXTENSIONS_PATH:/home/node/app/public/scripts/extensions/third-party:rw" \
+  -v "$PLUGINS_PATH:/home/node/app/plugins:rw" \
+  ghcr.io/sillytavern/sillytavern:"$SILLYTAVERN_VERSION"
+```
+
+> 默认情况下，容器将在前台运行。如果要在后台运行它，请将 `-d` 标志添加到 `docker run` 命令中。
+
+### 自己构建镜像
+
+我们有一个关于在 Docker 中使用 SillyTavern 的综合指南[在此处](http://docs.sillytavern.app/installation/docker/)，涵盖了 Windows、macOS 和 Linux 上的安装！如果您希望自己构建镜像，请阅读它。
+
+## ⚡ 通过 SillyTavern Launcher 安装
+
+SillyTavern Launcher 是一个安装向导，可帮助您进行多种选项的设置，包括为本地推理安装后端。
+
+### 对于 Windows 用户
+
+1.  在键盘上：按 **`WINDOWS + R`** 打开“运行”对话框。然后，运行以下命令安装 git：
+
+```shell
+cmd /c winget install -e --id Git.Git
+```
+
+2.  在键盘上：按 **`WINDOWS + E`** 打开文件资源管理器，然后导航到要安装启动器的文件夹。进入所需文件夹后，在地址栏中键入 `cmd` 并按 Enter。然后，运行以下命令：
+
+```shell
+git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher && start installer.bat
+```
+
+### 对于 Linux 用户
+
+1.  打开您喜欢的终端并安装 git
+2.  使用以下命令克隆 SillyTavern-Launcher：
+
+```shell
+git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher
+```
+
+3.  使用以下命令启动 installer.sh：
+
+```shell
+chmod +x install.sh && ./install.sh
+```
+
+4.  安装后使用以下命令启动 launcher.sh：
+
+```shell
+chmod +x launcher.sh && ./launcher.sh
+```
+
+### 对于 Mac 用户
+
+1.  打开终端并使用以下命令安装 brew：
+
+```shell
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+2.  使用以下命令安装 git：
+
+```shell
+brew install git
+```
+
+3.  使用以下命令克隆 SillyTavern-Launcher：
+
+```shell
+git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher
+```
+
+4.  使用以下命令启动 installer.sh：
+
+```shell
+chmod +x install.sh && ./install.sh
+```
+
+5.  安装后使用以下命令启动 launcher.sh：
+
+```shell
+chmod +x launcher.sh && ./launcher.sh
+```
+
+## 📱 通过 Termux 在 Android OS 上安装
+
+> \[!NOTE]
+> **SillyTavern 可以在 Android 设备上使用 Termux 原生运行，但我们不为此用例提供官方支持。**
+>
+> **请参阅 ArroganceComplex#2659 编写的本指南：**
+>
+> - <https://rentry.org/STAI-Termux>
+
+**不支持的平台：android arm LEtime-web。** 32 位 Android 需要一个无法通过 npm 安装的外部依赖项。使用以下命令安装它：`pkg install esbuild`。然后运行常规安装步骤。
+
+## 命令行参数
+
+您可以将命令行参数传递给 SillyTavern 服务器启动脚本，以覆盖 `config.yaml` 中的某些设置。
+
+### 示例
+
+```shell
+node server.js --port 8000 --listen false
+# 或
+npm run start -- --port 8000 --listen false
+# 或 (仅限 Windows)
+Start.bat --port 8000 --listen false
+```
+
+### 支持的参数
+
+> \[!TIP]
+> 所有参数都不是必需的。如果您不提供它们，SillyTavern 将使用 `config.yaml` 中的设置。
+
+| 选项                    | 描述                                          | 类型    |
+| ----------------------- | --------------------------------------------- | ------- |
+| `--version`             | 显示版本号                                    | boolean |
+| `--configPath`          | 覆盖 config.yaml 文件的路径                   | string  |
+| `--dataRoot`            | 数据存储的根目录                              | string  |
+| `--port`                | 设置 SillyTavern 将在其下运行的端口           | number  |
+| `--listen`              | SillyTavern 将侦听所有网络接口                | boolean |
+| `--whitelist`           | 启用白名单模式                                | boolean |
+| `--basicAuthMode`       | 启用基本身份验证                              | boolean |
+| `--enableIPv4`          | 启用 IPv4 协议                                | boolean |
+| `--enableIPv6`          | 启用 IPv6 协议                                | boolean |
+| `--listenAddressIPv4`   | 要侦听的特定 IPv4 地址                        | string  |
+| `--listenAddressIPv6`   | 要侦听的特定 IPv6 地址                        | string  |
+| `--dnsPreferIPv6`       | DNS 首选 IPv6                                 | boolean |
+| `--ssl`                 | 启用 SSL                                      | boolean |
+| `--certPath`            | 您的证书文件路径                              | string  |
+| `--keyPath`             | 您的私钥文件路径                              | string  |
+| `--autorun`             | 自动在浏览器中启动 SillyTavern                | boolean |
+| `--autorunHostname`     | 自动运行主机名                                | string  |
+| `--autorunPortOverride` | 覆盖自动运行的端口                            | string  |
+| `--avoidLocalhost`      | 在自动模式下避免使用 'localhost' 进行自动运行 | boolean |
+| `--corsProxy`           | 启用 CORS 代理                                | boolean |
+| `--requestProxyEnabled` | 为传出请求启用代理                            | boolean |
+| `--requestProxyUrl`     | 请求代理 URL（HTTP 或 SOCKS 协议）            | string  |
+| `--requestProxyBypass`  | 请求代理绕过列表（以空格分隔的主机列表）      | array   |
+| `--disableCsrf`         | 禁用 CSRF 保护（不推荐）                      | boolean |
+
+## 远程连接
+
+这通常适用于那些想在手机上使用 SillyTavern，而他们的电脑在同一 Wi-Fi 网络上运行 ST 服务器的人。但是，它也可以用于允许从任何地方进行远程连接。
+
+请在[文档](https://docs.sillytavern.app/usage/remoteconnections/)中阅读有关如何设置远程连接的详细指南。
+
+您可能还需要配置 SillyTavern 用户配置文件（可选密码保护）：[用户](https://docs.sillytavern.app/administration/multi-user/)。
+
+## 许可证和致谢
+
+**本程序的分发是希望它能有用，但不提供任何保证；甚至没有对适销性或特定用途适用性的默示保证。有关更多详细信息，请参阅 GNU Affero 通用公共许可证。**
+
+- [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 by Humi: MIT 许可证
+- CncAnon 的 TavernAITurbo mod 的部分内容经许可使用
+- 视觉小说模式的灵感来自 PepperTaco 的工作 (<https://github.com/peppertaco/Tavern/>)
+- Noto Sans 字体 by Google (OFL 许可证)
+- 图标主题 by Font Awesome <https://fontawesome.com> (图标: CC BY 4.0, 字体: SIL OFL 1.1, 代码: MIT 许可证)
+- 默认内容由 @OtisAlejandro (Seraphina 角色和世界书) 和 @kallmeflocc (10K Discord 用户庆祝背景) 提供
+- Docker 指南由 [@mrguymiah](https://github.com/mrguymiah) 和 [@Bronya-Rand](https://github.com/Bronya-Rand) 提供
+- kokoro-js 库由 [@hexgrad](https://github.com/hexgrad) 提供 (Apache-2.0 许可证)
+- 中文翻译由 [@XXpE3](https://github.com/XXpE3) 完成，中文 ISSUES 可以联系 @XXpE3
+
+## 主要贡献者
+
+[![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)](https://github.com/SillyTavern/SillyTavern/graphs/contributors)
 
 <!-- LINK GROUP -->
+
 [cover]: https://github.com/user-attachments/assets/01a6ae9a-16aa-45f2-8bff-32b5dc587e44
+[discord-link]: https://discord.gg/sillytavern
+[discord-shield-badge]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=for-the-badge
