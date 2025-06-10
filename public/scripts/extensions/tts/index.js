@@ -104,9 +104,9 @@ const ttsProviders = {
     Silero: SileroTtsProvider,
     SpeechT5: SpeechT5TtsProvider,
     System: SystemTtsProvider,
+    'TTS WebUI': TtsWebuiProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
-    'TTS WebUI': TtsWebuiProvider,
 };
 let ttsProvider;
 let ttsProviderName;

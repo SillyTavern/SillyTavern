@@ -42,18 +42,14 @@ class TtsWebuiProvider {
     get settingsHtml() {
         let html = `
         <h4 class="textAlignCenter">TTS WebUI Settings</h4>
-        
+
         <div class="flex gap10px marginBot10 alignItemsFlexEnd">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_endpoint">Provider Endpoint:</label>
                 <input id="tts_webui_endpoint" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.provider_endpoint}"/>
             </div>
-            <div id="tts_webui_key" class="menu_button menu_button_icon padding10">
-                <i class="fa-solid fa-key"></i>
-                <span>API Key</span>
-            </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_model">Model:</label>
@@ -64,7 +60,7 @@ class TtsWebuiProvider {
                 <input id="tts_webui_voices" type="text" class="text_pole" value="${this.defaultSettings.available_voices.join()}"/>
             </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_streaming" class="checkbox_label alignItemsCenter flexGap5">
@@ -77,10 +73,10 @@ class TtsWebuiProvider {
                 <input type="range" id="tts_webui_volume" value="${this.defaultSettings.volume}" min="0" max="2" step="0.1">
             </div>
         </div>
-        
+
         <hr>
         <h4 class="textAlignCenter">Generation Settings</h4>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_exaggeration">Exaggeration: <span id="tts_webui_exaggeration_output">${this.defaultSettings.exaggeration}</span></label>
@@ -91,7 +87,7 @@ class TtsWebuiProvider {
                 <input id="tts_webui_cfg_weight" type="range" value="${this.defaultSettings.cfg_weight}" min="0" max="2" step="0.1" />
             </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_temperature">Temperature: <span id="tts_webui_temperature_output">${this.defaultSettings.temperature}</span></label>
@@ -102,10 +98,10 @@ class TtsWebuiProvider {
                 <input id="tts_webui_seed" type="text" class="text_pole" value="${this.defaultSettings.seed}"/>
             </div>
         </div>
-        
+
         <hr>
         <h4 class="textAlignCenter">Chunking</h4>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_chunked" class="checkbox_label alignItemsCenter flexGap5">
@@ -120,7 +116,7 @@ class TtsWebuiProvider {
                 </label>
             </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_desired_length">Desired Length: <span id="tts_webui_desired_length_output">${this.defaultSettings.desired_length}</span></label>
@@ -131,10 +127,10 @@ class TtsWebuiProvider {
                 <input id="tts_webui_max_length" type="range" value="${this.defaultSettings.max_length}" min="50" max="450" step="5" />
             </div>
         </div>
-        
+
         <hr>
         <h4 class="textAlignCenter">Model</h4>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_device">Device:</label>
@@ -154,7 +150,7 @@ class TtsWebuiProvider {
                 </select>
             </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_cpu_offload" class="checkbox_label alignItemsCenter flexGap5">
@@ -166,10 +162,10 @@ class TtsWebuiProvider {
                 <!-- Empty for spacing -->
             </div>
         </div>
-        
+
         <hr>
         <h4 class="textAlignCenter">Streaming (Advanced Settings)</h4>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_tokens_per_slice">Tokens Per Slice: <span id="tts_webui_tokens_per_slice_output">${this.defaultSettings.tokens_per_slice}</span></label>
@@ -183,7 +179,7 @@ class TtsWebuiProvider {
                 </select>
             </div>
         </div>
-        
+
         <div class="flex gap10px marginBot10">
             <div class="flex1 flexFlowColumn">
                 <label for="tts_webui_remove_milliseconds">Remove Milliseconds: <span id="tts_webui_remove_milliseconds_output">${this.defaultSettings.remove_milliseconds}</span></label>
