@@ -516,12 +516,14 @@ export class SlashCommandParser {
                     ?? []
                 ;
                 try {
-                    const qrApi = (await import('../extensions/quick-reply/index.js')).quickReplyApi;
-                    options.push(...qrApi.listSets()
-                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
-                        .flat()
-                        .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
-                    );
+                    if ('quickReplyApi' in globalThis) {
+                        const qrApi = globalThis.quickReplyApi;
+                        options.push(...qrApi.listSets()
+                            .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
+                            .flat()
+                            .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
+                        );
+                    }
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
                     executor.unnamedArgumentList[0]?.value.toString(),

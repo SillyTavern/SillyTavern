@@ -181,7 +181,7 @@ const init = async () => {
 
     eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
 
-    window['quickReplyApi'] = quickReplyApi;
+    globalThis.quickReplyApi = quickReplyApi;
 };
 const finalizeInit = async () => {
     debug('executing startup');
