@@ -141,10 +141,6 @@ const INPUT_MAP = {
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
 };
 
-const STATIC_PLACEHOLDER_KEYS = [
-    SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT,
-];
-
 const getLabel = () => moment().format('L LT');
 
 /**
@@ -217,9 +213,6 @@ export function getSecretLabelById(id) {
 
 export function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
-        if (STATIC_PLACEHOLDER_KEYS.includes(secret_key)) {
-            continue;
-        }
         const validSecret = !!secret_state[secret_key];
         const placeholder = $('#viewSecrets').attr(validSecret ? 'key_saved_text' : 'missing_key_text');
         const label = getActiveSecretLabel(secret_key);

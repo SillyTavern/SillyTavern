@@ -3302,16 +3302,15 @@
                                     <div id="vertexai_service_account_status" class="info-block marginTopBot5" style="display: none;">
                                         <span id="vertexai_service_account_info"></span>
                                     </div>
-                                    <textarea id="vertexai_service_account_json" class="text_pole textarea_compact" rows="2" placeholder="Paste your Service Account JSON content here"></textarea>
-                                    <div data-for="vertexai_service_account_json" class="neutral_warning" data-i18n="For privacy reasons, your Service Account JSON content will be hidden after you click 'Connect'.">
-                                        For privacy reasons, your Service Account JSON content will be hidden after you click 'Connect'.
+                                    <div class="flex-container">
+                                        <input id="vertexai_service_account_json" name="vertexai_service_account_json" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                        <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="vertexai_service_account_json"></div>
+                                    </div>
+                                    <div data-for="vertexai_service_account_json" class="neutral_warning" data-i18n="For privacy reasons, your Service Account JSON content will be hidden after you click 'Validate JSON'.">
+                                        For privacy reasons, your Service Account JSON content will be hidden after you click 'Validate JSON'.
                                     </div>
                                     <div class="flex-container">
                                         <button type="button" id="vertexai_validate_service_account" class="menu_button menu_button_icon" data-i18n="Validate JSON">Validate JSON</button>
-                                        <button type="button" id="vertexai_manage_service_account" class="menu_button menu_button_icon manage-api-keys" data-key="vertexai_service_account_json">
-                                            <i class="fa-solid fa-key"></i>
-                                            <span data-i18n="Manage">Manage</span>
-                                        </button>
                                     </div>
                                 </div>
                             </div>
