@@ -12,7 +12,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { renderTemplateAsync } from './templates.js';
 import { textgen_types } from './textgen-settings.js';
-import { isTrueBoolean } from './utils.js';
+import { copyText, isTrueBoolean } from './utils.js';
 
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
@@ -565,9 +565,22 @@ async function openKeyManagerDialog(key) {
         const itemBlocks = [];
         for (const secret of secrets) {
             const itemTemplate = $(await renderTemplateAsync('secretKeyManagerListItem', secret));
+            itemTemplate.find('[data-action="copy-id"]').on('click', async function () {
+                await copyText(secret.id);
+                toastr.info(t`Secret ID copied to clipboard.`);
+            });
             itemTemplate.find('button[data-action="rotate-secret"]').on('click', async function () {
                 await rotateSecret(key, secret.id);
                 await renderSecretsList();
+            });
+            itemTemplate.find('button[data-action="copy-secret"]').on('click', async function () {
+                const secretValue = await findSecret(key, secret.id);
+                if (secretValue === null) {
+                    toastr.error(t`The key exposure might be disabled by the server config.`, t`Failed to copy secret value`);
+                    return;
+                }
+                await copyText(secretValue);
+                toastr.info(t`Secret value copied to clipboard.`);
             });
             itemTemplate.find('button[data-action="rename-secret"]').on('click', async function () {
                 const label = await Popup.show.input(t`Rename Secret`, t`Enter new label for the secret:`, secret?.label || getLabel());
