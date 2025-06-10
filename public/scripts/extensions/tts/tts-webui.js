@@ -22,7 +22,7 @@ class TtsWebuiProvider {
         volume: 1.0,
         available_voices: [''],
         provider_endpoint: 'http://127.0.0.1:7778/v1/audio/speech',
-        streaming: false,
+        streaming: true,
         stream_chunk_size: 100,
         desired_length: 80,
         max_length: 200,
