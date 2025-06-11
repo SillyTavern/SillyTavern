@@ -5430,7 +5430,6 @@ export function isImageInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'learnlm',
-        '-ab-test',
         // MistralAI
         'mistral-small-2503',
         'mistral-small-latest',

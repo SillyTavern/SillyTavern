@@ -387,7 +387,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-1.5-flash-8b-exp-0924',
         ];
 
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) || /-ab-test$/.test(m);
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
