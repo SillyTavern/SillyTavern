@@ -331,7 +331,7 @@ Start.bat --port 8000 --listen false
 | `--browserLaunchPort`            | 覆蓋自動啟動的端口設定                      | string  |
 | `--browserLaunchAvoidLocalhost`  | 在自動模式下避免使用 'localhost'            | boolean |
 | `--listen`                       | SillyTavern 是否可監聽所有網路接口。        | boolean |
-| `--corsProxy`                    | 啟用 CORS 代理。若未提供，                  | boolean |
+| `--corsProxy`                    | 啟用 CORS 代理。                       | boolean |
 | `--disableCsrf`                  | 停用 CSRF 保護                              | boolean |
 | `--ssl`                          | 啟用 SSL                                    | boolean |
 | `--certPath`                     | 設定您證書文件的路徑                        | string  |
