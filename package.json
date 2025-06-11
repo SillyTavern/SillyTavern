@@ -46,7 +46,7 @@
         "dompurify": "^3.2.6",
         "droll": "^0.2.1",
         "express": "^4.21.0",
-        "form-data": "^4.0.2",
+        "form-data": "^4.0.3",
         "fuse.js": "^7.1.0",
         "google-translate-api-browser": "^3.0.1",
         "google-translate-api-x": "^10.7.2",
