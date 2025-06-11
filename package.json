@@ -77,7 +77,7 @@
         "seedrandom": "^3.0.5",
         "showdown": "^2.1.0",
         "sillytavern-transformers": "2.14.6",
-        "simple-git": "^3.27.0",
+        "simple-git": "^3.28.0",
         "slidetoggle": "^4.0.0",
         "tiktoken": "^1.0.21",
         "url-join": "^5.0.0",
