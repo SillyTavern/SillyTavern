@@ -1046,9 +1046,8 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
         }
 
         return response.sendStatus(200);
-    }
-    catch {
-        console.error('An error occurred, character edit invalidated.');
+    } catch (err) {
+        console.error('An error occurred, character edit invalidated.', err);
     }
 });
 
