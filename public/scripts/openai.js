@@ -1937,13 +1937,6 @@ function saveModelList(data) {
                     }));
             }
         });
-
-        const selectedModel = model_list.find(model => model.id === oai_settings.google_model);
-        if (model_list.length > 0 && (!selectedModel || !oai_settings.google_model)) {
-            oai_settings.google_model = model_list[0].id;
-        }
-
-        $('#model_google_select').val(oai_settings.google_model).trigger('change');
     }
 }
 
@@ -5423,6 +5416,7 @@ export function isImageInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'learnlm',
+        '-ab-test',
         // MistralAI
         'mistral-small-2503',
         'mistral-small-latest',
