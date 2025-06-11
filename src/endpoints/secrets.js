@@ -168,14 +168,15 @@ export class SecretManager {
         if (allowKeysExposure) {
             return value;
         }
-        if (value.length <= 10) {
-            return '*'.repeat(value.length);
-        }
+        const threshold = 10;
         const exposedChars = 3;
-        const visibleStart = value.slice(0, exposedChars);
+        const placeholder = '*';
+        if (value.length <= threshold) {
+            return placeholder.repeat(threshold);
+        }
         const visibleEnd = value.slice(-exposedChars);
-        const maskedMiddle = '...';
-        return `${visibleStart}${maskedMiddle}${visibleEnd}`;
+        const maskedMiddle = placeholder.repeat(threshold - exposedChars);
+        return `${maskedMiddle}${visibleEnd}`;
     }
 
     /**
