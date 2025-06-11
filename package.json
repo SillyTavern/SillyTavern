@@ -41,7 +41,7 @@
         "cookie-session": "^2.1.0",
         "cors": "^2.8.5",
         "crc": "^4.3.2",
-        "csrf-sync": "^4.0.3",
+        "csrf-sync": "^4.2.1",
         "diff-match-patch": "^1.0.5",
         "dompurify": "^3.2.6",
         "droll": "^0.2.1",
