@@ -147,7 +147,7 @@ SillyTavern 支持扩展。
 2. 安装 [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
 3. 安装 GitHub Desktop 后，点击 `Clone a repository from the internet....`（注意：此步骤**无需**创建 GitHub 帐户）
 4. 在菜单中，点击 URL 选项卡，输入此 URL `https://github.com/SillyTavern/SillyTavern`，然后点击 Clone。您可以更改本地路径以更改 SillyTavern 的下载位置。
-5. 要打开 SillyTavern，请使用 Windows 资源管理器浏览到克隆存储库的文件夹。默认情况下，存储库将克 clone 到此处：`C:\Users\[您的 Windows 用户名]\Documents\GitHub\SillyTavern`
+5. 要打开 SillyTavern，请使用 Windows 资源管理器浏览到克隆存储库的文件夹。默认情况下，存储库将克隆到此处：`C:\Users\[您的 Windows 用户名]\Documents\GitHub\SillyTavern`
 6. 双击 `start.bat` 文件。（注意：文件名的 `.bat` 部分可能被您的操作系统隐藏，在这种情况下，它将显示为一个名为“`Start`”的文件。双击此文件以运行 SillyTavern）
 7. 双击后，应打开一个大的黑色命令控制台窗口，SillyTavern 将开始安装其运行所需的组件。
 8. 安装过程完成后，如果一切正常，命令控制台窗口应如下所示，并且您的浏览器中应打开一个 SillyTavern 选项卡：
