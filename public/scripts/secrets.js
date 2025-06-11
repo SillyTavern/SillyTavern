@@ -655,7 +655,7 @@ function registerSecretSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: t`The ID or a label of the secret key to set as active. If not provided, will return the currently active secret ID.`,
-                isRequired: false,
+                isRequired: true,
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: secretIdEnumProvider,
             }),
