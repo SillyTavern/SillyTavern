@@ -15,24 +15,24 @@ import { initConfig } from './config-init.js';
  * @property {boolean|string} enableIPv4 If enable IPv4 protocol ("auto" is also allowed)
  * @property {boolean|string} enableIPv6 If enable IPv6 protocol ("auto" is also allowed)
  * @property {boolean} dnsPreferIPv6 If prefer IPv6 for DNS
- * @property {boolean} autorun If automatically launch SillyTavern in the browser
- * @property {string} autorunHostname Autorun hostname
- * @property {number} autorunPortOverride Autorun port override (-1 is use server port)
+ * @property {boolean} browserLaunchEnabled If automatically launch SillyTavern in the browser
+ * @property {string} browserLaunchHostname Browser launch hostname
+ * @property {number} browserLaunchPort Browser launch port override (-1 is use server port)
+ * @property {boolean} browserLaunchAvoidLocalhost If avoid using 'localhost' for browser launch in auto mode
  * @property {boolean} enableCorsProxy If enable CORS proxy
  * @property {boolean} disableCsrf If disable CSRF protection
  * @property {boolean} ssl If enable SSL
  * @property {string} certPath Path to certificate
  * @property {string} keyPath Path to private key
  * @property {boolean} whitelistMode If enable whitelist mode
- * @property {boolean} avoidLocalhost If avoid using 'localhost' for autorun in auto mode
  * @property {boolean} basicAuthMode If enable basic authentication
  * @property {boolean} requestProxyEnabled If enable outgoing request proxy
  * @property {string} requestProxyUrl Request proxy URL
  * @property {string[]} requestProxyBypass Request proxy bypass list
  * @property {function(): URL} getIPv4ListenUrl Get IPv4 listen URL
  * @property {function(): URL} getIPv6ListenUrl Get IPv6 listen URL
- * @property {function(import('./server-startup.js').ServerStartupResult): Promise<string>} getAutorunHostname Get autorun hostname
- * @property {function(string): URL} getAutorunUrl Get autorun URL
+ * @property {function(import('./server-startup.js').ServerStartupResult): Promise<string>} getBrowserLaunchHostname Get browser launch hostname
+ * @property {function(string): URL} getBrowserLaunchUrl Get browser launch URL
  */
 
 /**
@@ -51,16 +51,16 @@ export class CommandLineParser {
             enableIPv4: true,
             enableIPv6: false,
             dnsPreferIPv6: false,
-            autorun: false,
-            autorunHostname: 'auto',
-            autorunPortOverride: -1,
+            browserLaunchEnabled: false,
+            browserLaunchHostname: 'auto',
+            browserLaunchPort: -1,
+            browserLaunchAvoidLocalhost: false,
             enableCorsProxy: false,
             disableCsrf: false,
             ssl: false,
             certPath: 'certs/cert.pem',
             keyPath: 'certs/privkey.pem',
             whitelistMode: true,
-            avoidLocalhost: false,
             basicAuthMode: false,
             requestProxyEnabled: false,
             requestProxyUrl: '',
@@ -71,11 +71,11 @@ export class CommandLineParser {
             getIPv6ListenUrl: function () {
                 throw new Error('getIPv6ListenUrl is not implemented');
             },
-            getAutorunHostname: async function () {
-                throw new Error('getAutorunHostname is not implemented');
+            getBrowserLaunchHostname: async function () {
+                throw new Error('getBrowserLaunchHostname is not implemented');
             },
-            getAutorunUrl: function () {
-                throw new Error('getAutorunUrl is not implemented');
+            getBrowserLaunchUrl: function () {
+                throw new Error('getBrowserLaunchUrl is not implemented');
             },
         });
 
@@ -100,90 +100,133 @@ export class CommandLineParser {
                 type: 'string',
                 default: null,
                 describe: 'Enables IPv6 protocol',
-            }).option('enableIPv4', {
+            })
+            .option('enableIPv4', {
                 type: 'string',
                 default: null,
                 describe: 'Enables IPv4 protocol',
-            }).option('port', {
+            })
+            .option('port', {
                 type: 'number',
                 default: null,
                 describe: 'Sets the server listening port',
-            }).option('dnsPreferIPv6', {
+            })
+            .option('dnsPreferIPv6', {
                 type: 'boolean',
                 default: null,
                 describe: 'Prefers IPv6 for DNS\nYou should probably have the enabled if you\'re on an IPv6 only network',
-            }).option('autorun', {
+            })
+            .option('browserLaunchEnabled', {
                 type: 'boolean',
                 default: null,
                 describe: 'Automatically launch SillyTavern in the browser',
-            }).option('autorunHostname', {
+            })
+            .option('browserLaunchHostname', {
                 type: 'string',
                 default: null,
-                describe: 'Sets the autorun hostname, probably best left on \'auto\'.\nUse values like \'localhost\', \'st.example.com\'',
-            }).option('autorunPortOverride', {
-                type: 'string',
+                describe: 'Sets the browser launch hostname, best left on \'auto\'.\nUse values like \'localhost\', \'st.example.com\'',
+            })
+            .option('browserLaunchPort', {
+                type: 'number',
                 default: null,
-                describe: 'Overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port',
-            }).option('listen', {
+                describe: 'Overrides the port for browser launch with open your browser with this port and ignore what port the server is running on. -1 is use server port',
+            })
+            .option('browserLaunchAvoidLocalhost', {
+                type: 'boolean',
+                default: null,
+                describe: 'Avoids using \'localhost\' for browser launch in auto mode.\nUse if you don\'t have \'localhost\' in your hosts file',
+            })
+            .option('listen', {
                 type: 'boolean',
                 default: null,
                 describe: 'Whether to listen on all network interfaces',
-            }).option('listenAddressIPv6', {
+            })
+            .option('listenAddressIPv6', {
                 type: 'string',
                 default: null,
                 describe: 'Specific IPv6 address to listen to',
-            }).option('listenAddressIPv4', {
+            })
+            .option('listenAddressIPv4', {
                 type: 'string',
                 default: null,
                 describe: 'Specific IPv4 address to listen to',
-            }).option('corsProxy', {
+            })
+            .option('corsProxy', {
                 type: 'boolean',
                 default: null,
                 describe: 'Enables CORS proxy',
-            }).option('disableCsrf', {
+            })
+            .option('disableCsrf', {
                 type: 'boolean',
                 default: null,
                 describe: 'Disables CSRF protection - NOT RECOMMENDED',
-            }).option('ssl', {
+            })
+            .option('ssl', {
                 type: 'boolean',
                 default: null,
                 describe: 'Enables SSL',
-            }).option('certPath', {
+            })
+            .option('certPath', {
                 type: 'string',
                 default: null,
                 describe: 'Path to SSL certificate file',
-            }).option('keyPath', {
+            })
+            .option('keyPath', {
                 type: 'string',
                 default: null,
                 describe: 'Path to SSL private key file',
-            }).option('whitelist', {
+            })
+            .option('whitelist', {
                 type: 'boolean',
                 default: null,
                 describe: 'Enables whitelist mode',
-            }).option('dataRoot', {
+            })
+            .option('dataRoot', {
                 type: 'string',
                 default: null,
                 describe: 'Root directory for data storage',
-            }).option('avoidLocalhost', {
-                type: 'boolean',
-                default: null,
-                describe: 'Avoids using \'localhost\' for autorun in auto mode.\nUse if you don\'t have \'localhost\' in your hosts file',
-            }).option('basicAuthMode', {
+            })
+            .option('basicAuthMode', {
                 type: 'boolean',
                 default: null,
                 describe: 'Enables basic authentication',
-            }).option('requestProxyEnabled', {
+            })
+            .option('requestProxyEnabled', {
                 type: 'boolean',
                 default: null,
                 describe: 'Enables a use of proxy for outgoing requests',
-            }).option('requestProxyUrl', {
+            })
+            .option('requestProxyUrl', {
                 type: 'string',
                 default: null,
                 describe: 'Request proxy URL (HTTP or SOCKS protocols)',
-            }).option('requestProxyBypass', {
+            })
+            .option('requestProxyBypass', {
                 type: 'array',
                 describe: 'Request proxy bypass list (space separated list of hosts)',
-            }).parseSync();
+            })
+            /* DEPRECATED options */
+            .option('autorun', {
+                type: 'boolean',
+                default: null,
+                describe: 'DEPRECATED: Use "browserLaunchEnabled" instead.',
+            })
+            .option('autorunHostname', {
+                type: 'string',
+                default: null,
+                describe: 'DEPRECATED: Use "browserLaunchHostname" instead.',
+            })
+            .option('autorunPortOverride', {
+                type: 'number',
+                default: null,
+                describe: 'DEPRECATED: Use "browserLaunchPort" instead.',
+            })
+            .option('avoidLocalhost', {
+                type: 'boolean',
+                default: null,
+                describe: 'DEPRECATED: Use "browserLaunchAvoidLocalhost" instead.',
+            })
+            .parseSync();
 
         const configPath = cliArguments.configPath ?? this.default.configPath;
         initConfig(configPath);
@@ -198,16 +241,16 @@ export class CommandLineParser {
             enableIPv4: stringToBool(cliArguments.enableIPv4) ?? stringToBool(getConfigValue('protocol.ipv4', this.default.enableIPv4)) ?? this.default.enableIPv4,
             enableIPv6: stringToBool(cliArguments.enableIPv6) ?? stringToBool(getConfigValue('protocol.ipv6', this.default.enableIPv6)) ?? this.default.enableIPv6,
             dnsPreferIPv6: cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', this.default.dnsPreferIPv6, 'boolean'),
-            autorun: cliArguments.autorun ?? getConfigValue('autorun', this.default.autorun, 'boolean'),
-            autorunHostname: cliArguments.autorunHostname ?? getConfigValue('autorunHostname', this.default.autorunHostname),
-            autorunPortOverride: cliArguments.autorunPortOverride ?? getConfigValue('autorunPortOverride', this.default.autorunPortOverride, 'number'),
+            browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? cliArguments.autorun ?? getConfigValue('browserLaunch.enabled', this.default.browserLaunchEnabled, 'boolean'),
+            browserLaunchHostname: cliArguments.browserLaunchHostname ?? cliArguments.autorunHostname ?? getConfigValue('browserLaunch.hostname', this.default.browserLaunchHostname),
+            browserLaunchPort: cliArguments.browserLaunchPort ?? cliArguments.autorunPortOverride ?? getConfigValue('browserLaunch.port', this.default.browserLaunchPort, 'number'),
+            browserLaunchAvoidLocalhost: cliArguments.browserLaunchAvoidLocalhost ?? cliArguments.avoidLocalhost ?? getConfigValue('browserLaunch.avoidLocalhost', this.default.browserLaunchAvoidLocalhost, 'boolean'),
             enableCorsProxy: cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', this.default.enableCorsProxy, 'boolean'),
             disableCsrf: cliArguments.disableCsrf ?? getConfigValue('disableCsrfProtection', this.default.disableCsrf, 'boolean'),
             ssl: cliArguments.ssl ?? getConfigValue('ssl.enabled', this.default.ssl, 'boolean'),
             certPath: cliArguments.certPath ?? getConfigValue('ssl.certPath', this.default.certPath),
             keyPath: cliArguments.keyPath ?? getConfigValue('ssl.keyPath', this.default.keyPath),
             whitelistMode: cliArguments.whitelist ?? getConfigValue('whitelistMode', this.default.whitelistMode, 'boolean'),
-            avoidLocalhost: cliArguments.avoidLocalhost ?? getConfigValue('avoidLocalhost', this.default.avoidLocalhost, 'boolean'),
             basicAuthMode: cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', this.default.basicAuthMode, 'boolean'),
             requestProxyEnabled: cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', this.default.requestProxyEnabled, 'boolean'),
             requestProxyUrl: cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', this.default.requestProxyUrl),
@@ -228,12 +271,12 @@ export class CommandLineParser {
                     (':' + this.port),
                 );
             },
-            getAutorunHostname: async function ({ useIPv6, useIPv4 }) {
-                if (this.autorunHostname === 'auto') {
-                    let localhostResolve = await canResolve('localhost', useIPv6, useIPv4);
+            getBrowserLaunchHostname: async function ({ useIPv6, useIPv4 }) {
+                if (this.browserLaunchHostname === 'auto') {
+                    const localhostResolve = await canResolve('localhost', useIPv6, useIPv4);
 
                     if (useIPv6 && useIPv4) {
-                        return (this.avoidLocalhost || !localhostResolve) ? '[::1]' : 'localhost';
+                        return (this.browserLaunchAvoidLocalhost || !localhostResolve) ? '[::1]' : 'localhost';
                     }
 
                     if (useIPv6) {
@@ -245,15 +288,15 @@ export class CommandLineParser {
                     }
                 }
 
-                return this.autorunHostname;
+                return this.browserLaunchHostname;
             },
-            getAutorunUrl: function (hostname) {
-                const autorunPort = (this.autorunPortOverride >= 0) ? this.autorunPortOverride : this.port;
+            getBrowserLaunchUrl: function (hostname) {
+                const browserLaunchPort = (this.browserLaunchPort >= 0) ? this.browserLaunchPort : this.port;
                 return new URL(
                     (this.ssl ? 'https://' : 'http://') +
                     (hostname) +
                     (':') +
-                    (autorunPort),
+                    (browserLaunchPort),
                 );
             },
         };

@@ -67,7 +67,7 @@
         "multer": "^2.0.1",
         "node-fetch": "^3.3.2",
         "node-persist": "^4.0.4",
-        "open": "^8.4.2",
+        "open": "^10.1.2",
         "png-chunk-text": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "proxy-agent": "^6.5.0",

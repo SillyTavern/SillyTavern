@@ -147,7 +147,7 @@ SillyTavern 支持扩展。
 2. 安装 [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
 3. 安装 GitHub Desktop 后，点击 `Clone a repository from the internet....`（注意：此步骤**无需**创建 GitHub 帐户）
 4. 在菜单中，点击 URL 选项卡，输入此 URL `https://github.com/SillyTavern/SillyTavern`，然后点击 Clone。您可以更改本地路径以更改 SillyTavern 的下载位置。
-5. 要打开 SillyTavern，请使用 Windows 资源管理器浏览到克隆存储库的文件夹。默认情况下，存储库将克隆到此处：`C:\Users\[您的 Windows 用户名]\Documents\GitHub\SillyTavern`
+5. 要打开 SillyTavern，请使用 Windows 资源管理器浏览到克隆存储库的文件夹。默认情况下，存储库将克 clone 到此处：`C:\Users\[您的 Windows 用户名]\Documents\GitHub\SillyTavern`
 6. 双击 `start.bat` 文件。（注意：文件名的 `.bat` 部分可能被您的操作系统隐藏，在这种情况下，它将显示为一个名为“`Start`”的文件。双击此文件以运行 SillyTavern）
 7. 双击后，应打开一个大的黑色命令控制台窗口，SillyTavern 将开始安装其运行所需的组件。
 8. 安装过程完成后，如果一切正常，命令控制台窗口应如下所示，并且您的浏览器中应打开一个 SillyTavern 选项卡：
@@ -336,32 +336,32 @@ Start.bat --port 8000 --listen false
 > \[!TIP]
 > 所有参数都不是必需的。如果您不提供它们，SillyTavern 将使用 `config.yaml` 中的设置。
 
-| 选项                    | 描述                                          | 类型    |
-| ----------------------- | --------------------------------------------- | ------- |
-| `--version`             | 显示版本号                                    | boolean |
-| `--configPath`          | 覆盖 config.yaml 文件的路径                   | string  |
-| `--dataRoot`            | 数据存储的根目录                              | string  |
-| `--port`                | 设置 SillyTavern 将在其下运行的端口           | number  |
-| `--listen`              | SillyTavern 将侦听所有网络接口                | boolean |
-| `--whitelist`           | 启用白名单模式                                | boolean |
-| `--basicAuthMode`       | 启用基本身份验证                              | boolean |
-| `--enableIPv4`          | 启用 IPv4 协议                                | boolean |
-| `--enableIPv6`          | 启用 IPv6 协议                                | boolean |
-| `--listenAddressIPv4`   | 要侦听的特定 IPv4 地址                        | string  |
-| `--listenAddressIPv6`   | 要侦听的特定 IPv6 地址                        | string  |
-| `--dnsPreferIPv6`       | DNS 首选 IPv6                                 | boolean |
-| `--ssl`                 | 启用 SSL                                      | boolean |
-| `--certPath`            | 您的证书文件路径                              | string  |
-| `--keyPath`             | 您的私钥文件路径                              | string  |
-| `--autorun`             | 自动在浏览器中启动 SillyTavern                | boolean |
-| `--autorunHostname`     | 自动运行主机名                                | string  |
-| `--autorunPortOverride` | 覆盖自动运行的端口                            | string  |
-| `--avoidLocalhost`      | 在自动模式下避免使用 'localhost' 进行自动运行 | boolean |
-| `--corsProxy`           | 启用 CORS 代理                                | boolean |
-| `--requestProxyEnabled` | 为传出请求启用代理                            | boolean |
-| `--requestProxyUrl`     | 请求代理 URL（HTTP 或 SOCKS 协议）            | string  |
-| `--requestProxyBypass`  | 请求代理绕过列表（以空格分隔的主机列表）      | array   |
-| `--disableCsrf`         | 禁用 CSRF 保护（不推荐）                      | boolean |
+| 选项                             | 描述                                           | 类型    |
+| -------------------------------- | ---------------------------------------------- | ------- |
+| `--version`                      | 显示版本号                                     | boolean |
+| `--configPath`                   | 覆盖 config.yaml 文件的路径                    | string  |
+| `--dataRoot`                     | 数据存储的根目录                               | string  |
+| `--port`                         | 设置 SillyTavern 将在其下运行的端口            | number  |
+| `--listen`                       | SillyTavern 将侦听所有网络接口                 | boolean |
+| `--whitelist`                    | 启用白名单模式                                 | boolean |
+| `--basicAuthMode`                | 启用基本身份验证                               | boolean |
+| `--enableIPv4`                   | 启用 IPv4 协议                                 | boolean |
+| `--enableIPv6`                   | 启用 IPv6 协议                                 | boolean |
+| `--listenAddressIPv4`            | 要侦听的特定 IPv4 地址                         | string  |
+| `--listenAddressIPv6`            | 要侦听的特定 IPv6 地址                         | string  |
+| `--dnsPreferIPv6`                | DNS 首选 IPv6                                  | boolean |
+| `--ssl`                          | 启用 SSL                                       | boolean |
+| `--certPath`                     | 您的证书文件路径                               | string  |
+| `--keyPath`                      | 您的私钥文件路径                               | string  |
+| `--browserLaunchEnabled`         | 自动在浏览器中启动 SillyTavern                 | boolean |
+| `--browserLaunchHostname`        | 自动运行主机名                                 | string  |
+| `--browserLaunchPort`            | 覆盖自动运行的端口                             | string  |
+| `--browserLaunchAvoidLocalhost`  | 在自动模式下避免使用 'localhost' 进行自动运行   | boolean |
+| `--corsProxy`                    | 启用 CORS 代理                                 | boolean |
+| `--requestProxyEnabled`          | 为传出请求启用代理                             | boolean |
+| `--requestProxyUrl`              | 请求代理 URL（HTTP 或 SOCKS 协议）             | string  |
+| `--requestProxyBypass`           | 请求代理绕过列表（以空格分隔的主机列表）        | array   |
+| `--disableCsrf`                  | 禁用 CSRF 保护（不推荐）                       | boolean |
 
 ## 远程连接
 
