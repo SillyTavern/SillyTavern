@@ -56,6 +56,7 @@ import {
     getSortableDelay,
     getStringHash,
     isDataURL,
+    isUuid,
     isValidUrl,
     parseJsonFile,
     resetScrollHeight,
@@ -5670,7 +5671,8 @@ async function onVertexAIValidateServiceAccount() {
         }
 
         // Save to backend secret storage
-        await writeSecret(SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT, jsonContent);
+        const keyLabel = serviceAccount['client_email'] || '';
+        await writeSecret(SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT, jsonContent, keyLabel);
 
         // Show success status
         updateVertexAIServiceAccountStatus(true, `Project: ${serviceAccount.project_id}, Email: ${serviceAccount.client_email}`);
@@ -5703,6 +5705,11 @@ async function onVertexAIClearServiceAccount() {
  */
 function onVertexAIServiceAccountJsonChange() {
     const jsonContent = String($(this).val()).trim();
+
+    // Autocomplete has been triggered, don't validate if the input is a UUID
+    if (isUuid(jsonContent)) {
+        return;
+    }
 
     if (jsonContent) {
         // Auto-validate when content is pasted

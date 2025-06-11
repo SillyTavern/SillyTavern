@@ -208,6 +208,7 @@ import {
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
+    initSecrets,
     readSecretState,
     secret_state,
     writeSecret,
@@ -975,6 +976,7 @@ async function firstLoadInit() {
     reloadMarkdownProcessor();
     applyBrowserFixes();
     await getClientVersion();
+    await initSecrets();
     await readSecretState();
     await initLocales();
     initChatUtilities();
