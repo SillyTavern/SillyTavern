@@ -10,7 +10,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getConfigValue } from '../util.js';
 
-const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv'];
+const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv', '.webp'];
 
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
@@ -142,7 +142,7 @@ async function generateThumbnail(directories, type, file) {
     if (cachedFileExists) {
         const originalStat = fs.statSync(pathToOriginalFile);
         const cachedStat = fs.statSync(pathToCachedFile);
-        if (originalStat.mtimeMs > cachedStat.mtimeMs) { // Corrected to mtimeMs
+        if (originalStat.mtimeMs > cachedStat.mtimeMs) {
             shouldRegenerate = true;
         }
     }
@@ -165,7 +165,7 @@ async function generateThumbnail(directories, type, file) {
         }
 
         // If we reach here, either thumbnail doesn't exist or needs regeneration.
-        const image = await Jimp.read(pathToOriginalFile); // This is the primary point of failure for APNG etc.
+        const image = await Jimp.read(pathToOriginalFile);
 
         // Get classification
         let classification = 'square';
@@ -183,17 +183,9 @@ async function generateThumbnail(directories, type, file) {
 
         buffer = pngFormat
             ? await thumbImage.getBufferAsync(JimpMime.png)
-            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality }); // Assuming default jpegColorSpace is fine
+            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality });
 
-        console.log(`[generateThumbnail] For file "${file}": Preparing to write. Path: "${pathToCachedFile}", Resolved Path: "${path.resolve(pathToCachedFile)}".`);
-        console.log(`[generateThumbnail] Buffer for "${file}": Type=${typeof buffer}, Length=${buffer?.length}, IsBuffer=${Buffer.isBuffer(buffer)}`);
-        try {
-            writeFileAtomicSync(pathToCachedFile, buffer);
-            console.log(`[generateThumbnail] SUCCESS: writeFileAtomicSync for "${file}" to "${pathToCachedFile}"`);
-        } catch (writeError) {
-            console.error(`[generateThumbnail] ERROR during writeFileAtomicSync for "${file}" to "${pathToCachedFile}": ${writeError.message}`, writeError.stack);
-            throw writeError; // Re-throw to be caught by the main try...catch for the function.
-        }
+        writeFileAtomicSync(pathToCachedFile, buffer);
         return { path: pathToCachedFile, classification: classification };
 
     } catch (error) {
@@ -280,30 +272,19 @@ export async function ensureThumbnailCache(directoriesList) {
 
         for (const file of bgFiles) {
             // Check if the file is a known image type or simply attempt generation
-            // This simple check can be expanded if needed
             if (!/\.(jpeg|jpg|png|gif|webp)$/i.test(file)) {
-                // console.log(`Skipping non-image file: ${file}`);
                 continue;
             }
             tasks.push(
                 generateThumbnail(directories, 'bg', file).then(result => {
                     if (result && result.path && result.classification) {
                         newAspectRatios[file] = result.classification;
-                    } else if (result && result.path && !result.classification) {
-                        // Thumbnail generated/existed, but classification failed (should not happen with current generateThumbnail logic)
-                        // Or, if generateThumbnail was modified to not always return classification for existing files.
-                        // For now, we expect classification. If missing, it might indicate an issue or an old image.
-                        // console.warn(`Thumbnail for ${file} processed, but classification missing.`);
-                    } else {
-                        // generation failed or original file missing
-                        // if (result === null && newAspectRatios[file]) {
-                        //     // Original file might have been deleted. Remove from aspect ratios.
-                        //     delete newAspectRatios[file];
-                        // }
-                        // console.warn(`Thumbnail generation failed for ${file}. It might be removed from aspect ratios if previously present.`);
                     }
+                    // Intentionally not re-adding complex else conditions here for classification missing / generation failed,
+                    // as generateThumbnail itself handles logging and returns null for failures.
+                    // The primary goal is to populate newAspectRatios with successful classifications.
                 }).catch(error => {
-                    console.error(`Error processing thumbnail for ${file}:`, error);
+                    console.error(`Error processing thumbnail for ${file}:`, error); // This catch is for unexpected errors in the promise chain itself
                 })
             );
         }
@@ -334,7 +315,6 @@ export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
 router.get('/', async function (request, response) {
-    console.log(`[/thumbnail route] Received request: type=${request.query.type}, file=${request.query.file}`);
     try{
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);
@@ -364,11 +344,7 @@ router.get('/', async function (request, response) {
             }
 
             const pathToOriginalFile = path.join(folder, file);
-            const effectivePathForDisabled = pathToOriginalFile; // Renamed for clarity
-            console.log(`[/thumbnail route] Determined path: ${effectivePathForDisabled}`);
-            console.log(`[/thumbnail route] For file "${request.query.file}", type "${request.query.type}": Effective path: "${effectivePathForDisabled}", Resolved Effective Path: "${effectivePathForDisabled ? path.resolve(effectivePathForDisabled) : 'N/A'}"`);
-            if (fs.existsSync(effectivePathForDisabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForDisabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForDisabled}`); }
-            if (!fs.existsSync(effectivePathForDisabled)) { // Using effectivePathForDisabled here
+            if (!fs.existsSync(pathToOriginalFile)) {
                 return response.sendStatus(404);
             }
             const contentType = mime.lookup(pathToOriginalFile) || 'image/png';
@@ -379,21 +355,19 @@ router.get('/', async function (request, response) {
 
         const thumbnailResult = await generateThumbnail(request.user.directories, type, file);
         const pathToCachedFile = thumbnailResult ? thumbnailResult.path : null;
-        const effectivePathForEnabled = pathToCachedFile; // Renamed for clarity
-        console.log(`[/thumbnail route] Determined path: ${effectivePathForEnabled}`);
-        console.log(`[/thumbnail route] For file "${request.query.file}", type "${request.query.type}": Effective path: "${effectivePathForEnabled}", Resolved Effective Path: "${effectivePathForEnabled ? path.resolve(effectivePathForEnabled) : 'N/A'}"`);
 
-        if (!effectivePathForEnabled) { // Using effectivePathForEnabled here
+        if (!pathToCachedFile) {
             return response.sendStatus(404);
         }
 
-        if (fs.existsSync(effectivePathForEnabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForEnabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForEnabled}`); }
-        if (!fs.existsSync(effectivePathForEnabled)) { // This check might seem redundant due to above, but keeping for safety. Using effectivePathForEnabled.
+        if (!fs.existsSync(pathToCachedFile)) {
+            // Keeping a minimal error log here if the file is still not found after generation attempt.
+            console.error(`[/thumbnail route] File NOT FOUND at an expected cached path: ${pathToCachedFile} for type: ${type}, file: ${file}`);
             return response.sendStatus(404);
         }
 
-        const contentType = mime.lookup(effectivePathForEnabled) || 'image/jpeg'; // Using effectivePathForEnabled
-        const cachedFile = await fsPromises.readFile(effectivePathForEnabled); // Using effectivePathForEnabled
+        const contentType = mime.lookup(pathToCachedFile) || 'image/jpeg';
+        const cachedFile = await fsPromises.readFile(pathToCachedFile);
         response.setHeader('Content-Type', contentType);
         return response.send(cachedFile);
     } catch (error) {

@@ -283,16 +283,13 @@ async function getThumbnailFromStorage(bg) {
     }
 
     try {
-        console.log(`[getThumbnailFromStorage] For bg="${bg}": Attempting to fetch original from path: "${getBackgroundPath(bg)}"`);
         const response = await fetch(getBackgroundPath(bg), { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error('Fetch failed with status: ' + response.status);
         }
         const imageBlob = await response.blob();
         const imageBase64 = await getBase64Async(imageBlob);
-        console.log(`[getThumbnailFromStorage] For bg="${bg}": Got imageBase64, length: ${imageBase64?.length}. Attempting createThumbnail.`);
         const thumbnailBase64 = await createThumbnail(imageBase64, THUMBNAIL_CONFIG.width, THUMBNAIL_CONFIG.height);
-        console.log(`[getThumbnailFromStorage] For bg="${bg}": Got thumbnailBase64, length: ${thumbnailBase64?.length}.`);
         const thumbnailBlob = await fetch(thumbnailBase64).then(res => res.blob());
         await THUMBNAIL_STORAGE.setItem(bg, thumbnailBlob);
         const blobUrl = URL.createObjectURL(thumbnailBlob);
@@ -459,7 +456,6 @@ export async function getBackgrounds() {
         const images = data.images;
         Object.assign(THUMBNAIL_CONFIG, data.config);
         allBackgroundAspects = data.aspects || {};
-        console.log('Fetched background aspects:', allBackgroundAspects); // Added log
         $('#bg_menu_content').children('div').remove();
         for (const bg of images) {
             const template = await getBackgroundFromTemplate(bg, false);
@@ -568,7 +564,6 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     }
 
     template.attr('data-aspect-ratio', finalClassification);
-    console.log(`[backgrounds.js] File: "${bg}", Server Aspect: "${serverClassification}", Final Classification for UI: "${finalClassification}"`);
     return template;
 }
 
@@ -736,7 +731,6 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
     $aspectRatioDropdown.append($('<option value="square">Square</option>'));
     $aspectRatioDropdown.append($('<option value="video">Video / Other</option>'));
-    console.log('[backgrounds.js] $aspectRatioDropdown HTML after adding options:', $aspectRatioDropdown.prop('outerHTML'));
 
     const $fittingDropdown = $('#background_fitting');
     const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
@@ -761,8 +755,6 @@ export function initBackgrounds() {
         // Defer the DOM manipulation
         setTimeout(function() {
             $backgroundItems.removeClass('bg-filtered-out'); // Show all items initially
-            // The console.log for debugging has been removed as part of this optimization refactor.
-            // If debugging is needed again, it can be re-added.
 
             if (selectedFilter !== 'none') {
                 $backgroundItems.filter(function() {
