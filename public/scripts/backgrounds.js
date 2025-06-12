@@ -38,6 +38,8 @@ const THUMBNAIL_CONFIG = {
  */
 let lazyLoadObserver = null;
 
+let allBackgroundAspects = {};
+
 export let background_settings = {
     name: '__transparent.png',
     url: generateUrlParameter('__transparent.png', false),
@@ -294,7 +296,7 @@ async function getThumbnailFromStorage(bg) {
         THUMBNAIL_BLOBS.set(bg, blobUrl);
         return blobUrl;
     } catch (error) {
-        console.error('Error fetching thumbnail, fallback image will be used:', error);
+        console.error(`[getThumbnailFromStorage] Error for bg="${bg}" (path: "${getBackgroundPath(bg)}"). Fallback will be used. Error details:`, error);
         const fallbackBlob = PNG_PIXEL_BLOB;
         const fallbackBlobUrl = URL.createObjectURL(fallbackBlob);
         THUMBNAIL_BLOBS.set(bg, fallbackBlobUrl);
@@ -450,8 +452,10 @@ export async function getBackgrounds() {
         body: JSON.stringify({}),
     });
     if (response.ok) {
-        const { images, config } = await response.json();
-        Object.assign(THUMBNAIL_CONFIG, config);
+        const data = await response.json();
+        const images = data.images;
+        Object.assign(THUMBNAIL_CONFIG, data.config);
+        allBackgroundAspects = data.aspects || {};
         $('#bg_menu_content').children('div').remove();
         for (const bg of images) {
             const template = await getBackgroundFromTemplate(bg, false);
@@ -546,6 +550,20 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     template.addClass('lazy-load-background');
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
+
+    const serverClassification = allBackgroundAspects[bg]; // What the server provided
+    let finalClassification;
+
+    if (serverClassification && serverClassification !== 'unknown') {
+        // Use valid classification from server (e.g., landscape, portrait, square)
+        finalClassification = serverClassification;
+    } else {
+        // Server couldn't determine aspect ratio (it was undefined in allBackgroundAspects or explicitly 'unknown')
+        // As per user feedback, classify these as 'video'.
+        finalClassification = 'video';
+    }
+
+    template.attr('data-aspect-ratio', finalClassification);
     return template;
 }
 
@@ -705,6 +723,47 @@ export function initBackgrounds() {
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
+
+    // Create and insert Aspect Ratio Dropdown
+    const $aspectRatioDropdown = $('<select id="background_aspect_ratio_filter" class="text_pole"></select>');
+    $aspectRatioDropdown.append($('<option value="none">None</option>'));
+    $aspectRatioDropdown.append($('<option value="landscape">Landscape</option>'));
+    $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
+    $aspectRatioDropdown.append($('<option value="square">Square</option>'));
+    $aspectRatioDropdown.append($('<option value="video">Video / Other</option>'));
+
+    const $fittingDropdown = $('#background_fitting');
+    const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
+
+    $fittingDropdown.before($dropdownWrapper); // Place the wrapper where the first dropdown was.
+    $dropdownWrapper.append($fittingDropdown); // Move the fitting dropdown into the wrapper.
+    $dropdownWrapper.append($aspectRatioDropdown); // Add the new dropdown into the wrapper.
+
+    // Event listener for the aspect ratio dropdown
+    $aspectRatioDropdown.on('input', function() {
+        const selectedFilter = $(this).val();
+        const $backgroundItems = $('#bg_menu_content > div.bg_example');
+
+        // Ensure the CSS class for filtering is defined
+        if (!$('style#bg-filter-style').length) {
+            $('<style id="bg-filter-style">')
+                .prop('type', 'text/css')
+                .html('.bg-filtered-out { display: none !important; }')
+                .appendTo('head');
+        }
+
+        // Defer the DOM manipulation
+        setTimeout(function() {
+            $backgroundItems.removeClass('bg-filtered-out'); // Show all items initially
+
+            if (selectedFilter !== 'none') {
+                $backgroundItems.filter(function() {
+                    return $(this).data('aspect-ratio') !== selectedFilter;
+                }).addClass('bg-filtered-out'); // Hide items that don't match the filter
+            }
+        }, 0); // Yield thread before heavy DOM manipulation
+    });
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),

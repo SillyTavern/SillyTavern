@@ -6,9 +6,14 @@ import mime from 'mime-types';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 import { Jimp, JimpMime } from '../jimp.js';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
+export { sync as writeFileAtomicSync } from 'write-file-atomic'; // Re-exporting
 
 import { getConfigValue } from '../util.js';
+
+// This constant needs to be accessible for export
+export const currentMetadataVersion = "1.0.1";
+
+const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv', '.webp'];
 
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
@@ -26,7 +31,7 @@ export const dimensions = {
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
-function getThumbnailFolder(directories, type) {
+export function getThumbnailFolder(directories, type) { // Added export
     let thumbnailFolder;
 
     switch (type) {
@@ -75,7 +80,47 @@ export function invalidateThumbnail(directories, type, file) {
     const pathToThumbnail = path.join(folder, file);
 
     if (fs.existsSync(pathToThumbnail)) {
-        fs.unlinkSync(pathToThumbnail);
+        try {
+            fs.unlinkSync(pathToThumbnail);
+            console.info(`[invalidateThumbnail] Deleted thumbnail file: ${pathToThumbnail}`);
+        } catch (e) {
+            console.error(`[invalidateThumbnail] Failed to delete thumbnail file ${pathToThumbnail}:`, e);
+            // If deletion fails, we might not want to proceed with JSON update,
+            // or handle it based on desired robustness. For now, log and continue.
+        }
+    }
+
+    if (type === 'bg') {
+        const thumbnailBaseDir = getThumbnailFolder(directories, 'bg');
+        if (!thumbnailBaseDir) { // Should not happen if type is 'bg' and getThumbnailFolder is correct
+            console.error('[invalidateThumbnail] Could not determine thumbnail base directory for bg type.');
+            return;
+        }
+        const aspectRatiosJsonPath = path.join(thumbnailBaseDir, 'aspect_ratios.json');
+
+        try {
+            if (fs.existsSync(aspectRatiosJsonPath)) {
+                let aspectRatiosData = fs.readFileSync(aspectRatiosJsonPath, 'utf-8');
+                let aspectRatios = JSON.parse(aspectRatiosData); // Potential point of failure if JSON is corrupt
+
+                if (aspectRatios.hasOwnProperty(file)) {
+                    delete aspectRatios[file];
+                    // Use the exported writeFileAtomicSync from this module
+                    writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
+                    console.info(`[invalidateThumbnail] Removed entry for "${file}" from aspect_ratios.json.`);
+
+                    // Update version file
+                    const versionFilePath = path.join(thumbnailBaseDir, 'aspect_metadata_version.txt');
+                    // currentMetadataVersion is a const available in this module's scope
+                    fs.writeFileSync(versionFilePath, currentMetadataVersion);
+                    console.info(`[invalidateThumbnail] Updated aspect_metadata_version.txt due to removal of ${file}.`);
+                }
+            }
+            // If aspectRatiosJsonPath doesn't exist, there's nothing to remove the file from.
+            // ensureThumbnailCache will handle consistency if it runs next.
+        } catch (e) {
+            console.error(`[invalidateThumbnail] Failed to update aspect_ratios.json or version for deleted file ${file}:`, e);
+        }
     }
 }
 
@@ -86,62 +131,98 @@ export function invalidateThumbnail(directories, type, file) {
  * @param {string} file Name of the file
  * @returns
  */
-async function generateThumbnail(directories, type, file) {
+export async function generateThumbnail(directories, type, file) { // Added export
+    const fileExtension = path.extname(file).toLowerCase();
+    if (SKIPPED_EXTENSIONS_FOR_JIMP.includes(fileExtension)) {
+        // console.warn(`[generateThumbnail] Skipped Jimp processing for "${file}" due to known problematic extension: ${fileExtension}.`); // Removed
+        return null; // Immediately return null, no further processing.
+    }
+
     let thumbnailFolder = getThumbnailFolder(directories, type);
     let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
+
     const pathToCachedFile = path.join(thumbnailFolder, file);
     const pathToOriginalFile = path.join(originalFolder, file);
 
     const cachedFileExists = fs.existsSync(pathToCachedFile);
     const originalFileExists = fs.existsSync(pathToOriginalFile);
-
-    // to handle cases when original image was updated after thumb creation
     let shouldRegenerate = false;
 
-    if (cachedFileExists && originalFileExists) {
+    if (!originalFileExists) {
+        if (cachedFileExists) {
+            try {
+                fs.unlinkSync(pathToCachedFile);
+                console.warn(`Removed stale thumbnail for deleted original: ${file}`);
+            } catch (e) {
+                console.error(`Error removing stale thumbnail ${pathToCachedFile}: ${e.message}`);
+            }
+        }
+        return null;
+    }
+
+    if (cachedFileExists) {
         const originalStat = fs.statSync(pathToOriginalFile);
         const cachedStat = fs.statSync(pathToCachedFile);
-
-        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.warn('Original file changed. Regenerating thumbnail...');
+        if (originalStat.mtimeMs > cachedStat.mtimeMs) {
             shouldRegenerate = true;
         }
     }
 
-    if (cachedFileExists && !shouldRegenerate) {
-        return pathToCachedFile;
-    }
-
-    if (!originalFileExists) {
-        return null;
-    }
-
+    // Main processing block
     try {
-        let buffer;
+        // If thumbnail exists and doesn't need regeneration, get classification and return
+        if (cachedFileExists && !shouldRegenerate) {
+            let classification = 'unknown';
+            try {
+                const imageForClassification = await Jimp.read(pathToOriginalFile);
+                const ratio = imageForClassification.bitmap.width / imageForClassification.bitmap.height;
+                if (ratio >= 1.2857) classification = 'landscape';
+                else if (ratio <= 0.7778) classification = 'portrait';
+                else classification = 'square';
+            } catch (e) {
+                // console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`); // Removed
+            }
+            return { path: pathToCachedFile, classification: classification };
+        }
 
-        try {
-            const size = dimensions[type];
-            const image = await Jimp.read(pathToOriginalFile);
-            const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : image.bitmap.width;
-            const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : image.bitmap.height;
-            image.cover({ w: width, h: height });
-            buffer = pngFormat
-                ? await image.getBuffer(JimpMime.png)
-                : await image.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
-        }
-        catch (inner) {
-            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`, inner);
-            buffer = fs.readFileSync(pathToOriginalFile);
-        }
+        // If we reach here, either thumbnail doesn't exist or needs regeneration.
+        const image = await Jimp.read(pathToOriginalFile);
+
+        // Get classification
+        let classification = 'square';
+        const ratio = image.bitmap.width / image.bitmap.height;
+        if (ratio >= 1.2857) classification = 'landscape';
+        else if (ratio <= 0.7778) classification = 'portrait';
+
+        // Generate thumbnail
+        let buffer;
+        const size = dimensions[type];
+        const thumbImage = image.clone();
+        const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : thumbImage.bitmap.width;
+        const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : thumbImage.bitmap.height;
+        thumbImage.cover({ w: width, h: height });
+
+        buffer = pngFormat
+            ? await thumbImage.getBufferAsync(JimpMime.png)
+            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality });
 
         writeFileAtomicSync(pathToCachedFile, buffer);
-    }
-    catch (outer) {
+        return { path: pathToCachedFile, classification: classification };
+
+    } catch (error) {
+        // console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`); // Removed
+
+        if (shouldRegenerate && cachedFileExists) {
+            try {
+                fs.unlinkSync(pathToCachedFile);
+                console.warn(`Removed potentially outdated/corrupt thumbnail for ${file} due to regeneration failure.`);
+            } catch (e) {
+                console.error(`Error removing thumbnail for ${file} after regeneration failure: ${e.message}`);
+            }
+        }
         return null;
     }
-
-    return pathToCachedFile;
 }
 
 /**
@@ -150,25 +231,174 @@ async function generateThumbnail(directories, type, file) {
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 export async function ensureThumbnailCache(directoriesList) {
-    for (const directories of directoriesList) {
-        const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
+    // currentMetadataVersion is now a module constant
 
-        // files exist, all ok
-        if (cacheFiles.length) {
+    for (const directories of directoriesList) {
+        if (!directories.backgrounds || !directories.thumbnailsBg) {
+            console.warn('[ensureThumbnailCache] Missing backgrounds or thumbnailsBg directory for a user, skipping.');
             continue;
         }
+        if (!fs.existsSync(directories.backgrounds)) {
+            console.warn(`[ensureThumbnailCache] Backgrounds directory ${directories.backgrounds} does not exist, skipping.`);
+            continue;
+        }
+        if (!fs.existsSync(directories.thumbnailsBg)) {
+            try {
+                fs.mkdirSync(directories.thumbnailsBg, { recursive: true });
+                console.info(`[ensureThumbnailCache] Created thumbnailsBg directory: ${directories.thumbnailsBg}`);
+            } catch (e) {
+                console.error(`[ensureThumbnailCache] Failed to create thumbnailsBg directory ${directories.thumbnailsBg}: ${e.message}. Skipping this directory.`);
+                continue;
+            }
+        }
 
-        console.info('Generating thumbnails cache. Please wait...');
+        const aspectRatiosJsonPath = path.join(directories.thumbnailsBg, 'aspect_ratios.json');
+        const versionFilePath = path.join(directories.thumbnailsBg, 'aspect_metadata_version.txt');
 
-        const bgFiles = fs.readdirSync(directories.backgrounds);
+        let existingAspectRatios = {};
+        let needsFullRegeneration = false;
+        let madeChangesToJSON = false;
+
+        const detectedVersion = fs.existsSync(versionFilePath) ? fs.readFileSync(versionFilePath, 'utf-8') : null;
+
+        if (detectedVersion !== currentMetadataVersion || !fs.existsSync(aspectRatiosJsonPath)) {
+            console.info(`[ensureThumbnailCache] Metadata version mismatch or missing JSON for ${directories.thumbnailsBg}. Triggering full regeneration.`);
+            needsFullRegeneration = true;
+            madeChangesToJSON = true; // Will definitely make changes if regenerating fully
+
+            // Delete all existing image thumbnails (not metadata files)
+            const filesInThumbnailsBg = fs.readdirSync(directories.thumbnailsBg);
+            for (const fileInThumbnailsBg of filesInThumbnailsBg) {
+                if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
+                    const fullPath = path.join(directories.thumbnailsBg, fileInThumbnailsBg);
+                    if (fs.statSync(fullPath).isFile()) {
+                        try { fs.unlinkSync(fullPath); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete old thumbnail ${fileInThumbnailsBg}:`, e); }
+                    }
+                }
+            }
+            if (fs.existsSync(aspectRatiosJsonPath)) {
+                try { fs.unlinkSync(aspectRatiosJsonPath); } catch (e) { console.warn('[ensureThumbnailCache] Could not delete old aspect_ratios.json:', e); }
+            }
+        } else {
+            try {
+                existingAspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
+            } catch (e) {
+                console.warn(`[ensureThumbnailCache] Could not parse aspect_ratios.json for ${directories.thumbnailsBg}, triggering full regeneration. Error: ${e.message}`);
+                needsFullRegeneration = true; // Treat as full regeneration if JSON is corrupt
+                madeChangesToJSON = true;
+                existingAspectRatios = {}; // Reset
+                 // Also clear out potentially inconsistent thumbnails
+                const filesInThumbnailsBg = fs.readdirSync(directories.thumbnailsBg);
+                for (const fileInThumbnailsBg of filesInThumbnailsBg) {
+                     if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
+                        const fullPath = path.join(directories.thumbnailsBg, fileInThumbnailsBg);
+                        if (fs.statSync(fullPath).isFile()) {
+                            try { fs.unlinkSync(fullPath); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete old thumbnail ${fileInThumbnailsBg} during corruption handling:`, e); }
+                        }
+                    }
+                }
+            }
+        }
+
+        const allEntriesInBgDir = fs.readdirSync(directories.backgrounds);
+        const bgFiles = []; // This will store only valid image files
+        const PLAUSIBLE_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.apng', '.tiff'];
+
+        for (const entryName of allEntriesInBgDir) {
+            const fullPathToEntry = path.join(directories.backgrounds, entryName);
+            try {
+                if (!fs.statSync(fullPathToEntry).isFile()) {
+                    continue; // Skip directories
+                }
+                const fileExtension = path.extname(entryName).toLowerCase();
+                if (!PLAUSIBLE_IMAGE_EXTENSIONS.includes(fileExtension)) {
+                    continue; // Skip non-plausible image files
+                }
+                bgFiles.push(entryName); // Add valid image file to the list for processing
+            } catch (statError) {
+                // Optional: console.error(`[ensureThumbnailCache] Error stating file or directory ${fullPathToEntry}: ${statError.message}. Skipping.`);
+                continue;
+            }
+        }
+        // Now, bgFiles contains only actual image files.
+
+        const bgFileSet = new Set(bgFiles); // For efficient lookup of existing background files
+        let currentAspectRatios = { ...existingAspectRatios };
         const tasks = [];
 
-        for (const file of bgFiles) {
-            tasks.push(generateThumbnail(directories, 'bg', file));
+        // Process current background files: add new ones, update changed ones
+        for (const file of bgFiles) { // Iterate over pre-filtered bgFiles
+            const pathToOriginalFile = path.join(directories.backgrounds, file);
+            const pathToCachedFile = path.join(directories.thumbnailsBg, file);
+            let fileNeedsProcessing = false;
+
+            if (needsFullRegeneration) {
+                fileNeedsProcessing = true;
+            } else {
+                // Since we've filtered for files, statSync should be safe.
+                // Error handling for statSync can be added if needed, but the outer try-catch for the loop might cover it.
+                const originalStat = fs.statSync(pathToOriginalFile);
+                if (!currentAspectRatios.hasOwnProperty(file)) {
+                    fileNeedsProcessing = true;
+                } else if (!fs.existsSync(pathToCachedFile)) {
+                    fileNeedsProcessing = true;
+                } else {
+                    const cachedStat = fs.statSync(pathToCachedFile);
+                    if (originalStat.mtimeMs > cachedStat.mtimeMs) {
+                        fileNeedsProcessing = true;
+                    }
+                }
+            }
+
+            if (fileNeedsProcessing) {
+                tasks.push(
+                    generateThumbnail(directories, 'bg', file).then(result => {
+                        if (result && result.path) { // Successfully generated/classified
+                            if (currentAspectRatios[file] !== result.classification) {
+                                madeChangesToJSON = true;
+                            }
+                            currentAspectRatios[file] = result.classification;
+                        } else { // generateThumbnail returned null (skipped, or error)
+                            if (currentAspectRatios.hasOwnProperty(file)) { // Was in JSON before, but now it's not processable
+                                delete currentAspectRatios[file];
+                                madeChangesToJSON = true;
+                            }
+                            // If it's a new file that couldn't be processed, it's just not added.
+                        }
+                    })
+                );
+            }
+            // If !fileNeedsProcessing, the entry from existingAspectRatios is kept in currentAspectRatios implicitly.
         }
 
         await Promise.all(tasks);
-        console.info(`Done! Generated: ${bgFiles.length} preview images`);
+
+        // Process deletions: remove entries from currentAspectRatios if original file is gone
+        if (!needsFullRegeneration) { // No need to check deletions if we started from scratch
+            for (const existingFileInJson in currentAspectRatios) {
+                if (!bgFileSet.has(existingFileInJson)) {
+                    console.info(`[ensureThumbnailCache] Original file ${existingFileInJson} deleted. Removing from aspect ratios and deleting its thumbnail.`);
+                    delete currentAspectRatios[existingFileInJson];
+                    madeChangesToJSON = true;
+                    const pathToStaleThumbnail = path.join(directories.thumbnailsBg, existingFileInJson);
+                    if (fs.existsSync(pathToStaleThumbnail)) {
+                        try { fs.unlinkSync(pathToStaleThumbnail); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete stale thumbnail ${pathToStaleThumbnail}: ${e.message}`); }
+                    }
+                }
+            }
+        }
+
+        if (madeChangesToJSON) {
+            try {
+                writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(currentAspectRatios, null, 2));
+                fs.writeFileSync(versionFilePath, currentMetadataVersion); // Update version if JSON is written
+                console.info(`[ensureThumbnailCache] Aspect ratio data updated for ${directories.thumbnailsBg}. Processed ${tasks.length} files that needed updates/generation.`);
+            } catch (e) {
+                console.error(`[ensureThumbnailCache] Failed to write aspect_ratios.json or version file for ${directories.thumbnailsBg}: ${e.message}`);
+            }
+        } else {
+            console.info(`[ensureThumbnailCache] Aspect ratio data is up-to-date for ${directories.thumbnailsBg}.`);
+        }
     }
 }
 
@@ -214,13 +444,16 @@ router.get('/', async function (request, response) {
             return response.send(originalFile);
         }
 
-        const pathToCachedFile = await generateThumbnail(request.user.directories, type, file);
+        const thumbnailResult = await generateThumbnail(request.user.directories, type, file);
+        const pathToCachedFile = thumbnailResult ? thumbnailResult.path : null;
 
         if (!pathToCachedFile) {
             return response.sendStatus(404);
         }
 
         if (!fs.existsSync(pathToCachedFile)) {
+            // Keeping a minimal error log here if the file is still not found after generation attempt.
+            console.error(`[/thumbnail route] File NOT FOUND at an expected cached path: ${pathToCachedFile} for type: ${type}, file: ${file}`);
             return response.sendStatus(404);
         }
 
