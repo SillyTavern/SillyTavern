@@ -16,16 +16,27 @@ protocol:
     ipv6: false
 # Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
-# The hostname that autorun opens.
-# - Use "auto" to let the server decide
-# - Use options like 'localhost', 'st.example.com'
-autorunHostname: "auto"
+# -- BROWSER LAUNCH CONFIGURATION --
+browserLaunch:
+  # Open the browser automatically on server startup.
+  enabled: true
+  # Browser to use for opening the URL.
+  # - Use "default" to use the system default browser
+  # - Use "firefox", "chrome", "edge"
+  browser: 'default'
+  # Overrides the hostname that opens in the browser.
+  # - Use "auto" to let the server decide
+  # - Use options like 'localhost', 'st.example.com'
+  hostname: 'auto'
+  # Overrides the port for run in the browser.
+  # - Use -1 to use the server port.
+  # - Specify a port to override the default.
+  port: -1
+  # Avoids using 'localhost' as the hostname in auto mode.
+  # Use if you don't have 'localhost' in your hosts file
+  avoidLocalhost: false
 # Server port
 port: 8000
-# Overrides the port for autorun in browser.
-# - Use -1 to use the server port.
-# - Specify a port to override the default.
-autorunPortOverride: -1
 # -- SSL options --
 ssl:
   enabled: false
@@ -98,12 +109,6 @@ rateLimiting:
   # Use X-Real-IP header instead of socket IP for rate limiting
   # Only enable this if you are using a properly configured reverse proxy (like Nginx/traefik/Caddy)
   preferRealIpHeader: false
-# -- ADVANCED CONFIGURATION --
-# Open the browser automatically
-autorun: true
-# Avoids using 'localhost' for autorun in auto mode.
-# use if you don't have 'localhost' in your hosts file
-avoidLocalhost: false
 
 ## BACKUP CONFIGURATION
 backups:

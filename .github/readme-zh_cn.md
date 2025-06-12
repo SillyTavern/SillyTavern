@@ -336,32 +336,32 @@ Start.bat --port 8000 --listen false
 > \[!TIP]
 > 所有参数都不是必需的。如果您不提供它们，SillyTavern 将使用 `config.yaml` 中的设置。
 
-| 选项                    | 描述                                          | 类型    |
-| ----------------------- | --------------------------------------------- | ------- |
-| `--version`             | 显示版本号                                    | boolean |
-| `--configPath`          | 覆盖 config.yaml 文件的路径                   | string  |
-| `--dataRoot`            | 数据存储的根目录                              | string  |
-| `--port`                | 设置 SillyTavern 将在其下运行的端口           | number  |
-| `--listen`              | SillyTavern 将侦听所有网络接口                | boolean |
-| `--whitelist`           | 启用白名单模式                                | boolean |
-| `--basicAuthMode`       | 启用基本身份验证                              | boolean |
-| `--enableIPv4`          | 启用 IPv4 协议                                | boolean |
-| `--enableIPv6`          | 启用 IPv6 协议                                | boolean |
-| `--listenAddressIPv4`   | 要侦听的特定 IPv4 地址                        | string  |
-| `--listenAddressIPv6`   | 要侦听的特定 IPv6 地址                        | string  |
-| `--dnsPreferIPv6`       | DNS 首选 IPv6                                 | boolean |
-| `--ssl`                 | 启用 SSL                                      | boolean |
-| `--certPath`            | 您的证书文件路径                              | string  |
-| `--keyPath`             | 您的私钥文件路径                              | string  |
-| `--autorun`             | 自动在浏览器中启动 SillyTavern                | boolean |
-| `--autorunHostname`     | 自动运行主机名                                | string  |
-| `--autorunPortOverride` | 覆盖自动运行的端口                            | string  |
-| `--avoidLocalhost`      | 在自动模式下避免使用 'localhost' 进行自动运行 | boolean |
-| `--corsProxy`           | 启用 CORS 代理                                | boolean |
-| `--requestProxyEnabled` | 为传出请求启用代理                            | boolean |
-| `--requestProxyUrl`     | 请求代理 URL（HTTP 或 SOCKS 协议）            | string  |
-| `--requestProxyBypass`  | 请求代理绕过列表（以空格分隔的主机列表）      | array   |
-| `--disableCsrf`         | 禁用 CSRF 保护（不推荐）                      | boolean |
+| 选项                             | 描述                                           | 类型    |
+| -------------------------------- | ---------------------------------------------- | ------- |
+| `--version`                      | 显示版本号                                     | boolean |
+| `--configPath`                   | 覆盖 config.yaml 文件的路径                    | string  |
+| `--dataRoot`                     | 数据存储的根目录                               | string  |
+| `--port`                         | 设置 SillyTavern 将在其下运行的端口            | number  |
+| `--listen`                       | SillyTavern 将侦听所有网络接口                 | boolean |
+| `--whitelist`                    | 启用白名单模式                                 | boolean |
+| `--basicAuthMode`                | 启用基本身份验证                               | boolean |
+| `--enableIPv4`                   | 启用 IPv4 协议                                 | boolean |
+| `--enableIPv6`                   | 启用 IPv6 协议                                 | boolean |
+| `--listenAddressIPv4`            | 要侦听的特定 IPv4 地址                         | string  |
+| `--listenAddressIPv6`            | 要侦听的特定 IPv6 地址                         | string  |
+| `--dnsPreferIPv6`                | DNS 首选 IPv6                                  | boolean |
+| `--ssl`                          | 启用 SSL                                       | boolean |
+| `--certPath`                     | 您的证书文件路径                               | string  |
+| `--keyPath`                      | 您的私钥文件路径                               | string  |
+| `--browserLaunchEnabled`         | 自动在浏览器中启动 SillyTavern                 | boolean |
+| `--browserLaunchHostname`        | 自动运行主机名                                 | string  |
+| `--browserLaunchPort`            | 覆盖自动运行的端口                             | string  |
+| `--browserLaunchAvoidLocalhost`  | 在自动模式下避免使用 'localhost' 进行自动运行   | boolean |
+| `--corsProxy`                    | 启用 CORS 代理                                 | boolean |
+| `--requestProxyEnabled`          | 为传出请求启用代理                             | boolean |
+| `--requestProxyUrl`              | 请求代理 URL（HTTP 或 SOCKS 协议）             | string  |
+| `--requestProxyBypass`           | 请求代理绕过列表（以空格分隔的主机列表）        | array   |
+| `--disableCsrf`                  | 禁用 CSRF 保护（不推荐）                       | boolean |
 
 ## 远程连接
 
