@@ -14,7 +14,6 @@ import {
     writeFileAtomicSync as sharedWriteFileAtomicSync
 } from './thumbnails.js';
 import { getImages } from '../util.js';
-import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
@@ -36,15 +35,16 @@ router.post('/all', function (request, response) {
     response.json({ images, config, aspects });
 });
 
-router.post('/delete', getFileNameValidationFunction('bg'), function (request, response) {
+router.post('/delete', function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    if (request.body.bg !== sanitize(request.body.bg)) {
+    const sanitizedBg = sanitize(request.body.bg);
+    if (request.body.bg !== sanitizedBg) {
         console.error('Malicious bg name prevented');
         return response.sendStatus(403);
     }
 
-    const fileName = path.join(request.user.directories.backgrounds, sanitize(request.body.bg));
+    const fileName = path.join(request.user.directories.backgrounds, sanitizedBg);
 
     if (!fs.existsSync(fileName)) {
         console.error('BG file not found');
@@ -52,7 +52,7 @@ router.post('/delete', getFileNameValidationFunction('bg'), function (request, r
     }
 
     fs.unlinkSync(fileName);
-    invalidateThumbnail(request.user.directories, 'bg', request.body.bg);
+    invalidateThumbnail(request.user.directories, 'bg', sanitizedBg);
     return response.send('ok');
 });
 
