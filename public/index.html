@@ -661,7 +661,7 @@
                                     </div>
                                 </div>
                                 <div data-source="openrouter" class="range-block">
-                                    <div class="range-block-title" title="Allow compressing requests by removing messages from the middle of the prompt.">
+                                    <div class="range-block-title" data-i18n="[title]Allow compressing requests by removing messages from the middle of the prompt." title="Allow compressing requests by removing messages from the middle of the prompt.">
                                         <span data-i18n="Middle-out Transform">Middle-out Transform</span>
                                         <a href="https://openrouter.ai/docs/transforms" target="_blank" rel="noreferrer noopener" class="note-link-span fa-solid fa-circle-question"></a>
                                     </div>
@@ -674,7 +674,7 @@
                                     </div>
                                 </div>
                                 <div data-source="openrouter">
-                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
+                                    <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="openrouter_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
                                 <hr>
                                 <div class="range-block">
@@ -2714,12 +2714,12 @@
                                     </select>
                                     <div class="marginTopBot5">
                                         <i class="fa-solid fa-flask"></i>
-                                        <span>Experimental feature. Use at your own risk.</span>
+                                        <span data-i18n="Experimental feature. Use at your own risk.">Experimental feature. Use at your own risk.</span>
                                     </div>
                                     <div class="marginTopBot5">
                                         <small>
                                             <i class="fa-solid fa-lightbulb"></i>
-                                            &nbsp;
+                                            &nbsp;<span data-i18n="Tabby model hint prefix"></span>
                                             <code>inline_model_loading: True</code>
                                             <span data-i18n="must be set in Tabby's config.yml to switch models.">
                                                 must be set in Tabby's config.yml to switch models.
@@ -2851,7 +2851,7 @@
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
                                     <small class="reverse_proxy_warning">
                                         <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
-                                        <code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
+                                        <span data-i18n="completions note prefix"></span><code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                     </small>
                                 </div>
                                 <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
@@ -3566,7 +3566,7 @@
                             <div>
                                 <small>
                                     <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
-                                    <code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
+                                    <b data-i18n="completions note prefix"></b><code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                 </small>
                             </div>
                             <h4>
@@ -4744,7 +4744,7 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
-                           <label for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
+                           <label data-i18n="[title]Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
                                <input id="background_thumbnails_animation" type="checkbox" />
                                <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
                            </label>

@@ -680,7 +680,7 @@ const SAFETY_CHAT = [
         is_system: true,
         is_user: false,
         create_date: 0,
-        mes: 'You deleted a character/chat and arrived back here for safety reasons! Pick another character!',
+        mes: () => t`You deleted a character/chat and arrived back here for safety reasons! Pick another character!`,
     },
 ];
 
@@ -6747,6 +6747,8 @@ export function resetChatState() {
     name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     setCharacterId(undefined);
+    // translate system user's message before diaplaying
+    SAFETY_CHAT[0].mes = SAFETY_CHAT[0].mes();
     // sets up system user to tell user about having deleted a character
     chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
