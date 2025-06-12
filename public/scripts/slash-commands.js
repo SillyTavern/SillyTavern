@@ -3558,11 +3558,6 @@ async function countGroupMemberCallback() {
         return '';
     }
 
-    if (is_group_generating) {
-        toastr.warning('Cannot run /member-count command while the group reply is generating.');
-        return '';
-    }
-
     return getGroupMembers(selected_group).length;
 }
 
