@@ -113,7 +113,7 @@ class ChatterboxTtsProvider {
 
         // Text chunking
         html += `<div class="chatterbox-setting-row">
-            <label>
+            <label class="checkbox_label">
                 <input type="checkbox" id="chatterbox-split-text" ${this.settings.split_text ? 'checked' : ''} />
                 Split long texts into chunks
             </label>
@@ -158,7 +158,7 @@ class ChatterboxTtsProvider {
             .chatterbox-settings-header h3 {
                 margin: 0;
             }
-            .status-indicator {
+            .chatterbox-settings-container .status-indicator {
                 font-weight: bold;
             }
             #chatterbox-status.ready { color: #4CAF50; }
@@ -172,6 +172,9 @@ class ChatterboxTtsProvider {
             }
             .chatterbox-setting-row label {
                 flex: 0 0 150px;
+            }
+            .chatterbox-setting-row label.checkbox_label {
+                flex-basis: auto;
             }
             .chatterbox-setting-row input[type="text"],
             .chatterbox-setting-row input[type="number"],
@@ -312,7 +315,7 @@ class ChatterboxTtsProvider {
             // Transform predefined voices
             const predefinedVoices = predefinedData.map(voice => ({
                 name: voice.display_name,
-                voice_id: voice.voice_id,
+                voice_id: voice.voice_id || voice.filename,
                 preview_url: null,
                 lang: voice.language || 'en',
             }));
@@ -588,7 +591,7 @@ class ChatterboxTtsProvider {
                 temperature: this.settings.temperature,
                 exaggeration: this.settings.exaggeration,
                 cfg_weight: this.settings.cfg_weight,
-                seed: this.settings.seed,
+                seed: this.settings.seed >= 0 ? this.settings.seed : Math.floor(Math.random() * 2147483648), // Use random seed if -1
                 speed_factor: this.settings.speed_factor,
                 language: this.settings.language,
                 split_text: this.settings.split_text,
