@@ -173,6 +173,8 @@ export async function generateThumbnail(directories, type, file) {
                 if (ratio >= 1.2857) classification = 'landscape';
                 else if (ratio <= 0.7778) classification = 'portrait';
                 else classification = 'square';
+            } catch (e) {
+                // if jimp fails to read the image for classification, proceed with unknown
             }
             return { path: pathToCachedFile, classification };
         }
