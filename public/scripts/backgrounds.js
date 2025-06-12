@@ -456,6 +456,7 @@ export async function getBackgrounds() {
         const images = data.images;
         Object.assign(THUMBNAIL_CONFIG, data.config);
         allBackgroundAspects = data.aspects || {};
+        console.log('Fetched background aspects:', allBackgroundAspects); // Added log
         $('#bg_menu_content').children('div').remove();
         for (const bg of images) {
             const template = await getBackgroundFromTemplate(bg, false);
@@ -557,6 +558,7 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     } else {
         template.attr('data-aspect-ratio', 'unknown'); // Default if not found
     }
+    console.log('Set data-aspect-ratio for', bg, 'to', template.attr('data-aspect-ratio')); // Added log
     return template;
 }
 
@@ -725,23 +727,29 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="square">Square</option>'));
 
     const $fittingDropdown = $('#background_fitting');
-    $fittingDropdown.after($aspectRatioDropdown);
+    const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
+
+    $fittingDropdown.before($dropdownWrapper); // Place the wrapper where the first dropdown was.
+    $dropdownWrapper.append($fittingDropdown); // Move the fitting dropdown into the wrapper.
+    $dropdownWrapper.append($aspectRatioDropdown); // Add the new dropdown into the wrapper.
 
     // Event listener for the aspect ratio dropdown
     $aspectRatioDropdown.on('input', function() {
         const selectedFilter = $(this).val();
         $('#bg_menu_content > div.bg_example').each(function() {
             const $bgElement = $(this);
+            const bgAspectRatio = $bgElement.data('aspect-ratio');
+            console.log('Filtering:', 'Selected:', selectedFilter, 'BG Element Aspect:', bgAspectRatio, 'Visible before:', $bgElement.is(':visible')); // Added log
             if (selectedFilter === 'none') {
                 $bgElement.show();
             } else {
-                const bgAspectRatio = $bgElement.data('aspect-ratio');
                 if (bgAspectRatio === selectedFilter) {
                     $bgElement.show();
                 } else {
                     $bgElement.hide();
                 }
             }
+            // console.log('Visible after:', $bgElement.is(':visible')); // Optional: log visibility after change
         });
     });
 

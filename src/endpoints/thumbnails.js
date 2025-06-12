@@ -187,7 +187,7 @@ async function generateThumbnail(directories, type, file) {
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 export async function ensureThumbnailCache(directoriesList) {
-    const currentMetadataVersion = "1.0.0";
+    const currentMetadataVersion = "1.0.1";
 
     for (const directories of directoriesList) {
         const aspectRatiosJsonPath = path.join(directories.thumbnailsBg, 'aspect_ratios.json');
