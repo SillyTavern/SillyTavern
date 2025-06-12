@@ -283,20 +283,23 @@ async function getThumbnailFromStorage(bg) {
     }
 
     try {
+        console.log(`[getThumbnailFromStorage] For bg="${bg}": Attempting to fetch original from path: "${getBackgroundPath(bg)}"`);
         const response = await fetch(getBackgroundPath(bg), { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error('Fetch failed with status: ' + response.status);
         }
         const imageBlob = await response.blob();
         const imageBase64 = await getBase64Async(imageBlob);
+        console.log(`[getThumbnailFromStorage] For bg="${bg}": Got imageBase64, length: ${imageBase64?.length}. Attempting createThumbnail.`);
         const thumbnailBase64 = await createThumbnail(imageBase64, THUMBNAIL_CONFIG.width, THUMBNAIL_CONFIG.height);
+        console.log(`[getThumbnailFromStorage] For bg="${bg}": Got thumbnailBase64, length: ${thumbnailBase64?.length}.`);
         const thumbnailBlob = await fetch(thumbnailBase64).then(res => res.blob());
         await THUMBNAIL_STORAGE.setItem(bg, thumbnailBlob);
         const blobUrl = URL.createObjectURL(thumbnailBlob);
         THUMBNAIL_BLOBS.set(bg, blobUrl);
         return blobUrl;
     } catch (error) {
-        console.error('Error fetching thumbnail, fallback image will be used:', error);
+        console.error(`[getThumbnailFromStorage] Error for bg="${bg}" (path: "${getBackgroundPath(bg)}"). Fallback will be used. Error details:`, error);
         const fallbackBlob = PNG_PIXEL_BLOB;
         const fallbackBlobUrl = URL.createObjectURL(fallbackBlob);
         THUMBNAIL_BLOBS.set(bg, fallbackBlobUrl);
@@ -732,7 +735,7 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="landscape">Landscape</option>'));
     $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
     $aspectRatioDropdown.append($('<option value="square">Square</option>'));
-    $aspectRatioDropdown.append($('<option value="video">Video / Animated</option>'));
+    $aspectRatioDropdown.append($('<option value="video">Video / Other</option>'));
     console.log('[backgrounds.js] $aspectRatioDropdown HTML after adding options:', $aspectRatioDropdown.prop('outerHTML'));
 
     const $fittingDropdown = $('#background_fitting');

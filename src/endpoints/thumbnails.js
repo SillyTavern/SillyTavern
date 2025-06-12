@@ -10,6 +10,8 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getConfigValue } from '../util.js';
 
+const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv'];
+
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
 const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
@@ -108,6 +110,12 @@ export function invalidateThumbnail(directories, type, file) {
  * @returns
  */
 async function generateThumbnail(directories, type, file) {
+    const fileExtension = path.extname(file).toLowerCase();
+    if (SKIPPED_EXTENSIONS_FOR_JIMP.includes(fileExtension)) {
+        console.warn(`[generateThumbnail] Skipped Jimp processing for "${file}" due to known problematic extension: ${fileExtension}.`);
+        return null; // Immediately return null, no further processing.
+    }
+
     let thumbnailFolder = getThumbnailFolder(directories, type);
     let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
