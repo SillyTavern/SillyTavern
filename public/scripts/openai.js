@@ -4628,6 +4628,11 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_google_select')) {
+        if (!value) {
+            console.debug('Null Google model selected. Ignoring.');
+            return;
+        }
+
         console.log('Google model changed to', value);
         oai_settings.google_model = value;
     }
