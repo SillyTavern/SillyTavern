@@ -127,7 +127,7 @@ export function invalidateThumbnail(directories, type, file) {
  * @param {string} file Name of the file
  * @returns
  */
-export async function generateThumbnail(directories, type, file) { 
+export async function generateThumbnail(directories, type, file) {
     const fileExtension = path.extname(file).toLowerCase();
     if (SKIPPED_EXTENSIONS_FOR_JIMP.includes(fileExtension)) {
         return null; // Immediately return null, no further processing.
@@ -173,8 +173,6 @@ export async function generateThumbnail(directories, type, file) {
                 if (ratio >= 1.2857) classification = 'landscape';
                 else if (ratio <= 0.7778) classification = 'portrait';
                 else classification = 'square';
-            } catch (e) {
-
             }
             return { path: pathToCachedFile, classification };
         }
@@ -349,7 +347,7 @@ export async function ensureThumbnailCache(directoriesList) {
                             }
                             currentAspectRatios[file] = result.classification;
                         } else { // generateThumbnail returned null (skipped, or error)
-                            if (Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) { 
+                            if (Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) {
                                 delete currentAspectRatios[file];
                                 madeChangesToJSON = true;
                             }

@@ -89,7 +89,7 @@ router.post('/upload', function (request, response) {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
         fs.unlinkSync(img_path);
 
-        (async () => { 
+        (async () => {
             try {
                 const thumbnailResult = await generateThumbnail(request.user.directories, 'bg', filename);
 
@@ -153,7 +153,7 @@ router.post('/upload', function (request, response) {
             } catch (e) {
                 console.error(`[Upload] Error during thumbnail generation or aspect ratio update for ${filename}: ${e.message}`);
             }
-        })(); 
+        })();
 
         response.send(filename);
     } catch (err) {

@@ -731,9 +731,9 @@ export function initBackgrounds() {
 
     const $fittingDropdown = $('#background_fitting');
     const $dropdownWrapper = $('<div id="background_options_wrapper"></div>');
-    $fittingDropdown.before($dropdownWrapper); 
-    $dropdownWrapper.append($fittingDropdown); 
-    $dropdownWrapper.append($aspectRatioDropdown); 
+    $fittingDropdown.before($dropdownWrapper);
+    $dropdownWrapper.append($fittingDropdown);
+    $dropdownWrapper.append($aspectRatioDropdown);
 
     // Event listener for the aspect ratio dropdown
     $aspectRatioDropdown.on('input', function() {
