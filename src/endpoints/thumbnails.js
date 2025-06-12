@@ -177,9 +177,15 @@ async function generateThumbnail(directories, type, file) {
             ? await thumbImage.getBufferAsync(JimpMime.png)
             : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality }); // Assuming default jpegColorSpace is fine
 
-        console.log(`[generateThumbnail] Attempting to write thumbnail for ${file} to ${pathToCachedFile}. Buffer length: ${buffer ? buffer.length : 'undefined'}`);
-        writeFileAtomicSync(pathToCachedFile, buffer); // This line can throw, will be caught by outer try-catch
-        console.log(`[generateThumbnail] Successfully wrote thumbnail for ${file} to ${pathToCachedFile} (after writeFileAtomicSync)`);
+        console.log(`[generateThumbnail] For file "${file}": Preparing to write. Path: "${pathToCachedFile}", Resolved Path: "${path.resolve(pathToCachedFile)}".`);
+        console.log(`[generateThumbnail] Buffer for "${file}": Type=${typeof buffer}, Length=${buffer?.length}, IsBuffer=${Buffer.isBuffer(buffer)}`);
+        try {
+            writeFileAtomicSync(pathToCachedFile, buffer);
+            console.log(`[generateThumbnail] SUCCESS: writeFileAtomicSync for "${file}" to "${pathToCachedFile}"`);
+        } catch (writeError) {
+            console.error(`[generateThumbnail] ERROR during writeFileAtomicSync for "${file}" to "${pathToCachedFile}": ${writeError.message}`, writeError.stack);
+            throw writeError; // Re-throw to be caught by the main try...catch for the function.
+        }
         return { path: pathToCachedFile, classification: classification };
 
     } catch (error) {
@@ -350,10 +356,11 @@ router.get('/', async function (request, response) {
             }
 
             const pathToOriginalFile = path.join(folder, file);
-            console.log(`[/thumbnail route] Determined path: ${pathToOriginalFile}`);
-            const effectivePathForDisabled = pathToOriginalFile;
+            const effectivePathForDisabled = pathToOriginalFile; // Renamed for clarity
+            console.log(`[/thumbnail route] Determined path: ${effectivePathForDisabled}`);
+            console.log(`[/thumbnail route] For file "${request.query.file}", type "${request.query.type}": Effective path: "${effectivePathForDisabled}", Resolved Effective Path: "${effectivePathForDisabled ? path.resolve(effectivePathForDisabled) : 'N/A'}"`);
             if (fs.existsSync(effectivePathForDisabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForDisabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForDisabled}`); }
-            if (!fs.existsSync(pathToOriginalFile)) {
+            if (!fs.existsSync(effectivePathForDisabled)) { // Using effectivePathForDisabled here
                 return response.sendStatus(404);
             }
             const contentType = mime.lookup(pathToOriginalFile) || 'image/png';
@@ -364,20 +371,21 @@ router.get('/', async function (request, response) {
 
         const thumbnailResult = await generateThumbnail(request.user.directories, type, file);
         const pathToCachedFile = thumbnailResult ? thumbnailResult.path : null;
-        console.log(`[/thumbnail route] Determined path: ${pathToCachedFile}`);
+        const effectivePathForEnabled = pathToCachedFile; // Renamed for clarity
+        console.log(`[/thumbnail route] Determined path: ${effectivePathForEnabled}`);
+        console.log(`[/thumbnail route] For file "${request.query.file}", type "${request.query.type}": Effective path: "${effectivePathForEnabled}", Resolved Effective Path: "${effectivePathForEnabled ? path.resolve(effectivePathForEnabled) : 'N/A'}"`);
 
-        if (!pathToCachedFile) {
+        if (!effectivePathForEnabled) { // Using effectivePathForEnabled here
             return response.sendStatus(404);
         }
 
-        const effectivePathForEnabled = pathToCachedFile;
         if (fs.existsSync(effectivePathForEnabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForEnabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForEnabled}`); }
-        if (!fs.existsSync(pathToCachedFile)) { // This check might seem redundant due to above, but keeping for safety
+        if (!fs.existsSync(effectivePathForEnabled)) { // This check might seem redundant due to above, but keeping for safety. Using effectivePathForEnabled.
             return response.sendStatus(404);
         }
 
-        const contentType = mime.lookup(pathToCachedFile) || 'image/jpeg';
-        const cachedFile = await fsPromises.readFile(pathToCachedFile);
+        const contentType = mime.lookup(effectivePathForEnabled) || 'image/jpeg'; // Using effectivePathForEnabled
+        const cachedFile = await fsPromises.readFile(effectivePathForEnabled); // Using effectivePathForEnabled
         response.setHeader('Content-Type', contentType);
         return response.send(cachedFile);
     } catch (error) {

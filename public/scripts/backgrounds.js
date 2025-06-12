@@ -552,18 +552,20 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
 
-    let classification = allBackgroundAspects[bg]; // bg is the filename
+    const serverClassification = allBackgroundAspects[bg]; // What the server provided
+    let finalClassification;
 
-    if (!classification || classification === 'unknown') {
-        const lowerBg = bg.toLowerCase();
-        if (lowerBg.endsWith('.webp') || lowerBg.endsWith('.gif') || lowerBg.endsWith('.mp4') || lowerBg.endsWith('.webm')) {
-            classification = 'video';
-        } else {
-            classification = 'unknown'; // Default if not a recognized video/animated type
-        }
+    if (serverClassification && serverClassification !== 'unknown') {
+        // Use valid classification from server (e.g., landscape, portrait, square)
+        finalClassification = serverClassification;
+    } else {
+        // Server couldn't determine aspect ratio (it was undefined in allBackgroundAspects or explicitly 'unknown')
+        // As per user feedback, classify these as 'video'.
+        finalClassification = 'video';
     }
-    template.attr('data-aspect-ratio', classification);
-    console.log('Set data-aspect-ratio for', bg, 'to', template.attr('data-aspect-ratio')); // Added log
+
+    template.attr('data-aspect-ratio', finalClassification);
+    console.log(`[backgrounds.js] File: "${bg}", Server Aspect: "${serverClassification}", Final Classification for UI: "${finalClassification}"`);
     return template;
 }
 
@@ -731,6 +733,7 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
     $aspectRatioDropdown.append($('<option value="square">Square</option>'));
     $aspectRatioDropdown.append($('<option value="video">Video / Animated</option>'));
+    console.log('[backgrounds.js] $aspectRatioDropdown HTML after adding options:', $aspectRatioDropdown.prop('outerHTML'));
 
     const $fittingDropdown = $('#background_fitting');
     const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
@@ -752,17 +755,18 @@ export function initBackgrounds() {
                 .appendTo('head');
         }
 
-        // First, remove the class from all to handle items that should become visible
-        $backgroundItems.removeClass('bg-filtered-out');
-        // The console.log for debugging has been removed as part of this optimization refactor.
-        // If debugging is needed again, it can be re-added.
+        // Defer the DOM manipulation
+        setTimeout(function() {
+            $backgroundItems.removeClass('bg-filtered-out'); // Show all items initially
+            // The console.log for debugging has been removed as part of this optimization refactor.
+            // If debugging is needed again, it can be re-added.
 
-        // Then, if a filter is active, add the class back to those that should be hidden
-        if (selectedFilter !== 'none') {
-            $backgroundItems.filter(function() {
-                return $(this).data('aspect-ratio') !== selectedFilter;
-            }).addClass('bg-filtered-out');
-        }
+            if (selectedFilter !== 'none') {
+                $backgroundItems.filter(function() {
+                    return $(this).data('aspect-ratio') !== selectedFilter;
+                }).addClass('bg-filtered-out'); // Hide items that don't match the filter
+            }
+        }, 0); // Yield thread before heavy DOM manipulation
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
