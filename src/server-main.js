@@ -337,7 +337,7 @@ async function postSetupTasks(result) {
             const appName = validBrowsers[browserLaunchApp.trim().toLowerCase()];
             const openOptions = appName ? { app: { name: appName } } : {};
 
-            console.log('Launching in a browser...');
+            console.log(`Launching in a browser: ${browserLaunchApp}...`);
             await open(browserLaunchUrl.toString(), openOptions);
         } catch (error) {
             console.error('Failed to launch the browser. Open the URL manually.');
