@@ -150,7 +150,7 @@
         "@types/lodash": "^4.17.17",
         "@types/mime-types": "^3.0.1",
         "@types/multer": "^1.4.13",
-        "@types/node": "^18.19.111",
+        "@types/node": "^18.19.84",
         "@types/node-persist": "^3.1.8",
         "@types/png-chunk-text": "^1.0.3",
         "@types/png-chunks-extract": "^1.0.2",

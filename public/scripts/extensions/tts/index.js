@@ -27,6 +27,7 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { GoogleTranslateTtsProvider } from './google-translate.js';
+import { ChatterboxTtsProvider } from './chatterbox.js';
 import { KokoroTtsProvider } from './kokoro.js';
 import { TtsWebuiProvider } from './tts-webui.js';
 
@@ -89,6 +90,7 @@ export function getPreviewString(lang) {
 const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     Azure: AzureTtsProvider,
+    Chatterbox: ChatterboxTtsProvider,
     Coqui: CoquiTtsProvider,
     'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,

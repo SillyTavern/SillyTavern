@@ -1476,6 +1476,10 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     padding-right: var(--mes-right-spacing);
 }
 
+.mes_text hr {
+    opacity: 0.4;
+}
+
 br {
     display: block;
     margin: 2px 0;
