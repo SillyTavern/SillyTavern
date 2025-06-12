@@ -27,7 +27,7 @@ class ChatterboxTtsProvider {
             voiceMap: this.settings.voiceMap || {},
         };
     }
-    
+
     ready = false;
     voices = [];
     separator = '. ';
@@ -134,7 +134,7 @@ class ChatterboxTtsProvider {
             </select>
         </div>`;
 
-        html += `</div>`; // End params section
+        html += '</div>'; // End params section
 
         // Footer with links
         html += `<div class="chatterbox-footer">
@@ -142,7 +142,7 @@ class ChatterboxTtsProvider {
             <a href="https://github.com/devnen/Chatterbox-TTS-Server" target="_blank">Documentation</a>
         </div>`;
 
-        html += `</div>`; // End container
+        html += '</div>'; // End container
 
         // Add CSS styles
         html += `<style>
@@ -224,19 +224,19 @@ class ChatterboxTtsProvider {
         this.updateUIFromSettings();
 
         console.debug('ChatterboxTTS: Settings loaded');
-        
+
         try {
             // Check if TTS provider is ready
             await this.checkReady();
-            
+
             if (this.ready) {
                 // Fetch all voice types for the voice map
                 await this.fetchTtsVoiceObjects();
                 this.updateStatus('Ready');
             }
-            
+
             this.setupEventListeners();
-            
+
         } catch (error) {
             console.error('Error loading Chatterbox settings:', error);
             this.updateStatus('Offline');
@@ -274,13 +274,13 @@ class ChatterboxTtsProvider {
     async checkReady() {
         try {
             const response = await fetch(`${this.settings.provider_endpoint}/api/ui/initial-data`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP Error Response: ${response.status} ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             // Check if we got valid data
             if (data) {
                 this.ready = true;
@@ -306,15 +306,15 @@ class ChatterboxTtsProvider {
             if (!predefinedResponse.ok) {
                 throw new Error(`HTTP ${predefinedResponse.status}: ${predefinedResponse.statusText}`);
             }
-            
+
             const predefinedData = await predefinedResponse.json();
-            
+
             // Transform predefined voices
             const predefinedVoices = predefinedData.map(voice => ({
                 name: voice.display_name,
                 voice_id: voice.voice_id,
                 preview_url: null,
-                lang: voice.language || 'en'
+                lang: voice.language || 'en',
             }));
 
             // Always try to fetch reference voices
@@ -327,16 +327,16 @@ class ChatterboxTtsProvider {
                         name: `[Clone] ${filename}`,
                         voice_id: `ref_${filename}`,
                         preview_url: null,
-                        lang: 'en'
+                        lang: 'en',
                     }));
                 }
             } catch (error) {
                 console.warn('Failed to fetch reference voices:', error);
             }
-            
+
             // Combine all voices
             this.voices = [...predefinedVoices, ...referenceVoices];
-            
+
             console.log(`Loaded ${this.voices.length} voices (${predefinedVoices.length} predefined, ${referenceVoices.length} reference)`);
             return this.voices;
         } catch (error) {
@@ -439,7 +439,7 @@ class ChatterboxTtsProvider {
         try {
             this.updateStatus('Processing');
             await this.checkReady();
-            
+
             if (this.ready) {
                 await this.fetchTtsVoiceObjects();
                 this.updateStatus('Ready');
@@ -459,18 +459,18 @@ class ChatterboxTtsProvider {
     async previewTtsVoice(voiceId) {
         try {
             this.updateStatus('Processing');
-            
-            const previewText = "Hello! This is a preview of the selected voice.";
-            
+
+            const previewText = 'Hello! This is a preview of the selected voice.';
+
             // Determine if this is a reference voice
             let isReferenceVoice = false;
             let actualVoiceId = voiceId;
-            
+
             if (voiceId && voiceId.startsWith('ref_')) {
                 isReferenceVoice = true;
                 actualVoiceId = voiceId.substring(4); // Remove 'ref_' prefix
             }
-            
+
             // Generate preview using the main TTS endpoint
             const requestBody = {
                 text: previewText,
@@ -482,7 +482,7 @@ class ChatterboxTtsProvider {
                 speed_factor: this.settings.speed_factor,
                 language: this.settings.language,
                 split_text: false, // Don't split for preview
-                output_format: this.settings.output_format
+                output_format: this.settings.output_format,
             };
 
             // Add voice-specific parameters
@@ -495,9 +495,9 @@ class ChatterboxTtsProvider {
             const response = await fetch(`${this.settings.provider_endpoint}/tts`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
@@ -507,15 +507,15 @@ class ChatterboxTtsProvider {
             // Get the audio blob and play it
             const audioBlob = await response.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
-            
+
             const audio = new Audio(audioUrl);
             audio.addEventListener('ended', () => {
                 URL.revokeObjectURL(audioUrl);
                 this.updateStatus('Ready');
             });
-            
+
             await audio.play();
-            
+
         } catch (error) {
             console.error('Error previewing voice:', error);
             this.updateStatus('Ready');
@@ -532,14 +532,14 @@ class ChatterboxTtsProvider {
         if (this.voices.length === 0) {
             await this.fetchTtsVoiceObjects();
         }
-        
+
         // Find the voice object by name or voice_id
-        let match = this.voices.find(voice => 
-            voice.name === voiceName || 
+        let match = this.voices.find(voice =>
+            voice.name === voiceName ||
             voice.voice_id === voiceName ||
-            voice.display_name === voiceName
+            voice.display_name === voiceName,
         );
-        
+
         if (!match) {
             console.warn(`Voice not found: ${voiceName}`);
             // Check if it's a reference voice that wasn't in the list
@@ -549,7 +549,7 @@ class ChatterboxTtsProvider {
                     name: `[Clone] ${filename}`,
                     voice_id: voiceName,
                     preview_url: null,
-                    lang: 'en'
+                    lang: 'en',
                 };
             }
             // Return a default voice object
@@ -557,10 +557,10 @@ class ChatterboxTtsProvider {
                 name: voiceName || 'Default',
                 voice_id: voiceName || this.settings.predefined_voice || 'S1',
                 preview_url: null,
-                lang: 'en'
+                lang: 'en',
             };
         }
-        
+
         return match;
     }
 
@@ -571,16 +571,16 @@ class ChatterboxTtsProvider {
     async generateTts(inputText, voiceId) {
         try {
             this.updateStatus('Processing');
-            
+
             // Determine if this is a reference voice
             let isReferenceVoice = false;
             let actualVoiceId = voiceId;
-            
+
             if (voiceId && voiceId.startsWith('ref_')) {
                 isReferenceVoice = true;
                 actualVoiceId = voiceId.substring(4); // Remove 'ref_' prefix
             }
-            
+
             // Prepare the request body
             const requestBody = {
                 text: inputText,
@@ -593,7 +593,7 @@ class ChatterboxTtsProvider {
                 language: this.settings.language,
                 split_text: this.settings.split_text,
                 chunk_size: this.settings.chunk_size,
-                output_format: this.settings.output_format
+                output_format: this.settings.output_format,
             };
 
             // Add voice-specific parameters
@@ -609,9 +609,9 @@ class ChatterboxTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'
+                    'Cache-Control': 'no-cache',
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
@@ -621,10 +621,10 @@ class ChatterboxTtsProvider {
             }
 
             this.updateStatus('Ready');
-            
+
             // Return the response directly - SillyTavern expects a Response object
             return response;
-            
+
         } catch (error) {
             console.error('Error in generateTts:', error);
             this.updateStatus('Ready');
