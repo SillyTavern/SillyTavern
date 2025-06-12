@@ -111,74 +111,88 @@ async function generateThumbnail(directories, type, file) {
     let thumbnailFolder = getThumbnailFolder(directories, type);
     let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
+
     const pathToCachedFile = path.join(thumbnailFolder, file);
     const pathToOriginalFile = path.join(originalFolder, file);
 
     const cachedFileExists = fs.existsSync(pathToCachedFile);
     const originalFileExists = fs.existsSync(pathToOriginalFile);
-
-    // to handle cases when original image was updated after thumb creation
     let shouldRegenerate = false;
 
-    if (cachedFileExists && originalFileExists) {
+    if (!originalFileExists) {
+        if (cachedFileExists) {
+            try {
+                fs.unlinkSync(pathToCachedFile);
+                console.warn(`Removed stale thumbnail for deleted original: ${file}`);
+            } catch (e) {
+                console.error(`Error removing stale thumbnail ${pathToCachedFile}: ${e.message}`);
+            }
+        }
+        return null;
+    }
+
+    if (cachedFileExists) {
         const originalStat = fs.statSync(pathToOriginalFile);
         const cachedStat = fs.statSync(pathToCachedFile);
-
-        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.warn('Original file changed. Regenerating thumbnail...');
+        if (originalStat.mtimeMs > cachedStat.mtimeMs) { // Corrected to mtimeMs
             shouldRegenerate = true;
         }
     }
 
-    // Read the image to determine classification, even if cached file exists and no regeneration is needed for the image itself.
-    // This is simplified for now; ensureThumbnailCache will be the primary writer of classification data.
-    let classification = 'square'; // Default classification
-
-    if (!originalFileExists) {
-        // If original doesn't exist, can't generate or classify.
-        // If a cached file exists but original is gone, it's stale. invalidateThumbnail should handle cleanup.
-        return null;
-    }
-
-    let image;
+    // Main processing block
     try {
-        image = await Jimp.read(pathToOriginalFile);
+        // If thumbnail exists and doesn't need regeneration, get classification and return
+        if (cachedFileExists && !shouldRegenerate) {
+            let classification = 'unknown';
+            try {
+                const imageForClassification = await Jimp.read(pathToOriginalFile);
+                const ratio = imageForClassification.bitmap.width / imageForClassification.bitmap.height;
+                if (ratio >= 1.2857) classification = 'landscape';
+                else if (ratio <= 0.7778) classification = 'portrait';
+                else classification = 'square';
+            } catch (e) {
+                console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`);
+            }
+            return { path: pathToCachedFile, classification: classification };
+        }
+
+        // If we reach here, either thumbnail doesn't exist or needs regeneration.
+        const image = await Jimp.read(pathToOriginalFile); // This is the primary point of failure for APNG etc.
+
+        // Get classification
+        let classification = 'square';
         const ratio = image.bitmap.width / image.bitmap.height;
         if (ratio >= 1.2857) classification = 'landscape';
         else if (ratio <= 0.7778) classification = 'portrait';
-    } catch (e) {
-        console.error(`Failed to read image for classification ${pathToOriginalFile}:`, e);
-        // If we can't read the image, we can't generate a thumbnail or classify it.
-        // If a cached version exists, we could return its path but without classification.
-        // However, the function expects to return classification. So, treat as failure.
-        return null;
-    }
 
-    if (cachedFileExists && !shouldRegenerate) {
-        return { path: pathToCachedFile, classification: classification };
-    }
-
-    // If we reach here, either the thumbnail doesn't exist or needs regeneration.
-    try {
+        // Generate thumbnail
         let buffer;
-        // Image already read for classification, use the 'image' object.
         const size = dimensions[type];
-        const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : image.bitmap.width;
-        const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : image.bitmap.height;
-        image.cover({ w: width, h: height }); // Use image.cover for resizing
+        const thumbImage = image.clone();
+        const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : thumbImage.bitmap.width;
+        const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : thumbImage.bitmap.height;
+        thumbImage.cover({ w: width, h: height });
+
         buffer = pngFormat
-            ? await image.getBuffer(JimpMime.png)
-            : await image.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
+            ? await thumbImage.getBufferAsync(JimpMime.png)
+            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality }); // Assuming default jpegColorSpace is fine
 
         writeFileAtomicSync(pathToCachedFile, buffer);
-    }
-    catch (e) {
-        console.error(`Failed to generate thumbnail for ${pathToOriginalFile}:`, e);
-        // Attempted to generate, but failed. Return null.
+        return { path: pathToCachedFile, classification: classification };
+
+    } catch (error) {
+        console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`);
+
+        if (shouldRegenerate && cachedFileExists) {
+            try {
+                fs.unlinkSync(pathToCachedFile);
+                console.warn(`Removed potentially outdated/corrupt thumbnail for ${file} due to regeneration failure.`);
+            } catch (e) {
+                console.error(`Error removing thumbnail for ${file} after regeneration failure: ${e.message}`);
+            }
+        }
         return null;
     }
-
-    return { path: pathToCachedFile, classification: classification };
 }
 
 /**
