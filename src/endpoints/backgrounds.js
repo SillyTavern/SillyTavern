@@ -11,7 +11,7 @@ import {
     generateThumbnail,
     getThumbnailFolder,
     currentMetadataVersion as sharedMetadataVersion,
-    writeFileAtomicSync as sharedWriteFileAtomicSync
+    writeFileAtomicSync as sharedWriteFileAtomicSync,
 } from './thumbnails.js';
 import { getImages } from '../util.js';
 
@@ -137,8 +137,8 @@ router.post('/upload', function (request, response) {
                         const aspectRatiosJsonPath = path.join(thumbnailBaseDir, 'aspect_ratios.json');
                         if (fs.existsSync(aspectRatiosJsonPath)) {
                             try {
-                                let aspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
-                                if (aspectRatios.hasOwnProperty(filename)) {
+                                const aspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
+                                if (Object.prototype.hasOwnProperty.call(aspectRatios, filename)) {
                                     delete aspectRatios[filename];
                                     sharedWriteFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
                                     console.info(`[Upload] Removed entry for unprocessable file ${filename} from aspect_ratios.json.`);

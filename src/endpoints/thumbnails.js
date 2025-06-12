@@ -5,13 +5,14 @@ import path from 'node:path';
 import mime from 'mime-types';
 import express from 'express';
 import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic'; // Import for local use
 import { Jimp, JimpMime } from '../jimp.js';
-export { sync as writeFileAtomicSync } from 'write-file-atomic'; // Re-exporting
+export { sync as writeFileAtomicSync } from 'write-file-atomic'; // Re-exporting for other modules
 
 import { getConfigValue } from '../util.js';
 
 // This constant needs to be accessible for export
-export const currentMetadataVersion = "1.0.1";
+export const currentMetadataVersion = '1.0.1';
 
 const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv', '.webp'];
 
@@ -21,8 +22,8 @@ const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase
 
 /** @type {Record<string, number[]>} */
 export const dimensions = {
-    'bg': getConfigValue('thumbnails.dimensions.bg', [160, 90]),
-    'avatar': getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
+    bg: getConfigValue('thumbnails.dimensions.bg', [160, 90]),
+    avatar: getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
 };
 
 /**
@@ -100,12 +101,12 @@ export function invalidateThumbnail(directories, type, file) {
 
         try {
             if (fs.existsSync(aspectRatiosJsonPath)) {
-                let aspectRatiosData = fs.readFileSync(aspectRatiosJsonPath, 'utf-8');
-                let aspectRatios = JSON.parse(aspectRatiosData); // Potential point of failure if JSON is corrupt
+                const aspectRatiosData = fs.readFileSync(aspectRatiosJsonPath, 'utf-8');
+                const aspectRatios = JSON.parse(aspectRatiosData); // Potential point of failure if JSON is corrupt
 
-                if (aspectRatios.hasOwnProperty(file)) {
+                if (Object.prototype.hasOwnProperty.call(aspectRatios, file)) {
                     delete aspectRatios[file];
-                    // Use the exported writeFileAtomicSync from this module
+                    // Use the imported writeFileAtomicSync from this module
                     writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
                     console.info(`[invalidateThumbnail] Removed entry for "${file}" from aspect_ratios.json.`);
 
@@ -138,8 +139,8 @@ export async function generateThumbnail(directories, type, file) { // Added expo
         return null; // Immediately return null, no further processing.
     }
 
-    let thumbnailFolder = getThumbnailFolder(directories, type);
-    let originalFolder = getOriginalFolder(directories, type);
+    const thumbnailFolder = getThumbnailFolder(directories, type);
+    const originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
 
     const pathToCachedFile = path.join(thumbnailFolder, file);
@@ -183,7 +184,7 @@ export async function generateThumbnail(directories, type, file) { // Added expo
             } catch (e) {
                 // console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`); // Removed
             }
-            return { path: pathToCachedFile, classification: classification };
+            return { path: pathToCachedFile, classification };
         }
 
         // If we reach here, either thumbnail doesn't exist or needs regeneration.
@@ -205,10 +206,10 @@ export async function generateThumbnail(directories, type, file) { // Added expo
 
         buffer = pngFormat
             ? await thumbImage.getBufferAsync(JimpMime.png)
-            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality });
+            : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality });
 
         writeFileAtomicSync(pathToCachedFile, buffer);
-        return { path: pathToCachedFile, classification: classification };
+        return { path: pathToCachedFile, classification };
 
     } catch (error) {
         // console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`); // Removed
@@ -287,10 +288,10 @@ export async function ensureThumbnailCache(directoriesList) {
                 needsFullRegeneration = true; // Treat as full regeneration if JSON is corrupt
                 madeChangesToJSON = true;
                 existingAspectRatios = {}; // Reset
-                 // Also clear out potentially inconsistent thumbnails
+                // Also clear out potentially inconsistent thumbnails
                 const filesInThumbnailsBg = fs.readdirSync(directories.thumbnailsBg);
                 for (const fileInThumbnailsBg of filesInThumbnailsBg) {
-                     if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
+                    if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
                         const fullPath = path.join(directories.thumbnailsBg, fileInThumbnailsBg);
                         if (fs.statSync(fullPath).isFile()) {
                             try { fs.unlinkSync(fullPath); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete old thumbnail ${fileInThumbnailsBg} during corruption handling:`, e); }
@@ -338,7 +339,7 @@ export async function ensureThumbnailCache(directoriesList) {
                 // Since we've filtered for files, statSync should be safe.
                 // Error handling for statSync can be added if needed, but the outer try-catch for the loop might cover it.
                 const originalStat = fs.statSync(pathToOriginalFile);
-                if (!currentAspectRatios.hasOwnProperty(file)) {
+                if (!Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) {
                     fileNeedsProcessing = true;
                 } else if (!fs.existsSync(pathToCachedFile)) {
                     fileNeedsProcessing = true;
@@ -359,13 +360,13 @@ export async function ensureThumbnailCache(directoriesList) {
                             }
                             currentAspectRatios[file] = result.classification;
                         } else { // generateThumbnail returned null (skipped, or error)
-                            if (currentAspectRatios.hasOwnProperty(file)) { // Was in JSON before, but now it's not processable
+                            if (Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) { // Was in JSON before, but now it's not processable
                                 delete currentAspectRatios[file];
                                 madeChangesToJSON = true;
                             }
                             // If it's a new file that couldn't be processed, it's just not added.
                         }
-                    })
+                    }),
                 );
             }
             // If !fileNeedsProcessing, the entry from existingAspectRatios is kept in currentAspectRatios implicitly.
@@ -376,13 +377,15 @@ export async function ensureThumbnailCache(directoriesList) {
         // Process deletions: remove entries from currentAspectRatios if original file is gone
         if (!needsFullRegeneration) { // No need to check deletions if we started from scratch
             for (const existingFileInJson in currentAspectRatios) {
-                if (!bgFileSet.has(existingFileInJson)) {
-                    console.info(`[ensureThumbnailCache] Original file ${existingFileInJson} deleted. Removing from aspect ratios and deleting its thumbnail.`);
-                    delete currentAspectRatios[existingFileInJson];
-                    madeChangesToJSON = true;
-                    const pathToStaleThumbnail = path.join(directories.thumbnailsBg, existingFileInJson);
-                    if (fs.existsSync(pathToStaleThumbnail)) {
-                        try { fs.unlinkSync(pathToStaleThumbnail); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete stale thumbnail ${pathToStaleThumbnail}: ${e.message}`); }
+                if (Object.prototype.hasOwnProperty.call(currentAspectRatios, existingFileInJson)) {
+                    if (!bgFileSet.has(existingFileInJson)) {
+                        console.info(`[ensureThumbnailCache] Original file ${existingFileInJson} deleted. Removing from aspect ratios and deleting its thumbnail.`);
+                        delete currentAspectRatios[existingFileInJson];
+                        madeChangesToJSON = true;
+                        const pathToStaleThumbnail = path.join(directories.thumbnailsBg, existingFileInJson);
+                        if (fs.existsSync(pathToStaleThumbnail)) {
+                            try { fs.unlinkSync(pathToStaleThumbnail); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete stale thumbnail ${pathToStaleThumbnail}: ${e.message}`); }
+                        }
                     }
                 }
             }
@@ -406,7 +409,7 @@ export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
 router.get('/', async function (request, response) {
-    try{
+    try {
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);
         }
@@ -418,7 +421,7 @@ router.get('/', async function (request, response) {
             return response.sendStatus(400);
         }
 
-        if (!(type == 'bg' || type == 'avatar')) {
+        if (!(type === 'bg' || type === 'avatar')) {
             return response.sendStatus(400);
         }
 
