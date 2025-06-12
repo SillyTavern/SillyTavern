@@ -211,7 +211,7 @@ export async function generateThumbnail(directories, type, file) { // Added expo
         return { path: pathToCachedFile, classification: classification };
 
     } catch (error) {
-        console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`);
+        // console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`); // Removed
 
         if (shouldRegenerate && cachedFileExists) {
             try {
@@ -300,26 +300,49 @@ export async function ensureThumbnailCache(directoriesList) {
             }
         }
 
-        const bgFiles = fs.readdirSync(directories.backgrounds);
+        const allEntriesInBgDir = fs.readdirSync(directories.backgrounds);
+        const bgFiles = []; // This will store only valid image files
+        const PLAUSIBLE_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.apng', '.tiff'];
+
+        for (const entryName of allEntriesInBgDir) {
+            const fullPathToEntry = path.join(directories.backgrounds, entryName);
+            try {
+                if (!fs.statSync(fullPathToEntry).isFile()) {
+                    continue; // Skip directories
+                }
+                const fileExtension = path.extname(entryName).toLowerCase();
+                if (!PLAUSIBLE_IMAGE_EXTENSIONS.includes(fileExtension)) {
+                    continue; // Skip non-plausible image files
+                }
+                bgFiles.push(entryName); // Add valid image file to the list for processing
+            } catch (statError) {
+                // Optional: console.error(`[ensureThumbnailCache] Error stating file or directory ${fullPathToEntry}: ${statError.message}. Skipping.`);
+                continue;
+            }
+        }
+        // Now, bgFiles contains only actual image files.
+
         const bgFileSet = new Set(bgFiles); // For efficient lookup of existing background files
         let currentAspectRatios = { ...existingAspectRatios };
         const tasks = [];
 
         // Process current background files: add new ones, update changed ones
-        for (const file of bgFiles) {
+        for (const file of bgFiles) { // Iterate over pre-filtered bgFiles
             const pathToOriginalFile = path.join(directories.backgrounds, file);
-            const pathToCachedFile = path.join(directories.thumbnailsBg, file); // Assuming thumbnail name matches original
+            const pathToCachedFile = path.join(directories.thumbnailsBg, file);
             let fileNeedsProcessing = false;
 
             if (needsFullRegeneration) {
                 fileNeedsProcessing = true;
             } else {
+                // Since we've filtered for files, statSync should be safe.
+                // Error handling for statSync can be added if needed, but the outer try-catch for the loop might cover it.
                 const originalStat = fs.statSync(pathToOriginalFile);
-                if (!currentAspectRatios.hasOwnProperty(file)) { // File is new (not in existing JSON)
+                if (!currentAspectRatios.hasOwnProperty(file)) {
                     fileNeedsProcessing = true;
-                } else if (!fs.existsSync(pathToCachedFile)) { // Thumbnail is missing
+                } else if (!fs.existsSync(pathToCachedFile)) {
                     fileNeedsProcessing = true;
-                } else { // Thumbnail exists, check modification time
+                } else {
                     const cachedStat = fs.statSync(pathToCachedFile);
                     if (originalStat.mtimeMs > cachedStat.mtimeMs) {
                         fileNeedsProcessing = true;
