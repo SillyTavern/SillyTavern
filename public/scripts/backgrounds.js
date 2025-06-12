@@ -555,11 +555,8 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     let finalClassification;
 
     if (serverClassification && serverClassification !== 'unknown') {
-        // Use valid classification from server (e.g., landscape, portrait, square)
         finalClassification = serverClassification;
     } else {
-        // Server couldn't determine aspect ratio (it was undefined in allBackgroundAspects or explicitly 'unknown')
-        // As per user feedback, classify these as 'video'.
         finalClassification = 'video';
     }
 
@@ -733,24 +730,15 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="video">Video / Other</option>'));
 
     const $fittingDropdown = $('#background_fitting');
-    const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
-
-    $fittingDropdown.before($dropdownWrapper); // Place the wrapper where the first dropdown was.
-    $dropdownWrapper.append($fittingDropdown); // Move the fitting dropdown into the wrapper.
-    $dropdownWrapper.append($aspectRatioDropdown); // Add the new dropdown into the wrapper.
+    const $dropdownWrapper = $('<div id="background_options_wrapper"></div>');
+    $fittingDropdown.before($dropdownWrapper); 
+    $dropdownWrapper.append($fittingDropdown); 
+    $dropdownWrapper.append($aspectRatioDropdown); 
 
     // Event listener for the aspect ratio dropdown
     $aspectRatioDropdown.on('input', function() {
         const selectedFilter = $(this).val();
         const $backgroundItems = $('#bg_menu_content > div.bg_example');
-
-        // Ensure the CSS class for filtering is defined
-        if (!$('style#bg-filter-style').length) {
-            $('<style id="bg-filter-style">')
-                .prop('type', 'text/css')
-                .html('.bg-filtered-out { display: none !important; }')
-                .appendTo('head');
-        }
 
         // Defer the DOM manipulation
         setTimeout(function() {

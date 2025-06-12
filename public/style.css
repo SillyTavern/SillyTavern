@@ -3372,6 +3372,15 @@ input[type=search]:focus::-webkit-search-cancel-button {
     height: 100%;
 }
 
+#background_options_wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.bg-filtered-out {
+    display: none !important;
+}
 
 #form_create {
     display: flex;

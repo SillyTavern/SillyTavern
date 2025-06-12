@@ -32,7 +32,7 @@ export const dimensions = {
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
-export function getThumbnailFolder(directories, type) { // Added export
+export function getThumbnailFolder(directories, type) {
     let thumbnailFolder;
 
     switch (type) {
@@ -86,8 +86,6 @@ export function invalidateThumbnail(directories, type, file) {
             console.info(`[invalidateThumbnail] Deleted thumbnail file: ${pathToThumbnail}`);
         } catch (e) {
             console.error(`[invalidateThumbnail] Failed to delete thumbnail file ${pathToThumbnail}:`, e);
-            // If deletion fails, we might not want to proceed with JSON update,
-            // or handle it based on desired robustness. For now, log and continue.
         }
     }
 
@@ -110,15 +108,12 @@ export function invalidateThumbnail(directories, type, file) {
                     writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
                     console.info(`[invalidateThumbnail] Removed entry for "${file}" from aspect_ratios.json.`);
 
-                    // Update version file
                     const versionFilePath = path.join(thumbnailBaseDir, 'aspect_metadata_version.txt');
                     // currentMetadataVersion is a const available in this module's scope
                     fs.writeFileSync(versionFilePath, currentMetadataVersion);
                     console.info(`[invalidateThumbnail] Updated aspect_metadata_version.txt due to removal of ${file}.`);
                 }
             }
-            // If aspectRatiosJsonPath doesn't exist, there's nothing to remove the file from.
-            // ensureThumbnailCache will handle consistency if it runs next.
         } catch (e) {
             console.error(`[invalidateThumbnail] Failed to update aspect_ratios.json or version for deleted file ${file}:`, e);
         }
@@ -132,10 +127,9 @@ export function invalidateThumbnail(directories, type, file) {
  * @param {string} file Name of the file
  * @returns
  */
-export async function generateThumbnail(directories, type, file) { // Added export
+export async function generateThumbnail(directories, type, file) { 
     const fileExtension = path.extname(file).toLowerCase();
     if (SKIPPED_EXTENSIONS_FOR_JIMP.includes(fileExtension)) {
-        // console.warn(`[generateThumbnail] Skipped Jimp processing for "${file}" due to known problematic extension: ${fileExtension}.`); // Removed
         return null; // Immediately return null, no further processing.
     }
 
@@ -170,9 +164,7 @@ export async function generateThumbnail(directories, type, file) { // Added expo
         }
     }
 
-    // Main processing block
     try {
-        // If thumbnail exists and doesn't need regeneration, get classification and return
         if (cachedFileExists && !shouldRegenerate) {
             let classification = 'unknown';
             try {
@@ -182,7 +174,7 @@ export async function generateThumbnail(directories, type, file) { // Added expo
                 else if (ratio <= 0.7778) classification = 'portrait';
                 else classification = 'square';
             } catch (e) {
-                // console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`); // Removed
+
             }
             return { path: pathToCachedFile, classification };
         }
@@ -190,7 +182,6 @@ export async function generateThumbnail(directories, type, file) { // Added expo
         // If we reach here, either thumbnail doesn't exist or needs regeneration.
         const image = await Jimp.read(pathToOriginalFile);
 
-        // Get classification
         let classification = 'square';
         const ratio = image.bitmap.width / image.bitmap.height;
         if (ratio >= 1.2857) classification = 'landscape';
@@ -212,7 +203,6 @@ export async function generateThumbnail(directories, type, file) { // Added expo
         return { path: pathToCachedFile, classification };
 
     } catch (error) {
-        // console.warn(`Jimp processing failed for image ${file}: ${error.message}. Skipping thumbnail and aspect ratio for this file.`); // Removed
 
         if (shouldRegenerate && cachedFileExists) {
             try {
@@ -232,7 +222,6 @@ export async function generateThumbnail(directories, type, file) { // Added expo
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 export async function ensureThumbnailCache(directoriesList) {
-    // currentMetadataVersion is now a module constant
 
     for (const directories of directoriesList) {
         if (!directories.backgrounds || !directories.thumbnailsBg) {
@@ -317,7 +306,7 @@ export async function ensureThumbnailCache(directoriesList) {
                 }
                 bgFiles.push(entryName); // Add valid image file to the list for processing
             } catch (statError) {
-                // Optional: console.error(`[ensureThumbnailCache] Error stating file or directory ${fullPathToEntry}: ${statError.message}. Skipping.`);
+
                 continue;
             }
         }
@@ -360,7 +349,7 @@ export async function ensureThumbnailCache(directoriesList) {
                             }
                             currentAspectRatios[file] = result.classification;
                         } else { // generateThumbnail returned null (skipped, or error)
-                            if (Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) { // Was in JSON before, but now it's not processable
+                            if (Object.prototype.hasOwnProperty.call(currentAspectRatios, file)) { 
                                 delete currentAspectRatios[file];
                                 madeChangesToJSON = true;
                             }
