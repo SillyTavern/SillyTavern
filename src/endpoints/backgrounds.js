@@ -4,7 +4,15 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { dimensions, invalidateThumbnail } from './thumbnails.js';
+// invalidateThumbnail is still used for /delete and /rename, dimensions for /all
+import {
+    dimensions,
+    invalidateThumbnail,
+    generateThumbnail,
+    getThumbnailFolder,
+    currentMetadataVersion as sharedMetadataVersion,
+    writeFileAtomicSync as sharedWriteFileAtomicSync
+} from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
@@ -74,12 +82,81 @@ router.post('/upload', function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const img_path = path.join(request.file.destination, request.file.filename);
-    const filename = request.file.originalname;
+    // Ensure filename is from originalname, as sanitize might have been applied to request.file.filename
+    const { originalname: filename } = request.file;
 
     try {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
         fs.unlinkSync(img_path);
-        invalidateThumbnail(request.user.directories, 'bg', filename);
+        // invalidateThumbnail(request.user.directories, 'bg', filename); // Removed old call
+
+        // New logic to update aspect_ratios.json
+        (async () => { // IIFE to use async/await
+            try {
+                const thumbnailResult = await generateThumbnail(request.user.directories, 'bg', filename);
+
+                if (thumbnailResult && thumbnailResult.classification) {
+                    const thumbnailBaseDir = getThumbnailFolder(request.user.directories, 'bg');
+
+                    if (thumbnailBaseDir) {
+                        const aspectRatiosJsonPath = path.join(thumbnailBaseDir, 'aspect_ratios.json');
+                        let aspectRatios = {};
+
+                        if (fs.existsSync(aspectRatiosJsonPath)) {
+                            try {
+                                const jsonData = fs.readFileSync(aspectRatiosJsonPath, 'utf-8');
+                                aspectRatios = JSON.parse(jsonData);
+                            } catch (e) {
+                                console.error(`[Upload] Failed to parse aspect_ratios.json: ${e.message}. Initializing new object.`);
+                                aspectRatios = {};
+                            }
+                        }
+
+                        if (aspectRatios[filename] !== thumbnailResult.classification) {
+                            aspectRatios[filename] = thumbnailResult.classification;
+                            try {
+                                // Use sharedWriteFileAtomicSync (already imported, no need for fallback check as export is direct)
+                                sharedWriteFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
+                                console.info(`[Upload] Updated aspect_ratios.json for: ${filename} -> ${thumbnailResult.classification}`);
+
+                                const versionFilePath = path.join(thumbnailBaseDir, 'aspect_metadata_version.txt');
+                                // Use sharedMetadataVersion (already imported)
+                                fs.writeFileSync(versionFilePath, sharedMetadataVersion);
+                                console.info(`[Upload] Updated aspect_metadata_version.txt to ${sharedMetadataVersion}`);
+
+                            } catch (e) {
+                                console.error(`[Upload] Failed to write aspect_ratios.json or version file: ${e.message}`);
+                            }
+                        }
+                    } else {
+                        console.error('[Upload] Could not get thumbnail folder path.');
+                    }
+                } else if (thumbnailResult === null) {
+                    const thumbnailBaseDir = getThumbnailFolder(request.user.directories, 'bg');
+                    if (thumbnailBaseDir) {
+                        const aspectRatiosJsonPath = path.join(thumbnailBaseDir, 'aspect_ratios.json');
+                        if (fs.existsSync(aspectRatiosJsonPath)) {
+                            try {
+                                let aspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
+                                if (aspectRatios.hasOwnProperty(filename)) {
+                                    delete aspectRatios[filename];
+                                    sharedWriteFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
+                                    console.info(`[Upload] Removed entry for unprocessable file ${filename} from aspect_ratios.json.`);
+                                    const versionFilePath = path.join(thumbnailBaseDir, 'aspect_metadata_version.txt');
+                                    fs.writeFileSync(versionFilePath, sharedMetadataVersion);
+                                    console.info(`[Upload] Updated aspect_metadata_version.txt to ${sharedMetadataVersion} after removing entry.`);
+                                }
+                            } catch (e) {
+                                console.error(`[Upload] Error processing aspect_ratios.json for unprocessable file ${filename}: ${e.message}`);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`[Upload] Error during thumbnail generation or aspect ratio update for ${filename}: ${e.message}`);
+            }
+        })(); // End of IIFE
+
         response.send(filename);
     } catch (err) {
         console.error(err);

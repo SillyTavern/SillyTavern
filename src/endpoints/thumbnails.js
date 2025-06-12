@@ -6,9 +6,12 @@ import mime from 'mime-types';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 import { Jimp, JimpMime } from '../jimp.js';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
+export { sync as writeFileAtomicSync } from 'write-file-atomic'; // Re-exporting
 
 import { getConfigValue } from '../util.js';
+
+// This constant needs to be accessible for export
+export const currentMetadataVersion = "1.0.1";
 
 const SKIPPED_EXTENSIONS_FOR_JIMP = ['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv', '.webp'];
 
@@ -28,7 +31,7 @@ export const dimensions = {
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
-function getThumbnailFolder(directories, type) {
+export function getThumbnailFolder(directories, type) { // Added export
     let thumbnailFolder;
 
     switch (type) {
@@ -79,25 +82,44 @@ export function invalidateThumbnail(directories, type, file) {
     if (fs.existsSync(pathToThumbnail)) {
         try {
             fs.unlinkSync(pathToThumbnail);
+            console.info(`[invalidateThumbnail] Deleted thumbnail file: ${pathToThumbnail}`);
         } catch (e) {
-            console.error(`Failed to delete thumbnail file ${pathToThumbnail}:`, e);
+            console.error(`[invalidateThumbnail] Failed to delete thumbnail file ${pathToThumbnail}:`, e);
             // If deletion fails, we might not want to proceed with JSON update,
             // or handle it based on desired robustness. For now, log and continue.
         }
     }
 
     if (type === 'bg') {
-        const aspectRatiosJsonPath = path.join(getThumbnailFolder(directories, 'bg'), 'aspect_ratios.json');
+        const thumbnailBaseDir = getThumbnailFolder(directories, 'bg');
+        if (!thumbnailBaseDir) { // Should not happen if type is 'bg' and getThumbnailFolder is correct
+            console.error('[invalidateThumbnail] Could not determine thumbnail base directory for bg type.');
+            return;
+        }
+        const aspectRatiosJsonPath = path.join(thumbnailBaseDir, 'aspect_ratios.json');
+
         try {
             if (fs.existsSync(aspectRatiosJsonPath)) {
-                let aspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
-                if (aspectRatios[file]) {
+                let aspectRatiosData = fs.readFileSync(aspectRatiosJsonPath, 'utf-8');
+                let aspectRatios = JSON.parse(aspectRatiosData); // Potential point of failure if JSON is corrupt
+
+                if (aspectRatios.hasOwnProperty(file)) {
                     delete aspectRatios[file];
+                    // Use the exported writeFileAtomicSync from this module
                     writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(aspectRatios, null, 2));
+                    console.info(`[invalidateThumbnail] Removed entry for "${file}" from aspect_ratios.json.`);
+
+                    // Update version file
+                    const versionFilePath = path.join(thumbnailBaseDir, 'aspect_metadata_version.txt');
+                    // currentMetadataVersion is a const available in this module's scope
+                    fs.writeFileSync(versionFilePath, currentMetadataVersion);
+                    console.info(`[invalidateThumbnail] Updated aspect_metadata_version.txt due to removal of ${file}.`);
                 }
             }
+            // If aspectRatiosJsonPath doesn't exist, there's nothing to remove the file from.
+            // ensureThumbnailCache will handle consistency if it runs next.
         } catch (e) {
-            console.error(`Failed to update aspect_ratios.json for deleted file ${file}:`, e);
+            console.error(`[invalidateThumbnail] Failed to update aspect_ratios.json or version for deleted file ${file}:`, e);
         }
     }
 }
@@ -109,10 +131,10 @@ export function invalidateThumbnail(directories, type, file) {
  * @param {string} file Name of the file
  * @returns
  */
-async function generateThumbnail(directories, type, file) {
+export async function generateThumbnail(directories, type, file) { // Added export
     const fileExtension = path.extname(file).toLowerCase();
     if (SKIPPED_EXTENSIONS_FOR_JIMP.includes(fileExtension)) {
-        console.warn(`[generateThumbnail] Skipped Jimp processing for "${file}" due to known problematic extension: ${fileExtension}.`);
+        // console.warn(`[generateThumbnail] Skipped Jimp processing for "${file}" due to known problematic extension: ${fileExtension}.`); // Removed
         return null; // Immediately return null, no further processing.
     }
 
@@ -159,7 +181,7 @@ async function generateThumbnail(directories, type, file) {
                 else if (ratio <= 0.7778) classification = 'portrait';
                 else classification = 'square';
             } catch (e) {
-                console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`);
+                // console.warn(`Jimp could not read ${file} for aspect ratio (cached thumbnail exists): ${e.message}. Classification set to 'unknown'.`); // Removed
             }
             return { path: pathToCachedFile, classification: classification };
         }
@@ -209,105 +231,151 @@ async function generateThumbnail(directories, type, file) {
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 export async function ensureThumbnailCache(directoriesList) {
-    const currentMetadataVersion = "1.0.1";
+    // currentMetadataVersion is now a module constant
 
     for (const directories of directoriesList) {
-        const aspectRatiosJsonPath = path.join(directories.thumbnailsBg, 'aspect_ratios.json');
-        const versionFilePath = path.join(directories.thumbnailsBg, 'aspect_metadata_version.txt');
-        let existingAspectRatios = {};
-        let detectedVersion = null;
-        let needsRegeneration = false;
-
-        if (fs.existsSync(versionFilePath)) {
+        if (!directories.backgrounds || !directories.thumbnailsBg) {
+            console.warn('[ensureThumbnailCache] Missing backgrounds or thumbnailsBg directory for a user, skipping.');
+            continue;
+        }
+        if (!fs.existsSync(directories.backgrounds)) {
+            console.warn(`[ensureThumbnailCache] Backgrounds directory ${directories.backgrounds} does not exist, skipping.`);
+            continue;
+        }
+        if (!fs.existsSync(directories.thumbnailsBg)) {
             try {
-                detectedVersion = fs.readFileSync(versionFilePath, 'utf-8');
+                fs.mkdirSync(directories.thumbnailsBg, { recursive: true });
+                console.info(`[ensureThumbnailCache] Created thumbnailsBg directory: ${directories.thumbnailsBg}`);
             } catch (e) {
-                console.warn('Could not read version file, assuming regeneration is needed:', e);
-                needsRegeneration = true;
+                console.error(`[ensureThumbnailCache] Failed to create thumbnailsBg directory ${directories.thumbnailsBg}: ${e.message}. Skipping this directory.`);
+                continue;
             }
         }
 
-        if (!detectedVersion || detectedVersion !== currentMetadataVersion || !fs.existsSync(aspectRatiosJsonPath)) {
-            needsRegeneration = true;
-            console.info('Thumbnail metadata version mismatch or missing JSON. Regenerating all background thumbnails and aspect ratio data...');
+        const aspectRatiosJsonPath = path.join(directories.thumbnailsBg, 'aspect_ratios.json');
+        const versionFilePath = path.join(directories.thumbnailsBg, 'aspect_metadata_version.txt');
 
-            // Delete existing thumbnails and aspect ratio JSON if regeneration is needed
+        let existingAspectRatios = {};
+        let needsFullRegeneration = false;
+        let madeChangesToJSON = false;
+
+        const detectedVersion = fs.existsSync(versionFilePath) ? fs.readFileSync(versionFilePath, 'utf-8') : null;
+
+        if (detectedVersion !== currentMetadataVersion || !fs.existsSync(aspectRatiosJsonPath)) {
+            console.info(`[ensureThumbnailCache] Metadata version mismatch or missing JSON for ${directories.thumbnailsBg}. Triggering full regeneration.`);
+            needsFullRegeneration = true;
+            madeChangesToJSON = true; // Will definitely make changes if regenerating fully
+
+            // Delete all existing image thumbnails (not metadata files)
             const filesInThumbnailsBg = fs.readdirSync(directories.thumbnailsBg);
             for (const fileInThumbnailsBg of filesInThumbnailsBg) {
                 if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
                     const fullPath = path.join(directories.thumbnailsBg, fileInThumbnailsBg);
-                    // Ensure it's a file before attempting to delete
-                    try {
-                        if (fs.statSync(fullPath).isFile()) {
-                            fs.unlinkSync(fullPath);
-                        }
-                    } catch (e) {
-                        console.warn(`Could not delete old thumbnail ${fileInThumbnailsBg}:`, e);
+                    if (fs.statSync(fullPath).isFile()) {
+                        try { fs.unlinkSync(fullPath); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete old thumbnail ${fileInThumbnailsBg}:`, e); }
                     }
                 }
             }
             if (fs.existsSync(aspectRatiosJsonPath)) {
-                try {
-                    fs.unlinkSync(aspectRatiosJsonPath);
-                } catch (e) {
-                    console.warn('Could not delete old aspect_ratios.json:', e);
-                }
+                try { fs.unlinkSync(aspectRatiosJsonPath); } catch (e) { console.warn('[ensureThumbnailCache] Could not delete old aspect_ratios.json:', e); }
             }
         } else {
             try {
                 existingAspectRatios = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
             } catch (e) {
-                console.warn('Could not parse aspect_ratios.json, will regenerate it.', e);
-                needsRegeneration = true; // Mark for regen if JSON is corrupt
-                // Also clear existing aspect ratios if JSON is corrupt, to rebuild fresh
-                existingAspectRatios = {};
+                console.warn(`[ensureThumbnailCache] Could not parse aspect_ratios.json for ${directories.thumbnailsBg}, triggering full regeneration. Error: ${e.message}`);
+                needsFullRegeneration = true; // Treat as full regeneration if JSON is corrupt
+                madeChangesToJSON = true;
+                existingAspectRatios = {}; // Reset
+                 // Also clear out potentially inconsistent thumbnails
+                const filesInThumbnailsBg = fs.readdirSync(directories.thumbnailsBg);
+                for (const fileInThumbnailsBg of filesInThumbnailsBg) {
+                     if (fileInThumbnailsBg !== 'aspect_ratios.json' && fileInThumbnailsBg !== 'aspect_metadata_version.txt') {
+                        const fullPath = path.join(directories.thumbnailsBg, fileInThumbnailsBg);
+                        if (fs.statSync(fullPath).isFile()) {
+                            try { fs.unlinkSync(fullPath); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete old thumbnail ${fileInThumbnailsBg} during corruption handling:`, e); }
+                        }
+                    }
+                }
             }
         }
 
-        // Determine files to process: all original background files.
-        // generateThumbnail will handle whether to regenerate the image or just get classification.
         const bgFiles = fs.readdirSync(directories.backgrounds);
+        const bgFileSet = new Set(bgFiles); // For efficient lookup of existing background files
+        let currentAspectRatios = { ...existingAspectRatios };
         const tasks = [];
-        let newAspectRatios = { ...existingAspectRatios }; // Initialize with existing, possibly empty or loaded
 
+        // Process current background files: add new ones, update changed ones
         for (const file of bgFiles) {
-            // Check if the file is a known image type or simply attempt generation
-            if (!/\.(jpeg|jpg|png|gif|webp)$/i.test(file)) {
-                continue;
-            }
-            tasks.push(
-                generateThumbnail(directories, 'bg', file).then(result => {
-                    if (result && result.path && result.classification) {
-                        newAspectRatios[file] = result.classification;
+            const pathToOriginalFile = path.join(directories.backgrounds, file);
+            const pathToCachedFile = path.join(directories.thumbnailsBg, file); // Assuming thumbnail name matches original
+            let fileNeedsProcessing = false;
+
+            if (needsFullRegeneration) {
+                fileNeedsProcessing = true;
+            } else {
+                const originalStat = fs.statSync(pathToOriginalFile);
+                if (!currentAspectRatios.hasOwnProperty(file)) { // File is new (not in existing JSON)
+                    fileNeedsProcessing = true;
+                } else if (!fs.existsSync(pathToCachedFile)) { // Thumbnail is missing
+                    fileNeedsProcessing = true;
+                } else { // Thumbnail exists, check modification time
+                    const cachedStat = fs.statSync(pathToCachedFile);
+                    if (originalStat.mtimeMs > cachedStat.mtimeMs) {
+                        fileNeedsProcessing = true;
                     }
-                    // Intentionally not re-adding complex else conditions here for classification missing / generation failed,
-                    // as generateThumbnail itself handles logging and returns null for failures.
-                    // The primary goal is to populate newAspectRatios with successful classifications.
-                }).catch(error => {
-                    console.error(`Error processing thumbnail for ${file}:`, error); // This catch is for unexpected errors in the promise chain itself
-                })
-            );
+                }
+            }
+
+            if (fileNeedsProcessing) {
+                tasks.push(
+                    generateThumbnail(directories, 'bg', file).then(result => {
+                        if (result && result.path) { // Successfully generated/classified
+                            if (currentAspectRatios[file] !== result.classification) {
+                                madeChangesToJSON = true;
+                            }
+                            currentAspectRatios[file] = result.classification;
+                        } else { // generateThumbnail returned null (skipped, or error)
+                            if (currentAspectRatios.hasOwnProperty(file)) { // Was in JSON before, but now it's not processable
+                                delete currentAspectRatios[file];
+                                madeChangesToJSON = true;
+                            }
+                            // If it's a new file that couldn't be processed, it's just not added.
+                        }
+                    })
+                );
+            }
+            // If !fileNeedsProcessing, the entry from existingAspectRatios is kept in currentAspectRatios implicitly.
         }
 
         await Promise.all(tasks);
 
-        // After all thumbnails are processed (or attempted), write the new aspect ratios JSON.
-        try {
-            writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(newAspectRatios, null, 2));
-        } catch (e) {
-            console.error('Failed to write aspect_ratios.json:', e);
-        }
-
-        // If regeneration was flagged, or if the aspect ratio JSON was written (implying changes or initial creation),
-        // update the version file.
-        if (needsRegeneration || fs.existsSync(aspectRatiosJsonPath)) { // Check if JSON exists as proxy for successful write
-            try {
-                fs.writeFileSync(versionFilePath, currentMetadataVersion);
-            } catch (e) {
-                console.error('Failed to write aspect_metadata_version.txt:', e);
+        // Process deletions: remove entries from currentAspectRatios if original file is gone
+        if (!needsFullRegeneration) { // No need to check deletions if we started from scratch
+            for (const existingFileInJson in currentAspectRatios) {
+                if (!bgFileSet.has(existingFileInJson)) {
+                    console.info(`[ensureThumbnailCache] Original file ${existingFileInJson} deleted. Removing from aspect ratios and deleting its thumbnail.`);
+                    delete currentAspectRatios[existingFileInJson];
+                    madeChangesToJSON = true;
+                    const pathToStaleThumbnail = path.join(directories.thumbnailsBg, existingFileInJson);
+                    if (fs.existsSync(pathToStaleThumbnail)) {
+                        try { fs.unlinkSync(pathToStaleThumbnail); } catch (e) { console.warn(`[ensureThumbnailCache] Could not delete stale thumbnail ${pathToStaleThumbnail}: ${e.message}`); }
+                    }
+                }
             }
         }
-        console.info(`Done! Processed background images for ${directories.user}. Aspect ratio data updated.`);
+
+        if (madeChangesToJSON) {
+            try {
+                writeFileAtomicSync(aspectRatiosJsonPath, JSON.stringify(currentAspectRatios, null, 2));
+                fs.writeFileSync(versionFilePath, currentMetadataVersion); // Update version if JSON is written
+                console.info(`[ensureThumbnailCache] Aspect ratio data updated for ${directories.thumbnailsBg}. Processed ${tasks.length} files that needed updates/generation.`);
+            } catch (e) {
+                console.error(`[ensureThumbnailCache] Failed to write aspect_ratios.json or version file for ${directories.thumbnailsBg}: ${e.message}`);
+            }
+        } else {
+            console.info(`[ensureThumbnailCache] Aspect ratio data is up-to-date for ${directories.thumbnailsBg}.`);
+        }
     }
 }
 
