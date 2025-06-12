@@ -481,7 +481,7 @@ class ChatterboxTtsProvider {
                 temperature: this.settings.temperature,
                 exaggeration: this.settings.exaggeration,
                 cfg_weight: this.settings.cfg_weight,
-                seed: this.settings.seed,
+                seed: this.settings.seed >= 0 ? this.settings.seed : Math.floor(Math.random() * 2147483648), // Use random seed if -1
                 speed_factor: this.settings.speed_factor,
                 language: this.settings.language,
                 split_text: false, // Don't split for preview
