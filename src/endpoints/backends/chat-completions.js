@@ -16,6 +16,7 @@ import {
     mergeObjectWithYaml,
     excludeKeysByYaml,
     color,
+    trimTrailingSlash,
 } from '../../util.js';
 import {
     convertClaudeMessages,
@@ -25,12 +26,13 @@ import {
     convertMistralMessages,
     convertAI21Messages,
     convertXAIMessages,
-    mergeMessages,
     cachingAtDepthForOpenRouterClaude,
     cachingAtDepthForClaude,
     getPromptNames,
     calculateClaudeBudgetTokens,
     calculateGoogleBudgetTokens,
+    postProcessPrompt,
+    PROMPT_PROCESSING_TYPE,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -60,34 +62,6 @@ const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
-
-/**
- * Applies a post-processing step to the generated messages.
- * @param {object[]} messages Messages to post-process
- * @param {string} type Prompt conversion type
- * @param {import('../../prompt-converters.js').PromptNames} names Prompt names
- * @returns
- */
-function postProcessPrompt(messages, type, names) {
-    const addAssistantPrefix = x => x.length && (x[x.length - 1].role !== 'assistant' || (x[x.length - 1].prefix = true)) ? x : x;
-    switch (type) {
-        case 'merge':
-        case 'claude':
-            return mergeMessages(messages, names, { strict: false, placeholders: false, single: false });
-        case 'semi':
-            return mergeMessages(messages, names, { strict: true, placeholders: false, single: false });
-        case 'strict':
-            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false });
-        case 'deepseek':
-            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: false, single: false }));
-        case 'deepseek-reasoner':
-            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: true, single: false }));
-        case 'single':
-            return mergeMessages(messages, names, { strict: true, placeholders: false, single: true });
-        default:
-            return messages;
-    }
-}
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -892,7 +866,9 @@ async function sendDeepSeekRequest(request, response) {
             });
         }
 
-        const postProcessType = String(request.body.model).endsWith('-reasoner') ? 'deepseek-reasoner' : 'deepseek';
+        const postProcessType = String(request.body.model).endsWith('-reasoner')
+            ? PROMPT_PROCESSING_TYPE.DEEPSEEK_REASONER
+            : PROMPT_PROCESSING_TYPE.DEEPSEEK;
         const processedMessages = postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request));
 
         const requestBody = {
@@ -1094,11 +1070,11 @@ router.post('/status', async function (request, statusResponse) {
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
-        apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
         const modelsUrl = !apiKey && request.body.reverse_proxy
-            ? `${apiUrl.origin}/${apiVersion}/models`
-            : `${apiUrl.origin}/${apiVersion}/models?key=${apiKey}`;
+            ? `${apiUrl}/${apiVersion}/models`
+            : `${apiUrl}/${apiVersion}/models?key=${apiKey}`;
 
         if (!apiKey && !request.body.reverse_proxy) {
             console.warn('Google AI Studio API key is missing.');
@@ -1403,7 +1379,7 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
         bodyParams = {};
-        request.body.messages = postProcessPrompt(request.body.messages, 'strict', getPromptNames(request));
+        request.body.messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.STRICT, getPromptNames(request));
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
         apiUrl = API_GROQ;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);

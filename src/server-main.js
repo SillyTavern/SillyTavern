@@ -76,6 +76,7 @@ import { checkForNewContent } from './endpoints/content-manager.js';
 import { init as settingsInit } from './endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
+import { migrateFlatSecrets } from './endpoints/secrets.js';
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -275,6 +276,7 @@ async function preSetupTasks() {
     await checkForNewContent(directories);
     await ensureThumbnailCache(directories);
     await diskCache.verify(directories);
+    migrateFlatSecrets(directories);
     cleanUploads();
     migrateAccessLog();
 

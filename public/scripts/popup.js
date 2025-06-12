@@ -53,6 +53,7 @@ export const POPUP_RESULT = {
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
+ * @property {(popup: Popup) => Promise<void?>|void?} [onOpen=null] - Handler called after the popup opens
  * @property {number?} [cropAspect=null] - Aspect ratio for the crop popup
  * @property {string?} [cropImage=null] - Image URL to display in the crop popup
  */
@@ -155,6 +156,7 @@ export class Popup {
 
     /** @type {(popup: Popup) => Promise<boolean?>|boolean?} */ onClosing;
     /** @type {(popup: Popup) => Promise<void?>|void?} */ onClose;
+    /** @type {(popup: Popup) => Promise<void?>|void?} */ onOpen;
 
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
@@ -175,7 +177,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -185,6 +187,7 @@ export class Popup {
         // Utilize event handlers being passed in
         this.onClosing = onClosing;
         this.onClose = onClose;
+        this.onOpen = onOpen;
 
         /**@type {HTMLTemplateElement}*/
         const template = document.querySelector('#popup_template');
@@ -478,6 +481,11 @@ export class Popup {
 
         runAfterAnimation(this.dlg, () => {
             this.dlg.removeAttribute('opening');
+
+            // If we have an onOpen handler, we run it now
+            if (this.onOpen) {
+                this.onOpen(this);
+            }
         });
 
         this.#promise = new Promise((resolve) => {

@@ -12,6 +12,7 @@
 @import url(css/scrollable-button.css);
 @import url(css/welcome.css);
 @import url(css/data-maid.css);
+@import url(css/secrets.css);
 
 :root {
     interpolate-size: allow-keywords;

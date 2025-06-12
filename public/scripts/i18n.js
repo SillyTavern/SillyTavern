@@ -67,7 +67,7 @@ const observer = new MutationObserver(mutations => {
  *
  * @example
  * ```js
- * toastr.warn(t`Tag ${tagName} not found.`);
+ * toastr.warning(t`Tag ${tagName} not found.`);
  * ```
  * Should be translated in the translation files as:
  * ```

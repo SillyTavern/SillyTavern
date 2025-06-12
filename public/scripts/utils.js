@@ -126,6 +126,17 @@ export function isValidUrl(value) {
 }
 
 /**
+ * Checks if a string is a valid UUID (version 1-5).
+ * @param {string} value String to check
+ * @returns {boolean} True if the string is a valid UUID, false otherwise.
+ */
+export function isUuid(value) {
+    // Regular expression to match UUIDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
+}
+
+/**
  * Converts string to a value of a given type. Includes pythonista-friendly aliases.
  * @param {string|SlashCommandClosure} value String value
  * @param {string} type Type to convert to

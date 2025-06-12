@@ -1,0 +1,11 @@
+{
+    "story_string": "<|system|>\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}<|endofsystem|>",
+    "example_separator": "",
+    "chat_start": "",
+    "use_stop_strings": false,
+    "names_as_stop_strings": true,
+    "always_force_name2": true,
+    "trim_sentences": false,
+    "single_line": false,
+    "name": "Dots1"
+}
