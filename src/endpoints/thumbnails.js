@@ -177,7 +177,9 @@ async function generateThumbnail(directories, type, file) {
             ? await thumbImage.getBufferAsync(JimpMime.png)
             : await thumbImage.getBufferAsync(JimpMime.jpeg, { quality: quality }); // Assuming default jpegColorSpace is fine
 
-        writeFileAtomicSync(pathToCachedFile, buffer);
+        console.log(`[generateThumbnail] Attempting to write thumbnail for ${file} to ${pathToCachedFile}. Buffer length: ${buffer ? buffer.length : 'undefined'}`);
+        writeFileAtomicSync(pathToCachedFile, buffer); // This line can throw, will be caught by outer try-catch
+        console.log(`[generateThumbnail] Successfully wrote thumbnail for ${file} to ${pathToCachedFile} (after writeFileAtomicSync)`);
         return { path: pathToCachedFile, classification: classification };
 
     } catch (error) {
@@ -318,6 +320,7 @@ export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
 router.get('/', async function (request, response) {
+    console.log(`[/thumbnail route] Received request: type=${request.query.type}, file=${request.query.file}`);
     try{
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);
@@ -347,6 +350,9 @@ router.get('/', async function (request, response) {
             }
 
             const pathToOriginalFile = path.join(folder, file);
+            console.log(`[/thumbnail route] Determined path: ${pathToOriginalFile}`);
+            const effectivePathForDisabled = pathToOriginalFile;
+            if (fs.existsSync(effectivePathForDisabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForDisabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForDisabled}`); }
             if (!fs.existsSync(pathToOriginalFile)) {
                 return response.sendStatus(404);
             }
@@ -356,13 +362,17 @@ router.get('/', async function (request, response) {
             return response.send(originalFile);
         }
 
-        const pathToCachedFile = await generateThumbnail(request.user.directories, type, file);
+        const thumbnailResult = await generateThumbnail(request.user.directories, type, file);
+        const pathToCachedFile = thumbnailResult ? thumbnailResult.path : null;
+        console.log(`[/thumbnail route] Determined path: ${pathToCachedFile}`);
 
         if (!pathToCachedFile) {
             return response.sendStatus(404);
         }
 
-        if (!fs.existsSync(pathToCachedFile)) {
+        const effectivePathForEnabled = pathToCachedFile;
+        if (fs.existsSync(effectivePathForEnabled)) { console.log(`[/thumbnail route] File exists at ${effectivePathForEnabled}`); } else { console.error(`[/thumbnail route] File NOT FOUND at ${effectivePathForEnabled}`); }
+        if (!fs.existsSync(pathToCachedFile)) { // This check might seem redundant due to above, but keeping for safety
             return response.sendStatus(404);
         }
 

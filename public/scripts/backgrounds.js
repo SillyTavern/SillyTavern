@@ -552,12 +552,17 @@ async function getBackgroundFromTemplate(bg, isCustom) {
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
 
-    const classification = allBackgroundAspects[bg]; // bg is the filename
-    if (classification) {
-        template.attr('data-aspect-ratio', classification);
-    } else {
-        template.attr('data-aspect-ratio', 'unknown'); // Default if not found
+    let classification = allBackgroundAspects[bg]; // bg is the filename
+
+    if (!classification || classification === 'unknown') {
+        const lowerBg = bg.toLowerCase();
+        if (lowerBg.endsWith('.webp') || lowerBg.endsWith('.gif') || lowerBg.endsWith('.mp4') || lowerBg.endsWith('.webm')) {
+            classification = 'video';
+        } else {
+            classification = 'unknown'; // Default if not a recognized video/animated type
+        }
     }
+    template.attr('data-aspect-ratio', classification);
     console.log('Set data-aspect-ratio for', bg, 'to', template.attr('data-aspect-ratio')); // Added log
     return template;
 }
@@ -725,6 +730,7 @@ export function initBackgrounds() {
     $aspectRatioDropdown.append($('<option value="landscape">Landscape</option>'));
     $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
     $aspectRatioDropdown.append($('<option value="square">Square</option>'));
+    $aspectRatioDropdown.append($('<option value="video">Video / Animated</option>'));
 
     const $fittingDropdown = $('#background_fitting');
     const $dropdownWrapper = $('<div id="background_options_wrapper" style="display: flex; align-items: center; gap: 5px;"></div>');
@@ -736,21 +742,27 @@ export function initBackgrounds() {
     // Event listener for the aspect ratio dropdown
     $aspectRatioDropdown.on('input', function() {
         const selectedFilter = $(this).val();
-        $('#bg_menu_content > div.bg_example').each(function() {
-            const $bgElement = $(this);
-            const bgAspectRatio = $bgElement.data('aspect-ratio');
-            console.log('Filtering:', 'Selected:', selectedFilter, 'BG Element Aspect:', bgAspectRatio, 'Visible before:', $bgElement.is(':visible')); // Added log
-            if (selectedFilter === 'none') {
-                $bgElement.show();
-            } else {
-                if (bgAspectRatio === selectedFilter) {
-                    $bgElement.show();
-                } else {
-                    $bgElement.hide();
-                }
-            }
-            // console.log('Visible after:', $bgElement.is(':visible')); // Optional: log visibility after change
-        });
+        const $backgroundItems = $('#bg_menu_content > div.bg_example');
+
+        // Ensure the CSS class for filtering is defined
+        if (!$('style#bg-filter-style').length) {
+            $('<style id="bg-filter-style">')
+                .prop('type', 'text/css')
+                .html('.bg-filtered-out { display: none !important; }')
+                .appendTo('head');
+        }
+
+        // First, remove the class from all to handle items that should become visible
+        $backgroundItems.removeClass('bg-filtered-out');
+        // The console.log for debugging has been removed as part of this optimization refactor.
+        // If debugging is needed again, it can be re-added.
+
+        // Then, if a filter is active, add the class back to those that should be hidden
+        if (selectedFilter !== 'none') {
+            $backgroundItems.filter(function() {
+                return $(this).data('aspect-ratio') !== selectedFilter;
+            }).addClass('bg-filtered-out');
+        }
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
