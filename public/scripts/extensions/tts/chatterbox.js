@@ -108,7 +108,7 @@ class ChatterboxTtsProvider {
         // Seed
         html += `<div class="chatterbox-setting-row">
             <label for="chatterbox-seed">Seed (-1 for random):</label>
-            <input id="chatterbox-seed" type="number" min="-1" value="${this.settings.seed}" />
+            <input id="chatterbox-seed" class="text_pole" type="number" min="-1" value="${this.settings.seed}" />
         </div>`;
 
         // Text chunking
@@ -122,7 +122,7 @@ class ChatterboxTtsProvider {
         // Chunk size
         html += `<div class="chatterbox-setting-row" id="chunk-size-row" ${!this.settings.split_text ? 'style="display: none;"' : ''}>
             <label for="chatterbox-chunk-size">Chunk Size:</label>
-            <input id="chatterbox-chunk-size" type="number" min="50" max="500" value="${this.settings.chunk_size}" />
+            <input id="chatterbox-chunk-size" class="text_pole" type="number" min="50" max="500" value="${this.settings.chunk_size}" />
         </div>`;
 
         // Output format
@@ -138,7 +138,7 @@ class ChatterboxTtsProvider {
 
         // Footer with links
         html += `<div class="chatterbox-footer">
-            <a href="${this.settings.provider_endpoint}" target="_blank">Chatterbox Web UI</a> | 
+            <a href="${this.settings.provider_endpoint}" target="_blank">Chatterbox Web UI</a> |
             <a href="https://github.com/devnen/Chatterbox-TTS-Server" target="_blank">Documentation</a>
         </div>`;
 
