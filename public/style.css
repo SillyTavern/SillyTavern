@@ -715,10 +715,6 @@ hr {
     opacity: 0.2;
 }
 
-#chat hr {
-    opacity: 0.4;
-}
-
 #bg1,
 #bg_custom {
     background-repeat: no-repeat;
@@ -1478,6 +1474,10 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     padding-top: 5px;
     padding-bottom: 5px;
     padding-right: var(--mes-right-spacing);
+}
+
+.mes_text hr {
+    opacity: 0.4;
 }
 
 br {
