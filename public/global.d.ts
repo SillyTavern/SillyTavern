@@ -1,6 +1,7 @@
 import libs from './lib';
 import getContext from './scripts/st-context';
 import { power_user } from './scripts/power-user';
+import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyApi';
 
 declare global {
     // Custom types
@@ -13,6 +14,7 @@ declare global {
 
     declare var pdfjsLib;
     declare var ePub;
+    declare var quickReplyApi: QuickReplyApi;
 
     declare var SillyTavern: {
         getContext(): typeof getContext;
@@ -28,6 +30,11 @@ declare global {
         pagination(method: string, options?: any): JQuery;
         pagination(options?: any): JQuery;
         izoomify(options?: any): JQuery;
+    }
+
+    // NPM package doesn't have the 'queue' property in the type definition
+    interface JQueryTransitOptions {
+        queue?: boolean;
     }
 
     namespace Select2 {

@@ -394,10 +394,11 @@ function getHordeModelTemplate(option) {
     `));
 }
 
-export function initHorde () {
+export function initHorde() {
     $('#horde_model').on('mousedown change', async function (e) {
         console.log('Horde model change', e);
-        horde_settings.models = $('#horde_model').val();
+        const modelValue = $('#horde_model').val();
+        horde_settings.models = Array.isArray(modelValue) ? modelValue : [];
         console.log('Updated Horde models', horde_settings.models);
 
         // Try select instruct preset
@@ -429,8 +430,12 @@ export function initHorde () {
         saveSettingsDebounced();
     });
 
-    $('#horde_api_key').on('input', async function () {
-        const key = String($(this).val()).trim();
+    $('#horde_api_key_button').on('click', async function () {
+        const key = String($('#horde_api_key').val()).trim();
+        if (!key) {
+            toastr.warning(t`Please enter your Horde API key`);
+            return;
+        }
         await writeSecret(SECRET_KEYS.HORDE, key);
     });
 

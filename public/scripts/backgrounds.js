@@ -38,6 +38,8 @@ const THUMBNAIL_CONFIG = {
  */
 let lazyLoadObserver = null;
 
+let allBackgroundAspects = {};
+
 export let background_settings = {
     name: '__transparent.png',
     url: generateUrlParameter('__transparent.png', false),
@@ -103,25 +105,11 @@ async function getChatBackgroundsList() {
         return;
     }
 
-    for (const bgPath of list) {
-        const domElement = await getBackgroundFromTemplate(bgPath, true);
-        $('#bg_custom_content').append(domElement);
-
-        // Client-side dimension fetching for custom backgrounds
-        const imageUrl = bgPath; // For custom backgrounds, bgPath is the direct URL
-        const img = new Image();
-        img.onload = () => {
-            $(domElement).data('width', img.naturalWidth).data('height', img.naturalHeight);
-            applyFilters(); // Re-apply filters as new dimension data arrives
-        };
-        img.onerror = () => {
-            $(domElement).data('width', 0).data('height', 0);
-            applyFilters(); // Re-apply filters even on error
-        };
-        img.src = imageUrl;
+    for (const bg of list) {
+        const template = await getBackgroundFromTemplate(bg, true);
+        $('#bg_custom_content').append(template);
     }
     activateLazyLoader();
-    applyFilters(); // Apply filters once after all custom images begin loading
 }
 
 function getBackgroundPath(fileUrl) {
@@ -464,28 +452,16 @@ export async function getBackgrounds() {
         body: JSON.stringify({}),
     });
     if (response.ok) {
-        const { images, config } = await response.json();
-        Object.assign(THUMBNAIL_CONFIG, config);
+        const data = await response.json();
+        const images = data.images;
+        Object.assign(THUMBNAIL_CONFIG, data.config);
+        allBackgroundAspects = data.aspects || {};
         $('#bg_menu_content').children('div').remove();
-        for (const bgItem of images) { // bgItem is an object like { name, type, path }
-            const domElement = await getBackgroundFromTemplate(bgItem, false);
-            $('#bg_menu_content').append(domElement);
-
-            // Client-side dimension fetching for system backgrounds
-            const imageUrl = getBackgroundPath(bgItem.name);
-            const img = new Image();
-            img.onload = () => {
-                $(domElement).data('width', img.naturalWidth).data('height', img.naturalHeight);
-                applyFilters(); // Re-apply filters as new dimension data arrives
-            };
-            img.onerror = () => {
-                $(domElement).data('width', 0).data('height', 0);
-                applyFilters(); // Re-apply filters even on error
-            };
-            img.src = imageUrl;
+        for (const bg of images) {
+            const template = await getBackgroundFromTemplate(bg, false);
+            $('#bg_menu_content').append(template);
         }
         activateLazyLoader();
-        applyFilters(); // Apply filters once after all system images begin loading
     }
 }
 
@@ -557,42 +533,30 @@ async function resolveImageUrl(bg, isCustom) {
 
 /**
  * Instantiates a background template
- * @param {string|object} bg Path to background or background object for system backgrounds
+ * @param {string} bg Path to background
  * @param {boolean} isCustom Whether the background is custom
  * @returns {Promise<JQuery<HTMLElement>>} Background template
  */
 async function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    let fileNameForAttrsAndUrl, title;
-
-    if (isCustom) {
-        // bg is a string (path directly usable as URL part for custom, or needs processing for others)
-        fileNameForAttrsAndUrl = bg;
-        title = bg.split('/').pop();
-    } else {
-        // bg can be an object { name, type, path } or a string (filename)
-        if (typeof bg === 'string') {
-            fileNameForAttrsAndUrl = bg;
-            title = bg;
-        } else { // It's an object
-            fileNameForAttrsAndUrl = bg.name;
-            title = bg.name;
-        }
-    }
-
-    const url = generateUrlParameter(fileNameForAttrsAndUrl, isCustom);
+    const url = generateUrlParameter(bg, isCustom);
+    const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
 
     template.attr('title', title);
-    template.attr('bgfile', fileNameForAttrsAndUrl);
+    template.attr('bgfile', bg);
     template.attr('custom', String(isCustom));
     template.data('url', url);
-    // Initialize with 0,0 - will be updated by client-side fetching
-    template.data('width', 0);
-    template.data('height', 0);
     template.addClass('lazy-load-background');
     template.css('background-image', PLACEHOLDER_IMAGE);
     template.find('.BGSampleTitle').text(friendlyTitle);
+
+    const classification = allBackgroundAspects[bg]; // bg is the filename
+    if (classification) {
+        template.attr('data-aspect-ratio', classification);
+    } else {
+        template.attr('data-aspect-ratio', 'unknown'); // Default if not found
+    }
     return template;
 }
 
@@ -728,54 +692,16 @@ function setFittingClass(fitting) {
     background_settings.fitting = fitting;
 }
 
-function applyFilters() {
-    const textFilterValue = String($('#bg-filter').val()).toLowerCase();
-    const aspectRatioFilterValue = $('#bg_aspect_ratio_filter').val();
-
-    const portraitMax = 832 / 1216; // approx 0.684
-    const landscapeMin = 1216 / 832; // approx 1.461
-
-    $('#bg_menu_content > div, #bg_custom_content > div').each(function () {
-        const $bgElement = $(this);
-        const title = $bgElement.attr('title') || '';
-        const width = parseFloat($bgElement.data('width'));
-        const height = parseFloat($bgElement.data('height'));
-
-        // Text filter
-        const textMatch = title.toLowerCase().includes(textFilterValue);
-
-        // Aspect ratio filter
-        let aspectRatioMatch = false;
-        if (aspectRatioFilterValue === 'none') {
-            aspectRatioMatch = true;
-        } else if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
-            const currentRatio = width / height;
-            if (aspectRatioFilterValue === 'portrait') {
-                aspectRatioMatch = currentRatio <= portraitMax;
-            } else if (aspectRatioFilterValue === 'landscape') {
-                aspectRatioMatch = currentRatio >= landscapeMin;
-            } else if (aspectRatioFilterValue === 'square') {
-                aspectRatioMatch = currentRatio > portraitMax && currentRatio < landscapeMin;
-            }
+function onBackgroundFilterInput() {
+    const filterValue = String($(this).val()).toLowerCase();
+    $('#bg_menu_content > div').each(function () {
+        const $bgContent = $(this);
+        if ($bgContent.attr('title').toLowerCase().includes(filterValue)) {
+            $bgContent.show();
         } else {
-            // If width/height are invalid, only show if filter is "none"
-            aspectRatioMatch = aspectRatioFilterValue === 'none';
-        }
-
-        if (textMatch && aspectRatioMatch) {
-            $bgElement.show();
-        } else {
-            $bgElement.hide();
+            $bgContent.hide();
         }
     });
-}
-
-function onBackgroundFilterInput() {
-    applyFilters();
-}
-
-function onAspectRatioFilterInput() {
-    applyFilters();
 }
 
 export function initBackgrounds() {
@@ -790,7 +716,35 @@ export function initBackgrounds() {
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
-    $('#bg_aspect_ratio_filter').on('input', onAspectRatioFilterInput);
+
+    // Create and insert Aspect Ratio Dropdown
+    const $aspectRatioDropdown = $('<select id="background_aspect_ratio_filter" class="text_pole"></select>');
+    $aspectRatioDropdown.append($('<option value="none">None</option>'));
+    $aspectRatioDropdown.append($('<option value="landscape">Landscape</option>'));
+    $aspectRatioDropdown.append($('<option value="portrait">Portrait</option>'));
+    $aspectRatioDropdown.append($('<option value="square">Square</option>'));
+
+    const $fittingDropdown = $('#background_fitting');
+    $fittingDropdown.after($aspectRatioDropdown);
+
+    // Event listener for the aspect ratio dropdown
+    $aspectRatioDropdown.on('input', function() {
+        const selectedFilter = $(this).val();
+        $('#bg_menu_content > div.bg_example').each(function() {
+            const $bgElement = $(this);
+            if (selectedFilter === 'none') {
+                $bgElement.show();
+            } else {
+                const bgAspectRatio = $bgElement.data('aspect-ratio');
+                if (bgAspectRatio === selectedFilter) {
+                    $bgElement.show();
+                } else {
+                    $bgElement.hide();
+                }
+            }
+        });
+    });
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),

@@ -56,6 +56,7 @@ import {
     getSortableDelay,
     getStringHash,
     isDataURL,
+    isUuid,
     isValidUrl,
     parseJsonFile,
     resetScrollHeight,
@@ -207,8 +208,11 @@ export const custom_prompt_post_processing_types = {
     /** @deprecated Use MERGE instead. */
     CLAUDE: 'claude',
     MERGE: 'merge',
+    MERGE_TOOLS: 'merge_tools',
     SEMI: 'semi',
+    SEMI_TOOLS: 'semi_tools',
     STRICT: 'strict',
+    STRICT_TOOLS: 'strict_tools',
     SINGLE: 'single',
 };
 
@@ -1245,8 +1249,8 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
  * @returns {Promise<Object>} prompts - The prepared and merged system and user-defined prompts.
  */
 async function preparePromptsForChatCompletion({ scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, personaDescription }) {
-    const scenarioText = scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : '';
-    const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : '';
+    const scenarioText = scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : (scenario || '');
+    const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : (charPersonality || '');
     const groupNudge = substituteParams(oai_settings.group_nudge_prompt);
     const impersonationPrompt = oai_settings.impersonation_prompt ? substituteParams(oai_settings.impersonation_prompt) : '';
 
@@ -1932,6 +1936,13 @@ function saveModelList(data) {
                         value: model.id,
                         text: model.id,
                     }));
+            }
+        });
+
+        // Merge static models into model_list
+        staticModels.forEach(modelId => {
+            if (!model_list.some(model => model.id === modelId)) {
+                model_list.push({ id: modelId });
             }
         });
 
@@ -3797,6 +3808,9 @@ async function getStatusOpen() {
         if (!('error' in responseData)) {
             setOnlineStatus(t`Valid`);
         }
+        if (responseData.bypass) {
+            setOnlineStatus(t`Status check bypassed`);
+        }
     } catch (error) {
         console.error(error);
 
@@ -4520,6 +4534,10 @@ function getMistralMaxContext(model, isUnlocked) {
         'open-mixtral-8x7b': 32768,
         'devstral-small-2505': 131072,
         'devstral-small-latest': 131072,
+        'magistral-medium-latest': 40960,
+        'magistral-medium-2506': 40960,
+        'magistral-small-latest': 40000,
+        'magistral-small-2506': 40000,
     };
 
     // Return context size if model found, otherwise default to 32k
@@ -5657,7 +5675,8 @@ async function onVertexAIValidateServiceAccount() {
         }
 
         // Save to backend secret storage
-        await writeSecret(SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT, jsonContent);
+        const keyLabel = serviceAccount['client_email'] || '';
+        await writeSecret(SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT, jsonContent, keyLabel);
 
         // Show success status
         updateVertexAIServiceAccountStatus(true, `Project: ${serviceAccount.project_id}, Email: ${serviceAccount.client_email}`);
@@ -5690,6 +5709,11 @@ async function onVertexAIClearServiceAccount() {
  */
 function onVertexAIServiceAccountJsonChange() {
     const jsonContent = String($(this).val()).trim();
+
+    // Autocomplete has been triggered, don't validate if the input is a UUID
+    if (isUuid(jsonContent)) {
+        return;
+    }
 
     if (jsonContent) {
         // Auto-validate when content is pasted

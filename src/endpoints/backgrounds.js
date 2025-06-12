@@ -4,18 +4,28 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-// Removed jimp import
 import { dimensions, invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
-router.post('/all', function (request, response) { // Changed to synchronous function
-    const images = getImages(request.user.directories.backgrounds); // getImages likely returns the structure previously expected
-    // Removed jimp processing loop
+router.post('/all', function (request, response) {
+    const images = getImages(request.user.directories.backgrounds);
     const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
-    response.json({ images, config }); // images is now directly from getImages
+    const aspectRatiosJsonPath = path.join(request.user.directories.thumbnailsBg, 'aspect_ratios.json');
+    let aspects = {};
+
+    try {
+        if (fs.existsSync(aspectRatiosJsonPath)) {
+            aspects = JSON.parse(fs.readFileSync(aspectRatiosJsonPath, 'utf-8'));
+        }
+    } catch (e) {
+        console.error('Failed to read or parse aspect_ratios.json:', e);
+        aspects = {}; // Ensure aspects is an empty object on error
+    }
+
+    response.json({ images, config, aspects });
 });
 
 router.post('/delete', getFileNameValidationFunction('bg'), function (request, response) {
