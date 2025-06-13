@@ -4181,12 +4181,13 @@ input[type='checkbox'].del_checkbox {
     padding: 0 !important;
     width: 100% !important;
     height: 5px !important;
-    background: var(--white50a) !important;
+    background: var(--SmartThemeBodyColor) !important;
     border-radius: 7px 7px 0 0 !important;
     background-size: 70% 100% !important;
     background-repeat: no-repeat !important;
     box-shadow: inset 0 0 2px var(--black50a) !important;
     cursor: ew-resize !important;
+    filter: brightness(0.75)
 }
 
 /*
@@ -4219,12 +4220,14 @@ input[type="range"] {
     padding: 0;
     width: 100%;
     height: 5px;
-    background: var(--white50a);
+    background: var(--SmartThemeBodyColor);
     border-radius: 15px;
     background-size: 70% 100%;
     background-repeat: no-repeat;
     box-shadow: inset 0 0 2px black;
     cursor: ew-resize;
+    transition: all var(--animation-duration-2x) ease-in-out;
+    filter: brightness(0.75);
 }
 
 input[type="range"]::-webkit-slider-thumb {
