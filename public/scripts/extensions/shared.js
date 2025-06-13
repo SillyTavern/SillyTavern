@@ -56,10 +56,11 @@ export async function getMultimodalCaption(base64Img, prompt) {
         model: extension_settings.caption.multimodal_model || 'gpt-4-turbo',
     };
 
-    // Add Vertex AI specific parameters if using Vertex AI
+     // Add Vertex AI specific parameters if using Vertex AI
     if (extension_settings.caption.multimodal_api === 'vertexai') {
         requestBody.vertexai_auth_mode = oai_settings.vertexai_auth_mode;
         requestBody.vertexai_region = oai_settings.vertexai_region;
+        requestBody.vertexai_express_project_id = oai_settings.vertexai_express_project_id;
     }
 
     if (isOllama) {

@@ -490,7 +490,18 @@ async function sendMakerSuiteRequest(request, response) {
             if (authType === 'express') {
                 // For Express mode (API key authentication), use the key parameter
                 const keyParam = authHeader.replace('Bearer ', '');
-                url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`;
+                const region = request.body.vertexai_region || 'us-central1';
+
+                if (region === 'us-central1') {
+                    url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`;
+                } else {
+                    const projectId = request.body.vertexai_express_project_id;
+                    if (!projectId) {
+                        console.warn('Project ID is required for regions other than us-central1.');
+                        return response.status(400).send({ error: true, message: 'Project ID is required for regions other than us-central1.' });
+                    }
+                    url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`;
+                }
             } else if (authType === 'full') {
                 // For Full mode (service account authentication), use project-specific URL
                 // Get project ID from Service Account JSON

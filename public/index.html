@@ -3256,19 +3256,48 @@
                             <!-- Express Mode Configuration -->
                             <div id="vertexai_express_config" class="vertexai-auth-section" data-mode="express">
                                 <h4>
-                                    <span data-i18n="Google Vertex AI API Key">
-                                        Google Vertex AI API Key
+                                    <span data-i18n="Google Vertex AI Configuration">
+                                        Google Vertex AI Configuration
                                     </span>
                                     <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview" data-i18n="(Express mode)" target="_blank" rel="noopener noreferrer">
                                         (Express mode)
                                     </a>
                                 </h4>
-                                <div class="flex-container">
-                                    <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_vertexai"></div>
+                                <!-- Region -->
+                                <div class="flex-container flexFlowColumn marginTop10">
+                                    <label for="vertexai_express_region">
+                                        <span data-i18n="Region">Region:</span>
+                                        <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations" target="_blank" rel="noopener noreferrer" title="View available regions and models" data-i18n="[title]View available regions and models" class="notes-link">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </label>
+                                    <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1">
                                 </div>
-                                <div data-for="api_key_vertexai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                <!-- API Key -->
+                                <div class="flex-container flexFlowColumn">
+                                    <label for="api_key_vertexai" data-i18n="API Key">API Key:</label>
+                                    <div class="flex-container">
+                                        <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                        <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_vertexai"></div>
+                                    </div>
+                                    <div data-for="api_key_vertexai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                        For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                    </div>
+                                </div>
+                                <!-- Project ID -->
+                                <div class="flex-container flexFlowColumn marginTop10">
+                                    <label for="vertexai_express_project_id">
+                                        <span data-i18n="Project ID">Project ID:</span>
+                                    </label>
+                                    <div class="flex-container">
+                                        <input id="vertexai_express_project_id" name="vertexai_express_project_id" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="Enter your Project ID">
+                                    </div>
+                                    <div class="toggle-description justifyLeft marginBot5">
+                                        <small data-i18n="Project ID is required when selecting regions other than the default (us-central1). You can find this in a model 404 error message.">
+                                            `Project ID` is only required when selecting regions other than the default (us-central1).<br>
+                                            You can find this in a model 404 error message.
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
 
@@ -3321,6 +3350,7 @@
                                 <select id="model_vertexai_select">
                                     <!-- Express Mode Models -->
                                     <optgroup id="vertexai_express_models" label="Express Mode Models" data-mode="express">
+                                        <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05  (only available in global)</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
