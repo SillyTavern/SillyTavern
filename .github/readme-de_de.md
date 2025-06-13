@@ -320,29 +320,29 @@ Start.bat --port 8000 --listen false
 
 ### Unterstützte Argumente
 
-| Option | Beschreibung | Typ |
-|-------------------------|----------------------------------------------------------------------------------------------------|----------|
-| `--version` | Versionsnummer anzeigen | boolean |
-| `--enableIPv6` | Aktiviert IPv6. | boolean |
-| `--enableIPv4` | Aktiviert IPv4. | boolean |
-| `--port` | Legt den Port fest, unter dem SillyTavern ausgeführt wird. Wenn nicht angegeben, wird auf YAML-Konfiguration „Port“ zurückgegriffen. | number |
-| „--dnsPreferIPv6“ | Bevorzugt IPv6 für DNS. Wenn nicht angegeben, wird auf YAML-Konfiguration „preferIPv6“ zurückgegriffen. | boolean |
-| „--autorun“ | Startet SillyTavern automatisch im Browser. Wenn nicht angegeben, wird auf YAML-Konfiguration „autorun“ zurückgegriffen.| boolean |
-| „--autorunHostname“ | Der Autorun-Hostname, am besten auf „auto“ belassen. | string |
-| „--autorunPortOverride“ | Überschreibt den Port für Autorun. | string |
-| „--listen“ | SillyTavern lauscht auf allen Netzwerkschnittstellen. Wenn nicht angegeben, wird auf YAML-Konfiguration „listen“ zurückgegriffen.| boolean |
-| „--corsProxy“ | Aktiviert CORS-Proxy. Wenn nicht angegeben, wird auf YAML-Konfiguration „enableCorsProxy“ zurückgegriffen. | boolean |
-| `--disableCsrf` | Deaktiviert CSRF-Schutz | boolean |
-| `--ssl` | Aktiviert SSL | boolean |
-| `--certPath` | Pfad zu Ihrer Zertifikatsdatei. | string |
-| `--keyPath` | Pfad zu Ihrer privaten Schlüsseldatei. | string |
-| `--whitelist` | Aktiviert den Whitelist-Modus | boolean |
-| `--dataRoot` | Stammverzeichnis für Datenspeicherung | string |
-| `--avoidLocalhost` | Vermeidet die Verwendung von „localhost“ für Autorun im Auto-Modus. | boolean |
-| `--basicAuthMode` | Aktiviert die grundlegende Authentifizierung | boolean |
-| `--requestProxyEnabled` | Aktiviert die Verwendung eines Proxys für ausgehende Anfragen | boolean |
-| `--requestProxyUrl` | Proxy-URL anfordern (HTTP- oder SOCKS-Protokolle) | string |
-| `--requestProxyBypass` | Proxy-Bypass-Liste anfordern (durch Leerzeichen getrennte Liste von Hosts) | Array |
+| Option                           | Beschreibung                                                                                     | Typ      |
+|----------------------------------|--------------------------------------------------------------------------------------------------|----------|
+| `--version`                      | Versionsnummer anzeigen                                                                          | boolean  |
+| `--enableIPv6`                   | Aktiviert IPv6.                                                                                  | boolean  |
+| `--enableIPv4`                   | Aktiviert IPv4.                                                                                  | boolean  |
+| `--port`                         | Legt den Port fest, unter dem SillyTavern ausgeführt wird.                                       | number   |
+| `--dnsPreferIPv6`                | Bevorzugt IPv6 für DNS. Wenn nicht angegeben.                                                    | boolean  |
+| `--browserLaunchEnabled`         | Startet SillyTavern automatisch im Browser.                                                      | boolean  |
+| `--browserLaunchHostname`        | Der Autorun-Hostname, am besten auf „auto" belassen.                                             | string   |
+| `--browserLaunchPort`            | Überschreibt den Port für Autorun.                                                               | string   |
+| `--browserLaunchAvoidLocalhost`  | Vermeidet die Verwendung von „localhost" für Autorun im Auto-Modus.                              | boolean  |
+| `--listen`                       | SillyTavern lauscht auf allen Netzwerkschnittstellen.                                            | boolean  |
+| `--corsProxy`                    | Aktiviert CORS-Proxy. Wenn nicht angegeben.                                                      | boolean  |
+| `--disableCsrf`                  | Deaktiviert CSRF-Schutz                                                                          | boolean  |
+| `--ssl`                          | Aktiviert SSL                                                                                    | boolean  |
+| `--certPath`                     | Pfad zu Ihrer Zertifikatsdatei.                                                                  | string   |
+| `--keyPath`                      | Pfad zu Ihrer privaten Schlüsseldatei.                                                           | string   |
+| `--whitelist`                    | Aktiviert den Whitelist-Modus                                                                    | boolean  |
+| `--dataRoot`                     | Stammverzeichnis für Datenspeicherung                                                            | string   |
+| `--basicAuthMode`                | Aktiviert die grundlegende Authentifizierung                                                     | boolean  |
+| `--requestProxyEnabled`          | Aktiviert die Verwendung eines Proxys für ausgehende Anfragen                                    | boolean  |
+| `--requestProxyUrl`              | Proxy-URL anfordern (HTTP- oder SOCKS-Protokolle)                                                | string   |
+| `--requestProxyBypass`           | Proxy-Bypass-Liste anfordern (durch Leerzeichen getrennte Liste von Hosts)                       | Array    |
 
 ## Remoteverbindungen
 

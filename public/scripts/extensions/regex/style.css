@@ -15,7 +15,7 @@
 }
 
 .regex-script-container:empty::after {
-    content: "No scripts found";
+    content: attr(no-scripts-text);
     font-size: 0.95em;
     opacity: 0.7;
     display: block;

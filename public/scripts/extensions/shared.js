@@ -233,6 +233,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'custom' && !oai_settings.custom_url) {
         throw new Error('Custom API URL is not set.');
     }
+
+    if (multimodalApi === 'aimlapi' && !secret_state[SECRET_KEYS.AIMLAPI]) {
+        throw new Error('AI/ML API key is not set.');
+    }
 }
 
 /**

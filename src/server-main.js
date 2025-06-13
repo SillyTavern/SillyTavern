@@ -14,7 +14,7 @@ import multer from 'multer';
 import responseTime from 'response-time';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
-import open from 'open';
+import open, { apps } from 'open';
 
 // local library imports
 import './fetch-patch.js';
@@ -65,6 +65,7 @@ import {
     safeReadFileSync,
     setupLogLevel,
     setWindowTitle,
+    getConfigValue,
 } from './util.js';
 import { UPLOADS_DIRECTORY } from './constants.js';
 import { ensureThumbnailCache } from './endpoints/thumbnails.js';
@@ -83,6 +84,7 @@ util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
+/** @type {import('./command-line.js').CommandLineArguments} */
 const cliArgs = globalThis.COMMAND_LINE_ARGS;
 
 if (!cliArgs.enableIPv6 && !cliArgs.enableIPv4) {
@@ -321,13 +323,22 @@ async function preSetupTasks() {
  * @returns {Promise<void>}
  */
 async function postSetupTasks(result) {
-    const autorunHostname = await cliArgs.getAutorunHostname(result);
-    const autorunUrl = cliArgs.getAutorunUrl(autorunHostname);
+    const browserLaunchHostname = await cliArgs.getBrowserLaunchHostname(result);
+    const browserLaunchUrl = cliArgs.getBrowserLaunchUrl(browserLaunchHostname);
+    const browserLaunchApp = String(getConfigValue('browserLaunch.browser', 'default') ?? '');
 
-    if (cliArgs.autorun) {
+    if (cliArgs.browserLaunchEnabled) {
         try {
-            console.log('Launching in a browser...');
-            await open(autorunUrl.toString());
+            const validBrowsers = {
+                'firefox': apps.firefox,
+                'chrome': apps.chrome,
+                'edge': apps.edge,
+            };
+            const appName = validBrowsers[browserLaunchApp.trim().toLowerCase()];
+            const openOptions = appName ? { app: { name: appName } } : {};
+
+            console.log(`Launching in a browser: ${browserLaunchApp}...`);
+            await open(browserLaunchUrl.toString(), openOptions);
         } catch (error) {
             console.error('Failed to launch the browser. Open the URL manually.');
         }
@@ -349,7 +360,7 @@ async function postSetupTasks(result) {
         );
     }
 
-    const goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
+    const goToLog = `Go to: ${color.blue(browserLaunchUrl)} to open SillyTavern`;
     const plainGoToLog = removeColorFormatting(goToLog);
 
     console.log(logListen);
@@ -363,7 +374,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
-    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: autorunUrl });
+    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: browserLaunchUrl });
 }
 
 /**

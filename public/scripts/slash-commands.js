@@ -54,7 +54,7 @@ import { getMessageTimeStamp, isMobile } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
+import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
 import { chat_completion_sources, oai_settings, promptManager } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
@@ -942,6 +942,12 @@ export function initDefaultSlashCommands() {
             </ul>
         </div>
     `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'member-count',
+        callback: countGroupMemberCallback,
+        aliases: ['countmember', 'membercount'],
+        helpString: 'Returns the total number of group members in the group chat list.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'delswipe',
@@ -3546,6 +3552,15 @@ async function peekCallback(_, arg) {
     return '';
 }
 
+async function countGroupMemberCallback() {
+    if (!selected_group) {
+        toastr.warning('Cannot run /member-count command outside of a group chat.');
+        return '';
+    }
+
+    return getGroupMembers(selected_group).length;
+}
+
 async function removeGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning('Cannot run /member-remove command outside of a group chat.');
@@ -4229,6 +4244,7 @@ function getModelOptions(quiet) {
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
         { id: 'model_01ai_select', api: 'openai', type: chat_completion_sources.ZEROONEAI },
         { id: 'model_deepseek_select', api: 'openai', type: chat_completion_sources.DEEPSEEK },
+        { id: 'model_aimlapi_select', api: 'openai', type: chat_completion_sources.AIMLAPI },
         { id: 'model_xai_select', api: 'openai', type: chat_completion_sources.XAI },
         { id: 'model_pollinations_select', api: 'openai', type: chat_completion_sources.POLLINATIONS },
         { id: 'model_novel_select', api: 'novel', type: null },

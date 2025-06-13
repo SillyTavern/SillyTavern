@@ -333,32 +333,32 @@ Start.bat --port 8000 --listen false
 > \[!TIP]
 > None of the arguments are required. If you don't provide them, SillyTavern will use the settings in `config.yaml`.
 
-| Option                  | Description                                                          | Type     |
-|-------------------------|----------------------------------------------------------------------|----------|
-| `--version`             | Show version number                                                  | boolean  |
-| `--configPath`          | Override the path to the config.yaml file                            | string   |
-| `--dataRoot`            | Root directory for data storage                                      | string   |
-| `--port`                | Sets the port under which SillyTavern will run                       | number   |
-| `--listen`              | SillyTavern will listen on all network interfaces                    | boolean  |
-| `--whitelist`           | Enables whitelist mode                                               | boolean  |
-| `--basicAuthMode`       | Enables basic authentication                                         | boolean  |
-| `--enableIPv4`          | Enables IPv4 protocol                                                | boolean  |
-| `--enableIPv6`          | Enables IPv6 protocol                                                | boolean  |
-| `--listenAddressIPv4`   | Specific IPv4 address to listen to                                   | string   |
-| `--listenAddressIPv6`   | Specific IPv6 address to listen to                                   | string   |
-| `--dnsPreferIPv6`       | Prefers IPv6 for DNS                                                 | boolean  |
-| `--ssl`                 | Enables SSL                                                          | boolean  |
-| `--certPath`            | Path to your certificate file                                        | string   |
-| `--keyPath`             | Path to your private key file                                        | string   |
-| `--autorun`             | Automatically launch SillyTavern in the browser                      | boolean  |
-| `--autorunHostname`     | Autorun hostname                                                     | string   |
-| `--autorunPortOverride` | Overrides the port for autorun                                       | string   |
-| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode                    | boolean  |
-| `--corsProxy`           | Enables CORS proxy                                                   | boolean  |
-| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                         | boolean  |
-| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                          | string   |
-| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)            | array    |
-| `--disableCsrf`         | Disables CSRF protection (NOT RECOMMENDED)                           | boolean  |
+| Option                          | Description                                                          | Type     |
+|---------------------------------|----------------------------------------------------------------------|----------|
+| `--version`                     | Show version number                                                  | boolean  |
+| `--configPath`                  | Override the path to the config.yaml file                            | string   |
+| `--dataRoot`                    | Root directory for data storage                                      | string   |
+| `--port`                        | Sets the port under which SillyTavern will run                       | number   |
+| `--listen`                      | SillyTavern will listen on all network interfaces                    | boolean  |
+| `--whitelist`                   | Enables whitelist mode                                               | boolean  |
+| `--basicAuthMode`               | Enables basic authentication                                         | boolean  |
+| `--enableIPv4`                  | Enables IPv4 protocol                                                | boolean  |
+| `--enableIPv6`                  | Enables IPv6 protocol                                                | boolean  |
+| `--listenAddressIPv4`           | Specific IPv4 address to listen to                                   | string   |
+| `--listenAddressIPv6`           | Specific IPv6 address to listen to                                   | string   |
+| `--dnsPreferIPv6`               | Prefers IPv6 for DNS                                                 | boolean  |
+| `--ssl`                         | Enables SSL                                                          | boolean  |
+| `--certPath`                    | Path to your certificate file                                        | string   |
+| `--keyPath`                     | Path to your private key file                                        | string   |
+| `--browserLaunchEnabled`        | Automatically launch SillyTavern in the browser                      | boolean  |
+| `--browserLaunchHostname`       | Browser launch hostname                                              | string   |
+| `--browserLaunchPort`           | Overrides the port for browser launch                                | string   |
+| `--browserLaunchAvoidLocalhost` | Avoids using 'localhost' for browser launch in auto mode             | boolean  |
+| `--corsProxy`                   | Enables CORS proxy                                                   | boolean  |
+| `--requestProxyEnabled`         | Enables a use of proxy for outgoing requests                         | boolean  |
+| `--requestProxyUrl`             | Request proxy URL (HTTP or SOCKS protocols)                          | string   |
+| `--requestProxyBypass`          | Request proxy bypass list (space separated list of hosts)            | array    |
+| `--disableCsrf`                 | Disables CSRF protection (NOT RECOMMENDED)                           | boolean  |
 
 ## Remote connections
 

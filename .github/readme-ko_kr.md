@@ -334,29 +334,29 @@ Start.bat --port 8000 --listen false
 
 ### 지원되는 인수
 
-| 옵션                  | 설명                                                                                          | 타입     |
-|-------------------------|------------------------------------------------------------------------------------------------------|----------|
-| `--version`             | 버전 표시                                                                                              | boolean  |
-| `--enableIPv6`          | IPv6 활성화                                                                                            | boolean  |
-| `--enableIPv4`          | IPv4 활성화                                                                                            | boolean  |
-| `--port`                | SillyTavern이 실행될 포트를 설정합니다. 설정되지 않은 경우 yaml config 'port'를 불러옵니다.                    | number   |
-| `--dnsPreferIPv6`       | DNS에 IPv6를 우선으로 할당합니다. 설정되지 않은 경우 yaml config를 불러옵니다.                                 | boolean  |
-| `--autorun`             | 브라우저에서 SillyTavern을 자동으로 실행합니다. 설정되지 않은 경우 yaml config 'autorun'를 불러옵니다. | boolean  |
-| `--autorunHostname`     | 자동 실행 호스트 이름, 'auto'가 최적의 설정일 것입니다.                                                  | string   |
-| `--autorunPortOverride` | 자동 실행 포트 덮어쓰기                                                                      | string   |
-| `--listen`              | SillyTavern이 모든 네트워크 인터페이스에서 수신 대기합니다. 설정되지 않은 경우 yaml 구성 'listen'을 불러옵니다.	| boolean  |
-| `--corsProxy`           | CORS 프록시 활성화. 설정되지 않은 경우 yaml 구성 'enableCorsProxy'을 불러옵니다.	                     | boolean  |
-| `--disableCsrf`         | CSRF 보호 비활성화                                                                             | boolean  |
-| `--ssl`                 | SSL 활성화                                                                                          | boolean  |
-| `--certPath`            | 인증서 파일 경로                                                                       | string   |
-| `--keyPath`             | 프라이빗 키 파일 경로                                                                       | string   |
-| `--whitelist`           | 화이트리스트 모드 활성화                                                                               | boolean  |
-| `--dataRoot`            | 데이터 스토리지의 루트 디렉토리                                                                       | string   |
-| `--avoidLocalhost`      | 자동 모드에서 자동 실행 시 'localhost' 사용 방지                                                   | boolean  |
-| `--basicAuthMode`       | 기본 인증 활성화                                                                         | boolean  |
-| `--requestProxyEnabled` | 외부 리퀘스트 프록시 활성화                                                         | boolean  |
-| `--requestProxyUrl`     | 프록시 URL 리퀘스트 (HTTP 혹은 SOCKS 프로토콜)                                                          | string   |
-| `--requestProxyBypass`  | 프록시 바이패스 리스트 리퀘스트 (공백으로 구분된 호스트 목록)                                            | array    |
+| 옵션                              | 설명                                                                                 | 타입     |
+|-----------------------------------|--------------------------------------------------------------------------------------|----------|
+| `--version`                       | 버전 표시                                                                            | boolean  |
+| `--enableIPv6`                    | IPv6 활성화                                                                          | boolean  |
+| `--enableIPv4`                    | IPv4 활성화                                                                          | boolean  |
+| `--port`                          | SillyTavern이 실행될 포트를 설정합니다.                                               | number   |
+| `--dnsPreferIPv6`                 | DNS에 IPv6를 우선으로 할당합니다.                                                     | boolean  |
+| `--browserLaunchEnabled`          | 브라우저에서 SillyTavern을 자동으로 실행합니다.                                       | boolean  |
+| `--browserLaunchHostname`         | 자동 실행 호스트 이름, 'auto'가 최적의 설정일 것입니다.                               | string   |
+| `--browserLaunchPort`             | 자동 실행 포트 덮어쓰기                                                               | string   |
+| `--browserLaunchAvoidLocalhost`   | 자동 모드에서 자동 실행 시 'localhost' 사용 방지                                      | boolean  |
+| `--listen`                        | SillyTavern이 모든 네트워크 인터페이스에서 수신 대기합니다.                           | boolean  |
+| `--corsProxy`                     | CORS 프록시 활성화.                                                                  | boolean  |
+| `--disableCsrf`                   | CSRF 보호 비활성화                                                                   | boolean  |
+| `--ssl`                           | SSL 활성화                                                                           | boolean  |
+| `--certPath`                      | 인증서 파일 경로                                                                     | string   |
+| `--keyPath`                       | 프라이빗 키 파일 경로                                                                | string   |
+| `--whitelist`                     | 화이트리스트 모드 활성화                                                             | boolean  |
+| `--dataRoot`                      | 데이터 스토리지의 루트 디렉토리                                                      | string   |
+| `--basicAuthMode`                 | 기본 인증 활성화                                                                     | boolean  |
+| `--requestProxyEnabled`           | 외부 리퀘스트 프록시 활성화                                                          | boolean  |
+| `--requestProxyUrl`               | 프록시 URL 리퀘스트 (HTTP 혹은 SOCKS 프로토콜)                                       | string   |
+| `--requestProxyBypass`            | 프록시 바이패스 리스트 리퀘스트 (공백으로 구분된 호스트 목록)                         | array    |
 
 ## 원격 연결
 

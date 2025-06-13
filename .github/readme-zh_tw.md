@@ -319,29 +319,29 @@ Start.bat --port 8000 --listen false
 
 ### Supported arguments
 
-| Option                  | Description                                                                                          | Type     |
-|-------------------------|------------------------------------------------------------------------------------------------------|----------|
-| `--version`             | 顯示版本序號                                                                                           | boolean  |
-| `--enableIPv6`          | 啟用 IPv6                                                                                             | boolean  |
-| `--enableIPv4`          | 啟用 IPv4                                                                                             | boolean  |
-| `--port`                | 設定 SillyTavern 運行的端口。若未提供，則預設使用 `config.yaml` 中的 'port'                                 | number
-| `--dnsPreferIPv6`       | 偏好使用 IPv6 解析 DNS。未提供則默認使用 `config.yaml` 中的 'preferIPv6'                                   | boolean  |
-| `--autorun`             | 自動在瀏覽器中啟動 SillyTavern。未提供則默認使用 `config.yaml` 中的 'autorun'                               | boolean  |
-| `--autorunHostname`     | 自動啟動時的主機名稱，通常建議保持為 'auto'                                                                | string   |
-| `--autorunPortOverride` | 覆蓋自動啟動的端口設定                                                                                   | string   |
-| `--listen`              | SillyTavern 是否可監聽所有網路接口。若未提供，則默認使用 `config.yaml` 中的 'listen'                         | boolean  |
-| `--corsProxy`           | 啟用 CORS 代理。若未提供，則默認使用 `config.yaml`  中的 'enableCorsProxy'                                 | boolean  |
-| `--disableCsrf`         | 停用 CSRF 保護                                                                                        | boolean  |
-| `--ssl`                 | 啟用 SSL                                                                                             | boolean  |
-| `--certPath`            | 設定您證書文件的路徑                                                                                    | string   |
-| `--keyPath`             | 設定您私人金鑰文件的路徑                                                                                 | string   |
-| `--whitelist`           | 啟用白名單模式                                                                                         | boolean  |
-| `--dataRoot`            | 設定數據儲存的根目錄                                                                                    | string   |
-| `--avoidLocalhost`      | 在自動模式下避免使用 'localhost'                                                                        | boolean  |
-| `--basicAuthMode`       | 啟用基本身份驗證模式                                                                                    | boolean  |
-| `--requestProxyEnabled` | 啟用代理以處理外部請求                                                                                  | boolean  |
-| `--requestProxyUrl`     | 設定請求代理的 URL（支持 HTTP 或 SOCKS 協議）                                                            | string   |
-| `--requestProxyBypass`  | 請求代理的例外主機清單（主機列表需以空格分隔）                                                              | array    |
+| Option                           | Description                                 | Type    |
+|----------------------------------|---------------------------------------------|---------|
+| `--version`                      | 顯示版本序號                                | boolean |
+| `--enableIPv6`                   | 啟用 IPv6                                   | boolean |
+| `--enableIPv4`                   | 啟用 IPv4                                   | boolean |
+| `--port`                         | 設定 SillyTavern 運行的端口。               | number  |
+| `--dnsPreferIPv6`                | 偏好使用 IPv6 解析 DNS。                    | boolean |
+| `--browserLaunchEnabled`         | 自動在瀏覽器中啟動 SillyTavern。            | boolean |
+| `--browserLaunchHostname`        | 自動啟動時的主機名稱，通常建議保持為 'auto' | string  |
+| `--browserLaunchPort`            | 覆蓋自動啟動的端口設定                      | string  |
+| `--browserLaunchAvoidLocalhost`  | 在自動模式下避免使用 'localhost'            | boolean |
+| `--listen`                       | SillyTavern 是否可監聽所有網路接口。        | boolean |
+| `--corsProxy`                    | 啟用 CORS 代理。                       | boolean |
+| `--disableCsrf`                  | 停用 CSRF 保護                              | boolean |
+| `--ssl`                          | 啟用 SSL                                    | boolean |
+| `--certPath`                     | 設定您證書文件的路徑                        | string  |
+| `--keyPath`                      | 設定您私人金鑰文件的路徑                    | string  |
+| `--whitelist`                    | 啟用白名單模式                              | boolean |
+| `--dataRoot`                     | 設定數據儲存的根目錄                        | string  |
+| `--basicAuthMode`                | 啟用基本身份驗證模式                        | boolean |
+| `--requestProxyEnabled`          | 啟用代理以處理外部請求                      | boolean |
+| `--requestProxyUrl`              | 設定請求代理的 URL（支持 HTTP 或 SOCKS 協議）| string  |
+| `--requestProxyBypass`           | 請求代理的例外主機清單（主機列表需以空格分隔）| array   |
 
 ## 遠端連線
 

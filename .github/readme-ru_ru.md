@@ -283,29 +283,29 @@ Start.bat --port 8000 --listen false
 
 ### Поддерживаемые аргументы
 
-| Аргумент                | Описание                                                                                                       | Тип      |
-|-------------------------|----------------------------------------------------------------------------------------------------------------|----------|
-| `--version`             | Показывает номер версии.                                                                                       | boolean  |
-| `--enableIPv6`          | Включает IPv6.                                                                                                 | boolean  |
-| `--enableIPv4`          | Включает IPv4.                                                                                                 | boolean  |
-| `--port`                | Устанавливает порт, котрый будет использовать SillyTavern. Если не указан, то используется yaml-конфиг 'port'. | number   |
-| `--dnsPreferIPv6`       | Отдает предпочтение IPv6 для dns. Если не указан, то используется yaml-конфиг 'preferIPv6'.                    | boolean  |
-| `--autorun`             | Автоматический запуск SillyTavern в браузере. Если не указан, то используется yaml-конфиг 'autorun'.           | boolean  |
-| `--autorunHostname`     | Имя хоста автозапуска, лучше оставить на 'auto'.                                                               | string   |
-| `--autorunPortOverride` | Переопределяет порт для автозапуска.                                                                           | string   |
-| `--listen`              | SillyTavern будет прослушивать все сетевые интерфейсы. Если не указан, то используется yaml-конфиг 'listen'.   | boolean  |
-| `--corsProxy`           | Включает CORS-прокси. Если не указан, то используется yaml-конфиг 'enableCorsProxy'.                           | boolean  |
-| `--disableCsrf`         | Отключает защиту от CSRF.                                                                                      | boolean  |
-| `--ssl`                 | Включает SSL.                                                                                                  | boolean  |
-| `--certPath`            | Путь к файлу c сертификатом.                                                                                   | string   |
-| `--keyPath`             | Путь к файлу с закрытым ключом.                                                                                | string   |
-| `--whitelist`           | Включает режим белого списка.                                                                                  | boolean  |
-| `--dataRoot`            | Корневой каталог для хранения данных.                                                                          | string   |
-| `--avoidLocalhost`      | Избегает использования 'localhost' для автозапуска в режиме 'auto'.                                            | boolean  |
-| `--basicAuthMode`       | Включает простую аутентификацию.                                                                               | boolean  |
-| `--requestProxyEnabled` | Разрешает использование прокси для исходящих запросов.                                                         | boolean  |
-| `--requestProxyUrl`     | URL-адрес прокси (протоколы HTTP или SOCKS).                                                                   | string   |
-| `--requestProxyBypass`  | Bypass список прокси (список хостов, разделенных пробелами).                                                   | array    |
+| Аргумент                     | Описание                                                                                                  | Тип     |
+|------------------------------|-----------------------------------------------------------------------------------------------------------|---------|
+| `--version`                  | Показывает номер версии.                                                                                  | boolean |
+| `--enableIPv6`               | Включает IPv6.                                                                                            | boolean |
+| `--enableIPv4`               | Включает IPv4.                                                                                            | boolean |
+| `--port`                     | Устанавливает порт, который будет использовать SillyTavern.                                               | number  |
+| `--dnsPreferIPv6`            | Отдает предпочтение IPv6 для dns.                                                                         | boolean |
+| `--browserLaunchEnabled`     | Автоматический запуск SillyTavern в браузере.                                                             | boolean |
+| `--browserLaunchHostname`    | Имя хоста автозапуска, лучше оставить на 'auto'.                                                          | string  |
+| `--browserLaunchPort`        | Переопределяет порт для автозапуска.                                                                      | string  |
+| `--browserLaunchAvoidLocalhost`| Избегает использования 'localhost' для автозапуска в режиме 'auto'.                                      | boolean |
+| `--listen`                   | SillyTavern будет прослушивать все сетевые интерфейсы.                                                    | boolean |
+| `--corsProxy`                | Включает CORS-прокси.                                                                                     | boolean |
+| `--disableCsrf`              | Отключает защиту от CSRF.                                                                                 | boolean |
+| `--ssl`                      | Включает SSL.                                                                                             | boolean |
+| `--certPath`                 | Путь к файлу c сертификатом.                                                                              | string  |
+| `--keyPath`                  | Путь к файлу с закрытым ключом.                                                                           | string  |
+| `--whitelist`                | Включает режим белого списка.                                                                             | boolean |
+| `--dataRoot`                 | Корневой каталог для хранения данных.                                                                     | string  |
+| `--basicAuthMode`            | Включает простую аутентификацию.                                                                          | boolean |
+| `--requestProxyEnabled`      | Разрешает использование прокси для исходящих запросов.                                                    | boolean |
+| `--requestProxyUrl`          | URL-адрес прокси (протоколы HTTP или SOCKS).                                                              | string  |
+| `--requestProxyBypass`       | Bypass список прокси (список хостов, разделенных пробелами).                                              | array   |
 
 ## Удалённое подключение
 
