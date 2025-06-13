@@ -161,6 +161,8 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
 
+    $('#context_derived_map').val(power_user.chat_template_hash in power_user.context_derive_mappings && preset == power_user.context_derive_mappings[power_user.chat_template_hash]).trigger('change');
+
     saveSettingsDebounced();
 }
 
@@ -190,6 +192,8 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         $('#instruct_enabled').prop('checked', true).trigger('change');
         !quiet && toastr.info('Instruct Mode enabled');
     }
+
+    $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct.derive_mappings && preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]).trigger('change');
 
     saveSettingsDebounced();
 }
@@ -750,6 +754,45 @@ jQuery(() => {
         $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
     });
 
+    $('#instruct_derived_map').on('input', function () {
+        const chat_template_hash = power_user.chat_template_hash;
+        if (!power_user.instruct.derive_mappings) {
+            power_user.instruct.derive_mappings = {};
+        }
+
+        const value = !(chat_template_hash in power_user.instruct.derive_mappings && power_user.instruct.derive_mappings[chat_template_hash] === power_user.instruct.preset);
+
+        if (chat_template_hash == '') {
+            toastr.error('Error: No model loaded');
+            return;
+        }
+        if (value) {
+            if (power_user.instruct.derived) {
+                toastr.info(`Bound ${power_user.instruct.preset} preset to currently loaded model and all models that share its chat template.`);
+            } else {
+                toastr.warning('Note: Instruct derivation is disabled. This will have no effect until it is turned on.');
+            }
+
+            // map current preset to current chat template hash
+            power_user.instruct.derive_mappings[chat_template_hash] = power_user.instruct.preset;
+        } else {
+            // unmap current preset (i.e. restore default) for current chat template hash
+            delete power_user.instruct.derive_mappings[chat_template_hash];
+            toastr.info('Instruct preset for current model will use defaults when loaded the next time.');
+        }
+        $('#instruct_derived_map').parent().find('i').toggleClass('toggleEnabled', value);
+        saveSettingsDebounced();
+    });
+
+    $('#instruct_derived_map').on('change', function () {
+        const chat_template_hash = power_user.chat_template_hash;
+        const enabled = chat_template_hash in power_user.instruct.derive_mappings && power_user.instruct.derive_mappings[chat_template_hash] == power_user.instruct.preset;
+        const i = $('#instruct_derived_map').parent().find('i');
+        i.toggleClass('toggleEnabled', enabled);
+        i.toggleClass('fa-lock', enabled);
+        i.toggleClass('fa-unlock', !enabled);
+    });
+
     $('#instruct_bind_to_context').on('change', function () {
         $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
     });
@@ -787,6 +830,8 @@ jQuery(() => {
             // Select matching context template
             selectMatchingContextTemplate(name);
         }
+
+        $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct.derive_mappings && preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]).trigger('change');
     });
 
     if (!CSS.supports('field-sizing', 'content')) {

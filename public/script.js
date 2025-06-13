@@ -1321,6 +1321,8 @@ async function getStatusTextgen() {
                 const data = await response.json();
                 if (data) {
                     const { chat_template, chat_template_hash } = data;
+                    power_user.chat_template_hash = chat_template_hash;
+
                     if (wantsContextSize && 'default_generation_settings' in data) {
                         const backend_max_context = data['default_generation_settings']['n_ctx'];
                         const old_value = max_context;
@@ -1333,13 +1335,20 @@ async function getStatusTextgen() {
                         }
                     }
                     console.log(`We have chat template ${chat_template.split('\n')[0]}...`);
-                    const templates = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
-                    if (templates) {
-                        const { context, instruct } = templates;
-                        if (wantsContextDerivation) {
+                    let { context, instruct } = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
+                    if (wantsContextDerivation) {
+                        if (chat_template_hash in power_user.context_derive_mappings) {
+                            context = power_user.context_derive_mappings[chat_template_hash];
+                        }
+                        if (context) {
                             selectContextPreset(context, { isAuto: true });
                         }
-                        if (wantsInstructDerivation) {
+                    }
+                    if (wantsInstructDerivation) {
+                        if (power_user.instruct.derive_mappings && chat_template_hash in power_user.instruct.derive_mappings) {
+                            instruct = power_user.instruct.derive_mappings[chat_template_hash];
+                        }
+                        if (instruct) {
                             selectInstructPreset(instruct, { isAuto: true });
                         }
                     }

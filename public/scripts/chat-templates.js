@@ -94,10 +94,12 @@ const parse_derivation = derivation => (typeof derivation === 'string') ? {
     'instruct': derivation,
 } : derivation;
 
+const not_found = { context: null, instruct: null };
+
 export async function deriveTemplatesFromChatTemplate(chat_template, hash) {
     if (chat_template.trim() === '') {
         console.log('Missing chat template.');
-        return null;
+        return not_found;
     }
 
     if (hash in hash_derivations) {
@@ -112,5 +114,5 @@ export async function deriveTemplatesFromChatTemplate(chat_template, hash) {
     }
 
     console.warn(`Unknown chat template hash: ${hash} for [${chat_template}]`);
-    return null;
+    return not_found;
 }

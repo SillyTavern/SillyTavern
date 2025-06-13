@@ -222,6 +222,8 @@ let power_user = {
     disable_group_trimming: false,
     single_line: false,
 
+    chat_template_hash: '', /** the chat template hash of the currently loaded model, if any; used when deriving mappings */
+
     instruct: {
         enabled: false,
         preset: 'Alpaca',
@@ -244,6 +246,7 @@ let power_user = {
         names_behavior: names_behavior_types.FORCE,
         activation_regex: '',
         derived: false,
+        derive_mappings: {}, /** user defined chat template hash to instruct template mappings */
         bind_to_context: false,
         user_alignment_message: '',
         system_same_as_user: false,
@@ -261,6 +264,7 @@ let power_user = {
     },
 
     context_derived: false,
+    context_derive_mappings: {}, /** user defined chat template hash to context template mappings */
     context_size_derived: false,
 
     sysprompt: {
@@ -1910,6 +1914,9 @@ async function loadContextSettings() {
         }
 
         power_user.context.preset = name;
+
+        $('#context_derived_map').val(power_user.chat_template_hash in power_user.context_derive_mappings && preset == power_user.context_derive_mappings[power_user.chat_template_hash]).trigger('change');
+
         contextControls.forEach(control => {
             const presetValue = preset[control.property] ?? control.defaultValue;
 
@@ -3254,6 +3261,40 @@ $(document).ready(() => {
 
     $('#context_size_derived').on('change', function () {
         $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
+    });
+
+    $('#context_derived_map').on('input', function () {
+        const chat_template_hash = power_user.chat_template_hash;
+        const value = !(power_user.chat_template_hash in power_user.context_derive_mappings);
+
+        if (chat_template_hash == '') {
+            toastr.error('Error: No model loaded');
+            return;
+        }
+        if (value) {
+            if (power_user.context_derived) {
+                toastr.info(`Bound ${power_user.context.preset} preset to currently loaded model and all models that share its chat template.`);
+            } else {
+                toastr.warning('Note: Context derivation is disabled. This will have no effect until it is turned on.');
+            }
+
+            // map current preset to current chat template hash
+            power_user.context_derive_mappings[chat_template_hash] = power_user.context.preset;
+        } else {
+            // unmap current preset (i.e. restore default) for current chat template hash
+            delete power_user.context_derive_mappings[chat_template_hash];
+            toastr.info('Context preset for current model will use defaults when loaded the next time.');
+        }
+        saveSettingsDebounced();
+    });
+
+    $('#context_derived_map').on('change', function () {
+        const chat_template_hash = power_user.chat_template_hash;
+        const enabled = chat_template_hash in power_user.context_derive_mappings && power_user.context_derive_mappings[chat_template_hash] == power_user.context.preset;
+        const i = $('#context_derived_map').parent().find('i');
+        i.toggleClass('toggleEnabled', enabled);
+        i.toggleClass('fa-lock', enabled);
+        i.toggleClass('fa-unlock', !enabled);
     });
 
     $('#always-force-name2-checkbox').change(function () {
