@@ -4233,13 +4233,14 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     position: relative;
-    box-shadow: 0 0 5px 0 black;
-    box-shadow: inset 0 0 5px var(--black70a);
+    /*box-shadow: 0 0 5px 0 black;
+    box-shadow: inset 0 0 5px var(--black70a);*/
     -webkit-appearance: none;
     height: 15px;
     width: 15px;
     border-radius: 50%;
-    background: var(--white100);
+    background: var(--SmartThemeCheckboxTickColor);
+    border: 2px solid var(--SmartThemeBodyColor);
 }
 
 .doubleRangeContainer {
