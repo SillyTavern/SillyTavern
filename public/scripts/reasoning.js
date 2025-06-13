@@ -118,6 +118,8 @@ export function extractReasoningFromData(data, {
                     return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
                 case chat_completion_sources.CLAUDE:
                     return data?.content?.find(part => part.type === 'thinking')?.thinking ?? '';
+                case chat_completion_sources.AIMLAPI:
+                case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.CUSTOM: {
                     return data?.choices?.[0]?.message?.reasoning_content
                         ?? data?.choices?.[0]?.message?.reasoning
