@@ -69,7 +69,7 @@ function getBackupFunction(handle) {
     if (!backupFunctions.has(handle)) {
         backupFunctions.set(handle, _.throttle(backupChat, throttleInterval, { leading: true, trailing: true }));
     }
-    return backupFunctions.get(handle) || (() => {});
+    return backupFunctions.get(handle) || (() => { });
 }
 
 /**
@@ -487,28 +487,33 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 });
 
 router.post('/rename', validateAvatarUrlMiddleware, async function (request, response) {
-    if (!request.body || !request.body.original_file || !request.body.renamed_file) {
-        return response.sendStatus(400);
+    try {
+        if (!request.body || !request.body.original_file || !request.body.renamed_file) {
+            return response.sendStatus(400);
+        }
+
+        const pathToFolder = request.body.is_group
+            ? request.user.directories.groupChats
+            : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
+        const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
+        const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
+        const sanitizedFileName = path.parse(pathToRenamedFile).name;
+        console.debug('Old chat name', pathToOriginalFile);
+        console.debug('New chat name', pathToRenamedFile);
+
+        if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
+            console.error('Either Source or Destination files are not available');
+            return response.status(400).send({ error: true });
+        }
+
+        fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
+        fs.unlinkSync(pathToOriginalFile);
+        console.info('Successfully renamed chat file.');
+        return response.send({ ok: true, sanitizedFileName });
+    } catch (error) {
+        console.error('Error renaming chat file:', error);
+        return response.status(500).send({ error: true });
     }
-
-    const pathToFolder = request.body.is_group
-        ? request.user.directories.groupChats
-        : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
-    const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
-    const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
-    const sanitizedFileName = path.parse(pathToRenamedFile).name;
-    console.info('Old chat name', pathToOriginalFile);
-    console.info('New chat name', pathToRenamedFile);
-
-    if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
-        console.error('Either Source or Destination files are not available');
-        return response.status(400).send({ error: true });
-    }
-
-    fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
-    fs.unlinkSync(pathToOriginalFile);
-    console.info('Successfully renamed.');
-    return response.send({ ok: true, sanitizedFileName });
 });
 
 router.post('/delete', validateAvatarUrlMiddleware, function (request, response) {
@@ -859,7 +864,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             // Search through title and messages of the chat
             const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
             const text = [path.parse(chatFile.path).name,
-                ...messages.map(message => message?.mes)].join('\n').toLowerCase();
+            ...messages.map(message => message?.mes)].join('\n').toLowerCase();
             const hasMatch = fragments.every(fragment => text.includes(fragment));
 
             if (hasMatch) {
