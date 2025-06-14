@@ -1535,7 +1535,7 @@ export async function runGenerationInterceptors(chat, contextSize, type) {
 
 /**
  * Writes a field to the character's data extensions object.
- * @param {number} characterId Index in the character array
+ * @param {number|string} characterId Index in the character array
  * @param {string} key Field name
  * @param {any} value Field value
  * @returns {Promise<void>} When the field is written

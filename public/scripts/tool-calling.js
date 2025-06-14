@@ -611,6 +611,7 @@ export class ToolManager {
             chat_completion_sources.MISTRALAI,
             chat_completion_sources.CLAUDE,
             chat_completion_sources.OPENROUTER,
+            chat_completion_sources.AIMLAPI,
             chat_completion_sources.GROQ,
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,

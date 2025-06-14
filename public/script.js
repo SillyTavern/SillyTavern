@@ -250,7 +250,20 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels, loadTabbyModels, loadGenericModels } from './scripts/textgen-models.js';
+import {
+    loadFeatherlessModels,
+    loadMancerModels,
+    loadOllamaModels,
+    loadTogetherAIModels,
+    loadInfermaticAIModels,
+    loadOpenRouterModels,
+    loadVllmModels,
+    loadAphroditeModels,
+    loadDreamGenModels,
+    initTextGenModels,
+    loadTabbyModels,
+    loadGenericModels,
+} from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities } from './scripts/chats.js';
 import { getPresetManager, initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
@@ -542,6 +555,10 @@ export const event_types = {
     TOOL_CALLS_PERFORMED: 'tool_calls_performed',
     TOOL_CALLS_RENDERED: 'tool_calls_rendered',
     CHARACTER_MANAGEMENT_DROPDOWN: 'charManagementDropdown',
+    SECRET_WRITTEN: 'secret_written',
+    SECRET_DELETED: 'secret_deleted',
+    SECRET_ROTATED: 'secret_rotated',
+    SECRET_EDITED: 'secret_edited',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
@@ -2726,7 +2743,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
 /**
  * Returns the URL of the avatar for the given character Id.
- * @param {number} characterId Character Id
+ * @param {number|string} characterId Character Id
  * @returns {string} Avatar URL
  */
 export function getCharacterAvatar(characterId) {
@@ -6108,7 +6125,11 @@ export function extractMessageFromData(data, activeApi = null) {
         case 'koboldhorde':
             return data.text;
         case 'textgenerationwebui':
-            return data.choices?.[0]?.text ?? data.content ?? data.response ?? '';
+            return data.choices?.[0]?.text
+                ?? data.choices?.[0]?.message?.content
+                ?? data.content
+                ?? data.response
+                ?? '';
         case 'novel':
             return data.output;
         case 'openai':

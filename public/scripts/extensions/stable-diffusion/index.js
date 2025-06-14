@@ -41,7 +41,7 @@ import {
     stringFormat,
 } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
-import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelAnlas, getNovelUnlimitedImageGeneration, loadNovelSubscriptionData } from '../../nai-settings.js';
 import { getMultimodalCaption } from '../shared.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -53,7 +53,7 @@ import {
 } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
@@ -74,6 +74,7 @@ const sources = {
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
+    aimlapi: 'aimlapi',
     comfy: 'comfy',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
@@ -1144,42 +1145,6 @@ function onComfyWorkflowChange() {
     saveSettingsDebounced();
 }
 
-async function onApiKeyClick(popupText, secretKey) {
-    const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
-        customButtons: [{
-            text: 'Remove Key',
-            appendAtEnd: true,
-            result: POPUP_RESULT.NEGATIVE,
-            action: async () => {
-                await writeSecret(secretKey, '');
-                toastr.success('API Key removed');
-                await loadSettingOptions();
-            },
-        }],
-    });
-
-    if (!key) {
-        return;
-    }
-
-    await writeSecret(secretKey, String(key));
-
-    toastr.success('API Key saved');
-    await loadSettingOptions();
-}
-
-async function onStabilityKeyClick() {
-    return onApiKeyClick('Stability AI API Key:', SECRET_KEYS.STABILITY);
-}
-
-async function onBflKeyClick() {
-    return onApiKeyClick('BFL API Key:', SECRET_KEYS.BFL);
-}
-
-async function onFalaiKeyClick() {
-    return onApiKeyClick('FALAI API Key:', SECRET_KEYS.FALAI);
-}
-
 function onBflUpsamplingInput() {
     extension_settings.sd.bfl_upsampling = !!$('#sd_bfl_upsampling').prop('checked');
     saveSettingsDebounced();
@@ -1303,6 +1268,7 @@ async function onModelChange() {
         sources.horde,
         sources.novel,
         sources.openai,
+        sources.aimlapi,
         sources.togetherai,
         sources.pollinations,
         sources.stability,
@@ -1505,6 +1471,9 @@ async function loadSamplers() {
         case sources.openai:
             samplers = ['N/A'];
             break;
+        case sources.aimlapi:
+            samplers = ['N/A'];
+            break;
         case sources.comfy:
             samplers = await loadComfySamplers();
             break;
@@ -1694,6 +1663,9 @@ async function loadModels() {
             break;
         case sources.openai:
             models = await loadOpenAiModels();
+            break;
+        case sources.aimlapi:
+            models = await loadAimlapiModels();
             break;
         case sources.comfy:
             models = await loadComfyModels();
@@ -1959,6 +1931,23 @@ async function loadOpenAiModels() {
     ];
 }
 
+async function loadAimlapiModels() {
+    $('#sd_aimlapi_key').toggleClass('success', !!secret_state[SECRET_KEYS.AIMLAPI]);
+
+    const result = await fetch('/api/sd/aimlapi/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (!result.ok) {
+        return [];
+    }
+
+    const json = await result.json();
+
+    return (json.data || []);
+}
+
 async function loadVladModels() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -2086,6 +2075,9 @@ async function loadSchedulers() {
         case sources.openai:
             schedulers = ['N/A'];
             break;
+        case sources.aimlapi:
+            schedulers = ['N/A'];
+            break;
         case sources.togetherai:
             schedulers = ['N/A'];
             break;
@@ -2175,6 +2167,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.openai:
+            vaes = ['N/A'];
+            break;
+        case sources.aimlapi:
             vaes = ['N/A'];
             break;
         case sources.togetherai:
@@ -2748,6 +2743,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.openai:
                 result = await generateOpenAiImage(prefixedPrompt, signal);
+                break;
+            case sources.aimlapi:
+                result = await generateAimlapiImage(prefixedPrompt, signal);
                 break;
             case sources.comfy:
                 result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
@@ -3334,6 +3332,47 @@ async function generateOpenAiImage(prompt, signal) {
 }
 
 /**
+ * Universal image generation via AIMLAPI:
+ * - Builds the right request body for any model (OpenAI vs SD/Flux/Recraft).
+ * - Extracts the URL or base64 response.
+ * - If it’s a URL, fetches the image and converts to base64.
+ * - Returns { format: 'png', data: '<base64 string>' }, ready for saveBase64AsFile().
+ */
+async function generateAimlapiImage(prompt, signal) {
+    const model = extension_settings.sd.model.toLowerCase();
+    const isSdLike =
+        model.startsWith('flux/') ||
+        model.startsWith('stable') ||
+        model === 'recraft-v3' ||
+        model === 'triposr';
+
+    const body = { prompt, model };
+    if (isSdLike) {
+        body.steps = clamp(extension_settings.sd.steps, 1, 50);
+        body.guidance = clamp(extension_settings.sd.scale, 1.5, 5);
+        body.width = clamp(extension_settings.sd.width, 256, 1440);
+        body.height = clamp(extension_settings.sd.height, 256, 1440);
+        if (extension_settings.sd.seed >= 0) body.seed = extension_settings.sd.seed;
+    } else {
+        body.n = 1;
+        body.size = `${extension_settings.sd.width}x${extension_settings.sd.height}`;
+        body.quality = extension_settings.sd.openai_quality;
+        body.style = extension_settings.sd.openai_style;
+    }
+
+    const res = await fetch('/api/sd/aimlapi/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal,
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    const { format, data } = await res.json();
+    return { format, data };
+}
+
+/**
  * Generates an image in ComfyUI using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
@@ -3849,6 +3888,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NOVEL];
         case sources.openai:
             return secret_state[SECRET_KEYS.OPENAI];
+        case sources.aimlapi:
+            return secret_state[SECRET_KEYS.AIMLAPI];
         case sources.comfy:
             return true;
         case sources.togetherai:
@@ -4522,13 +4563,10 @@ jQuery(async () => {
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
     $('#sd_tool_visible').on('input', onToolVisibleInput);
     $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
-    $('#sd_stability_key').on('click', onStabilityKeyClick);
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
-    $('#sd_bfl_key').on('click', onBflKeyClick);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
-    $('#sd_falai_key').on('click', onFalaiKeyClick);
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {
@@ -4555,6 +4593,19 @@ jQuery(async () => {
     eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+        eventSource.on(event, async (/** @type {string} */ key) => {
+            switch (key) {
+                case SECRET_KEYS.BFL:
+                case SECRET_KEYS.FALAI:
+                case SECRET_KEYS.STABILITY:
+                case SECRET_KEYS.AIMLAPI:
+                    await loadSettingOptions();
+                    break;
+            }
+        });
+    });
 
     await loadSettings();
     $('body').addClass('sd');
