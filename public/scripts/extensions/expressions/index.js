@@ -978,6 +978,7 @@ function getJsonSchema(emotions) {
         required: [
             'emotion',
         ],
+        additionalProperties: false,
     };
 }
 
