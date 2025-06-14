@@ -41,7 +41,20 @@
                     </div>
                 </label>
                 <small data-i18n="Will be used if the API doesn't support JSON schemas or function calling.">Will be used if the API doesn't support JSON schemas or function calling.</small>
-                <textarea id="expression_llm_prompt" type="text" class="text_pole textarea_compact" rows="2" placeholder="Use &lcub;&lcub;labels&rcub;&rcub; special macro."></textarea>
+                <textarea id="expression_llm_prompt" type="text" class="text_pole textarea_compact autoSetHeight" rows="2" placeholder="Use &lcub;&lcub;labels&rcub;&rcub; special macro."></textarea>
+            </div>
+            <div class="expression_prompt_type_block flex-container flexFlowColumn">
+                <div data-i18n="LLM Prompt Strategy" class="title_restorable">
+                    LLM Prompt Strategy
+                </div>
+                <label for="expression_prompt_raw" class="checkbox_label">
+                    <input id="expression_prompt_raw" type="radio" name="expression_prompt_type" value="raw">
+                    <span data-i18n="Limited Context">Limited Context</span>
+                </label>
+                <label for="expression_prompt_full" class="checkbox_label">
+                    <input id="expression_prompt_full" type="radio" name="expression_prompt_type" value="full">
+                    <span data-i18n="Full Context">Full Context</span>
+                </label>
             </div>
             <div class="expression_fallback_block m-b-1 m-t-1">
                 <label for="expression_fallback" data-i18n="Default / Fallback Expression">Default / Fallback Expression</label>

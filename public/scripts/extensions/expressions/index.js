@@ -86,6 +86,12 @@ const EXPRESSION_API = {
     none: 99,
 };
 
+/** @enum {string} */
+const PROMPT_TYPE = {
+    raw: 'raw',
+    full: 'full',
+};
+
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
@@ -1047,7 +1053,14 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 let emotionResponse;
                 try {
                     inApiCall = true;
-                    emotionResponse = await generateQuietPrompt(prompt, false, false);
+                    switch (extension_settings.expressions.promptType) {
+                        case PROMPT_TYPE.raw:
+                            emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+                            break;
+                        case PROMPT_TYPE.full:
+                            emotionResponse = await generateQuietPrompt(prompt, false, false);
+                            break;
+                    }
                 } finally {
                     inApiCall = false;
                 }
@@ -1705,6 +1718,7 @@ function onExpressionApiChanged() {
     if (tempApi) {
         extension_settings.expressions.api = Number(tempApi);
         $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api));
+        $('.expression_prompt_type_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
         expressionsList = null;
         spriteCache = {};
         moduleWorker();
@@ -2105,6 +2119,11 @@ function migrateSettings() {
         extension_settings.expressions.showDefault = false;
         saveSettingsDebounced();
     }
+
+    if (extension_settings.expressions.promptType === undefined) {
+        extension_settings.expressions.promptType = PROMPT_TYPE.raw;
+        saveSettingsDebounced();
+    }
 }
 
 (async function () {
@@ -2172,6 +2191,16 @@ function migrateSettings() {
             extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
             saveSettingsDebounced();
         });
+        $('#expression_prompt_raw').on('input', function () {
+            extension_settings.expressions.promptType = PROMPT_TYPE.raw;
+            saveSettingsDebounced();
+        });
+        $('#expression_prompt_full').on('input', function () {
+            extension_settings.expressions.promptType = PROMPT_TYPE.full;
+            saveSettingsDebounced();
+        });
+        $(`input[name="expression_prompt_type"][value="${extension_settings.expressions.promptType}"]`).prop('checked', true);
+        $('.expression_prompt_type_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
 
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);

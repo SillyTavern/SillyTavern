@@ -178,6 +178,7 @@ export const extension_settings = {
         llmPrompt: undefined,
         allowMultiple: true,
         rerollIfSame: false,
+        promptType: 'raw',
     },
     connectionManager: {
         selectedProfile: '',
