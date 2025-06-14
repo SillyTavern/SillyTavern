@@ -1,6 +1,6 @@
 import { Fuse } from '../../../lib.js';
 
-import { characters, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
+import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
@@ -909,10 +909,6 @@ function sampleClassifyText(text) {
  * @returns {Promise<string>} Prompt for the LLM API.
  */
 async function getLlmPrompt(labels) {
-    if (isJsonSchemaSupported()) {
-        return '';
-    }
-
     const labelsString = labels.map(x => `"${x}"`).join(', ');
     const prompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { labels: labelsString });
     return prompt;
@@ -1047,7 +1043,14 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 const expressionsList = await getExpressionsList({ filterAvailable: filterAvailable });
                 const prompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
-                const emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+
+                let emotionResponse;
+                try {
+                    inApiCall = true;
+                    emotionResponse = await generateQuietPrompt(prompt, false, false);
+                } finally {
+                    inApiCall = false;
+                }
                 return parseLlmResponse(emotionResponse, expressionsList);
             }
             // Using WebLLM
