@@ -3331,7 +3331,29 @@
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </label>
-                                <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1">
+                                <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1" list="vertexai_region_suggestions">
+
+                                <datalist id="vertexai_region_suggestions">
+                                    <option value="global">global</option>
+                                    <option value="us-central1">us-central1</option>
+                                    <option value="us-east1">us-east1</option>
+                                    <option value="us-east4">us-east4</option>
+                                    <option value="us-west1">us-west1</option>
+                                    <option value="us-west2">us-west2</option>
+                                    <option value="us-west3">us-west3</option>
+                                    <option value="us-west4">us-west4</option>
+                                    <option value="europe-west1">europe-west1</option>
+                                    <option value="europe-west2">europe-west2</option>
+                                    <option value="europe-west3">europe-west3</option>
+                                    <option value="europe-west4">europe-west4</option>
+                                    <option value="europe-west6">europe-west6</option>
+                                    <option value="europe-central2">europe-central2</option>
+                                    <option value="asia-northeast1">asia-northeast1</option>
+                                    <option value="asia-northeast3">asia-northeast3</option>
+                                    <option value="asia-southeast1">asia-southeast1</option>
+                                    <option value="asia-south1">asia-south1</option>
+                                    <option value="australia-southeast1">australia-southeast1</option>
+                                </datalist>
                             </div>
 
                             <!-- Model Selection -->
