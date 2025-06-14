@@ -2385,8 +2385,6 @@ async function sendOpenAIRequest(type, messages, signal) {
             delete generate_data.top_logprobs;
             delete generate_data.logprobs;
             delete generate_data.logit_bias;
-            delete generate_data.tools;
-            delete generate_data.tool_choice;
         }
     }
 

@@ -34,6 +34,7 @@ import {
     calculateGoogleBudgetTokens,
     postProcessPrompt,
     PROMPT_PROCESSING_TYPE,
+    addAssistantPrefix,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -869,9 +870,9 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const postProcessType = String(request.body.model).endsWith('-reasoner')
-            ? PROMPT_PROCESSING_TYPE.DEEPSEEK_REASONER
-            : PROMPT_PROCESSING_TYPE.DEEPSEEK;
-        const processedMessages = postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request));
+            ? PROMPT_PROCESSING_TYPE.STRICT_TOOLS
+            : PROMPT_PROCESSING_TYPE.SEMI_TOOLS;
+        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request)), bodyParams.tools);
 
         const requestBody = {
             'messages': processedMessages,
