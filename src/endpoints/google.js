@@ -11,6 +11,31 @@ import { trimTrailingSlash } from '../util.js';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 
+function createWavHeader(dataSize, sampleRate, numChannels = 1, bitsPerSample = 16) {
+    const header = Buffer.alloc(44);
+    header.write('RIFF', 0);
+    header.writeUInt32LE(36 + dataSize, 4);
+    header.write('WAVE', 8);
+    header.write('fmt ', 12);
+    header.writeUInt32LE(16, 16);
+    header.writeUInt16LE(1, 20);
+    header.writeUInt16LE(numChannels, 22);
+    header.writeUInt32LE(sampleRate, 24);
+    header.writeUInt32LE(sampleRate * numChannels * bitsPerSample / 8, 28);
+    header.writeUInt16LE(numChannels * bitsPerSample / 8, 32);
+    header.writeUInt16LE(bitsPerSample, 34);
+    header.write('data', 36);
+    header.writeUInt32LE(dataSize, 40);
+    return header;
+}
+
+function createCompleteWavFile(pcmData, sampleRate) {
+    const header = createWavHeader(pcmData.length, sampleRate);
+    return Buffer.concat([header, pcmData]);
+}
+
+
+
 // Vertex AI authentication helper functions
 export async function getVertexAIAuth(request) {
     const authMode = request.body.vertexai_auth_mode || 'express';
@@ -257,5 +282,150 @@ router.post('/generate-voice', async (request, response) => {
     } catch (error) {
         console.error('Google Translate TTS generation failed', error);
         response.status(500).send('Internal server error');
+    }
+});
+
+
+
+router.post('/list-native-voices', async (request, response) => {
+    try {
+        // Hardcoded Gemini native TTS voices from official documentation
+        // Source: https://ai.google.dev/gemini-api/docs/speech-generation#voices
+        const voices = [
+            { name: 'Zephyr', voice_id: 'Zephyr', lang: 'en-US', description: 'Bright' },
+            { name: 'Puck', voice_id: 'Puck', lang: 'en-US', description: 'Upbeat' },
+            { name: 'Charon', voice_id: 'Charon', lang: 'en-US', description: 'Informative' },
+            { name: 'Kore', voice_id: 'Kore', lang: 'en-US', description: 'Firm' },
+            { name: 'Fenrir', voice_id: 'Fenrir', lang: 'en-US', description: 'Excitable' },
+            { name: 'Leda', voice_id: 'Leda', lang: 'en-US', description: 'Youthful' },
+            { name: 'Orus', voice_id: 'Orus', lang: 'en-US', description: 'Firm' },
+            { name: 'Aoede', voice_id: 'Aoede', lang: 'en-US', description: 'Breezy' },
+            { name: 'Callirhoe', voice_id: 'Callirhoe', lang: 'en-US', description: 'Easy-going' },
+            { name: 'Autonoe', voice_id: 'Autonoe', lang: 'en-US', description: 'Bright' },
+            { name: 'Enceladus', voice_id: 'Enceladus', lang: 'en-US', description: 'Breathy' },
+            { name: 'Iapetus', voice_id: 'Iapetus', lang: 'en-US', description: 'Clear' },
+            { name: 'Umbriel', voice_id: 'Umbriel', lang: 'en-US', description: 'Easy-going' },
+            { name: 'Algieba', voice_id: 'Algieba', lang: 'en-US', description: 'Smooth' },
+            { name: 'Despina', voice_id: 'Despina', lang: 'en-US', description: 'Smooth' },
+            { name: 'Erinome', voice_id: 'Erinome', lang: 'en-US', description: 'Clear' },
+            { name: 'Algenib', voice_id: 'Algenib', lang: 'en-US', description: 'Gravelly' },
+            { name: 'Rasalgethi', voice_id: 'Rasalgethi', lang: 'en-US', description: 'Informative' },
+            { name: 'Laomedeia', voice_id: 'Laomedeia', lang: 'en-US', description: 'Upbeat' },
+            { name: 'Achernar', voice_id: 'Achernar', lang: 'en-US', description: 'Soft' },
+            { name: 'Alnilam', voice_id: 'Alnilam', lang: 'en-US', description: 'Firm' },
+            { name: 'Schedar', voice_id: 'Schedar', lang: 'en-US', description: 'Even' },
+            { name: 'Gacrux', voice_id: 'Gacrux', lang: 'en-US', description: 'Mature' },
+            { name: 'Pulcherrima', voice_id: 'Pulcherrima', lang: 'en-US', description: 'Forward' },
+            { name: 'Achird', voice_id: 'Achird', lang: 'en-US', description: 'Friendly' },
+            { name: 'Zubenelgenubi', voice_id: 'Zubenelgenubi', lang: 'en-US', description: 'Casual' },
+            { name: 'Vindemiatrix', voice_id: 'Vindemiatrix', lang: 'en-US', description: 'Gentle' },
+            { name: 'Sadachbia', voice_id: 'Sadachbia', lang: 'en-US', description: 'Lively' },
+            { name: 'Sadaltager', voice_id: 'Sadaltager', lang: 'en-US', description: 'Knowledgeable' },
+            { name: 'Sulafat', voice_id: 'Sulafat', lang: 'en-US', description: 'Warm' },
+        ];
+        return response.json({ voices });
+
+    } catch (error) {
+        console.error('Failed to return Google TTS voices:', error);
+        response.status(500).json({
+            error: 'Internal server error while fetching voices',
+            details: error.message,
+        });
+    }
+});
+
+router.post('/generate-native-tts', async (request, response) => {
+    try {
+        const { text, voice, model, apiType, customEndpoint } = request.body;
+        const useVertexAi = apiType === 'vertexai';
+        const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
+
+        let apiKey;
+        let apiUrl;
+
+        if (useVertexAi) {
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
+            apiUrl = new URL(customEndpoint || API_VERTEX_AI);
+        } else {
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+            apiUrl = new URL(customEndpoint || API_MAKERSUITE);
+        }
+
+        if (!apiKey) {
+            return response.status(400).json({ error: `No API key found for ${apiName}. Please set it up in the API Connections panel.` });
+        }
+
+        let url;
+        if (useVertexAi) {
+            url = `${apiUrl.origin}/v1/publishers/google/models/${model}:generateContent?key=${apiKey}`;
+        } else {
+            url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        }
+
+        const requestBody = {
+            contents: [{
+                role: 'user',
+                parts: [{ text: text }],
+            }],
+            generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: {
+                            voiceName: voice,
+                        },
+                    },
+                },
+            },
+            safetySettings: GEMINI_SAFETY,
+        };
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const errorText = await result.text();
+            console.error(`${apiName} native TTS API error: ${result.status} ${result.statusText}`, errorText);
+            const errorMessage = JSON.parse(errorText).error?.message || 'TTS generation failed.';
+            return response.status(result.status).json({ error: errorMessage });
+        }
+
+        const data = await result.json();
+        const audioPart = data?.candidates?.[0]?.content?.parts?.[0];
+        const audioData = audioPart?.inlineData?.data;
+        const mimeType = audioPart?.inlineData?.mimeType;
+
+        if (!audioData) {
+            return response.status(500).json({ error: 'No audio data found in response' });
+        }
+
+        const audioBuffer = Buffer.from(audioData, 'base64');
+
+        //If the audio is raw PCM, wrap it in a WAV header and send it.
+        if (mimeType && mimeType.toLowerCase().includes('audio/l16')) {
+            const rateMatch = mimeType.match(/rate=(\d+)/);
+            const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+            const pcmData = audioBuffer;
+
+            // Create a complete, playable WAV file buffer.
+            const wavBuffer = createCompleteWavFile(pcmData, sampleRate);
+
+            // Send the WAV file directly to the browser. This is much faster.
+            response.setHeader('Content-Type', 'audio/wav');
+            return response.send(wavBuffer);
+        }
+
+        // Fallback for any other audio format Google might send in the future.
+        response.setHeader('Content-Type', mimeType || 'application/octet-stream');
+        response.send(audioBuffer);
+
+    } catch (error) {
+        console.error('Google native TTS generation failed:', error);
+        if (!response.headersSent) {
+            response.status(500).json({ error: 'Internal server error during TTS generation', details: error.message });
+        }
     }
 });
