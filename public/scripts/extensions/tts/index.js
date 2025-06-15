@@ -97,7 +97,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     'Google Translate': GoogleTranslateTtsProvider,
-    'Google Native TTS': GoogleNativeTtsProvider,
+    'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Kokoro: KokoroTtsProvider,
