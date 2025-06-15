@@ -149,19 +149,12 @@ router.post('/caption-image', async (request, response) => {
             if (authType === 'express') {
                 // Express mode: use API key parameter
                 const keyParam = authHeader.replace('Bearer ', '');
-                const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_VERTEX_AI);
                 const region = request.body.vertexai_region || 'us-central1';
-
-                if (region === 'us-central1') {
-                    url = `${apiUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
-                } else {
-                    const projectId = request.body.vertexai_express_project_id;
-                    if (!projectId) {
-                        console.warn('Project ID is required for regions other than us-central1.');
-                        return response.status(400).send({ error: true, message: 'Project ID is required for regions other than us-central1.' });
-                    }
-                    url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent?key=${keyParam}`;
-                }
+                const apiUrl = trimTrailingSlash(region === 'global' ? 'https://aiplatform.googleapis.com' : `https://${region}-aiplatform.googleapis.com`);
+                const projectId = request.body.vertexai_express_project_id;
+                url = projectId
+                    ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent?key=${keyParam}`
+                    : `${apiUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
             } else if (authType === 'full') {
                 // Full mode: use project-specific URL with Authorization header
                 // Get project ID from Service Account JSON
