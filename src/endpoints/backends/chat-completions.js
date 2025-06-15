@@ -496,7 +496,7 @@ async function sendMakerSuiteRequest(request, response) {
                 const projectId = request.body.vertexai_express_project_id;
                 const baseUrl = region === 'global'
                     ? 'https://aiplatform.googleapis.com'
-                    : `https://${region}-aiplatform.googleapis.com`);
+                    : `https://${region}-aiplatform.googleapis.com`;
                 url = projectId
                     ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent?key=${keyParam}${stream ? '&alt=sse' : ''}`
                     : `${baseUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}${stream ? '&alt=sse' : ''}`;
