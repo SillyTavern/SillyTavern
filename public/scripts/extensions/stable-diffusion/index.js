@@ -2465,8 +2465,15 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
 
         // generate the text prompt for the image
-        const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
+        let prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
+
+        // Extension hook for prompt processing
+        if (eventSource) {
+            const extensionData = { prompt, generationType, message, trigger };
+            await eventSource.emit('sd_prompt_processing', extensionData);
+            prompt = extensionData.prompt; // Allow extensions to modify the prompt
+        }
 
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
