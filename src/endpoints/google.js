@@ -104,6 +104,7 @@ export async function getAccessToken(jwtToken) {
         throw new Error(`Failed to get access token: ${error}`);
     }
 
+    /** @type {any} */
     const data = await response.json();
     return data.access_token;
 }
@@ -150,11 +151,13 @@ router.post('/caption-image', async (request, response) => {
                 // Express mode: use API key parameter
                 const keyParam = authHeader.replace('Bearer ', '');
                 const region = request.body.vertexai_region || 'us-central1';
-                const apiUrl = trimTrailingSlash(region === 'global' ? 'https://aiplatform.googleapis.com' : `https://${region}-aiplatform.googleapis.com`);
                 const projectId = request.body.vertexai_express_project_id;
+                const baseUrl = region === 'global'
+                    ? 'https://aiplatform.googleapis.com'
+                    : `https://${region}-aiplatform.googleapis.com`;
                 url = projectId
                     ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent?key=${keyParam}`
-                    : `${apiUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
+                    : `${baseUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}`;
             } else if (authType === 'full') {
                 // Full mode: use project-specific URL with Authorization header
                 // Get project ID from Service Account JSON
