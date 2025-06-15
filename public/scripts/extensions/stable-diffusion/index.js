@@ -2469,11 +2469,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         console.log('Processed image prompt:', prompt);
 
         // Extension hook for prompt processing
-        if (eventSource) {
-            const extensionData = { prompt, generationType, message, trigger };
-            await eventSource.emit('sd_prompt_processing', extensionData);
-            prompt = extensionData.prompt; // Allow extensions to modify the prompt
-        }
+        const eventData = { prompt, generationType, message, trigger };
+        await eventSource.emit('sd_prompt_processing', eventData);
+        prompt = eventData.prompt; // Allow extensions to modify the prompt
 
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
