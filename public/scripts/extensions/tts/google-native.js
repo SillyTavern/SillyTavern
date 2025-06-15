@@ -1,4 +1,6 @@
 import { getRequestHeaders } from '../../../script.js';
+import { oai_settings } from '../../openai.js';
+import { isValidUrl } from '../../utils.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 
@@ -17,7 +19,6 @@ export class GoogleNativeTtsProvider {
     get settingsHtml() {
         return `
         <small>Hint: Save an API key in the Google AI Studio/Vertex AI connection settings</small>
-        
         <div id="google-native-tts-settings">
             <div>
                 <label for="google-tts-api-type">API Type:</label>
@@ -26,7 +27,6 @@ export class GoogleNativeTtsProvider {
                     <option value="vertexai">Google Vertex AI</option>
                 </select>
             </div>
-            
             <div>
                 <label for="google-tts-model">Model:</label>
                 <select id="google-tts-model">
@@ -34,7 +34,6 @@ export class GoogleNativeTtsProvider {
                     <option value="gemini-2.5-pro-preview-tts">Gemini 2.5 Pro Preview TTS</option>
                 </select>
             </div>
-            
         </div>`;
     }
 
@@ -161,6 +160,7 @@ export class GoogleNativeTtsProvider {
 
     async fetchNativeTtsGeneration(text, voiceId) {
         console.info(`Generating native Google TTS for voice_id ${voiceId}`);
+        const useReverseProxy = oai_settings.reverse_proxy && isValidUrl(oai_settings.reverse_proxy);
 
         const response = await fetch('/api/google/generate-native-tts', {
             method: 'POST',
@@ -169,7 +169,12 @@ export class GoogleNativeTtsProvider {
                 text: text,
                 voice: voiceId,
                 model: this.settings.model,
-                apiType: this.settings.apiType,
+                api: this.settings.apiType,
+                reverse_proxy: useReverseProxy ? oai_settings.reverse_proxy : '',
+                proxy_password: useReverseProxy ? oai_settings.proxy_password : '',
+                vertexai_auth_mode: oai_settings.vertexai_auth_mode,
+                vertexai_region: oai_settings.vertexai_region,
+                vertexai_express_project_id: oai_settings.vertexai_express_project_id,
             }),
         });
 
