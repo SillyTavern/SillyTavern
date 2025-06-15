@@ -413,7 +413,7 @@ router.post('/generate-native-tts', async (request, response) => {
     } catch (error) {
         console.error('Google TTS generation failed:', error);
         if (!response.headersSent) {
-            return response.sendStatus(500);
+            return response.status(500).json({ error: 'Internal server error during TTS generation' });
         }
         return response.end();
     }
