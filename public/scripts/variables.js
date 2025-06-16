@@ -470,7 +470,7 @@ export function parseBooleanOperands(args) {
         }
 
         // Number parses spaces as 0, and parseFloat is weird
-        const operandNumber = operand?.trim()?.length ? Number(operand) : NaN;
+        const operandNumber = typeof operand === 'string' && operand.trim().length ? Number(operand) : NaN;
 
         if (!isNaN(operandNumber)) {
             return operandNumber;
