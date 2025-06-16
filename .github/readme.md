@@ -232,6 +232,28 @@ docker run \
 
 We have a comprehensive guide on using SillyTavern in Docker [here](http://docs.sillytavern.app/installation/docker/) which covers installations on Windows, macOS and Linux! Give it a read if you wish to build the image yourself.
 
+### Common issues with Docker
+
+#### SELinux Permission Issues with Mounted Volumes
+
+Linux distributions with SELinux enabled (such as RHEL, CentOS, Fedora, etc.) may prevent Docker containers from accessing mounted volumes due to security policies. This can result in permission denied errors when the container tries to read or write to the mounted directories.
+
+Two suffixes `:z` or `:Z` can be added to the volume mount. These suffixes tell Docker to relabel file objects on the shared volumes.
+
+* The `z` option is used when the volume content will be shared between containers.
+* The `Z` option is used when the volume content should only be used by the current container.
+
+Example:
+
+```yaml
+# docker-compose.yml
+volumes:
+  ## Shared volume
+  - ./config:/home/node/app/config:z
+  ## Private volume
+  - ./data:/home/node/app/data:Z
+```
+
 ## ⚡ Installing via SillyTavern Launcher
 
 SillyTavern Launcher is an installation wizard that will help you get setup with many options, including installing a backend for local inference.
