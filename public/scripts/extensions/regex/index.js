@@ -205,8 +205,8 @@ async function loadRegexScripts() {
         $(container).append(scriptHtml);
     }
 
-    extension_settings?.regex?.forEach((script, index, array) => renderScript('#saved_regex_scripts', script, false, index, array));
-    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index, array) => renderScript('#saved_scoped_scripts', script, true, index, array));
+    extension_settings?.regex?.forEach((script, index) => renderScript('#saved_regex_scripts', script, false, index));
+    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index) => renderScript('#saved_scoped_scripts', script, true, index));
 
     const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isAllowed);
@@ -280,11 +280,18 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
 
         const testScript = {
             id: uuidv4(),
-            scriptName: editorHtml.find('.regex_script_name').val(),
-            findRegex: editorHtml.find('.find_regex').val(),
-            replaceString: editorHtml.find('.regex_replace_string').val(),
+            scriptName: editorHtml.find('.regex_script_name').val().toString(),
+            findRegex: editorHtml.find('.find_regex').val().toString(),
+            replaceString: editorHtml.find('.regex_replace_string').val().toString(),
             trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
             substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
+            disabled: false,
+            promptOnly: false,
+            markdownOnly: false,
+            runOnEdit: false,
+            minDepth: null,
+            maxDepth: null,
+            placement: null,
         };
         const rawTestString = String(editorHtml.find('#regex_test_input').val());
         const result = runRegexScript(testScript, rawTestString);
@@ -301,12 +308,12 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             scriptName: String(editorHtml.find('.regex_script_name').val()),
             findRegex: String(editorHtml.find('.find_regex').val()),
             replaceString: String(editorHtml.find('.regex_replace_string').val()),
-            trimStrings: editorHtml.find('.regex_trim_strings').val().split('\n').filter((e) => e.length !== 0) || [],
+            trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
             placement:
                 editorHtml
                     .find('input[name="replace_position"]')
                     .filter(':checked')
-                    .map(function () { return parseInt($(this).val()); })
+                    .map(function () { return parseInt($(this).val().toString()); })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
