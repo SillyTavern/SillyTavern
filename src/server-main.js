@@ -329,18 +329,26 @@ async function postSetupTasks(result) {
 
     if (cliArgs.browserLaunchEnabled) {
         try {
-            const validBrowsers = {
-                'firefox': apps.firefox,
-                'chrome': apps.chrome,
-                'edge': apps.edge,
-            };
+            function getBrowsers() {
+                const isAndroid = process.platform === 'android';
+                if (isAndroid) {
+                    return {};
+                }
+                return {
+                    'firefox': apps.firefox,
+                    'chrome': apps.chrome,
+                    'edge': apps.edge,
+                };
+            }
+
+            const validBrowsers = getBrowsers();
             const appName = validBrowsers[browserLaunchApp.trim().toLowerCase()];
             const openOptions = appName ? { app: { name: appName } } : {};
 
             console.log(`Launching in a browser: ${browserLaunchApp}...`);
             await open(browserLaunchUrl.toString(), openOptions);
         } catch (error) {
-            console.error('Failed to launch the browser. Open the URL manually.');
+            console.error('Failed to launch the browser. Open the URL manually.', error);
         }
     }
 
