@@ -115,6 +115,7 @@ async function deleteRegexScript({ id, isScoped }) {
 async function loadRegexScripts() {
     $('#saved_regex_scripts').empty();
     $('#saved_scoped_scripts').empty();
+    setToggleAllIcon(false);
 
     const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
 
