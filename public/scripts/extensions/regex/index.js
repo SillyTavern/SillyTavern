@@ -614,6 +614,23 @@ jQuery(async () => {
         return scripts.filter(script => selectedIds.includes(script.id));
     }
 
+    $('#bulk_select_all_toggle').on('click', async function () {
+        const checkboxes = $('#regex_container .regex_bulk_checkbox');
+        if (checkboxes.length === 0) {
+            return;
+        }
+
+        const allAreChecked = checkboxes.length === checkboxes.filter(':checked').length;
+        const newState = !allAreChecked; // true if we just checked all, false if we just unchecked all
+
+        checkboxes.prop('checked', newState);
+
+        const icon = $(this).find('i');
+        // Toggle the icon shapes
+        icon.toggleClass('fa-check-double', !newState); // Add 'fa-square-check' when deselected
+        icon.toggleClass('fa-minus', newState);  // Add 'fa-square-minus' when selected
+    });
+
     $('#bulk_enable_regex').on('click', async function () {
         const scripts = getSelectedScripts().filter(script => script.disabled);
         if (scripts.length === 0) {
