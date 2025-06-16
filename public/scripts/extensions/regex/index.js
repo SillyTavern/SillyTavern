@@ -28,6 +28,18 @@ export function getRegexScripts() {
 }
 
 /**
+ * Toggle the icon for the "select all" checkbox in the regex settings.
+ * - Use `fa-check-double` when the checkbox is unchecked (indicating all scripts are not selected).
+ * - Use `fa-minus` when the checkbox is checked (indicating all scripts are selected).
+ * @param {boolean} allAreChecked Should the "select all" icon be in the checked state?
+ */
+function setToggleAllIcon(allAreChecked) {
+    const selectAllIcon = $('#bulk_select_all_toggle').find('i');
+    selectAllIcon.toggleClass('fa-check-double', !allAreChecked);
+    selectAllIcon.toggleClass('fa-minus', allAreChecked);
+}
+
+/**
  * Saves a regex script to the extension settings or character data.
  * @param {import('../../char-data.js').RegexScriptData} regexScript
  * @param {number} existingScriptIndex Index of the existing script
@@ -182,6 +194,11 @@ async function loadRegexScripts() {
 
             await deleteRegexScript({ id: script.id, isScoped });
             await reloadCurrentChat();
+        });
+        scriptHtml.find('.regex_bulk_checkbox').on('change', function () {
+            const checkboxes = $('#regex_container .regex_bulk_checkbox');
+            const allAreChecked = checkboxes.length === checkboxes.filter(':checked').length;
+            setToggleAllIcon(allAreChecked);
         });
 
         $(container).append(scriptHtml);
@@ -624,11 +641,7 @@ jQuery(async () => {
         const newState = !allAreChecked; // true if we just checked all, false if we just unchecked all
 
         checkboxes.prop('checked', newState);
-
-        const icon = $(this).find('i');
-        // Toggle the icon shapes
-        icon.toggleClass('fa-check-double', !newState); // Add 'fa-square-check' when deselected
-        icon.toggleClass('fa-minus', newState);  // Add 'fa-square-minus' when selected
+        setToggleAllIcon(newState);
     });
 
     $('#bulk_enable_regex').on('click', async function () {
