@@ -609,7 +609,24 @@ function setOpenAIMessages(chat) {
         const image = chat[j]?.extra?.image;
         const video = chat[j]?.extra?.video;
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'video': video, 'invocations': invocations };
+        
+        // Handle image and video formatting for OpenAI Vision API
+        if ((image && isImageInliningSupported()) || (video && isVideoInliningSupported())) {
+            const contentArray = [{ type: 'text', text: content }];
+            
+            if (image && isImageInliningSupported()) {
+                contentArray.push({ type: 'image_url', image_url: { 'url': image } });
+            }
+            
+            if (video && isVideoInliningSupported()) {
+                contentArray.push({ type: 'video_url', video_url: { 'url': video } });
+            }
+            
+            content = contentArray;
+            messages[i] = { 'role': role, 'content': content, name: name, 'invocations': invocations };
+        } else {
+            messages[i] = { 'role': role, 'content': content, name: name, 'invocations': invocations };
+        }
         j++;
     }
 
@@ -851,10 +868,25 @@ async function populationInjectionPrompts(prompts, messages) {
  * @param cyclePrompt
  */
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
+    // Ensure chatHistory prompt exists or create a default one
     if (!prompts.has('chatHistory')) {
-        return;
+        // Import Prompt class to create proper instance
+        const { Prompt } = await import('./PromptManager.js');
+        const defaultChatHistoryPrompt = new Prompt({
+            identifier: 'chatHistory',
+            role: 'system',
+            content: '',
+            name: 'Chat History',
+            system_prompt: true,
+            position: 'end',
+            injection_position: 1,
+            injection_depth: 4,
+            forbid_overrides: false,
+            extension: false,
+        });
+        prompts.add(defaultChatHistoryPrompt);
     }
-
+    
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     // Reserve budget for new chat message
@@ -920,12 +952,32 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             await chatMessage.setName(messageName);
         }
 
-        if (imageInlining && chatPrompt.image) {
-            await chatMessage.addImage(chatPrompt.image);
+        // Extract image data from different possible locations
+        let imageData = chatPrompt.image || chatPrompt.extra?.image;
+        let videoData = chatPrompt.video || chatPrompt.extra?.video;
+        
+        // Check if image/video is in content array (OpenAI Vision format)
+        if (Array.isArray(chatPrompt.content)) {
+            if (!imageData) {
+                const imageUrlPart = chatPrompt.content.find(part => part.type === 'image_url');
+                if (imageUrlPart && imageUrlPart.image_url && imageUrlPart.image_url.url) {
+                    imageData = imageUrlPart.image_url.url;
+                }
+            }
+            if (!videoData) {
+                const videoUrlPart = chatPrompt.content.find(part => part.type === 'video_url');
+                if (videoUrlPart && videoUrlPart.video_url && videoUrlPart.video_url.url) {
+                    videoData = videoUrlPart.video_url.url;
+                }
+            }
         }
 
-        if (videoInlining && chatPrompt.video) {
-            await chatMessage.addVideo(chatPrompt.video);
+        if (imageInlining && imageData) {
+            await chatMessage.addImage(imageData);
+        }
+
+        if (videoInlining && videoData) {
+            await chatMessage.addVideo(videoData);
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {

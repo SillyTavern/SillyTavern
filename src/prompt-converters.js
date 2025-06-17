@@ -857,8 +857,8 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
         });
     }
 
-    // Check for content tokens and replace them with the actual content objects
-    if (contentTokens.size > 0) {
+    // Check for content tokens and replace them with the actual content objects (only in non-strict mode)
+    if (contentTokens.size > 0 && !strict) {
         mergedMessages.forEach((message) => {
             const hasValidToken = Array.from(contentTokens.keys()).some(token => message.content.includes(token));
 
@@ -898,6 +898,33 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
+        
+        // Process content tokens BEFORE recursive call to preserve image data
+        if (contentTokens.size > 0) {
+            mergedMessages.forEach((message) => {
+                const hasValidToken = Array.from(contentTokens.keys()).some(token => message.content.includes(token));
+
+                if (hasValidToken) {
+                    const splitContent = message.content.split('\n\n');
+                    const mergedContent = [];
+
+                    splitContent.forEach((content) => {
+                        if (contentTokens.has(content)) {
+                            mergedContent.push(contentTokens.get(content));
+                        } else {
+                            if (mergedContent.length > 0 && mergedContent[mergedContent.length - 1].type === 'text') {
+                                mergedContent[mergedContent.length - 1].text += `\n\n${content}`;
+                            } else {
+                                mergedContent.push({ type: 'text', text: content });
+                            }
+                        }
+                    });
+
+                    message.content = mergedContent;
+                }
+            });
+        }
+        
         return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false, tools });
     }
 

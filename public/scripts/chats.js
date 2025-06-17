@@ -207,9 +207,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
 
         // If file is image
         if (file.type.startsWith('image/')) {
-            const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.image = imageUrl;
+            message.extra.image = fileBase64;
             message.extra.inline_image = true;
         }
         // If file is video
