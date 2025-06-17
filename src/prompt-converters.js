@@ -1063,10 +1063,9 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
-                return null;
+                return -1;
             case REASONING_EFFORT.min:
-                budgetTokens = 0;
-                break;
+                return 0;
             case REASONING_EFFORT.low:
                 budgetTokens = Math.floor(maxTokens * 0.1);
                 break;
@@ -1086,12 +1085,39 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return budgetTokens;
     }
 
+    function getFlashLiteBudget() {
+        let budgetTokens = 0;
+
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return -1;
+            case REASONING_EFFORT.min:
+                return 0;
+            case REASONING_EFFORT.low:
+                budgetTokens = Math.floor(maxTokens * 0.1);
+                break;
+            case REASONING_EFFORT.medium:
+                budgetTokens = Math.floor(maxTokens * 0.25);
+                break;
+            case REASONING_EFFORT.high:
+                budgetTokens = Math.floor(maxTokens * 0.5);
+                break;
+            case REASONING_EFFORT.max:
+                budgetTokens = maxTokens;
+                break;
+        }
+
+        budgetTokens = Math.max(Math.min(budgetTokens, 24576), 512);
+
+        return budgetTokens;
+    }
+
     function getProBudget() {
         let budgetTokens = 0;
 
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
-                return null;
+                return -1;
             case REASONING_EFFORT.min:
                 budgetTokens = 128;
                 break;
@@ -1112,6 +1138,10 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         budgetTokens = Math.max(Math.min(budgetTokens, 32768), 128);
 
         return budgetTokens;
+    }
+
+    if (model.includes('flash-lite')) {
+        return getFlashLiteBudget();
     }
 
     if (model.includes('flash')) {

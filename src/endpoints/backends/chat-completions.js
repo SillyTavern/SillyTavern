@@ -451,6 +451,12 @@ async function sendMakerSuiteRequest(request, response) {
                 thinkingConfig.thinkingBudget = thinkingBudget;
             }
 
+            // Vertex doesn't allow mixing disabled thinking with includeThoughts
+            if (useVertexAi && thinkingBudget === 0 && thinkingConfig.includeThoughts) {
+                console.info('Thinking budget is 0, but includeThoughts is true. Thoughts will not be included in the response.');
+                thinkingConfig.includeThoughts = false;
+            }
+
             generationConfig.thinkingConfig = thinkingConfig;
         }
 
