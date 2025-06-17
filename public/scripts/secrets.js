@@ -150,7 +150,7 @@ const getLabel = () => moment().format('L LT');
  * Resolves the secret key based on the selected API, chat completion source, and text completion type.
  * @returns {string|null} The secret key corresponding to the selected API, or null if no key is found.
  */
-function resolveSecretKey() {
+export function resolveSecretKey() {
     const { mainApi, chatCompletionSettings, textCompletionSettings } = SillyTavern.getContext();
     const chatCompletionSource = chatCompletionSettings.chat_completion_source;
     const textCompletionType = textCompletionSettings.type;
