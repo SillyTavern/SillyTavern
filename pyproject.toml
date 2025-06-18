@@ -1,0 +1,8 @@
+[project]
+    name = "sillytavern-i18n"
+    version = "0.1.0"
+    description = "Add your description here"
+    requires-python = ">=3.13"
+    dependencies = [
+        "opencc-python-reimplemented>=0.1.7",
+    ]
