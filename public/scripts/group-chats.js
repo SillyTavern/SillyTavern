@@ -269,7 +269,7 @@ export async function getGroupChat(groupId, reload = false) {
             await printMessages();
         } else {
             toastr.warning('Group chat file not found: ' + chat_id);
-            return;    
+            return;
         }
     }
 
