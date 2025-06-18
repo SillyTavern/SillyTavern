@@ -609,21 +609,19 @@ function setOpenAIMessages(chat) {
         const image = chat[j]?.extra?.image;
         const video = chat[j]?.extra?.video;
         const invocations = chat[j]?.extra?.tool_invocations;
-        
         // Handle image and video formatting for OpenAI Vision API
         if ((image && isImageInliningSupported()) || (video && isVideoInliningSupported())) {
             const contentArray = [{ type: 'text', text: content }];
-            
             if (image && isImageInliningSupported()) {
                 contentArray.push({ type: 'image_url', image_url: { 'url': image } });
             }
             
             if (video && isVideoInliningSupported()) {
-                contentArray.push({ type: 'video_url', video_url: { 'url': video } });
+            contentArray.push({ type: 'video_url', video_url: { 'url': video } });
             }
             
             content = contentArray;
-            messages[i] = { 'role': role, 'content': content, name: name, 'invocations': invocations };
+        messages[i] = { 'role': role, 'content': content, name: name, 'invocations': invocations };
         } else {
             messages[i] = { 'role': role, 'content': content, name: name, 'invocations': invocations };
         }
@@ -888,7 +886,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
     
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
     const newChatMessage = await Message.createAsync('system', substituteParams(newChat), 'newMainChat');
@@ -958,7 +955,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         
         // Check if image/video is in content array (OpenAI Vision format)
         if (Array.isArray(chatPrompt.content)) {
-            if (!imageData) {
+        if (!imageData) {
                 const imageUrlPart = chatPrompt.content.find(part => part.type === 'image_url');
                 if (imageUrlPart && imageUrlPart.image_url && imageUrlPart.image_url.url) {
                     imageData = imageUrlPart.image_url.url;
