@@ -858,7 +858,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
     }
 
     // Check for content tokens and replace them with the actual content objects (only in non-strict mode)
-    if (contentTokens.size > 0 && !strict) {
+    if (contentTokens.size > 0) {
         mergedMessages.forEach((message) => {
             const hasValidToken = Array.from(contentTokens.keys()).some(token => message.content.includes(token));
 
