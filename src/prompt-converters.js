@@ -899,7 +899,6 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
             }
         }
         
-        // Process content tokens BEFORE recursive call to preserve image data
         if (contentTokens.size > 0) {
             mergedMessages.forEach((message) => {
                 const hasValidToken = Array.from(contentTokens.keys()).some(token => message.content.includes(token));
