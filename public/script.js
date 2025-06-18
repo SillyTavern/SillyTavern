@@ -7417,16 +7417,7 @@ export async function openCharacterChat(file_name) {
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
     chat_metadata = {};
-    try {
-        await getChat();
-        if (chat.length === 0) {
-            toastr.warning('Chat file not found: ' + file_name);
-            return;
-        }
-    } catch (e) {
-        toastr.warning('Chat file not found: ' + file_name);
-        return;
-    }
+    await getChat();
     $('#selected_chat_pole').val(file_name);
     await createOrEditCharacter(new CustomEvent('newChat'));
 }
