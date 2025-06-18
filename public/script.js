@@ -173,7 +173,6 @@ import {
     isElementInViewport,
     copyText,
     escapeHtml,
-    saveBase64AsFile,
     uuidv4,
     equalsIgnoreCaseAndAccents,
     localizePagination,
