@@ -266,6 +266,10 @@ export async function getGroupChat(groupId, reload = false) {
                 await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
             }
             await saveGroupChat(groupId, false);
+            await printMessages();
+        } else {
+            toastr.warning('Group chat file not found: ' + chat_id);
+            return;    
         }
     }
 

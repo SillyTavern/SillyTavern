@@ -238,17 +238,11 @@ export function updateBookmarkDisplay(mes, newBookmarkLink = null) {
 
 async function backToMainChat() {
     const mainChatName = getMainChatName();
-    const allChats = await getExistingChatNames();
-
-    if (allChats.includes(mainChatName)) {
-        if (selected_group) {
-            await openGroupChat(selected_group, mainChatName);
-        } else {
-            await openCharacterChat(mainChatName);
-        }
-        return mainChatName;
+    if (selected_group) {
+        await openGroupChat(selected_group, mainChatName);
+    } else {
+        await openCharacterChat(mainChatName);
     }
-
     return null;
 }
 
