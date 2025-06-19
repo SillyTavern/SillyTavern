@@ -1297,6 +1297,8 @@ async function getStatusTextgen() {
             setOnlineStatus('no_connection');
         }
 
+        power_user.chat_template_hash = '';
+
         // Determine instruct mode preset
         const autoselected = autoSelectInstructPreset(online_status);
 
