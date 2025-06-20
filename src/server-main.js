@@ -264,8 +264,10 @@ async function preSetupTasks() {
     // Print formatted header
     console.log();
     console.log(`SillyTavern ${version.pkgVersion}`);
-    if (version.gitBranch) {
-        console.log(`Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}`);
+    if (version.gitBranch && version.commitDate) {
+        const date = new Date(version.commitDate);
+        const localDate = date.toLocaleString('en-US');
+        console.log(`Running '${version.gitBranch}' (${version.gitRevision}) - ${localDate}`);
         if (!version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
             console.log('INFO: Currently not on the latest commit.');
             console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
