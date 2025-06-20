@@ -161,7 +161,10 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
 
-    $('#context_derived_map').val(power_user.chat_template_hash in power_user.context_derive_mappings && preset == power_user.context_derive_mappings[power_user.chat_template_hash]).trigger('change');
+    $('#context_derived_map').val(
+        power_user.chat_template_hash in power_user.context_derive_mappings &&
+        preset == power_user.context_derive_mappings[power_user.chat_template_hash]
+    ).trigger('change');
 
     saveSettingsDebounced();
 }
@@ -193,7 +196,11 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         !quiet && toastr.info('Instruct Mode enabled');
     }
 
-    $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct.derive_mappings && preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]).trigger('change');
+    $('#instruct_derived_map').val(
+        power_user.instruct.derive_mappings &&
+        power_user.chat_template_hash in power_user.instruct.derive_mappings &&
+        preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]
+    ).trigger('change');
 
     saveSettingsDebounced();
 }

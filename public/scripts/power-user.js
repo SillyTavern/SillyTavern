@@ -1915,7 +1915,10 @@ async function loadContextSettings() {
 
         power_user.context.preset = name;
 
-        $('#context_derived_map').val(power_user.chat_template_hash in power_user.context_derive_mappings && preset == power_user.context_derive_mappings[power_user.chat_template_hash]).trigger('change');
+        $('#context_derived_map').val(
+            power_user.chat_template_hash in power_user.context_derive_mappings &&
+            preset == power_user.context_derive_mappings[power_user.chat_template_hash]
+        ).trigger('change');
 
         contextControls.forEach(control => {
             const presetValue = preset[control.property] ?? control.defaultValue;
