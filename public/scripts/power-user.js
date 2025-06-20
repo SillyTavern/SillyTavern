@@ -1917,7 +1917,7 @@ async function loadContextSettings() {
 
         $('#context_derived_map').val(
             power_user.chat_template_hash in power_user.context_derive_mappings &&
-            preset == power_user.context_derive_mappings[power_user.chat_template_hash]
+            preset == power_user.context_derive_mappings[power_user.chat_template_hash],
         ).trigger('change');
 
         contextControls.forEach(control => {

@@ -163,7 +163,7 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
 
     $('#context_derived_map').val(
         power_user.chat_template_hash in power_user.context_derive_mappings &&
-        preset == power_user.context_derive_mappings[power_user.chat_template_hash]
+        preset == power_user.context_derive_mappings[power_user.chat_template_hash],
     ).trigger('change');
 
     saveSettingsDebounced();
@@ -199,7 +199,7 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
     $('#instruct_derived_map').val(
         power_user.instruct.derive_mappings &&
         power_user.chat_template_hash in power_user.instruct.derive_mappings &&
-        preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]
+        preset == power_user.instruct.derive_mappings[power_user.chat_template_hash],
     ).trigger('change');
 
     saveSettingsDebounced();
