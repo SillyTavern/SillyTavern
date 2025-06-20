@@ -4188,6 +4188,7 @@ async function onImageSwiped({ message, element, direction }) {
                 const hasNegative = message.extra.negative;
                 const prompt = await refinePrompt(message.extra.title, false);
                 const negativePromptPrefix = hasNegative ? await refinePrompt(message.extra.negative, true) : '';
+                message.extra.title = prompt;
                 const characterName = context.groupId
                     ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
                     : context.characters[context.characterId]?.name;
