@@ -418,3 +418,68 @@ router.post('/generate-native-tts', async (request, response) => {
         return response.end();
     }
 });
+
+router.post('/generate-image', async (request, response) => {
+    try {
+        const model = request.body.model || 'imagen-3.0-generate-002';
+        const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'predict');
+
+        // block_none for safetySetting is currently not supported.
+        // AI Studio is stricter than Vertex AI.
+        const safetySetting = request.body.api === 'vertexai'
+            ? 'block_only_high'
+            : 'block_low_and_above';
+
+        const requestBody = {
+            instances: [{
+                prompt: request.body.prompt || '',
+            }],
+            parameters: {
+                sampleCount: 1,
+                seed: Number(request.body.seed ?? Math.floor(Math.random() * 1000000)),
+                enhancePrompt: Boolean(request.body.enhance ?? false),
+                negativePrompt: request.body.negative_prompt || undefined,
+                aspectRatio: String(request.body.aspect_ratio || '1:1'),
+                personGeneration: 'allow_all',
+                language: 'auto',
+                safetySetting: safetySetting,
+                addWatermark: false,
+                outputOptions: {
+                    mimeType: 'image/jpeg',
+                    compressionQuality: 100,
+                },
+            },
+        };
+
+        console.debug(`${apiName} image generation request:`, model, requestBody);
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const errorText = await result.text();
+            console.warn(`${apiName} image generation error: ${result.status} ${result.statusText}`, errorText);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+        const imagePart = data?.predictions?.[0]?.bytesBase64Encoded;
+
+        if (!imagePart) {
+            console.warn(`${apiName} image generation error: No image data found in response`);
+            return response.sendStatus(500);
+        }
+
+        return response.send({ image: imagePart });
+    } catch (error) {
+        console.error('Google Image generation failed:', error);
+        if (!response.headersSent) {
+            return response.sendStatus(500);
+        }
+        return response.end();
+    }
+});

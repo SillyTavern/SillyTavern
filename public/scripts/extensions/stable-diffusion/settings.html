@@ -43,6 +43,7 @@
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="extras">Extras API (deprecated)</option>
                 <option value="falai">FAL.AI</option>
+                <option value="google">Google AI</option>
                 <option value="huggingface">HuggingFace Inference API (serverless)</option>
                 <option value="nanogpt">NanoGPT</option>
                 <option value="novel">NovelAI Diffusion</option>
@@ -278,6 +279,26 @@
                         <i class="fa-fw fa-solid fa-key"></i>
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
+                </div>
+            </div>
+
+            <div data-sd-source="google">
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_google_api" data-i18n="API Type">API Type</label>
+                        <select id="sd_google_api" class="text_pole">
+                            <option value="makersuite">Google AI Studio</option>
+                            <option value="vertexai">Google Vertex AI</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-container">
+                    <label class="flex1 checkbox_label" for="sd_google_enhance" title="Enables prompt enhancing (passes prompts through an LLM to add detail).">
+                        <input id="sd_google_enhance" type="checkbox" />
+                        <span data-i18n="Enhance">
+                            Enhance
+                        </span>
+                    </label>
                 </div>
             </div>
 

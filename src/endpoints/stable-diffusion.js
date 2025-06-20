@@ -1327,17 +1327,6 @@ xai.post('/generate', async (request, response) => {
     }
 });
 
-router.use('/comfy', comfy);
-router.use('/together', together);
-router.use('/drawthings', drawthings);
-router.use('/pollinations', pollinations);
-router.use('/stability', stability);
-router.use('/huggingface', huggingface);
-router.use('/nanogpt', nanogpt);
-router.use('/bfl', bfl);
-router.use('/falai', falai);
-router.use('/xai', xai);
-
 const aimlapi = express.Router();
 
 aimlapi.post('/models', async (request, response) => {
@@ -1422,4 +1411,14 @@ aimlapi.post('/generate-image', async (req, res) => {
     }
 });
 
+router.use('/comfy', comfy);
+router.use('/together', together);
+router.use('/drawthings', drawthings);
+router.use('/pollinations', pollinations);
+router.use('/stability', stability);
+router.use('/huggingface', huggingface);
+router.use('/nanogpt', nanogpt);
+router.use('/bfl', bfl);
+router.use('/falai', falai);
+router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
