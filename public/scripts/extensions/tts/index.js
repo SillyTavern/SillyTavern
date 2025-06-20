@@ -88,6 +88,31 @@ export function getPreviewString(lang) {
     return previewStrings[lang] ?? fallbackPreview;
 }
 
+/**
+ * Registers a TTS provider.
+ * @param {string} name Name of the TTS provider to register.
+ * @param {function} provider Provider class.
+ */
+export function registerTtsProvider(name, provider) {
+    if (!name || typeof name !== 'string') {
+        throw new Error(`TTS provider name ${name} is not a valid string.`);
+    }
+    if (!provider || typeof provider !== 'function') {
+        throw new Error(`TTS provider ${name} is not a valid provider class.`);
+    }
+    if (ttsProviders[name]) {
+        throw new Error(`TTS provider ${name} is already registered.`);
+    }
+    ttsProviders[name] = provider;
+    console.info(`Registered TTS provider: ${name}`);
+    $('#tts_provider').append($('<option />').val(name).text(name));
+
+    // Load if it was previously selected
+    if (extension_settings.tts.currentProvider === name) {
+        loadTtsProvider(name);
+    }
+}
+
 const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     Azure: AzureTtsProvider,
