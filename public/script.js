@@ -3568,7 +3568,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
+                    'extra': structuredClone(chat[messageId]['extra']),
                 };
             }
 
@@ -3673,7 +3673,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
+                    'extra': structuredClone(chat[messageId]['extra']),
                 };
             }
         }
@@ -6558,7 +6558,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             send_date: item['send_date'],
             gen_started: item['gen_started'],
             gen_finished: item['gen_finished'],
-            extra: JSON.parse(JSON.stringify(item['extra'])),
+            extra: structuredClone(item['extra']),
         };
     } else {
         item['swipe_id'] = 0;
@@ -6568,7 +6568,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             send_date: chat[chat.length - 1]['send_date'],
             gen_started: chat[chat.length - 1]['gen_started'],
             gen_finished: chat[chat.length - 1]['gen_finished'],
-            extra: JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+            extra: structuredClone(chat[chat.length - 1]['extra']),
         };
     }
 
@@ -8676,7 +8676,7 @@ export function showSwipeButtons() {
             'send_date': chat[chat.length - 1]['send_date'],
             'gen_started': chat[chat.length - 1]['gen_started'],
             'gen_finished': chat[chat.length - 1]['gen_finished'],
-            'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+            'extra': structuredClone(chat[chat.length - 1]['extra']),
         };
     }
 
@@ -9352,7 +9352,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
+        chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra);
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -9490,7 +9490,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
             'send_date': chat[chat.length - 1]['send_date'],
             'gen_started': chat[chat.length - 1]['gen_started'],
             'gen_finished': chat[chat.length - 1]['gen_finished'],
-            'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+            'extra': structuredClone(chat[chat.length - 1]['extra']),
         };
         //assign swipe info array with last message from chat
     }
@@ -9531,7 +9531,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
+        chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []);
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
