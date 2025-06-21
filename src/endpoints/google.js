@@ -424,11 +424,8 @@ router.post('/generate-image', async (request, response) => {
         const model = request.body.model || 'imagen-3.0-generate-002';
         const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'predict');
 
-        // block_none for safetySetting is currently not supported.
         // AI Studio is stricter than Vertex AI.
-        const safetySetting = request.body.api === 'vertexai'
-            ? 'block_only_high'
-            : 'block_low_and_above';
+        const isVertex = request.body.api === 'vertexai';
 
         const requestBody = {
             instances: [{
@@ -436,14 +433,14 @@ router.post('/generate-image', async (request, response) => {
             }],
             parameters: {
                 sampleCount: 1,
-                seed: Number(request.body.seed ?? Math.floor(Math.random() * 1000000)),
-                enhancePrompt: Boolean(request.body.enhance ?? false),
-                negativePrompt: request.body.negative_prompt || undefined,
+                seed: isVertex ? Number(request.body.seed ?? Math.floor(Math.random() * 1000000)) : undefined,
+                enhancePrompt: isVertex ? Boolean(request.body.enhance ?? false) : undefined,
+                negativePrompt: isVertex ? (request.body.negative_prompt || undefined) : undefined,
                 aspectRatio: String(request.body.aspect_ratio || '1:1'),
                 personGeneration: 'allow_all',
-                language: 'auto',
-                safetySetting: safetySetting,
-                addWatermark: false,
+                language: isVertex ? 'auto' : undefined,
+                safetySetting: isVertex ? 'block_only_high' : 'block_low_and_above',
+                addWatermark: isVertex ? false : undefined,
                 outputOptions: {
                     mimeType: 'image/jpeg',
                     compressionQuality: 100,
