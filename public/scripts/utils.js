@@ -2367,7 +2367,7 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
 
     // If allowAvatar is true, search by avatar first
     if (allowAvatar && name) {
-        const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
+        const characterByAvatar = filteredCharacters.find(char => char.avatar === name || (!name.endsWith('.png') && char.avatar === `${name}.png`));
         if (characterByAvatar) {
             return characterByAvatar;
         }
