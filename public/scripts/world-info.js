@@ -1217,7 +1217,7 @@ function registerWorldInfoSlashCommands() {
         const tags = getContext().tags;
 
         // characterFilter is an object with internal fields we need to access, which may also may be null and need to be populated
-        const createCharacterFilterfieldObjectIfNeeded = (currentEntry) => {
+        const createCharacterFilterFieldObjectIfNeeded = (currentEntry) => {
             if (!currentEntry.characterFilter) {
                 Object.assign(
                     currentEntry,
@@ -1262,19 +1262,19 @@ function registerWorldInfoSlashCommands() {
         let tagNames;
         switch (field){
             case 'characterFilterNames':
-                createCharacterFilterfieldObjectIfNeeded(entry);
+                createCharacterFilterFieldObjectIfNeeded(entry);
                 entry.characterFilter.names = parseStringArray(value);
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
             case 'characterFilterTags':
-                createCharacterFilterfieldObjectIfNeeded(entry);
+                createCharacterFilterFieldObjectIfNeeded(entry);
                 tagNames = parseStringArray(value);
                 //Find the tag objects corresponding to each name in the user array, then return an array of the corresponding IDs
                 entry.characterFilter.tags = tags.filter((tag) => tagNames.includes(tag.name)).map((tag) => tag.id);
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
             case 'characterFilterExclude':
-                createCharacterFilterfieldObjectIfNeeded(entry);
+                createCharacterFilterFieldObjectIfNeeded(entry);
                 entry.characterFilter.isExclude = isTrueBoolean(value);
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
