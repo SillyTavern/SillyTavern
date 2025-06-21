@@ -1413,7 +1413,7 @@ function registerWorldInfoSlashCommands() {
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
         wiEntryFields: () => Object.entries(newWorldInfoEntryDefinition).map(([key, value]) =>
-            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`,
+            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : JSON.stringify(value.default))}`,
                 enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
