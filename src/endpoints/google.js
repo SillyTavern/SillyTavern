@@ -426,6 +426,8 @@ router.post('/generate-image', async (request, response) => {
 
         // AI Studio is stricter than Vertex AI.
         const isVertex = request.body.api === 'vertexai';
+        // Is it even worth it?
+        const isDeprecated = model.startsWith('imagegeneration');
 
         const requestBody = {
             instances: [{
@@ -437,9 +439,9 @@ router.post('/generate-image', async (request, response) => {
                 enhancePrompt: isVertex ? Boolean(request.body.enhance ?? false) : undefined,
                 negativePrompt: isVertex ? (request.body.negative_prompt || undefined) : undefined,
                 aspectRatio: String(request.body.aspect_ratio || '1:1'),
-                personGeneration: 'allow_all',
+                personGeneration: !isDeprecated ? 'allow_all' : undefined,
                 language: isVertex ? 'auto' : undefined,
-                safetySetting: isVertex ? 'block_only_high' : 'block_low_and_above',
+                safetySetting: !isDeprecated ? (isVertex ? 'block_only_high' : 'block_low_and_above') : undefined,
                 addWatermark: isVertex ? false : undefined,
                 outputOptions: {
                     mimeType: 'image/jpeg',
