@@ -222,8 +222,6 @@ let power_user = {
     disable_group_trimming: false,
     single_line: false,
 
-    chat_template_hash: '', /** the chat template hash of the currently loaded model, if any; used when deriving mappings */
-
     instruct: {
         enabled: false,
         preset: 'Alpaca',
@@ -245,8 +243,6 @@ let power_user = {
         macro: true,
         names_behavior: names_behavior_types.FORCE,
         activation_regex: '',
-        derived: false,
-        derive_mappings: {}, /** user defined chat template hash to instruct template mappings */
         bind_to_context: false,
         user_alignment_message: '',
         system_same_as_user: false,
@@ -263,7 +259,11 @@ let power_user = {
         names_as_stop_strings: true,
     },
 
+    chat_template_hash: '', /** the chat template hash of the currently loaded model, if any; used when deriving mappings */
+
+    instruct_derived: false,
     context_derived: false,
+    instruct_derive_mappings: {}, /** user defined chat template hash to instruct template mappings */
     context_derive_mappings: {}, /** user defined chat template hash to context template mappings */
     context_size_derived: false,
 
@@ -1596,6 +1596,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#encode_tags').prop('checked', power_user.encode_tags);
     $('#example_messages_behavior').val(getExampleMessagesBehavior());
     $(`#example_messages_behavior option[value="${getExampleMessagesBehavior()}"]`).prop('selected', true);
+    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     $('#context_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.context_derived);
     $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
 
@@ -3254,6 +3255,16 @@ $(document).ready(() => {
 
     $('#context_derived').on('change', function () {
         $('#context_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.context_derived);
+    });
+
+    $('#instruct_derived').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.instruct_derived = value;
+        saveSettingsDebounced();
+    });
+
+    $('#instruct_derived').on('change', function () {
+        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     });
 
     $('#context_size_derived').on('input', function () {

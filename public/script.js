@@ -1305,7 +1305,7 @@ async function getStatusTextgen() {
         const supportsTokenization = response.headers.get('x-supports-tokenization') === 'true';
         supportsTokenization ? sessionStorage.setItem(TOKENIZER_SUPPORTED_KEY, 'true') : sessionStorage.removeItem(TOKENIZER_SUPPORTED_KEY);
 
-        const wantsInstructDerivation = !autoselected && (power_user.instruct.enabled && power_user.instruct.derived);
+        const wantsInstructDerivation = !autoselected && (power_user.instruct.enabled && power_user.instruct_derived);
         const wantsContextDerivation = power_user.context_derived;
         const wantsContextSize = power_user.context_size_derived;
         const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(textgen_settings.type);
@@ -1347,8 +1347,8 @@ async function getStatusTextgen() {
                         }
                     }
                     if (wantsInstructDerivation) {
-                        if (power_user.instruct.derive_mappings && chat_template_hash in power_user.instruct.derive_mappings) {
-                            instruct = power_user.instruct.derive_mappings[chat_template_hash];
+                        if (power_user.instruct_derive_mappings && chat_template_hash in power_user.instruct_derive_mappings) {
+                            instruct = power_user.instruct_derive_mappings[chat_template_hash];
                         }
                         if (instruct) {
                             selectInstructPreset(instruct, { isAuto: true });

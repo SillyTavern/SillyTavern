@@ -40,7 +40,6 @@ const controls = [
     { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
     { id: 'instruct_last_input_sequence', property: 'last_input_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
-    { id: 'instruct_derived', property: 'derived', isCheckbox: true },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
     { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
@@ -102,7 +101,7 @@ export async function loadInstructMode(data) {
 
     $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
     $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
-    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
+    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
 
     controls.forEach(control => {
@@ -197,9 +196,9 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
     }
 
     $('#instruct_derived_map').val(
-        power_user.instruct.derive_mappings &&
-        power_user.chat_template_hash in power_user.instruct.derive_mappings &&
-        preset == power_user.instruct.derive_mappings[power_user.chat_template_hash],
+        power_user.instruct_derive_mappings &&
+        power_user.chat_template_hash in power_user.instruct_derive_mappings &&
+        preset == power_user.instruct_derive_mappings[power_user.chat_template_hash],
     ).trigger('change');
 
     saveSettingsDebounced();
@@ -758,33 +757,33 @@ jQuery(() => {
     });
 
     $('#instruct_derived').on('change', function () {
-        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
+        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     });
 
     $('#instruct_derived_map').on('input', function () {
         const chat_template_hash = power_user.chat_template_hash;
-        if (!power_user.instruct.derive_mappings) {
-            power_user.instruct.derive_mappings = {};
+        if (!power_user.instruct_derive_mappings) {
+            power_user.instruct_derive_mappings = {};
         }
 
-        const value = !(chat_template_hash in power_user.instruct.derive_mappings && power_user.instruct.derive_mappings[chat_template_hash] === power_user.instruct.preset);
+        const value = !(chat_template_hash in power_user.instruct_derive_mappings && power_user.instruct_derive_mappings[chat_template_hash] === power_user.instruct.preset);
 
         if (chat_template_hash == '') {
             toastr.error('Error: No model loaded');
             return;
         }
         if (value) {
-            if (power_user.instruct.derived) {
+            if (power_user.instruct_derived) {
                 toastr.info(`Bound ${power_user.instruct.preset} preset to currently loaded model and all models that share its chat template.`);
             } else {
                 toastr.warning('Note: Instruct derivation is disabled. This will have no effect until it is turned on.');
             }
 
             // map current preset to current chat template hash
-            power_user.instruct.derive_mappings[chat_template_hash] = power_user.instruct.preset;
+            power_user.instruct_derive_mappings[chat_template_hash] = power_user.instruct.preset;
         } else {
             // unmap current preset (i.e. restore default) for current chat template hash
-            delete power_user.instruct.derive_mappings[chat_template_hash];
+            delete power_user.instruct_derive_mappings[chat_template_hash];
             toastr.info('Instruct preset for current model will use defaults when loaded the next time.');
         }
         $('#instruct_derived_map').parent().find('i').toggleClass('toggleEnabled', value);
@@ -793,7 +792,7 @@ jQuery(() => {
 
     $('#instruct_derived_map').on('change', function () {
         const chat_template_hash = power_user.chat_template_hash;
-        const enabled = chat_template_hash in power_user.instruct.derive_mappings && power_user.instruct.derive_mappings[chat_template_hash] == power_user.instruct.preset;
+        const enabled = chat_template_hash in power_user.instruct_derive_mappings && power_user.instruct_derive_mappings[chat_template_hash] == power_user.instruct.preset;
         const i = $('#instruct_derived_map').parent().find('i');
         i.toggleClass('toggleEnabled', enabled);
         i.toggleClass('fa-lock', enabled);
@@ -838,7 +837,7 @@ jQuery(() => {
             selectMatchingContextTemplate(name);
         }
 
-        $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct.derive_mappings && preset == power_user.instruct.derive_mappings[power_user.chat_template_hash]).trigger('change');
+        $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct_derive_mappings && preset == power_user.instruct_derive_mappings[power_user.chat_template_hash]).trigger('change');
     });
 
     if (!CSS.supports('field-sizing', 'content')) {
