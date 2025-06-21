@@ -1260,10 +1260,15 @@ function registerWorldInfoSlashCommands() {
 
         // handle special cases, otherwise execute default logic
         let tagNames;
+        let charNames;
         switch (field){
             case 'characterFilterNames':
                 createCharacterFilterFieldObjectIfNeeded(entry);
-                entry.characterFilter.names = parseStringArray(value);
+                charNames = parseStringArray(value);
+                entry.characterFilter.names = charNames
+                    .map((name) => getCharaFilename(null, { manualAvatarKey: findChar({ name, allowAvatar: true, preferCurrentChar: false, quiet: true })?.avatar }))
+                    .filter(Boolean)
+                    .filter(onlyUnique);
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
             case 'characterFilterTags':
