@@ -423,7 +423,8 @@ function getCustomTokenBans() {
         .concat(settings.global_banned_tokens.split('\n'))
         .concat(textgenerationwebui_banned_in_macros)
         .filter(x => x.length > 0)
-        .filter(onlyUnique);
+        .filter(onlyUnique)
+        .map(x => substituteParams(x));
 
     //debug
     if (textgenerationwebui_banned_in_macros.length) {
