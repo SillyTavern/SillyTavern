@@ -217,8 +217,9 @@ class DataMaidDialog {
             button.addEventListener('click', async () => {
                 const item = button.closest('.dataMaidItem');
                 const hash = item?.getAttribute('data-hash');
+                const itemName = items.find(i => i.hash === hash)?.name;
                 if (hash) {
-                    await this.view(prop, hash);
+                    await this.view(prop, hash, itemName);
                 }
             });
         });
@@ -304,13 +305,14 @@ class DataMaidDialog {
      * Opens the item view for a specific hash.
      * @param {string} prop Property name for the category
      * @param {string} hash Item hash to view
+     * @param {string} name Name of the item to view
      * @private
      */
-    async view(prop, hash) {
+    async view(prop, hash, name) {
         const url = this.getViewUrl(hash);
         const isImage = ['images', 'avatarThumbnails', 'backgroundThumbnails'].includes(prop);
         const element = isImage
-            ? await this.getViewElement(url)
+            ? await this.getViewElement(url, name)
             : await this.getTextViewElement(url);
         await callGenericPopup(element, POPUP_TYPE.DISPLAY, '', { large: true, wide: true });
     }
@@ -341,16 +343,21 @@ class DataMaidDialog {
     }
 
     /**
-     * Gets an image element for viewing images.
+     * Gets a media element for viewing images or videos.
      * @param {string} url View URL
+     * @param {string} name Name of the file
      * @returns {Promise<HTMLElement>} Image element
      * @private
      */
-    async getViewElement(url) {
-        const img = document.createElement('img');
-        img.src = url;
-        img.classList.add('dataMaidImageView');
-        return img;
+    async getViewElement(url, name) {
+        const isVideo = /\.(mp4|webm|ogg|avi|mov|3gp|flv|mkv|wmv)$/i.test(name);
+        const mediaElement = document.createElement(isVideo ? 'video' : 'img');
+        if (mediaElement instanceof HTMLVideoElement) {
+            mediaElement.controls = true;
+        }
+        mediaElement.src = url;
+        mediaElement.classList.add('dataMaidImageView');
+        return mediaElement;
     }
 
     /**
