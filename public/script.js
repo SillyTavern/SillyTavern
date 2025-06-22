@@ -2496,6 +2496,11 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
                 eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
             });
         }
+    } else {
+        const container = messageElement.find('.mes_img_container');
+        container.removeClass('img_extra img_swipes');
+        const text = messageElement.find('.mes_text');
+        text.removeClass('displayNone');
     }
 
     // Add video to message
@@ -2521,6 +2526,8 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         });
 
         video.attr('src', mes.extra?.video);
+    } else {
+        messageElement.find('.mes_video').remove();
     }
 
     // Add file to message
@@ -3561,7 +3568,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
+                    'extra': structuredClone(chat[messageId]['extra']),
                 };
             }
 
@@ -3666,7 +3673,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
+                    'extra': structuredClone(chat[messageId]['extra']),
                 };
             }
         }
@@ -6551,7 +6558,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             send_date: item['send_date'],
             gen_started: item['gen_started'],
             gen_finished: item['gen_finished'],
-            extra: JSON.parse(JSON.stringify(item['extra'])),
+            extra: structuredClone(item['extra']),
         };
     } else {
         item['swipe_id'] = 0;
@@ -6561,7 +6568,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             send_date: chat[chat.length - 1]['send_date'],
             gen_started: chat[chat.length - 1]['gen_started'],
             gen_finished: chat[chat.length - 1]['gen_finished'],
-            extra: JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+            extra: structuredClone(chat[chat.length - 1]['extra']),
         };
     }
 
@@ -8649,7 +8656,6 @@ export function showSwipeButtons() {
         !swipes ||
         Number($('.mes:last').attr('mesid')) < 0 ||
         chat[chat.length - 1].is_user ||
-        chat[chat.length - 1].extra?.image ||
         (selected_group && is_group_generating)
     ) { return; }
 
@@ -8665,6 +8671,13 @@ export function showSwipeButtons() {
         chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+        chat[chat.length - 1]['swipe_info'] = [];
+        chat[chat.length - 1]['swipe_info'][0] = {
+            'send_date': chat[chat.length - 1]['send_date'],
+            'gen_started': chat[chat.length - 1]['gen_started'],
+            'gen_finished': chat[chat.length - 1]['gen_finished'],
+            'extra': structuredClone(chat[chat.length - 1]['extra']),
+        };
     }
 
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
@@ -9339,7 +9352,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
+        chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra);
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -9401,6 +9414,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
+                                appendMediaToMessage(chat[chat.length - 1], $(this).parent().children('.mes_block'));
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 saveChatDebounced();
                             },
@@ -9476,7 +9490,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
             'send_date': chat[chat.length - 1]['send_date'],
             'gen_started': chat[chat.length - 1]['gen_started'],
             'gen_finished': chat[chat.length - 1]['gen_finished'],
-            'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+            'extra': structuredClone(chat[chat.length - 1]['extra']),
         };
         //assign swipe info array with last message from chat
     }
@@ -9500,6 +9514,11 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
         if (chat[chat.length - 1].extra.display_text) {
             delete chat[chat.length - 1].extra.display_text;
         }
+
+        delete chat[chat.length - 1].extra.image;
+        delete chat[chat.length - 1].extra.image_swipes;
+        delete chat[chat.length - 1].extra.video;
+        delete chat[chat.length - 1].extra.inline_image;
     }
     if (!Array.isArray(chat[chat.length - 1]['swipe_info'])) {
         chat[chat.length - 1]['swipe_info'] = [];
@@ -9512,7 +9531,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
+        chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []);
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
@@ -9595,6 +9614,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
+                                appendMediaToMessage(chat[chat.length - 1], swipeMessage);
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                                     console.debug('caught here 2');
