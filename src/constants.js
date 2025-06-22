@@ -287,7 +287,7 @@ export const TOGETHERAI_KEYS = [
     'stop',
 ];
 
-// https://github.com/ollama/ollama/blob/main/docs/api.md#request-with-options
+// https://github.com/ollama/ollama/blob/main/docs/api.md#request-8
 export const OLLAMA_KEYS = [
     'num_predict',
     'num_ctx',
@@ -303,9 +303,6 @@ export const OLLAMA_KEYS = [
     'typical_p',
     'seed',
     'repeat_last_n',
-    'mirostat',
-    'mirostat_tau',
-    'mirostat_eta',
     'min_p',
 ];
 
