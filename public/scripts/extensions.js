@@ -976,11 +976,14 @@ async function onUpdateClick() {
  * Updates a third-party extension via the API.
  * @param {string} extensionName Extension folder name
  * @param {boolean} quiet If true, don't show a success message
+ * @param {number?} timeout Timeout in milliseconds to wait for the update to complete. If null, no timeout is set.
  */
-async function updateExtension(extensionName, quiet) {
+async function updateExtension(extensionName, quiet, timeout = null) {
     try {
+        const signal = timeout ? AbortSignal.timeout(timeout) : undefined;
         const response = await fetch('/api/extensions/update', {
             method: 'POST',
+            signal: signal,
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 extensionName,
@@ -1009,7 +1012,7 @@ async function updateExtension(extensionName, quiet) {
             toastr.success(t`Extension ${extensionName} updated to ${data.shortCommitHash}`, t`Reload the page to apply updates`);
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Extension update error:', error);
     }
 }
 
@@ -1480,6 +1483,7 @@ async function autoUpdateExtensions(forceAll) {
     const banner = toastr.info(t`Auto-updating extensions. This may take several minutes.`, t`Please wait...`, { timeOut: 10000, extendedTimeOut: 10000 });
     const isCurrentUserAdmin = isAdmin();
     const promises = [];
+    const autoUpdateTimeout = 60 * 1000;
     for (const [id, manifest] of Object.entries(manifests)) {
         const isDisabled = extension_settings.disabledExtensions.includes(id);
         if (!forceAll && isDisabled) {
@@ -1493,7 +1497,7 @@ async function autoUpdateExtensions(forceAll) {
         }
         if ((forceAll || manifest.auto_update) && id.startsWith('third-party')) {
             console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
-            promises.push(updateExtension(id.replace('third-party', ''), true));
+            promises.push(updateExtension(id.replace('third-party', ''), true, autoUpdateTimeout));
         }
     }
     await Promise.allSettled(promises);
