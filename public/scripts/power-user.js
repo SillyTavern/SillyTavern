@@ -1571,6 +1571,11 @@ async function loadPowerUserSettings(settings, data) {
         delete power_user.import_card_tags;
     }
 
+    if (power_user?.instruct?.derived === true) {
+        power_user.instruct_derived = true;
+        delete power_user.instruct.derived;
+    }
+
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
