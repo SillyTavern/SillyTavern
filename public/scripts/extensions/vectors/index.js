@@ -586,9 +586,10 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
         const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
         chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
+        const applyOverlap = (x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x;
         const chunks = settings.only_custom_boundary && settings.force_chunk_delimiter
-            ? fileText.split(settings.force_chunk_delimiter)
-            : splitRecursive(fileText, chunkSize, delimiters).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+            ? fileText.split(settings.force_chunk_delimiter).map(applyOverlap)
+            : splitRecursive(fileText, chunkSize, delimiters).map(applyOverlap);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));

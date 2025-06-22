@@ -23,8 +23,6 @@ export const PROMPT_PROCESSING_TYPE = {
     STRICT: 'strict',
     STRICT_TOOLS: 'strict_tools',
     SINGLE: 'single',
-    DEEPSEEK: 'deepseek',
-    DEEPSEEK_REASONER: 'deepseek-reasoner',
 };
 
 /**
@@ -54,14 +52,15 @@ export function getPromptNames(request) {
 /**
  * Adds an assistant prefix to the last message.
  * @param {any[]} prompt Prompt messages array
+ * @param {any[]} tools Array of tool definitions
  * @returns {any[]} Transformed messages array
  */
-function addAssistantPrefix(prompt) {
+export function addAssistantPrefix(prompt, tools) {
     if (!prompt.length) {
         return prompt;
     }
-    const hasAnyToolMessages = prompt.some(x => x.role === 'tool');
-    if (!hasAnyToolMessages && prompt[prompt.length - 1].role === 'assistant') {
+    const hasAnyTools = (Array.isArray(tools) && tools.length > 0) || prompt.some(x => x.role === 'tool');
+    if (!hasAnyTools && prompt[prompt.length - 1].role === 'assistant') {
         prompt[prompt.length - 1].prefix = true;
     }
     return prompt;
@@ -89,10 +88,6 @@ export function postProcessPrompt(messages, type, names) {
             return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: false });
         case PROMPT_PROCESSING_TYPE.STRICT_TOOLS:
             return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true });
-        case PROMPT_PROCESSING_TYPE.DEEPSEEK:
-            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: false, single: false, tools: true }));
-        case PROMPT_PROCESSING_TYPE.DEEPSEEK_REASONER:
-            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true }));
         case PROMPT_PROCESSING_TYPE.SINGLE:
             return mergeMessages(messages, names, { strict: true, placeholders: false, single: true, tools: false });
         default:
@@ -1068,10 +1063,9 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
-                return null;
+                return -1;
             case REASONING_EFFORT.min:
-                budgetTokens = 0;
-                break;
+                return 0;
             case REASONING_EFFORT.low:
                 budgetTokens = Math.floor(maxTokens * 0.1);
                 break;
@@ -1091,12 +1085,39 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return budgetTokens;
     }
 
+    function getFlashLiteBudget() {
+        let budgetTokens = 0;
+
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return -1;
+            case REASONING_EFFORT.min:
+                return 0;
+            case REASONING_EFFORT.low:
+                budgetTokens = Math.floor(maxTokens * 0.1);
+                break;
+            case REASONING_EFFORT.medium:
+                budgetTokens = Math.floor(maxTokens * 0.25);
+                break;
+            case REASONING_EFFORT.high:
+                budgetTokens = Math.floor(maxTokens * 0.5);
+                break;
+            case REASONING_EFFORT.max:
+                budgetTokens = maxTokens;
+                break;
+        }
+
+        budgetTokens = Math.max(Math.min(budgetTokens, 24576), 512);
+
+        return budgetTokens;
+    }
+
     function getProBudget() {
         let budgetTokens = 0;
 
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
-                return null;
+                return -1;
             case REASONING_EFFORT.min:
                 budgetTokens = 128;
                 break;
@@ -1117,6 +1138,10 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         budgetTokens = Math.max(Math.min(budgetTokens, 32768), 128);
 
         return budgetTokens;
+    }
+
+    if (model.includes('flash-lite')) {
+        return getFlashLiteBudget();
     }
 
     if (model.includes('flash')) {

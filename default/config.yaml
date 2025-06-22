@@ -21,6 +21,7 @@ browserLaunch:
   # Open the browser automatically on server startup.
   enabled: true
   # Browser to use for opening the URL.
+  # NOT SUPPORTED ON ANDROID DEVICES.
   # - Use "default" to use the system default browser
   # - Use "firefox", "chrome", "edge"
   browser: 'default'

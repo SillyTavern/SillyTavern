@@ -41,7 +41,7 @@ import {
     stringFormat,
 } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
-import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelAnlas, getNovelUnlimitedImageGeneration, loadNovelSubscriptionData } from '../../nai-settings.js';
 import { getMultimodalCaption } from '../shared.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -53,11 +53,12 @@ import {
 } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
 import { t } from '../../i18n.js';
+import { oai_settings } from '../../openai.js';
 
 export { MODULE_NAME };
 
@@ -74,6 +75,7 @@ const sources = {
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
+    aimlapi: 'aimlapi',
     comfy: 'comfy',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
@@ -84,6 +86,7 @@ const sources = {
     bfl: 'bfl',
     falai: 'falai',
     xai: 'xai',
+    google: 'google',
 };
 
 const initiators = {
@@ -329,6 +332,10 @@ const defaultSettings = {
 
     // BFL API settings
     bfl_upsampling: false,
+
+    // Google settings
+    google_api: 'makersuite',
+    google_enhance: true,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -508,6 +515,8 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+    $('#sd_google_api').val(extension_settings.sd.google_api);
+    $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1144,42 +1153,6 @@ function onComfyWorkflowChange() {
     saveSettingsDebounced();
 }
 
-async function onApiKeyClick(popupText, secretKey) {
-    const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
-        customButtons: [{
-            text: 'Remove Key',
-            appendAtEnd: true,
-            result: POPUP_RESULT.NEGATIVE,
-            action: async () => {
-                await writeSecret(secretKey, '');
-                toastr.success('API Key removed');
-                await loadSettingOptions();
-            },
-        }],
-    });
-
-    if (!key) {
-        return;
-    }
-
-    await writeSecret(secretKey, String(key));
-
-    toastr.success('API Key saved');
-    await loadSettingOptions();
-}
-
-async function onStabilityKeyClick() {
-    return onApiKeyClick('Stability AI API Key:', SECRET_KEYS.STABILITY);
-}
-
-async function onBflKeyClick() {
-    return onApiKeyClick('BFL API Key:', SECRET_KEYS.BFL);
-}
-
-async function onFalaiKeyClick() {
-    return onApiKeyClick('FALAI API Key:', SECRET_KEYS.FALAI);
-}
-
 function onBflUpsamplingInput() {
     extension_settings.sd.bfl_upsampling = !!$('#sd_bfl_upsampling').prop('checked');
     saveSettingsDebounced();
@@ -1303,6 +1276,7 @@ async function onModelChange() {
         sources.horde,
         sources.novel,
         sources.openai,
+        sources.aimlapi,
         sources.togetherai,
         sources.pollinations,
         sources.stability,
@@ -1311,6 +1285,7 @@ async function onModelChange() {
         sources.bfl,
         sources.falai,
         sources.xai,
+        sources.google,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1505,6 +1480,9 @@ async function loadSamplers() {
         case sources.openai:
             samplers = ['N/A'];
             break;
+        case sources.aimlapi:
+            samplers = ['N/A'];
+            break;
         case sources.comfy:
             samplers = await loadComfySamplers();
             break;
@@ -1527,6 +1505,9 @@ async function loadSamplers() {
             samplers = ['N/A'];
             break;
         case sources.xai:
+            samplers = ['N/A'];
+            break;
+        case sources.google:
             samplers = ['N/A'];
             break;
     }
@@ -1695,6 +1676,9 @@ async function loadModels() {
         case sources.openai:
             models = await loadOpenAiModels();
             break;
+        case sources.aimlapi:
+            models = await loadAimlapiModels();
+            break;
         case sources.comfy:
             models = await loadComfyModels();
             break;
@@ -1721,6 +1705,9 @@ async function loadModels() {
             break;
         case sources.xai:
             models = await loadXAIModels();
+            break;
+        case sources.google:
+            models = await loadGoogleModels();
             break;
     }
 
@@ -1959,6 +1946,23 @@ async function loadOpenAiModels() {
     ];
 }
 
+async function loadAimlapiModels() {
+    $('#sd_aimlapi_key').toggleClass('success', !!secret_state[SECRET_KEYS.AIMLAPI]);
+
+    const result = await fetch('/api/sd/aimlapi/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (!result.ok) {
+        return [];
+    }
+
+    const json = await result.json();
+
+    return (json.data || []);
+}
+
 async function loadVladModels() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -2034,6 +2038,21 @@ async function loadNovelModels() {
     ];
 }
 
+async function loadGoogleModels() {
+    return [
+        'imagen-4.0-generate-preview-06-06',
+        'imagen-4.0-fast-generate-preview-06-06',
+        'imagen-4.0-ultra-generate-preview-06-06',
+        'imagen-3.0-generate-002',
+        'imagen-3.0-generate-001',
+        'imagen-3.0-fast-generate-001',
+        'imagen-3.0-capability-001',
+        'imagegeneration@006',
+        'imagegeneration@005',
+        'imagegeneration@002',
+    ].map(name => ({ value: name, text: name }));
+}
+
 function loadNovelSchedulers() {
     return ['karras', 'native', 'exponential', 'polyexponential'];
 }
@@ -2086,6 +2105,9 @@ async function loadSchedulers() {
         case sources.openai:
             schedulers = ['N/A'];
             break;
+        case sources.aimlapi:
+            schedulers = ['N/A'];
+            break;
         case sources.togetherai:
             schedulers = ['N/A'];
             break;
@@ -2111,6 +2133,9 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.xai:
+            schedulers = ['N/A'];
+            break;
+        case sources.google:
             schedulers = ['N/A'];
             break;
     }
@@ -2177,6 +2202,9 @@ async function loadVaes() {
         case sources.openai:
             vaes = ['N/A'];
             break;
+        case sources.aimlapi:
+            vaes = ['N/A'];
+            break;
         case sources.togetherai:
             vaes = ['N/A'];
             break;
@@ -2202,6 +2230,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.xai:
+            vaes = ['N/A'];
+            break;
+        case sources.google:
             vaes = ['N/A'];
             break;
     }
@@ -2473,8 +2504,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
 
         // generate the text prompt for the image
-        const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
+        let prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
+
+        // Extension hook for prompt processing
+        const eventData = { prompt, generationType, message, trigger };
+        await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
+        prompt = eventData.prompt; // Allow extensions to modify the prompt
 
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
@@ -2749,6 +2785,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.openai:
                 result = await generateOpenAiImage(prefixedPrompt, signal);
                 break;
+            case sources.aimlapi:
+                result = await generateAimlapiImage(prefixedPrompt, signal);
+                break;
             case sources.comfy:
                 result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -2775,6 +2814,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.xai:
                 result = await generateXAIImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.google:
+                result = await generateGoogleImage(prefixedPrompt, negativePrompt, signal);
                 break;
         }
 
@@ -2913,20 +2955,39 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
+ * @param {'google'|'stability'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
-function getClosestAspectRatio(width, height) {
-    const aspectRatios = {
-        '16:9': 16 / 9,
-        '1:1': 1,
-        '21:9': 21 / 9,
-        '2:3': 2 / 3,
-        '3:2': 3 / 2,
-        '4:5': 4 / 5,
-        '5:4': 5 / 4,
-        '9:16': 9 / 16,
-        '9:21': 9 / 21,
-    };
+function getClosestAspectRatio(width, height, source) {
+    function getAspectRatios() {
+        switch (source) {
+            case 'stability':
+                return {
+                    '16:9': 16 / 9,
+                    '1:1': 1,
+                    '21:9': 21 / 9,
+                    '2:3': 2 / 3,
+                    '3:2': 3 / 2,
+                    '4:5': 4 / 5,
+                    '5:4': 5 / 4,
+                    '9:16': 9 / 16,
+                    '9:21': 9 / 21,
+                };
+            case 'google':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
+                    '4:3': 4 / 3,
+                    '3:4': 3 / 4,
+                };
+            default:
+                console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
+                return null;
+        }
+    }
+
+    const aspectRatios = getAspectRatios() || { '1:1': 1 };
 
     const aspectRatio = width / height;
 
@@ -2965,7 +3026,7 @@ async function generateStabilityImage(prompt, negativePrompt, signal) {
                 payload: {
                     prompt: prompt.slice(0, PROMPT_LIMIT),
                     negative_prompt: negativePrompt.slice(0, PROMPT_LIMIT),
-                    aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height),
+                    aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'stability'),
                     seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
                     style_preset: extension_settings.sd.stability_style_preset,
                     output_format: IMAGE_FORMAT,
@@ -3334,6 +3395,47 @@ async function generateOpenAiImage(prompt, signal) {
 }
 
 /**
+ * Universal image generation via AIMLAPI:
+ * - Builds the right request body for any model (OpenAI vs SD/Flux/Recraft).
+ * - Extracts the URL or base64 response.
+ * - If it’s a URL, fetches the image and converts to base64.
+ * - Returns { format: 'png', data: '<base64 string>' }, ready for saveBase64AsFile().
+ */
+async function generateAimlapiImage(prompt, signal) {
+    const model = extension_settings.sd.model.toLowerCase();
+    const isSdLike =
+        model.startsWith('flux/') ||
+        model.startsWith('stable') ||
+        model === 'recraft-v3' ||
+        model === 'triposr';
+
+    const body = { prompt, model };
+    if (isSdLike) {
+        body.steps = clamp(extension_settings.sd.steps, 1, 50);
+        body.guidance = clamp(extension_settings.sd.scale, 1.5, 5);
+        body.width = clamp(extension_settings.sd.width, 256, 1440);
+        body.height = clamp(extension_settings.sd.height, 256, 1440);
+        if (extension_settings.sd.seed >= 0) body.seed = extension_settings.sd.seed;
+    } else {
+        body.n = 1;
+        body.size = `${extension_settings.sd.width}x${extension_settings.sd.height}`;
+        body.quality = extension_settings.sd.openai_quality;
+        body.style = extension_settings.sd.openai_style;
+    }
+
+    const res = await fetch('/api/sd/aimlapi/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal,
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    const { format, data } = await res.json();
+    return { format, data };
+}
+
+/**
  * Generates an image in ComfyUI using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
@@ -3575,7 +3677,41 @@ async function generateFalaiImage(prompt, negativePrompt, signal) {
         return { format: 'jpg', data: data.image };
     } else {
         const text = await result.text();
-        console.log(text);
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image using the Google Vertex AI API.
+ * @param {string} prompt The main instruction used to guide the image generation.
+ * @param {string} negativePrompt The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
+ */
+async function generateGoogleImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/google/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'google'),
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            enhance: extension_settings.sd.google_enhance,
+            api: extension_settings.sd.google_api || 'makersuite',
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+            vertexai_auth_mode: oai_settings.vertexai_auth_mode,
+            vertexai_region: oai_settings.vertexai_region,
+            vertexai_express_project_id: oai_settings.vertexai_express_project_id,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
         throw new Error(text);
     }
 }
@@ -3849,6 +3985,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NOVEL];
         case sources.openai:
             return secret_state[SECRET_KEYS.OPENAI];
+        case sources.aimlapi:
+            return secret_state[SECRET_KEYS.AIMLAPI];
         case sources.comfy:
             return true;
         case sources.togetherai:
@@ -3867,6 +4005,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.FALAI];
         case sources.xai:
             return secret_state[SECRET_KEYS.XAI];
+        case sources.google:
+            return secret_state[SECRET_KEYS.MAKERSUITE] || secret_state[SECRET_KEYS.VERTEXAI] || secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT];
     }
 }
 
@@ -4048,6 +4188,7 @@ async function onImageSwiped({ message, element, direction }) {
                 const hasNegative = message.extra.negative;
                 const prompt = await refinePrompt(message.extra.title, false);
                 const negativePromptPrefix = hasNegative ? await refinePrompt(message.extra.negative, true) : '';
+                message.extra.title = prompt;
                 const characterName = context.groupId
                     ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
                     : context.characters[context.characterId]?.name;
@@ -4522,13 +4663,19 @@ jQuery(async () => {
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
     $('#sd_tool_visible').on('input', onToolVisibleInput);
     $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
-    $('#sd_stability_key').on('click', onStabilityKeyClick);
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
-    $('#sd_bfl_key').on('click', onBflKeyClick);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
-    $('#sd_falai_key').on('click', onFalaiKeyClick);
+
+    $('#sd_google_api').on('input', function () {
+        extension_settings.sd.google_api = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#sd_google_enhance').on('input', function () {
+        extension_settings.sd.google_enhance = $(this).prop('checked');
+        saveSettingsDebounced();
+    });
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {
@@ -4555,6 +4702,19 @@ jQuery(async () => {
     eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+        eventSource.on(event, async (/** @type {string} */ key) => {
+            switch (key) {
+                case SECRET_KEYS.BFL:
+                case SECRET_KEYS.FALAI:
+                case SECRET_KEYS.STABILITY:
+                case SECRET_KEYS.AIMLAPI:
+                    await loadSettingOptions();
+                    break;
+            }
+        });
+    });
 
     await loadSettings();
     $('body').addClass('sd');

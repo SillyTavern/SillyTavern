@@ -4,6 +4,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 
 import {
+    AIMLAPI_HEADERS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
     OPENROUTER_HEADERS,
@@ -33,6 +34,7 @@ import {
     calculateGoogleBudgetTokens,
     postProcessPrompt,
     PROMPT_PROCESSING_TYPE,
+    addAssistantPrefix,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -61,6 +63,7 @@ const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
+const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 
 /**
@@ -448,6 +451,12 @@ async function sendMakerSuiteRequest(request, response) {
                 thinkingConfig.thinkingBudget = thinkingBudget;
             }
 
+            // Vertex doesn't allow mixing disabled thinking with includeThoughts
+            if (useVertexAi && thinkingBudget === 0 && thinkingConfig.includeThoughts) {
+                console.info('Thinking budget is 0, but includeThoughts is true. Thoughts will not be included in the response.');
+                thinkingConfig.includeThoughts = false;
+            }
+
             generationConfig.thinkingConfig = thinkingConfig;
         }
 
@@ -490,7 +499,14 @@ async function sendMakerSuiteRequest(request, response) {
             if (authType === 'express') {
                 // For Express mode (API key authentication), use the key parameter
                 const keyParam = authHeader.replace('Bearer ', '');
-                url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`;
+                const region = request.body.vertexai_region || 'us-central1';
+                const projectId = request.body.vertexai_express_project_id;
+                const baseUrl = region === 'global'
+                    ? 'https://aiplatform.googleapis.com'
+                    : `https://${region}-aiplatform.googleapis.com`;
+                url = projectId
+                    ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent?key=${keyParam}${stream ? '&alt=sse' : ''}`
+                    : `${baseUrl}/v1/publishers/google/models/${model}:generateContent?key=${keyParam}${stream ? '&alt=sse' : ''}`;
             } else if (authType === 'full') {
                 // For Full mode (service account authentication), use project-specific URL
                 // Get project ID from Service Account JSON
@@ -867,9 +883,9 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const postProcessType = String(request.body.model).endsWith('-reasoner')
-            ? PROMPT_PROCESSING_TYPE.DEEPSEEK_REASONER
-            : PROMPT_PROCESSING_TYPE.DEEPSEEK;
-        const processedMessages = postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request));
+            ? PROMPT_PROCESSING_TYPE.STRICT_TOOLS
+            : PROMPT_PROCESSING_TYPE.SEMI_TOOLS;
+        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request)), bodyParams.tools);
 
         const requestBody = {
             'messages': processedMessages,
@@ -963,6 +979,17 @@ async function sendXaiRequest(request, response) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
+        if (request.body.enable_web_search) {
+            bodyParams['search_parameters'] = {
+                mode: 'on',
+                sources: [
+                    { type: 'web', safe_search: false },
+                    { type: 'news', safe_search: false },
+                    { type: 'x' },
+                ],
+            };
+        }
+
         const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
         const requestBody = {
@@ -1009,6 +1036,99 @@ async function sendXaiRequest(request, response) {
         }
     } catch (error) {
         console.error('Error communicating with xAI API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
+ * Sends a request to AI/ML API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendAimlapiRequest(request, response) {
+    const apiUrl = API_AIMLAPI;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
+
+    if (!apiKey) {
+        console.warn('AI/ML API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
+            bodyParams['stop'] = request.body.stop;
+        }
+
+        if (request.body.reasoning_effort) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'seed': request.body.seed,
+            'n': request.body.n,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+                ...AIMLAPI_HEADERS,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('AI/ML API request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn(`AI/ML API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('AI/ML API response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with AI/ML API: ', error);
         if (!response.headersSent) {
             response.send({ error: true });
         } else {
@@ -1064,6 +1184,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = new URL(request.body.reverse_proxy || API_XAI);
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AIMLAPI) {
+        apiUrl = API_AIMLAPI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
+        headers = { ...AIMLAPI_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = 'https://text.pollinations.ai';
         apiKey = 'NONE';
@@ -1286,6 +1410,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
     }
 

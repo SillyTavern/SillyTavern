@@ -652,7 +652,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom,xai">
+                                <div class="range-block" data-source="openai,custom,xai,aimlapi">
                                     <div class="range-block-title" data-i18n="Multiple swipes per generation">
                                         Multiple swipes per generation
                                     </div>
@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,windowai,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -730,7 +730,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter,makersuite,vertexai,cohere,perplexity">
+                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -980,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1499,7 +1499,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1969,7 +1969,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,openrouter,claude">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -1983,7 +1983,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1994,7 +1994,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,vertexai,claude,custom,01ai,xai,pollinations">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,01ai,xai,pollinations">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -2064,7 +2064,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai,makersuite,vertexai">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2078,7 +2078,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2092,7 +2092,7 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,openrouter" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
@@ -2131,7 +2131,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,openrouter,scale,custom">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,scale,custom">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2376,7 +2376,7 @@
                                     <input id="api_key_openrouter-tg" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" value="" type="text" autocomplete="off">
                                     <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_openrouter"></div>
                                 </div>
-                                <div data-for="api_key_openrouter" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                <div data-for="api_key_openrouter-tg" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                     For privacy reasons, your API key will be hidden after you click 'Connect'.
                                 </div>
                                 <div>
@@ -2789,6 +2789,7 @@
                             <optgroup>
                                 <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
+                                <option value="aimlapi">AI/ML API</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="deepseek">DeepSeek</option>
@@ -3191,12 +3192,15 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
                                         <option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05 → 2.5-pro-exp-03-25</option>
@@ -3256,19 +3260,38 @@
                             <!-- Express Mode Configuration -->
                             <div id="vertexai_express_config" class="vertexai-auth-section" data-mode="express">
                                 <h4>
-                                    <span data-i18n="Google Vertex AI API Key">
-                                        Google Vertex AI API Key
+                                    <span data-i18n="Google Vertex AI Configuration">
+                                        Google Vertex AI Configuration
                                     </span>
                                     <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview" data-i18n="(Express mode)" target="_blank" rel="noopener noreferrer">
                                         (Express mode)
                                     </a>
                                 </h4>
-                                <div class="flex-container">
-                                    <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_vertexai"></div>
+                                <!-- API Key -->
+                                <div class="flex-container flexFlowColumn">
+                                    <label for="api_key_vertexai" data-i18n="API Key">API Key:</label>
+                                    <div class="flex-container">
+                                        <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                        <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_vertexai"></div>
+                                    </div>
+                                    <div data-for="api_key_vertexai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                        For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                    </div>
                                 </div>
-                                <div data-for="api_key_vertexai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                <!-- Project ID -->
+                                <div class="flex-container flexFlowColumn marginTop10">
+                                    <label for="vertexai_express_project_id">
+                                        <span data-i18n="Project ID">Project ID:</span>
+                                    </label>
+                                    <div class="flex-container">
+                                        <input id="vertexai_express_project_id" name="vertexai_express_project_id" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="Enter your Project ID">
+                                    </div>
+                                    <div class="toggle-description justifyLeft marginBot5">
+                                        <small data-i18n="Project ID is required when selecting regions other than the default (us-central1). You can find this in a model 404 error message.">
+                                            `Project ID` is only required when selecting regions other than the default (us-central1).<br>
+                                            You can find this in a model 404 error message.
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
 
@@ -3282,20 +3305,6 @@
                                         <i class="fa-solid fa-circle-question"></i>
                                     </a>
                                 </h4>
-
-                                <!-- Region -->
-                                <div class="flex-container flexFlowColumn">
-                                    <label for="vertexai_region">
-                                        <span data-i18n="Region">
-                                            Region:
-                                        </span>
-                                        <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations" target="_blank" rel="noopener noreferrer" title="View available regions and models" data-i18n="[title]View available regions and models" class="notes-link">
-                                            <span class="fa-solid fa-circle-question note-link-span"></span>
-                                        </a>
-                                    </label>
-                                    <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1">
-                                </div>
-
                                 <!-- Service Account JSON Content -->
                                 <div class="flex-container flexFlowColumn">
                                     <label for="vertexai_service_account_json" data-i18n="Service Account JSON Content">Service Account JSON Content:</label>
@@ -3315,34 +3324,62 @@
                                 </div>
                             </div>
 
+                            <!-- Region -->
+                            <div class="flex-container flexFlowColumn">
+                                <label for="vertexai_region">
+                                    <span data-i18n="Region">
+                                        Region:
+                                    </span>
+                                    <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations" target="_blank" rel="noopener noreferrer" title="View available regions and models" data-i18n="[title]View available regions and models" class="notes-link">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </label>
+                                <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1" list="vertexai_region_suggestions">
+
+                                <datalist id="vertexai_region_suggestions">
+                                    <option value="global">global</option>
+                                    <option value="us-central1">us-central1</option>
+                                    <option value="us-east1">us-east1</option>
+                                    <option value="us-east4">us-east4</option>
+                                    <option value="us-west1">us-west1</option>
+                                    <option value="us-west2">us-west2</option>
+                                    <option value="us-west3">us-west3</option>
+                                    <option value="us-west4">us-west4</option>
+                                    <option value="europe-west1">europe-west1</option>
+                                    <option value="europe-west2">europe-west2</option>
+                                    <option value="europe-west3">europe-west3</option>
+                                    <option value="europe-west4">europe-west4</option>
+                                    <option value="europe-west6">europe-west6</option>
+                                    <option value="europe-central2">europe-central2</option>
+                                    <option value="asia-northeast1">asia-northeast1</option>
+                                    <option value="asia-northeast3">asia-northeast3</option>
+                                    <option value="asia-southeast1">asia-southeast1</option>
+                                    <option value="asia-south1">asia-south1</option>
+                                    <option value="australia-southeast1">australia-southeast1</option>
+                                </datalist>
+                            </div>
+
                             <!-- Model Selection -->
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
-                                    <!-- Express Mode Models -->
-                                    <optgroup id="vertexai_express_models" label="Express Mode Models" data-mode="express">
-                                        <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
-                                        <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
-                                        <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
-                                        <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
-                                        <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
-                                        <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
-                                    </optgroup>
-
-                                    <!-- Full Version Models -->
-                                    <optgroup id="vertexai_full_gemini_25" label="Gemini 2.5" data-mode="full">
+                                    <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
-                                        <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-pro-exp-03-25" data-mode="full">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
-                                    <optgroup id="vertexai_full_gemini_20" label="Gemini 2.0" data-mode="full">
-                                        <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
-                                        <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-                                        <option value="gemini-2.0-flash-preview-image-generation">gemini-2.0-flash-preview-image-generation</option>
+                                    <optgroup label="Gemini 2.0">
+                                        <option value="gemini-2.0-flash-exp" data-mode="full">gemini-2.0-flash-exp</option>
+                                        <option value="gemini-2.0-flash-preview-image-generation" data-mode="full">gemini-2.0-flash-preview-image-generation</option>
                                         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                                        <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
                                         <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
                                     </optgroup>
                                 </select>
@@ -3632,6 +3669,21 @@
                                 <option value="grok-beta">grok-beta</option>
                             </select>
                         </div>
+                        <div id="aimlapi_form" data-source="aimlapi">
+                            <h4>
+                                <span>AI/ML API Key</span>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_aimlapi" name="api_key_aimlapi" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_aimlapi"></div>
+                            </div>
+                            <div data-for="api_key_aimlapi" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4>AI/ML Model</h4>
+                            <select id="model_aimlapi_select">
+                            </select>
+                        </div>
                         <div id="pollinations_form" data-source="pollinations">
                             <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
                             <select id="model_pollinations_select">
@@ -3658,13 +3710,17 @@
                             </h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
                                 <option data-i18n="prompt_post_processing_none" value="">None</option>
-                                <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles (no tools)</option>
-                                <option data-i18n="prompt_post_processing_merge_tools" value="merge_tools">Merge consecutive roles (with tools)</option>
-                                <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles; no tools)</option>
-                                <option data-i18n="prompt_post_processing_semi_tools" value="semi_tools">Semi-strict (alternating roles; with tools)</option>
-                                <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles; no tools)</option>
-                                <option data-i18n="prompt_post_processing_strict_tools" value="strict_tools">Strict (user first, alternating roles; with tools)</option>
-                                <option data-i18n="prompt_post_processing_single" value="single">Single user message (no tools)</option>
+                                <optgroup label="With Tools">
+                                    <option data-i18n="prompt_post_processing_merge_tools" value="merge_tools">Merge consecutive roles (with tools)</option>
+                                    <option data-i18n="prompt_post_processing_semi_tools" value="semi_tools">Semi-strict (alternating roles; with tools)</option>
+                                    <option data-i18n="prompt_post_processing_strict_tools" value="strict_tools">Strict (user first, alternating roles; with tools)</option>
+                                </optgroup>
+                                <optgroup label="No Tools">
+                                    <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles (no tools)</option>
+                                    <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles; no tools)</option>
+                                    <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles; no tools)</option>
+                                    <option data-i18n="prompt_post_processing_single" value="single">Single user message (no tools)</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="flex-container flex">
@@ -4752,7 +4808,7 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
-                           <label data-i18n="[title]Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
+                           <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
                                <input id="background_thumbnails_animation" type="checkbox" />
                                <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
                            </label>

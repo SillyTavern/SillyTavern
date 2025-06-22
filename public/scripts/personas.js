@@ -1007,7 +1007,9 @@ async function deleteUserAvatar() {
         console.warn('No avatar id found');
         return;
     }
-    const confirm = await Popup.show.confirm(t`Delete Persona`,
+    const name = power_user.personas[avatarId] || '';
+    const confirm = await Popup.show.confirm(
+        t`Delete Persona` + `: ${name}`,
         t`Are you sure you want to delete this avatar?` + '<br />' + t`All information associated with its linked persona will be lost.`);
 
     if (!confirm) {

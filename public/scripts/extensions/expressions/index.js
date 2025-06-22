@@ -1,6 +1,6 @@
 import { Fuse } from '../../../lib.js';
 
-import { characters, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
+import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
@@ -84,6 +84,12 @@ const EXPRESSION_API = {
     llm: 2,
     webllm: 3,
     none: 99,
+};
+
+/** @enum {string} */
+const PROMPT_TYPE = {
+    raw: 'raw',
+    full: 'full',
 };
 
 let expressionsList = null;
@@ -909,10 +915,6 @@ function sampleClassifyText(text) {
  * @returns {Promise<string>} Prompt for the LLM API.
  */
 async function getLlmPrompt(labels) {
-    if (isJsonSchemaSupported()) {
-        return '';
-    }
-
     const labelsString = labels.map(x => `"${x}"`).join(', ');
     const prompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { labels: labelsString });
     return prompt;
@@ -976,6 +978,7 @@ function getJsonSchema(emotions) {
         required: [
             'emotion',
         ],
+        additionalProperties: false,
     };
 }
 
@@ -1047,7 +1050,21 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 const expressionsList = await getExpressionsList({ filterAvailable: filterAvailable });
                 const prompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
-                const emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+
+                let emotionResponse;
+                try {
+                    inApiCall = true;
+                    switch (extension_settings.expressions.promptType) {
+                        case PROMPT_TYPE.raw:
+                            emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+                            break;
+                        case PROMPT_TYPE.full:
+                            emotionResponse = await generateQuietPrompt(prompt, false, false);
+                            break;
+                    }
+                } finally {
+                    inApiCall = false;
+                }
                 return parseLlmResponse(emotionResponse, expressionsList);
             }
             // Using WebLLM
@@ -1702,6 +1719,7 @@ function onExpressionApiChanged() {
     if (tempApi) {
         extension_settings.expressions.api = Number(tempApi);
         $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api));
+        $('.expression_prompt_type_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
         expressionsList = null;
         spriteCache = {};
         moduleWorker();
@@ -2102,6 +2120,11 @@ function migrateSettings() {
         extension_settings.expressions.showDefault = false;
         saveSettingsDebounced();
     }
+
+    if (extension_settings.expressions.promptType === undefined) {
+        extension_settings.expressions.promptType = PROMPT_TYPE.raw;
+        saveSettingsDebounced();
+    }
 }
 
 (async function () {
@@ -2169,6 +2192,16 @@ function migrateSettings() {
             extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
             saveSettingsDebounced();
         });
+        $('#expression_prompt_raw').on('input', function () {
+            extension_settings.expressions.promptType = PROMPT_TYPE.raw;
+            saveSettingsDebounced();
+        });
+        $('#expression_prompt_full').on('input', function () {
+            extension_settings.expressions.promptType = PROMPT_TYPE.full;
+            saveSettingsDebounced();
+        });
+        $(`input[name="expression_prompt_type"][value="${extension_settings.expressions.promptType}"]`).prop('checked', true);
+        $('.expression_prompt_type_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
 
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);

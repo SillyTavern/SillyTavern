@@ -60,6 +60,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     if (extension_settings.caption.multimodal_api === 'vertexai') {
         requestBody.vertexai_auth_mode = oai_settings.vertexai_auth_mode;
         requestBody.vertexai_region = oai_settings.vertexai_region;
+        requestBody.vertexai_express_project_id = oai_settings.vertexai_express_project_id;
     }
 
     if (isOllama) {
@@ -232,6 +233,10 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (multimodalApi === 'custom' && !oai_settings.custom_url) {
         throw new Error('Custom API URL is not set.');
+    }
+
+    if (multimodalApi === 'aimlapi' && !secret_state[SECRET_KEYS.AIMLAPI]) {
+        throw new Error('AI/ML API key is not set.');
     }
 }
 

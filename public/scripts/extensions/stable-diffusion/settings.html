@@ -37,11 +37,13 @@
             </label>
             <label for="sd_source" data-i18n="Source">Source</label>
             <select id="sd_source">
+                <option value="aimlapi">AI/ML API</option>
                 <option value="bfl">BFL (Black Forest Labs)</option>
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="extras">Extras API (deprecated)</option>
                 <option value="falai">FAL.AI</option>
+                <option value="google">Google AI</option>
                 <option value="huggingface">HuggingFace Inference API (serverless)</option>
                 <option value="nanogpt">NanoGPT</option>
                 <option value="novel">NovelAI Diffusion</option>
@@ -139,7 +141,16 @@
                 </div>
                 <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
             </div>
-            <div data-sd-source="openai">
+            <div data-sd-source="aimlapi">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_aimlapi_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_aimlapi">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+            </div>
+            <div data-sd-source="openai,aimlapi">
                 <small data-i18n="These settings only apply to DALL-E 3">These settings only apply to DALL-E 3</small>
                 <div class="flex-container">
                     <div class="flex1">
@@ -200,7 +211,7 @@
             <div data-sd-source="stability">
                 <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
                     <strong class="flex1" data-i18n="API Key">API Key</strong>
-                    <div id="sd_stability_key" class="menu_button menu_button_icon">
+                    <div id="sd_stability_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_stability">
                         <i class="fa-fw fa-solid fa-key"></i>
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
@@ -244,7 +255,7 @@
                         <i class="fa-solid fa-share-from-square"></i>
                     </a>
                     <span class="expander"></span>
-                    <div id="sd_bfl_key" class="menu_button menu_button_icon">
+                    <div id="sd_bfl_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_bfl">
                         <i class="fa-fw fa-solid fa-key"></i>
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
@@ -264,10 +275,30 @@
                         <i class="fa-solid fa-share-from-square"></i>
                     </a>
                     <span class="expander"></span>
-                    <div id="sd_falai_key" class="menu_button menu_button_icon">
+                    <div id="sd_falai_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_falai">
                         <i class="fa-fw fa-solid fa-key"></i>
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
+                </div>
+            </div>
+
+            <div data-sd-source="google">
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_google_api" data-i18n="API Type">API Type</label>
+                        <select id="sd_google_api" class="text_pole">
+                            <option value="makersuite">Google AI Studio</option>
+                            <option value="vertexai">Google Vertex AI</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-container">
+                    <label class="flex1 checkbox_label" for="sd_google_enhance" title="Enables prompt enhancing (passes prompts through an LLM to add detail).">
+                        <input id="sd_google_enhance" type="checkbox" />
+                        <span data-i18n="Enhance">
+                            Enhance
+                        </span>
+                    </label>
                 </div>
             </div>
 

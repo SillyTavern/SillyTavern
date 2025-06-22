@@ -1124,6 +1124,7 @@ function registerWorldInfoSlashCommands() {
     async function getEntryFieldCallback(args, uid) {
         const file = args.file;
         const field = args.field || 'content';
+        const tags = getContext().tags;
 
         const entries = await getEntriesFromFile(file);
 
@@ -1143,7 +1144,31 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const fieldValue = entry[field];
+        // handle special cases, otherwise execute default logic
+        let fieldValue;
+        switch (field){
+            case 'characterFilterNames':
+                if (entry.characterFilter) {
+                    fieldValue = entry.characterFilter.names;
+                }
+                break;
+            case 'characterFilterTags':
+                if (entry.characterFilter) {
+                    if (!entry.characterFilter.tags) {
+                        return '';
+                    }
+                    //Find the tag objects corresponding to each ID in the array, then return the names
+                    fieldValue = tags.filter((tag) => entry.characterFilter.tags.includes(tag.id)).map((tag) => tag.name);
+                }
+                break;
+            case 'characterFilterExclude':
+                if (entry.characterFilter) {
+                    fieldValue = entry.characterFilter.isExclude;
+                }
+                break;
+            default:
+                fieldValue = entry[field];
+        }
 
         if (fieldValue === undefined) {
             return '';
@@ -1189,6 +1214,23 @@ function registerWorldInfoSlashCommands() {
         const file = args.file;
         const uid = args.uid;
         const field = args.field || 'content';
+        const tags = getContext().tags;
+
+        // characterFilter is an object with internal fields we need to access, which may also may be null and need to be populated
+        const createCharacterFilterFieldObjectIfNeeded = (currentEntry) => {
+            if (!currentEntry.characterFilter) {
+                Object.assign(
+                    currentEntry,
+                    {
+                        characterFilter: {
+                            isExclude: false,
+                            names: [],
+                            tags: [],
+                        },
+                    },
+                );
+            }
+        };
 
         if (value === undefined) {
             toastr.warning('Value is required');
@@ -1216,18 +1258,45 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (Array.isArray(entry[field])) {
-            entry[field] = parseStringArray(value);
-        } else if (typeof entry[field] === 'boolean') {
-            entry[field] = isTrueBoolean(value);
-        } else if (typeof entry[field] === 'number') {
-            entry[field] = Number(value);
-        } else {
-            entry[field] = value;
-        }
+        // handle special cases, otherwise execute default logic
+        let tagNames;
+        let charNames;
+        switch (field){
+            case 'characterFilterNames':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                charNames = parseStringArray(value);
+                entry.characterFilter.names = charNames
+                    .map((name) => getCharaFilename(null, { manualAvatarKey: findChar({ name, allowAvatar: true, preferCurrentChar: false, quiet: true })?.avatar }))
+                    .filter(Boolean)
+                    .filter(onlyUnique);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            case 'characterFilterTags':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                tagNames = parseStringArray(value);
+                //Find the tag objects corresponding to each name in the user array, then return an array of the corresponding IDs
+                entry.characterFilter.tags = tags.filter((tag) => tagNames.includes(tag.name)).map((tag) => tag.id);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            case 'characterFilterExclude':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                entry.characterFilter.isExclude = isTrueBoolean(value);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            default:
+                if (Array.isArray(entry[field])) {
+                    entry[field] = parseStringArray(value);
+                } else if (typeof entry[field] === 'boolean') {
+                    entry[field] = isTrueBoolean(value);
+                } else if (typeof entry[field] === 'number') {
+                    entry[field] = Number(value);
+                } else {
+                    entry[field] = value;
+                }
 
-        if (originalWIDataKeyMap[field]) {
-            setWIOriginalDataValue(data, uid, originalWIDataKeyMap[field], entry[field]);
+                if (originalWIDataKeyMap[field]) {
+                    setWIOriginalDataValue(data, uid, originalWIDataKeyMap[field], entry[field]);
+                }
         }
 
         await saveWorldInfo(file, data);
@@ -1349,7 +1418,7 @@ function registerWorldInfoSlashCommands() {
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
         wiEntryFields: () => Object.entries(newWorldInfoEntryDefinition).map(([key, value]) =>
-            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`,
+            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : JSON.stringify(value.default))}`,
                 enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
@@ -3578,6 +3647,9 @@ export const newWorldInfoEntryDefinition = {
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
     delay: { default: null, type: 'number?' },
+    characterFilterNames: { default: [], type: 'array' },
+    characterFilterTags: { default: [], type: 'array' },
+    characterFilterExclude: { default: false, type: 'boolean' },
 };
 
 export const newWorldInfoEntryTemplate = Object.fromEntries(

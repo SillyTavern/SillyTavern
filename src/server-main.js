@@ -14,7 +14,6 @@ import multer from 'multer';
 import responseTime from 'response-time';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
-import open, { apps } from 'open';
 
 // local library imports
 import './fetch-patch.js';
@@ -265,8 +264,10 @@ async function preSetupTasks() {
     // Print formatted header
     console.log();
     console.log(`SillyTavern ${version.pkgVersion}`);
-    if (version.gitBranch) {
-        console.log(`Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}`);
+    if (version.gitBranch && version.commitDate) {
+        const date = new Date(version.commitDate);
+        const localDate = date.toLocaleString('en-US', { timeZoneName: 'short' });
+        console.log(`Running '${version.gitBranch}' (${version.gitRevision}) - ${localDate}`);
         if (!version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
             console.log('INFO: Currently not on the latest commit.');
             console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
@@ -329,18 +330,30 @@ async function postSetupTasks(result) {
 
     if (cliArgs.browserLaunchEnabled) {
         try {
-            const validBrowsers = {
-                'firefox': apps.firefox,
-                'chrome': apps.chrome,
-                'edge': apps.edge,
-            };
+            // TODO: This should be converted to a regular import when support for Node 18 is dropped
+            const openModule = await import('open');
+            const { default: open, apps } = openModule;
+
+            function getBrowsers() {
+                const isAndroid = process.platform === 'android';
+                if (isAndroid) {
+                    return {};
+                }
+                return {
+                    'firefox': apps.firefox,
+                    'chrome': apps.chrome,
+                    'edge': apps.edge,
+                };
+            }
+
+            const validBrowsers = getBrowsers();
             const appName = validBrowsers[browserLaunchApp.trim().toLowerCase()];
             const openOptions = appName ? { app: { name: appName } } : {};
 
             console.log(`Launching in a browser: ${browserLaunchApp}...`);
             await open(browserLaunchUrl.toString(), openOptions);
         } catch (error) {
-            console.error('Failed to launch the browser. Open the URL manually.');
+            console.error('Failed to launch the browser. Open the URL manually.', error);
         }
     }
 
