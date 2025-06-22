@@ -893,6 +893,27 @@ async function deleteMessageImage() {
     await saveChatConditional();
 }
 
+async function deleteMessageVideo() {
+    const confirm = await Popup.show.confirm(t`Delete video from message?`, t`This action can't be undone.`);
+    if (!confirm) {
+        return;
+    }
+
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+
+    if (!message?.extra?.video) {
+        console.warn('Message has no video or it is empty');
+        return;
+    }
+
+    delete message.extra.video;
+    mesBlock.find('.mes_video_container').remove();
+
+    await saveChatConditional();
+}
+
 /**
  * Deletes file from the server.
  * @param {string} url Path to the file on the server
@@ -1856,6 +1877,7 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_img', expandMessageImage);
     $(document).on('click', '.mes_img_enlarge', expandAndZoomMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
+    $(document).on('click', '.mes_video_delete', deleteMessageVideo);
 
     $('#file_form_input').on('change', async () => {
         const fileInput = document.getElementById('file_form_input');

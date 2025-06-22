@@ -2505,16 +2505,11 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
 
     // Add video to message
     if (mes.extra?.video) {
-        const container = messageElement.find('.mes_block');
+        const container = $('#message_video_template .mes_video_container').clone();
+        messageElement.find('.mes_video_container').remove();
+        messageElement.find('.mes_block').append(container);
         const chatHeight = $('#chat').prop('scrollHeight');
-
-        // Create video element if it doesn't exist
-        let video = messageElement.find('.mes_video');
-        if (video.length === 0) {
-            video = $('<video class="mes_video" controls preload="metadata"></video>');
-            container.append(video);
-        }
-
+        const video = container.find('.mes_video');
         video.off('loadedmetadata').on('loadedmetadata', function () {
             if (!adjustScroll) {
                 return;
@@ -2527,7 +2522,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
 
         video.attr('src', mes.extra?.video);
     } else {
-        messageElement.find('.mes_video').remove();
+        messageElement.find('.mes_video_container').remove();
     }
 
     // Add file to message

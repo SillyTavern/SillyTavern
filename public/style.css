@@ -5033,8 +5033,9 @@ a:hover {
     display: none;
 }
 
-/* Message images */
-.mes .mes_img_container {
+/* Message images/video */
+.mes .mes_img_container,
+.mes .mes_video_container {
     max-width: 100%;
     /*to fit inside single window height of mobile landscape*/
     display: none;
@@ -5044,8 +5045,12 @@ a:hover {
     padding: 0.5rem;
 }
 
+.mes .mes_video_container:has(.mes_video[src]) {
+    display: flex;
+}
+
 .mes_img {
-    border-radius: 10px;
+    border-radius: 5px;
     max-width: 100%;
     max-height: 40vh;
     image-rendering: -webkit-optimize-contrast;
@@ -5059,7 +5064,8 @@ a:hover {
 }
 
 .mes_img_swipes,
-.mes_img_controls {
+.mes_img_controls,
+.mes_video_controls {
     position: absolute;
     top: 0.1em;
     left: 0;
@@ -5070,6 +5076,8 @@ a:hover {
     justify-content: space-between;
     align-items: center;
     padding: 1em;
+    z-index: 1;
+    transition: opacity var(--animation-duration) ease-in-out;
 }
 
 .mes_img_swipes {
@@ -5078,7 +5086,8 @@ a:hover {
 }
 
 .mes_img_swipes .right_menu_button,
-.mes_img_controls .right_menu_button {
+.mes_img_controls .right_menu_button,
+.mes_video_controls .right_menu_button {
     filter: brightness(90%);
     text-shadow: 1px 1px var(--SmartThemeShadowColor) !important;
     padding: 1px;
@@ -5087,23 +5096,29 @@ a:hover {
 }
 
 .mes_img_swipes .right_menu_button::before,
-.mes_img_controls .right_menu_button::before {
+.mes_img_controls .right_menu_button::before,
+.mes_video_controls .right_menu_button::before {
     /* Fix weird alignment with this font-awesome icons on focus */
     position: relative;
     top: 0.6125em;
 }
 
 .mes_img_swipes .right_menu_button:hover,
-.mes_img_controls .right_menu_button:hover {
+.mes_img_controls .right_menu_button:hover,
+.mes_video_controls .right_menu_button:hover {
     filter: brightness(150%);
 }
 
+/* It's better to show controls only when the video is not playing */
+/* but :playing pseudo-class is not supported in all browsers */
+/* .mes_video_container:focus-within .mes_video_controls:not(:has(.mes_video:playing)), */
 .mes_img_container:has(.mes_img.error) .mes_img_swipes,
 .mes_img_container:has(.mes_img.error) .mes_img_controls,
 .mes_img_container:hover .mes_img_swipes,
 .mes_img_container:focus-within .mes_img_swipes,
 .mes_img_container:hover .mes_img_controls,
-.mes_img_container:focus-within .mes_img_controls {
+.mes_img_container:focus-within .mes_img_controls,
+.mes_video_container:hover .mes_video_controls {
     opacity: 1;
 }
 
@@ -5203,9 +5218,8 @@ body:not(.sd) .mes_img_swipes {
 .mes_video {
     max-width: 100%;
     max-height: 400px;
-    border-radius: 8px;
+    border-radius: 5px;
     background: #000;
-    margin: 0.5rem;
 }
 
 /* Ensure video controls are visible */
