@@ -581,14 +581,17 @@ comfy.post('/generate', async (request, response) => {
                 .join('\n') || '';
             throw new Error(`ComfyUI generation did not succeed.\n\n${errorMessages}`.trim());
         }
-        const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+        const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
+        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
         const imgUrl = new URL(urlJoin(request.body.url, '/view'));
         imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
         const imgResponse = await fetch(imgUrl);
         if (!imgResponse.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
+        response.setHeader('X-File-Extension', format);
         return response.send(Buffer.from(imgBuffer).toString('base64'));
     } catch (error) {
         console.error('ComfyUI error:', error);
