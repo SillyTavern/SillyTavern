@@ -270,13 +270,14 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
  */
 
 /**
- * Parses an image buffer and applies crop if defined.
- * @param {Buffer} buffer Buffer of the image
+ * Applies avatar crop and resize operations to an image.
+ * I couldn't fix the type issue, so the first argument has {any} type.
+ * @param {object} jimp Jimp image instance
  * @param {Crop|undefined} [crop] Crop parameters
- * @returns {Promise<Buffer>} Image buffer
+ * @returns {Promise<Buffer>} Processed image buffer
  */
-async function parseImageBuffer(buffer, crop) {
-    const image = await Jimp.fromBuffer(buffer);
+export async function applyAvatarCropResize(jimp, crop) {
+    const image = /** @type {InstanceType<typeof import('../jimp.js').Jimp>} */ (jimp);
     let finalWidth = image.bitmap.width, finalHeight = image.bitmap.height;
 
     // Apply crop if defined
@@ -297,6 +298,17 @@ async function parseImageBuffer(buffer, crop) {
 }
 
 /**
+ * Parses an image buffer and applies crop if defined.
+ * @param {Buffer} buffer Buffer of the image
+ * @param {Crop|undefined} [crop] Crop parameters
+ * @returns {Promise<Buffer>} Image buffer
+ */
+async function parseImageBuffer(buffer, crop) {
+    const image = await Jimp.fromBuffer(buffer);
+    return await applyAvatarCropResize(image, crop);
+}
+
+/**
  * Reads an image file and applies crop if defined.
  * @param {string} imgPath Path to the image file
  * @param {Crop|undefined} crop Crop parameters
@@ -305,23 +317,7 @@ async function parseImageBuffer(buffer, crop) {
 async function tryReadImage(imgPath, crop) {
     try {
         const rawImg = await Jimp.read(imgPath);
-        let finalWidth = rawImg.bitmap.width, finalHeight = rawImg.bitmap.height;
-
-        // Apply crop if defined
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg.crop({ x: crop.x, y: crop.y, w: crop.width, h: crop.height });
-            // Apply standard resize if requested
-            if (crop.want_resize) {
-                finalWidth = AVATAR_WIDTH;
-                finalHeight = AVATAR_HEIGHT;
-            } else {
-                finalWidth = crop.width;
-                finalHeight = crop.height;
-            }
-        }
-
-        rawImg.cover({ w: finalWidth, h: finalHeight });
-        return await rawImg.getBuffer(JimpMime.png);
+        return await applyAvatarCropResize(rawImg, crop);
     }
     // If it's an unsupported type of image (APNG) - just read the file as buffer
     catch (error) {
