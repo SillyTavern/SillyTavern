@@ -43,10 +43,25 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const crop = tryParse(request.query.crop);
         const rawImg = await Jimp.read(pathToUpload);
 
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg.crop({ w: crop.width, h: crop.height, x: crop.x, y: crop.y });
-            rawImg.cover({ w: AVATAR_WIDTH, h: AVATAR_HEIGHT });  // Moved inside the crop block
+        let finalWidth = rawImg.bitmap.width;
+        let finalHeight = rawImg.bitmap.height;
+        
+        if (
+            typeof crop === 'object' &&
+            [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')
+        ) {
+            rawImg.crop({ x: crop.x, y: crop.y, w: crop.width, h: crop.height });
+            
+            if (crop.want_resize) {
+                finalWidth = AVATAR_WIDTH;
+                finalHeight = AVATAR_HEIGHT;
+            } else {
+                finalWidth = crop.width;
+                finalHeight = crop.height;
+            }
         }
+        rawImg.cover({ w: finalWidth, h: finalHeight });
+
 
         const image = await rawImg.getBuffer(JimpMime.png);
 
