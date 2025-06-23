@@ -46,7 +46,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg.crop({ w: crop.width, h: crop.height, x: crop.x, y: crop.y });
             rawImg.cover({ w: AVATAR_WIDTH, h: AVATAR_HEIGHT });  // Moved inside the crop block
-}
+        }
 
         const image = await rawImg.getBuffer(JimpMime.png);
 
