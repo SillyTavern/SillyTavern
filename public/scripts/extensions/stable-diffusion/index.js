@@ -339,7 +339,7 @@ const defaultSettings = {
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
-const isVideo = (format) => ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'].includes(format);
+const isVideo = (/** @type {string} */ format) => ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'].includes(String(format || '').trim().toLowerCase());
 
 /**
  * Generate interceptor for interactive mode triggers.
