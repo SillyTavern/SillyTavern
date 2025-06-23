@@ -64,9 +64,6 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
 
 const image = await rawImg.getBuffer(JimpMime.png);
 
-
-        const image = await rawImg.getBuffer(JimpMime.png);
-
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
