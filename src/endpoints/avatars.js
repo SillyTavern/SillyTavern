@@ -3,12 +3,12 @@ import fs from 'node:fs';
 
 import express from 'express';
 import sanitize from 'sanitize-filename';
-import { Jimp, JimpMime } from '../jimp.js';
+import { Jimp } from '../jimp.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { getImages, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { applyAvatarCropResize } from './characters.js';
 
 export const router = express.Router();
 
@@ -42,13 +42,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const pathToUpload = path.join(request.file.destination, request.file.filename);
         const crop = tryParse(request.query.crop);
         const rawImg = await Jimp.read(pathToUpload);
-
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg.crop({ w: crop.width, h: crop.height, x: crop.x, y: crop.y });
-        }
-
-        rawImg.cover({ w: AVATAR_WIDTH, h: AVATAR_HEIGHT });
-        const image = await rawImg.getBuffer(JimpMime.png);
+        const image = await applyAvatarCropResize(rawImg, crop);
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
