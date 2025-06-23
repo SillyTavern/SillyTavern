@@ -62,6 +62,8 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         }
         rawImg.cover({ w: finalWidth, h: finalHeight });
 
+const image = await rawImg.getBuffer(JimpMime.png);
+
 
         const image = await rawImg.getBuffer(JimpMime.png);
 
