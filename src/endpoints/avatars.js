@@ -45,13 +45,13 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
 
         let finalWidth = rawImg.bitmap.width;
         let finalHeight = rawImg.bitmap.height;
-        
+
         if (
             typeof crop === 'object' &&
             [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')
         ) {
             rawImg.crop({ x: crop.x, y: crop.y, w: crop.width, h: crop.height });
-            
+
             if (crop.want_resize) {
                 finalWidth = AVATAR_WIDTH;
                 finalHeight = AVATAR_HEIGHT;
