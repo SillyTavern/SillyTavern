@@ -51,7 +51,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout } from '../../constants.js';
+import { debounce_timeout, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -339,7 +339,7 @@ const defaultSettings = {
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
-const isVideo = (/** @type {string} */ format) => ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'].includes(String(format || '').trim().toLowerCase());
+const isVideo = (/** @type {string} */ format) => VIDEO_EXTENSIONS.includes(String(format || '').trim().toLowerCase());
 
 /**
  * Generate interceptor for interactive mode triggers.
