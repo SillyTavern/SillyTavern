@@ -50,6 +50,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         fs.unlinkSync(pathToUpload);
         return response.send({ path: filename });
     } catch (err) {
+        console.error('Error uploading user avatar:', err);
         return response.status(400).send('Is not a valid image');
     }
 });
