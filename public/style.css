@@ -5400,20 +5400,21 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     overflow-y: hidden;
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
-    display: none;
+    display: block;
+    visibility: hidden;
     position: absolute;
     top: var(--topBarBlockSize);
     left: 0;
     right: 0;
     margin: 0 auto;
-    height: 0;
+    height: auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     /* z-index: 1000 !important; */
-    transition-property: height, display;
+    clip-path: inset(0 0 100% 0);
+    transition-property: clip-path, visibility;
     transition-duration: var(--animation-duration-2x);
     transition-timing-function: ease-in-out;
-    transition-behavior: allow-discrete;
 }
 
 #movingDivs>.drawer-content {
@@ -5421,17 +5422,12 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
 }
 
 .drawer-content.openDrawer {
-    display: block;
-    height: auto;
-    height: calc-size(auto, size);
+    visibility: visible;
+    clip-path: inset(0 0 0 0);
     overflow-y: auto;
 
     @supports selector(::-webkit-scrollbar-thumb) {
         animation: hide-scroll var(--animation-duration-2x) backwards;
-    }
-
-    @starting-style {
-        height: 0;
     }
 }
 
@@ -5462,8 +5458,9 @@ body:not(.movingUI) .drawer-content.maximized {
     width: calc((100dvw - var(--sheldWidth) - 2px) /2);
     max-height: calc(100vh - var(--topBarBlockSize));
     max-height: calc(100dvh - var(--topBarBlockSize));
-    height: 0;
+    height: 100%;
     position: fixed;
+    display: flex;
     top: 0;
     margin: 0;
     box-shadow: none;
@@ -5485,12 +5482,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft.openDrawer,
 .fillRight.openDrawer {
-    display: flex;
-    height: 100%;
 
-    @starting-style {
-        height: 0;
-    }
 }
 
 /*
