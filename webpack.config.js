@@ -1,6 +1,7 @@
 import process from 'node:process';
 import path from 'node:path';
 import isDocker from 'is-docker';
+import webpack from 'webpack';
 import { serverDirectory } from './src/server-directory.js';
 
 /**
@@ -18,7 +19,7 @@ export default function getPublicLibConfig(forceDist = false) {
         }
 
         if (typeof globalThis.DATA_ROOT === 'string') {
-            return path.resolve(globalThis.DATA_ROOT, '_webpack', 'cache');
+            return path.resolve(globalThis.DATA_ROOT, '_webpack', webpack.version, 'cache');
         }
 
         throw new Error('DATA_ROOT variable is not set.');
@@ -30,7 +31,7 @@ export default function getPublicLibConfig(forceDist = false) {
         }
 
         if (typeof globalThis.DATA_ROOT === 'string') {
-            return path.resolve(globalThis.DATA_ROOT, '_webpack', 'output');
+            return path.resolve(globalThis.DATA_ROOT, '_webpack', webpack.version, 'output');
         }
 
         throw new Error('DATA_ROOT variable is not set.');
