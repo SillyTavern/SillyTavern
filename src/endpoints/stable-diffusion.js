@@ -595,8 +595,7 @@ comfy.post('/generate', async (request, response) => {
         }
         const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
-        response.setHeader('X-File-Extension', format);
-        return response.send(Buffer.from(imgBuffer).toString('base64'));
+        return response.send({ format: format, data: Buffer.from(imgBuffer).toString('base64') });
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);

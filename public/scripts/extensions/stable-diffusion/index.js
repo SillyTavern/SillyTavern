@@ -3525,8 +3525,8 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
         const text = await promptResult.text();
         throw new Error(text);
     }
-    const format = promptResult.headers.get('x-file-extension') || 'png';
-    return { format: format, data: await promptResult.text() };
+    const { format, data } = await promptResult.json();
+    return { format, data };
 }
 
 
