@@ -37,6 +37,10 @@ export const router = express.Router();
  */
 router.post('/upload', async (request, response) => {
     try {
+        if (!request.body) {
+            return response.status(400).send({ error: 'No data provided' });
+        }
+
         const { image, format } = request.body;
 
         if (!image) {
