@@ -43,6 +43,7 @@ import {
     extractTextFromOffice,
     download,
     getFileText,
+    getFileExtension,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -204,7 +205,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
         let base64Data = fileBase64.split(',')[1];
-        const extension = file.name.substring((file.name.lastIndexOf('.') + file.name.length) % file.name.length + 1);
+        const extension = getFileExtension(file);
 
         // If file is image
         if (file.type.startsWith('image/')) {
