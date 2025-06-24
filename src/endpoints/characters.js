@@ -277,7 +277,11 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
  * @returns {Promise<Buffer>} Processed image buffer
  */
 export async function applyAvatarCropResize(jimp, crop) {
-    const image = /** @type {InstanceType<typeof import('../jimp.js').Jimp>} */ (jimp);
+    if (!(jimp instanceof Jimp)) {
+        throw new TypeError('Expected a Jimp instance');
+    }
+
+    const image = /** @type {InstanceType<typeof Jimp>} */ (jimp);
     let finalWidth = image.bitmap.width, finalHeight = image.bitmap.height;
 
     // Apply crop if defined
