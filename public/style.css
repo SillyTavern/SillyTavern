@@ -5400,8 +5400,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     overflow-y: hidden;
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
-    display: block;
-    visibility: hidden;
+    display: none;
     position: absolute;
     top: var(--topBarBlockSize);
     left: 0;
@@ -5412,9 +5411,10 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     /* z-index: 1000 !important; */
     clip-path: inset(0 0 100% 0);
-    transition-property: clip-path, visibility;
+    transition-property: clip-path, display;
     transition-duration: var(--animation-duration-2x);
     transition-timing-function: ease-in-out;
+    transition-behavior: allow-discrete;
 }
 
 #movingDivs>.drawer-content {
@@ -5422,12 +5422,16 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
 }
 
 .drawer-content.openDrawer {
-    visibility: visible;
-    clip-path: inset(0 0 0 0);
+    display: block;
     overflow-y: auto;
+    clip-path: inset(0 0 0 0);
 
     @supports selector(::-webkit-scrollbar-thumb) {
         animation: hide-scroll var(--animation-duration-2x) backwards;
+    }
+
+    @starting-style {
+        clip-path: inset(0 0 100% 0);
     }
 }
 
@@ -5460,7 +5464,6 @@ body:not(.movingUI) .drawer-content.maximized {
     max-height: calc(100dvh - var(--topBarBlockSize));
     height: 100%;
     position: fixed;
-    display: flex;
     top: 0;
     margin: 0;
     box-shadow: none;
@@ -5482,7 +5485,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft.openDrawer,
 .fillRight.openDrawer {
-
+    display: flex;
 }
 
 /*
