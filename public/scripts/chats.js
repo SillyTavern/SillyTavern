@@ -214,7 +214,11 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         }
         // If file is video
         else if (file.type.startsWith('video/')) {
-            const extension = file.type.split('/')[1];
+            let extension = file.type.split('/')[1];
+            // Special handling for MKV files, as the server expects 'mkv' not 'x-matroska'.
+            if (extension === 'x-matroska') {
+                extension = 'mkv';
+            }
             const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.video = videoUrl;
         } else {
