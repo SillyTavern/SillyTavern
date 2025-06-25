@@ -377,6 +377,7 @@ function migrateSettings() {
 
         if (!Array.isArray(script.placement)) {
             script.placement = [];
+            performSave = true;
         }
 
         if (script.placement.includes(regex_placement.MD_DISPLAY)) {
