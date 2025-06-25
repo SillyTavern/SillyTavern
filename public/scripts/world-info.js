@@ -1915,7 +1915,7 @@ function addMissingWorldInfoFields(data) {
 
         // Ensure that the key is always an array
         if (!Array.isArray(entry.key)) {
-            entry.key = [entry.key];
+            entry.key = [];
         }
 
         // Ensure that the keysecondary is always an array
