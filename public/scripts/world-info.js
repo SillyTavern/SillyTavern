@@ -2169,9 +2169,9 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         }).filter(entry => entry !== null);
 
         // Apply the filter and do the chosen sorting
+        entriesArray = addMissingWorldInfoFields(entriesArray);
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
         entriesArray = sortWorldInfoEntries(entriesArray);
-        entriesArray = addMissingWorldInfoFields(entriesArray);
 
         // Cache keys
         const keys = entriesArray.flatMap(entry => [...entry.key, ...entry.keysecondary]);
