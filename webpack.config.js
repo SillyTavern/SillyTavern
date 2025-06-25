@@ -15,7 +15,7 @@ import { serverDirectory } from './src/server-directory.js';
 export default function getPublicLibConfig(forceDist = false) {
     function getCacheDirectory() {
         if (forceDist || isDocker()) {
-            return path.resolve(process.cwd(), 'dist/webpack');
+            return path.resolve(process.cwd(), 'dist', '_webpack', webpack.version, 'cache');
         }
 
         if (typeof globalThis.DATA_ROOT === 'string') {
@@ -27,7 +27,7 @@ export default function getPublicLibConfig(forceDist = false) {
 
     function getOutputDirectory() {
         if (forceDist || isDocker()) {
-            return path.resolve(process.cwd(), 'dist');
+            return path.resolve(process.cwd(), 'dist', '_webpack', webpack.version, 'output');
         }
 
         if (typeof globalThis.DATA_ROOT === 'string') {
