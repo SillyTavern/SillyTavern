@@ -422,6 +422,7 @@ export const MEDIA_EXTENSIONS = [
     'jpg',
     'webp',
     'jpeg',
+    'jfif',
     'gif',
     'mp4',
     'avi',
