@@ -144,7 +144,7 @@ export async function loadTogetherAIModels(data) {
     $('#model_togetherai_select').empty();
     for (const model of data) {
         // Hey buddy, I think you've got the wrong door.
-        if (model.display_type === 'image') {
+        if (model.type === 'image') {
             continue;
         }
 
