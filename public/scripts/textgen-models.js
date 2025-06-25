@@ -267,7 +267,7 @@ export async function loadOpenRouterModels(data) {
     for (const model of data) {
         const option = document.createElement('option');
         option.value = model.id;
-        option.text = model.id;
+        option.text = model.name;
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }
