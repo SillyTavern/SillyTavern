@@ -440,7 +440,7 @@ comfy.post('/models', async (request, response) => {
         models.forEach(it => it.text = it.text.replace(/\.[^.]*$/, '').replace(/_/g, ' '));
 
         return response.send(models);
-    } catch (error)     {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -581,15 +581,21 @@ comfy.post('/generate', async (request, response) => {
                 .join('\n') || '';
             throw new Error(`ComfyUI generation did not succeed.\n\n${errorMessages}`.trim());
         }
-        const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+        const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
+        console.debug('ComfyUI outputs:', outputs);
+        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
+        if (!imgInfo) {
+            throw new Error('ComfyUI did not return any recognizable outputs.');
+        }
         const imgUrl = new URL(urlJoin(request.body.url, '/view'));
         imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
         const imgResponse = await fetch(imgUrl);
         if (!imgResponse.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
-        return response.send(Buffer.from(imgBuffer).toString('base64'));
+        return response.send({ format: format, data: Buffer.from(imgBuffer).toString('base64') });
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);
