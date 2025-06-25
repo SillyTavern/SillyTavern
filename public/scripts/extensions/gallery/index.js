@@ -8,7 +8,7 @@ import {
     animation_easing,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
-import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename } from '../../utils.js';
+import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename, saveBase64AsFile, getFileExtension } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -341,27 +341,12 @@ async function showCharGallery(deleteModeState = false) {
 async function uploadFile(file, url) {
     try {
         // Convert the file to a base64 string
-        const base64Data = await getBase64Async(file);
+        const fileBase64 = await getBase64Async(file);
+        const base64Data = fileBase64.split(',')[1];
+        const extension = getFileExtension(file);
+        const path = await saveBase64AsFile(base64Data, url, '', extension);
 
-        // Create the payload
-        const payload = {
-            image: base64Data,
-            ch_name: url,
-        };
-
-        const response = await fetch('/api/images/upload', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        toastr.success(t`File uploaded successfully. Saved at: ${result.path}`);
+        toastr.success(t`File uploaded successfully. Saved at: ${path}`);
     } catch (error) {
         console.error('There was an issue uploading the file:', error);
 

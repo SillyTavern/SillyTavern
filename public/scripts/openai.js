@@ -2949,13 +2949,15 @@ class Message {
             chat_completion_sources.MISTRALAI,
             chat_completion_sources.VERTEXAI,
         ];
-        if (compressImageSources.includes(oai_settings.chat_completion_source)) {
-            const sizeThreshold = 2 * 1024 * 1024;
-            const dataSize = image.length * 0.75;
-            const maxSide = 1024;
-            if (dataSize > sizeThreshold) {
-                image = await createThumbnail(image, maxSide);
-            }
+        const sizeThreshold = 2 * 1024 * 1024;
+        const dataSize = image.length * 0.75;
+        const safeMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const mimeType = image?.split(';')?.[0]?.split(':')?.[1];
+        if (compressImageSources.includes(oai_settings.chat_completion_source) && dataSize > sizeThreshold) {
+            const maxSide = 2048;
+            image = await createThumbnail(image, maxSide, maxSide);
+        } else if (!safeMimeTypes.includes(mimeType)) {
+            image = await createThumbnail(image, null, null);
         }
         return image;
     }
