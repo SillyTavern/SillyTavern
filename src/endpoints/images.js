@@ -6,6 +6,7 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 
 import { clientRelativePath, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
+import { MEDIA_EXTENSIONS } from '../constants.js';
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -47,7 +48,7 @@ router.post('/upload', async (request, response) => {
             return response.status(400).send({ error: 'No image data provided' });
         }
 
-        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'].includes(format);
+        const validFormat = MEDIA_EXTENSIONS.includes(format);
         if (!validFormat) {
             return response.status(400).send({ error: 'Invalid image format' });
         }

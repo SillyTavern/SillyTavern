@@ -27,4 +27,4 @@ export const IGNORE_SYMBOL = Symbol.for('ignore');
  * Common video file extensions. Should be the same as supported by Gemini.
  * https://ai.google.dev/gemini-api/docs/video-understanding#supported-formats
  */
-export const VIDEO_EXTENSIONS = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv'];
+export const VIDEO_EXTENSIONS = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv', 'mpg'];

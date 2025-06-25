@@ -412,3 +412,24 @@ export const LOG_LEVELS = {
     WARN: 2,
     ERROR: 3,
 };
+
+/**
+ * An array of supported media file extensions.
+ * This is used to validate file uploads and ensure that only supported media types are processed.
+ */
+export const MEDIA_EXTENSIONS = [
+    'png',
+    'jpg',
+    'webp',
+    'jpeg',
+    'gif',
+    'mp4',
+    'avi',
+    'mov',
+    'wmv',
+    'flv',
+    'webm',
+    '3gp',
+    'mkv',
+    'mpg',
+];
