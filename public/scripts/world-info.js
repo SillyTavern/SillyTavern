@@ -1899,6 +1899,44 @@ function getWIElement(name) {
 }
 
 /**
+ * Adds missing fields to WI entries that are present in the entry template, but not in the data.
+ * Additionally verify that array/object fields are of the expected type.
+ * @param {any[]} data WI entries
+ * @returns {any[]} Data with backfilled fields
+ */
+function addMissingWorldInfoFields(data) {
+    data.forEach((entry) => {
+        // Add missing fields from the template
+        Object.entries(newWorldInfoEntryTemplate).forEach(([key, value]) => {
+            if (!Object.hasOwn(entry, key)) {
+                entry[key] = structuredClone(value);
+            }
+        });
+
+        // Ensure that the key is always an array
+        if (!Array.isArray(entry.key)) {
+            entry.key = [entry.key];
+        }
+
+        // Ensure that the keysecondary is always an array
+        if (!Array.isArray(entry.keysecondary)) {
+            entry.keysecondary = [];
+        }
+
+        // Ensure that the characterFilter is an object with the expected structure
+        if (!entry.characterFilter || typeof entry.characterFilter !== 'object') {
+            entry.characterFilter = {
+                isExclude: false,
+                names: [],
+                tags: [],
+            };
+        }
+    });
+
+    return data;
+}
+
+/**
  * Sorts the given data based on the selected sort option
  *
  * @param {any[]} data WI entries
@@ -2123,13 +2161,17 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         // Convert the data.entries object into an array
         let entriesArray = Object.keys(data.entries).map(uid => {
             const entry = data.entries[uid];
+            if (!entry || typeof entry !== 'object') {
+                return null;
+            }
             entry.displayIndex = entry.displayIndex ?? entry.uid;
             return entry;
-        });
+        }).filter(entry => entry !== null);
 
         // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
         entriesArray = sortWorldInfoEntries(entriesArray);
+        entriesArray = addMissingWorldInfoFields(entriesArray);
 
         // Cache keys
         const keys = entriesArray.flatMap(entry => [...entry.key, ...entry.keysecondary]);
