@@ -247,6 +247,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
 
     } catch (error) {
         console.error('Could not upload file', error);
+        toastr.error(t`Either the file is corrupted or its format is not supported.`, t`Could not upload the file`);
     } finally {
         $('#file_form').trigger('reset');
     }
