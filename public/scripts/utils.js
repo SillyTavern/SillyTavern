@@ -1449,7 +1449,7 @@ export async function saveBase64AsFile(base64Data, subFolder, fileName, extensio
  * @returns {string} The file extension of the given file
  */
 export function getFileExtension(file) {
-    return file.name.substring((file.name.lastIndexOf('.') + file.name.length) % file.name.length + 1);
+    return file.name.substring((file.name.lastIndexOf('.') + file.name.length) % file.name.length + 1).toLowerCase().trim();
 }
 
 /**
