@@ -1,4 +1,5 @@
 import { getRequestHeaders } from '../script.js';
+import { VIDEO_EXTENSIONS } from './constants.js';
 import { t } from './i18n.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { renderTemplateAsync } from './templates.js';
@@ -350,7 +351,7 @@ class DataMaidDialog {
      * @private
      */
     async getViewElement(url, name) {
-        const isVideo = /\.(mp4|webm|ogg|avi|mov|3gp|flv|mkv|wmv)$/i.test(name);
+        const isVideo = VIDEO_EXTENSIONS.includes(name.split('.').pop());
         const mediaElement = document.createElement(isVideo ? 'video' : 'img');
         if (mediaElement instanceof HTMLVideoElement) {
             mediaElement.controls = true;
