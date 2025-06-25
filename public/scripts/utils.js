@@ -1558,10 +1558,16 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
                 maxHeight = img.height;
             }
 
-            if (img.width > img.height) {
-                thumbnailHeight = maxWidth / aspectRatio;
+            // Do not upscale if image is already smaller than max dimensions
+            if (img.width <= maxWidth && img.height <= maxHeight) {
+                thumbnailWidth = img.width;
+                thumbnailHeight = img.height;
             } else {
-                thumbnailWidth = maxHeight * aspectRatio;
+                if (img.width > img.height) {
+                    thumbnailHeight = maxWidth / aspectRatio;
+                } else {
+                    thumbnailWidth = maxHeight * aspectRatio;
+                }
             }
 
             // Set the canvas dimensions and draw the resized image
