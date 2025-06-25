@@ -418,6 +418,7 @@ export const LOG_LEVELS = {
  * This is used to validate file uploads and ensure that only supported media types are processed.
  */
 export const MEDIA_EXTENSIONS = [
+    'bmp',
     'png',
     'jpg',
     'webp',
