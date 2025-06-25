@@ -1146,7 +1146,7 @@ function registerWorldInfoSlashCommands() {
 
         // handle special cases, otherwise execute default logic
         let fieldValue;
-        switch (field){
+        switch (field) {
             case 'characterFilterNames':
                 if (entry.characterFilter) {
                     fieldValue = entry.characterFilter.names;
@@ -1261,7 +1261,7 @@ function registerWorldInfoSlashCommands() {
         // handle special cases, otherwise execute default logic
         let tagNames;
         let charNames;
-        switch (field){
+        switch (field) {
             case 'characterFilterNames':
                 createCharacterFilterFieldObjectIfNeeded(entry);
                 charNames = parseStringArray(value);
@@ -3608,7 +3608,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * Use `newEntryTemplate` if you just need the template that contains default values
  *
- * @type {{[key: string]: { default: any, type: string }}}
+ * @type {{[key: string]: { default: any, type: string, excludeFromTemplate?: boolean }}}
  */
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
@@ -3647,13 +3647,13 @@ export const newWorldInfoEntryDefinition = {
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
     delay: { default: null, type: 'number?' },
-    characterFilterNames: { default: [], type: 'array' },
-    characterFilterTags: { default: [], type: 'array' },
-    characterFilterExclude: { default: false, type: 'boolean' },
+    characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true },
+    characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true },
+    characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true },
 };
 
 export const newWorldInfoEntryTemplate = Object.fromEntries(
-    Object.entries(newWorldInfoEntryDefinition).map(([key, value]) => [key, value.default]),
+    Object.entries(newWorldInfoEntryDefinition).filter(([_, value]) => !value.excludeFromTemplate).map(([key, value]) => [key, value.default]),
 );
 
 /**
