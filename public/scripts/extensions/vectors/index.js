@@ -22,7 +22,7 @@ import {
     openThirdPartyExtensionMenu,
 } from '../../extensions.js';
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
@@ -33,7 +33,6 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
-import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
 import { removeReasoningFromString } from '../../reasoning.js';
@@ -1494,32 +1493,6 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
-    $('#api_key_nomicai').on('click', async () => {
-        const popupText = 'NomicAI API Key:';
-        const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
-            customButtons: [{
-                text: 'Remove Key',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(SECRET_KEYS.NOMICAI, '');
-                    toastr.success('API Key removed');
-                    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
-                    saveSettingsDebounced();
-                },
-            }],
-        });
-
-        if (!key) {
-            return;
-        }
-
-        await writeSecret(SECRET_KEYS.NOMICAI, String(key));
-        $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
-
-        toastr.success('API Key saved');
-        saveSettingsDebounced();
-    });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
@@ -1777,6 +1750,12 @@ jQuery(async () => {
     });
 
     $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+        eventSource.on(event, (/** @type {string} */ key)=> {
+            if (key !== SECRET_KEYS.NOMICAI) return;
+            $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+        });
+    });
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

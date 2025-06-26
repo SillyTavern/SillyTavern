@@ -768,7 +768,7 @@ jQuery(async () => {
             return;
         }
 
-        await writeSecret(extension_settings.translate.provider, key);
+        await writeSecret(extension_settings.translate.provider, String(key));
         toastr.success('API Key saved');
         $('#translate_key_button').addClass('success');
     });
@@ -802,7 +802,7 @@ jQuery(async () => {
             return;
         }
 
-        await writeSecret(secretKey, url);
+        await writeSecret(secretKey, String(url));
 
         toastr.success('API URL saved');
         $('#translate_url_button').addClass('success');
