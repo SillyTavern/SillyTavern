@@ -46,6 +46,12 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const rawImg = await Jimp.read(pathToUpload);
         const image = await applyAvatarCropResize(rawImg, crop);
 
+        // Remove previous thumbnail and bust cache if overwriting
+        if (request.body.overwrite_name) {
+            invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.overwrite_name));
+            response.setHeader('Clear-Site-Data', '"cache"');
+        }
+
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
