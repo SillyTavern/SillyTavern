@@ -251,34 +251,3 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     flex-wrap: wrap;
     row-gap: 5px;
 }
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__choice {
-    margin-top: 0px;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search__field {
-    /* Min height to reserve spacing */
-    min-height: calc(var(--mainFontSize) + 13px);
-    /* Min width to be clickable */
-    min-width: 4em;
-    align-content: center;
-    /* Fix search textarea alignment issue with UL elements */
-    margin-top: 0px;
-    height: unset;
-    /* Prevent height from jumping around when input is focused */
-    line-height: 1;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
-    /* Min height to reserve spacing */
-    min-height: calc(var(--mainFontSize) + 13px);
-}
-
-/* Make search bar invisible unless the select2 is active, to save space */
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
-    height: 1px;
-}
-
-.select2_multi_sameline+span.select2-container.select2-container--focus .select2-selection--multiple .select2-search--inline {
-    height: unset;
-}
