@@ -39,8 +39,8 @@
 
 .select2-container .select2-selection--single .select2-selection__rendered {
     color: var(--SmartThemeBodyColor);
-    line-height: revert;
-    padding-left: unset;
+    line-height: 24px;
+    padding-left: 5px;
 }
 
 .select2-container .select2-results>.select2-results__options {
