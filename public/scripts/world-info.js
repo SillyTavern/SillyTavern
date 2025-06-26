@@ -1924,7 +1924,7 @@ function addMissingWorldInfoFields(data) {
         }
 
         // Ensure that the characterFilter is an object with the expected structure
-        if (!entry.characterFilter || typeof entry.characterFilter !== 'object') {
+        if (!entry.characterFilter || typeof entry.characterFilter !== 'object' || Array.isArray(entry.characterFilter)) {
             entry.characterFilter = {
                 isExclude: false,
                 names: [],
