@@ -37,6 +37,7 @@ import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from '
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { isFirefox } from './browser-fixes.js';
 
 /**
  * @typedef {object} PersonaConnection A connection between a character and a character or group entity
@@ -188,7 +189,7 @@ function getUserAvatarBlock(avatarId) {
     template.attr('data-avatar-id', avatarId);
     template.find('.avatar').attr('data-avatar-id', avatarId).attr('title', avatarId);
     template.toggleClass('default_persona', avatarId === power_user.default_persona);
-    const avatarUrl = getThumbnailUrl('persona', avatarId);
+    const avatarUrl = getThumbnailUrl('persona', avatarId, isFirefox());
     template.find('img').attr('src', avatarUrl);
 
     // Make sure description block has at least three rows. Otherwise height looks inconsistent. I don't have a better idea for this.
