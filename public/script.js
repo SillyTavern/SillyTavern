@@ -1324,9 +1324,10 @@ async function getStatusTextgen() {
         supportsTokenization ? sessionStorage.setItem(TOKENIZER_SUPPORTED_KEY, 'true') : sessionStorage.removeItem(TOKENIZER_SUPPORTED_KEY);
 
         const wantsInstructDerivation = !autoSelected && (power_user.instruct.enabled && power_user.instruct_derived);
-        const wantsContextDerivation = power_user.context_derived;
+        const wantsContextDerivation = !autoSelected && power_user.context_derived;
         const wantsContextSize = power_user.context_size_derived;
         const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(textgen_settings.type);
+
         if (supportsChatTemplate && (wantsInstructDerivation || wantsContextDerivation || wantsContextSize)) {
             const response = await fetch('/api/backends/text-completions/props', {
                 method: 'POST',
@@ -1355,22 +1356,12 @@ async function getStatusTextgen() {
                         }
                     }
                     console.log(`We have chat template ${chat_template.split('\n')[0]}...`);
-                    let { context, instruct } = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
-                    if (wantsContextDerivation) {
-                        if (chat_template_hash in power_user.context_derive_mappings) {
-                            context = power_user.context_derive_mappings[chat_template_hash];
-                        }
-                        if (context) {
-                            selectContextPreset(context, { isAuto: true });
-                        }
+                    const { context, instruct } = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
+                    if (wantsContextDerivation && context) {
+                        selectContextPreset(context, { isAuto: true });
                     }
-                    if (wantsInstructDerivation) {
-                        if (power_user.instruct_derive_mappings && chat_template_hash in power_user.instruct_derive_mappings) {
-                            instruct = power_user.instruct_derive_mappings[chat_template_hash];
-                        }
-                        if (instruct) {
-                            selectInstructPreset(instruct, { isAuto: true });
-                        }
+                    if (wantsInstructDerivation && power_user.instruct.enabled && instruct) {
+                        selectInstructPreset(instruct, { isAuto: true });
                     }
                 }
             }
