@@ -124,7 +124,7 @@ function reloadUserAvatar(force = false) {
         }
 
         if ($(this).attr('is_user') == 'true' && $(this).attr('force_avatar') == 'false') {
-            avatarImg.attr('src', getUserAvatar(user_avatar));
+            avatarImg.attr('src', getThumbnailUrl('persona', user_avatar));
         }
     });
 }
@@ -179,7 +179,6 @@ function verifyPersonaSearchSortRule() {
  * @returns {JQuery<HTMLElement>} Avatar block
  */
 function getUserAvatarBlock(avatarId) {
-    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
     const template = $('#user_avatar_template .avatar-container').clone();
     const personaName = power_user.personas[avatarId];
     const personaDescription = power_user.persona_descriptions[avatarId]?.description;
@@ -189,10 +188,7 @@ function getUserAvatarBlock(avatarId) {
     template.attr('data-avatar-id', avatarId);
     template.find('.avatar').attr('data-avatar-id', avatarId).attr('title', avatarId);
     template.toggleClass('default_persona', avatarId === power_user.default_persona);
-    let avatarUrl = getUserAvatar(avatarId);
-    if (isFirefox) {
-        avatarUrl += '?t=' + Date.now();
-    }
+    const avatarUrl = getThumbnailUrl('persona', avatarId);
     template.find('img').attr('src', avatarUrl);
 
     // Make sure description block has at least three rows. Otherwise height looks inconsistent. I don't have a better idea for this.
@@ -386,6 +382,7 @@ async function changeUserAvatar(e) {
         const name = formData.get('overwrite_name');
         if (name) {
             await fetch(getUserAvatar(String(name)), { cache: 'no-cache' });
+            await fetch(getThumbnailUrl('persona', String(name)), { cache: 'no-cache' });
             reloadUserAvatar(true);
         }
 
@@ -1657,7 +1654,7 @@ async function syncUserNameToPersona() {
     for (const mes of chat) {
         if (mes.is_user) {
             mes.name = name1;
-            mes.force_avatar = getUserAvatar(user_avatar);
+            mes.force_avatar = getThumbnailUrl('persona', user_avatar);
         }
     }
 

@@ -45,6 +45,10 @@ class DataMaidDialog {
                 name: t`Background Thumbnails`,
                 description: t`Thumbnails for missing or deleted backgrounds.`,
             },
+            personaThumbnails: {
+                name: t`Persona Thumbnails`,
+                description: t`Thumbnails for missing or deleted personas.`,
+            },
             chatBackups: {
                 name: t`Chat Backups`,
                 description: t`Automatically generated chat backups.`,
