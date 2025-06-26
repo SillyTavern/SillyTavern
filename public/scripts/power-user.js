@@ -3276,9 +3276,15 @@ $(document).ready(() => {
     });
 
     $('#bind_model_presets').on('input', function () {
+        if (online_status === "no_connection") {
+            return;
+        }
+
         const chat_template_hash = power_user.chat_template_hash;
 
-        const bind_model_preset = power_user.model_preset_mappings[online_status] ?? power_user.model_preset_mappings[chat_template_hash] ?? {};
+        const bind_model_preset = power_user.model_preset_mappings[online_status]
+            ?? power_user.model_preset_mappings[chat_template_hash]
+            ?? {};
         const bindings_match = bind_model_preset && power_user.context.preset == bind_model_preset['context'] && (!power_user.instruct.enable || power_user.instruct.preset === bind_model_preset['instruct']);
 
         const value = !bindings_match;
@@ -3311,6 +3317,7 @@ $(document).ready(() => {
             if (bound.length == 0) {
                 toastr.warning('No applicable presets available.')
             } else {
+                toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`)
                 power_user.model_preset_mappings[online_status] = bind_model_preset;
                 if (chat_template_hash !== '') {
                     power_user.model_preset_mappings[chat_template_hash] = bind_model_preset;
@@ -3320,8 +3327,9 @@ $(document).ready(() => {
             // unmap current preset
             delete power_user.model_preset_mappings[chat_template_hash];
             delete power_user.model_preset_mappings[online_status];
-            toastr.info('Context preset for current model will use defaults when loaded the next time.');
+            toastr.info(`Context preset for ${online_status} will use defaults when loaded the next time.`);
         }
+
         saveSettingsDebounced();
     });
 
