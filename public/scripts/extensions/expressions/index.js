@@ -1331,7 +1331,7 @@ async function renderFallbackExpressionPicker() {
     defaultPicker.empty();
 
 
-    addOption(OPTION_NO_FALLBACK, '[ No fallback ]', !extension_settings.expressions.fallback_expression);
+    addOption(OPTION_NO_FALLBACK, '[ No fallback ]', !extension_settings.expressions.fallback_expression && !extension_settings.expressions.showDefault);
     addOption(OPTION_EMOJI_FALLBACK, '[ Default emojis ]', !!extension_settings.expressions.showDefault);
 
     for (const expression of expressions) {
@@ -2116,7 +2116,7 @@ function migrateSettings() {
         saveSettingsDebounced();
     }
 
-    if (extension_settings.expressions.showDefault && extension_settings.expressions.fallback_expression !== undefined) {
+    if (extension_settings.expressions.showDefault && extension_settings.expressions.fallback_expression) {
         extension_settings.expressions.showDefault = false;
         saveSettingsDebounced();
     }
