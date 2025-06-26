@@ -2163,7 +2163,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         // Convert the data.entries object into an array
         let entriesArray = Object.keys(data.entries).map(uid => {
             const entry = data.entries[uid];
-            if (!entry || typeof entry !== 'object') {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
                 return null;
             }
             entry.displayIndex = entry.displayIndex ?? entry.uid;
