@@ -127,7 +127,6 @@ const INPUT_MAP = {
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
     [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
-    [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
     [SECRET_KEYS.KOBOLDCPP]: '#api_key_koboldcpp',
     [SECRET_KEYS.LLAMACPP]: '#api_key_llamacpp',
     [SECRET_KEYS.COHERE]: '#api_key_cohere',
