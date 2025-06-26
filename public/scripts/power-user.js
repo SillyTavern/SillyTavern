@@ -3281,7 +3281,7 @@ $(document).ready(() => {
     });
 
     $('#bind_model_presets').on('input', function () {
-        if (online_status === "no_connection") {
+        if (online_status === 'no_connection') {
             return;
         }
 
@@ -3320,9 +3320,9 @@ $(document).ready(() => {
                 }
             }
             if (bound.length == 0) {
-                toastr.warning('No applicable presets available.')
+                toastr.warning('No applicable presets available.');
             } else {
-                toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`)
+                toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`);
                 power_user.model_preset_mappings[online_status] = bind_model_preset;
                 if (chat_template_hash !== '') {
                     power_user.model_preset_mappings[chat_template_hash] = bind_model_preset;

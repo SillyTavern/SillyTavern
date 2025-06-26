@@ -173,7 +173,7 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
 
-    updateBindModelPresetState()
+    updateBindModelPresetState();
 
     saveSettingsDebounced();
 }
@@ -205,7 +205,7 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         !quiet && toastr.info('Instruct Mode enabled');
     }
 
-    updateBindModelPresetState()
+    updateBindModelPresetState();
 
     saveSettingsDebounced();
 }
@@ -817,7 +817,7 @@ jQuery(() => {
             selectMatchingContextTemplate(name);
         }
 
-        updateBindModelPresetState()
+        updateBindModelPresetState();
     });
 
     if (!CSS.supports('field-sizing', 'content')) {
