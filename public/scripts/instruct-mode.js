@@ -1,6 +1,6 @@
 'use strict';
 
-import { name1, name2, saveSettingsDebounced, substituteParams } from '../script.js';
+import { name1, name2, online_status, saveSettingsDebounced, substituteParams } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { parseExampleIntoIndividual } from './openai.js';
 import {
@@ -141,6 +141,19 @@ export async function loadInstructMode(data) {
 }
 
 /**
+ * Updates the bind model preset state based on the current model, instruct and context preset.
+ */
+export function updateBindModelPresetState() {
+    const bind_model_preset = power_user.model_preset_mappings[online_status] ?? power_user.model_preset_mappings[power_user.chat_template_hash];
+    const bindings_match = (bind_model_preset && power_user.context.preset == bind_model_preset['context'] && (!power_user.instruct.enable || power_user.instruct.preset === bind_model_preset['instruct'])) ?? false;
+    const current = $('#bind_model_presets').prop('checked');
+    if (bindings_match === current) {
+        return; // No change needed
+    }
+    $('#bind_model_presets').prop('checked', bindings_match);
+}
+
+/**
  * Select context template if not already selected.
  * @param {string} preset Preset name.
  * @param {object} [options={}] Optional arguments.
@@ -160,10 +173,7 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
 
-    $('#context_derived_map').val(
-        power_user.chat_template_hash in power_user.context_derive_mappings &&
-        preset == power_user.context_derive_mappings[power_user.chat_template_hash],
-    ).trigger('change');
+    updateBindModelPresetState()
 
     saveSettingsDebounced();
 }
@@ -195,11 +205,7 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         !quiet && toastr.info('Instruct Mode enabled');
     }
 
-    $('#instruct_derived_map').val(
-        power_user.instruct_derive_mappings &&
-        power_user.chat_template_hash in power_user.instruct_derive_mappings &&
-        preset == power_user.instruct_derive_mappings[power_user.chat_template_hash],
-    ).trigger('change');
+    updateBindModelPresetState()
 
     saveSettingsDebounced();
 }
@@ -211,6 +217,19 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
  * @returns {boolean} True if instruct preset was activated by model id, false otherwise.
  */
 export function autoSelectInstructPreset(modelId) {
+    const model_preset_map = power_user.model_preset_mappings[modelId];
+
+    if (model_preset_map) {
+        const { instruct, context } = model_preset_map;
+        if (instruct) {
+            selectInstructPreset(instruct, { isAuto: true });
+        }
+        if (context) {
+            selectContextPreset(context, { isAuto: true });
+        }
+        return true;
+    }
+
     // If instruct mode is disabled, don't do anything
     if (!power_user.instruct.enabled) {
         return false;
@@ -760,45 +779,6 @@ jQuery(() => {
         $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     });
 
-    $('#instruct_derived_map').on('input', function () {
-        const chat_template_hash = power_user.chat_template_hash;
-        if (!power_user.instruct_derive_mappings) {
-            power_user.instruct_derive_mappings = {};
-        }
-
-        const value = !(chat_template_hash in power_user.instruct_derive_mappings && power_user.instruct_derive_mappings[chat_template_hash] === power_user.instruct.preset);
-
-        if (chat_template_hash == '') {
-            toastr.error('Error: No model loaded');
-            return;
-        }
-        if (value) {
-            if (power_user.instruct_derived) {
-                toastr.info(`Bound ${power_user.instruct.preset} preset to currently loaded model and all models that share its chat template.`);
-            } else {
-                toastr.warning('Note: Instruct derivation is disabled. This will have no effect until it is turned on.');
-            }
-
-            // map current preset to current chat template hash
-            power_user.instruct_derive_mappings[chat_template_hash] = power_user.instruct.preset;
-        } else {
-            // unmap current preset (i.e. restore default) for current chat template hash
-            delete power_user.instruct_derive_mappings[chat_template_hash];
-            toastr.info('Instruct preset for current model will use defaults when loaded the next time.');
-        }
-        $('#instruct_derived_map').parent().find('i').toggleClass('toggleEnabled', value);
-        saveSettingsDebounced();
-    });
-
-    $('#instruct_derived_map').on('change', function () {
-        const chat_template_hash = power_user.chat_template_hash;
-        const enabled = chat_template_hash in power_user.instruct_derive_mappings && power_user.instruct_derive_mappings[chat_template_hash] == power_user.instruct.preset;
-        const i = $('#instruct_derived_map').parent().find('i');
-        i.toggleClass('toggleEnabled', enabled);
-        i.toggleClass('fa-lock', enabled);
-        i.toggleClass('fa-unlock', !enabled);
-    });
-
     $('#instruct_bind_to_context').on('change', function () {
         $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
     });
@@ -837,7 +817,7 @@ jQuery(() => {
             selectMatchingContextTemplate(name);
         }
 
-        $('#instruct_derived_map').val(power_user.chat_template_hash in power_user.instruct_derive_mappings && preset == power_user.instruct_derive_mappings[power_user.chat_template_hash]).trigger('change');
+        updateBindModelPresetState()
     });
 
     if (!CSS.supports('field-sizing', 'content')) {
