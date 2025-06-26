@@ -65,7 +65,6 @@
     font-family: var(--mainFontFamily);
     padding: 3px 5px;
     display: unset;  /* override the ST textarea display style */
-    line-height: 1.4;  /* get placeholder text to the center */
     border-radius: 0;  /* border radius was interfering with cursor */
 }
 
@@ -94,6 +93,7 @@
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: var(--mainFontFamily);
+    padding-top: 2px;  /* keep placeholder text aligned */
 }
 
 .select2-container.select2-container--focus .select2-selection--multiple,
