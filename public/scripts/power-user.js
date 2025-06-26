@@ -3323,7 +3323,9 @@ $(document).ready(() => {
                 toastr.warning('No applicable presets available.');
             } else {
                 toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`);
-                power_user.model_preset_mappings[online_status] = bind_model_preset;
+                if (!online_status.startsWith('koboldcpp/ggml-model-')) {
+                    power_user.model_preset_mappings[online_status] = bind_model_preset;
+                }
                 if (chat_template_hash !== '') {
                     power_user.model_preset_mappings[chat_template_hash] = bind_model_preset;
                 }
