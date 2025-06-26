@@ -1915,11 +1915,13 @@ function addMissingWorldInfoFields(data) {
 
         // Ensure that the key is always an array
         if (!Array.isArray(entry.key)) {
+            console.debug('[WI] Fixing invalid "key" field for entry', entry);
             entry.key = [];
         }
 
         // Ensure that the keysecondary is always an array
         if (!Array.isArray(entry.keysecondary)) {
+            console.debug('[WI] Fixing invalid "keysecondary" field for entry', entry);
             entry.keysecondary = [];
         }
 
