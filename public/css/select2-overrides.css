@@ -19,10 +19,9 @@
 .select2-container .select2-selection .select2-selection__clear {
     color: var(--SmartThemeBodyColor);
     font-size: 20px;
-    padding: 0;
     position: absolute;
     right: 5px;
-    top: 0;
+    margin-top: 0;  /* compensate for the increased font size */
 }
 
 .select2-container .select2-search__field {
@@ -63,9 +62,11 @@
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
     font-family: var(--mainFontFamily);
     padding: 3px 5px;
+    display: unset;  /* override the ST textarea display style */
+    line-height: 1.4;  /* get placeholder text to the center */
+    border-radius: 0;  /* border radius was interfering with cursor */
 }
 
 /* Customize the selected option */
@@ -93,7 +94,6 @@
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: var(--mainFontFamily);
-    padding: 3px 5px;
 }
 
 .select2-container.select2-container--focus .select2-selection--multiple,
@@ -229,25 +229,4 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 
 .select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display:hover {
     background-color: var(--white30a);
-}
-
-/* Custom class to support same line multi inputs of select2 controls */
-.select2_multi_sameline+span.select2-container .select2-selection--multiple {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
-    /* Allow search placeholder to take up all space if needed */
-    flex-grow: 1;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
-    /* Fix weird styling choice or huge margin around selected options */
-    margin-block-start: 2px;
-    margin-block-end: 2px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    row-gap: 5px;
 }
