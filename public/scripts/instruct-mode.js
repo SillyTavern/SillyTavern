@@ -141,16 +141,17 @@ export async function loadInstructMode(data) {
 }
 
 /**
- * Updates the bind model preset state based on the current model, instruct and context preset.
+ * Updates the bind model template state based on the current model, instruct and context preset.
  */
-export function updateBindModelPresetState() {
-    const bind_model_preset = power_user.model_preset_mappings[online_status] ?? power_user.model_preset_mappings[power_user.chat_template_hash];
-    const bindings_match = (bind_model_preset && power_user.context.preset == bind_model_preset['context'] && (!power_user.instruct.enable || power_user.instruct.preset === bind_model_preset['instruct'])) ?? false;
-    const current = $('#bind_model_presets').prop('checked');
+export function updateBindModelTemplatesState() {
+    const bind_model_templates = power_user.model_templates_mappings[online_status] ?? power_user.model_templates_mappings[power_user.chat_template_hash];
+    const bindings_match = (bind_model_templates && power_user.context.preset === bind_model_templates['context'] && (!power_user.instruct.enabled || power_user.instruct.preset === bind_model_templates['instruct'])) ?? false;
+    const current = $('#bind_model_templates').prop('checked');
+    console.log(`updateBindModelTemplatesState(): checked=${current} match=${bindings_match} c=${power_user.context.preset} i=${power_user.instruct.preset} preset=${JSON.stringify(bind_model_templates)}`)
     if (bindings_match === current) {
         return; // No change needed
     }
-    $('#bind_model_presets').prop('checked', bindings_match);
+    $('#bind_model_templates').prop('checked', bindings_match);
 }
 
 /**
@@ -173,7 +174,7 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
 
-    updateBindModelPresetState();
+    updateBindModelTemplatesState();
 
     saveSettingsDebounced();
 }
@@ -205,7 +206,7 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         !quiet && toastr.info('Instruct Mode enabled');
     }
 
-    updateBindModelPresetState();
+    updateBindModelTemplatesState();
 
     saveSettingsDebounced();
 }
@@ -217,10 +218,10 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
  * @returns {boolean} True if instruct preset was activated by model id, false otherwise.
  */
 export function autoSelectInstructPreset(modelId) {
-    const model_preset_map = power_user.model_preset_mappings[modelId];
+    const model_templates_map = power_user.model_templates_mappings[modelId];
 
-    if (model_preset_map) {
-        const { instruct, context } = model_preset_map;
+    if (model_templates_map) {
+        const { instruct, context } = model_templates_map;
         if (instruct) {
             selectInstructPreset(instruct, { isAuto: true });
         }
@@ -817,7 +818,7 @@ jQuery(() => {
             selectMatchingContextTemplate(name);
         }
 
-        updateBindModelPresetState();
+        updateBindModelTemplatesState();
     });
 
     if (!CSS.supports('field-sizing', 'content')) {

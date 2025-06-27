@@ -38,7 +38,7 @@ import {
     loadInstructMode,
     names_behavior_types,
     selectInstructPreset,
-    updateBindModelPresetState,
+    updateBindModelTemplatesState,
 } from './instruct-mode.js';
 
 import { getTagsList, tag_import_setting, tag_map, tags } from './tags.js';
@@ -59,6 +59,7 @@ import { loadSystemPrompts } from './sysprompt.js';
 import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
+import { bindModelTemplates } from './chat-templates.js';
 
 export {
     loadPowerUserSettings,
@@ -266,7 +267,7 @@ let power_user = {
     instruct_derived: false,
     context_derived: false,
     context_size_derived: false,
-    model_preset_mappings: {}, /** user defined model identifier / chat template hash to instruct/context template mappings */
+    model_templates_mappings: {}, /** user defined model identifier / chat template hash to instruct/context template mappings */
 
     sysprompt: {
         enabled: true,
@@ -1577,6 +1578,8 @@ async function loadPowerUserSettings(settings, data) {
         delete power_user.instruct.derived;
     }
 
+    power_user.chat_template_hash = '';
+
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
@@ -1956,7 +1959,7 @@ async function loadContextSettings() {
             }
         }
 
-        updateBindModelPresetState();
+        updateBindModelTemplatesState();
 
         saveSettingsDebounced();
     });
@@ -3280,67 +3283,13 @@ $(document).ready(() => {
         $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
     });
 
-    $('#bind_model_presets').on('input', function () {
-        if (online_status === 'no_connection') {
-            return;
+    $('#bind_model_templates').on('input', function () {
+        if (bindModelTemplates(power_user, online_status)) {
+            saveSettingsDebounced();
         }
-
-        const chat_template_hash = power_user.chat_template_hash;
-
-        const bind_model_preset = power_user.model_preset_mappings[online_status]
-            ?? power_user.model_preset_mappings[chat_template_hash]
-            ?? {};
-        const bindings_match = bind_model_preset && power_user.context.preset == bind_model_preset['context'] && (!power_user.instruct.enable || power_user.instruct.preset === bind_model_preset['instruct']);
-
-        const value = !bindings_match;
-
-        const bound = [];
-
-        if (value) {
-            if (power_user.context_derived) {
-                if (power_user.context.preset !== bind_model_preset['context']) {
-                    bound.push(`${power_user.context.preset} context preset`);
-                    // toastr.info(`Bound ${power_user.context.preset} preset to currently loaded model and all models that share its chat template.`);
-
-                    // map current preset to current chat template hash
-                    bind_model_preset['context'] = power_user.context.preset;
-                }
-            } else {
-                toastr.warning('Note: Context derivation is disabled. Not including context preset.');
-            }
-            if (power_user.instruct.enabled) {
-                if (power_user.instruct_derived) {
-                    if (power_user.instruct.preset !== bind_model_preset['instruct']) {
-                        bound.push(`${power_user.instruct.preset} instruct preset`);
-
-                        bind_model_preset['instruct'] = power_user.instruct.preset;
-                    }
-                } else {
-                    toastr.warning('Note: Instruct derivation is disabled. Not including instruct preset.');
-                }
-            }
-            if (bound.length == 0) {
-                toastr.warning('No applicable presets available.');
-            } else {
-                toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`);
-                if (!online_status.startsWith('koboldcpp/ggml-model-')) {
-                    power_user.model_preset_mappings[online_status] = bind_model_preset;
-                }
-                if (chat_template_hash !== '') {
-                    power_user.model_preset_mappings[chat_template_hash] = bind_model_preset;
-                }
-            }
-        } else {
-            // unmap current preset
-            delete power_user.model_preset_mappings[chat_template_hash];
-            delete power_user.model_preset_mappings[online_status];
-            toastr.info(`Context preset for ${online_status} will use defaults when loaded the next time.`);
-        }
-
-        saveSettingsDebounced();
     });
 
-    $('#bind_model_presets').on('change', updateBindModelPresetState);
+    $('#bind_model_templates').on('change', updateBindModelTemplatesState);
 
     $('#always-force-name2-checkbox').change(function () {
         power_user.always_force_name2 = !!$(this).prop('checked');
