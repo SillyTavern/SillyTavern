@@ -3549,7 +3549,7 @@ class StreamingProcessor {
 
             // Token count update.
             const tokenCountText = this.reasoningHandler.reasoning + processedText;
-            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(tokenCountText, 0) : 0;
+            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await getTokenCountAsync(tokenCountText, 0) : 0;
             if (currentTokenCount) {
                 chat[messageId]['extra']['token_count'] = currentTokenCount;
                 if (this.messageTokenCounterDom instanceof HTMLElement) {
@@ -9037,7 +9037,7 @@ function openCharacterWorldPopup() {
         onExtraWorldInfoChanged();
     });
 
-    callPopup(template, 'text');
+    callGenericPopup(template, POPUP_TYPE.TEXT);
 }
 
 function openAlternateGreetings() {
@@ -10909,7 +10909,7 @@ jQuery(async function () {
         e.stopPropagation();
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
-        callPopup('<h3>' + t`Delete the Chat File?` + '</h3>', 'del_chat');
+        callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
     });
 
     $('#advanced_div').on('click', function () {
