@@ -147,7 +147,6 @@ export function updateBindModelTemplatesState() {
     const bind_model_templates = power_user.model_templates_mappings[online_status] ?? power_user.model_templates_mappings[power_user.chat_template_hash];
     const bindings_match = (bind_model_templates && power_user.context.preset === bind_model_templates['context'] && (!power_user.instruct.enabled || power_user.instruct.preset === bind_model_templates['instruct'])) ?? false;
     const current = $('#bind_model_templates').prop('checked');
-    console.log(`updateBindModelTemplatesState(): checked=${current} match=${bindings_match} c=${power_user.context.preset} i=${power_user.instruct.preset} preset=${JSON.stringify(bind_model_templates)}`)
     if (bindings_match === current) {
         return; // No change needed
     }
