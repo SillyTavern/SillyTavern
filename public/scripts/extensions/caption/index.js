@@ -53,6 +53,10 @@ function migrateSettings() {
     if (!extension_settings.caption.template) {
         extension_settings.caption.template = TEMPLATE_DEFAULT;
     }
+
+    if (!extension_settings.caption.show_in_chat) {
+        extension_settings.caption.show_in_chat = false;
+    }
 }
 
 /**
@@ -167,6 +171,7 @@ async function sendCaptionedMessage(caption, image) {
         extra: {
             image: image,
             title: messageText,
+            inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
     context.chat.push(message);
@@ -594,6 +599,10 @@ jQuery(async function () {
     });
     $('#caption_altEndpoint_enabled').prop('checked', !!(extension_settings.caption.alt_endpoint_enabled)).on('input', () => {
         extension_settings.caption.alt_endpoint_enabled = !!$('#caption_altEndpoint_enabled').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_show_in_chat').prop('checked', !!(extension_settings.caption.show_in_chat)).on('input', () => {
+        extension_settings.caption.show_in_chat = !!$('#caption_show_in_chat').prop('checked');
         saveSettingsDebounced();
     });
 
