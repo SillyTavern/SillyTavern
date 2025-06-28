@@ -6,6 +6,7 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { humanizedISO8601DateTime } from '../util.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
@@ -76,7 +77,7 @@ router.post('/create', (request, response) => {
         generation_mode_join_prefix: request.body.generation_mode_join_prefix ?? '',
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
     };
-    const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
+    const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(groupMetadata, null, 4);
 
     if (!fs.existsSync(request.user.directories.groups)) {
@@ -87,19 +88,19 @@ router.post('/create', (request, response) => {
     return response.send(groupMetadata);
 });
 
-router.post('/edit', (request, response) => {
+router.post('/edit', getFileNameValidationFunction('id'), (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
     const id = request.body.id;
-    const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
+    const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(request.body, null, 4);
 
     writeFileAtomicSync(pathToFile, fileData);
     return response.send({ ok: true });
 });
 
-router.post('/delete', async (request, response) => {
+router.post('/delete', getFileNameValidationFunction('id'), async (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -114,7 +115,7 @@ router.post('/delete', async (request, response) => {
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
                 console.info('Deleting group chat', chat);
-                const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+                const pathToFile = path.join(request.user.directories.groupChats, sanitize(`${chat}.jsonl`));
 
                 if (fs.existsSync(pathToFile)) {
                     fs.unlinkSync(pathToFile);

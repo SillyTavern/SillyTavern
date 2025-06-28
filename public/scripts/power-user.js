@@ -44,7 +44,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -2347,7 +2347,7 @@ async function saveTheme(name = undefined, theme = undefined) {
             return;
         }
 
-        name = String(newName);
+        name = await getSanitizedFilename(String(newName));
     }
 
     if (typeof theme !== 'object') {
@@ -2458,7 +2458,7 @@ async function saveMovingUI() {
         return;
     }
 
-    const name = String(popupResult);
+    const name = await getSanitizedFilename(String(popupResult));
 
     const movingUIPreset = {
         name,

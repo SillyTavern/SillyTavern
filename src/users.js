@@ -13,6 +13,7 @@ import mime from 'mime-types';
 import archiver from 'archiver';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp } from './util.js';
@@ -670,7 +671,7 @@ export async function getUserAvatar(handle) {
         if (!avatarFile) {
             return PUBLIC_USER_AVATAR;
         }
-        const avatarPath = path.join(directory.avatars, avatarFile);
+        const avatarPath = path.join(directory.avatars, sanitize(avatarFile));
         if (!fs.existsSync(avatarPath)) {
             return PUBLIC_USER_AVATAR;
         }
