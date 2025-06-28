@@ -17,7 +17,7 @@ class ElevenLabsTtsProvider {
         style_exaggeration: 0.00,
         speaker_boost: true,
         apiKey: '',
-        model: 'eleven_monolingual_v1',
+        model: 'eleven_turbo_v2_5',
         voiceMap: {},
     };
 
@@ -70,7 +70,14 @@ class ElevenLabsTtsProvider {
     }
 
     shouldInvolveExtendedSettings() {
-        return this.settings.model === 'eleven_multilingual_v2';
+        // Models that support extended settings (style_exaggeration, speaker_boost)
+        const modelsWithExtendedSettings = [
+            'eleven_v3',
+            'eleven_ttv_v3',
+            'eleven_multilingual_v2',
+            'eleven_multilingual_ttv_v2',
+        ];
+        return modelsWithExtendedSettings.includes(this.settings.model);
     }
 
     onSettingsChange() {
