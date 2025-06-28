@@ -1,5 +1,6 @@
-import { chat, chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
-import { extension_settings } from '../../extensions.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, characters, this_chid } from '../../../script.js';
+import { extension_settings, writeExtensionField } from '../../extensions.js';
+import { Popup, POPUP_RESULT } from '../../popup.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
@@ -39,6 +40,8 @@ const defaultSettings = {
 let isReady = false;
 /** @type {Function[]}*/
 let executeQueue = [];
+/** @type {Number}*/
+let lastCharId;
 /** @type {QuickReplySettings}*/
 let settings;
 /** @type {SettingsUi} */
@@ -123,6 +126,8 @@ const loadSettings = async () => {
     }
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
+       settings.config.scope = 'global';
+       settings.config.onSave = () => settings.save();
     } catch (ex) {
         settings = QuickReplySettings.from(defaultSettings);
     }
@@ -141,6 +146,96 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
 
 
 
+const saveScopedSets = debounceAsync(async () => {
+   if (!this_chid) return;
+   const char = characters[this_chid];
+   if (!char) return;
+
+   const scopedSets = settings.charConfig?.setList?.map(link => link.set) ?? [];
+   const data = scopedSets.map(qrs => qrs.toJSON());
+   await writeExtensionField(this_chid, 'quickReply_sets', data);
+   log('Scoped sets saved to character card.');
+});
+
+
+const checkEmbeddedSets = () => {
+   const allowed = extension_settings.character_allowed_quickreply ?? [];
+   if (this_chid && !allowed.includes(this_chid)) {
+       return false;
+   }
+   return true;
+};
+
+
+const onCharChanged = async () => {
+   if (lastCharId == this_chid) return;
+   lastCharId = this_chid;
+
+   settings.charConfig = null;
+
+   if (!this_chid) return;
+
+
+   const char = characters[this_chid];
+   const embeddedSetsData = char.data?.extensions?.quickReply_sets ?? [];
+
+   if (!embeddedSetsData || embeddedSetsData.length === 0) {
+       settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
+       return;
+   }
+
+
+   if (!checkEmbeddedSets()) {
+       const confirm = await Popup.show.confirm(
+           'This character contains embedded Quick Reply sets, but is not authorized to execute them. Do you want to authorize it?',
+           'Authorize Quick Replies',
+           { okButton: 'Authorize' },
+       );
+       if (confirm === POPUP_RESULT.AFFIRMATIVE) {
+           const allowed = extension_settings.character_allowed_quickreply ?? [];
+           allowed.push(this_chid);
+           extension_settings.character_allowed_quickreply = allowed;
+       } else {
+           settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
+           return;
+       }
+   }
+
+
+   for (const qrsData of embeddedSetsData) {
+       const existingSet = QuickReplySet.get(qrsData.name);
+       if (existingSet) {
+           const confirmed = await Popup.show.confirm(
+               `A Quick Reply Set named "${qrsData.name}" already exists. Do you want to overwrite it with the version from this character?`,
+               'Overwrite Confirmation',
+           );
+           if (confirmed !== POPUP_RESULT.AFFIRMATIVE) {
+               continue;
+           }
+           const index = QuickReplySet.list.indexOf(existingSet);
+           const newSet = QuickReplySet.from(qrsData);
+           newSet.qrList = qrsData.qrList.map(qr => QuickReply.from(qr));
+           newSet.init();
+           QuickReplySet.list[index] = newSet;
+           await newSet.performSave();
+       } else {
+           const newSet = QuickReplySet.from(qrsData);
+           newSet.qrList = qrsData.qrList.map(qr => QuickReply.from(qr));
+           newSet.init();
+           QuickReplySet.list.push(newSet);
+           await newSet.performSave();
+       }
+   }
+
+   const charSetConfig = QuickReplyConfig.from({
+       scope: 'character',
+       setList: embeddedSetsData.map(qrsData => ({ set: qrsData.name, isVisible: true })),
+   });
+   charSetConfig.onSave = saveScopedSets;
+   settings.charConfig = charSetConfig;
+};
+
+
 const init = async () => {
     await loadSets();
     await loadSettings();
@@ -152,10 +247,16 @@ const init = async () => {
     buttons = new ButtonUi(settings);
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
+   QuickReplySet.onScopedSetSave = saveScopedSets;
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
-        let qr = [...settings.config.setList, ...(settings.chatConfig?.setList ?? [])]
-            .map(it=>it.set.qrList)
+        let qr = [
+           ...(settings.chatConfig?.setList ?? []),
+           ...(settings.charConfig?.setList ?? []),
+           ...settings.config.setList,
+       ]
+            .filter(it => it.isVisible)
+            .map(it => it.set.qrList)
             .flat()
             .find(it=>it.label == name)
             ;
@@ -201,8 +302,12 @@ await init();
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
+   await onCharChanged();
     if (chatIdx) {
-        settings.chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
+       const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
+       chatConfig.scope = 'chat';
+       chatConfig.onSave = () => settings.save();
+       settings.chatConfig = chatConfig;
     } else {
         settings.chatConfig = null;
     }

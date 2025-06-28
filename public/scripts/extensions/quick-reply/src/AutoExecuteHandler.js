@@ -40,6 +40,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -49,6 +50,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -58,6 +60,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -67,6 +70,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -76,6 +80,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnGroupMemberDraft)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnGroupMemberDraft))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnGroupMemberDraft))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -85,6 +90,7 @@ export class AutoExecuteHandler {
         if (!this.checkExecute()) return;
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnNewChat)).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnNewChat))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnNewChat))?.flat() ?? []),
         ];
         await this.performAutoExecute(qrList);
@@ -100,6 +106,7 @@ export class AutoExecuteHandler {
 
         const qrList = [
             ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.automationId && automationIds.includes(qr.automationId))).flat(),
+            ...(this.settings.charConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.automationId && automationIds.includes(qr.automationId)))?.flat() ?? []),
             ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.automationId && automationIds.includes(qr.automationId)))?.flat() ?? []),
         ];
 

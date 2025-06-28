@@ -19,6 +19,7 @@ export class QuickReplySettings {
     /**@type {Boolean}*/ showPopoutButton = true;
     /**@type {QuickReplyConfig}*/ config;
     /**@type {QuickReplyConfig}*/ _chatConfig;
+   /**@type {QuickReplyConfig}*/ _charConfig;
     get chatConfig() {
         return this._chatConfig;
     }
@@ -29,6 +30,16 @@ export class QuickReplySettings {
             this.hookConfig(this._chatConfig);
         }
     }
+   get charConfig() {
+       return this._charConfig;
+   }
+   set charConfig(value) {
+       if (this._charConfig != value) {
+           this.unhookConfig(this._charConfig);
+           this._charConfig = value;
+           this.hookConfig(this._charConfig);
+       }
+   }
 
     /**@type {Function}*/ onSave;
     /**@type {Function}*/ onRequestEditSet;
@@ -39,6 +50,7 @@ export class QuickReplySettings {
     init() {
         this.hookConfig(this.config);
         this.hookConfig(this.chatConfig);
+       this.hookConfig(this.charConfig);
     }
 
     hookConfig(config) {

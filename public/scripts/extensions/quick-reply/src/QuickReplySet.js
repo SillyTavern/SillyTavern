@@ -8,6 +8,7 @@ import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
     /**@type {QuickReplySet[]}*/ static list = [];
+   /**@type {function(QuickReplySet):void}*/ static onScopedSetSave;
 
     static from(props) {
         props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
@@ -251,6 +252,7 @@ export class QuickReplySet {
      * @param {QuickReply} qr
      */
     hookQuickReply(qr) {
+        // @ts-ignore
         qr.onDebug = ()=>this.debug(qr);
         qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
         qr.onDelete = ()=>this.removeQuickReply(qr);
@@ -297,12 +299,14 @@ export class QuickReplySet {
                     }
                     sel.addEventListener('keyup', (evt)=>{
                         if (evt.key == 'Shift') {
+                            // @ts-ignore
                             (dlg.dom ?? dlg.dlg).classList.remove('qr--isCopy');
                             return;
                         }
                     });
                     sel.addEventListener('keydown', (evt)=>{
                         if (evt.key == 'Shift') {
+                            // @ts-ignore
                             (dlg.dom ?? dlg.dlg).classList.add('qr--isCopy');
                             return;
                         }
@@ -331,6 +335,7 @@ export class QuickReplySet {
                     isCopy = true;
                     dlg.completeAffirmative();
                 });
+                // @ts-ignore
                 (dlg.ok ?? dlg.okButton).insertAdjacentElement('afterend', copyBtn);
             }
             const prom = dlg.show();
@@ -374,6 +379,9 @@ export class QuickReplySet {
 
         if (response.ok) {
             this.rerender();
+           if (QuickReplySet.onScopedSetSave) {
+               QuickReplySet.onScopedSetSave(this);
+           }
         } else {
             warn(`Failed to save Quick Reply Set: ${this.name}`);
             console.error('QR could not be saved', response);
