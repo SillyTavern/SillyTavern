@@ -17,7 +17,7 @@ class ElevenLabsTtsProvider {
         style_exaggeration: 0.00,
         speaker_boost: true,
         apiKey: '',
-        model: 'eleven_monolingual_v1',
+        model: 'eleven_turbo_v2_5',
         voiceMap: {},
     };
 
@@ -28,10 +28,15 @@ class ElevenLabsTtsProvider {
             <input id="elevenlabs_tts_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
             <label for="elevenlabs_tts_model">Model</label>
             <select id="elevenlabs_tts_model" class="text_pole">
-                <option value="eleven_monolingual_v1">English v1</option>
-                <option value="eleven_multilingual_v1">Multilingual v1</option>
+                <option value="eleven_v3">Eleven v3</option>
+                <option value="eleven_ttv_v3">Eleven ttv v3</option>
                 <option value="eleven_multilingual_v2">Multilingual v2</option>
-                <option value="eleven_turbo_v2">Turbo v2</option>
+                <option value="eleven_flash_v2_5">Eleven Flash v2.5</option>
+                <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+                <option value="eleven_multilingual_ttv_v2">Multilingual ttv v2</option>
+                <option value="eleven_monolingual_v1">English v1 (Old)</option>
+                <option value="eleven_multilingual_v1">Multilingual v1 (Old)</option>
+                <option value="eleven_turbo_v2">Turbo v2 (Old)</option>
             </select>
             <input id="eleven_labs_connect" class="menu_button" type="button" value="Connect" />
             <label for="elevenlabs_tts_stability">Stability: <span id="elevenlabs_tts_stability_output"></span></label>
@@ -65,7 +70,14 @@ class ElevenLabsTtsProvider {
     }
 
     shouldInvolveExtendedSettings() {
-        return this.settings.model === 'eleven_multilingual_v2';
+        // Models that support extended settings (style_exaggeration, speaker_boost)
+        const modelsWithExtendedSettings = [
+            'eleven_v3',
+            'eleven_ttv_v3',
+            'eleven_multilingual_v2',
+            'eleven_multilingual_ttv_v2',
+        ];
+        return modelsWithExtendedSettings.includes(this.settings.model);
     }
 
     onSettingsChange() {
