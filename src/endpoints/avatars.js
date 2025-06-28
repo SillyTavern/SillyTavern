@@ -9,12 +9,13 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { getImages, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { applyAvatarCropResize } from './characters.js';
+import { invalidateThumbnail } from './thumbnails.js';
 
 export const router = express.Router();
 
 router.post('/get', function (request, response) {
-    var images = getImages(request.user.directories.avatars);
-    response.send(JSON.stringify(images));
+    const images = getImages(request.user.directories.avatars);
+    response.send(images);
 });
 
 router.post('/delete', getFileNameValidationFunction('avatar'), function (request, response) {
@@ -29,6 +30,7 @@ router.post('/delete', getFileNameValidationFunction('avatar'), function (reques
 
     if (fs.existsSync(fileName)) {
         fs.unlinkSync(fileName);
+        invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.avatar));
         return response.send({ result: 'ok' });
     }
 
@@ -43,6 +45,12 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const crop = tryParse(request.query.crop);
         const rawImg = await Jimp.read(pathToUpload);
         const image = await applyAvatarCropResize(rawImg, crop);
+
+        // Remove previous thumbnail and bust cache if overwriting
+        if (request.body.overwrite_name) {
+            invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.overwrite_name));
+            response.setHeader('Clear-Site-Data', '"cache"');
+        }
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
