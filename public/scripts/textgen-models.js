@@ -144,7 +144,7 @@ export async function loadTogetherAIModels(data) {
     $('#model_togetherai_select').empty();
     for (const model of data) {
         // Hey buddy, I think you've got the wrong door.
-        if (model.display_type === 'image') {
+        if (model.type === 'image') {
             continue;
         }
 
@@ -267,7 +267,7 @@ export async function loadOpenRouterModels(data) {
     for (const model of data) {
         const option = document.createElement('option');
         option.value = model.id;
-        option.text = model.id;
+        option.text = model.name;
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }

@@ -10,9 +10,9 @@ import {
     updateMessageBlock,
 } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { updateReasoningUI } from '../../reasoning.js';
-import { findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { secret_state } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -152,9 +152,9 @@ const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
     const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $('#translate_key_button').toggle(providerRequiresKey);
+    $('#translate_key_button').toggle(providerRequiresKey).data('key', extension_settings.translate.provider);
     $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $('#translate_url_button').toggle(providerOptionalUrl);
+    $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
     $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
 }
@@ -749,63 +749,16 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
-    $('#translate_key_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const key = await callGenericPopup(`<h3>${optionText} API Key</h3>`, POPUP_TYPE.INPUT, '', {
-            customButtons: [{
-                text: 'Remove Key',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(extension_settings.translate.provider, '');
-                    toastr.success('API Key removed');
-                    $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
-                },
-            }],
+
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach((eventType) => {
+        eventSource.on(eventType, (/** @type {string} */ key) => {
+            if (key === extension_settings.translate.provider) {
+                $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
+            }
+            if (key === `${extension_settings.translate.provider}_url`) {
+                $('#translate_url_button').toggleClass('success', !!secret_state[`${extension_settings.translate.provider}_url`]);
+            }
         });
-
-        if (!key) {
-            return;
-        }
-
-        await writeSecret(extension_settings.translate.provider, key);
-        toastr.success('API Key saved');
-        $('#translate_key_button').addClass('success');
-    });
-    $('#translate_url_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const exampleURLs = {
-            'libre': 'http://127.0.0.1:5000/translate',
-            'lingva': 'https://lingva.ml/api/v1',
-            'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate',
-        };
-        const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
-
-        const secretKey = extension_settings.translate.provider + '_url';
-        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
-
-        const url = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedUrl, {
-            customButtons: [{
-                text: 'Remove URL',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(secretKey, '');
-                    toastr.success('API URL removed');
-                    $('#translate_url_button').toggleClass('success', !!secret_state[secretKey]);
-                },
-            }],
-        });
-
-        if (!url) {
-            return;
-        }
-
-        await writeSecret(secretKey, url);
-
-        toastr.success('API URL saved');
-        $('#translate_url_button').addClass('success');
     });
 
     loadSettings();

@@ -43,6 +43,7 @@ import {
     extractTextFromOffice,
     download,
     getFileText,
+    getFileExtension,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -204,17 +205,16 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
         let base64Data = fileBase64.split(',')[1];
+        const extension = getFileExtension(file);
 
         // If file is image
         if (file.type.startsWith('image/')) {
-            const extension = file.type.split('/')[1];
             const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
         }
         // If file is video
         else if (file.type.startsWith('video/')) {
-            const extension = file.type.split('/')[1];
             const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.video = videoUrl;
         } else {
@@ -247,6 +247,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
 
     } catch (error) {
         console.error('Could not upload file', error);
+        toastr.error(t`Either the file is corrupted or its format is not supported.`, t`Could not upload the file`);
     } finally {
         $('#file_form').trigger('reset');
     }
@@ -889,6 +890,27 @@ async function deleteMessageImage() {
     } else {
         appendMediaToMessage(message, mesBlock);
     }
+
+    await saveChatConditional();
+}
+
+async function deleteMessageVideo() {
+    const confirm = await Popup.show.confirm(t`Delete video from message?`, t`This action can't be undone.`);
+    if (!confirm) {
+        return;
+    }
+
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+
+    if (!message?.extra?.video) {
+        console.warn('Message has no video or it is empty');
+        return;
+    }
+
+    delete message.extra.video;
+    mesBlock.find('.mes_video_container').remove();
 
     await saveChatConditional();
 }
@@ -1856,6 +1878,7 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_img', expandMessageImage);
     $(document).on('click', '.mes_img_enlarge', expandAndZoomMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
+    $(document).on('click', '.mes_video_delete', deleteMessageVideo);
 
     $('#file_form_input').on('change', async () => {
         const fileInput = document.getElementById('file_form_input');

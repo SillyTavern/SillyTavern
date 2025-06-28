@@ -62,6 +62,7 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
 /**
  * @typedef {object} DataMaidMessageExtra - The extra data object.
  * @property {string} [image] - The link to the image, if any.
+ * @property {string} [video] - The link to the video, if any.
  * @property {string[]} [image_swipes] - The links to the image swipes, if any.
  * @property {DataMaidFile} [file] - The file object, if any.
  */
@@ -161,11 +162,14 @@ export class DataMaidService {
         const result = [];
 
         try {
-            const messages = await this.#parseAllChats(x => !!x?.extra?.image || Array.isArray(x?.extra?.image_swipes));
+            const messages = await this.#parseAllChats(x => !!x?.extra?.image || !!x?.extra?.video || Array.isArray(x?.extra?.image_swipes));
             const knownImages = new Set();
             for (const message of messages) {
                 if (message?.extra?.image) {
                     knownImages.add(message.extra.image);
+                }
+                if (message?.extra?.video) {
+                    knownImages.add(message.extra.video);
                 }
                 if (Array.isArray(message?.extra?.image_swipes)) {
                     for (const swipe of message.extra.image_swipes) {

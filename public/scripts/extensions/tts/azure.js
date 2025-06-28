@@ -1,6 +1,5 @@
-import { getRequestHeaders } from '../../../script.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
-import { SECRET_KEYS, findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 export { AzureTtsProvider };
 
@@ -26,7 +25,7 @@ class AzureTtsProvider {
                 <h4 for="azure_tts_key" class="flex1 margin0">
                     <a href="https://portal.azure.com/" target="_blank">Azure TTS Key</a>
                 </h4>
-                <div id="azure_tts_key" class="menu_button menu_button_icon">
+                <div id="azure_tts_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_azure_tts">
                     <i class="fa-solid fa-key"></i>
                     <span>Click to set</span>
                 </div>
@@ -37,6 +36,20 @@ class AzureTtsProvider {
         </div>
         `;
         return html;
+    }
+
+    constructor() {
+        this.handler = async function (/** @type {string} */ key) {
+            if (key !== SECRET_KEYS.AZURE_TTS) return;
+            $('#azure_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.AZURE_TTS]);
+            await this.onRefreshClick();
+        }.bind(this);
+    }
+
+    dispose() {
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.removeListener(event, this.handler);
+        });
     }
 
     onSettingsChange() {
@@ -65,34 +78,9 @@ class AzureTtsProvider {
         }
 
         $('#azure_tts_region').val(this.settings.region).on('input', () => this.onSettingsChange());
-        $('#azure_tts_key').toggleClass('success', secret_state[SECRET_KEYS.AZURE_TTS]);
-        $('#azure_tts_key').on('click', async () => {
-            const popupText = 'Azure TTS API Key';
-            const savedKey = secret_state[SECRET_KEYS.AZURE_TTS] ? await findSecret(SECRET_KEYS.AZURE_TTS) : '';
-
-            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
-                customButtons: [{
-                    text: 'Remove Key',
-                    appendAtEnd: true,
-                    result: POPUP_RESULT.NEGATIVE,
-                    action: async () => {
-                        await writeSecret(SECRET_KEYS.AZURE_TTS, '');
-                        $('#azure_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.AZURE_TTS]);
-                        toastr.success('API Key removed');
-                        await this.onRefreshClick();
-                    },
-                }],
-            });
-
-            if (!key) {
-                return;
-            }
-
-            await writeSecret(SECRET_KEYS.AZURE_TTS, String(key));
-
-            toastr.success('API Key saved');
-            $('#azure_tts_key').addClass('success');
-            await this.onRefreshClick();
+        $('#azure_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.AZURE_TTS]);
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.on(event, this.handler);
         });
 
         try {

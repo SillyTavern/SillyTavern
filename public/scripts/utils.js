@@ -1410,32 +1410,27 @@ export async function getSanitizedFilename(fileName) {
  * Sends a base64 encoded image to the backend to be saved as a file.
  *
  * @param {string} base64Data - The base64 encoded image data.
- * @param {string} characterName - The character name to determine the sub-directory for saving.
- * @param {string} ext - The file extension for the image (e.g., 'jpg', 'png', 'webp').
+ * @param {string} subFolder - The character name to determine the sub-directory for saving.
+ * @param {string} fileName - The name of the file to save the image as (without extension).
+ * @param {string} extension - The file extension for the image (e.g., 'jpg', 'png', 'webp').
  *
  * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename = '', ext) {
-    // Construct the full data URL
-    const format = ext; // Extract the file extension (jpg, png, webp)
-    const dataURL = `data:image/${format};base64,${base64Data}`;
-
+export async function saveBase64AsFile(base64Data, subFolder, fileName, extension) {
     // Prepare the request body
     const requestBody = {
-        image: dataURL,
-        ch_name: characterName,
-        filename: String(filename).replace(/\./g, '_'),
+        image: base64Data,
+        format: extension,
+        ch_name: subFolder,
+        filename: String(fileName).replace(/\./g, '_'),
     };
 
     // Send the data URL to your backend using fetch
     const response = await fetch('/api/images/upload', {
         method: 'POST',
+        headers: getRequestHeaders(),
         body: JSON.stringify(requestBody),
-        headers: {
-            ...getRequestHeaders(),
-            'Content-Type': 'application/json',
-        },
     });
 
     // If the response is successful, get the saved image path from the server's response
@@ -1446,6 +1441,15 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');
     }
+}
+
+/**
+ * Gets the file extension from a File object.
+ * @param {File} file The file to get the extension from
+ * @returns {string} The file extension of the given file
+ */
+export function getFileExtension(file) {
+    return file.name.substring((file.name.lastIndexOf('.') + file.name.length) % file.name.length + 1).toLowerCase().trim();
 }
 
 /**
@@ -1554,15 +1558,25 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
                 maxHeight = img.height;
             }
 
-            if (img.width > img.height) {
-                thumbnailHeight = maxWidth / aspectRatio;
+            // Do not upscale if image is already smaller than max dimensions
+            if (img.width <= maxWidth && img.height <= maxHeight) {
+                thumbnailWidth = img.width;
+                thumbnailHeight = img.height;
             } else {
-                thumbnailWidth = maxHeight * aspectRatio;
+                if (img.width > img.height) {
+                    thumbnailHeight = maxWidth / aspectRatio;
+                } else {
+                    thumbnailWidth = maxHeight * aspectRatio;
+                }
             }
 
             // Set the canvas dimensions and draw the resized image
             canvas.width = thumbnailWidth;
             canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
             ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
 
             // Convert the canvas to a data URL and resolve the promise
