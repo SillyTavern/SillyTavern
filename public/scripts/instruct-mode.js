@@ -228,6 +228,8 @@ export function autoSelectInstructPreset(modelId) {
             selectContextPreset(context, { isAuto: true });
         }
         return true;
+    } else {
+        updateBindModelTemplatesState();
     }
 
     // If instruct mode is disabled, don't do anything
