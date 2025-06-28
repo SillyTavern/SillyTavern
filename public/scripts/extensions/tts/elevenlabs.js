@@ -45,7 +45,7 @@ class ElevenLabsTtsProvider {
             <label for="elevenlabs_tts_similarity_boost">Similarity Boost: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
             <input id="elevenlabs_tts_similarity_boost" type="range" value="${this.defaultSettings.similarity_boost}" min="0" max="1" step="0.01" />
             <label for="elevenlabs_tts_speed">Speed: <span id="elevenlabs_tts_speed_output"></span></label>
-            <input id="elevenlabs_tts_speed" type="range" value="${this.defaultSettings.speed}" min="0.7" max="1.2" step="0.1" />
+            <input id="elevenlabs_tts_speed" type="range" value="${this.defaultSettings.speed}" min="0.7" max="1.2" step="0.01" />
             <div id="elevenlabs_tts_v2_options" style="display: none;">
                 <label for="elevenlabs_tts_style_exaggeration">Style Exaggeration: <span id="elevenlabs_tts_style_exaggeration_output"></span></label>
                 <input id="elevenlabs_tts_style_exaggeration" type="range" value="${this.defaultSettings.style_exaggeration}" min="0" max="1" step="0.01" />
