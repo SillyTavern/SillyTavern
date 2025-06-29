@@ -2561,6 +2561,9 @@ export function addCopyToCodeBlocks(messageElement) {
         copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy', 'interactable');
         copyButton.title = 'Copy code';
         codeBlocks.get(i).appendChild(copyButton);
+        copyButton.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
         copyButton.addEventListener('pointerup', async function () {
             const text = codeBlocks.get(i).innerText;
             await copyText(text);
