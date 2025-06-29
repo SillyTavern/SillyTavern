@@ -40,7 +40,7 @@ const defaultSettings = {
 let isReady = false;
 /** @type {Function[]}*/
 let executeQueue = [];
-/** @type {Number}*/
+/** @type {string}*/
 let lastCharId;
 /** @type {QuickReplySettings}*/
 let settings;
@@ -247,7 +247,7 @@ const init = async () => {
     buttons = new ButtonUi(settings);
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
-   QuickReplySet.onScopedSetSave = saveScopedSets;
+   QuickReplySet.onScopedSetSave = () => saveScopedSets();
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [
