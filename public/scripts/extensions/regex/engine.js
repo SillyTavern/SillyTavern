@@ -69,7 +69,13 @@ function getScopedRegex() {
 }
 
 function getPresetRegex() {
-    const isAllowed = extension_settings?.preset_allowed_regex?.includes(oai_settings.preset_settings_openai);
+    const selectedVal = $('#main_api').val();
+    // If the main API is not OpenAI, return an empty array
+    if (selectedVal !== 'openai') {
+        return [];
+    }
+    
+    const isAllowed = extension_settings?.preset_allowed_regex[selectedVal]?.includes(oai_settings.preset_settings_openai);
 
     if (!isAllowed) {
         return [];

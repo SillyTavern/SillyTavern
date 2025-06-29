@@ -1573,6 +1573,7 @@
     "ext_regex_edit_script": "编辑脚本",
     "ext_regex_move_to_global": "移至全局脚本",
     "ext_regex_move_to_scoped": "移至作用域脚本",
+    "ext_regex_move_to_preset": "移至预设脚本",
     "ext_regex_export_script": "导出脚本",
     "ext_regex_delete_script": "删除脚本",
     "Export": "导出",

@@ -25,7 +25,7 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
  * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
 export function getRegexScripts() {
-    return [...(extension_settings.regex ?? []), ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? []), ...(oai_settings.extensions?.regex_scripts ?? [])];
+    return [...(extension_settings.regex ?? []), ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? []), ...($('#main_api').val() === 'openai' ? oai_settings.extensions?.regex_scripts ?? [] : [])];
 }
 
 /**
@@ -96,9 +96,10 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType) {
     if (scriptType === scriptTypes.PRESET) {
         await writePresetExtensionField('regex_scripts', array);
 
-        // Add the character to the allowed list
-        if (!extension_settings.preset_allowed_regex.includes(oai_settings.preset_settings_openai)) {
-            extension_settings.preset_allowed_regex.push(oai_settings.preset_settings_openai);
+        // Add the preset to the allowed list
+        const selectedVal = $('#main_api').val();
+        if (!extension_settings.preset_allowed_regex[selectedVal].includes(oai_settings.preset_settings_openai)) {
+            extension_settings.preset_allowed_regex[selectedVal].push(oai_settings.preset_settings_openai);
         }
     }
 
@@ -136,6 +137,7 @@ async function loadRegexScripts() {
     $('#saved_scoped_scripts').empty();
     $('#saved_preset_scripts').empty();
     setToggleAllIcon(false);
+    const selectedVal = $('#main_api').val();
 
     const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
 
@@ -211,6 +213,7 @@ async function loadRegexScripts() {
             await deleteRegexScript({ id: script.id, scriptType: scriptType });
             await saveRegexScript(script, -1, scriptTypes.PRESET);
         });
+        hideOrShowElement(scriptHtml.find('.move_to_preset'), selectedVal === 'openai');
         scriptHtml.find('.export_regex').on('click', async function () {
             const fileName = `regex-${sanitizeFileName(script.scriptName)}.json`;
             const fileData = JSON.stringify(script, null, 4);
@@ -237,12 +240,16 @@ async function loadRegexScripts() {
 
     extension_settings?.regex?.forEach((script, index, array) => renderScript('#saved_regex_scripts', script, scriptTypes.GLOBAL, index));
     characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index, array) => renderScript('#saved_scoped_scripts', script, scriptTypes.SCOPED, index));
-    oai_settings.extensions.regex_scripts?.forEach((script, index, array) => renderScript('#saved_preset_scripts', script, scriptTypes.PRESET, index));
 
     const isScopedAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isScopedAllowed);
-    const isPresetAllowed = extension_settings?.preset_allowed_regex?.includes(oai_settings.preset_settings_openai);
-    $('#regex_preset_toggle').prop('checked', isPresetAllowed);
+
+    // If the selected API is OpenAI, render the preset scripts
+    if (selectedVal === 'openai') {
+        oai_settings.extensions.regex_scripts?.forEach((script, index, array) => renderScript('#saved_preset_scripts', script, scriptTypes.PRESET, index));
+        const isPresetAllowed = extension_settings?.preset_allowed_regex[selectedVal]?.includes(oai_settings.preset_settings_openai);
+        $('#regex_preset_toggle').prop('checked', isPresetAllowed);
+    }
 }
 
 /**
@@ -438,6 +445,17 @@ function migrateSettings() {
     if (!extension_settings.character_allowed_regex) {
         extension_settings.character_allowed_regex = [];
         performSave = true;
+    }
+
+    const apis = ['koboldhorde', 'kobold', 'textgenerationwebui', 'novel', 'openai'];
+    for (const api of apis) {
+        if (!extension_settings.preset_allowed_regex || typeof extension_settings.preset_allowed_regex !== 'object') {
+            extension_settings.preset_allowed_regex = {};
+        }
+        if (!extension_settings.preset_allowed_regex[api]) {
+            extension_settings.preset_allowed_regex[api] = [];
+            performSave = true;
+        }
     }
 
     if (performSave) {
@@ -636,18 +654,19 @@ async function checkPresetEmbeddedRegexScripts() {
     const name = oai_settings.preset_settings_openai;
     const scripts = oai_settings.extensions?.regex_scripts;
 
+    const selectedVal = $('#main_api').val();
     if (previousPresetName && !Object.keys(openai_setting_names).includes(previousPresetName)) {
-        if (extension_settings.preset_allowed_regex?.includes(previousPresetName)) {
-            const index = extension_settings.preset_allowed_regex.indexOf(previousPresetName);
+        if (extension_settings.preset_allowed_regex[selectedVal]?.includes(previousPresetName)) {
+            const index = extension_settings.preset_allowed_regex[selectedVal].indexOf(previousPresetName);
             if (index !== -1) {
-                extension_settings.preset_allowed_regex.splice(index, 1);
+                extension_settings.preset_allowed_regex[selectedVal].splice(index, 1);
                 saveSettingsDebounced();
             }
         }
     }
 
     if (Array.isArray(scripts) && scripts.length > 0) {
-        if (!extension_settings.preset_allowed_regex.includes(name)) {
+        if (!extension_settings.preset_allowed_regex[selectedVal].includes(name)) {
             const checkKey = `AlertRegex_preset_${name}`;
 
             if (!accountStorage.getItem(checkKey)) {
@@ -656,7 +675,7 @@ async function checkPresetEmbeddedRegexScripts() {
                 const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 
                 if (result) {
-                    extension_settings.preset_allowed_regex.push(name);
+                    extension_settings.preset_allowed_regex[selectedVal].push(name);
                     await reloadCurrentChat();
                     saveSettingsDebounced();
                 }
@@ -667,6 +686,24 @@ async function checkPresetEmbeddedRegexScripts() {
     loadRegexScripts();
 }
 
+async function checkMainApi() {
+    const selectedVal = $('#main_api').val();
+    const isOpenAI = selectedVal === 'openai';
+
+    hideOrShowElement($('#preset_scripts_block').prev(), isOpenAI);
+    hideOrShowElement($('#preset_scripts_block'), isOpenAI);
+
+    await loadRegexScripts();
+}
+
+function hideOrShowElement(element, show) {
+    if (show && element.attr('hidden') !== undefined) {
+        element.removeAttr('hidden');
+    }
+    if (!show) {
+        element.attr('hidden', '');
+    }
+}
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
@@ -868,14 +905,15 @@ jQuery(async () => {
         const isEnable = !!$(this).prop('checked');
         const name = oai_settings.preset_settings_openai;
 
+        const selectedVal = $('#main_api').val();
         if (isEnable) {
-            if (!extension_settings.preset_allowed_regex.includes(name)) {
-                extension_settings.preset_allowed_regex.push(name);
+            if (!extension_settings.preset_allowed_regex[selectedVal].includes(name)) {
+                extension_settings.preset_allowed_regex[selectedVal].push(name);
             }
         } else {
-            const index = extension_settings.preset_allowed_regex.indexOf(name);
+            const index = extension_settings.preset_allowed_regex[selectedVal].indexOf(name);
             if (index !== -1) {
-                extension_settings.preset_allowed_regex.splice(index, 1);
+                extension_settings.preset_allowed_regex[selectedVal].splice(index, 1);
             }
         }
 
@@ -883,7 +921,7 @@ jQuery(async () => {
         reloadCurrentChat();
     });
 
-    await loadRegexScripts();
+    await checkMainApi();
     $('#saved_regex_scripts').sortable('enable');
 
     const localEnumProviders = {
@@ -960,6 +998,7 @@ jQuery(async () => {
         `,
     }));
 
+    eventSource.on(event_types.MAIN_API_CHANGED, checkMainApi);
     eventSource.on(event_types.CHAT_CHANGED, checkCharEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
     eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, getPresetChangeInfo);
