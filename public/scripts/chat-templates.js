@@ -94,10 +94,12 @@ const parse_derivation = derivation => (typeof derivation === 'string') ? {
     'instruct': derivation,
 } : derivation;
 
+const not_found = { context: null, instruct: null };
+
 export async function deriveTemplatesFromChatTemplate(chat_template, hash) {
     if (chat_template.trim() === '') {
         console.log('Missing chat template.');
-        return null;
+        return not_found;
     }
 
     if (hash in hash_derivations) {
@@ -112,5 +114,65 @@ export async function deriveTemplatesFromChatTemplate(chat_template, hash) {
     }
 
     console.warn(`Unknown chat template hash: ${hash} for [${chat_template}]`);
-    return null;
+    return not_found;
+}
+
+export async function bindModelTemplates(power_user, online_status) {
+    if (online_status === 'no_connection') {
+        return false;
+    }
+
+    const chat_template_hash = power_user.chat_template_hash;
+
+    const bind_model_templates = power_user.model_templates_mappings[online_status]
+        ?? power_user.model_templates_mappings[chat_template_hash]
+        ?? {};
+    const bindings_match = bind_model_templates && power_user.context.preset == bind_model_templates['context'] && (!power_user.instruct.enabled || power_user.instruct.preset === bind_model_templates['instruct']);
+
+
+    const bound = [];
+
+    if (bindings_match) {
+        // unmap current preset
+        delete power_user.model_templates_mappings[chat_template_hash];
+        delete power_user.model_templates_mappings[online_status];
+        toastr.info(`Context preset for ${online_status} will use defaults when loaded the next time.`);
+    } else {
+        if (power_user.context_derived) {
+            if (power_user.context.preset !== bind_model_templates['context']) {
+                bound.push(`${power_user.context.preset} context preset`);
+                // toastr.info(`Bound ${power_user.context.preset} preset to currently loaded model and all models that share its chat template.`);
+
+                // map current preset to current chat template hash
+                bind_model_templates['context'] = power_user.context.preset;
+            }
+        } else {
+            toastr.warning('Note: Context derivation is disabled. Not including context preset.');
+        }
+        if (power_user.instruct.enabled) {
+            if (power_user.instruct_derived) {
+                if (power_user.instruct.preset !== bind_model_templates['instruct']) {
+                    bound.push(`${power_user.instruct.preset} instruct preset`);
+
+                    bind_model_templates['instruct'] = power_user.instruct.preset;
+                }
+            } else {
+                toastr.warning('Note: Instruct derivation is disabled. Not including instruct preset.');
+            }
+        }
+        if (bound.length == 0) {
+            toastr.warning('No applicable presets available.');
+            return false;
+        }
+
+        toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`);
+        if (!online_status.startsWith('koboldcpp/ggml-model-')) {
+            power_user.model_templates_mappings[online_status] = bind_model_templates;
+        }
+        if (chat_template_hash !== '') {
+            power_user.model_templates_mappings[chat_template_hash] = bind_model_templates;
+        }
+    }
+
+    return true;
 }
