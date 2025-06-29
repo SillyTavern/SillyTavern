@@ -74,7 +74,7 @@ function getPresetRegex() {
     if (selectedVal !== 'openai') {
         return [];
     }
-    
+
     const isAllowed = extension_settings?.preset_allowed_regex[selectedVal]?.includes(oai_settings.preset_settings_openai);
 
     if (!isAllowed) {
