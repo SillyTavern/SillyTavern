@@ -162,11 +162,12 @@ export class SecretManager {
     /**
      * Masks a secret value with asterisks in the middle
      * @param {string} value The secret value to mask
+     * @param {string} key The secret key
      * @returns {string} A masked version of the value for peeking
      */
-    getMaskedValue(value) {
+    getMaskedValue(value, key) {
         // No masking if exposure is allowed
-        if (allowKeysExposure) {
+        if (allowKeysExposure || EXPORTABLE_KEYS.includes(key)) {
             return value;
         }
         const threshold = 10;
@@ -340,7 +341,7 @@ export class SecretManager {
             if (value && Array.isArray(value) && value.length > 0) {
                 state[key] = value.map(secret => ({
                     id: secret.id,
-                    value: this.getMaskedValue(secret.value),
+                    value: this.getMaskedValue(secret.value, key),
                     label: secret.label,
                     active: secret.active,
                 }));

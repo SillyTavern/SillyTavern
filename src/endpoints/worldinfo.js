@@ -19,7 +19,7 @@ export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
         return dummyObject;
     }
 
-    const filename = `${worldInfoName}.json`;
+    const filename = sanitize(`${worldInfoName}.json`);
     const pathToWorldInfo = path.join(directories.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
@@ -114,7 +114,7 @@ router.post('/edit', (request, response) => {
         return response.status(400).send('Is not a valid world info file');
     }
 
-    const filename = `${sanitize(request.body.name)}.json`;
+    const filename = sanitize(`${request.body.name}.json`);
     const pathToFile = path.join(request.user.directories.worlds, filename);
 
     writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
