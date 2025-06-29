@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 // the hash can be obtained from command line e.g. via: MODEL=path_to_model; python -c "import json, hashlib, sys; print(hashlib.sha256(json.load(open('"$MODEL"/tokenizer_config.json'))['chat_template'].encode()).hexdigest())"
 // note that chat templates must be trimmed to match the llama.cpp metadata value
 const hash_derivations = {
@@ -122,55 +124,54 @@ export async function bindModelTemplates(power_user, online_status) {
         return false;
     }
 
-    const chat_template_hash = power_user.chat_template_hash;
-
-    const bind_model_templates = power_user.model_templates_mappings[online_status]
-        ?? power_user.model_templates_mappings[chat_template_hash]
+    const chatTemplateHash = power_user.chat_template_hash;
+    const bindModelTemplates = power_user.model_templates_mappings[online_status]
+        ?? power_user.model_templates_mappings[chatTemplateHash]
         ?? {};
-    const bindings_match = bind_model_templates && power_user.context.preset == bind_model_templates['context'] && (!power_user.instruct.enabled || power_user.instruct.preset === bind_model_templates['instruct']);
-
+    const bindingsMatch = bindModelTemplates
+        && power_user.context.preset == bindModelTemplates['context']
+        && (!power_user.instruct.enabled || power_user.instruct.preset === bindModelTemplates['instruct']);
 
     const bound = [];
 
-    if (bindings_match) {
+    if (bindingsMatch) {
         // unmap current preset
-        delete power_user.model_templates_mappings[chat_template_hash];
+        delete power_user.model_templates_mappings[chatTemplateHash];
         delete power_user.model_templates_mappings[online_status];
-        toastr.info(`Context preset for ${online_status} will use defaults when loaded the next time.`);
+        toastr.info(t`Context preset for ${online_status} will use defaults when loaded the next time.`);
     } else {
         if (power_user.context_derived) {
-            if (power_user.context.preset !== bind_model_templates['context']) {
+            if (power_user.context.preset !== bindModelTemplates['context']) {
                 bound.push(`${power_user.context.preset} context preset`);
                 // toastr.info(`Bound ${power_user.context.preset} preset to currently loaded model and all models that share its chat template.`);
 
                 // map current preset to current chat template hash
-                bind_model_templates['context'] = power_user.context.preset;
+                bindModelTemplates['context'] = power_user.context.preset;
             }
         } else {
-            toastr.warning('Note: Context derivation is disabled. Not including context preset.');
+            toastr.warning(t`Note: Context derivation is disabled. Not including context preset.`);
         }
         if (power_user.instruct.enabled) {
             if (power_user.instruct_derived) {
-                if (power_user.instruct.preset !== bind_model_templates['instruct']) {
+                if (power_user.instruct.preset !== bindModelTemplates['instruct']) {
                     bound.push(`${power_user.instruct.preset} instruct preset`);
-
-                    bind_model_templates['instruct'] = power_user.instruct.preset;
+                    bindModelTemplates['instruct'] = power_user.instruct.preset;
                 }
             } else {
-                toastr.warning('Note: Instruct derivation is disabled. Not including instruct preset.');
+                toastr.warning(t`Note: Instruct derivation is disabled. Not including instruct preset.`);
             }
         }
         if (bound.length == 0) {
-            toastr.warning('No applicable presets available.');
+            toastr.warning(t`No applicable presets available.`);
             return false;
         }
 
-        toastr.info(`Bound ${online_status} to ${bound.join(', ')}.`);
+        toastr.info(t`Bound ${online_status} to ${bound.join(', ')}.`);
         if (!online_status.startsWith('koboldcpp/ggml-model-')) {
-            power_user.model_templates_mappings[online_status] = bind_model_templates;
+            power_user.model_templates_mappings[online_status] = bindModelTemplates;
         }
-        if (chat_template_hash !== '') {
-            power_user.model_templates_mappings[chat_template_hash] = bind_model_templates;
+        if (chatTemplateHash !== '') {
+            power_user.model_templates_mappings[chatTemplateHash] = bindModelTemplates;
         }
     }
 

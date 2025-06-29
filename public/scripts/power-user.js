@@ -262,12 +262,13 @@ let power_user = {
         names_as_stop_strings: true,
     },
 
-    chat_template_hash: '', /** the chat template hash of the currently loaded model, if any; used when deriving mappings */
-
     instruct_derived: false,
     context_derived: false,
     context_size_derived: false,
-    model_templates_mappings: {}, /** user defined model identifier / chat template hash to instruct/context template mappings */
+    /** User-defined model identifier / chat template hash to instruct/context template mappings */
+    model_templates_mappings: {},
+    /** The chat template hash of the currently loaded model, if any; used when deriving mappings */
+    chat_template_hash: '',
 
     sysprompt: {
         enabled: true,
@@ -1578,6 +1579,7 @@ async function loadPowerUserSettings(settings, data) {
         delete power_user.instruct.derived;
     }
 
+    // Reset the saved chat template hash
     power_user.chat_template_hash = '';
 
     $('#single_line').prop('checked', power_user.single_line);
