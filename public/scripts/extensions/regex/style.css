@@ -35,6 +35,10 @@
     display: none;
 }
 
+#preset_scripts_block .move_to_preset {
+    display: none;
+}
+
 #scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)) {
     opacity: 0.5;
 }

@@ -331,6 +331,7 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    extensions: ['', 'extensions', false, false],
 };
 
 const default_settings = {
@@ -420,8 +421,10 @@ const default_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
+//Maybe here can use: structuredClone(default_settings);
 const oai_settings = {
     preset_settings_openai: 'Default',
     temp_openai: 1.0,
@@ -509,6 +512,7 @@ const oai_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
 export let proxies = [
@@ -3582,6 +3586,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_providers = settings.openrouter_providers ?? default_settings.openrouter_providers;
     oai_settings.bind_preset_to_connection = settings.bind_preset_to_connection ?? default_settings.bind_preset_to_connection;
 
+    oai_settings.extensions = settings.extensions ?? default_settings.extensions;
+
     // Migrate from old settings
     if (settings.names_in_completion === true) {
         oai_settings.names_behavior = character_names_behavior.COMPLETION;
@@ -3922,7 +3928,7 @@ function showWindowExtensionError() {
  * @param triggerUi Whether the change event of preset UI element should be emitted
  * @returns {Promise<void>}
  */
-async function saveOpenAIPreset(name, settings, triggerUi = true) {
+export async function saveOpenAIPreset(name, settings, triggerUi = true) {
     const presetBody = {
         chat_completion_source: settings.chat_completion_source,
         openai_model: settings.openai_model,
@@ -4006,6 +4012,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         request_images: settings.request_images,
         seed: settings.seed,
         n: settings.n,
+        extensions: settings.extensions,
     };
 
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${encodeURIComponent(name)}`, {
@@ -4442,13 +4449,17 @@ function onSettingsPresetChange() {
                 continue;
             }
 
-            if (preset[key] !== undefined) {
-                if (isCheckbox) {
-                    updateCheckbox(selector, preset[key]);
-                } else {
-                    updateInput(selector, preset[key]);
+            if (oai_settings[setting] !== undefined) {
+                if (preset[key] !== undefined) {
+                    if (selector) {
+                        if (isCheckbox) {
+                            updateCheckbox(selector, preset[key]);
+                        } else {
+                            updateInput(selector, preset[key]);
+                        }
+                    }
                 }
-                oai_settings[setting] = preset[key];
+                oai_settings[setting] = preset[key] ?? default_settings[setting];
             }
         }
 

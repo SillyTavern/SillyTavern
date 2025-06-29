@@ -10,6 +10,7 @@ import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { oai_settings, openai_setting_names, openai_settings, saveOpenAIPreset } from './openai.js';
 
 export {
     getContext,
@@ -189,6 +190,7 @@ export const extension_settings = {
     /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],
     character_allowed_regex: [],
+    preset_allowed_regex: [],
     tts: {},
     sd: {
         prompts: {},
@@ -1585,6 +1587,34 @@ export async function writeExtensionField(characterId, key, value) {
     if (!mergeResponse.ok) {
         console.error('Failed to save extension field', mergeResponse.statusText);
     }
+}
+
+/**
+ * Writes a field to the character's data extensions object.
+ * @param {string} key Field name
+ * @param {any} value Field value
+ * @returns {Promise<void>} When the field is written
+ */
+export async function writePresetExtensionField(key, value) {
+    const context = getContext();
+
+    const path = `extensions.${key}`;
+    setValueByPath(oai_settings, path, value);
+
+    const name = oai_settings.preset_settings_openai;
+    const presetData = structuredClone(openai_settings[openai_setting_names[name]]);
+    presetData.temp_openai = presetData.temperature;
+    presetData.freq_pen_openai = presetData.frequency_penalty;
+    presetData.pres_pen_openai = presetData.presence_penalty;
+    presetData.repetition_penalty_openai = presetData.repetition_penalty;
+    presetData.top_p_openai = presetData.top_p;
+    presetData.top_k_openai = presetData.top_k;
+    presetData.top_a_openai = presetData.top_a;
+    presetData.min_p_openai = presetData.min_p;
+
+    setValueByPath(presetData, path, value);
+
+    await saveOpenAIPreset(name, presetData, false);
 }
 
 /**
