@@ -1,5 +1,6 @@
 import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { oai_settings } from '../../openai.js';
 import { regexFromString } from '../../utils.js';
 export {
     regex_placement,
@@ -67,6 +68,22 @@ function getScopedRegex() {
     return scripts;
 }
 
+function getPresetRegex() {
+    const isAllowed = extension_settings?.preset_allowed_regex?.includes(oai_settings.preset_settings_openai);
+
+    if (!isAllowed) {
+        return [];
+    }
+
+    const scripts = oai_settings.extensions?.regex_scripts;
+
+    if (!Array.isArray(scripts)) {
+        return [];
+    }
+
+    return scripts;
+}
+
 /**
  * Parent function to fetch a regexed version of a raw string
  * @param {string} rawString The raw string to be regexed
@@ -87,7 +104,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? [])];
+    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? []), ...(getPresetRegex() ?? [])];
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
