@@ -204,26 +204,14 @@ const onCharChanged = async () => {
 
    for (const qrsData of embeddedSetsData) {
        const existingSet = QuickReplySet.get(qrsData.name);
+       const newSet = QuickReplySet.from(qrsData);
        if (existingSet) {
-           const confirmed = await Popup.show.confirm(
-               `A Quick Reply Set named "${qrsData.name}" already exists. Do you want to overwrite it with the version from this character?`,
-               'Overwrite Confirmation',
-           );
-           if (confirmed !== POPUP_RESULT.AFFIRMATIVE) {
-               continue;
-           }
+           // Silently overwrite the in-memory version for this session without saving it globally.
            const index = QuickReplySet.list.indexOf(existingSet);
-           const newSet = QuickReplySet.from(qrsData);
-           newSet.qrList = qrsData.qrList.map(qr => QuickReply.from(qr));
-           newSet.init();
            QuickReplySet.list[index] = newSet;
-           await newSet.performSave();
        } else {
-           const newSet = QuickReplySet.from(qrsData);
-           newSet.qrList = qrsData.qrList.map(qr => QuickReply.from(qr));
-           newSet.init();
+           // Add the new set to the in-memory list for this session.
            QuickReplySet.list.push(newSet);
-           await newSet.performSave();
        }
    }
 
@@ -347,3 +335,4 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
+

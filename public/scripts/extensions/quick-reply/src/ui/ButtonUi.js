@@ -90,7 +90,7 @@ export class ButtonUi {
                         root.append(buttons);
                     }
                 }
-                [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
+                [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? []), ...(this.settings.charConfig?.setList ?? [])]
                     .filter(link=>link.isVisible)
                     .forEach(link=>buttonHolder.append(link.set.render()))
                 ;
@@ -150,7 +150,7 @@ export class ButtonUi {
                             body.append(buttons);
                         }
                     }
-                    [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
+                    [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? []), ...(this.settings.charConfig?.setList ?? [])]
                         .filter(link=>link.isVisible)
                         .forEach(link=>buttonHolder.append(link.set.render()))
                     ;
