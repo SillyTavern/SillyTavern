@@ -190,7 +190,7 @@ export const extension_settings = {
     /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],
     character_allowed_regex: [],
-    preset_allowed_regex: [],
+    preset_allowed_regex: {},
     tts: {},
     sd: {
         prompts: {},
@@ -1590,19 +1590,19 @@ export async function writeExtensionField(characterId, key, value) {
 }
 
 /**
- * Writes a field to the character's data extensions object.
+ * Writes a field to the preset's data extensions object.a
  * @param {string} key Field name
  * @param {any} value Field value
  * @returns {Promise<void>} When the field is written
  */
 export async function writePresetExtensionField(key, value) {
-    const context = getContext();
-
     const path = `extensions.${key}`;
     setValueByPath(oai_settings, path, value);
 
+    // Save scripts but not main settings
     const name = oai_settings.preset_settings_openai;
     const presetData = structuredClone(openai_settings[openai_setting_names[name]]);
+    // Map OpenAI unique setting names to general preset data
     presetData.temp_openai = presetData.temperature;
     presetData.freq_pen_openai = presetData.frequency_penalty;
     presetData.pres_pen_openai = presetData.presence_penalty;

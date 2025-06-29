@@ -560,6 +560,7 @@ export const event_types = {
     SECRET_DELETED: 'secret_deleted',
     SECRET_ROTATED: 'secret_rotated',
     SECRET_EDITED: 'secret_edited',
+    MAIN_API_CHANGED: 'main_api_changed',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
@@ -7541,6 +7542,7 @@ export function changeMainAPI() {
     validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
+    eventSource.emit(event_types.MAIN_API_CHANGED);
 }
 
 export function setUserName(value, { toastPersonaNameChange = true } = {}) {
