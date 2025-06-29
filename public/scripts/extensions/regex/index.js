@@ -627,7 +627,7 @@ async function checkCharEmbeddedRegexScripts() {
 
                 if (!accountStorage.getItem(checkKey)) {
                     accountStorage.setItem(checkKey, 'true');
-                    const template = await renderExtensionTemplateAsync('regex', 'charEmbeddedScripts', {});
+                    const template = await renderExtensionTemplateAsync('regex', 'EmbeddedScripts', {});
                     const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 
                     if (result) {
