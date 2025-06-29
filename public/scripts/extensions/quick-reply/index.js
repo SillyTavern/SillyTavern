@@ -52,6 +52,7 @@ let buttons;
 let autoExec;
 /** @type {QuickReplyApi} */
 export let quickReplyApi;
+const overwrittenGlobalSets = new Map();
 
 
 
@@ -151,10 +152,21 @@ const saveScopedSets = debounceAsync(async () => {
    const char = characters[this_chid];
    if (!char) return;
 
-   const scopedSets = settings.charConfig?.setList?.map(link => link.set) ?? [];
-   const data = scopedSets.map(qrs => qrs.toJSON());
+    if (!settings.charConfig) return;
+
+    const data = settings.charConfig.setList.map(link => {
+        const setData = link.set.toJSON();
+        // Manually add isVisible to the saved data, as it's part of the link, not the set itself.
+        setData.isVisible = link.isVisible;
+        return setData;
+    });
+
    await writeExtensionField(this_chid, 'quickReply_sets', data);
    log('Scoped sets saved to character card.');
+
+   // Refresh the UI to reflect the changes immediately.
+   buttons.refresh();
+   manager.rerender();
 });
 
 
@@ -168,59 +180,99 @@ const checkEmbeddedSets = () => {
 
 
 const onCharChanged = async () => {
-   if (lastCharId == this_chid) return;
-   lastCharId = this_chid;
+    if (lastCharId === this_chid) return;
 
-   settings.charConfig = null;
+    // Unload the old character's sets and restore any overwritten global sets.
+    const oldCharConfig = settings.charConfig;
+    if (oldCharConfig) {
+        for (const link of oldCharConfig.setList) {
+            const setToUnload = link.set;
+            if (!setToUnload || setToUnload.scope !== 'character') continue;
 
-   if (!this_chid) return;
+            const listIndex = QuickReplySet.list.indexOf(setToUnload);
+            if (listIndex === -1) continue;
 
+            if (overwrittenGlobalSets.has(setToUnload.name)) {
+                // This was an overwrite; restore the original global set.
+                QuickReplySet.list[listIndex] = overwrittenGlobalSets.get(setToUnload.name);
+                overwrittenGlobalSets.delete(setToUnload.name);
+            } else {
+                // This was a character-only set; remove it from the master list.
+                QuickReplySet.list.splice(listIndex, 1);
+            }
+        }
+    }
+    overwrittenGlobalSets.clear(); // Clear any leftovers.
 
-   const char = characters[this_chid];
-   const embeddedSetsData = char.data?.extensions?.quickReply_sets ?? [];
+    // Load the new character's sets.
+    lastCharId = this_chid;
+    settings.charConfig = null;
 
-   if (!embeddedSetsData || embeddedSetsData.length === 0) {
-       settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
-       return;
-   }
+    if (!this_chid) {
+        // No new character, just trigger a UI refresh and we're done.
+        buttons.refresh();
+        manager.rerender();
+        return;
+    }
 
+    const char = characters[this_chid];
+    const embeddedSetsData = char.data?.extensions?.quickReply_sets ?? [];
 
-   if (!checkEmbeddedSets()) {
-       const confirm = await Popup.show.confirm(
-           'This character contains embedded Quick Reply sets, but is not authorized to execute them. Do you want to authorize it?',
-           'Authorize Quick Replies',
-           { okButton: 'Authorize' },
-       );
-       if (confirm === POPUP_RESULT.AFFIRMATIVE) {
-           const allowed = extension_settings.character_allowed_quickreply ?? [];
-           allowed.push(this_chid);
-           extension_settings.character_allowed_quickreply = allowed;
-       } else {
-           settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
-           return;
-       }
-   }
+    if (!embeddedSetsData || embeddedSetsData.length === 0) {
+        settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
+        buttons.refresh();
+        manager.rerender();
+        return;
+    }
 
+    if (!checkEmbeddedSets()) {
+        const confirm = await Popup.show.confirm(
+            'This character contains embedded Quick Reply sets, but is not authorized to execute them. Do you want to authorize it?',
+            'Authorize Quick Replies',
+            { okButton: 'Authorize' }
+        );
+        if (confirm === POPUP_RESULT.AFFIRMATIVE) {
+            const allowed = extension_settings.character_allowed_quickreply ?? [];
+            allowed.push(this_chid);
+            extension_settings.character_allowed_quickreply = allowed;
+        } else {
+            settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
+            buttons.refresh();
+            manager.rerender();
+            return;
+        }
+    }
 
-   for (const qrsData of embeddedSetsData) {
-       const existingSet = QuickReplySet.get(qrsData.name);
-       const newSet = QuickReplySet.from(qrsData);
-       if (existingSet) {
-           // Silently overwrite the in-memory version for this session without saving it globally.
-           const index = QuickReplySet.list.indexOf(existingSet);
-           QuickReplySet.list[index] = newSet;
-       } else {
-           // Add the new set to the in-memory list for this session.
-           QuickReplySet.list.push(newSet);
-       }
-   }
+    // Load sets from character data
+    for (const qrsData of embeddedSetsData) {
+        qrsData.scope = 'character'; // Explicitly mark as a character-scoped set
+        const newSet = QuickReplySet.from(qrsData);
+        const existingSet = QuickReplySet.get(newSet.name);
 
-   const charSetConfig = QuickReplyConfig.from({
-       scope: 'character',
-       setList: embeddedSetsData.map(qrsData => ({ set: qrsData.name, isVisible: true })),
-   });
-   charSetConfig.onSave = saveScopedSets;
-   settings.charConfig = charSetConfig;
+        if (existingSet) {
+            // It's an overwrite. Store the original global set to restore it later.
+            if (existingSet.scope === 'global') {
+                overwrittenGlobalSets.set(existingSet.name, existingSet);
+            }
+            const listIndex = QuickReplySet.list.indexOf(existingSet);
+            QuickReplySet.list[listIndex] = newSet;
+        } else {
+            // It's a new set, just add it to the list.
+            QuickReplySet.list.push(newSet);
+        }
+    }
+
+    const charSetConfig = QuickReplyConfig.from({
+        scope: 'character',
+        setList: embeddedSetsData.map(qrsData => ({
+            set: qrsData.name,
+            isVisible: qrsData.isVisible !== false, // Restore visibility
+        })),
+    });
+    charSetConfig.onSave = saveScopedSets;
+    settings.charConfig = charSetConfig;
+
+    // The parent onChatChanged will call buttons.refresh() and manager.rerender()
 };
 
 

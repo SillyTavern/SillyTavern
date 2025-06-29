@@ -11,9 +11,11 @@ export class QuickReplySet {
    /**@type {function(QuickReplySet):void}*/ static onScopedSetSave;
 
     static from(props) {
-        props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
+        const qrList = props.qrList;
+        props.qrList = [];
         const instance = Object.assign(new this(), props);
-        // instance.init();
+        instance.qrList = (qrList ?? []).map(it=>QuickReply.from(it));
+        instance.init();
         return instance;
     }
 
@@ -25,6 +27,7 @@ export class QuickReplySet {
     }
 
     /**@type {string}*/ name;
+    /**@type {'global'|'character'}*/ scope = 'global';
     /**@type {boolean}*/ disableSend = false;
     /**@type {boolean}*/ placeBeforeInput = false;
     /**@type {boolean}*/ injectInput = false;
