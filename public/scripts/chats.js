@@ -44,6 +44,7 @@ import {
     download,
     getFileText,
     getFileExtension,
+    convertTextToBinaryString,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -224,7 +225,8 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 try {
                     const converter = getConverter(file.type);
                     const fileText = await converter(file);
-                    base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+                    // TODO: Eventually replace line below to use `convertTextToBase64`.
+                    base64Data = window.btoa(convertTextToBinaryString(fileText));
                 } catch (error) {
                     toastr.error(String(error), t`Could not convert file`);
                     console.error('Could not convert file', error);
@@ -477,7 +479,7 @@ export async function appendFileContent(message, messageText) {
 export function encodeStyleTags(text) {
     const styleRegex = /<style>(.+?)<\/style>/gims;
     return text.replaceAll(styleRegex, (_, match) => {
-        return `<custom-style>${escape(match)}</custom-style>`;
+        return `<custom-style>${encodeURIComponent(match)}</custom-style>`;
     });
 }
 
@@ -530,7 +532,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
-            let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
+            let styleCleaned = decodeURIComponent(style).replaceAll(/<br\/>/g, '');
             const ast = css.parse(styleCleaned);
             const sheet = ast?.stylesheet;
             if (sheet) {
@@ -1497,14 +1499,16 @@ export async function uploadFileAttachmentToServer(file, target) {
         try {
             const converter = getConverter(file.type);
             const fileText = await converter(file);
-            base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+            // TODO: Eventually replace line below to use `convertTextToBase64`.
+            base64Data = window.btoa(convertTextToBinaryString(fileText));
         } catch (error) {
             toastr.error(String(error), t`Could not convert file`);
             console.error('Could not convert file', error);
         }
     } else {
         const fileText = await file.text();
-        base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+        /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
+        base64Data = window.btoa(convertTextToBinaryString(fileText));
     }
 
     const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);

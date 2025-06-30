@@ -1453,6 +1453,36 @@ export function getFileExtension(file) {
 }
 
 /**
+ * Converts UTF-8 string into a binary string,
+ * where each character's code point directly matches the byte value (0-255).
+ *
+ * @param {string} text The UTF-8 string
+ * @returns {string} The binary string
+ */
+export function convertTextToBinaryString(text) {
+    const encoder = new TextEncoder();
+    const utf8Bytes = encoder.encode(text);
+    const binaryString = String.fromCharCode(...utf8Bytes);
+    return binaryString;
+}
+
+/**
+ * Converts UTF-8 string into a Base64-encoded string.
+ *
+ * For future use, when `Uint8Array.prototype.toBase64` function is implemented in all major browsers.
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/toBase64|MDN Reference}
+ *
+ * @param {string} text The UTF-8 string
+ * @returns {string} The Base64-encoded string
+ */
+export function convertTextToBase64(text) {
+    const encoder = new TextEncoder();
+    const utf8Bytes = encoder.encode(text);
+    const base64String = utf8Bytes.toBase64();
+    return base64String;
+}
+
+/**
  * Loads either a CSS or JS file and appends it to the appropriate document section.
  *
  * @param {string} url - The URL of the file to be loaded.
