@@ -39,6 +39,7 @@ import {
 import { download, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
 import { reasoning_templates } from './reasoning.js';
+import { extension_settings } from './extensions.js';
 
 const presetManagers = {};
 
@@ -523,7 +524,7 @@ class PresetManager {
     }
 
     isAdvancedFormatting() {
-        return  ['context', 'instruct', 'sysprompt', 'reasoning'].includes(this.apiId);
+        return ['context', 'instruct', 'sysprompt', 'reasoning'].includes(this.apiId);
     }
 
     updateList(name, preset) {
@@ -902,6 +903,10 @@ export async function initPresetManager() {
         }
 
         await presetManager.renamePreset(newName);
+        const index = extension_settings.preset_allowed_regex[apiId].indexOf(oldName);
+        if (index !== -1) {
+            extension_settings.preset_allowed_regex[apiId][index] = newName;
+        }
 
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.

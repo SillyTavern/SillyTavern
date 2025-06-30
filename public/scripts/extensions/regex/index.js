@@ -448,10 +448,10 @@ function migrateSettings() {
     }
 
     const apis = ['koboldhorde', 'kobold', 'textgenerationwebui', 'novel', 'openai'];
+    if (!extension_settings.preset_allowed_regex || Array.isArray(extension_settings.preset_allowed_regex)) {
+        extension_settings.preset_allowed_regex = {};
+    }
     for (const api of apis) {
-        if (!extension_settings.preset_allowed_regex || typeof extension_settings.preset_allowed_regex !== 'object') {
-            extension_settings.preset_allowed_regex = {};
-        }
         if (!extension_settings.preset_allowed_regex[api]) {
             extension_settings.preset_allowed_regex[api] = [];
             performSave = true;
@@ -627,7 +627,7 @@ async function checkCharEmbeddedRegexScripts() {
 
                 if (!accountStorage.getItem(checkKey)) {
                     accountStorage.setItem(checkKey, 'true');
-                    const template = await renderExtensionTemplateAsync('regex', 'EmbeddedScripts', {});
+                    const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
                     const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 
                     if (result) {

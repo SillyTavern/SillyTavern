@@ -47,6 +47,10 @@
     opacity: 0.5;
 }
 
+#preset_scripts_block:not(:has(#regex_preset_toggle:checked)) {
+    opacity: 0.5;
+}
+
 .enable_scoped:checked ~ .regex-toggle-on {
     display: block;
 }
