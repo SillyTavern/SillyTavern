@@ -17,7 +17,7 @@ function rgb2hex(rgb) {
         ('0' + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
 }
 
-$('button').click(function () {
+$('button').on('click', function () {
     var hex = rgb2hex($('input').val());
     $('.result').html(hex);
 });

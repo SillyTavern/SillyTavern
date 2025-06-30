@@ -3068,7 +3068,7 @@ export function sendSystemMessage(type, text, extra = {}) {
         const parent = spinner.parentElement;
         spinner.remove();
         browser.renderInto(parent);
-        browser.search.focus();
+        browser.search.trigger('focus');
     }
 }
 
@@ -10746,10 +10746,10 @@ jQuery(async function () {
     });
     $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
         if (S_TAPreviouslyFocused) {
-            $('#send_textarea').focus();
+            $('#send_textarea').trigger('focus');
         }
     });
-    $(document).click(event => {
+    $(document).on('click', event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
             var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
             if (!validIDs.includes($(event.target).attr('id'))) {
@@ -10762,7 +10762,7 @@ jQuery(async function () {
 
     /////////////////
 
-    $('#swipes-checkbox').change(function () {
+    $('#swipes-checkbox').on('change', function () {
         swipes = !!$('#swipes-checkbox').prop('checked');
         if (swipes) {
             //console.log('toggle change calling showswipebtns');
@@ -11439,7 +11439,7 @@ jQuery(async function () {
         is_delete_mode = false;
     });
 
-    $('#settings_preset').change(function () {
+    $('#settings_preset').on('change', function () {
         if ($('#settings_preset').find(':selected').val() != 'gui') {
             preset_settings = $('#settings_preset').find(':selected').text();
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -11464,7 +11464,7 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
 
-    $('#settings_preset_novel').change(function () {
+    $('#settings_preset_novel').on('change', function () {
         nai_settings.preset_settings_novel = $('#settings_preset_novel')
             .find(':selected')
             .text();
@@ -11477,7 +11477,7 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
 
-    $('#main_api').change(function () {
+    $('#main_api').on('change', function () {
         cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
@@ -12005,7 +12005,7 @@ jQuery(async function () {
         select_rm_characters();
     });
 
-    $('#dupe_button').click(async function () {
+    $('#dupe_button').on('click', async function () {
         await duplicateCharacter();
     });
 
@@ -12197,18 +12197,18 @@ jQuery(async function () {
         }
     });
 
-    $(document).keyup(function (e) {
+    $(document).on('keyup', function (e) {
         if (e.key === 'Escape') {
             const isEditVisible = $('#curEditTextarea').is(':visible') || $('.reasoning_edit_textarea').length > 0;
             if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor('all');
-                $('#send_textarea').focus();
+                $('#send_textarea').trigger('focus');
                 return;
             }
             if (isEditVisible && power_user.auto_save_msg_edits === true) {
                 $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).trigger('click');
                 closeMessageEditor('reasoning');
-                $('#send_textarea').focus();
+                $('#send_textarea').trigger('focus');
                 return;
             }
             if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
@@ -12309,7 +12309,7 @@ jQuery(async function () {
     });
 
     $(document).on('change', '.range-block-counter input, .neo-range-input', function (e) {
-        e.target.focus();
+        e.target.trigger('focus');
         e.target.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
     });
 

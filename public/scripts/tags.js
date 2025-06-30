@@ -1301,7 +1301,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
             select: (e, u) => selectTag(e, u, listSelector, { tagListOptions: tagListOptions }),
             minLength: 0,
         })
-        .focus(onTagInputFocus); // <== show tag list on click
+        .on('focus', onTagInputFocus); // <== show tag list on click
 }
 
 async function onViewTagsListClick() {
