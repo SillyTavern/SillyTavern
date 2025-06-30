@@ -12,19 +12,19 @@ router.post('/save', (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(request.user.directories.themes, sanitize(request.body.name) + '.json');
+    const filename = path.join(request.user.directories.themes, sanitize(`${request.body.name}.json`));
     writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
 
-router.post('/delete', function (request, response) {
+router.post('/delete', (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
     }
 
     try {
-        const filename = path.join(request.user.directories.themes, sanitize(request.body.name) + '.json');
+        const filename = path.join(request.user.directories.themes, sanitize(`${request.body.name}.json`));
         if (!fs.existsSync(filename)) {
             console.error('Theme file not found:', filename);
             return response.sendStatus(404);

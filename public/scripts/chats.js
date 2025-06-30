@@ -225,7 +225,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 try {
                     const converter = getConverter(file.type);
                     const fileText = await converter(file);
-                    // TODO: Eventually replace line below to use `convertTextToBase64`.
+                    /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
                     base64Data = window.btoa(convertTextToBinaryString(fileText));
                 } catch (error) {
                     toastr.error(String(error), t`Could not convert file`);
@@ -1499,7 +1499,7 @@ export async function uploadFileAttachmentToServer(file, target) {
         try {
             const converter = getConverter(file.type);
             const fileText = await converter(file);
-            // TODO: Eventually replace line below to use `convertTextToBase64`.
+            /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
             base64Data = window.btoa(convertTextToBinaryString(fileText));
         } catch (error) {
             toastr.error(String(error), t`Could not convert file`);
