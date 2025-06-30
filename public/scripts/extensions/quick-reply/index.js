@@ -1,4 +1,4 @@
-import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, characters, this_chid } from '../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, characters, this_chid, saveSettingsDebounced, reloadCurrentChat } from '../../../script.js';
 import { extension_settings, writeExtensionField } from '../../extensions.js';
 import { Popup, POPUP_RESULT } from '../../popup.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
@@ -148,41 +148,41 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
 
 
 const saveScopedSets = debounceAsync(async () => {
-   if (!this_chid) return;
-   const char = characters[this_chid];
-   if (!char) return;
+    if (!this_chid) return;
+    const char = characters[this_chid];
+    if (!char) return;
 
     if (!settings.charConfig) return;
 
-    const data = settings.charConfig.setList.map(link => {
+    const newData = settings.charConfig.setList.map(link => {
         const setData = link.set.toJSON();
         // Manually add isVisible to the saved data, as it's part of the link, not the set itself.
         setData.isVisible = link.isVisible;
         return setData;
     });
 
-   await writeExtensionField(this_chid, 'quickReply_sets', data);
-   log('Scoped sets saved to character card.');
+    const oldData = char.data?.extensions?.quickReply_sets ?? [];
 
-   // Refresh the UI to reflect the changes immediately.
-   buttons.refresh();
-   manager.rerender();
+    // Deep compare old and new data. Only save if different to prevent loops.
+    if (JSON.stringify(oldData) === JSON.stringify(newData)) {
+        return;
+    }
+
+    await writeExtensionField(this_chid, 'quickReply_sets', newData);
+    log('Scoped sets saved to character card.');
+
+    // Refresh the UI to reflect the changes immediately.
+    buttons.refresh();
+    manager.rerender();
 });
 
 
-const checkEmbeddedSets = () => {
-   const allowed = extension_settings.character_allowed_quickreply ?? [];
-   if (this_chid && !allowed.includes(this_chid)) {
-       return false;
-   }
-   return true;
-};
 
 
 const onCharChanged = async () => {
     if (lastCharId === this_chid) return;
 
-    // Unload the old character's sets and restore any overwritten global sets.
+    // Phase 1: Unload the old character's sets and restore any overwritten global sets.
     const oldCharConfig = settings.charConfig;
     if (oldCharConfig) {
         for (const link of oldCharConfig.setList) {
@@ -193,23 +193,20 @@ const onCharChanged = async () => {
             if (listIndex === -1) continue;
 
             if (overwrittenGlobalSets.has(setToUnload.name)) {
-                // This was an overwrite; restore the original global set.
                 QuickReplySet.list[listIndex] = overwrittenGlobalSets.get(setToUnload.name);
                 overwrittenGlobalSets.delete(setToUnload.name);
             } else {
-                // This was a character-only set; remove it from the master list.
                 QuickReplySet.list.splice(listIndex, 1);
             }
         }
     }
     overwrittenGlobalSets.clear(); // Clear any leftovers.
 
-    // Load the new character's sets.
+    // Phase 2: Load the new character's sets.
     lastCharId = this_chid;
     settings.charConfig = null;
 
     if (!this_chid) {
-        // No new character, just trigger a UI refresh and we're done.
         buttons.refresh();
         manager.rerender();
         return;
@@ -218,6 +215,7 @@ const onCharChanged = async () => {
     const char = characters[this_chid];
     const embeddedSetsData = char.data?.extensions?.quickReply_sets ?? [];
 
+    // If there are no sets, configure empty and exit.
     if (!embeddedSetsData || embeddedSetsData.length === 0) {
         settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
         buttons.refresh();
@@ -225,23 +223,32 @@ const onCharChanged = async () => {
         return;
     }
 
-    if (!checkEmbeddedSets()) {
+    // If there are sets, check for authorization, regex-style.
+    const avatar = char?.avatar;
+    const allowed = extension_settings.character_allowed_quickreply ?? [];
+    if (avatar && !allowed.includes(avatar)) {
         const confirm = await Popup.show.confirm(
             'This character contains embedded Quick Reply sets, but is not authorized to execute them. Do you want to authorize it?',
             'Authorize Quick Replies',
-            { okButton: 'Authorize' }
+            { okButton: 'Authorize' },
         );
+
         if (confirm === POPUP_RESULT.AFFIRMATIVE) {
-            const allowed = extension_settings.character_allowed_quickreply ?? [];
-            allowed.push(this_chid);
+            allowed.push(avatar);
             extension_settings.character_allowed_quickreply = allowed;
+            saveSettingsDebounced();
+            lastCharId = null; // Force a re-run of the logic after reload
+            await reloadCurrentChat(); // Crucial step: reload to apply the new permission state.
+            return; // Stop further execution, as reload will trigger a new onCharChanged.
         } else {
+            // User denied permission. Don't load sets.
             settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
             buttons.refresh();
             manager.rerender();
             return;
         }
     }
+
 
     // Load sets from character data
     for (const qrsData of embeddedSetsData) {
@@ -277,6 +284,9 @@ const onCharChanged = async () => {
 
 
 const init = async () => {
+    if (!extension_settings.character_allowed_quickreply) {
+        extension_settings.character_allowed_quickreply = [];
+    }
     await loadSets();
     await loadSettings();
     log('settings: ', settings);
@@ -340,6 +350,20 @@ const finalizeInit = async () => {
 };
 await init();
 
+const purgeEmbeddedQuickReplySets = ({ character }) => {
+    const avatar = character?.avatar;
+
+    if (avatar && extension_settings.character_allowed_quickreply?.includes(avatar)) {
+        const index = extension_settings.character_allowed_quickreply.indexOf(avatar);
+        if (index !== -1) {
+            extension_settings.character_allowed_quickreply.splice(index, 1);
+            saveSettingsDebounced();
+            log(`Removed character avatar ${avatar} from Quick Reply whitelist.`);
+        }
+    }
+};
+
+
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
    await onCharChanged();
@@ -357,6 +381,7 @@ const onChatChanged = async (chatIdx) => {
     await autoExec.handleChatChanged();
 };
 eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
+eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedQuickReplySets);
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
