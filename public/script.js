@@ -8930,6 +8930,7 @@ function updateAlternateGreetingsHintVisibility(root) {
     $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
 }
 
+let characterWorldPopup;
 function openCharacterWorldPopup() {
     const chid = $('#set_character_world').data('chid');
 
@@ -8974,6 +8975,10 @@ function openCharacterWorldPopup() {
     }
 
     function onExtraWorldInfoChanged() {
+        // If there are no world names, don't do anything.
+        if (world_names.length === 0) {
+            return;
+        }
         const selectorFieldValue = $('.character_extra_world_info_selector').val();
         const selectedWorlds = Array.isArray(selectorFieldValue) ? selectorFieldValue : [];
         let charLore = world_info.charLore ?? [];
@@ -9000,22 +9005,16 @@ function openCharacterWorldPopup() {
         saveSettingsDebounced();
     }
 
+    if (characterWorldPopup) {
+        characterWorldPopup.complete();
+    }
+
     const template = $('#character_world_template .character_world').clone();
     const select = template.find('.character_world_info_selector');
     const extraSelect = template.find('.character_extra_world_info_selector');
     const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
     const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
     template.find('.character_name').text(name);
-
-    // Not needed on mobile
-    if (!isMobile()) {
-        $(extraSelect).select2({
-            width: '100%',
-            placeholder: t`No auxillary Lorebooks set. Click here to select.`,
-            allowClear: true,
-            closeOnSelect: false,
-        });
-    }
 
     // Apped to base dropdown
     world_names.forEach((item, i) => {
@@ -9045,17 +9044,29 @@ function openCharacterWorldPopup() {
     });
 
     select.on('change', onSelectCharacterWorld);
-    extraSelect.on('mousedown change', async function (e) {
-        // If there's no world names, don't do anything
-        if (world_names.length === 0) {
-            e.preventDefault();
-            return;
-        }
 
-        onExtraWorldInfoChanged();
+    const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
+        onOpen: function (popup) {
+            // Not needed on mobile.
+            if (isMobile()) return;
+
+            const extraSelect2 = $(popup.dlg).find('.character_extra_world_info_selector');
+            extraSelect2.select2({
+                width: '100%',
+                placeholder: t`No auxillary Lorebooks set. Click here to select.`,
+                allowClear: true,
+                closeOnSelect: false,
+                dropdownParent: $(popup.dlg),
+            });
+            extraSelect2.on('select2:select select2:unselect', onExtraWorldInfoChanged);
+        },
+        onClose: function () {
+            characterWorldPopup = null;
+        },
     });
 
-    callGenericPopup(template, POPUP_TYPE.TEXT);
+    characterWorldPopup = popup;
+    popup.show();
 }
 
 function openAlternateGreetings() {
