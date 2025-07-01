@@ -53,6 +53,8 @@ let autoExec;
 /** @type {QuickReplyApi} */
 export let quickReplyApi;
 const overwrittenGlobalSets = new Map();
+/** A counter to prevent re-entrant, overlapping executions of onChatChanged */
+let changeId = 0;
 
 
 
@@ -180,7 +182,7 @@ const saveScopedSets = debounceAsync(async () => {
 
 
 const onCharChanged = async () => {
-    if (lastCharId === this_chid) return;
+    if (lastCharId === this_chid) return false;
 
     // Phase 1: Unload the old character's sets and restore any overwritten global sets.
     const oldCharConfig = settings.charConfig;
@@ -209,7 +211,7 @@ const onCharChanged = async () => {
     if (!this_chid) {
         buttons.refresh();
         manager.rerender();
-        return;
+        return false;
     }
 
     const char = characters[this_chid];
@@ -220,7 +222,7 @@ const onCharChanged = async () => {
         settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
         buttons.refresh();
         manager.rerender();
-        return;
+        return false;
     }
 
     // If there are sets, check for authorization, regex-style.
@@ -239,13 +241,13 @@ const onCharChanged = async () => {
             saveSettingsDebounced();
             lastCharId = null; // Force a re-run of the logic after reload
             await reloadCurrentChat(); // Crucial step: reload to apply the new permission state.
-            return; // Stop further execution, as reload will trigger a new onCharChanged.
+            return true; // Stop further execution, as reload will trigger a new onCharChanged.
         } else {
             // User denied permission. Don't load sets.
             settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
             buttons.refresh();
             manager.rerender();
-            return;
+            return false;
         }
     }
 
@@ -280,6 +282,7 @@ const onCharChanged = async () => {
     settings.charConfig = charSetConfig;
 
     // The parent onChatChanged will call buttons.refresh() and manager.rerender()
+    return false;
 };
 
 
@@ -365,8 +368,20 @@ const purgeEmbeddedQuickReplySets = ({ character }) => {
 
 
 const onChatChanged = async (chatIdx) => {
-    log('CHAT_CHANGED', chatIdx);
-   await onCharChanged();
+    const localChangeId = ++changeId;
+    log('CHAT_CHANGED', chatIdx, `ID: ${localChangeId}`);
+
+    // onCharChanged can trigger a reload, which will fire a new CHAT_CHANGED event.
+    // We get a signal back to know if we should abort this execution path.
+    const didReload = await onCharChanged();
+
+    // If a newer execution has started (changeId changed) or if onCharChanged triggered
+    // a reload, this instance is obsolete and should be aborted.
+    if (localChangeId !== changeId || didReload) {
+        log(`Aborting CHAT_CHANGED ID: ${localChangeId} (current: ${changeId}, reloaded: ${didReload})`);
+        return;
+    }
+
     if (chatIdx) {
        const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
        chatConfig.scope = 'chat';
