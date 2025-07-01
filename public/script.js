@@ -8939,7 +8939,7 @@ function openCharacterWorldPopup() {
     }
 
     async function onSelectCharacterWorld() {
-        const value = $('.character_world_info_selector').find('option:selected').val();
+        const value = $(this).val();
         const worldIndex = value !== '' ? Number(value) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
 
@@ -8974,7 +8974,11 @@ function openCharacterWorldPopup() {
     }
 
     function onExtraWorldInfoChanged() {
-        const selectorFieldValue = $('.character_extra_world_info_selector').val();
+        // If there are no world names, don't do anything.
+        if (world_names.length === 0) {
+            return;
+        }
+        const selectorFieldValue = $(this).val();
         const selectedWorlds = Array.isArray(selectorFieldValue) ? selectorFieldValue : [];
         let charLore = world_info.charLore ?? [];
 
@@ -8984,12 +8988,14 @@ function openCharacterWorldPopup() {
 
         const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
         if (existingCharIndex === -1) {
-            const newCharLoreEntry = {
-                name: fileName,
-                extraBooks: tempExtraBooks,
-            };
-
-            charLore.push(newCharLoreEntry);
+            // Add record only if at least 1 lorebook is selected.
+            if (tempExtraBooks.length > 0) {
+                const newCharLoreEntry = {
+                    name: fileName,
+                    extraBooks: tempExtraBooks,
+                };
+                charLore.push(newCharLoreEntry);
+            }
         } else if (tempExtraBooks.length === 0) {
             charLore.splice(existingCharIndex, 1);
         } else {
@@ -9007,17 +9013,7 @@ function openCharacterWorldPopup() {
     const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
     template.find('.character_name').text(name);
 
-    // Not needed on mobile
-    if (!isMobile()) {
-        $(extraSelect).select2({
-            width: '100%',
-            placeholder: t`No auxillary Lorebooks set. Click here to select.`,
-            allowClear: true,
-            closeOnSelect: false,
-        });
-    }
-
-    // Apped to base dropdown
+    // Append to base dropdown.
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
         option.value = String(i);
@@ -9030,12 +9026,12 @@ function openCharacterWorldPopup() {
     if (world_names.length > 0) {
         extraSelect.empty();
     }
+    const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename(chid));
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
         option.value = String(i);
         option.innerText = item;
 
-        const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename());
         if (existingCharLore) {
             option.selected = existingCharLore.extraBooks.includes(item);
         } else {
@@ -9044,18 +9040,27 @@ function openCharacterWorldPopup() {
         extraSelect.append(option);
     });
 
-    select.on('change', onSelectCharacterWorld);
-    extraSelect.on('mousedown change', async function (e) {
-        // If there's no world names, don't do anything
-        if (world_names.length === 0) {
-            e.preventDefault();
-            return;
-        }
+    const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
+        onOpen: function (popup) {
+            // Not needed on mobile.
+            if (isMobile()) return;
 
-        onExtraWorldInfoChanged();
+            const primarySelect = $(popup.dlg).find('.character_world_info_selector');
+            primarySelect.on('change', onSelectCharacterWorld);
+
+            const extraSelect2 = $(popup.dlg).find('.character_extra_world_info_selector');
+            extraSelect2.select2({
+                width: '100%',
+                placeholder: t`No auxillary Lorebooks set. Click here to select.`,
+                allowClear: true,
+                closeOnSelect: false,
+                dropdownParent: $(popup.dlg),
+            });
+            extraSelect2.on('mousedown change', onExtraWorldInfoChanged);
+        },
     });
 
-    callGenericPopup(template, POPUP_TYPE.TEXT);
+    popup.show();
 }
 
 function openAlternateGreetings() {
