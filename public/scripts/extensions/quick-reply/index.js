@@ -1,6 +1,6 @@
 import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, characters, this_chid, saveSettingsDebounced, reloadCurrentChat } from '../../../script.js';
 import { extension_settings, writeExtensionField } from '../../extensions.js';
-import { Popup, POPUP_RESULT } from '../../popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
@@ -229,10 +229,57 @@ const onCharChanged = async () => {
     const avatar = char?.avatar;
     const allowed = extension_settings.character_allowed_quickreply ?? [];
     if (avatar && !allowed.includes(avatar)) {
-        const confirm = await Popup.show.confirm(
-            'This character contains embedded Quick Reply sets, but is not authorized to execute them. Do you want to authorize it?',
-            'Authorize Quick Replies',
-            { okButton: 'Authorize' },
+        const dangerWarningText = `
+            <div class="red_text">
+                <h4>DANGER: EMBEDDED SCRIPTS</h4>
+                This character contains embedded scripts (Quick Replies).<br>
+                These scripts are created by the character's author and have the same permissions as any other extension.<br>
+                <b>They can be used to:</b>
+                <ul>
+                    <li>Read, modify, or delete your chats and characters.</li>
+                    <li>Connect to external services and send your data.</li>
+                    <li>Modify SillyTavern's user interface or behavior.</li>
+                </ul>
+                <br>
+                <b>Only authorize characters from authors you trust.</b>
+            </div>
+        `;
+        const confirm = await callGenericPopup(
+            dangerWarningText,
+            POPUP_TYPE.CONFIRM,
+            '',
+            {
+                okButton: 'Authorize',
+                cancelButton: 'Deny',
+                wide: true,
+                customInputs: [
+                    {
+                        id: 'qr_script_danger_ack',
+                        label: 'I understand that using embedded scripts can be dangerous.',
+                        type: 'checkbox',
+                    },
+                    {
+                        id: 'qr_script_no_report_ack',
+                        label: 'I will NOT report issues related to any damages or data loss related to the use of embedded scripts.',
+                        type: 'checkbox',
+                    },
+                ],
+                onClosing: (popup) => {
+                    // Only validate if the user is trying to confirm.
+                    if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
+                        return true;
+                    }
+
+                    const danger_ack = popup.inputResults.get('qr_script_danger_ack');
+                    const noreport_ack = popup.inputResults.get('qr_script_no_report_ack');
+
+                    if (!danger_ack || !noreport_ack) {
+                        toastr.warning('You must accept both conditions to authorize embedded scripts.');
+                        return false; // Prevent closing
+                    }
+                    return true; // Allow closing
+                },
+            },
         );
 
         if (confirm === POPUP_RESULT.AFFIRMATIVE) {
