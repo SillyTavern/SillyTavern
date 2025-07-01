@@ -44,7 +44,7 @@ import {
     download,
     getFileText,
     getFileExtension,
-    convertTextToBinaryString,
+    convertTextToBase64,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -225,8 +225,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 try {
                     const converter = getConverter(file.type);
                     const fileText = await converter(file);
-                    /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
-                    base64Data = window.btoa(convertTextToBinaryString(fileText));
+                    base64Data = convertTextToBase64(fileText);
                 } catch (error) {
                     toastr.error(String(error), t`Could not convert file`);
                     console.error('Could not convert file', error);
@@ -1499,16 +1498,14 @@ export async function uploadFileAttachmentToServer(file, target) {
         try {
             const converter = getConverter(file.type);
             const fileText = await converter(file);
-            /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
-            base64Data = window.btoa(convertTextToBinaryString(fileText));
+            base64Data = convertTextToBase64(fileText);
         } catch (error) {
             toastr.error(String(error), t`Could not convert file`);
             console.error('Could not convert file', error);
         }
     } else {
         const fileText = await file.text();
-        /** TODO: Eventually replace line below to use [`convertTextToBase64`]({@link ./utils.js}). */
-        base64Data = window.btoa(convertTextToBinaryString(fileText));
+        base64Data = convertTextToBase64(fileText);
     }
 
     const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);

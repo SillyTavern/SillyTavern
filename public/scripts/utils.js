@@ -1453,24 +1453,7 @@ export function getFileExtension(file) {
 }
 
 /**
- * Converts UTF-8 string into a binary string,
- * where each character's code point directly matches the byte value (0-255).
- *
- * @param {string} text The UTF-8 string
- * @returns {string} The binary string
- */
-export function convertTextToBinaryString(text) {
-    const encoder = new TextEncoder();
-    const utf8Bytes = encoder.encode(text);
-    const binaryString = String.fromCharCode(...utf8Bytes);
-    return binaryString;
-}
-
-/**
- * Converts UTF-8 string into a Base64-encoded string.
- *
- * For future use, when `Uint8Array.prototype.toBase64` function is implemented in all major browsers.
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/toBase64|MDN Reference}
+ * Converts UTF-8 string into Base64-encoded string.
  *
  * @param {string} text The UTF-8 string
  * @returns {string} The Base64-encoded string
@@ -1478,8 +1461,16 @@ export function convertTextToBinaryString(text) {
 export function convertTextToBase64(text) {
     const encoder = new TextEncoder();
     const utf8Bytes = encoder.encode(text);
-    const base64String = utf8Bytes.toBase64();
-    return base64String;
+    /**
+     * return `true` if `Uint8Array.prototype.toBase64` function is supported.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/toBase64|MDN Reference}
+     */
+    if ('toBase64' in Uint8Array.prototype) {
+        return utf8Bytes.toBase64();
+    }
+    // Creates binary string, where each character's code point directly matches the byte value (0-255).
+    const binaryString = String.fromCharCode(...utf8Bytes);
+    return window.btoa(binaryString);
 }
 
 /**
