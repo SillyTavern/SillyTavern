@@ -10908,11 +10908,44 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '.PastChat_cross', function (e) {
+    /**
+     * Handles the deletion of a chat file, including group chats.
+     *
+     * @param {string} chatFile - The name of the chat file to delete.
+     * @param {object} group - The group object if the chat is part of a group.
+     * @param {boolean} [fromSlashCommand=false] - Whether the deletion was triggered from a slash command.
+     * @returns {Promise<void>}
+     */
+    async function handleDeleteChat(chatFile, group, fromSlashCommand = false) {
+        // Close past chat popup.
+        $('#select_chat_cross').trigger('click');
+        showLoader();
+        if (group) {
+            await deleteGroupChat(group, chatFile);
+        } else {
+            await delChat(chatFile);
+        }
+
+        if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
+            $('#options').hide();  // Hide option popup menu.
+            hideLoader();
+        } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
+            setTimeout(function () {
+                $('#option_select_chat').trigger('click');
+                $('#options').hide();  // Hide option popup menu.
+                hideLoader();
+            }, 2000);
+        }
+    }
+
+    $(document).on('click', '.PastChat_cross', async function (e) {
         e.stopPropagation();
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
-        callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
+        const result = await callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            await handleDeleteChat(chat_file_for_del, selected_group);
+        }
     });
 
     $('#advanced_div').on('click', function () {
@@ -10961,25 +10994,7 @@ jQuery(async function () {
         }, animation_duration);
 
         if (popup_type == 'del_chat') {
-            //close past chat popup
-            $('#select_chat_cross').trigger('click');
-            showLoader();
-            if (selected_group) {
-                await deleteGroupChat(selected_group, chat_file_for_del);
-            } else {
-                await delChat(chat_file_for_del);
-            }
-
-            if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
-                $('#options').hide();  // hide option popup menu
-                hideLoader();
-            } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
-                setTimeout(function () {
-                    $('#option_select_chat').trigger('click');
-                    $('#options').hide();  // hide option popup menu
-                    hideLoader();
-                }, 2000);
-            }
+            await handleDeleteChat(chat_file_for_del, selected_group, fromSlashCommand);
         }
 
         if (dialogueResolve) {
