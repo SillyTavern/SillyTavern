@@ -8930,22 +8930,33 @@ function updateAlternateGreetingsHintVisibility(root) {
     $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
 }
 
+let characterWorldPopup = null;
 function openCharacterWorldPopup() {
-    const chid = $('#set_character_world').data('chid');
+    if (characterWorldPopup) {
+        characterWorldPopup.setAutoFocus();
+        return;
+    }
 
+    const chid = $('#set_character_world').data('chid');
     if (menu_type != 'create' && chid === undefined) {
         toastr.error('Does not have an Id for this character in world select menu.');
         return;
     }
 
-    async function onSelectCharacterWorld() {
-        const value = $(this).val();
-        const worldIndex = value !== '' ? Number(value) : NaN;
-        const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
+    // TODO: Maybe make this utility function not use the window context?
+    const fileName = getCharaFilename(chid);
+    const charName = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
+    const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
+    const template = $('#character_world_template .character_world').clone();
+    template.find('.character_name').text(charName);
 
+    // --- Event Handlers ---
+    async function handlePrimaryWorldSelect() {
+        const selectedValue = $(this).val();
+        const worldIndex = selectedValue !== '' ? Number(selectedValue) : NaN;
+        const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
         const previousValue = $('#character_world').val();
         $('#character_world').val(name);
-
         console.debug('Character world selected:', name);
 
         if (menu_type == 'create') {
@@ -8955,111 +8966,80 @@ function openCharacterWorldPopup() {
                 try {
                     // Dirty hack to remove embedded lorebook from character JSON data.
                     const data = JSON.parse(String($('#character_json_data').val()));
-
                     if (data?.data?.character_book) {
                         data.data.character_book = undefined;
                     }
-
                     $('#character_json_data').val(JSON.stringify(data));
                     toastr.info(t`Embedded lorebook will be removed from this character.`);
                 } catch {
                     console.error('Failed to parse character JSON data.');
                 }
             }
-
             await createOrEditCharacter();
         }
-
-        setWorldInfoButtonClass(undefined, !!value);
+        setWorldInfoButtonClass(undefined, !!name);
     }
 
-    function onExtraWorldInfoChanged() {
-        // If there are no world names, don't do anything.
-        if (world_names.length === 0) {
-            return;
-        }
-        const selectorFieldValue = $(this).val();
-        const selectedWorlds = Array.isArray(selectorFieldValue) ? selectorFieldValue : [];
+    function handleExtrasWorldSelect() {
+        const selectedValues = $(this).val();
+        const selectedWorlds = Array.isArray(selectedValues) ? selectedValues : [];
         let charLore = world_info.charLore ?? [];
-
-        // TODO: Maybe make this utility function not use the window context?
-        const fileName = getCharaFilename(chid);
-        const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter((e) => e !== undefined);
-
+        const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter(Boolean);
         const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
+
         if (existingCharIndex === -1) {
             // Add record only if at least 1 lorebook is selected.
             if (tempExtraBooks.length > 0) {
-                const newCharLoreEntry = {
-                    name: fileName,
-                    extraBooks: tempExtraBooks,
-                };
-                charLore.push(newCharLoreEntry);
+                charLore.push({ name: fileName, extraBooks: tempExtraBooks });
             }
         } else if (tempExtraBooks.length === 0) {
             charLore.splice(existingCharIndex, 1);
         } else {
             charLore[existingCharIndex].extraBooks = tempExtraBooks;
         }
-
         Object.assign(world_info, { charLore: charLore });
         saveSettingsDebounced();
     }
 
-    const template = $('#character_world_template .character_world').clone();
-    const select = template.find('.character_world_info_selector');
-    const extraSelect = template.find('.character_extra_world_info_selector');
-    const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
-    const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
-    template.find('.character_name').text(name);
-
-    // Append to base dropdown.
+    // --- Populate Dropdowns ---
+    // Append to primary dropdown.
+    const primarySelect = template.find('.character_world_info_selector');
     world_names.forEach((item, i) => {
-        const option = document.createElement('option');
-        option.value = String(i);
-        option.innerText = item;
-        option.selected = item === worldId;
-        select.append(option);
+        primarySelect.append(new Option(item, String(i), item === worldId, item === worldId));
     });
 
-    // Append to extras dropdown
-    if (world_names.length > 0) {
-        extraSelect.empty();
-    }
-    const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename(chid));
+    // Append to extras dropdown.
+    const extrasSelect = template.find('.character_extra_world_info_selector');
+    const existingCharLore = world_info.charLore?.find((e) => e.name === fileName);
     world_names.forEach((item, i) => {
-        const option = document.createElement('option');
-        option.value = String(i);
-        option.innerText = item;
-
-        if (existingCharLore) {
-            option.selected = existingCharLore.extraBooks.includes(item);
-        } else {
-            option.selected = false;
-        }
-        extraSelect.append(option);
+        const isSelected = !!existingCharLore?.extraBooks.includes(item);
+        extrasSelect.append(new Option(item, String(i), isSelected, isSelected));
     });
 
     const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
         onOpen: function (popup) {
+            const popupDialog = $(popup.dlg);
+
+            primarySelect.on('change', handlePrimaryWorldSelect);
+            extrasSelect.on('change', handleExtrasWorldSelect);
+
             // Not needed on mobile.
-            if (isMobile()) return;
-
-            const primarySelect = $(popup.dlg).find('.character_world_info_selector');
-            primarySelect.on('change', onSelectCharacterWorld);
-
-            const extraSelect2 = $(popup.dlg).find('.character_extra_world_info_selector');
-            extraSelect2.select2({
-                width: '100%',
-                placeholder: t`No auxillary Lorebooks set. Click here to select.`,
-                allowClear: true,
-                closeOnSelect: false,
-                dropdownParent: $(popup.dlg),
-            });
-            extraSelect2.on('mousedown change', onExtraWorldInfoChanged);
+            if (!isMobile()) {
+                extrasSelect.select2({
+                    width: '100%',
+                    placeholder: t`No auxiliary Lorebooks set. Click here to select.`,
+                    allowClear: true,
+                    closeOnSelect: false,
+                    dropdownParent: popupDialog,
+                });
+            }
+        },
+        onClose: function () {
+            characterWorldPopup = null;
         },
     });
 
+    characterWorldPopup = popup;
     popup.show();
 }
 
