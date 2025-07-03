@@ -324,7 +324,6 @@ async function showCharGallery(deleteModeState = false) {
         await delay(100);
         await initGallery(items, url);
     } catch (err) {
-        console.trace();
         console.error(err);
     }
 }
@@ -734,7 +733,6 @@ async function listGalleryCommand(args) {
         return JSON.stringify(items.map(it => it.src));
 
     } catch (err) {
-        console.trace();
         console.error(err);
     }
     return JSON.stringify([]);

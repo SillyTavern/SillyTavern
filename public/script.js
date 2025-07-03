@@ -12126,9 +12126,9 @@ jQuery(async function () {
         const messageElement = $(this).closest('.mes');
         const thumbURL = $(this).children('img').attr('src');
         const charsPath = '/characters/';
-        const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf('=') + 1);
+        const targetAvatarImg = isValidUrl(thumbURL) ? new URL(thumbURL, window.location.origin).searchParams.get('file') : '';
         const charname = targetAvatarImg.replace('.png', '');
-        const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
+        const isValidCharacter = characters.some(x => x.avatar === targetAvatarImg);
 
         // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
         if (!power_user.movingUI) {
@@ -12161,7 +12161,7 @@ jQuery(async function () {
             const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
             if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) {
                 //handle user and system avatars
-                const isValidPersona = decodeURIComponent(targetAvatarImg) in power_user.personas;
+                const isValidPersona = targetAvatarImg in power_user.personas;
                 if (isValidPersona) {
                     const personaSrc = getUserAvatar(targetAvatarImg);
                     zoomedAvatarImgElement.attr('src', personaSrc);

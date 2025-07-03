@@ -972,7 +972,7 @@ async function fetchPerchanceAvatar(avatarUrl, isAvatarBase64) {
             return buffer;
         } else {
             // use jimp to convert the base64 to PNG if it's not PNG
-            console.trace('Perchance character avatar is not PNG, converting to PNG...');
+            console.debug('Perchance character avatar is not PNG, converting to PNG...');
             return await Jimp.read(buffer).then(image => image.getBuffer(JimpMime.png));
         }
     }
@@ -988,7 +988,7 @@ async function fetchPerchanceAvatar(avatarUrl, isAvatarBase64) {
         if (avatarContentType === 'image/png') {
             return avatarBuffer;
         } else {
-            console.trace(`Perchance character avatar is not PNG: ${avatarContentType}. Converting to PNG...`);
+            console.debug(`Perchance character avatar is not PNG: ${avatarContentType}. Converting to PNG...`);
 
             // use jimp to convert the image to PNG if it's not PNG
             return await Jimp.read(avatarBuffer)
