@@ -2012,7 +2012,12 @@ export function initTags() {
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
     $(document).on('click', '.tag_remove', onTagRemoveClick);
     $(document).on('input', '.tag_input', onTagInput);
-    $(document).on('click', '.tags_view', onViewTagsListClick);
+    $(document).on('click', '.tags_view', function (event) {
+        // 1. Prevent the label from toggling the checkbox
+        event.preventDefault();
+        // 2. Open the tag view list dialog
+        onViewTagsListClick();
+    });
     $(document).on('click', '.tag_delete', onTagDeleteClick);
     $(document).on('click', '.tag_as_folder', onTagAsFolderClick);
     $(document).on('input', '.tag_view_name', onTagRenameInput);
