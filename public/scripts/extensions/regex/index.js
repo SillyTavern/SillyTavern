@@ -1,5 +1,5 @@
 import { characters, eventSource, event_types, getCurrentChatId, nai_settings, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
-import { oai_settings, openai_setting_names } from '../../openai.js';
+import { oai_settings } from '../../openai.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField, writePresetExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
