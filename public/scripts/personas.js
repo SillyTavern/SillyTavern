@@ -744,6 +744,41 @@ export function autoSelectPersona(name) {
 }
 
 /**
+ * Edits the title of a persona based on the input from a popup.
+ * @param {Popup} popup Popup instance
+ * @param {string} avatarId Avatar ID of the persona to edit
+ * @param {string} currentTitle Current title of the persona
+ */
+async function editPersonaTitle(popup, avatarId, currentTitle) {
+    if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (!power_user.persona_descriptions[avatarId]) {
+        console.warn('Uninitialized persona descriptor for avatar:', avatarId);
+        return;
+    }
+
+    const newTitle = String(popup.inputResults.get('persona_title') || '').trim();
+
+    if (!newTitle && currentTitle) {
+        console.log(`Removed persona title for ${avatarId}`);
+        delete power_user.persona_descriptions[avatarId].title;
+        await getUserAvatars(true, avatarId);
+        saveSettingsDebounced();
+        return;
+    }
+
+    if (newTitle !== currentTitle) {
+        power_user.persona_descriptions[avatarId].title = newTitle;
+        console.log(`Updated persona title for ${avatarId} to ${newTitle}`);
+        await getUserAvatars(true, avatarId);
+        saveSettingsDebounced();
+        return;
+    }
+}
+
+/**
  * Renames the persona with the given avatar ID by showing a popup to enter a new name.
  * @param {string} avatarId - ID of the avatar to rename
  * @returns {Promise<boolean>} A promise that resolves to true if the persona was renamed, false otherwise
@@ -758,34 +793,7 @@ async function renamePersona(avatarId) {
             label: t`Persona Title (optional, display only)`,
             defaultState: currentTitle,
         }],
-        onClose: async (popup) => {
-            if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
-                return;
-            }
-
-            if (!power_user.persona_descriptions[avatarId]) {
-                console.warn('Uninitialized persona descriptor for avatar:', avatarId);
-                return;
-            }
-
-            const newTitle = String(popup.inputResults.get('persona_title') || '').trim();
-
-            if (!newTitle && currentTitle) {
-                console.log(`Removed persona title for ${avatarId}`);
-                delete power_user.persona_descriptions[avatarId].title;
-                await getUserAvatars(true, avatarId);
-                saveSettingsDebounced();
-                return;
-            }
-
-            if (newTitle !== currentTitle) {
-                power_user.persona_descriptions[avatarId].title = newTitle;
-                console.log(`Updated persona title for ${avatarId} to ${newTitle}`);
-                await getUserAvatars(true, avatarId);
-                saveSettingsDebounced();
-                return;
-            }
-        },
+        onClose: (popup) => editPersonaTitle(popup, avatarId, currentTitle),
     });
 
     if (!newName || newName === currentName) {
