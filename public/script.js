@@ -3079,7 +3079,7 @@ export function sendSystemMessage(type, text, extra = {}) {
         const parent = spinner.parentElement;
         spinner.remove();
         browser.renderInto(parent);
-        browser.search.trigger('focus');
+        browser.search.focus();
     }
 }
 
@@ -10074,12 +10074,32 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
 }
 
 async function doDeleteChat() {
-    await displayPastChats();
-    let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
-    $(currentChatDeleteButton).trigger('click');
-    await delay(1);
-    $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
-    return '';
+    return displayPastChats().then(() => new Promise((resolve) => {
+        let resolved = false;
+        const timeOutId = setTimeout(() => {
+            toastr.error(t`Chat deletion timed out. Please try again.`);
+            setResolved();
+        }, 5000);
+
+        const setResolved = () => {
+            if (resolved) {
+                return;
+            }
+            resolved = true;
+            [event_types.CHAT_DELETED, event_types.GROUP_CHAT_DELETED].forEach((eventType) => {
+                eventSource.removeListener(eventType, setResolved);
+            });
+            clearTimeout(timeOutId);
+            resolve('');
+        };
+
+        [event_types.CHAT_DELETED, event_types.GROUP_CHAT_DELETED].forEach((eventType) => {
+            eventSource.on(eventType, setResolved);
+        });
+
+        const currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
+        $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true });
+    }));
 }
 
 async function doRenameChat(_, chatName) {
@@ -10938,13 +10958,20 @@ jQuery(async function () {
         }
     }
 
-    $(document).on('click', '.PastChat_cross', async function (e) {
+    $(document).on('click', '.PastChat_cross', async function (e, { fromSlashCommand = false } = {}) {
         e.stopPropagation();
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
+
+        // Skip confirmation if called from a slash command.
+        if (fromSlashCommand) {
+            await handleDeleteChat(chat_file_for_del, selected_group, true);
+            return;
+        }
+
         const result = await callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            await handleDeleteChat(chat_file_for_del, selected_group);
+            await handleDeleteChat(chat_file_for_del, selected_group, false);
         }
     });
 
