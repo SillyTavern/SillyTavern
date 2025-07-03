@@ -1,6 +1,6 @@
 import { DOMPurify, Popper } from '../lib.js';
 
-import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
+import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, main_api } from '../script.js';
 import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
@@ -11,6 +11,7 @@ import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { oai_settings, openai_setting_names, openai_settings, saveOpenAIPreset } from './openai.js';
+import { getPresetManager } from './preset-manager.js';
 
 export {
     getContext,
@@ -1597,24 +1598,31 @@ export async function writeExtensionField(characterId, key, value) {
  */
 export async function writePresetExtensionField(key, value) {
     const path = `extensions.${key}`;
-    setValueByPath(oai_settings, path, value);
+    if (main_api === 'openai') {
+        setValueByPath(oai_settings, path, value);
 
-    // Save scripts but not main settings
-    const name = oai_settings.preset_settings_openai;
-    const presetData = structuredClone(openai_settings[openai_setting_names[name]]);
-    // Map OpenAI unique setting names to general preset data
-    presetData.temp_openai = presetData.temperature;
-    presetData.freq_pen_openai = presetData.frequency_penalty;
-    presetData.pres_pen_openai = presetData.presence_penalty;
-    presetData.repetition_penalty_openai = presetData.repetition_penalty;
-    presetData.top_p_openai = presetData.top_p;
-    presetData.top_k_openai = presetData.top_k;
-    presetData.top_a_openai = presetData.top_a;
-    presetData.min_p_openai = presetData.min_p;
+        // Save scripts but not main settings
+        const name = oai_settings.preset_settings_openai;
+        const presetData = structuredClone(openai_settings[openai_setting_names[name]]);
+        // Map OpenAI unique setting names to general preset data
+        presetData.temp_openai = presetData.temperature;
+        presetData.freq_pen_openai = presetData.frequency_penalty;
+        presetData.pres_pen_openai = presetData.presence_penalty;
+        presetData.repetition_penalty_openai = presetData.repetition_penalty;
+        presetData.top_p_openai = presetData.top_p;
+        presetData.top_k_openai = presetData.top_k;
+        presetData.top_a_openai = presetData.top_a;
+        presetData.min_p_openai = presetData.min_p;
 
-    setValueByPath(presetData, path, value);
+        setValueByPath(presetData, path, value);
 
-    await saveOpenAIPreset(name, presetData, false);
+        await saveOpenAIPreset(name, presetData, false);
+    } else {
+        const presetManager = getPresetManager(main_api);
+        const preset = presetManager.getPresetSettings();
+        setValueByPath(preset, path, value);
+        presetManager.savePresetExtensionsOnly(presetManager.getSelectedPresetName());
+    }
 }
 
 /**

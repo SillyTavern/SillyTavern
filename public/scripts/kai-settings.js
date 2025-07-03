@@ -31,6 +31,7 @@ export const kai_settings = {
     use_default_badwordsids: false,
     grammar: '',
     seed: -1,
+    extensions: {},
 };
 
 /**
@@ -94,6 +95,9 @@ export function loadKoboldSettings(preset) {
     if (Object.hasOwn(preset, 'use_default_badwordsids')) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
+    }
+    if (Object.hasOwn(preset, 'extensions')) {
+        kai_settings.extensions = preset.extensions;
     }
 }
 

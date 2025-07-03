@@ -453,6 +453,34 @@ class PresetManager {
         this.updateList(name, preset);
     }
 
+    async savePresetExtensionsOnly(name) {
+        const originalPreset = this.apiId === 'textgenerationwebui' ? textgenerationwebui_presets[textgenerationwebui_preset_names[name]] :
+            this.apiId === 'novel' ? novelai_settings[novelai_setting_names[name]] :
+                this.apiId === 'kobold' ? koboldai_settings[koboldai_setting_names[name]] : null;
+
+        if (!originalPreset) { return; }
+
+        const preset = this.getPresetSettings(name);
+        originalPreset.extensions = preset['extensions'] || {};
+
+        const response = await fetch('/api/presets/save', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ preset: originalPreset, name, apiId: this.apiId }),
+        });
+
+        if (!response.ok) {
+            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Preset could not be saved`);
+            console.error('Preset could not be saved', response);
+            throw new Error('Preset could not be saved');
+        }
+
+        const data = await response.json();
+        name = data.name;
+
+        this.updateList(name, originalPreset);
+    }
+
     async renamePreset(newName) {
         const oldName = this.getSelectedPresetName();
         if (equalsIgnoreCaseAndAccents(oldName, newName)) {
@@ -980,9 +1008,11 @@ export async function initPresetManager() {
             return;
         }
 
+        const name = presetManager.getSelectedPresetName();
         const result = await presetManager.deletePreset();
 
         if (result) {
+            eventSource.emit(event_types.PRESET_DELETED, { apiId, name });
             const successToast = !presetManager.isAdvancedFormatting() ? t`Preset deleted` : t`Template deleted`;
             toastr.success(successToast);
         } else {

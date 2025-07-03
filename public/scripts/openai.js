@@ -4383,6 +4383,7 @@ async function onDeletePresetClick() {
         toastr.warning(t`Preset was not deleted from server`);
     } else {
         toastr.success(t`Preset deleted`);
+        eventSource.emit(event_types.PRESET_DELETED, { apiId: 'openai', name: nameToDelete });
     }
 
     saveSettingsDebounced();
@@ -4473,6 +4474,7 @@ function onSettingsPresetChange() {
 
         saveSettingsDebounced();
         eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
+        eventSource.emit(event_types.PRESET_CHANGED);
     });
 }
 

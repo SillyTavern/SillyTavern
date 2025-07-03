@@ -216,6 +216,7 @@ const settings = {
     min_keep: 0,
     featherless_model: '',
     generic_model: '',
+    extensions: {},
 };
 
 export {
@@ -227,7 +228,7 @@ export let textgenerationwebui_banned_in_macros = [];
 export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
-export const setting_names = [
+export const setting_keys = [
     'temp',
     'temperature_last',
     'rep_pen',
@@ -298,6 +299,7 @@ export const setting_names = [
     'nsigma',
     'min_keep',
     'generic_model',
+    'extensions',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -354,9 +356,9 @@ async function selectPreset(name) {
     }
 
     settings.preset = name;
-    for (const name of setting_names) {
-        const value = preset[name];
-        setSettingByName(name, value, true);
+    for (const key of setting_keys) {
+        const value = preset[key];
+        setSettingByName(key, value, true);
     }
     setGenerationParamsFromPreset(preset);
     BIAS_CACHE.delete(BIAS_KEY);
@@ -551,7 +553,7 @@ export function loadTextGenSettings(data, loadedSettings) {
         $('#settings_preset_textgenerationwebui').val(settings.preset);
     }
 
-    for (const i of setting_names) {
+    for (const i of setting_keys) {
         const value = settings[i];
         setSettingByName(i, value);
     }
@@ -759,7 +761,9 @@ jQuery(function () {
 
     $('#settings_preset_textgenerationwebui').on('change', function () {
         const presetName = $(this).val();
-        selectPreset(presetName);
+        selectPreset(presetName).finally(() => {
+            eventSource.emit(event_types.PRESET_CHANGED);
+        });
     });
 
     $('#samplerResetButton').off('click').on('click', function () {
@@ -834,7 +838,7 @@ jQuery(function () {
         }
     });
 
-    for (const i of setting_names) {
+    for (const i of setting_keys) {
         $(`#${i}_textgenerationwebui`).attr('x-setting-id', i);
         $(document).on('input', `#${i}_textgenerationwebui`, function () {
             const isCheckbox = $(this).attr('type') == 'checkbox';
@@ -919,19 +923,19 @@ function insertMissingArrayItems(source, target) {
     }
 }
 
-function setSettingByName(setting, value, trigger) {
+function setSettingByName(setting_key, value, trigger) {
     if (value === null || value === undefined) {
         return;
     }
 
-    if ('sampler_order' === setting) {
+    if ('sampler_order' === setting_key) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
         sortKoboldItemsByOrder(value);
         settings.sampler_order = value;
         return;
     }
 
-    if ('sampler_priority' === setting) {
+    if ('sampler_priority' === setting_key) {
         value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
         insertMissingArrayItems(OOBA_DEFAULT_ORDER, value);
         sortOobaItemsByOrder(value);
@@ -939,7 +943,7 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
-    if ('samplers_priorities' === setting) {
+    if ('samplers_priorities' === setting_key) {
         value = Array.isArray(value) ? value : APHRODITE_DEFAULT_ORDER;
         insertMissingArrayItems(APHRODITE_DEFAULT_ORDER, value);
         sortAphroditeItemsByOrder(value);
@@ -947,7 +951,7 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
-    if ('samplers' === setting) {
+    if ('samplers' === setting_key) {
         value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
         insertMissingArrayItems(LLAMACPP_DEFAULT_ORDER, value);
         sortLlamacppItemsByOrder(value);
@@ -955,36 +959,41 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
-    if ('logit_bias' === setting) {
+    if ('logit_bias' === setting_key) {
         settings.logit_bias = Array.isArray(value) ? value : [];
         return;
     }
 
-    if ('json_schema' === setting) {
+    if ('json_schema' === setting_key) {
         settings.json_schema = value ?? {};
         $('#tabby_json_schema').val(JSON.stringify(settings.json_schema, null, 2));
         return;
     }
 
-    const isCheckbox = $(`#${setting}_textgenerationwebui`).attr('type') == 'checkbox';
-    const isText = $(`#${setting}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting}_textgenerationwebui`).is('textarea');
+    if ('extensions' === setting_key) {
+        settings.extensions = value ?? {};
+        return;
+    }
+
+    const isCheckbox = $(`#${setting_key}_textgenerationwebui`).attr('type') == 'checkbox';
+    const isText = $(`#${setting_key}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting_key}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
         const val = Boolean(value);
-        $(`#${setting}_textgenerationwebui`).prop('checked', val);
+        $(`#${setting_key}_textgenerationwebui`).prop('checked', val);
 
-        if ('send_banned_tokens' === setting) {
-            $(`#${setting}_textgenerationwebui`).trigger('change');
+        if ('send_banned_tokens' === setting_key) {
+            $(`#${setting_key}_textgenerationwebui`).trigger('change');
         }
     }
     else if (isText) {
-        $(`#${setting}_textgenerationwebui`).val(value);
+        $(`#${setting_key}_textgenerationwebui`).val(value);
     }
     else {
         const val = parseFloat(value);
-        $(`#${setting}_textgenerationwebui`).val(val);
-        $(`#${setting}_counter_textgenerationwebui`).val(val);
+        $(`#${setting_key}_textgenerationwebui`).val(val);
+        $(`#${setting_key}_counter_textgenerationwebui`).val(val);
         if (power_user.enableZenSliders) {
-            let zenSlider = $(`#${setting}_textgenerationwebui_zenslider`).slider();
+            let zenSlider = $(`#${setting_key}_textgenerationwebui_zenslider`).slider();
             zenSlider.slider('option', 'value', val);
             zenSlider.slider('option', 'slide')
                 .call(zenSlider, null, {
@@ -994,7 +1003,7 @@ function setSettingByName(setting, value, trigger) {
     }
 
     if (trigger) {
-        $(`#${setting}_textgenerationwebui`).trigger('input');
+        $(`#${setting_key}_textgenerationwebui`).trigger('input');
     }
 }
 

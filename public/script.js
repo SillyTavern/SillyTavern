@@ -511,6 +511,8 @@ export const event_types = {
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     OAI_PRESET_EXPORT_READY: 'oai_preset_export_ready',
     OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
+    PRESET_DELETED: 'preset_deleted',
+    PRESET_CHANGED: 'preset_changed',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     WORLDINFO_UPDATED: 'worldinfo_updated',
     CHARACTER_EDITED: 'character_edited',
@@ -11454,8 +11456,10 @@ jQuery(async function () {
         is_delete_mode = false;
     });
 
-    $('#settings_preset').change(function () {
+    $('#settings_preset').on('change', function () {
+
         if ($('#settings_preset').find(':selected').val() != 'gui') {
+
             preset_settings = $('#settings_preset').find(':selected').text();
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
@@ -11477,12 +11481,12 @@ jQuery(async function () {
                 .sortable('disable');
         }
         saveSettingsDebounced();
+        eventSource.emit(event_types.PRESET_CHANGED);
     });
 
-    $('#settings_preset_novel').change(function () {
-        nai_settings.preset_settings_novel = $('#settings_preset_novel')
-            .find(':selected')
-            .text();
+    $('#settings_preset_novel').on('change', function () {
+        const presetName = $('#settings_preset_novel').find(':selected').text();
+        nai_settings.preset_settings_novel = presetName;
 
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
@@ -11490,9 +11494,10 @@ jQuery(async function () {
         max_context = Number($('#max_context').val());
 
         saveSettingsDebounced();
+        eventSource.emit(event_types.PRESET_CHANGED);
     });
 
-    $('#main_api').change(function () {
+    $('#main_api').on('change', function () {
         cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
