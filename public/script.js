@@ -12362,7 +12362,10 @@ jQuery(async function () {
     });
 
     $(document).on('change', '.range-block-counter input, .neo-range-input', function (e) {
-        e.target.trigger('focus');
+        if (!(e.target instanceof HTMLElement)) {
+            return;
+        }
+        e.target.focus();
         e.target.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
     });
 
@@ -12382,7 +12385,7 @@ jQuery(async function () {
                 } else {
                     //if value not ok, warn and reset to last known valid value
                     toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
-                    console.log(valueBeforeManualInput);
+                    console.debug(valueBeforeManualInput);
                     //newSlider.val(valueBeforeManualInput)
                     $(this).val(valueBeforeManualInput);
                 }
@@ -12392,7 +12395,7 @@ jQuery(async function () {
 
     $(document).on('keyup', '.range-block-counter input, .neo-range-input', function () {
         valueBeforeManualInput = $(this).val();
-        console.log(valueBeforeManualInput);
+        console.debug(valueBeforeManualInput);
         isManualInput = true;
     });
 
