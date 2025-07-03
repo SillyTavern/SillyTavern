@@ -12126,7 +12126,7 @@ jQuery(async function () {
         const messageElement = $(this).closest('.mes');
         const thumbURL = $(this).children('img').attr('src');
         const charsPath = '/characters/';
-        const targetAvatarImg = isValidUrl(thumbURL) ? new URL(thumbURL, window.location.origin).searchParams.get('file') : '';
+        const targetAvatarImg = (() => { try { return new URL(thumbURL, window.location.origin).searchParams.get('file'); } catch { return null; } })();
         const charname = targetAvatarImg.replace('.png', '');
         const isValidCharacter = characters.some(x => x.avatar === targetAvatarImg);
 
