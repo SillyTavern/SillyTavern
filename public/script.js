@@ -882,6 +882,7 @@ export let create_save = {
     depth_prompt_depth: depth_prompt_depth_default,
     depth_prompt_role: depth_prompt_role_default,
     extensions: {},
+    extra_books: [],
 };
 
 //animation right menu
@@ -8986,6 +8987,11 @@ async function openCharacterWorldPopup() {
         const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter(Boolean);
         const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
 
+        if (menu_type == 'create') {
+            create_save.extra_books = tempExtraBooks;
+            return;
+        }
+
         if (existingCharIndex === -1) {
             // Add record only if at least 1 lorebook is selected.
             if (tempExtraBooks.length > 0) {
@@ -9012,7 +9018,8 @@ async function openCharacterWorldPopup() {
     const extrasSelect = template.find('.character_extra_world_info_selector');
     const existingCharLore = world_info.charLore?.find((e) => e.name === fileName);
     world_names.forEach((item, i) => {
-        const isSelected = !!existingCharLore?.extraBooks.includes(item);
+        const array = (menu_type == 'create' ? create_save.extra_books : existingCharLore?.extraBooks);
+        const isSelected = !!array?.includes(item);
         extrasSelect.append(new Option(item, String(i), isSelected, isSelected));
     });
 
@@ -9198,6 +9205,15 @@ async function createOrEditCharacter(e) {
                 $(field.id).val(fieldValue);
                 field.callback && field.callback(fieldValue);
             });
+
+            if (Array.isArray(create_save.extra_books) && create_save.extra_books.length > 0) {
+                const fileName = getCharaFilename(null, { manualAvatarKey: avatarId });
+                const charLore = world_info.charLore ?? [];
+                charLore.push({ name: fileName, extraBooks: create_save.extra_books });
+                Object.assign(world_info, { charLore: charLore });
+                saveSettingsDebounced();
+            }
+            create_save.extra_books = [];
 
             $('#character_popup-button-h3').text('Create character');
 
