@@ -135,7 +135,7 @@ function onCfgMenuItemClick() {
             .siblings('.inline-drawer-content')
             .css('display') !== 'block') {
             $('#floatingPrompt').addClass('resizing');
-            $('#CFGBlockToggle').click();
+            $('#CFGBlockToggle').trigger('click');
         }
     } else {
         //hide AN if it's already displayed

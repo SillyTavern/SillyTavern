@@ -3151,7 +3151,7 @@ export function forceCharacterEditorTokenize() {
     $('#character_popup').trigger('input');
 }
 
-$(document).ready(() => {
+jQuery(() => {
     const adjustAutocompleteDebounced = debounce(() => {
         $('.ui-autocomplete-input').each(function () {
             const isOpen = $(this).autocomplete('widget')[0].style.display !== 'none';
@@ -3236,7 +3236,7 @@ $(document).ready(() => {
     });
 
     // Settings that go to settings.json
-    $('#collapse-newlines-checkbox').change(function () {
+    $('#collapse-newlines-checkbox').on('change', function () {
         power_user.collapse_newlines = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3244,7 +3244,7 @@ $(document).ready(() => {
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
-    $('#trim_sentences_checkbox').change(function () {
+    $('#trim_sentences_checkbox').on('change', function () {
         power_user.trim_sentences = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3293,7 +3293,7 @@ $(document).ready(() => {
 
     $('#bind_model_templates').on('change', updateBindModelTemplatesState);
 
-    $('#always-force-name2-checkbox').change(function () {
+    $('#always-force-name2-checkbox').on('change', function () {
         power_user.always_force_name2 = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3309,7 +3309,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#chat-show-reply-prefix-checkbox').change(function () {
+    $('#chat-show-reply-prefix-checkbox').on('change', function () {
         power_user.show_user_prompt_bias = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
@@ -3355,7 +3355,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#fast_ui_mode').change(function () {
+    $('#fast_ui_mode').on('change', function () {
         power_user.fast_ui_mode = $(this).prop('checked');
         switchUiMode();
         saveSettingsDebounced();
@@ -3373,13 +3373,13 @@ $(document).ready(() => {
         applyCustomCSS();
     });
 
-    $('#movingUImode').change(function () {
+    $('#movingUImode').on('change', function () {
         power_user.movingUI = $(this).prop('checked');
         switchMovingUI();
         saveSettingsDebounced();
     });
 
-    $('#noShadowsmode').change(function () {
+    $('#noShadowsmode').on('change', function () {
         power_user.noShadows = $(this).prop('checked');
         applyNoShadows();
         saveSettingsDebounced();
@@ -3848,7 +3848,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#custom_stopping_strings_macro').change(function () {
+    $('#custom_stopping_strings_macro').on('change', function () {
         power_user.custom_stopping_strings_macro = !!$(this).prop('checked');
         saveSettingsDebounced();
     });

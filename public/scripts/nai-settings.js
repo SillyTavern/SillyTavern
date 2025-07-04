@@ -837,7 +837,7 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $('#model_novel_select').change(function () {
+    $('#model_novel_select').on('change', function () {
         nai_settings.model_novel = String($('#model_novel_select').find(':selected').val());
         saveSettingsDebounced();
 
