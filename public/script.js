@@ -8930,13 +8930,7 @@ function updateAlternateGreetingsHintVisibility(root) {
     $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
 }
 
-let characterWorldPopup = null;
-function openCharacterWorldPopup() {
-    if (characterWorldPopup) {
-        characterWorldPopup.setAutoFocus();
-        return;
-    }
-
+async function openCharacterWorldPopup() {
     const chid = $('#set_character_world').data('chid');
     if (menu_type != 'create' && chid === undefined) {
         toastr.error('Does not have an Id for this character in world select menu.');
@@ -8957,6 +8951,7 @@ function openCharacterWorldPopup() {
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
         const previousValue = $('#character_world').val();
         $('#character_world').val(name);
+
         console.debug('Character world selected:', name);
 
         if (menu_type == 'create') {
@@ -8966,17 +8961,21 @@ function openCharacterWorldPopup() {
                 try {
                     // Dirty hack to remove embedded lorebook from character JSON data.
                     const data = JSON.parse(String($('#character_json_data').val()));
+
                     if (data?.data?.character_book) {
                         data.data.character_book = undefined;
                     }
+
                     $('#character_json_data').val(JSON.stringify(data));
                     toastr.info(t`Embedded lorebook will be removed from this character.`);
                 } catch {
                     console.error('Failed to parse character JSON data.');
                 }
             }
+
             await createOrEditCharacter();
         }
+
         setWorldInfoButtonClass(undefined, !!name);
     }
 
@@ -8997,6 +8996,7 @@ function openCharacterWorldPopup() {
         } else {
             charLore[existingCharIndex].extraBooks = tempExtraBooks;
         }
+
         Object.assign(world_info, { charLore: charLore });
         saveSettingsDebounced();
     }
@@ -9034,13 +9034,9 @@ function openCharacterWorldPopup() {
                 });
             }
         },
-        onClose: function () {
-            characterWorldPopup = null;
-        },
     });
 
-    characterWorldPopup = popup;
-    popup.show();
+    await popup.show();
 }
 
 function openAlternateGreetings() {
@@ -12278,13 +12274,13 @@ jQuery(async function () {
         const target = $(targetElement.selectedOptions).attr('id');
         switch (target) {
             case 'set_character_world':
-                openCharacterWorldPopup();
+                await openCharacterWorldPopup();
                 break;
             case 'set_chat_scenario':
                 await setScenarioOverride();
                 break;
             case 'renameCharButton':
-                renameCharacter();
+                await renameCharacter();
                 break;
             case 'import_character_info':
                 await importEmbeddedWorldInfo();
