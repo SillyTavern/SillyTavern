@@ -221,7 +221,7 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMes
 }
 
 export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
-    var thisPromptSet = undefined;
+    let thisPromptSet = undefined;
 
     for (var i = 0; i < itemizedPrompts.length; i++) {
         console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
