@@ -3216,6 +3216,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: block;
 }
 
+.avatar-container .ch_additional_info,
 .character_name_block .character_version {
     text-overflow: ellipsis;
     overflow: hidden;

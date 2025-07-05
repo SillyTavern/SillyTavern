@@ -1301,7 +1301,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
             select: (e, u) => selectTag(e, u, listSelector, { tagListOptions: tagListOptions }),
             minLength: 0,
         })
-        .focus(onTagInputFocus); // <== show tag list on click
+        .on('focus', onTagInputFocus); // <== show tag list on click
 }
 
 async function onViewTagsListClick() {
@@ -1738,7 +1738,6 @@ function onTagRenameInput() {
  * @param {string} cssProperty - The CSS property to apply the color to
  */
 function onTagColorize(evt, setColor, cssProperty) {
-    console.debug(evt);
     const isDefaultColor = $(evt.target).data('default-color') === evt.detail.rgba;
     $(evt.target).closest('.tag_view_color_picker').find('.link_icon').toggle(!isDefaultColor);
 
@@ -1749,7 +1748,6 @@ function onTagColorize(evt, setColor, cssProperty) {
     $(evt.target).closest('.tag_view_item').find('.tag_view_name').css(cssProperty, newColor);
     const tag = tags.find(x => x.id === id);
     setColor(tag, newColor);
-    console.debug(tag);
     saveSettingsDebounced();
 
     // Debounce redrawing color of the tag in other elements
@@ -2012,7 +2010,12 @@ export function initTags() {
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
     $(document).on('click', '.tag_remove', onTagRemoveClick);
     $(document).on('input', '.tag_input', onTagInput);
-    $(document).on('click', '.tags_view', onViewTagsListClick);
+    $(document).on('click', '.tags_view', function (event) {
+        // 1. Prevent the label from toggling the checkbox
+        event.preventDefault();
+        // 2. Open the tag view list dialog
+        onViewTagsListClick();
+    });
     $(document).on('click', '.tag_delete', onTagDeleteClick);
     $(document).on('click', '.tag_as_folder', onTagAsFolderClick);
     $(document).on('input', '.tag_view_name', onTagRenameInput);

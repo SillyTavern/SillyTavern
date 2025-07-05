@@ -822,5 +822,13 @@
     {
         "filename": "presets/context/Dots1.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/context/Mistral V7-Tekken.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V7-Tekken.json",
+        "type": "instruct"
     }
 ]

@@ -25,6 +25,7 @@ import {
     setActiveCharacter,
     entitiesFilter,
     doNewChat,
+    online_status,
     messageFormatting,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
@@ -37,6 +38,7 @@ import {
     loadInstructMode,
     names_behavior_types,
     selectInstructPreset,
+    updateBindModelTemplatesState,
 } from './instruct-mode.js';
 
 import { getTagsList, tag_import_setting, tag_map, tags } from './tags.js';
@@ -57,6 +59,7 @@ import { loadSystemPrompts } from './sysprompt.js';
 import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
+import { bindModelTemplates } from './chat-templates.js';
 
 export {
     loadPowerUserSettings,
@@ -243,7 +246,6 @@ let power_user = {
         macro: true,
         names_behavior: names_behavior_types.FORCE,
         activation_regex: '',
-        derived: false,
         bind_to_context: false,
         user_alignment_message: '',
         system_same_as_user: false,
@@ -260,8 +262,13 @@ let power_user = {
         names_as_stop_strings: true,
     },
 
+    instruct_derived: false,
     context_derived: false,
     context_size_derived: false,
+    /** User-defined model identifier / chat template hash to instruct/context template mappings */
+    model_templates_mappings: {},
+    /** The chat template hash of the currently loaded model, if any; used when deriving mappings */
+    chat_template_hash: '',
 
     sysprompt: {
         enabled: true,
@@ -1567,6 +1574,14 @@ async function loadPowerUserSettings(settings, data) {
         delete power_user.import_card_tags;
     }
 
+    if (power_user?.instruct?.derived === true) {
+        power_user.instruct_derived = true;
+        delete power_user.instruct.derived;
+    }
+
+    // Reset the saved chat template hash
+    power_user.chat_template_hash = '';
+
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
@@ -1592,6 +1607,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#encode_tags').prop('checked', power_user.encode_tags);
     $('#example_messages_behavior').val(getExampleMessagesBehavior());
     $(`#example_messages_behavior option[value="${getExampleMessagesBehavior()}"]`).prop('selected', true);
+    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     $('#context_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.context_derived);
     $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
 
@@ -1910,6 +1926,7 @@ async function loadContextSettings() {
         }
 
         power_user.context.preset = name;
+
         contextControls.forEach(control => {
             const presetValue = preset[control.property] ?? control.defaultValue;
 
@@ -1943,6 +1960,8 @@ async function loadContextSettings() {
                 }
             }
         }
+
+        updateBindModelTemplatesState();
 
         saveSettingsDebounced();
     });
@@ -3132,7 +3151,7 @@ export function forceCharacterEditorTokenize() {
     $('#character_popup').trigger('input');
 }
 
-$(document).ready(() => {
+jQuery(() => {
     const adjustAutocompleteDebounced = debounce(() => {
         $('.ui-autocomplete-input').each(function () {
             const isOpen = $(this).autocomplete('widget')[0].style.display !== 'none';
@@ -3217,7 +3236,7 @@ $(document).ready(() => {
     });
 
     // Settings that go to settings.json
-    $('#collapse-newlines-checkbox').change(function () {
+    $('#collapse-newlines-checkbox').on('change', function () {
         power_user.collapse_newlines = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3225,7 +3244,7 @@ $(document).ready(() => {
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
-    $('#trim_sentences_checkbox').change(function () {
+    $('#trim_sentences_checkbox').on('change', function () {
         power_user.trim_sentences = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3246,6 +3265,16 @@ $(document).ready(() => {
         $('#context_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.context_derived);
     });
 
+    $('#instruct_derived').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.instruct_derived = value;
+        saveSettingsDebounced();
+    });
+
+    $('#instruct_derived').on('change', function () {
+        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
+    });
+
     $('#context_size_derived').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.context_size_derived = value;
@@ -3256,7 +3285,15 @@ $(document).ready(() => {
         $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
     });
 
-    $('#always-force-name2-checkbox').change(function () {
+    $('#bind_model_templates').on('input', function () {
+        if (bindModelTemplates(power_user, online_status)) {
+            saveSettingsDebounced();
+        }
+    });
+
+    $('#bind_model_templates').on('change', updateBindModelTemplatesState);
+
+    $('#always-force-name2-checkbox').on('change', function () {
         power_user.always_force_name2 = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
@@ -3272,7 +3309,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#chat-show-reply-prefix-checkbox').change(function () {
+    $('#chat-show-reply-prefix-checkbox').on('change', function () {
         power_user.show_user_prompt_bias = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
@@ -3318,7 +3355,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#fast_ui_mode').change(function () {
+    $('#fast_ui_mode').on('change', function () {
         power_user.fast_ui_mode = $(this).prop('checked');
         switchUiMode();
         saveSettingsDebounced();
@@ -3336,13 +3373,13 @@ $(document).ready(() => {
         applyCustomCSS();
     });
 
-    $('#movingUImode').change(function () {
+    $('#movingUImode').on('change', function () {
         power_user.movingUI = $(this).prop('checked');
         switchMovingUI();
         saveSettingsDebounced();
     });
 
-    $('#noShadowsmode').change(function () {
+    $('#noShadowsmode').on('change', function () {
         power_user.noShadows = $(this).prop('checked');
         applyNoShadows();
         saveSettingsDebounced();
@@ -3811,7 +3848,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#custom_stopping_strings_macro').change(function () {
+    $('#custom_stopping_strings_macro').on('change', function () {
         power_user.custom_stopping_strings_macro = !!$(this).prop('checked');
         saveSettingsDebounced();
     });

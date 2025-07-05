@@ -1,6 +1,6 @@
 'use strict';
 
-import { name1, name2, saveSettingsDebounced, substituteParams } from '../script.js';
+import { name1, name2, online_status, saveSettingsDebounced, substituteParams } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { parseExampleIntoIndividual } from './openai.js';
 import {
@@ -40,7 +40,6 @@ const controls = [
     { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
     { id: 'instruct_last_input_sequence', property: 'last_input_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
-    { id: 'instruct_derived', property: 'derived', isCheckbox: true },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
     { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
@@ -102,7 +101,7 @@ export async function loadInstructMode(data) {
 
     $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
     $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
-    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
+    $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
 
     controls.forEach(control => {
@@ -142,6 +141,20 @@ export async function loadInstructMode(data) {
 }
 
 /**
+ * Updates the bind model template state based on the current model, instruct and context preset.
+ */
+export function updateBindModelTemplatesState() {
+    const bindModelTemplates = power_user.model_templates_mappings[online_status] ?? power_user.model_templates_mappings[power_user.chat_template_hash];
+    const bindingsMatch = (bindModelTemplates && power_user.context.preset === bindModelTemplates['context'] && (!power_user.instruct.enabled || power_user.instruct.preset === bindModelTemplates['instruct'])) ?? false;
+    const currentState = $('#bind_model_templates').prop('checked');
+    if (bindingsMatch === currentState) {
+        // No change needed
+        return;
+    }
+    $('#bind_model_templates').prop('checked', bindingsMatch);
+}
+
+/**
  * Select context template if not already selected.
  * @param {string} preset Preset name.
  * @param {object} [options={}] Optional arguments.
@@ -160,6 +173,8 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
         $('#context_presets').val(preset).trigger('change');
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
     }
+
+    updateBindModelTemplatesState();
 
     saveSettingsDebounced();
 }
@@ -191,6 +206,8 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
         !quiet && toastr.info('Instruct Mode enabled');
     }
 
+    updateBindModelTemplatesState();
+
     saveSettingsDebounced();
 }
 
@@ -201,6 +218,21 @@ export function selectInstructPreset(preset, { quiet = false, isAuto = false } =
  * @returns {boolean} True if instruct preset was activated by model id, false otherwise.
  */
 export function autoSelectInstructPreset(modelId) {
+    const modelTemplatesMap = power_user.model_templates_mappings[modelId];
+
+    if (modelTemplatesMap) {
+        const { instruct, context } = modelTemplatesMap;
+        if (instruct) {
+            selectInstructPreset(instruct, { isAuto: true });
+        }
+        if (context) {
+            selectContextPreset(context, { isAuto: true });
+        }
+        return true;
+    } else {
+        updateBindModelTemplatesState();
+    }
+
     // If instruct mode is disabled, don't do anything
     if (!power_user.instruct.enabled) {
         return false;
@@ -747,7 +779,7 @@ jQuery(() => {
     });
 
     $('#instruct_derived').on('change', function () {
-        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.derived);
+        $('#instruct_derived').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct_derived);
     });
 
     $('#instruct_bind_to_context').on('change', function () {
@@ -787,6 +819,8 @@ jQuery(() => {
             // Select matching context template
             selectMatchingContextTemplate(name);
         }
+
+        updateBindModelTemplatesState();
     });
 
     if (!CSS.supports('field-sizing', 'content')) {

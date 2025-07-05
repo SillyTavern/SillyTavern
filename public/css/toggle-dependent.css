@@ -93,7 +93,8 @@ body.charListGrid #rm_print_characters_block .group_select .ch_name,
 body.charListGrid #rm_print_characters_block .group_select .group_select_counter,
 #user_avatar_block.gridView .avatar-container .ch_name,
 #user_avatar_block.gridView .avatar-container .bogus_folder_counter,
-#user_avatar_block.gridView .avatar-container .group_select_counter {
+#user_avatar_block.gridView .avatar-container .group_select_counter,
+#user_avatar_block.gridView .avatar-container .ch_additional_info {
     width: 100%;
     max-width: 100px;
     text-align: center;

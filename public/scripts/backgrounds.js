@@ -524,7 +524,7 @@ async function resolveImageUrl(bg, isCustom) {
             ? bg
             : getThumbnailUrl('bg', bg);
 
-    return `url('${thumbnailUrl}')`;
+    return `url("${thumbnailUrl}")`;
 }
 
 /**
