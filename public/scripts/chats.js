@@ -499,20 +499,43 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             for (let i = 0; i < rule.selectors.length; i++) {
                 const selector = rule.selectors[i];
                 if (selector) {
-                    const selectors = (selector.split(' ') ?? []).map((v) => {
-                        if (v.startsWith('.')) {
-                            return '.custom-' + v.substring(1);
-                        }
-                        return v;
-                    }).join(' ');
-
-                    rule.selectors[i] = prefix + selectors;
+                    rule.selectors[i] = prefix + sanitizeSelector(selector);
                 }
             }
         }
         if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
             rule.declarations = rule.declarations.filter(declaration => !declaration.value.includes('://'));
         }
+    }
+
+    function sanitizeSelector(selector) {
+        // Handle pseudo-classes that can contain nested selectors
+        const pseudoClasses = ['has', 'not', 'where', 'is', 'matches', 'any'];
+        const pseudoRegex = new RegExp(`:(${pseudoClasses.join('|')})\\(([^)]+)\\)`, 'g');
+
+        // First, sanitize any nested selectors within pseudo-classes
+        selector = selector.replace(pseudoRegex, (match, pseudoClass, content) => {
+            // Recursively sanitize the content within the pseudo-class
+            const sanitizedContent = sanitizeSimpleSelector(content);
+            return `:${pseudoClass}(${sanitizedContent})`;
+        });
+
+        // Then sanitize the main selector parts
+        return sanitizeSimpleSelector(selector);
+    }
+
+    function sanitizeSimpleSelector(selector) {
+        // Split by spaces but preserve complex selectors
+        return selector.split(/\s+/).map((part) => {
+            // Handle class selectors, but preserve pseudo-classes and other complex parts
+            return part.replace(/\.([\w-]+)/g, (match, className) => {
+                // Don't modify if it's already prefixed with 'custom-'
+                if (className.startsWith('custom-')) {
+                    return match;
+                }
+                return `.custom-${className}`;
+            });
+        }).join(' ');
     }
 
     function sanitizeRuleSet(ruleSet) {
