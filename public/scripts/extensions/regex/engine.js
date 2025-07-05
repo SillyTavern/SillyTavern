@@ -1,7 +1,7 @@
-import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { substituteParams, substituteParamsExtended } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
-import { oai_settings } from '../../openai.js';
 import { regexFromString } from '../../utils.js';
+import { getRegexScripts } from './index.js';
 export {
     regex_placement,
     getRegexedString,
@@ -52,44 +52,6 @@ function sanitizeRegexMacro(x) {
         }) : x;
 }
 
-function getScopedRegex() {
-    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
-
-    if (!isAllowed) {
-        return [];
-    }
-
-    const scripts = characters[this_chid]?.data?.extensions?.regex_scripts;
-
-    if (!Array.isArray(scripts)) {
-        return [];
-    }
-
-    return scripts;
-}
-
-function getPresetRegex() {
-    const selectedVal = $('#main_api').val();
-    // If the main API is not OpenAI, return an empty array
-    if (selectedVal !== 'openai') {
-        return [];
-    }
-
-    const isAllowed = extension_settings?.preset_allowed_regex[selectedVal]?.includes(oai_settings.preset_settings_openai);
-
-    if (!isAllowed) {
-        return [];
-    }
-
-    const scripts = oai_settings.extensions?.regex_scripts;
-
-    if (!Array.isArray(scripts)) {
-        return [];
-    }
-
-    return scripts;
-}
-
 /**
  * Parent function to fetch a regexed version of a raw string
  * @param {string} rawString The raw string to be regexed
@@ -110,7 +72,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? []), ...(getPresetRegex() ?? [])];
+    const allRegex = getRegexScripts(true);
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown

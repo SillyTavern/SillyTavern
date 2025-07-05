@@ -27,8 +27,8 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
  *
  * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts() {
-    return [...(getScriptsByType(scriptTypes.GLOBAL)), ...(getScriptsByType(scriptTypes.SCOPED)), ...(getScriptsByType(scriptTypes.PRESET))];
+export function getRegexScripts(allowedOnly = false) {
+    return [...(getScriptsByType(scriptTypes.GLOBAL, allowedOnly)), ...(getScriptsByType(scriptTypes.SCOPED, allowedOnly)), ...(getScriptsByType(scriptTypes.PRESET, allowedOnly))];
 }
 
 /**
@@ -36,22 +36,29 @@ export function getRegexScripts() {
  * @param {number} scriptType
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
-export function getScriptsByType(scriptType) {
-    if (scriptType === scriptTypes.GLOBAL) {
-        return extension_settings.regex ?? [];
-    } else if (scriptType === scriptTypes.SCOPED) {
-        return characters[this_chid]?.data?.extensions?.regex_scripts ?? [];
-    } else if (scriptType === scriptTypes.PRESET) {
-        const settings = main_api === 'openai' ? oai_settings :
-            main_api === 'novel' ? nai_settings :
-                main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
-        return settings.extensions?.regex_scripts ?? [];
+export function getScriptsByType(scriptType, allowedOnly = false) {
+    switch (scriptType) {
+        case scriptTypes.GLOBAL:
+            return extension_settings.regex ?? [];
+        case scriptTypes.SCOPED:
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
+                return [];
+            }
+            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+            return Array.isArray(scopedScripts) ? scopedScripts : [];
+        case scriptTypes.PRESET:
+            if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
+                return [];
+            }
+            const settings = main_api === 'openai' ? oai_settings :
+                main_api === 'novel' ? nai_settings :
+                    main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
+            const presetScripts = settings.extensions?.regex_scripts;
+            return Array.isArray(presetScripts) ? presetScripts : [];
     }
-
-    return [];
 }
 
-function getPresetName() {
+export function getPresetName() {
     if (main_api === 'openai') {
         return oai_settings.preset_settings_openai;
     } else {
