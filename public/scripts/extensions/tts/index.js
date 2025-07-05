@@ -866,7 +866,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
 
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
 
-    if (extension_settings.tts.periodic_auto_generation) {
+    if (extension_settings.tts.periodic_auto_generation && isStreamingEnabled()) {
         ttsJobQueue.push(message);
     } else {
         processAndQueueTtsMessage(message);
