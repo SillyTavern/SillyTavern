@@ -17,10 +17,11 @@ import {
     generateKoboldWithStreaming,
     kai_settings,
     loadKoboldSettings,
-    formatKoboldUrl,
     getKoboldGenerationData,
     kai_flags,
-    setKoboldFlags,
+    koboldai_settings,
+    koboldai_setting_names,
+    initKoboldSettings,
 } from './scripts/kai-settings.js';
 
 import {
@@ -303,9 +304,6 @@ globalThis.SillyTavern = {
     getContext,
 };
 
-/**
- * Exports that were once part of this module. For backwards compatibility.
- */
 export {
     user_avatar,
     setUserAvatar,
@@ -324,6 +322,8 @@ export {
     replaceItemizedPromptText,
     deleteItemizedPrompts,
     findItemizedPromptSet,
+    koboldai_settings,
+    koboldai_setting_names,
 };
 
 /**
@@ -900,8 +900,6 @@ let popup_type = '';
 let chat_file_for_del = '';
 export let online_status = 'no_connection';
 
-export let api_server = '';
-
 export let is_send_press = false; //Send generation
 
 let this_del_mes = -1;
@@ -912,9 +910,6 @@ var this_edit_mes_id;
 
 //settings
 export let settings;
-export let koboldai_settings;
-export let koboldai_setting_names;
-var preset_settings = 'gui';
 export let amount_gen = 80; //default max length of AI generated responses
 export let max_context = 2048;
 
@@ -1009,6 +1004,7 @@ async function firstLoadInit() {
     initDefaultSlashCommands();
     initTextGenModels();
     initOpenAI();
+    initKoboldSettings();
     initSystemPrompts();
     initExtensions();
     initExtensionSlashCommands();
@@ -1114,52 +1110,6 @@ async function getStatusHorde() {
         setOnlineStatus(hordeStatus ? t`Connected` : 'no_connection');
     }
     catch {
-        setOnlineStatus('no_connection');
-    }
-
-    return resultCheckStatus();
-}
-
-async function getStatusKobold() {
-    let endpoint = api_server;
-
-    if (!endpoint) {
-        console.warn('No endpoint for status check');
-        setOnlineStatus('no_connection');
-        return resultCheckStatus();
-    }
-
-    try {
-        const response = await fetch('/api/backends/kobold/status', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                main_api,
-                api_server: endpoint,
-            }),
-            signal: abortStatusCheck.signal,
-        });
-
-        const data = await response.json();
-
-        setOnlineStatus(data?.model ?? 'no_connection');
-
-        if (!data.koboldUnitedVersion) {
-            throw new Error('Missing mandatory Kobold version in data:', data);
-        }
-
-        // Determine instruct mode preset
-        autoSelectInstructPreset(online_status);
-
-        // determine if we can use stop sequence and streaming
-        setKoboldFlags(data.koboldUnitedVersion, data.koboldCppVersion);
-
-        // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
-        if (online_status === 'no_connection' && data.response) {
-            toastr.error(data.response, t`API Error`, { timeOut: 5000, preventDuplicates: true });
-        }
-    } catch (err) {
-        console.error('Error getting status', err);
         setOnlineStatus('no_connection');
     }
 
@@ -3716,11 +3666,11 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         switch (api) {
             case 'kobold':
             case 'koboldhorde':
-                if (preset_settings === 'gui') {
-                    generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
+                if (kai_settings.preset_settings === 'gui') {
+                    generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server: kai_settings.api_server };
                 } else {
                     const isHorde = api === 'koboldhorde';
-                    const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                    const koboldSettings = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
                     generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
                 }
                 TempResponseLength.restore(api);
@@ -4871,12 +4821,12 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 gui_settings: true,
                 max_length: maxLength,
                 max_context_length: max_context,
-                api_server,
+                api_server: kai_settings.api_server,
             };
 
-            if (preset_settings != 'gui') {
+            if (kai_settings.preset_settings != 'gui') {
                 const isHorde = main_api == 'koboldhorde';
-                const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                const presetSettings = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
                 const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
                 generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
             }
@@ -7329,47 +7279,12 @@ export async function getSettings() {
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
 
-        //Load KoboldAI settings
-        koboldai_setting_names = data.koboldai_setting_names;
-        koboldai_settings = data.koboldai_settings;
-        koboldai_settings.forEach(function (item, i, arr) {
-            koboldai_settings[i] = JSON.parse(item);
-        });
-
-        let arr_holder = {};
-
-        $('#settings_preset').empty();
-        $('#settings_preset').append(
-            '<option value="gui">GUI KoboldAI Settings</option>',
-        ); //adding in the GUI settings, since it is not loaded dynamically
-
-        koboldai_setting_names.forEach(function (item, i, arr) {
-            arr_holder[item] = i;
-            $('#settings_preset').append(`<option value=${i}>${item}</option>`);
-            //console.log('loading preset #'+i+' -- '+item);
-        });
-        koboldai_setting_names = {};
-        koboldai_setting_names = arr_holder;
-        preset_settings = settings.preset_settings;
-
-        if (preset_settings == 'gui') {
-            selectKoboldGuiPreset();
-        } else {
-            if (typeof koboldai_setting_names[preset_settings] !== 'undefined') {
-                $(`#settings_preset option[value=${koboldai_setting_names[preset_settings]}]`)
-                    .attr('selected', 'true');
-            } else {
-                preset_settings = 'gui';
-                selectKoboldGuiPreset();
-            }
-        }
-
         novelai_setting_names = data.novelai_setting_names;
         novelai_settings = data.novelai_settings;
         novelai_settings.forEach(function (item, i, arr) {
             novelai_settings[i] = JSON.parse(item);
         });
-        arr_holder = {};
+        const arr_holder = {};
 
         $('#settings_preset_novel').empty();
 
@@ -7381,7 +7296,6 @@ export async function getSettings() {
         novelai_setting_names = arr_holder;
 
         //Load AI model config settings
-
         amount_gen = settings.amount_gen;
         if (settings.max_context !== undefined)
             max_context = parseInt(settings.max_context);
@@ -7392,7 +7306,7 @@ export async function getSettings() {
         showSwipeButtons();
 
         // Kobold
-        loadKoboldSettings(settings.kai_settings ?? settings);
+        loadKoboldSettings(data, settings.kai_settings ?? settings, settings);
 
         // Novel
         loadNovelSettings(settings.nai_settings ?? settings);
@@ -7400,7 +7314,6 @@ export async function getSettings() {
 
         // TextGen
         loadTextGenSettings(data, settings);
-
 
         // OpenAI
         loadOpenAISettings(data, settings.oai_settings ?? settings);
@@ -7444,12 +7357,8 @@ export async function getSettings() {
 
         main_api = settings.main_api;
         $('#main_api').val(main_api);
-        $('#main_api option[value=' + main_api + ']').attr(
-            'selected',
-            'true',
-        );
+        $(`#main_api option[value=${main_api}]`).attr('selected', 'true');
         changeMainAPI();
-
 
         //Load User's Name and Avatar
         initUserAvatar(settings.user_avatar);
@@ -7458,10 +7367,6 @@ export async function getSettings() {
         //Load the active character and group
         active_character = settings.active_character;
         active_group = settings.active_group;
-
-        //Load the API server URL from settings
-        api_server = settings.api_server;
-        $('#api_url_text').val(api_server);
 
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
@@ -7485,12 +7390,6 @@ export async function getSettings() {
     await validateDisabledSamplers();
     settingsReady = true;
     await eventSource.emit(event_types.SETTINGS_LOADED);
-}
-
-function selectKoboldGuiPreset() {
-    $('#settings_preset option[value=gui]')
-        .attr('selected', 'true')
-        .trigger('change');
 }
 
 //MARK: saveSettings()
@@ -7523,8 +7422,6 @@ export async function saveSettings(loopCounter = 0) {
             username: name1,
             active_character: active_character,
             active_group: active_group,
-            api_server: api_server,
-            preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
             max_context: max_context,
@@ -8609,7 +8506,7 @@ export function setGenerationProgress(progress) {
 }
 
 function isHordeGenerationNotAllowed() {
-    if (main_api == 'koboldhorde' && preset_settings == 'gui') {
+    if (main_api == 'koboldhorde' && kai_settings.preset_settings == 'gui') {
         toastr.error(t`GUI Settings preset is not supported for Horde. Please select another preset.`);
         return true;
     }
@@ -10893,27 +10790,6 @@ jQuery(async function () {
         }
     });
 
-    ///////////////////////////////////////////////////////////////////////////////////
-
-    $('#api_button').on('click', function (e) {
-        if ($('#api_url_text').val() != '') {
-            let value = formatKoboldUrl(String($('#api_url_text').val()).trim());
-
-            if (!value) {
-                toastr.error('Please enter a valid URL.');
-                return;
-            }
-
-            $('#api_url_text').val(value);
-            api_server = value;
-            startStatusLoading();
-
-            main_api = 'kobold';
-            saveSettingsDebounced();
-            getStatusKobold();
-        }
-    });
-
     $('#api_button_textgenerationwebui').on('click', async function (e) {
         const keys = [
             { id: 'api_key_mancer', secret: SECRET_KEYS.MANCER },
@@ -11182,31 +11058,6 @@ jQuery(async function () {
         showSwipeButtons();
         this_del_mes = -1;
         is_delete_mode = false;
-    });
-
-    $('#settings_preset').on('change', function () {
-        if ($('#settings_preset').find(':selected').val() != 'gui') {
-            preset_settings = $('#settings_preset').find(':selected').text();
-            const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
-            loadKoboldSettings(preset);
-            setGenerationParamsFromPreset(preset);
-            $('#kobold_api-settings').find('input').prop('disabled', false);
-            $('#kobold_api-settings').css('opacity', 1.0);
-            $('#kobold_order')
-                .css('opacity', 1)
-                .sortable('enable');
-        } else {
-            //$('.button').disableSelection();
-            preset_settings = 'gui';
-
-            $('#kobold_api-settings').find('input').prop('disabled', true);
-            $('#kobold_api-settings').css('opacity', 0.5);
-
-            $('#kobold_order')
-                .css('opacity', 0.5)
-                .sortable('disable');
-        }
-        saveSettingsDebounced();
     });
 
     $('#settings_preset_novel').on('change', function () {
