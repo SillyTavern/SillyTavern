@@ -40,13 +40,14 @@ export function getScriptsByType(scriptType, allowedOnly = false) {
     switch (scriptType) {
         case scriptTypes.GLOBAL:
             return extension_settings.regex ?? [];
-        case scriptTypes.SCOPED:
+        case scriptTypes.SCOPED: {
             if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
                 return [];
             }
             const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
             return Array.isArray(scopedScripts) ? scopedScripts : [];
-        case scriptTypes.PRESET:
+        }
+        case scriptTypes.PRESET: {
             if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
                 return [];
             }
@@ -55,6 +56,7 @@ export function getScriptsByType(scriptType, allowedOnly = false) {
                     main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
             const presetScripts = settings.extensions?.regex_scripts;
             return Array.isArray(presetScripts) ? presetScripts : [];
+        }
     }
 }
 
