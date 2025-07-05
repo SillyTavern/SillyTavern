@@ -430,7 +430,7 @@ export async function getStatusKobold() {
         setOnlineStatus(data?.model ?? 'no_connection');
 
         if (!data.koboldUnitedVersion) {
-            throw new Error('Missing mandatory Kobold version in data:', data);
+            throw new Error(`Missing mandatory Kobold version in data: ${JSON.stringify(data)}`);
         }
 
         // Determine instruct mode preset
