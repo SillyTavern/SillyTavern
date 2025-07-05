@@ -1,0 +1,10 @@
+{
+    "display_name": "Databank Insertion",
+    "loading_order": 200,
+    "requires": [],
+    "generate_interceptor": "databank_inject",
+    "js": "index.js",
+    "author": "",
+    "version": "1.0.0",
+    "homePage": ""
+}
