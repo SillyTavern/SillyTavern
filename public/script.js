@@ -7234,6 +7234,8 @@ export function changeMainAPI() {
         $('#ai_module_block_novel').css('display', 'none');
     }
 
+    $('#prompt_cost_block').toggle(selectedVal === 'textgenerationwebui');
+
     // Hide common settings for OpenAI
     console.debug('value?', selectedVal);
     if (selectedVal == 'openai') {
