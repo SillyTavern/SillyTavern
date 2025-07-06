@@ -471,7 +471,7 @@ export class ConnectionManagerRequestService {
 
     /**
      * @param {import('./connection-manager/index.js').ConnectionProfile?} [profile]
-     * @return {import('../../script.js').ConnectAPIMap}
+     * @return {import('../slash-commands.js').ConnectAPIMap}
      * @throws {Error}
      */
     static validateProfile(profile) {

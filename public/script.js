@@ -1,7 +1,6 @@
 import {
     showdown,
     moment,
-    Fuse,
     DOMPurify,
     hljs,
     Handlebars,
@@ -89,7 +88,6 @@ import {
     sortEntitiesList,
     registerDebugFunction,
     flushEphemeralStoppingStrings,
-    context_presets,
     resetMovableStyles,
     forceCharacterEditorTokenize,
     applyPowerUserSettings,
@@ -167,7 +165,6 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
-    isTrueBoolean,
     toggleDrawer,
     isElementInViewport,
     copyText,
@@ -182,7 +179,7 @@ import {
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -223,9 +220,6 @@ import {
     formatInstructModeExamples,
     getInstructStoppingSequences,
     formatInstructModeSystemPrompt,
-    selectInstructPreset,
-    instruct_presets,
-    selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -251,16 +245,11 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
-import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
-import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
-import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
-import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
@@ -306,6 +295,8 @@ export {
     koboldai_setting_names,
     novelai_settings,
     novelai_setting_names,
+    UNIQUE_APIS,
+    CONNECT_API_MAP,
 };
 
 /**
@@ -5257,7 +5248,7 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-async function duplicateCharacter() {
+export async function duplicateCharacter() {
     if (this_chid === undefined || !characters[this_chid]) {
         toastr.warning(t`You must first select a character to duplicate!`);
         return '';
@@ -7385,7 +7376,7 @@ export async function getPastCharacterChats(characterId = null) {
 /**
  * Helper for `displayPastChats`, to make the same info consistently available for other functions
  */
-function getCurrentChatDetails() {
+export function getCurrentChatDetails() {
     if (!characters[this_chid] && !selected_group) {
         return { sessionName: '', group: null, characterName: '', avatarImgURL: '' };
     }
@@ -8931,219 +8922,6 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
 }
 
 /**
- * @typedef {object} ConnectAPIMap
- * @property {string} selected - API name (e.g. "textgenerationwebui", "openai")
- * @property {string?} [button] - CSS selector for the API button
- * @property {string?} [type] - API type, mostly used by text completion. (e.g. "openrouter")
- * @property {string?} [source] - API source, mostly used by chat completion. (e.g. "openai")
- */
-
-/**
- * @type {Record<string, ConnectAPIMap>}
- */
-export const CONNECT_API_MAP = {
-    // Default APIs not contined inside text gen / chat gen
-    'kobold': {
-        selected: 'kobold',
-        button: '#api_button',
-    },
-    'horde': {
-        selected: 'koboldhorde',
-    },
-    'novel': {
-        selected: 'novel',
-        button: '#api_button_novel',
-    },
-    'koboldcpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.KOBOLDCPP,
-    },
-    // KoboldCpp alias
-    'kcpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.KOBOLDCPP,
-    },
-    'openai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.OPENAI,
-    },
-    // OpenAI alias
-    'oai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.OPENAI,
-    },
-    // Google alias
-    'google': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.MAKERSUITE,
-    },
-    // OpenRouter special naming, to differentiate between chat comp and text comp
-    'openrouter': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.OPENROUTER,
-    },
-    'openrouter-text': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.OPENROUTER,
-    },
-};
-
-// Collect all unique API names in an array
-export const UNIQUE_APIS = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
-
-// Fill connections map from textgen_types and chat_completion_sources
-for (const textGenType of Object.values(textgen_types)) {
-    if (CONNECT_API_MAP[textGenType]) continue;
-    CONNECT_API_MAP[textGenType] = {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textGenType,
-    };
-}
-for (const chatCompletionSource of Object.values(chat_completion_sources)) {
-    if (CONNECT_API_MAP[chatCompletionSource]) continue;
-    CONNECT_API_MAP[chatCompletionSource] = {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chatCompletionSource,
-    };
-}
-
-async function selectContextCallback(args, name) {
-    if (!name) {
-        return power_user.context.preset;
-    }
-
-    const quiet = isTrueBoolean(args?.quiet);
-    const contextNames = context_presets.map(preset => preset.name);
-    const fuse = new Fuse(contextNames);
-    const result = fuse.search(name);
-
-    if (result.length === 0) {
-        !quiet && toastr.warning(t`Context template '${name}' not found`);
-        return '';
-    }
-
-    const foundName = result[0].item;
-    selectContextPreset(foundName, { quiet: quiet });
-    return foundName;
-}
-
-async function selectInstructCallback(args, name) {
-    if (!name) {
-        return power_user.instruct.enabled || isTrueBoolean(args?.forceGet) ? power_user.instruct.preset : '';
-    }
-
-    const quiet = isTrueBoolean(args?.quiet);
-    const instructNames = instruct_presets.map(preset => preset.name);
-    const fuse = new Fuse(instructNames);
-    const result = fuse.search(name);
-
-    if (result.length === 0) {
-        !quiet && toastr.warning(t`Instruct template '${name}' not found`);
-        return '';
-    }
-
-    const foundName = result[0].item;
-    selectInstructPreset(foundName, { quiet: quiet });
-    return foundName;
-}
-
-async function enableInstructCallback() {
-    $('#instruct_enabled').prop('checked', true).trigger('input').trigger('change');
-    return '';
-}
-
-async function disableInstructCallback() {
-    $('#instruct_enabled').prop('checked', false).trigger('input').trigger('change');
-    return '';
-}
-
-/**
- * @param {string} text API name
- */
-async function connectAPISlash(args, text) {
-    if (!text.trim()) {
-        for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
-            if (config.selected !== main_api) continue;
-
-            if (config.source) {
-                if (oai_settings.chat_completion_source === config.source) {
-                    return key;
-                } else {
-                    continue;
-                }
-            }
-
-            if (config.type) {
-                if (textgen_settings.type === config.type) {
-                    return key;
-                } else {
-                    continue;
-                }
-            }
-
-            return key;
-        }
-
-        console.error('FIXME: The current API is not in the API map');
-        return '';
-    }
-
-    const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
-    if (!apiConfig) {
-        toastr.error(t`Error: ${text} is not a valid API`);
-        return '';
-    }
-
-    let connectionRequired = false;
-
-    if (main_api !== apiConfig.selected) {
-        $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
-        $('#main_api').trigger('change');
-        connectionRequired = true;
-    }
-
-    if (apiConfig.source && oai_settings.chat_completion_source !== apiConfig.source) {
-        $(`#chat_completion_source option[value='${apiConfig.source}']`).prop('selected', true);
-        $('#chat_completion_source').trigger('change');
-        connectionRequired = true;
-    }
-
-    if (apiConfig.type && textgen_settings.type !== apiConfig.type) {
-        $(`#textgen_type option[value='${apiConfig.type}']`).prop('selected', true);
-        $('#textgen_type').trigger('change');
-        connectionRequired = true;
-    }
-
-    if (connectionRequired && apiConfig.button) {
-        $(apiConfig.button).trigger('click');
-    }
-
-    const quiet = isTrueBoolean(args?.quiet);
-    const toast = quiet ? jQuery() : toastr.info(t`API set to ${text}, trying to connect..`);
-
-    try {
-        if (connectionRequired) {
-            await waitUntilCondition(() => online_status !== 'no_connection', 5000, 100);
-        }
-        console.log('Connection successful');
-    } catch {
-        console.log('Could not connect after 5 seconds, skipping.');
-    }
-
-    toastr.clear(toast);
-    return text;
-}
-
-/**
  * Imports supported files dropped into the app window.
  * @param {File[]} files Array of files to process
  * @param {Map<File, string>} [data] Extra data to pass to the import function
@@ -9286,32 +9064,6 @@ async function importFromURL(items, files) {
     }
 }
 
-async function doImpersonate(args, prompt) {
-    const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
-    const shouldAwait = isTrueBoolean(args?.await);
-    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
-        try {
-            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
-        } catch {
-            console.warn('Timeout waiting for generation unlock');
-            toastr.warning(t`Cannot run /impersonate command while the reply is being generated.`);
-            return '';
-        }
-
-        // Prevent generate recursion
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
-
-        outerResolve(new Promise(innerResolve => setTimeout(() => innerResolve(Generate('impersonate', options)), 1)));
-    }, 1));
-
-    if (shouldAwait) {
-        const innerPromise = await outerPromise;
-        await innerPromise;
-    }
-
-    return '';
-}
-
 export async function doNewChat({ deleteCurrentChat = false } = {}) {
     //Make a new chat for selected character
     if ((!selected_group && this_chid == undefined) || menu_type == 'create') {
@@ -9344,53 +9096,6 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
         if (deleteCurrentChat) await delChat(chat_file_for_del + '.jsonl');
     }
 
-}
-
-async function doDeleteChat() {
-    return displayPastChats().then(() => new Promise((resolve) => {
-        let resolved = false;
-        const timeOutId = setTimeout(() => {
-            toastr.error(t`Chat deletion timed out. Please try again.`);
-            setResolved();
-        }, 5000);
-
-        const setResolved = () => {
-            if (resolved) {
-                return;
-            }
-            resolved = true;
-            [event_types.CHAT_DELETED, event_types.GROUP_CHAT_DELETED].forEach((eventType) => {
-                eventSource.removeListener(eventType, setResolved);
-            });
-            clearTimeout(timeOutId);
-            resolve('');
-        };
-
-        [event_types.CHAT_DELETED, event_types.GROUP_CHAT_DELETED].forEach((eventType) => {
-            eventSource.on(eventType, setResolved);
-        });
-
-        const currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
-        $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true });
-    }));
-}
-
-async function doRenameChat(_, chatName) {
-    if (!chatName) {
-        toastr.warning(t`Name must be provided as an argument to rename this chat.`);
-        return '';
-    }
-
-    const currentChatName = getCurrentChatId();
-    if (!currentChatName) {
-        toastr.warning(t`No chat selected that can be renamed.`);
-        return '';
-    }
-
-    await renameChat(currentChatName, chatName);
-
-    toastr.success(t`Successfully renamed chat to: ${chatName}`);
-    return '';
 }
 
 /**
@@ -9506,22 +9211,11 @@ export async function updateRemoteChatName(characterId, newName) {
     }
 }
 
-/**
- * /getchatname` slash command
- */
-async function doGetChatName() {
-    return getCurrentChatDetails().sessionName;
-}
 
 function doCharListDisplaySwitch() {
     power_user.charListGrid = !power_user.charListGrid;
     document.body.classList.toggle('charListGrid', power_user.charListGrid);
     saveSettingsDebounced();
-}
-
-function doCloseChat() {
-    $('#option_close_chat').trigger('click');
-    return '';
 }
 
 /**
@@ -9632,11 +9326,6 @@ export async function newAssistantChat({ temporary = false } = {}) {
     chat_metadata = {};
     setCharacterName(neutralCharacterName);
     sendSystemMessage(system_message_types.ASSISTANT_NOTE);
-}
-
-function doTogglePanels() {
-    $('#option_settings').trigger('click');
-    return '';
 }
 
 /**
@@ -9776,249 +9465,6 @@ API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api 
 
 // MARK: DOM Handlers Start
 jQuery(async function () {
-    async function doForceSave() {
-        await saveSettings();
-        await saveChatConditional();
-        toastr.success('Chat and settings saved.');
-        return '';
-    }
-
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dupe',
-        callback: duplicateCharacter,
-        helpString: 'Duplicates the currently selected character.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'api',
-        callback: connectAPISlash,
-        returns: 'the current API',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message on connection',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'API to connect to',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
-                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === selected)),
-                        selected[0].toUpperCase() ?? enumIcons.default)),
-            }),
-        ],
-        helpString: `
-            <div>
-                Connect to an API. If no argument is provided, it will return the currently connected API.
-            </div>
-            <div>
-                <strong>Available APIs:</strong>
-                <pre><code>${Object.keys(CONNECT_API_MAP).join(', ')}</code></pre>
-            </div>
-        `,
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'impersonate',
-        callback: doImpersonate,
-        aliases: ['imp'],
-        namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'await',
-                'Whether to await for the triggered generation before continuing',
-                [ARGUMENT_TYPE.BOOLEAN],
-                false,
-                false,
-                'false',
-            ),
-        ],
-        unnamedArgumentList: [
-            new SlashCommandArgument(
-                'prompt', [ARGUMENT_TYPE.STRING], false,
-            ),
-        ],
-        helpString: `
-            <div>
-                Calls an impersonation response, with an optional additional prompt.
-            </div>
-            <div>
-                If <code>await=true</code> named argument is passed, the command will wait for the impersonation to end before continuing.
-            </div>
-            <div>
-                <strong>Example:</strong>
-                <ul>
-                    <li>
-                        <pre><code class="language-stscript">/impersonate What is the meaning of life?</code></pre>
-                    </li>
-                </ul>
-            </div>
-        `,
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'delchat',
-        callback: doDeleteChat,
-        helpString: 'Deletes the current chat.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'renamechat',
-        callback: doRenameChat,
-        unnamedArgumentList: [
-            new SlashCommandArgument(
-                'new chat name', [ARGUMENT_TYPE.STRING], true,
-            ),
-        ],
-        helpString: 'Renames the current chat.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'getchatname',
-        callback: doGetChatName,
-        returns: 'chat file name',
-        helpString: 'Returns the name of the current chat file into the pipe.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'closechat',
-        callback: doCloseChat,
-        helpString: 'Closes the current chat.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'tempchat',
-        callback: () => {
-            return new Promise((resolve, reject) => {
-                const eventCallback = async (chatId) => {
-                    if (chatId) {
-                        return reject('Not in a temporary chat');
-                    }
-                    await newAssistantChat({ temporary: true });
-                    return resolve('');
-                };
-                eventSource.once(event_types.CHAT_CHANGED, eventCallback);
-                doCloseChat();
-                setTimeout(() => {
-                    reject('Failed to open temporary chat');
-                    eventSource.removeListener(event_types.CHAT_CHANGED, eventCallback);
-                }, debounce_timeout.relaxed);
-            });
-        },
-        helpString: 'Opens a temporary chat with Assistant.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'panels',
-        callback: doTogglePanels,
-        aliases: ['togglepanels'],
-        helpString: 'Toggle UI panels on/off',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'forcesave',
-        callback: doForceSave,
-        helpString: 'Forces a save of the current chat and settings',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'instruct',
-        callback: selectInstructCallback,
-        returns: 'current template',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message on template change',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-            SlashCommandNamedArgument.fromProps({
-                name: 'forceGet',
-                description: 'Force getting a name even if instruct mode is disabled',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'instruct template name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => instruct_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
-            }),
-        ],
-        helpString: `
-            <div>
-                Selects instruct mode template by name. Enables instruct mode if not already enabled.
-                Gets the current instruct template if no name is provided and instruct mode is enabled or <code>forceGet=true</code> is passed.
-            </div>
-            <div>
-                <strong>Example:</strong>
-                <ul>
-                    <li>
-                        <pre><code class="language-stscript">/instruct creative</code></pre>
-                    </li>
-                </ul>
-            </div>
-        `,
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'instruct-on',
-        callback: enableInstructCallback,
-        helpString: 'Enables instruct mode.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'instruct-off',
-        callback: disableInstructCallback,
-        helpString: 'Disables instruct mode',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'instruct-state',
-        aliases: ['instruct-toggle'],
-        helpString: 'Gets the current instruct mode state. If an argument is provided, it will set the instruct mode state.',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'instruct mode state',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        callback: async (_args, state) => {
-            if (!state || typeof state !== 'string') {
-                return String(power_user.instruct.enabled);
-            }
-
-            const newState = isTrueBoolean(state);
-            newState ? enableInstructCallback() : disableInstructCallback();
-            return String(power_user.instruct.enabled);
-        },
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'context',
-        callback: selectContextCallback,
-        returns: 'template name',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message on template change',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-                enumList: commonEnumProviders.boolean('trueFalse')(),
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'context template name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => context_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
-            }),
-        ],
-        helpString: 'Selects context template by name. Gets the current template if no name is provided',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'chat-manager',
-        callback: () => {
-            $('#option_select_chat').trigger('click');
-            return '';
-        },
-        aliases: ['chat-history', 'manage-chats'],
-        helpString: 'Opens the chat manager for the current character/group.',
-    }));
-
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
