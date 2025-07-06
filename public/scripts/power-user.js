@@ -61,18 +61,6 @@ import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
 
-export {
-    loadPowerUserSettings,
-    loadMovingUIState,
-    collapseNewlines,
-    playMessageSound,
-    fixMarkdown,
-    power_user,
-    send_on_enter_options,
-    getContextSettings,
-    applyPowerUserSettings,
-};
-
 export const toastPositionClasses = [
     'toast-top-left',
     'toast-top-center',
@@ -108,7 +96,7 @@ export const chat_styles = {
     DOCUMENT: 2,
 };
 
-const send_on_enter_options = {
+export const send_on_enter_options = {
     DISABLED: -1,
     AUTO: 0,
     ENABLED: 1,
@@ -126,7 +114,7 @@ export const persona_description_positions = {
     NONE: 9,
 };
 
-let power_user = {
+export const power_user = {
     charListGrid: false,
     tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
@@ -370,7 +358,7 @@ const debug_functions = [];
 
 const setHotswapsDebounced = debounce(favsToHotswap);
 
-function playMessageSound() {
+export function playMessageSound() {
     if (!power_user.play_message_sound) {
         return;
     }
@@ -395,7 +383,7 @@ function playMessageSound() {
  * @example
  * collapseNewlines("\n\n\n"); // "\n"
  */
-function collapseNewlines(x) {
+export function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, '\n');
 }
 
@@ -416,7 +404,7 @@ function collapseNewlines(x) {
  * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
  * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
  */
-function fixMarkdown(text, forDisplay) {
+export function fixMarkdown(text, forDisplay) {
     // Find pairs of formatting characters and capture the text in between them
     const format = /([*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -862,13 +850,13 @@ async function CreateZenSliders(elmnt) {
                     })
                     //trigger slider changes when user clicks away
                     .on('mouseup blur', function () {
-                        let manualInput = parseFloat(handle.text()).toFixed(decimals);
+                        let manualInput = parseFloat(parseFloat(handle.text()).toFixed(decimals));
                         if (isManualInput) {
                             //disallow manual inputs outside acceptable range
                             if (manualInput >= sliderMin && manualInput <= sliderMax) {
                                 //if value is ok, assign to slider and update handle text and position
                                 newSlider.val(manualInput);
-                                handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
+                                handleSlideEvent.call(newSlider, null, { value: manualInput }, 'manual');
                                 valueBeforeManualInput = manualInput;
                             } else {
                                 //if value not ok, warn and reset to last known valid value
@@ -890,13 +878,13 @@ async function CreateZenSliders(elmnt) {
 
     function handleSlideEvent(event, ui, type) {
         var handle = $(this).find('.ui-slider-handle');
-        var numVal = Number(ui.value).toFixed(decimals);
-        offVal = Number(offVal).toFixed(decimals);
-        allVal = Number(allVal).toFixed(decimals);
+        var numVal = parseFloat(Number(ui.value).toFixed(decimals));
+        offVal = parseFloat(Number(offVal).toFixed(decimals));
+        allVal = parseFloat(Number(allVal).toFixed(decimals));
         console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin);
         if (numVal > sliderMax) { numVal = sliderMax; }
         if (numVal < sliderMin) { numVal = sliderMin; }
-        var stepNumber = ((ui.value - sliderMin) / stepScale).toFixed(0);
+        var stepNumber = parseFloat(((ui.value - sliderMin) / stepScale).toFixed(0));
         var handleText = (ui.value);
         var leftMargin = (stepNumber / numSteps) * 50 * -1;
         var perStepPercent = 1 / numSteps; //how far in % each step should be on the slider
@@ -1035,10 +1023,9 @@ function applyAvatarStyle() {
 }
 
 function applyChatDisplay() {
-
-    if (!power_user.chat_display === (null || undefined)) {
+    if ([null, undefined].includes(power_user.chat_display)) {
         console.debug('applyChatDisplay: saw no chat display type defined');
-        return;
+        power_user.chat_display = chat_styles.DEFAULT;
     }
     console.debug(`poweruser.chat_display ${power_user.chat_display}`);
     $('#chat_display').val(power_user.chat_display).prop('selected', true);
@@ -1417,7 +1404,7 @@ async function showDebugMenu() {
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
 }
 
-function applyPowerUserSettings() {
+export function applyPowerUserSettings() {
     switchUiMode();
     applyFontScale('forced');
     applyThemeColor();
@@ -1496,7 +1483,7 @@ function getExampleMessagesBehavior() {
 }
 
 //MARK: loadPowerUser
-async function loadPowerUserSettings(settings, data) {
+export async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
     if (settings.power_user !== undefined) {
@@ -1552,15 +1539,15 @@ async function loadPowerUserSettings(settings, data) {
         context_presets = data.context;
     }
 
-    if (power_user.chat_display === '') {
+    if (typeof power_user.chat_display !== 'number') {
         power_user.chat_display = chat_styles.DEFAULT;
     }
 
-    if (power_user.waifuMode === '') {
+    if (typeof power_user.waifuMode !== 'boolean') {
         power_user.waifuMode = false;
     }
 
-    if (power_user.chat_width === '') {
+    if (typeof power_user.chat_width !== 'number') {
         power_user.chat_width = 50;
     }
 
@@ -1618,8 +1605,8 @@ async function loadPowerUserSettings(settings, data) {
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
     $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
-    $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
-    $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
+    $(`#tokenizer option[value="${power_user.tokenizer}"]`).prop('selected', true);
+    $(`#send_on_enter option[value=${power_user.send_on_enter}]`).prop('selected', true);
     $('#confirm_message_delete').prop('checked', power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $('#spoiler_free_mode').prop('checked', power_user.spoiler_free_mode);
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
@@ -1655,8 +1642,8 @@ async function loadPowerUserSettings(settings, data) {
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
     $('#enableLabMode').prop('checked', power_user.enableLabMode).trigger('input', { fromInit: true });
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop('checked', true);
-    $(`#chat_display option[value=${power_user.chat_display}]`).attr('selected', true).trigger('change');
-    $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true).trigger('change');
+    $(`#chat_display option[value=${power_user.chat_display}]`).prop('selected', true).trigger('change');
+    $(`#toastr_position option[value=${power_user.toastr_position}]`).prop('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
@@ -1763,7 +1750,7 @@ function loadCharListState() {
     document.body.classList.toggle('charListGrid', power_user.charListGrid);
 }
 
-function loadMovingUIState() {
+export function loadMovingUIState() {
     if (!isMobile()
         && power_user.movingUIState
         && power_user.movingUI === true) {
@@ -1853,7 +1840,7 @@ function switchMaxContextSize() {
 }
 
 // Fetch a compiled object of all preset settings
-function getContextSettings() {
+export function getContextSettings() {
     let compiledSettings = {};
 
     contextControls.forEach((control) => {
@@ -2397,7 +2384,7 @@ async function saveTheme(name = undefined, theme = undefined) {
     }
     else {
         themes[themeIndex] = theme;
-        $(`#themes option[value="${name}"]`).attr('selected', true);
+        $(`#themes option[value="${name}"]`).prop('selected', true);
     }
 
     power_user.theme = name;
@@ -2504,7 +2491,7 @@ async function saveMovingUI() {
         }
         else {
             movingUIPresets[movingUIPresetIndex] = movingUIPreset;
-            $(`#movingUIPresets option[value="${name}"]`).attr('selected', true);
+            $(`#movingUIPresets option[value="${name}"]`).prop('selected', true);
         }
 
         power_user.movingUIPreset = name;
@@ -3162,7 +3149,7 @@ jQuery(() => {
     });
 
     const reportZoomLevelDebounced = debounce(() => {
-        const zoomLevel = Number(window.devicePixelRatio).toFixed(2) || 1;
+        const zoomLevel = parseFloat(Number(window.devicePixelRatio).toFixed(2)) || 1;
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         const originalWidth = winWidth * zoomLevel;
@@ -3187,8 +3174,8 @@ jQuery(() => {
 
         //attempt to scale movingUI elements naturally across window resizing/zooms
         //this will still break if the zoom level causes mobile styles to come into play.
-        const scaleY = Number(window.innerHeight / coreTruthWinHeight).toFixed(4);
-        const scaleX = Number(window.innerWidth / coreTruthWinWidth).toFixed(4);
+        const scaleY = parseFloat(Number(window.innerHeight / coreTruthWinHeight).toFixed(4));
+        const scaleX = parseFloat(Number(window.innerWidth / coreTruthWinWidth).toFixed(4));
 
         if (Object.keys(power_user.movingUIState).length > 0) {
             for (var elmntName of Object.keys(power_user.movingUIState)) {
@@ -3362,7 +3349,7 @@ jQuery(() => {
     });
 
     $('#waifuMode').on('change', () => {
-        power_user.waifuMode = $('#waifuMode').prop('checked');
+        power_user.waifuMode = !!$('#waifuMode').prop('checked');
         switchWaifuMode();
         saveSettingsDebounced();
     });
@@ -3410,7 +3397,7 @@ jQuery(() => {
 
     $('#chat_width_slider').on('input', function (e, data) {
         const applyMode = data?.forced ? 'forced' : 'normal';
-        power_user.chat_width = Number(e.target.value);
+        power_user.chat_width = Number($(this).val());
         applyChatWidth(applyMode);
         saveSettingsDebounced();
         setHotswapsDebounced();
@@ -3440,81 +3427,81 @@ jQuery(() => {
 
     $('input[name="font_scale"]').on('input', async function (e, data) {
         const applyMode = data?.forced ? 'forced' : 'normal';
-        power_user.font_scale = Number(e.target.value);
+        power_user.font_scale = Number($(this).val());
         $('#font_scale_counter').val(power_user.font_scale);
         applyFontScale(applyMode);
         saveSettingsDebounced();
     });
 
     $('input[name="blur_strength"]').on('input', async function (e) {
-        power_user.blur_strength = Number(e.target.value);
+        power_user.blur_strength = Number($(this).val());
         $('#blur_strength_counter').val(power_user.blur_strength);
         applyBlurStrength();
         saveSettingsDebounced();
     });
 
     $('input[name="shadow_width"]').on('input', async function (e) {
-        power_user.shadow_width = Number(e.target.value);
+        power_user.shadow_width = Number($(this).val());
         $('#shadow_width_counter').val(power_user.shadow_width);
         applyShadowWidth();
         saveSettingsDebounced();
     });
 
-    $('#main-text-color-picker').on('change', (evt) => {
+    $('#main-text-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.main_text_color = evt.detail.rgba;
         applyThemeColor('main');
         saveSettingsDebounced();
     });
 
-    $('#italics-color-picker').on('change', (evt) => {
+    $('#italics-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.italics_text_color = evt.detail.rgba;
         applyThemeColor('italics');
         saveSettingsDebounced();
     });
 
-    $('#underline-color-picker').on('change', (evt) => {
+    $('#underline-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.underline_text_color = evt.detail.rgba;
         applyThemeColor('underline');
         saveSettingsDebounced();
     });
 
-    $('#quote-color-picker').on('change', (evt) => {
+    $('#quote-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.quote_text_color = evt.detail.rgba;
         applyThemeColor('quote');
         saveSettingsDebounced();
     });
 
-    $('#blur-tint-color-picker').on('change', (evt) => {
+    $('#blur-tint-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.blur_tint_color = evt.detail.rgba;
         applyThemeColor('blurTint');
         saveSettingsDebounced();
     });
 
-    $('#chat-tint-color-picker').on('change', (evt) => {
+    $('#chat-tint-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.chat_tint_color = evt.detail.rgba;
         applyThemeColor('chatTint');
         saveSettingsDebounced();
     });
 
-    $('#user-mes-blur-tint-color-picker').on('change', (evt) => {
+    $('#user-mes-blur-tint-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.user_mes_blur_tint_color = evt.detail.rgba;
         applyThemeColor('userMesBlurTint');
         saveSettingsDebounced();
     });
 
-    $('#bot-mes-blur-tint-color-picker').on('change', (evt) => {
+    $('#bot-mes-blur-tint-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.bot_mes_blur_tint_color = evt.detail.rgba;
         applyThemeColor('botMesBlurTint');
         saveSettingsDebounced();
     });
 
-    $('#shadow-color-picker').on('change', (evt) => {
+    $('#shadow-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.shadow_color = evt.detail.rgba;
         applyThemeColor('shadow');
         saveSettingsDebounced();
     });
 
-    $('#border-color-picker').on('change', (evt) => {
+    $('#border-color-picker').on('change', (/** @type {ColorPickerEvent} */ evt) => {
         power_user.border_color = evt.detail.rgba;
         applyThemeColor('border');
         saveSettingsDebounced();

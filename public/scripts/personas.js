@@ -317,12 +317,9 @@ async function uploadUserAvatar(url, name) {
         formData.append('overwrite_name', name);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
-
     await fetch('/api/avatars/upload', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         cache: 'no-cache',
         body: formData,
     });
@@ -368,12 +365,9 @@ async function changeUserAvatar(e) {
         formData.set('avatar', convertedFile);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
-
     const response = await fetch(url, {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType:true }),
         cache: 'no-cache',
         body: formData,
     });

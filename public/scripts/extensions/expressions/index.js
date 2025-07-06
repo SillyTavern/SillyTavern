@@ -1758,26 +1758,36 @@ async function onExpressionFallbackChanged() {
     saveSettingsDebounced();
 }
 
+/**
+ * Handles the file upload process for a sprite image.
+ * @param {string} url URL to upload the file to
+ * @param {FormData} formData FormData object containing the file and other data to upload
+ * @returns {Promise<any>} - The response data from the server
+ */
 async function handleFileUpload(url, formData) {
     try {
-        const data = await jQuery.ajax({
-            type: 'POST',
-            url: url,
-            data: formData,
-            beforeSend: function () { },
-            cache: false,
-            contentType: false,
-            processData: false,
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
         });
 
+        if (!result.ok) {
+            throw new Error(`Upload failed with status ${result.status}`);
+        }
+
+        const data = await result.json();
+
         // Refresh sprites list
-        const name = formData.get('name');
+        const name = formData.get('name').toString();
         delete spriteCache[name];
         await fetchImagesNoCache();
         await validateImages(name);
 
         return data;
     } catch (error) {
+        console.error('Error uploading image:', error);
         toastr.error('Failed to upload image');
     }
 }
