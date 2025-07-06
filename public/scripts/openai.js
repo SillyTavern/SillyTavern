@@ -61,6 +61,7 @@ import {
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
+    textValueMatcher,
     uuidv4,
 } from './utils.js';
 import { countTokensOpenAIAsync, getTokenizerModel } from './tokenizers.js';
@@ -4383,7 +4384,7 @@ async function onDeletePresetClick() {
         toastr.warning(t`Preset was not deleted from server`);
     } else {
         toastr.success(t`Preset deleted`);
-        eventSource.emit(event_types.PRESET_DELETED, { apiId: 'openai', name: nameToDelete });
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: 'openai', name: nameToDelete });
     }
 
     saveSettingsDebounced();
@@ -6362,6 +6363,7 @@ export function initOpenAI() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+            matcher: textValueMatcher,
         });
         $('#model_aimlapi_select').select2({
             placeholder: t`Select a model`,

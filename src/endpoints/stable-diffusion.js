@@ -1160,28 +1160,44 @@ const falai = express.Router();
 falai.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
-        const result = await fetch(modelsUrl);
+        let page = 1;
+        let modelsResponse;
+        let models = [];
 
-        if (!result.ok) {
-            console.warn('FAL.AI returned an error.', result.status, result.statusText);
-            throw new Error('FAL.AI request failed.');
-        }
+        do {
+            modelsUrl.searchParams.set('page', page.toString());
+            const result = await fetch(modelsUrl);
 
-        const data = await result.json();
+            if (!result.ok) {
+                console.warn('FAL.AI returned an error.', result.status, result.statusText);
+                throw new Error('FAL.AI request failed.');
+            }
 
-        if (!Array.isArray(data)) {
-            console.warn('FAL.AI returned invalid data.');
-            throw new Error('FAL.AI request failed.');
-        }
 
-        const models = data
-            .filter(x => !x.title.toLowerCase().includes('inpainting') &&
-                !x.title.toLowerCase().includes('control') &&
-                !x.title.toLowerCase().includes('upscale') &&
-                !x.title.toLowerCase().includes('lora'))
+            modelsResponse = await result.json();
+            if (!('items' in modelsResponse) || !Array.isArray(modelsResponse.items)) {
+                console.warn('FAL.AI returned invalid data.');
+                throw new Error('FAL.AI request failed.');
+            }
+
+            models = models.concat(
+                modelsResponse.items.filter(
+                    x => (
+                        !x.title.toLowerCase().includes('inpainting') &&
+                        !x.title.toLowerCase().includes('control') &&
+                        !x.title.toLowerCase().includes('upscale') &&
+                        !x.title.toLowerCase().includes('lora')
+                    ),
+                ),
+            );
+
+            page = modelsResponse.page + 1;
+        } while (modelsResponse != null && page < modelsResponse.pages);
+
+        const modelOptions = models
             .sort((a, b) => a.title.localeCompare(b.title))
             .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
-        return response.send(models);
+        return response.send(modelOptions);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

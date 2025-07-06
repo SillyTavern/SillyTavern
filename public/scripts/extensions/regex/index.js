@@ -678,13 +678,22 @@ async function checkPresetEmbeddedRegexScripts() {
 
                 if (result) {
                     extension_settings.preset_allowed_regex[main_api].push(name);
-                    await reloadCurrentChat();
                     saveSettingsDebounced();
                 }
             }
         }
     }
 
+    const isPresetAllowed = extension_settings?.preset_allowed_regex[main_api]?.includes(name);
+    const hasScripts = getScriptsByType(scriptTypes.PRESET).some(script => !script.disabled);
+    if (isPresetAllowed && hasScripts) {
+        await reloadCurrentChat();
+    }
+    loadRegexScripts();
+}
+
+async function onMainApiChanged() {
+    await reloadCurrentChat();
     loadRegexScripts();
 }
 
@@ -903,6 +912,7 @@ jQuery(async () => {
                 saveSettingsDebounced();
 
                 console.debug(`Regex scripts in ${selector} reordered`);
+                await reloadCurrentChat();
                 await loadRegexScripts();
             },
         });
@@ -1034,7 +1044,7 @@ jQuery(async () => {
         `,
     }));
 
-    eventSource.on(event_types.MAIN_API_CHANGED, loadRegexScripts);
+    eventSource.on(event_types.MAIN_API_CHANGED, onMainApiChanged);
     eventSource.on(event_types.CHAT_CHANGED, checkCharEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
     eventSource.on(event_types.PRESET_CHANGED, checkPresetEmbeddedRegexScripts);

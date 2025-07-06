@@ -5,7 +5,6 @@ import { oai_settings } from '../../openai.js';
 import { getPresetManager } from '../../preset-manager.js';
 import { textgenerationwebui_settings } from '../../textgen-settings.js';
 import { regexFromString } from '../../utils.js';
-import { el } from '../third-party/ST-Prompt-Template/libs/faker.mjs';
 export {
     regex_placement,
     getRegexedString,
