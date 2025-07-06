@@ -119,13 +119,13 @@ import {
     generateNovelWithStreaming,
     getNovelGenerationData,
     getKayraMaxContextTokens,
-    getNovelTier,
-    loadNovelPreset,
     loadNovelSettings,
     nai_settings,
     adjustNovelInstructionPrompt,
-    loadNovelSubscriptionData,
     parseNovelAILogprobs,
+    novelai_settings,
+    novelai_setting_names,
+    initNovelAISettings,
 } from './scripts/nai-settings.js';
 
 import {
@@ -210,7 +210,6 @@ import {
     SECRET_KEYS,
     initSecrets,
     readSecretState,
-    secret_state,
     writeSecret,
 } from './scripts/secrets.js';
 import { EventEmitter } from './lib/eventemitter.js';
@@ -325,6 +324,8 @@ export {
     findItemizedPromptSet,
     koboldai_settings,
     koboldai_setting_names,
+    novelai_settings,
+    novelai_setting_names,
 };
 
 /**
@@ -918,9 +919,6 @@ var swipes = true;
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
-//novel settings
-export let novelai_settings;
-export let novelai_setting_names;
 /** @type {AbortController} */
 let abortController;
 
@@ -1006,6 +1004,7 @@ async function firstLoadInit() {
     initTextGenModels();
     initOpenAI();
     initKoboldSettings();
+    initNovelAISettings();
     initSystemPrompts();
     initExtensions();
     initExtensionSlashCommands();
@@ -1254,22 +1253,6 @@ async function getStatusTextgen() {
     }
 
     return resultCheckStatus();
-}
-
-async function getStatusNovel() {
-    try {
-        const result = await loadNovelSubscriptionData();
-
-        if (!result) {
-            throw new Error('Could not load subscription data');
-        }
-
-        setOnlineStatus(getNovelTier());
-    } catch {
-        setOnlineStatus('no_connection');
-    }
-
-    resultCheckStatus();
 }
 
 export function startStatusLoading() {
@@ -7282,22 +7265,6 @@ export async function getSettings() {
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
 
-        novelai_setting_names = data.novelai_setting_names;
-        novelai_settings = data.novelai_settings;
-        novelai_settings.forEach(function (item, i, arr) {
-            novelai_settings[i] = JSON.parse(item);
-        });
-        const arr_holder = {};
-
-        $('#settings_preset_novel').empty();
-
-        novelai_setting_names.forEach(function (item, i, arr) {
-            arr_holder[item] = i;
-            $('#settings_preset_novel').append(`<option value=${i}>${item}</option>`);
-        });
-        novelai_setting_names = {};
-        novelai_setting_names = arr_holder;
-
         //Load AI model config settings
         amount_gen = settings.amount_gen;
         if (settings.max_context !== undefined)
@@ -7312,8 +7279,7 @@ export async function getSettings() {
         loadKoboldSettings(data, settings.kai_settings ?? settings, settings);
 
         // Novel
-        loadNovelSettings(settings.nai_settings ?? settings);
-        $(`#settings_preset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).attr('selected', 'true');
+        loadNovelSettings(data, settings.nai_settings ?? settings);
 
         // TextGen
         loadTextGenSettings(data, settings);
@@ -10825,23 +10791,6 @@ jQuery(async function () {
         getStatusTextgen();
     });
 
-    $('#api_button_novel').on('click', async function (e) {
-        e.stopPropagation();
-        const api_key_novel = String($('#api_key_novel').val()).trim();
-
-        if (api_key_novel.length) {
-            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
-        }
-
-        if (!secret_state[SECRET_KEYS.NOVEL]) {
-            console.log('No secret key saved for NovelAI');
-            return;
-        }
-
-        startStatusLoading();
-        // Check near immediately rather than waiting for up to 90s
-        await getStatusNovel();
-    });
 
     const button = $('#options_button');
     const menu = $('#options');
@@ -11061,19 +11010,6 @@ jQuery(async function () {
         showSwipeButtons();
         this_del_mes = -1;
         is_delete_mode = false;
-    });
-
-    $('#settings_preset_novel').on('change', function () {
-        nai_settings.preset_settings_novel = $('#settings_preset_novel')
-            .find(':selected')
-            .text();
-
-        const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-        loadNovelPreset(preset);
-        amount_gen = Number($('#amount_gen').val());
-        max_context = Number($('#max_context').val());
-
-        saveSettingsDebounced();
     });
 
     $('#main_api').on('change', function () {
