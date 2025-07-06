@@ -2503,7 +2503,7 @@ export function textValueMatcher(params, data) {
         const match = $.extend(true, {}, data);
 
         // Check each child of the option
-        for (var c = data.children.length - 1; c >= 0; c--) {
+        for (let c = data.children.length - 1; c >= 0; c--) {
             const child = data.children[c];
 
             const matches = textValueMatcher(params, child);
