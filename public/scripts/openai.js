@@ -61,6 +61,7 @@ import {
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
+    textValueMatcher,
     uuidv4,
 } from './utils.js';
 import { countTokensOpenAIAsync, getTokenizerModel } from './tokenizers.js';
@@ -6348,6 +6349,7 @@ export function initOpenAI() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+            matcher: textValueMatcher,
         });
         $('#model_aimlapi_select').select2({
             placeholder: t`Select a model`,
