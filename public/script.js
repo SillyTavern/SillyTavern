@@ -10207,6 +10207,9 @@ jQuery(async function () {
     //********************
     //***Message Editor***
     $(document).on('click', '.mes_edit', async function () {
+        if (is_delete_mode) {
+            return;
+        }
         if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
