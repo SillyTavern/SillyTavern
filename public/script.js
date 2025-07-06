@@ -137,9 +137,10 @@ import {
     horde_settings,
     loadHordeSettings,
     generateHorde,
-    checkHordeStatus,
+    getStatusHorde,
     getHordeModels,
     adjustHordeGenerationParams,
+    isHordeGenerationNotAllowed,
     MIN_LENGTH,
     initHorde,
 } from './scripts/horde.js';
@@ -959,18 +960,6 @@ export function setActiveCharacter(entityOrKey) {
 export function setActiveGroup(entityOrKey) {
     active_group = entityOrKey ? getTagKeyForEntity(entityOrKey) : null;
     if (active_group) active_character = null;
-}
-
-async function getStatusHorde() {
-    try {
-        const hordeStatus = await checkHordeStatus();
-        setOnlineStatus(hordeStatus ? t`Connected` : 'no_connection');
-    }
-    catch {
-        setOnlineStatus('no_connection');
-    }
-
-    return resultCheckStatus();
 }
 
 export function startStatusLoading() {
@@ -8190,15 +8179,6 @@ export function setGenerationProgress(progress) {
             'transition': '0.25s ease-in-out',
         });
     }
-}
-
-function isHordeGenerationNotAllowed() {
-    if (main_api == 'koboldhorde' && kai_settings.preset_settings == 'gui') {
-        toastr.error(t`GUI Settings preset is not supported for Horde. Please select another preset.`);
-        return true;
-    }
-
-    return false;
 }
 
 export function cancelTtsPlay() {
