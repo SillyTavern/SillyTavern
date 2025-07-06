@@ -1716,6 +1716,132 @@ export function registerFileConverter(mimeType, converter) {
     converters[mimeType] = converter;
 }
 
+export function addDOMPurifyHooks() {
+    // Allow target="_blank" in links
+    DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+        if ('target' in node) {
+            node.setAttribute('target', '_blank');
+            node.setAttribute('rel', 'noopener');
+        }
+    });
+
+    DOMPurify.addHook('uponSanitizeAttribute', (node, data, config) => {
+        if (!config['MESSAGE_SANITIZE']) {
+            return;
+        }
+
+        /* Retain the classes on UI elements of messages that interact with the main UI */
+        const permittedNodeTypes = ['BUTTON', 'DIV'];
+        if (config['MESSAGE_ALLOW_SYSTEM_UI'] && node.classList.contains('menu_button') && permittedNodeTypes.includes(node.nodeName)) {
+            return;
+        }
+
+        switch (data.attrName) {
+            case 'class': {
+                if (data.attrValue) {
+                    data.attrValue = data.attrValue.split(' ').map((v) => {
+                        if (v.startsWith('fa-') || v.startsWith('note-') || v === 'monospace') {
+                            return v;
+                        }
+
+                        return 'custom-' + v;
+                    }).join(' ');
+                }
+                break;
+            }
+        }
+    });
+
+    DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
+        if (!config['MESSAGE_SANITIZE']) {
+            return;
+        }
+
+        // Replace line breaks with <br> in unknown elements
+        if (node instanceof HTMLUnknownElement) {
+            node.innerHTML = node.innerHTML.trim().replaceAll('\n', '<br>');
+        }
+
+        const isMediaAllowed = isExternalMediaAllowed();
+        if (isMediaAllowed) {
+            return;
+        }
+
+        if (!(node instanceof Element)) {
+            return;
+        }
+
+        let mediaBlocked = false;
+
+        switch (node.tagName) {
+            case 'AUDIO':
+            case 'VIDEO':
+            case 'SOURCE':
+            case 'TRACK':
+            case 'EMBED':
+            case 'OBJECT':
+            case 'IMG': {
+                const isExternalUrl = (url) => (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
+                const src = node.getAttribute('src');
+                const data = node.getAttribute('data');
+                const srcset = node.getAttribute('srcset');
+
+                if (srcset) {
+                    const srcsetUrls = srcset.split(',');
+
+                    for (const srcsetUrl of srcsetUrls) {
+                        const [url] = srcsetUrl.trim().split(' ');
+
+                        if (isExternalUrl(url)) {
+                            console.warn('External media blocked', url);
+                            node.remove();
+                            mediaBlocked = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (src && isExternalUrl(src)) {
+                    console.warn('External media blocked', src);
+                    mediaBlocked = true;
+                    node.remove();
+                }
+
+                if (data && isExternalUrl(data)) {
+                    console.warn('External media blocked', data);
+                    mediaBlocked = true;
+                    node.remove();
+                }
+
+                if (mediaBlocked && (node instanceof HTMLMediaElement)) {
+                    node.autoplay = false;
+                    node.pause();
+                }
+            }
+                break;
+        }
+
+        if (mediaBlocked) {
+            const entityId = getCurrentEntityId();
+            const warningShownKey = `mediaWarningShown:${entityId}`;
+
+            if (accountStorage.getItem(warningShownKey) === null) {
+                const warningToast = toastr.warning(
+                    t`Use the 'Ext. Media' button to allow it. Click on this message to dismiss.`,
+                    t`External media has been blocked`,
+                    {
+                        timeOut: 0,
+                        preventDuplicates: true,
+                        onclick: () => toastr.clear(warningToast),
+                    },
+                );
+
+                accountStorage.setItem(warningShownKey, 'true');
+            }
+        }
+    });
+}
+
 export function initChatUtilities() {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
