@@ -26,14 +26,33 @@ function setToggleAllIcon(allAreChecked) {
     selectAllIcon.toggleClass('fa-minus', allAreChecked);
 }
 
+function hideOrShowElement(element, show) {
+    if (show && element.attr('hidden') !== undefined) {
+        element.removeAttr('hidden');
+    }
+    if (!show) {
+        element.attr('hidden', '');
+    }
+}
+
+function setMoveButtonsVisibility() {
+    const hasGlobalScripts = $('#saved_regex_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
+    const hasScopedScripts = $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
+    const hasPresetScripts = $('#saved_preset_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
+    hideOrShowElement($('#bulk_regex_move_to_global'), hasScopedScripts || hasPresetScripts);
+    hideOrShowElement($('#bulk_regex_move_to_scoped'), hasGlobalScripts || hasPresetScripts);
+    hideOrShowElement($('#bulk_regex_move_to_preset'), hasGlobalScripts || hasScopedScripts);
+}
+
 /**
  * Saves a regex script to the extension settings or character data.
  * @param {import('../../char-data.js').RegexScriptData} regexScript
  * @param {number} existingScriptIndex Index of the existing script
  * @param {number} scriptType Is the script scoped to a character?
+ * @param {boolean} [saveSettings=true] Whether to save the settings immediately
  * @returns {Promise<void>}
  */
-async function saveRegexScript(regexScript, existingScriptIndex, scriptType) {
+async function saveRegexScript(regexScript, existingScriptIndex, scriptType, saveSettings = true) {
     // If not editing
     const array = getScriptsByType(scriptType);
 
@@ -84,17 +103,19 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType) {
         }
     }
 
-    saveSettingsDebounced();
-    await loadRegexScripts();
+    if (saveSettings) {
+        saveSettingsDebounced();
+        await loadRegexScripts();
 
-    // Reload the current chat to undo previous markdown
-    const currentChatId = getCurrentChatId();
-    if (currentChatId !== undefined && currentChatId !== null) {
-        await reloadCurrentChat();
+        // Reload the current chat to undo previous markdown
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
     }
 }
 
-async function deleteRegexScript({ id, scriptType }) {
+async function deleteRegexScript({ id, scriptType, saveSettings = true }) {
     const array = getScriptsByType(scriptType);
 
     const existingScriptIndex = array.findIndex((script) => script.id === id);
@@ -107,10 +128,22 @@ async function deleteRegexScript({ id, scriptType }) {
         if (scriptType === scriptTypes.PRESET) {
             await writePresetExtensionField('regex_scripts', array);
         }
-
-        saveSettingsDebounced();
-        await loadRegexScripts();
+        if (saveSettings) {
+            saveSettingsDebounced();
+            await loadRegexScripts();
+        }
     }
+}
+
+async function moveRegexScript(script, toType, fromType = null, saveSettings = true) {
+    if (!fromType) {
+        fromType = getScriptType(script);
+    }
+    if (!toType || fromType === toType || fromType === -1) {
+        return;
+    }
+    await deleteRegexScript({ id: script.id, scriptType: fromType, saveSettings: false });
+    await saveRegexScript(script, -1, toType, saveSettings);
 }
 
 async function loadRegexScripts() {
@@ -118,7 +151,6 @@ async function loadRegexScripts() {
     $('#saved_scoped_scripts').empty();
     $('#saved_preset_scripts').empty();
     setToggleAllIcon(false);
-
 
     const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
 
@@ -160,39 +192,29 @@ async function loadRegexScripts() {
             if (!confirm) {
                 return;
             }
-
-            await deleteRegexScript({ id: script.id, scriptType: scriptType });
-            await saveRegexScript(script, -1, scriptTypes.GLOBAL);
+            await moveRegexScript(script, scriptTypes.GLOBAL, scriptType);
         });
         scriptHtml.find('.move_to_scoped').on('click', async function () {
             if (this_chid === undefined) {
                 toastr.error(t`No character selected.`);
                 return;
             }
-
             if (selected_group) {
                 toastr.error(t`Cannot edit scoped scripts in group chats.`);
                 return;
             }
-
             const confirm = await callGenericPopup(t`Are you sure you want to move this regex script to scoped?`, POPUP_TYPE.CONFIRM);
-
             if (!confirm) {
                 return;
             }
-
-            await deleteRegexScript({ id: script.id, scriptType: scriptType });
-            await saveRegexScript(script, -1, scriptTypes.SCOPED);
+            await moveRegexScript(script, scriptTypes.SCOPED, scriptType);
         });
         scriptHtml.find('.move_to_preset').on('click', async function () {
             const confirm = await callGenericPopup(t`Are you sure you want to move this regex script to preset?`, POPUP_TYPE.CONFIRM);
-
             if (!confirm) {
                 return;
             }
-
-            await deleteRegexScript({ id: script.id, scriptType: scriptType });
-            await saveRegexScript(script, -1, scriptTypes.PRESET);
+            await moveRegexScript(script, scriptTypes.PRESET, scriptType);
         });
         scriptHtml.find('.export_regex').on('click', async function () {
             const fileName = `regex-${sanitizeFileName(script.scriptName)}.json`;
@@ -201,15 +223,14 @@ async function loadRegexScripts() {
         });
         scriptHtml.find('.delete_regex').on('click', async function () {
             const confirm = await callGenericPopup(t`Are you sure you want to delete this regex script?`, POPUP_TYPE.CONFIRM);
-
             if (!confirm) {
                 return;
             }
-
             await deleteRegexScript({ id: script.id, scriptType });
             await reloadCurrentChat();
         });
         scriptHtml.find('.regex_bulk_checkbox').on('change', function () {
+            setMoveButtonsVisibility();
             const checkboxes = $('#regex_container .regex_bulk_checkbox');
             const allAreChecked = checkboxes.length === checkboxes.filter(':checked').length;
             setToggleAllIcon(allAreChecked);
@@ -226,6 +247,8 @@ async function loadRegexScripts() {
     $('#regex_scoped_toggle').prop('checked', isScopedAllowed);
     const isPresetAllowed = extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName());
     $('#regex_preset_toggle').prop('checked', isPresetAllowed);
+
+    setMoveButtonsVisibility();
 }
 
 /**
@@ -582,6 +605,13 @@ function getScriptType(script) {
     return getScriptsByType(scriptTypes.SCOPED).some(s => s.id === script.id) ? scriptTypes.SCOPED : getScriptsByType(scriptTypes.PRESET).some(s => s.id === script.id) ? scriptTypes.PRESET : scriptTypes.GLOBAL;
 }
 
+function getSelectedScripts() {
+    const scripts = getRegexScripts();
+    const selector = '#regex_container .regex-script-label:has(.regex_bulk_checkbox:checked)';
+    const selectedIds = Array.from(document.querySelectorAll(selector)).map(e => e.getAttribute('id')).filter(id => id);
+    return scripts.filter(script => selectedIds.includes(script.id));
+}
+
 function purgeEmbeddedRegexScripts({ character }) {
     const avatar = character?.avatar;
 
@@ -710,13 +740,6 @@ jQuery(async () => {
         $('#import_regex_file').trigger('click');
     });
 
-    function getSelectedScripts() {
-        const scripts = getRegexScripts();
-        const selector = '#regex_container .regex-script-label:has(.regex_bulk_checkbox:checked)';
-        const selectedIds = Array.from(document.querySelectorAll(selector)).map(e => e.getAttribute('id')).filter(id => id);
-        return scripts.filter(script => selectedIds.includes(script.id));
-    }
-
     $('#bulk_select_all_toggle').on('click', async function () {
         const checkboxes = $('#regex_container .regex_bulk_checkbox');
         if (checkboxes.length === 0) {
@@ -756,6 +779,65 @@ jQuery(async () => {
         await loadRegexScripts();
     });
 
+    $('#bulk_regex_move_to_global').on('click', async function () {
+        const scripts = getSelectedScripts();
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for moving.`);
+            return;
+        }
+        for (const script of scripts) {
+            await moveRegexScript(script, scriptTypes.GLOBAL, getScriptType(script), false);
+        }
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+
+        // Reload the current chat to undo previous markdown
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
+    });
+
+    $('#bulk_regex_move_to_scoped').on('click', async function () {
+        const scripts = getSelectedScripts();
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for moving.`);
+            return;
+        }
+        for (const script of scripts) {
+            await moveRegexScript(script, scriptTypes.SCOPED, getScriptType(script), false);
+        }
+
+        await loadRegexScripts();
+
+        // Reload the current chat to undo previous markdown
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
+    });
+
+    $('#bulk_regex_move_to_preset').on('click', async function () {
+        const scripts = getSelectedScripts();
+        if (scripts.length === 0) {
+            toastr.warning(t`No regex scripts selected for moving.`);
+            return;
+        }
+        for (const script of scripts) {
+            await moveRegexScript(script, scriptTypes.PRESET, getScriptType(script), false);
+        }
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+
+        // Reload the current chat to undo previous markdown
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
+    });
+
     $('#bulk_delete_regex').on('click', async function () {
         const scripts = getSelectedScripts();
         if (scripts.length === 0) {
@@ -767,10 +849,11 @@ jQuery(async () => {
             return;
         }
         for (const script of scripts) {
-            await deleteRegexScript({ id: script.id, scriptType: getScriptType(script) });
+            await deleteRegexScript({ id: script.id, scriptType: getScriptType(script), saveSettings: false });
         }
-        await reloadCurrentChat();
         saveSettingsDebounced();
+        await loadRegexScripts();
+        await reloadCurrentChat();
     });
 
     $('#bulk_export_regex').on('click', async function () {

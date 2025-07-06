@@ -149,12 +149,17 @@ input.enable_scoped {
 }
 
 .regex_settings .regex_bulk_operations,
-.regex_settings .regex_bulk_checkbox {
+.regex_settings .regex_bulk_checkbox,
+.regex_settings .regex_bulk_operations_hr {
     display: none;
 }
 
 .regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_operations {
     display: flex;
+}
+
+.regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_operations_hr {
+    display: block;
 }
 
 .regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_checkbox {

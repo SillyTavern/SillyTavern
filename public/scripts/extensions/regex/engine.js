@@ -5,6 +5,7 @@ import { oai_settings } from '../../openai.js';
 import { getPresetManager } from '../../preset-manager.js';
 import { textgenerationwebui_settings } from '../../textgen-settings.js';
 import { regexFromString } from '../../utils.js';
+import { el } from '../third-party/ST-Prompt-Template/libs/faker.mjs';
 export {
     regex_placement,
     getRegexedString,
@@ -59,6 +60,10 @@ export function getScriptsByType(scriptType, allowedOnly = false) {
     }
 }
 
+/**
+ * Gets the name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
+ * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
+ */
 export function getPresetName() {
     if (main_api === 'openai') {
         return oai_settings.preset_settings_openai;
