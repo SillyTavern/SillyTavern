@@ -1785,10 +1785,11 @@ async function handleFileUpload(url, formData) {
         await fetchImagesNoCache();
         await validateImages(name);
 
-        return data;
+        return data ?? {};
     } catch (error) {
         console.error('Error uploading image:', error);
         toastr.error('Failed to upload image');
+        return {};
     }
 }
 
@@ -2006,7 +2007,11 @@ async function onClickExpressionUploadPackButton() {
         const uploadToast = toastr.info('Please wait...', 'Upload is processing', { timeOut: 0, extendedTimeOut: 0 });
         const { count } = await handleFileUpload('/api/sprites/upload-zip', formData);
         toastr.clear(uploadToast);
-        toastr.success(`Uploaded ${count} image(s) for ${name}`);
+
+        // Only show success message if at least one image was uploaded
+        if (count) {
+            toastr.success(`Uploaded ${count} image(s) for ${name}`);
+        }
 
         // Reset the input
         e.target.form.reset();
