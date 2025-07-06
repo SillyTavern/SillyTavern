@@ -1,12 +1,71 @@
-import { substituteParams, substituteParamsExtended } from '../../../script.js';
+import { characters, main_api, nai_settings, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { kai_settings } from '../../kai-settings.js';
+import { oai_settings } from '../../openai.js';
+import { getPresetManager } from '../../preset-manager.js';
+import { textgenerationwebui_settings } from '../../textgen-settings.js';
 import { regexFromString } from '../../utils.js';
-import { getRegexScripts } from './index.js';
 export {
     regex_placement,
     getRegexedString,
     runRegexScript,
 };
+
+export const scriptTypes = {
+    GLOBAL: 0,
+    SCOPED: 1,
+    PRESET: 2,
+};
+
+/**
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
+ */
+
+/**
+ * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
+ *
+ * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
+ */
+export function getRegexScripts(allowedOnly = false) {
+    return [...(getScriptsByType(scriptTypes.GLOBAL, allowedOnly)), ...(getScriptsByType(scriptTypes.SCOPED, allowedOnly)), ...(getScriptsByType(scriptTypes.PRESET, allowedOnly))];
+}
+
+/**
+ * Retrieves the regex scripts for a specific type.
+ * @param {number} scriptType
+ * @returns {RegexScript[]} An array of regex scripts for the specified type.
+ */
+export function getScriptsByType(scriptType, allowedOnly = false) {
+    switch (scriptType) {
+        case scriptTypes.GLOBAL:
+            return extension_settings.regex ?? [];
+        case scriptTypes.SCOPED: {
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
+                return [];
+            }
+            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+            return Array.isArray(scopedScripts) ? scopedScripts : [];
+        }
+        case scriptTypes.PRESET: {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
+                return [];
+            }
+            const settings = main_api === 'openai' ? oai_settings :
+                main_api === 'novel' ? nai_settings :
+                    main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
+            const presetScripts = settings.extensions?.regex_scripts;
+            return Array.isArray(presetScripts) ? presetScripts : [];
+        }
+    }
+}
+
+export function getPresetName() {
+    if (main_api === 'openai') {
+        return oai_settings.preset_settings_openai;
+    } else {
+        return getPresetManager(main_api)?.getSelectedPresetName();
+    }
+}
 
 /**
  * @enum {number} Where the regex script should be applied

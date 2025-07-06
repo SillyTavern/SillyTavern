@@ -1,5 +1,4 @@
-import { characters, eventSource, event_types, getCurrentChatId, nai_settings, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
-import { oai_settings } from '../../openai.js';
+import { characters, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField, writePresetExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
@@ -9,64 +8,11 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
+import { getPresetName, getRegexScripts, getScriptsByType, regex_placement, runRegexScript, scriptTypes, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
-import { kai_settings } from '../../kai-settings.js';
-import { textgenerationwebui_settings } from '../../textgen-settings.js';
-import { getPresetManager } from '../../preset-manager.js';
 
 const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase();
-
-/**
- * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
- */
-
-/**
- * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
- *
- * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
- */
-export function getRegexScripts(allowedOnly = false) {
-    return [...(getScriptsByType(scriptTypes.GLOBAL, allowedOnly)), ...(getScriptsByType(scriptTypes.SCOPED, allowedOnly)), ...(getScriptsByType(scriptTypes.PRESET, allowedOnly))];
-}
-
-/**
- * Retrieves the regex scripts for a specific type.
- * @param {number} scriptType
- * @returns {RegexScript[]} An array of regex scripts for the specified type.
- */
-export function getScriptsByType(scriptType, allowedOnly = false) {
-    switch (scriptType) {
-        case scriptTypes.GLOBAL:
-            return extension_settings.regex ?? [];
-        case scriptTypes.SCOPED: {
-            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
-                return [];
-            }
-            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
-            return Array.isArray(scopedScripts) ? scopedScripts : [];
-        }
-        case scriptTypes.PRESET: {
-            if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
-                return [];
-            }
-            const settings = main_api === 'openai' ? oai_settings :
-                main_api === 'novel' ? nai_settings :
-                    main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
-            const presetScripts = settings.extensions?.regex_scripts;
-            return Array.isArray(presetScripts) ? presetScripts : [];
-        }
-    }
-}
-
-export function getPresetName() {
-    if (main_api === 'openai') {
-        return oai_settings.preset_settings_openai;
-    } else {
-        return getPresetManager(main_api)?.getSelectedPresetName();
-    }
-}
 
 /**
  * Toggle the icon for the "select all" checkbox in the regex settings.
@@ -79,12 +25,6 @@ function setToggleAllIcon(allAreChecked) {
     selectAllIcon.toggleClass('fa-check-double', !allAreChecked);
     selectAllIcon.toggleClass('fa-minus', allAreChecked);
 }
-
-const scriptTypes = {
-    GLOBAL: 0,
-    SCOPED: 1,
-    PRESET: 2,
-};
 
 /**
  * Saves a regex script to the extension settings or character data.
