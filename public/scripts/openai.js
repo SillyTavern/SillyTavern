@@ -4440,7 +4440,7 @@ function onSettingsPresetChange() {
         settings: oai_settings,
         savePreset: saveOpenAIPreset,
         presetNameBefore: presetNameBefore,
-    }).finally(r => {
+    }).finally(() => {
         if (oai_settings.bind_preset_to_connection) {
             $('.model_custom_select').empty();
         }
@@ -4473,8 +4473,9 @@ function onSettingsPresetChange() {
         $('#openai_logit_bias_preset').trigger('change');
 
         saveSettingsDebounced();
-        eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
-        eventSource.emit(event_types.PRESET_CHANGED);
+        eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER).finally(() => {
+            eventSource.emit(event_types.PRESET_CHANGED);
+        });
     });
 }
 

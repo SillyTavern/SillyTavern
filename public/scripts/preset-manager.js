@@ -627,6 +627,7 @@ class PresetManager {
         }
 
         const filteredKeys = [
+            'api_server',
             'preset',
             'streaming',
             'truncation_length',
@@ -636,6 +637,7 @@ class PresetManager {
             'can_use_tokenization',
             'can_use_streaming',
             'preset_settings_novel',
+            'preset_settings',
             'streaming_novel',
             'nai_preamble',
             'model_novel',

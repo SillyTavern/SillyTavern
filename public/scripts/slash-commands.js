@@ -6,7 +6,6 @@ import {
     UNIQUE_APIS,
     activateSendButtons,
     addOneMessage,
-    api_server,
     characters,
     chat,
     chat_metadata,
@@ -80,6 +79,7 @@ import { accountStorage } from './util/AccountStorage.js';
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { t } from './i18n.js';
+import { kai_settings } from './kai-settings.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -4555,7 +4555,7 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
     const isCurrentlyKoboldClassic = main_api === 'kobold';
     if (api === 'kobold' || (!api && isCurrentlyKoboldClassic)) {
         if (!url) {
-            return api_server ?? '';
+            return kai_settings.api_server ?? '';
         }
 
         if (!isCurrentlyKoboldClassic && autoConnect) {
@@ -4571,7 +4571,7 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
             $('#api_button').trigger('click');
         }
 
-        return api_server ?? '';
+        return kai_settings.api_server ?? '';
     }
 
     // Do some checks and get the api type we are targeting with this command

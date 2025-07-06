@@ -760,7 +760,7 @@ jQuery(function () {
     });
 
     $('#settings_preset_textgenerationwebui').on('change', function () {
-        const presetName = $(this).val();
+        const presetName = $(this).val(); 
         selectPreset(presetName).finally(() => {
             eventSource.emit(event_types.PRESET_CHANGED);
         });

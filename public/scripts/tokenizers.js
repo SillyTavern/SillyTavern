@@ -1,10 +1,10 @@
 import { localforage } from '../lib.js';
-import { characters, main_api, api_server, nai_settings, online_status, this_chid } from '../script.js';
+import { characters, main_api, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
-import { kai_flags } from './kai-settings.js';
+import { kai_flags, kai_settings } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
@@ -911,7 +911,7 @@ function countTokensFromKoboldAPI(str, resolve) {
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].count,
         data: JSON.stringify({
             text: str,
-            url: api_server,
+            url: kai_settings.api_server,
         }),
         dataType: 'json',
         contentType: 'application/json',
@@ -1062,7 +1062,7 @@ function getTextTokensFromKoboldAPI(str, resolve) {
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].encode,
         data: JSON.stringify({
             text: str,
-            url: api_server,
+            url: kai_settings.api_server,
         }),
         dataType: 'json',
         contentType: 'application/json',
