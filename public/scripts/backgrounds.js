@@ -636,12 +636,9 @@ async function uploadBackground(formData) {
             return;
         }
 
-        const headers = getRequestHeaders();
-        delete headers['Content-Type'];
-
         const response = await fetch('/api/backgrounds/upload', {
             method: 'POST',
-            headers: headers,
+            headers: getRequestHeaders({ omitContentType: true }),
             body: formData,
             cache: 'no-cache',
         });

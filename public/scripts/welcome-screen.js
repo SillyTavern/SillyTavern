@@ -577,12 +577,9 @@ async function createPermanentAssistant() {
         console.warn('Error fetching system avatar. Fallback image will be used.', error);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
-
     const fetchResult = await fetch('/api/characters/create', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         body: formData,
         cache: 'no-cache',
     });

@@ -311,7 +311,7 @@ export function getGroupNames() {
  * @returns {number|Object} 0-based character ID or key-value object if full is true
  */
 export function findGroupMemberId(arg, full = false) {
-    arg = arg?.trim();
+    arg = arg?.toString()?.trim();
 
     if (!arg) {
         console.warn('WARN: No argument provided for findGroupMemberId');
@@ -1358,7 +1358,7 @@ function isGroupMember(group, avatarId) {
     }
 }
 
-function getGroupCharacters({ doFilter, onlyMembers } = {}) {
+function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
     function sortMembersFn(a, b) {
         const membersArray = thisGroup?.members ?? newGroupMembers;
         const aIndex = membersArray.indexOf(a.item.avatar);
@@ -1757,7 +1757,7 @@ async function onGroupActionClick(event) {
 
 function updateFavButtonState(state) {
     fav_grp_checked = state;
-    $('#rm_group_fav').val(fav_grp_checked);
+    $('#rm_group_fav').val(String(fav_grp_checked));
     $('#group_favorite_button').toggleClass('fav_on', fav_grp_checked);
     $('#group_favorite_button').toggleClass('fav_off', !fav_grp_checked);
 }
@@ -2047,11 +2047,9 @@ export async function deleteGroupChat(groupId, chatId) {
  * @param {EventTarget} eventTarget Element that triggered the import
  */
 export async function importGroupChat(formData, eventTarget) {
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
     const fetchResult = await fetch('/api/chats/group/import', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         body: formData,
         cache: 'no-cache',
     });

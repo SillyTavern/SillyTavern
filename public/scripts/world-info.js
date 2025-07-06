@@ -5199,6 +5199,10 @@ export function onWorldInfoChange(args, text) {
     return '';
 }
 
+/**
+ * Imports world info from a file.
+ * @param {File} file File to import
+ */
 export async function importWorldInfo(file) {
     if (!file) {
         return;
@@ -5252,28 +5256,34 @@ export async function importWorldInfo(file) {
         return false;
     }
 
-    jQuery.ajax({
-        type: 'POST',
-        url: '/api/worldinfo/import',
-        data: formData,
-        beforeSend: () => { },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (data) {
-            if (data.name) {
-                await updateWorldInfoList();
+    try {
+        const result = await fetch('/api/worldinfo/import', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
+        });
 
-                const newIndex = world_names.indexOf(data.name);
-                if (newIndex >= 0) {
-                    $('#world_editor_select').val(newIndex).trigger('change');
-                }
+        if (!result.ok) {
+            throw new Error(`Failed to import world info: ${result.statusText}`);
+        }
 
-                toastr.success(`World Info "${data.name}" imported successfully!`);
+        const data = await result.json();
+
+        if (data.name) {
+            await updateWorldInfoList();
+
+            const newIndex = world_names.indexOf(data.name);
+            if (newIndex >= 0) {
+                $('#world_editor_select').val(newIndex).trigger('change');
             }
-        },
-        error: (_jqXHR, _exception) => { },
-    });
+
+            toastr.success(t`World Info "${data.name}" imported successfully!`);
+        }
+    } catch (error) {
+        console.error('Error importing world info:', error);
+        toastr.error(t`Failed to import World Info`);
+    }
 }
 
 /**
