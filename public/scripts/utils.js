@@ -1469,7 +1469,11 @@ export function convertTextToBase64(text) {
         return utf8Bytes.toBase64();
     }
     // Creates binary string, where each character's code point directly matches the byte value (0-255).
-    const binaryString = String.fromCharCode(...utf8Bytes);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < utf8Bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode(...utf8Bytes.subarray(i, i + chunkSize));
+    }
     return window.btoa(binaryString);
 }
 
