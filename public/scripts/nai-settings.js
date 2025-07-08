@@ -56,6 +56,7 @@ export const nai_settings = {
     banned_tokens: '',
     order: default_order,
     logit_bias: [],
+    extensions: {},
 };
 
 const nai_tiers = {
@@ -205,6 +206,7 @@ export function loadNovelPreset(preset) {
     nai_settings.math1_temp = preset.math1_temp || 1;
     nai_settings.math1_quad = preset.math1_quad || 0;
     nai_settings.math1_quad_entropy_scale = preset.math1_quad_entropy_scale || 0;
+    nai_settings.extensions = preset.extensions || {};
     loadNovelSettingsUi(nai_settings);
 }
 

@@ -44,6 +44,7 @@ export const kai_settings = {
     seed: -1,
     api_server: '',
     preset_settings: 'gui',
+    extensions: {},
 };
 
 /**
@@ -130,6 +131,11 @@ export function loadKoboldSettings(data, preset, settings) {
 
 function loadKoboldSettingsFromPreset(preset) {
     for (const name of Object.keys(kai_settings)) {
+        if (name === 'extensions') {
+            kai_settings.extensions = preset.extensions || {};
+            continue;
+        }
+
         const value = preset[name] ?? defaultValues[name];
         const slider = sliders.find(x => x.name === name);
 
