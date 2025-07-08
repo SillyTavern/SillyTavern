@@ -37,7 +37,7 @@ import {
     textgenerationwebui_presets,
     textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
-import { download, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
+import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
 import { reasoning_templates } from './reasoning.js';
 
@@ -103,19 +103,6 @@ function registerPresetManagers() {
             presetManagers[apiId] = new PresetManager($(e), apiId);
         }
     });
-}
-
-/**
- * Ensures that the provided object is a plain object.
- * @param {object} obj Object to ensure is a plain object
- * @return {object} A plain object, or an empty object if the input is not an object.
- */
-function ensurePlainObject(obj) {
-    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
-        return {};
-    }
-
-    return obj;
 }
 
 class PresetManager {
