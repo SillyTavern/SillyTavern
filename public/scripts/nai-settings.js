@@ -260,6 +260,7 @@ export function loadNovelSettings(data, settings) {
     nai_settings.math1_temp = settings.math1_temp || 1;
     nai_settings.math1_quad = settings.math1_quad || 0;
     nai_settings.math1_quad_entropy_scale = settings.math1_quad_entropy_scale || 0;
+    nai_settings.extensions = settings.extensions || {};
     loadNovelSettingsUi(nai_settings);
 }
 
