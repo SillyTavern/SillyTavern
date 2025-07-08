@@ -4009,10 +4009,14 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         n: settings.n,
     };
 
-    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${encodeURIComponent(name)}`, {
+    const savePresetSettings = await fetch('/api/presets/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(presetBody),
+        body: JSON.stringify({
+            apiId: 'openai',
+            name: name,
+            preset: presetBody,
+        }),
     });
 
     if (savePresetSettings.ok) {
@@ -4221,10 +4225,14 @@ async function onPresetImportFileChange(e) {
 
     await eventSource.emit(event_types.OAI_PRESET_IMPORT_READY, { data: presetBody, presetName: name });
 
-    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${encodeURIComponent(name)}`, {
+    const savePresetSettings = await fetch('/api/presets/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: importedFile,
+        body: JSON.stringify({
+            apiId: 'openai',
+            name: name,
+            preset: importedFile,
+        }),
     });
 
     if (!savePresetSettings.ok) {
@@ -4367,10 +4375,10 @@ async function onDeletePresetClick() {
         $('#settings_preset_openai').trigger('change');
     }
 
-    const response = await fetch('/api/presets/delete-openai', {
+    const response = await fetch('/api/presets/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ name: nameToDelete }),
+        body: JSON.stringify({ apiId: 'openai', name: nameToDelete }),
     });
 
     if (!response.ok) {
