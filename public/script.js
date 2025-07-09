@@ -179,7 +179,7 @@ import {
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -422,8 +422,6 @@ export const event_types = {
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
-
-eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 export const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
