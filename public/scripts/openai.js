@@ -4638,7 +4638,8 @@ function getMistralMaxContext(model, isUnlocked) {
         'mistral-small-2409': 32768,
         'mistral-small-2501': 32768,
         'mistral-small-2503': 32768,
-        'mistral-small-latest': 32768,
+        'mistral-small-2506': 131072,
+        'mistral-small-latest': 131072,
         'mistral-tiny': 32768,
         'mistral-tiny-2312': 32768,
         'open-mistral-7b': 32768,
@@ -5618,6 +5619,7 @@ export function isImageInliningSupported() {
         'learnlm',
         // MistralAI
         'mistral-small-2503',
+        'mistral-small-2506',
         'mistral-small-latest',
         'mistral-medium-latest',
         'mistral-medium-2505',
