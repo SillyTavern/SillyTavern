@@ -2160,6 +2160,7 @@ function getReasoningEffort() {
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.POLLINATIONS,
+        chat_completion_sources.PERPLEXITY,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {

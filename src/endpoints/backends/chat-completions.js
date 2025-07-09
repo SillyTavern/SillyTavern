@@ -1507,7 +1507,9 @@ router.post('/generate', function (request, response) {
         apiUrl = API_PERPLEXITY;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+        };
         request.body.messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.STRICT, getPromptNames(request));
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
         apiUrl = API_GROQ;
