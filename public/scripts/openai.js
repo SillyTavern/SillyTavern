@@ -2370,8 +2370,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isPerplexity) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        // Normalize values. 1 == disabled. 0 == is usual disabled state in OpenAI.
-        generate_data['frequency_penalty'] = Math.max(0, Number(oai_settings.freq_pen_openai)) + 1;
+        generate_data['frequency_penalty'] = Number(oai_settings.freq_pen_openai);
         generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
