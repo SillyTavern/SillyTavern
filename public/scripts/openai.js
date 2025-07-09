@@ -1978,6 +1978,24 @@ function saveModelList(data) {
 
         $('#model_google_select').val(oai_settings.google_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
+        $('#model_groq_select').empty();
+        model_list.forEach((model) => {
+            $('#model_groq_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.groq_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.groq_model)) {
+            oai_settings.groq_model = model_list[0].id;
+        }
+
+        $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -3827,7 +3845,6 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
-        chat_completion_sources.GROQ,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4649,6 +4666,13 @@ function getGroqMaxContext(model, isUnlocked) {
         return unlocked_max;
     }
 
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const contextLength = model_list.find((record) => record.id === model)?.context_window;
+        if (contextLength) {
+            return contextLength;
+        }
+    }
+
     const contextMap = {
         'gemma2-9b-it': max_8k,
         'llama-3.3-70b-versatile': max_128k,
@@ -4669,6 +4693,9 @@ function getGroqMaxContext(model, isUnlocked) {
         'mistral-saba-24b': max_32k,
         'meta-llama/llama-4-scout-17b-16e-instruct': max_128k,
         'meta-llama/llama-4-maverick-17b-128e-instruct': max_128k,
+        'compound-beta': max_128k,
+        'compound-beta-mini': max_128k,
+        'qwen/qwen3-32b': max_128k,
     };
 
     // Return context size if model found, otherwise default to 128k
@@ -4762,6 +4789,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_groq_select')) {
+        if (!value) {
+            console.debug('Null Groq model selected. Ignoring.');
+            return;
+        }
         console.log('Groq model changed to', value);
         oai_settings.groq_model = value;
     }
