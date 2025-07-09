@@ -332,6 +332,7 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
 const default_settings = {
@@ -421,6 +422,7 @@ const default_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
 const oai_settings = {
@@ -510,6 +512,7 @@ const oai_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
 export let proxies = [
@@ -3600,6 +3603,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.function_calling = settings.function_calling ?? default_settings.function_calling;
     oai_settings.openrouter_providers = settings.openrouter_providers ?? default_settings.openrouter_providers;
     oai_settings.bind_preset_to_connection = settings.bind_preset_to_connection ?? default_settings.bind_preset_to_connection;
+    oai_settings.extensions = settings.extensions ?? default_settings.extensions;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
@@ -4024,6 +4028,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         request_images: settings.request_images,
         seed: settings.seed,
         n: settings.n,
+        extensions: settings.extensions,
     };
 
     const savePresetSettings = await fetch('/api/presets/save', {
@@ -4465,6 +4470,12 @@ function onSettingsPresetChange() {
 
         for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
             if (isConnection && !oai_settings.bind_preset_to_connection) {
+                continue;
+            }
+
+            // Extensions don't need UI updates and shouldn't fallback to current settings
+            if (key === 'extensions') {
+                oai_settings.extensions = preset.extensions || {};
                 continue;
             }
 

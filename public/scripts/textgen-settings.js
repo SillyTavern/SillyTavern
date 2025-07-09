@@ -224,6 +224,7 @@ const settings = {
     min_keep: 0,
     featherless_model: '',
     generic_model: '',
+    extensions: {},
 };
 
 export {
@@ -306,6 +307,7 @@ export const setting_names = [
     'nsigma',
     'min_keep',
     'generic_model',
+    'extensions',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -1098,6 +1100,12 @@ function insertMissingArrayItems(source, target) {
 }
 
 function setSettingByName(setting, value, trigger) {
+    if ('extensions' === setting) {
+        value = value || {};
+        settings.extensions = value;
+        return;
+    }
+
     if (value === null || value === undefined) {
         return;
     }
