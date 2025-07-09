@@ -366,7 +366,7 @@ const default_settings = {
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
     vertexai_model: 'gemini-2.0-flash-001',
-    ai21_model: 'jamba-1.6-large',
+    ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -455,7 +455,7 @@ const oai_settings = {
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
     vertexai_model: 'gemini-2.0-flash-001',
-    ai21_model: 'jamba-1.6-large',
+    ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -3589,7 +3589,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     if (oai_settings.ai21_model.startsWith('j2-')) {
-        oai_settings.ai21_model = 'jamba-1.6-large';
+        oai_settings.ai21_model = 'jamba-large';
     }
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -4713,7 +4713,7 @@ async function onModelChange() {
 
     if ($(this).is('#model_ai21_select')) {
         if (value === '' || value.startsWith('j2-')) {
-            value = 'jamba-1.6-large';
+            value = 'jamba-large';
             $('#model_ai21_select').val(value);
         }
 
