@@ -894,7 +894,7 @@ jQuery(async () => {
         },
         {
             selector: '#saved_preset_scripts',
-            setter: x => { 
+            setter: x => {
                 const presetManager = getPresetManager();
                 presetManager.writePresetExtensionField({ path: 'regex_scripts', value: x });
             },

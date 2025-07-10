@@ -1,9 +1,6 @@
-import { characters, main_api, nai_settings, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { characters, main_api, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
-import { kai_settings } from '../../kai-settings.js';
-import { oai_settings } from '../../openai.js';
 import { getPresetManager } from '../../preset-manager.js';
-import { textgenerationwebui_settings } from '../../textgen-settings.js';
 import { regexFromString } from '../../utils.js';
 export {
     regex_placement,
@@ -50,10 +47,8 @@ export function getScriptsByType(scriptType, allowedOnly = false) {
             if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
                 return [];
             }
-            const settings = main_api === 'openai' ? oai_settings :
-                main_api === 'novel' ? nai_settings :
-                    main_api === 'textgenerationwebui' ? textgenerationwebui_settings : kai_settings;
-            const presetScripts = settings.extensions?.regex_scripts;
+            const presetManager = getPresetManager();
+            const presetScripts = presetManager?.readPresetExtensionField({ path: 'regex_scripts' });
             return Array.isArray(presetScripts) ? presetScripts : [];
         }
     }
@@ -64,11 +59,7 @@ export function getScriptsByType(scriptType, allowedOnly = false) {
  * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
  */
 export function getPresetName() {
-    if (main_api === 'openai') {
-        return oai_settings.preset_settings_openai;
-    } else {
-        return getPresetManager(main_api)?.getSelectedPresetName();
-    }
+    return getPresetManager().getSelectedPresetName();
 }
 
 /**
@@ -174,7 +165,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
 
 /**
  * Runs the provided regex script on the given string
- * @param {import('./index.js').RegexScript} regexScript The regex script to run
+ * @param {RegexScript} regexScript The regex script to run
  * @param {string} rawString The string to run the regex script on
  * @param {RegexScriptParams} params The parameters to use for the regex script
  * @returns {string} The new string
