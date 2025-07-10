@@ -179,7 +179,7 @@ import {
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -245,7 +245,6 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
-import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
@@ -266,6 +265,7 @@ import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
+import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -297,6 +297,10 @@ export {
     novelai_setting_names,
     UNIQUE_APIS,
     CONNECT_API_MAP,
+    system_messages,
+    system_message_types,
+    sendSystemMessage,
+    getSystemMessageByType,
 };
 
 /**
@@ -506,25 +510,6 @@ export const saveCharacterDebounced = debounce(() => $('#create_button').trigger
 export const printCharactersDebounced = debounce(() => { printCharacters(false); }, DEFAULT_PRINT_TIMEOUT);
 
 /**
- * @enum {string} System message types
- */
-export const system_message_types = {
-    HELP: 'help',
-    WELCOME: 'welcome',
-    EMPTY: 'empty',
-    GENERIC: 'generic',
-    NARRATOR: 'narrator',
-    COMMENT: 'comment',
-    SLASH_COMMANDS: 'slash_commands',
-    FORMATTING: 'formatting',
-    HOTKEYS: 'hotkeys',
-    MACROS: 'macros',
-    WELCOME_PROMPT: 'welcome_prompt',
-    ASSISTANT_NOTE: 'assistant_note',
-    ASSISTANT_MESSAGE: 'assistant_message',
-};
-
-/**
  * @enum {number} Extension prompt types
  */
 export const extension_prompt_types = {
@@ -544,106 +529,6 @@ export const extension_prompt_roles = {
 };
 
 export const MAX_INJECTION_DEPTH = 10000;
-
-// Initialized in getSystemMessages()
-const SAFETY_CHAT = [];
-
-export let system_messages = {};
-
-async function getSystemMessages() {
-    system_messages = {
-        help: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('help'),
-        },
-        slash_commands: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: '',
-        },
-        hotkeys: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('hotkeys'),
-        },
-        formatting: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('formatting'),
-        },
-        macros: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('macros'),
-        },
-        welcome:
-        {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            uses_system_ui: true,
-            mes: await renderTemplateAsync('welcome', { displayVersion }),
-        },
-        empty: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
-        },
-        generic: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: 'Generic system message. User `text` parameter to override the contents',
-        },
-        welcome_prompt: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            uses_system_ui: true,
-            mes: await renderTemplateAsync('welcomePrompt'),
-            extra: {
-                isSmallSys: true,
-            },
-        },
-        assistant_note: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('assistantNote'),
-            uses_system_ui: true,
-            extra: {
-                isSmallSys: true,
-            },
-        },
-    };
-
-    const safetyMessage = {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_system: true,
-        is_user: false,
-        create_date: 0,
-        mes: t`You deleted a character/chat and arrived back here for safety reasons! Pick another character!`,
-    };
-    SAFETY_CHAT.splice(0, SAFETY_CHAT.length, safetyMessage);
-}
 
 async function getClientVersion() {
     try {
@@ -863,7 +748,7 @@ async function firstLoadInit() {
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
-    await getSystemMessages();
+    await initSystemMessages();
     await getSettings();
     initKeyboard();
     initDynamicStyles();
@@ -2586,60 +2471,6 @@ export async function processCommands(message) {
         clearChatInput: true,
     });
     return true;
-}
-
-/**
- * Gets a system message by type.
- * @param {string} type Type of system message
- * @param {string} [text] Text to be sent
- * @param {object} [extra] Additional data to be added to the message
- * @returns {object} System message object
- */
-export function getSystemMessageByType(type, text, extra = {}) {
-    const systemMessage = system_messages[type];
-
-    if (!systemMessage) {
-        return;
-    }
-
-    const newMessage = { ...systemMessage, send_date: getMessageTimeStamp() };
-
-    if (text) {
-        newMessage.mes = text;
-    }
-
-    if (type === system_message_types.SLASH_COMMANDS) {
-        newMessage.mes = getSlashCommandsHelp();
-    }
-
-    if (!newMessage.extra) {
-        newMessage.extra = {};
-    }
-
-    newMessage.extra = Object.assign(newMessage.extra, extra);
-    newMessage.extra.type = type;
-    return newMessage;
-}
-
-/**
- * Sends a system message to the chat.
- * @param {string} type Type of system message
- * @param {string} [text] Text to be sent
- * @param {object} [extra] Additional data to be added to the message
- */
-export function sendSystemMessage(type, text, extra = {}) {
-    const newMessage = getSystemMessageByType(type, text, extra);
-    chat.push(newMessage);
-    addOneMessage(newMessage);
-    is_send_press = false;
-    if (type === system_message_types.SLASH_COMMANDS) {
-        const browser = new SlashCommandBrowser();
-        const spinner = document.querySelector('#chat .last_mes .custom-slashHelp');
-        const parent = spinner.parentElement;
-        spinner.remove();
-        browser.renderInto(parent);
-        browser.search.focus();
-    }
 }
 
 /**
