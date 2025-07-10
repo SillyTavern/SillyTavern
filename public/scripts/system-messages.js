@@ -28,7 +28,7 @@ export const system_message_types = {
     ASSISTANT_MESSAGE: 'assistant_message',
 };
 
-export async function getSystemMessages() {
+export async function initSystemMessages() {
     const result = {
         help: {
             name: systemUserName,

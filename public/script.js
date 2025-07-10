@@ -265,7 +265,7 @@ import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
-import { getSystemMessageByType, getSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
+import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -748,7 +748,7 @@ async function firstLoadInit() {
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
-    await getSystemMessages();
+    await initSystemMessages();
     await getSettings();
     initKeyboard();
     initDynamicStyles();
