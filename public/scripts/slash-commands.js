@@ -2270,7 +2270,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'id',
-                description: 'injection ID or variable name pointing to ID',
+                description: 'injection ID',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.injects,
@@ -2311,7 +2311,7 @@ export function initDefaultSlashCommands() {
                 'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
+        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID (will be auto-generated if not provided). Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
@@ -2987,14 +2987,8 @@ function injectCallback(args, value) {
         'assistant': extension_prompt_roles.ASSISTANT,
     };
 
-    const id = String(args?.id ?? '');
+    const id = String(args?.id ?? '') || Math.random().toString(36).substring(2);
     const ephemeral = isTrueBoolean(String(args?.ephemeral ?? ''));
-
-    if (!id) {
-        console.warn('WARN: No ID provided for /inject command');
-        toastr.warning('No ID provided for /inject command');
-        return '';
-    }
 
     const defaultPosition = 'after';
     const defaultDepth = 4;
