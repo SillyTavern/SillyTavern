@@ -5647,6 +5647,7 @@ export function isImageInliningSupported() {
         'mistral-medium-2505',
         'pixtral',
         // xAI (Grok)
+        'grok-4',
         'grok-2-vision',
         'grok-vision',
     ];
