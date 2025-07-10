@@ -2416,6 +2416,12 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isXAI) {
+        if (generate_data.model.includes('grok-4')) {
+            delete generate_data.presence_penalty;
+            delete generate_data.frequency_penalty;
+            delete generate_data.stop;
+            delete generate_data.reasoning_effort;
+        }
         if (generate_data.model.includes('grok-3-mini')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
@@ -5134,6 +5140,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (oai_settings.xai_model.includes('grok-vision')) {
             $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
             $('#openai_max_context').attr('max', max_128k);
         }
