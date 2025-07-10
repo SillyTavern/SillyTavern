@@ -9993,7 +9993,8 @@ jQuery(async function () {
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
             if (!selected_group && this_chid === undefined && !is_send_press) {
-                await newAssistantChat({ temporary: true });
+                const alreadyInTempChat = this_chid === undefined && name2 === neutralCharacterName;
+                await newAssistantChat({ temporary: alreadyInTempChat });
             }
         }
 
