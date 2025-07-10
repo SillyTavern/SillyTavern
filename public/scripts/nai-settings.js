@@ -143,7 +143,7 @@ export function convertNovelPreset(data) {
         math1_quad_entropy_scale: data.parameters.math1_quad_entropy_scale,
         min_p: data.parameters.min_p,
         order: Array.isArray(data.parameters.order) ? data.parameters.order.filter(s => s.enabled && Object.keys(samplers).includes(s.id)).map(s => samplers[s.id]) : default_order,
-        extensions: data.parameters.extensions || {},
+        extensions: {},
     };
 }
 

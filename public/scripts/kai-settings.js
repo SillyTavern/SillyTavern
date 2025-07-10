@@ -133,6 +133,11 @@ export function loadKoboldSettings(data, preset, settings) {
 
 function loadKoboldSettingsFromPreset(preset) {
     for (const name of Object.keys(kai_settings)) {
+        if (name === 'extensions') {
+            kai_settings.extensions = preset.extensions || {};
+            continue;
+        }
+
         const value = preset[name] ?? defaultValues[name];
         const slider = sliders.find(x => x.name === name);
 
@@ -153,9 +158,6 @@ function loadKoboldSettingsFromPreset(preset) {
     if (Object.hasOwn(preset, 'use_default_badwordsids')) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
-    }
-    if (Object.hasOwn(preset, 'extensions')) {
-        kai_settings.extensions = preset.extensions;
     }
 }
 

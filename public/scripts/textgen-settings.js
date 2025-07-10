@@ -1102,6 +1102,12 @@ function insertMissingArrayItems(source, target) {
 }
 
 function setSettingByName(setting, value, trigger) {
+    if ('extensions' === setting) {
+        value = value || {};
+        settings.extensions = value;
+        return;
+    }
+
     if (value === null || value === undefined) {
         return;
     }

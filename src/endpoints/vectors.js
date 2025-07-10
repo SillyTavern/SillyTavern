@@ -56,7 +56,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'extras':
             return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return getMakerSuiteVector(text, directories);
+            return getMakerSuiteVector(text, directories, sourceSettings.model);
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
@@ -105,7 +105,7 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await getMakerSuiteBatchVector(batch, directories));
+                results.push(...await getMakerSuiteBatchVector(batch, directories, sourceSettings.model));
                 break;
             case 'cohere':
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));

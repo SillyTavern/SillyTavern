@@ -101,32 +101,3 @@ router.post('/restore', function (request, response) {
         return response.sendStatus(500);
     }
 });
-
-// TODO: Merge with /api/presets/save
-router.post('/save-openai', function (request, response) {
-    if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
-    const name = sanitize(request.query.name);
-    if (!name) return response.sendStatus(400);
-
-    const fullpath = path.join(request.user.directories.openAI_Settings, `${name}.json`);
-    writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
-    return response.send({ name });
-});
-
-// TODO: Merge with /api/presets/delete
-router.post('/delete-openai', function (request, response) {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const name = sanitize(request.body.name);
-    if (!name) return response.sendStatus(400);
-    const pathToFile = path.join(request.user.directories.openAI_Settings, `${name}.json`);
-
-    if (fs.existsSync(pathToFile)) {
-        fs.unlinkSync(pathToFile);
-        return response.send({ ok: true });
-    }
-
-    return response.send({ error: true });
-});

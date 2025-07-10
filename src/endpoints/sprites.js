@@ -216,7 +216,7 @@ router.post('/upload-zip', async (request, response) => {
 
         // Remove uploaded ZIP file
         fs.unlinkSync(spritePackPath);
-        return response.send({ count: sprites.length });
+        return response.send({ ok: true, count: sprites.length });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -262,7 +262,7 @@ router.post('/upload', async (request, response) => {
         fs.cpSync(spritePath, pathToFile);
         // Remove uploaded file
         fs.unlinkSync(spritePath);
-        return response.sendStatus(200);
+        return response.send({ ok: true });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

@@ -213,6 +213,7 @@ function setupConnectAPIMap() {
 }
 
 export function initDefaultSlashCommands() {
+    eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
     setupConnectAPIMap();
 
     async function enableInstructCallback() {

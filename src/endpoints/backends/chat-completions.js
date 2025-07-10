@@ -1192,6 +1192,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = 'https://text.pollinations.ai';
         apiKey = 'NONE';
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
+        apiUrl = API_GROQ;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
         apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
@@ -1503,7 +1507,9 @@ router.post('/generate', function (request, response) {
         apiUrl = API_PERPLEXITY;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+        };
         request.body.messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.STRICT, getPromptNames(request));
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
         apiUrl = API_GROQ;

@@ -102,6 +102,19 @@ export function deepMerge(target, source) {
     return output;
 }
 
+/**
+ * Ensures that the provided object is a plain object.
+ * @param {object} obj Object to ensure is a plain object
+ * @return {object} A plain object, or an empty object if the input is not an object.
+ */
+export function ensurePlainObject(obj) {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+        return {};
+    }
+
+    return obj;
+}
+
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -1469,7 +1482,11 @@ export function convertTextToBase64(text) {
         return utf8Bytes.toBase64();
     }
     // Creates binary string, where each character's code point directly matches the byte value (0-255).
-    const binaryString = String.fromCharCode(...utf8Bytes);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < utf8Bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode(...utf8Bytes.subarray(i, i + chunkSize));
+    }
     return window.btoa(binaryString);
 }
 

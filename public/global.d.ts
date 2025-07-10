@@ -73,4 +73,10 @@ declare global {
      * @param args - The arguments for the conversion function.
      */
     function convertVideoToAnimatedWebp(args: ConvertVideoArgs): Promise<Uint8Array>;
+
+    interface ColorPickerEvent extends JQuery.ChangeEvent<HTMLElement> {
+        detail: {
+            rgba: string;
+        };
+    }
 }

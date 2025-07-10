@@ -1,5 +1,6 @@
 import { characters, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
-import { extension_settings, renderExtensionTemplateAsync, writeExtensionField, writePresetExtensionField } from '../../extensions.js';
+import { getPresetManager } from '../../preset-manager.js';
+import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -93,7 +94,8 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
     }
 
     if (scriptType === scriptTypes.PRESET) {
-        await writePresetExtensionField('regex_scripts', array);
+        const presetManager = getPresetManager();
+        await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: array });
 
         // Add the preset to the allowed list
 
@@ -126,7 +128,8 @@ async function deleteRegexScript({ id, scriptType, saveSettings = true }) {
             await writeExtensionField(this_chid, 'regex_scripts', array);
         }
         if (scriptType === scriptTypes.PRESET) {
-            await writePresetExtensionField('regex_scripts', array);
+            const presetManager = getPresetManager();
+            await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: array });
         }
         if (saveSettings) {
             saveSettingsDebounced();
@@ -561,7 +564,8 @@ async function onRegexImportObjectChange(regexScript, scriptType) {
             await writeExtensionField(this_chid, 'regex_scripts', array);
         }
         if (scriptType === scriptTypes.PRESET) {
-            await writePresetExtensionField('regex_scripts', array);
+            const presetManager = getPresetManager();
+            await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: array });
         }
 
         saveSettingsDebounced();
@@ -890,7 +894,10 @@ jQuery(async () => {
         },
         {
             selector: '#saved_preset_scripts',
-            setter: x => writePresetExtensionField('regex_scripts', x),
+            setter: x => { 
+                const presetManager = getPresetManager();
+                presetManager.writePresetExtensionField({ path: 'regex_scripts', value: x });
+            },
             getter: () => getScriptsByType(scriptTypes.PRESET),
         },
     ];

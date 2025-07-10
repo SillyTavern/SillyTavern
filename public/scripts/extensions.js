@@ -1591,41 +1591,6 @@ export async function writeExtensionField(characterId, key, value) {
 }
 
 /**
- * Writes a field to the preset's data extensions object.a
- * @param {string} key Field name
- * @param {any} value Field value
- * @returns {Promise<void>} When the field is written
- */
-export async function writePresetExtensionField(key, value) {
-    const path = `extensions.${key}`;
-    if (main_api === 'openai') {
-        setValueByPath(oai_settings, path, value);
-
-        // Save scripts but not main settings
-        const name = oai_settings.preset_settings_openai;
-        const presetData = structuredClone(openai_settings[openai_setting_names[name]]);
-        // Map OpenAI unique setting names to general preset data
-        presetData.temp_openai = presetData.temperature;
-        presetData.freq_pen_openai = presetData.frequency_penalty;
-        presetData.pres_pen_openai = presetData.presence_penalty;
-        presetData.repetition_penalty_openai = presetData.repetition_penalty;
-        presetData.top_p_openai = presetData.top_p;
-        presetData.top_k_openai = presetData.top_k;
-        presetData.top_a_openai = presetData.top_a;
-        presetData.min_p_openai = presetData.min_p;
-
-        setValueByPath(presetData, path, value);
-
-        await saveOpenAIPreset(name, presetData, false);
-    } else {
-        const presetManager = getPresetManager(main_api);
-        const preset = presetManager.getPresetSettings();
-        setValueByPath(preset, path, value);
-        presetManager.savePresetExtensionsOnly(presetManager.getSelectedPresetName());
-    }
-}
-
-/**
  * Prompts the user to enter the Git URL of the extension to import.
  * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
  * If the extension is imported successfully, a success message is displayed.

@@ -2078,7 +2078,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2092,7 +2092,7 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,perplexity" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
@@ -3165,7 +3165,11 @@
                                         <option value="jamba-mini">jamba-mini</option>
                                         <option value="jamba-large">jamba-large</option>
                                     </optgroup>
-                                    <optgroup label="Jamba 1.6">
+                                    <optgroup label="Jamba 1.7">
+                                        <option value="jamba-1.7-mini">jamba-1.7-mini</option>
+                                        <option value="jamba-1.7-large">jamba-1.7-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6 (Deprecated)">
                                         <option value="jamba-1.6-mini">jamba-1.6-mini</option>
                                         <option value="jamba-1.6-large">jamba-1.6-large</option>
                                     </optgroup>
@@ -3430,6 +3434,7 @@
                                         <option value="mistral-small-2409">mistral-small-2409</option>
                                         <option value="mistral-small-2501">mistral-small-2501</option>
                                         <option value="mistral-small-2503">mistral-small-2503</option>
+                                        <option value="mistral-small-2506">mistral-small-2506</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-medium-2505">mistral-medium-2505</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
@@ -3464,35 +3469,17 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <optgroup label="Alibaba Cloud">
-                                    <option value="qwen-2.5-32b">qwen-2.5-32b</option>
-                                    <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
-                                </optgroup>
-                                <optgroup label="DeepSeek">
-                                    <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
-                                    <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-                                </optgroup>
-                                <optgroup label="Google">
-                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                                </optgroup>
-                                <optgroup label="Meta">
-                                    <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
-                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
-                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
-                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
-                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
-                                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
-                                    <option value="llama-guard-3-8b">llama-guard-3-8b</option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                </optgroup>
-                                <optgroup label="Mistral AI">
-                                    <option value="mistral-saba-24b">mistral-saba-24b</option>
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                </optgroup>
+                                <option value="qwen/qwen3-32b">qwen/qwen3-32b</option>
+                                <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
+                                <option value="llama-guard-3-8b">llama-guard-3-8b</option>
+                                <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                <option value="mistral-saba-24b">mistral-saba-24b</option>
                             </select>
                         </div>
                         <div id="nanogpt_form" data-source="nanogpt">
@@ -3545,6 +3532,7 @@
                                     <option value="sonar-pro">sonar-pro</option>
                                     <option value="sonar-reasoning">sonar-reasoning</option>
                                     <option value="sonar-reasoning-pro">sonar-reasoning-pro</option>
+                                    <option value="sonar-deep-research">sonar-deep-research</option>
                                 </optgroup>
                                 <optgroup label="Offline Models">
                                     <option value="r1-1776">r1-1776</option>

@@ -179,7 +179,7 @@ import {
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -425,8 +425,6 @@ export const event_types = {
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
-
-eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 export const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
@@ -787,11 +785,17 @@ export let active_group = '';
 
 export const entitiesFilter = new FilterHelper(printCharactersDebounced);
 
-export function getRequestHeaders() {
-    return {
+export function getRequestHeaders({ omitContentType = false } = {}) {
+    const headers = {
         'Content-Type': 'application/json',
         'X-CSRF-Token': token,
     };
+
+    if (omitContentType) {
+        delete headers['Content-Type'];
+    }
+
+    return headers;
 }
 
 export function getSlideToggleOptions() {
@@ -7082,50 +7086,51 @@ export async function saveSettings(loopCounter = 0) {
         TempResponseLength.restore(null);
     }
 
-    //console.log('Entering settings with name1 = '+name1);
-    return jQuery.ajax({
-        type: 'POST',
-        url: '/api/settings/save',
-        data: JSON.stringify({
-            firstRun: firstRun,
-            accountStorage: accountStorage.getState(),
-            currentVersion: currentVersion,
-            username: name1,
-            active_character: active_character,
-            active_group: active_group,
-            user_avatar: user_avatar,
-            amount_gen: amount_gen,
-            max_context: max_context,
-            main_api: main_api,
-            world_info_settings: getWorldInfoSettings(),
-            textgenerationwebui_settings: textgen_settings,
-            swipes: swipes,
-            horde_settings: horde_settings,
-            power_user: power_user,
-            extension_settings: extension_settings,
-            tags: tags,
-            tag_map: tag_map,
-            nai_settings: nai_settings,
-            kai_settings: kai_settings,
-            oai_settings: oai_settings,
-            background: background_settings,
-            proxies: proxies,
-            selected_proxy: selected_proxy,
-        }, null, 4),
-        beforeSend: function () { },
-        cache: false,
-        dataType: 'json',
-        contentType: 'application/json',
-        //processData: false,
-        success: async function (data) {
-            eventSource.emit(event_types.SETTINGS_UPDATED);
-        },
-        error: function (jqXHR, exception) {
-            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Settings could not be saved`);
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+    const payload = {
+        firstRun: firstRun,
+        accountStorage: accountStorage.getState(),
+        currentVersion: currentVersion,
+        username: name1,
+        active_character: active_character,
+        active_group: active_group,
+        user_avatar: user_avatar,
+        amount_gen: amount_gen,
+        max_context: max_context,
+        main_api: main_api,
+        world_info_settings: getWorldInfoSettings(),
+        textgenerationwebui_settings: textgen_settings,
+        swipes: swipes,
+        horde_settings: horde_settings,
+        power_user: power_user,
+        extension_settings: extension_settings,
+        tags: tags,
+        tag_map: tag_map,
+        nai_settings: nai_settings,
+        kai_settings: kai_settings,
+        oai_settings: oai_settings,
+        background: background_settings,
+        proxies: proxies,
+        selected_proxy: selected_proxy,
+    };
+
+    try {
+        const result = await fetch('/api/settings/save', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(payload),
+            cache: 'no-cache',
+        });
+
+        if (!result.ok) {
+            throw new Error(`Failed to save settings: ${result.statusText}`);
+        }
+
+        settings = payload;
+        await eventSource.emit(event_types.SETTINGS_UPDATED);
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Settings could not be saved`);
+    }
 }
 
 /**
@@ -8083,12 +8088,10 @@ export async function saveChatConditional() {
  * @param {EventTarget} eventTarget Event target to trigger the event on.
  */
 async function importCharacterChat(formData, eventTarget) {
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
     const fetchResult = await fetch('/api/chats/import', {
         method: 'POST',
         body: formData,
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         cache: 'no-cache',
     });
 
@@ -8392,8 +8395,7 @@ async function createOrEditCharacter(e) {
         formData.set('avatar', convertedFile);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
+    const headers = getRequestHeaders({ omitContentType: true });
 
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if (String($('#character_name_pole').val()).length === 0) {
@@ -9017,32 +9019,38 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     formData.append('file_type', format);
     if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
-    const data = await jQuery.ajax({
-        type: 'POST',
-        url: '/api/characters/import',
-        data: formData,
-        async: true,
-        cache: false,
-        contentType: false,
-        processData: false,
-    });
+    try {
+        const result = await fetch('/api/characters/import', {
+            method: 'POST',
+            body: formData,
+            headers: getRequestHeaders({ omitContentType: true }),
+            cache: 'no-cache',
+        });
 
-    if (data.error) {
-        toastr.error(t`The file is likely invalid or corrupted.`, t`Could not import character`);
-        return;
-    }
-
-    if (data.file_name !== undefined) {
-        $('#character_search_bar').val('').trigger('input');
-
-        toastr.success(t`Character Created: ${String(data.file_name).replace('.png', '')}`);
-        let avatarFileName = `${data.file_name}.png`;
-        if (importTags) {
-            await importCharactersTags([avatarFileName]);
-
-            selectImportedChar(data.file_name);
+        if (!result.ok) {
+            throw new Error(`Failed to import character: ${result.statusText}`);
         }
-        return avatarFileName;
+
+        const data = await result.json();
+
+        if (data.error) {
+            throw new Error(`Server returned an error: ${data.error}`);
+        }
+
+        if (data.file_name !== undefined) {
+            $('#character_search_bar').val('').trigger('input');
+
+            toastr.success(t`Character Created: ${String(data.file_name).replace('.png', '')}`);
+            let avatarFileName = `${data.file_name}.png`;
+            if (importTags) {
+                await importCharactersTags([avatarFileName]);
+                selectImportedChar(data.file_name);
+            }
+            return avatarFileName;
+        }
+    } catch (error) {
+        console.error('Error importing character', error);
+        toastr.error(t`The file is likely invalid or corrupted.`, t`Could not import character`);
     }
 }
 
@@ -9989,7 +9997,8 @@ jQuery(async function () {
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
             if (!selected_group && this_chid === undefined && !is_send_press) {
-                await newAssistantChat({ temporary: true });
+                const alreadyInTempChat = this_chid === undefined && name2 === neutralCharacterName;
+                await newAssistantChat({ temporary: alreadyInTempChat });
             }
         }
 
@@ -10211,6 +10220,9 @@ jQuery(async function () {
     //********************
     //***Message Editor***
     $(document).on('click', '.mes_edit', async function () {
+        if (is_delete_mode) {
+            return;
+        }
         if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
