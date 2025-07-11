@@ -4,6 +4,9 @@ FROM node:lts-alpine3.21 AS builder
 ARG APP_HOME=/home/node/app
 WORKDIR ${APP_HOME}
 
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
 # Bundle app source
 COPY . ./
 
