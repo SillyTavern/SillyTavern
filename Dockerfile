@@ -38,7 +38,7 @@ WORKDIR ${APP_HOME}
 ENV NODE_ENV=production
 
 # Install system dependencies
-RUN apk add --no-cache tini git git-lfs \
+RUN apk add --no-cache gcompat tini git git-lfs \
     && mkdir -p ${APP_HOME}/data
 
 # Copy build output and dependencies
@@ -49,4 +49,5 @@ RUN git config --global --add safe.directory "*"
 
 EXPOSE 8000
 
+# Ensure proper handling of kernel signals
 ENTRYPOINT ["tini", "--", "./docker-entrypoint.sh"]
