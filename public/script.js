@@ -204,7 +204,6 @@ import {
     applyCharacterTagsToMessageDivs,
 } from './scripts/tags.js';
 import { initSecrets, readSecretState } from './scripts/secrets.js';
-import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
@@ -236,7 +235,7 @@ import {
 } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
-import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
+import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
 import { getPresetManager, initPresetManager } from './scripts/preset-manager.js';
@@ -266,6 +265,7 @@ import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCa
 import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
+import { event_types, eventSource } from './scripts/events.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -301,6 +301,8 @@ export {
     system_message_types,
     sendSystemMessage,
     getSystemMessageByType,
+    event_types,
+    eventSource,
 };
 
 /**
@@ -338,99 +340,7 @@ toastr.options = {
     },
 };
 
-// Event source init
-//MARK: event_types
-export const event_types = {
-    APP_READY: 'app_ready',
-    EXTRAS_CONNECTED: 'extras_connected',
-    MESSAGE_SWIPED: 'message_swiped',
-    MESSAGE_SENT: 'message_sent',
-    MESSAGE_RECEIVED: 'message_received',
-    MESSAGE_EDITED: 'message_edited',
-    MESSAGE_DELETED: 'message_deleted',
-    MESSAGE_UPDATED: 'message_updated',
-    MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
-    MESSAGE_REASONING_EDITED: 'message_reasoning_edited',
-    MESSAGE_REASONING_DELETED: 'message_reasoning_deleted',
-    MORE_MESSAGES_LOADED: 'more_messages_loaded',
-    IMPERSONATE_READY: 'impersonate_ready',
-    CHAT_CHANGED: 'chat_id_changed',
-    GENERATION_AFTER_COMMANDS: 'GENERATION_AFTER_COMMANDS',
-    GENERATION_STARTED: 'generation_started',
-    GENERATION_STOPPED: 'generation_stopped',
-    GENERATION_ENDED: 'generation_ended',
-    SD_PROMPT_PROCESSING: 'sd_prompt_processing',
-    EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
-    EXTENSION_SETTINGS_LOADED: 'extension_settings_loaded',
-    SETTINGS_LOADED: 'settings_loaded',
-    SETTINGS_UPDATED: 'settings_updated',
-    GROUP_UPDATED: 'group_updated',
-    MOVABLE_PANELS_RESET: 'movable_panels_reset',
-    SETTINGS_LOADED_BEFORE: 'settings_loaded_before',
-    SETTINGS_LOADED_AFTER: 'settings_loaded_after',
-    CHATCOMPLETION_SOURCE_CHANGED: 'chatcompletion_source_changed',
-    CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
-    OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
-    OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
-    OAI_PRESET_EXPORT_READY: 'oai_preset_export_ready',
-    OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
-    WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
-    WORLDINFO_UPDATED: 'worldinfo_updated',
-    CHARACTER_EDITED: 'character_edited',
-    CHARACTER_PAGE_LOADED: 'character_page_loaded',
-    CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE: 'character_group_overlay_state_change_before',
-    CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER: 'character_group_overlay_state_change_after',
-    USER_MESSAGE_RENDERED: 'user_message_rendered',
-    CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
-    FORCE_SET_BACKGROUND: 'force_set_background',
-    CHAT_DELETED: 'chat_deleted',
-    CHAT_CREATED: 'chat_created',
-    GROUP_CHAT_DELETED: 'group_chat_deleted',
-    GROUP_CHAT_CREATED: 'group_chat_created',
-    GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
-    GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
-    GENERATE_AFTER_DATA: 'generate_after_data',
-    GROUP_MEMBER_DRAFTED: 'group_member_drafted',
-    GROUP_WRAPPER_STARTED: 'group_wrapper_started',
-    GROUP_WRAPPER_FINISHED: 'group_wrapper_finished',
-    WORLD_INFO_ACTIVATED: 'world_info_activated',
-    TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
-    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
-    CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
-    CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
-    // TODO: Naming convention is inconsistent with other events
-    CHARACTER_DELETED: 'characterDeleted',
-    CHARACTER_DUPLICATED: 'character_duplicated',
-    CHARACTER_RENAMED: 'character_renamed',
-    CHARACTER_RENAMED_IN_PAST_CHAT: 'character_renamed_in_past_chat',
-    /** @deprecated The event is aliased to STREAM_TOKEN_RECEIVED. */
-    SMOOTH_STREAM_TOKEN_RECEIVED: 'stream_token_received',
-    STREAM_TOKEN_RECEIVED: 'stream_token_received',
-    STREAM_REASONING_DONE: 'stream_reasoning_done',
-    FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
-    WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
-    OPEN_CHARACTER_LIBRARY: 'open_character_library',
-    ONLINE_STATUS_CHANGED: 'online_status_changed',
-    IMAGE_SWIPED: 'image_swiped',
-    CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
-    CONNECTION_PROFILE_CREATED: 'connection_profile_created',
-    CONNECTION_PROFILE_DELETED: 'connection_profile_deleted',
-    CONNECTION_PROFILE_UPDATED: 'connection_profile_updated',
-    TOOL_CALLS_PERFORMED: 'tool_calls_performed',
-    TOOL_CALLS_RENDERED: 'tool_calls_rendered',
-    CHARACTER_MANAGEMENT_DROPDOWN: 'charManagementDropdown',
-    SECRET_WRITTEN: 'secret_written',
-    SECRET_DELETED: 'secret_deleted',
-    SECRET_ROTATED: 'secret_rotated',
-    SECRET_EDITED: 'secret_edited',
-};
-
-export const eventSource = new EventEmitter([event_types.APP_READY]);
-
 export const characterGroupOverlay = new BulkEditOverlay();
-const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
-eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
-console.debug('Character context menu initialized', characterContextMenu);
 
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
@@ -9964,10 +9874,11 @@ jQuery(async function () {
         is_delete_mode = false;
     });
 
-    $('#main_api').on('change', function () {
+    $('#main_api').on('change', async function () {
         cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
+        await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
     });
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////

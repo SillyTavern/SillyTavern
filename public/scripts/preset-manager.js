@@ -1035,6 +1035,9 @@ export async function initPresetManager() {
 
         await presetManager.renamePreset(newName);
 
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: oldName });
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: apiId, name: newName });
+
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
             $('#update_oai_preset').trigger('click');
@@ -1107,6 +1110,7 @@ export async function initPresetManager() {
             return;
         }
 
+        const name = presetManager.getSelectedPresetName();
         const result = await presetManager.deletePreset();
 
         if (result) {
@@ -1118,6 +1122,7 @@ export async function initPresetManager() {
         }
 
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {
