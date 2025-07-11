@@ -2266,13 +2266,14 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'inject',
+        returns: 'injection ID',
         callback: injectCallback,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'id',
                 description: 'injection ID',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
+                isRequired: false,
                 enumProvider: commonEnumProviders.injects,
             }),
             new SlashCommandNamedArgument(
@@ -2311,7 +2312,7 @@ export function initDefaultSlashCommands() {
                 'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID (will be auto-generated if not provided). Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
+        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID (will be auto-generated if not provided). Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries. Returns the injection ID.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
@@ -3039,7 +3040,7 @@ function injectCallback(args, value) {
         eventSource.once(event_types.GENERATION_STOPPED, unsetInject);
     }
 
-    return '';
+    return id;
 }
 
 async function listInjectsCallback(args) {
