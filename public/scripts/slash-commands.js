@@ -2994,10 +2994,10 @@ function injectCallback(args, value) {
     const defaultDepth = 4;
     const positionValue = args?.position ?? defaultPosition;
     const position = positions[positionValue] ?? positions[defaultPosition];
-    const depthValue = Number(args?.depth) ?? defaultDepth;
+    const depthValue = Number(args?.depth ?? defaultDepth);
     const depth = isNaN(depthValue) ? defaultDepth : depthValue;
     const roleValue = typeof args?.role === 'string' ? args.role.toLowerCase().trim() : Number(args?.role ?? extension_prompt_roles.SYSTEM);
-    const role = roles[roleValue] ?? roles[extension_prompt_roles.SYSTEM];
+    const role = roles[roleValue] ?? extension_prompt_roles.SYSTEM;
     const scan = isTrueBoolean(String(args?.scan));
     const filter = args?.filter instanceof SlashCommandClosure ? args.filter.rawText : null;
     const filterFunction = args?.filter instanceof SlashCommandClosure ? closureToFilter(args.filter) : null;
