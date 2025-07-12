@@ -425,7 +425,6 @@ const default_settings = {
     extensions: {},
 };
 
-//Maybe here can use: structuredClone(default_settings);
 const oai_settings = {
     preset_settings_openai: 'Default',
     temp_openai: 1.0,
@@ -3951,7 +3950,7 @@ function showWindowExtensionError() {
  * @param triggerUi Whether the change event of preset UI element should be emitted
  * @returns {Promise<void>}
  */
-export async function saveOpenAIPreset(name, settings, triggerUi = true) {
+async function saveOpenAIPreset(name, settings, triggerUi = true) {
     const presetBody = {
         chat_completion_source: settings.chat_completion_source,
         openai_model: settings.openai_model,

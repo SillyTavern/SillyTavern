@@ -1154,11 +1154,6 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
-    if ('extensions' === setting) {
-        settings.extensions = value ?? {};
-        return;
-    }
-
     const isCheckbox = $(`#${setting}_textgenerationwebui`).attr('type') == 'checkbox';
     const isText = $(`#${setting}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
