@@ -40,7 +40,6 @@ import {
 import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
 import { reasoning_templates } from './reasoning.js';
-import { extension_settings } from './extensions.js';
 
 const presetManagers = {};
 
