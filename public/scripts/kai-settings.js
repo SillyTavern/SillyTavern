@@ -518,7 +518,7 @@ export function initKoboldSettings() {
         saveSettingsDebounced();
     });
 
-    $('#settings_preset').on('change', function () {
+    $('#settings_preset').on('change', async function () {
         if ($('#settings_preset').find(':selected').val() != 'gui') {
             kai_settings.preset_settings = $('#settings_preset').find(':selected').text();
             const preset = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
@@ -540,6 +540,6 @@ export function initKoboldSettings() {
                 .sortable('disable');
         }
         saveSettingsDebounced();
-        eventSource.emit(event_types.PRESET_CHANGED);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'kobold', name: kai_settings.preset_settings });
     });
 }

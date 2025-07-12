@@ -82,6 +82,7 @@ const OOBA_DEFAULT_ORDER = [
     'temperature',
     'dynamic_temperature',
     'quadratic_sampling',
+    'top_n_sigma',
     'top_k',
     'top_p',
     'typical_p',
@@ -906,11 +907,10 @@ export function initTextGenSettings() {
         saveSettingsDebounced();
     });
 
-    $('#settings_preset_textgenerationwebui').on('change', function () {
+    $('#settings_preset_textgenerationwebui').on('change', async function () {
         const presetName = $(this).val();
-        selectPreset(presetName).finally(() => {
-            eventSource.emit(event_types.PRESET_CHANGED);
-        });
+        await selectPreset(presetName);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'textgenerationwebui', name: presetName });
     });
 
     $('#samplerResetButton').off('click').on('click', function () {

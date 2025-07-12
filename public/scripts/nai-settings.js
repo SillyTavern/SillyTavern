@@ -892,12 +892,12 @@ export function initNovelAISettings() {
         await getStatusNovel();
     });
 
-    $('#settings_preset_novel').on('change', function () {
+    $('#settings_preset_novel').on('change', async function () {
         nai_settings.preset_settings_novel = $('#settings_preset_novel').find(':selected').text();
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
         saveSettingsDebounced();
-        eventSource.emit(event_types.PRESET_CHANGED);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'novel', name: nai_settings.preset_settings_novel });
     });
 
     $('#streaming_novel').on('input', function () {

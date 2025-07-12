@@ -618,23 +618,29 @@ function getSelectedScripts() {
 
 function purgeEmbeddedRegexScripts({ character }) {
     const avatar = character?.avatar;
-
-    if (avatar && extension_settings.character_allowed_regex?.includes(avatar)) {
-        const index = extension_settings.character_allowed_regex.indexOf(avatar);
-        if (index !== -1) {
-            extension_settings.character_allowed_regex.splice(index, 1);
-            saveSettingsDebounced();
-        }
+    if (!avatar) {
+        return;
+    }
+    const checkKey = `AlertRegex_${characters[this_chid].avatar}`;
+    if (accountStorage.getItem(checkKey)) {
+        accountStorage.removeItem(checkKey);
+    }
+    const index = extension_settings.character_allowed_regex.indexOf(avatar);
+    if (index !== -1) {
+        extension_settings.character_allowed_regex.splice(index, 1);
+        saveSettingsDebounced();
     }
 }
 
 function purgePresetEmbeddedRegexScripts({ apiId, name }) {
-    if (name && extension_settings.preset_allowed_regex[apiId]?.includes(name)) {
-        const index = extension_settings.preset_allowed_regex[apiId].indexOf(name);
-        if (index !== -1) {
-            extension_settings.preset_allowed_regex[apiId].splice(index, 1);
-            saveSettingsDebounced();
-        }
+    const checkKey = `AlertRegex_${main_api}_${name}`;
+    if (accountStorage.getItem(checkKey)) {
+        accountStorage.removeItem(checkKey);
+    }
+    const index = extension_settings.preset_allowed_regex[apiId].indexOf(name);
+    if (index !== -1) {
+        extension_settings.preset_allowed_regex[apiId].splice(index, 1);
+        saveSettingsDebounced();
     }
 }
 
@@ -643,7 +649,7 @@ async function checkCharEmbeddedRegexScripts() {
 
     if (chid !== undefined && !selected_group) {
         const avatar = characters[chid]?.avatar;
-        const scripts = characters[chid]?.data?.extensions?.regex_scripts;
+        const scripts = getScriptsByType(scriptTypes.SCOPED);
 
         if (Array.isArray(scripts) && scripts.length > 0) {
             if (avatar && !extension_settings.character_allowed_regex.includes(avatar)) {
@@ -699,6 +705,21 @@ async function checkPresetEmbeddedRegexScripts() {
 async function onMainApiChanged() {
     await reloadCurrentChat();
     loadRegexScripts();
+}
+
+function onPresetRenamed({ apiId, oldName, newName }) {
+    const oldCheckKey = `AlertRegex_${main_api}_${oldName}`;
+    const checkKey = `AlertRegex_${main_api}_${newName}`;
+    const value = accountStorage.getItem(oldCheckKey);
+    if (value) {
+        accountStorage.setItem(checkKey, value);
+        accountStorage.removeItem(oldCheckKey);
+    }
+    const index = extension_settings.preset_allowed_regex[apiId].indexOf(oldName);
+    if (index !== -1) {
+        extension_settings.preset_allowed_regex[apiId][index] = newName;
+        saveSettingsDebounced();
+    }
 }
 
 // Workaround for loading in sequence with other extensions
@@ -1054,6 +1075,7 @@ jQuery(async () => {
     eventSource.on(event_types.MAIN_API_CHANGED, onMainApiChanged);
     eventSource.on(event_types.CHAT_CHANGED, checkCharEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
+    eventSource.on(event_types.PRESET_RENAMED, onPresetRenamed)
     eventSource.on(event_types.PRESET_CHANGED, checkPresetEmbeddedRegexScripts);
     eventSource.on(event_types.PRESET_DELETED, purgePresetEmbeddedRegexScripts);
 });

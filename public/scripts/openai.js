@@ -2417,6 +2417,12 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isXAI) {
+        if (generate_data.model.includes('grok-4')) {
+            delete generate_data.presence_penalty;
+            delete generate_data.frequency_penalty;
+            delete generate_data.stop;
+            delete generate_data.reasoning_effort;
+        }
         if (generate_data.model.includes('grok-3-mini')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
@@ -4465,7 +4471,7 @@ function onSettingsPresetChange() {
         settings: oai_settings,
         savePreset: saveOpenAIPreset,
         presetNameBefore: presetNameBefore,
-    }).finally(() => {
+    }).finally(async () => {
         if (oai_settings.bind_preset_to_connection) {
             $('.model_custom_select').empty();
         }
@@ -4500,9 +4506,8 @@ function onSettingsPresetChange() {
         $('#openai_logit_bias_preset').trigger('change');
 
         saveSettingsDebounced();
-        eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER).finally(() => {
-            eventSource.emit(event_types.PRESET_CHANGED);
-        });
+        await eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'openai', name: presetName });
     });
 }
 
@@ -4660,7 +4665,10 @@ function getMistralMaxContext(model, isUnlocked) {
         'open-mistral-7b': 32768,
         'open-mixtral-8x7b': 32768,
         'devstral-small-2505': 131072,
+        'devstral-small-2507': 131072,
         'devstral-small-latest': 131072,
+        'devstral-medium-latest': 131072,
+        'devstral-medium-2507': 131072,
         'magistral-medium-latest': 40960,
         'magistral-medium-2506': 40960,
         'magistral-small-latest': 40000,
@@ -5135,6 +5143,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (oai_settings.xai_model.includes('grok-vision')) {
             $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
             $('#openai_max_context').attr('max', max_128k);
         }
@@ -5640,6 +5650,7 @@ export function isImageInliningSupported() {
         'mistral-medium-2505',
         'pixtral',
         // xAI (Grok)
+        'grok-4',
         'grok-2-vision',
         'grok-vision',
     ];

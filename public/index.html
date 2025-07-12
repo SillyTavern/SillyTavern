@@ -1314,7 +1314,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top nsigma">Top nsigma</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
@@ -1811,6 +1811,7 @@
                                             <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
                                             <div data-name="dynamic_temperature" draggable="true"><span>Dynamic Temperature</span><small></small></div>
                                             <div data-name="quadratic_sampling" draggable="true"><span>Quadratic / Smooth Sampling</span><small></small></div>
+                                            <div data-name="top_n_sigma" draggable="true"><span>Top Nsigma</span><small></small></div>
                                             <div data-name="top_k" draggable="true"><span>Top K</span><small></small></div>
                                             <div data-name="top_p" draggable="true"><span>Top P</span><small></small></div>
                                             <div data-name="typical_p" draggable="true"><span>Typical P</span><small></small></div>
@@ -3419,6 +3420,7 @@
                                         <option value="pixtral-12b-latest">pixtral-12b-latest</option>
                                         <option value="pixtral-large-latest">pixtral-large-latest</option>
                                         <option value="devstral-small-latest">devstral-small-latest</option>
+                                        <option value="devstral-medium-latest">devstral-medium-latest</option>
                                         <option value="magistral-small-latest">magistral-small-latest</option>
                                         <option value="magistral-medium-latest">magistral-medium-latest</option>
                                     </optgroup>
@@ -3451,6 +3453,8 @@
                                         <option value="pixtral-12b-2409">pixtral-12b-2409</option>
                                         <option value="pixtral-large-2411">pixtral-large-2411</option>
                                         <option value="devstral-small-2505">devstral-small-2505</option>
+                                        <option value="devstral-small-2507">devstral-small-2507</option>
+                                        <option value="devstral-medium-2507">devstral-medium-2507</option>
                                         <option value="magistral-small-2506">magistral-small-2506</option>
                                         <option value="magistral-medium-2506">magistral-medium-2506</option>
                                     </optgroup>
@@ -3647,6 +3651,7 @@
                             </div>
                             <h4 data-i18n="xAI Model">xAI Model</h4>
                             <select id="model_xai_select">
+                                <option value="grok-4-0709">grok-4-0709</option>
                                 <option value="grok-3-beta">grok-3-beta</option>
                                 <option value="grok-3-fast-beta">grok-3-fast-beta</option>
                                 <option value="grok-3-mini-beta">grok-3-mini-beta</option>

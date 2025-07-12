@@ -1035,10 +1035,8 @@ export async function initPresetManager() {
         }
 
         await presetManager.renamePreset(newName);
-        const index = extension_settings.preset_allowed_regex[apiId].indexOf(oldName);
-        if (index !== -1) {
-            extension_settings.preset_allowed_regex[apiId][index] = newName;
-        }
+
+        await eventSource.emit(event_types.PRESET_RENAMED, { apiId: apiId, oldName: oldName, newName: newName });
 
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
@@ -1125,6 +1123,7 @@ export async function initPresetManager() {
         }
 
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {
