@@ -140,10 +140,6 @@ export const UNSAFE_EXTENSIONS = [
 
 export const GEMINI_SAFETY = [
     {
-        category: 'HARM_CATEGORY_UNSPECIFIED',
-        threshold: 'OFF',
-    },
-    {
         category: 'HARM_CATEGORY_HARASSMENT',
         threshold: 'OFF',
     },
