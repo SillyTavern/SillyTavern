@@ -3066,9 +3066,9 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        prompt = [{role: 'user', content: prompt.trim()}]
+        prompt = [{ role: 'user', content: prompt.trim() }];
     } else {  // checks for message-style object
-        if (prompt.length === 0) throw Error("No messages provided")
+        if (prompt.length === 0) throw Error('No messages provided');
     }
 
     // Format each message in the prompt, accounting for the provided roles
@@ -3089,17 +3089,17 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        if (isInstruct) systemPrompt = formatInstructModeSystemPrompt(systemPrompt) + '\n'
-        prompt.unshift({role: 'system', content: systemPrompt.trim()});
+        if (isInstruct) systemPrompt = formatInstructModeSystemPrompt(systemPrompt) + '\n';
+        prompt.unshift({ role: 'system', content: systemPrompt.trim() });
     }
 
     // If text completion, convert to text prompt by concatenating all message contents
     if (api !== 'openai') {
         prompt = prompt.map(message => message.content).join('');
-        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n')  // add last line
+        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n');  // add last line
     }
 
-    return prompt
+    return prompt;
 }
 
 
@@ -3125,7 +3125,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
     let eventHook = () => { };
 
     // construct final prompt from the input
-    prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt)
+    prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt);
 
     try {
         if (responseLengthCustomized) {
@@ -3157,7 +3157,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
                 TempResponseLength.restore(api);
                 break;
             case 'openai': {
-                generateData = prompt  // generateData is just the chat message object
+                generateData = prompt;  // generateData is just the chat message object
                 eventHook = TempResponseLength.setupEventHook(api);
             } break;
         }
