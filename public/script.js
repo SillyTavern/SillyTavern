@@ -3059,7 +3059,7 @@ class StreamingProcessor {
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
  * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
- * @param {string} [prefill] Prefill for the prompt
+ * @param {string} [prefill] Prefill for the prompt (only applied for text completion when instructOverride is false).
  * @returns {string | object[]} Prompt ready for use in generation. If using TC, this will be a string. If using CC, this will be an array of chat-style messages.
  */
 export function createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt, prefill) {
@@ -3097,10 +3097,12 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
-    // If text completion, convert to text prompt by concatenating all message contents
-    if (api === 'openai' && prefill) {  // with Chat Completion, the prefill is an additional assistant message at the end.
+    // with Chat Completion, the prefill is an additional assistant message at the end.
+    if (api === 'openai' && prefill) {
         prompt.push({ role: 'assistant', content: prefill });
     }
+
+    // if text completion, convert to text prompt by concatenating all message contents and adding the prefill as a promptBias.
     if (api !== 'openai') {
         const joiner = isInstruct ? '' : '\n';
         prompt = prompt.map(message => message.content).join(joiner);
@@ -3121,7 +3123,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
- * @param {string} [prefill] An optional prefill.
+ * @param {string} [prefill] An optional prefill (only applied for text completion when instructOverride is false).
  * @returns {Promise<string>} Generated message
  */
 export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, prefill = '') {
