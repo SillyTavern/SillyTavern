@@ -3092,8 +3092,8 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        if (isInstruct) systemPrompt = formatInstructModeSystemPrompt(systemPrompt) + '\n';
-        prompt.unshift({ role: 'system', content: systemPrompt.trim() });
+        systemPrompt = isInstruct ? formatInstructModeSystemPrompt(systemPrompt) : systemPrompt.trim();
+        prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
     // If text completion, convert to text prompt by concatenating all message contents
