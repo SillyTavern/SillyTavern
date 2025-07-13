@@ -3073,16 +3073,13 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // Format each message in the prompt, accounting for the provided roles
     for (const message of prompt) {
-        message.content = substituteParams(message.content ?? '');
-        const isLastMessage = prompt.indexOf(message) === prompt.length - 1;
-        if (api === 'novel' && isLastMessage) {
-            message.content = adjustNovelInstructionPrompt(message.content);
-        }
+        let name = '';
+        if (message.role === 'user') name = message.name ?? name1;
+        if (message.role === 'assistant') name = message.name ?? name2;
+        if (message.role === 'system') name = message.name ?? '';
+        const prefix = isInstruct ? '' : (name ? `${name}: ` : '');
+        message.content = prefix + substituteParams(message.content ?? '');
         if (isInstruct) {  // instruct formatting for text completion
-            let name = '';
-            if (message.role === 'user') name = message.name ?? name1;
-            if (message.role === 'assistant') name = message.name ?? name2;
-            if (message.role === 'system') name = message.name ?? '';
             const isUser = message.role === 'user';
             const isNarrator = message.role === 'system';
             message.content = formatInstructModeChat(name, message.content, isUser, isNarrator, '', name1, name2, false);
@@ -3100,6 +3097,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     if (api !== 'openai') {
         const joiner = isInstruct ? '' : '\n';
         prompt = prompt.map(message => message.content).join(joiner);
+        prompt = api === 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
         prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n');  // add last line
     }
 
