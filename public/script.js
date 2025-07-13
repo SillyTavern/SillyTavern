@@ -3098,7 +3098,8 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If text completion, convert to text prompt by concatenating all message contents
     if (api !== 'openai') {
-        prompt = prompt.map(message => message.content).join('');
+        const joiner = isInstruct ? '' : '\n';
+        prompt = prompt.map(message => message.content).join(joiner);
         prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n');  // add last line
     }
 
