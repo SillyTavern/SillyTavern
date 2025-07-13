@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Buffer } from 'node:buffer';
 
 import express from 'express';
+import fetch from 'node-fetch';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { Tokenizer } from '@agnai/web-tokenizers';

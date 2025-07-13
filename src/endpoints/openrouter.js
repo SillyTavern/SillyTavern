@@ -1,4 +1,5 @@
 import express from 'express';
+import fetch from 'node-fetch';
 
 export const router = express.Router();
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
