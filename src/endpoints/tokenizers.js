@@ -1025,6 +1025,7 @@ router.post('/remote/kobold/count', async function (request, response) {
             return response.send({ error: true });
         }
 
+        /** @type {any} */
         const data = await result.json();
         const count = data['value'];
         const ids = data['ids'] ?? [];
@@ -1089,6 +1090,7 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
             return response.send({ error: true });
         }
 
+        /** @type {any} */
         const data = await result.json();
         const count =  (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
         const ids = (data?.tokens ?? data?.ids ?? []);
