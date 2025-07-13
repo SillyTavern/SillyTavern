@@ -3068,20 +3068,23 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     if (typeof prompt === 'string') {
         prompt = [{ role: 'user', content: prompt.trim() }];
     } else {  // checks for message-style object
-        if (prompt.length === 0) throw Error('No messages provided');
+        if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
     }
 
     // Format each message in the prompt, accounting for the provided roles
-    for (let message of prompt) {
+    for (const message of prompt) {
         message.content = substituteParams(message.content ?? '');
-        if (api === 'novel') message.content = adjustNovelInstructionPrompt(message.content);
+        const isLastMessage = prompt.indexOf(message) === prompt.length - 1;
+        if (api === 'novel' && isLastMessage) {
+            message.content = adjustNovelInstructionPrompt(message.content);
+        }
         if (isInstruct) {  // instruct formatting for text completion
             let name = '';
             if (message.role === 'user') name = message.name ?? name1;
             if (message.role === 'assistant') name = message.name ?? name2;
             if (message.role === 'system') name = message.name ?? '';
-            let isUser = message.role === 'user';
-            let isNarrator = message.role === 'system';
+            const isUser = message.role === 'user';
+            const isNarrator = message.role === 'system';
             message.content = formatInstructModeChat(name, message.content, isUser, isNarrator, '', name1, name2, false);
         }
     }
@@ -3101,7 +3104,6 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     return prompt;
 }
-
 
 /**
  * Generates a message using the provided prompt.
@@ -3142,7 +3144,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
                 } else {
                     const isHorde = api === 'koboldhorde';
                     const koboldSettings = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
-                    generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+                    generateData = getKoboldGenerationData(prompt.toString(), koboldSettings, amount_gen, max_context, isHorde, 'quiet');
                 }
                 TempResponseLength.restore(api);
                 break;
@@ -3165,7 +3167,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         let data = {};
 
         if (api === 'koboldhorde') {
-            data = await generateHorde(prompt, generateData, abortController.signal, false);
+            data = await generateHorde(prompt.toString(), generateData, abortController.signal, false);
         } else if (api === 'openai') {
             data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
         } else {
