@@ -3053,8 +3053,64 @@ class StreamingProcessor {
 }
 
 /**
+ * Constructs a prompt to be used for either Text Completion or Chat Completion. Input is format-agnostic.
+ * @param {string | object[]} prompt Input prompt. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
+ * @param {string} api API to use.
+ * @param {boolean} instructOverride true to override instruct mode, false to use the default value
+ * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
+ * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
+ * @returns {string | object[]} Prompt ready for use in generation. If using TC, this will be a string. If using CC, this will be an array of chat-style messages.
+ */
+export function createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt) {
+    const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
+
+    // If the prompt was given as a string, convert to a message-style object assuming user role
+    if (typeof prompt === 'string') {
+        const message = api === 'openai'
+            ? { role: 'user', content: prompt.trim() }
+            : { role: 'system', content: prompt };
+        prompt = [message];
+    } else {  // checks for message-style object
+        if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
+    }
+
+    // Format each message in the prompt, accounting for the provided roles
+    for (const message of prompt) {
+        let name = '';
+        if (message.role === 'user') name = message.name ?? name1;
+        if (message.role === 'assistant') name = message.name ?? name2;
+        if (message.role === 'system') name = message.name ?? '';
+        const prefix = isInstruct || api === 'openai' ? '' : (name ? `${name}: ` : '');
+        message.content = prefix + substituteParams(message.content ?? '');
+        if (isInstruct) {  // instruct formatting for text completion
+            const isUser = message.role === 'user';
+            const isNarrator = message.role === 'system';
+            message.content = formatInstructModeChat(name, message.content, isUser, isNarrator, '', name1, name2, false);
+        }
+    }
+
+    // prepend system prompt, if provided
+    if (systemPrompt) {
+        systemPrompt = substituteParams(systemPrompt);
+        systemPrompt = isInstruct ? (formatInstructModeSystemPrompt(systemPrompt) + '\n') : systemPrompt.trim();
+        prompt.unshift({ role: 'system', content: systemPrompt });
+    }
+
+    // If text completion, convert to text prompt by concatenating all message contents
+    if (api !== 'openai') {
+        const joiner = isInstruct ? '' : '\n';
+        prompt = prompt.map(message => message.content).join(joiner);
+        prompt = api === 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
+        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n');  // add last line
+    }
+
+    return prompt;
+}
+
+/**
  * Generates a message using the provided prompt.
- * @param {string} prompt Prompt to generate a message from
+ * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
+ * @param {string | object[]} prompt Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
@@ -3070,20 +3126,10 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
 
     const abortController = new AbortController();
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
-    const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
-    const isQuiet = true;
     let eventHook = () => { };
 
-    if (systemPrompt) {
-        systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? formatInstructModeSystemPrompt(systemPrompt) : systemPrompt;
-        prompt = api === 'openai' ? prompt : `${systemPrompt}\n${prompt}`;
-    }
-
-    prompt = substituteParams(prompt);
-    prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
-    prompt = isInstruct ? formatInstructModeChat(name1, prompt, false, true, '', name1, name2, false) : prompt;
-    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2, isQuiet, quietToLoud)) : (prompt + '\n');
+    // construct final prompt from the input. Can either be a string or an array of chat-style messages.
+    prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt);
 
     try {
         if (responseLengthCustomized) {
@@ -3100,7 +3146,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
                 } else {
                     const isHorde = api === 'koboldhorde';
                     const koboldSettings = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
-                    generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+                    generateData = getKoboldGenerationData(prompt.toString(), koboldSettings, amount_gen, max_context, isHorde, 'quiet');
                 }
                 TempResponseLength.restore(api);
                 break;
@@ -3115,10 +3161,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
                 TempResponseLength.restore(api);
                 break;
             case 'openai': {
-                generateData = [{ role: 'user', content: prompt.trim() }];
-                if (systemPrompt) {
-                    generateData.unshift({ role: 'system', content: systemPrompt.trim() });
-                }
+                generateData = prompt;  // generateData is just the chat message object
                 eventHook = TempResponseLength.setupEventHook(api);
             } break;
         }
@@ -3126,7 +3169,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         let data = {};
 
         if (api === 'koboldhorde') {
-            data = await generateHorde(prompt, generateData, abortController.signal, false);
+            data = await generateHorde(prompt.toString(), generateData, abortController.signal, false);
         } else if (api === 'openai') {
             data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
         } else {
