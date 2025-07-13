@@ -3080,7 +3080,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
         if (message.role === 'user') name = message.name ?? name1;
         if (message.role === 'assistant') name = message.name ?? name2;
         if (message.role === 'system') name = message.name ?? '';
-        const prefix = isInstruct ? '' : (name ? `${name}: ` : '');
+        const prefix = isInstruct || api === 'openai' ? '' : (name ? `${name}: ` : '');
         message.content = prefix + substituteParams(message.content ?? '');
         if (isInstruct) {  // instruct formatting for text completion
             const isUser = message.role === 'user';
