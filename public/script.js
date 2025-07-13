@@ -3075,8 +3075,8 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     for (let message of prompt) {
         message.content = substituteParams(message.content ?? '');
         if (api === 'novel') message.content = adjustNovelInstructionPrompt(message.content);
-        let name = '';
-        if (isInstruct) {
+        if (isInstruct) {  // instruct formatting for text completion
+            let name = '';
             if (message.role === 'user') name = message.name ?? name1;
             if (message.role === 'assistant') name = message.name ?? name2;
             if (message.role === 'system') name = message.name ?? '';
@@ -3124,7 +3124,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let eventHook = () => { };
 
-    // construct final prompt from the input
+    // construct final prompt from the input. Can either be a string or an array of chat-style messages.
     prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt);
 
     try {
