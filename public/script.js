@@ -3059,7 +3059,7 @@ class StreamingProcessor {
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
  * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
- * @param {string} [prefill] Prefill for the prompt (only applied for text completion when instructOverride is false).
+ * @param {string} [prefill] Prefill for the prompt.
  * @returns {string | object[]} Prompt ready for use in generation. If using TC, this will be a string. If using CC, this will be an array of chat-style messages.
  */
 export function createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt, prefill) {
