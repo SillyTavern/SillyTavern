@@ -1161,6 +1161,7 @@ falai.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
         let page = 1;
+        /** @type {any} */
         let modelsResponse;
         let models = [];
 
@@ -1172,7 +1173,6 @@ falai.post('/models', async (_request, response) => {
                 console.warn('FAL.AI returned an error.', result.status, result.statusText);
                 throw new Error('FAL.AI request failed.');
             }
-
 
             modelsResponse = await result.json();
             if (!('items' in modelsResponse) || !Array.isArray(modelsResponse.items)) {
