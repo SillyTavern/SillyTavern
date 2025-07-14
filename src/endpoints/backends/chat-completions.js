@@ -1017,15 +1017,15 @@ async function sendXaiRequest(request, response) {
         }
 
         if (request.body._json_schema) {
-        bodyParams['response_format'] = {
-            type: 'json_schema',
-            json_schema: {
-                name: request.body._json_schema.name,
-                strict: request.body._json_schema.strict ?? true,
-                schema: request.body._json_schema.value,
-            }
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body._json_schema.name,
+                    strict: request.body._json_schema.strict ?? true,
+                    schema: request.body._json_schema.value,
+                },
+            };
         }
-    }
 
         const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
@@ -1546,8 +1546,8 @@ router.post('/generate', function (request, response) {
                     name: request.body._json_schema.name,
                     strict: request.body._json_schema.strict ?? true,
                     schema: request.body._json_schema.value,
-                }
-            }
+                },
+            };
         }
 
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
@@ -1653,8 +1653,8 @@ router.post('/generate', function (request, response) {
                 name: request.body._json_schema.name,
                 strict: request.body._json_schema.strict ?? true,
                 schema: request.body._json_schema.value,
-            }
-        }
+            },
+        };
     }
 
     const requestBody = {

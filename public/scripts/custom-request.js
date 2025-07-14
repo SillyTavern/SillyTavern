@@ -480,8 +480,7 @@ export class ChatCompletionService {
                 if (result.content && typeof result.content === 'string') {
                     try {
                         result.content = JSON.parse(result.content);
-                    } catch (e) {
-                    }
+                    } catch (e) { /* empty */ }
                 } else if (data.chat_completion_source === 'claude' && json.content) { // Fuck claude
                     result.content = json.content.find(x => x.type === 'tool_use')?.input;
                 }
