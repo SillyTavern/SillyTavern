@@ -1672,17 +1672,18 @@ export function initDefaultSlashCommands() {
         returns: 'generated text',
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
+                'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
             ),
             new SlashCommandNamedArgument(
                 'instruct', 'use instruct mode', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
             ),
             new SlashCommandNamedArgument(
-                'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false,
+                'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false, false, '[]',
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'as',
                 description: 'role of the output prompt',
+                defaultValue: 'system',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
                     new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.assistant),
@@ -1690,10 +1691,16 @@ export function initDefaultSlashCommands() {
                 ],
             }),
             new SlashCommandNamedArgument(
-                'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING], false,
+                'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
             new SlashCommandNamedArgument(
-                'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER], false,
+                'prefill', 'prefill prompt at the end', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
+                'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
+                'trim', 'trim {{user}} and {{char}} prefixes from the output', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
             ),
         ],
         unnamedArgumentList: [
@@ -3628,7 +3635,9 @@ async function generateRawCallback(args, value) {
     const as = args?.as || 'system';
     const quietToLoud = as === 'char';
     const systemPrompt = resolveVariable(args?.system) || '';
+    const prefillPrompt = resolveVariable(args?.prefill) || '';
     const length = Number(resolveVariable(args?.length) ?? 0) || 0;
+    const trimNames = !isFalseBoolean(args?.trim);
 
     try {
         if (lock) {
@@ -3636,7 +3645,7 @@ async function generateRawCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length);
+        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length, trimNames, prefillPrompt);
         return result;
     } catch (err) {
         console.error('Error on /genraw generation', err);
