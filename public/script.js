@@ -3117,9 +3117,10 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
+ * @param {PureGenerateOptions} [options] Additional options for generation
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, options = {}) {
     if (!api) {
         api = main_api;
     }
@@ -3171,7 +3172,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         if (api === 'koboldhorde') {
             data = await generateHorde(prompt.toString(), generateData, abortController.signal, false);
         } else if (api === 'openai') {
-            data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
+            data = await sendOpenAIRequest('quiet', generateData, abortController.signal, options);
         } else {
             const generateUrl = getGenerateUrl(api);
             const response = await fetch(generateUrl, {
@@ -3328,15 +3329,35 @@ function removeLastMessage() {
 }
 
 /**
+ * @typedef {object} JsonSchema
+ * @property {string} name
+ * @property {object} value
+ * @property {string} [description]
+ * @property {boolean} [strict]
+ *
+ * @typedef {object} GenerateOptions
+ * @property {boolean} [automatic_trigger]
+ * @property {boolean} [force_name2]
+ * @property {string} [quiet_prompt]
+ * @property {boolean} [quietToLoud]
+ * @property {boolean} [skipWIAN]
+ * @property {number} [force_chid]
+ * @property {AbortSignal} [signal]
+ * @property {string} [quietImage]
+ * @property {string} [quietName]
+ * @property {number} [depth]
+ * @property {JsonSchema} [jsonSchema]
+ */
+
+/**
  * MARK:Generate()
  * Runs a generation using the current chat context.
  * @param {string} type Generation type
  * @param {GenerateOptions} options Generation options
  * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
  * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
- * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, quietName?: string, depth?: number }} GenerateOptions
  */
-export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName, depth = 0 } = {}, dryRun = false) {
+export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName, jsonSchema = null, depth = 0 } = {}, dryRun = false) {
     console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
@@ -4478,7 +4499,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 });
             }
         } else {
-            return await sendGenerationRequest(type, generate_data);
+            return await sendGenerationRequest(type, generate_data, {
+                jsonSchema,
+            });
         }
     }
 
@@ -5087,15 +5110,22 @@ function setInContextMessages(msgInContextCount, type) {
 }
 
 /**
+ * Send a chat completion request to backend
+ * @typedef {object} PureGenerateOptions
+ * @property {JsonSchema} [jsonSchema]
+ */
+
+/**
  * Sends a non-streaming request to the API.
  * @param {string} type Generation type
  * @param {object} data Generation data
+ * @param {PureGenerateOptions} [options] Additional options for the generation request
  * @returns {Promise<object>} Response data from the API
  * @throws {Error|object}
  */
-export async function sendGenerationRequest(type, data) {
+export async function sendGenerationRequest(type, data, options = {}) {
     if (main_api === 'openai') {
-        return await sendOpenAIRequest(type, data.prompt, abortController.signal);
+        return await sendOpenAIRequest(type, data.prompt, abortController.signal, options);
     }
 
     if (main_api === 'koboldhorde') {
@@ -5121,16 +5151,17 @@ export async function sendGenerationRequest(type, data) {
  * Sends a streaming request to the API.
  * @param {string} type Generation type
  * @param {object} data Generation data
+ * @param {PureGenerateOptions} [options] Additional options for the generation request
  * @returns {Promise<any>} Streaming generator
  */
-export async function sendStreamingRequest(type, data) {
+export async function sendStreamingRequest(type, data, options = {}) {
     if (abortController?.signal?.aborted) {
         throw new Error('Generation was aborted.');
     }
 
     switch (main_api) {
         case 'openai':
-            return await sendOpenAIRequest(type, data.prompt, streamingProcessor.abortController.signal);
+            return await sendOpenAIRequest(type, data.prompt, streamingProcessor.abortController.signal, options);
         case 'textgenerationwebui':
             return await generateTextGenWithStreaming(data, streamingProcessor.abortController.signal);
         case 'novel':
