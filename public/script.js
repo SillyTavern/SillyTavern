@@ -3126,7 +3126,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
- * @param {string} [prefill] An optional prefill (only applied for text completion when instructOverride is false).
+ * @param {string} [prefill] An optional prefill for the prompt.
  * @returns {Promise<string>} Generated message
  */
 export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, prefill = '') {
