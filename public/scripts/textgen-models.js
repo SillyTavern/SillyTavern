@@ -62,6 +62,7 @@ const OPENROUTER_PROVIDERS = [
     'Meta',
     'Minimax',
     'Mistral',
+    'Moonshot AI',
     'Morph',
     'NCompass',
     'Nebius',
