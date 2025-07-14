@@ -830,5 +830,13 @@
     {
         "filename": "presets/instruct/Mistral V7-Tekken.json",
         "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Moonshot AI.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Moonshot AI.json",
+        "type": "context"
     }
 ]
