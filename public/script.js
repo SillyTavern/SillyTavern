@@ -3058,10 +3058,11 @@ class StreamingProcessor {
  * @param {string} api API to use.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
- * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
+ * @param {string} [systemPrompt] System prompt to use.
+ * @param {string} [prefill] Prefill for the prompt.
  * @returns {string | object[]} Prompt ready for use in generation. If using TC, this will be a string. If using CC, this will be an array of chat-style messages.
  */
-export function createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt) {
+export function createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt, prefill) {
     const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
@@ -3073,6 +3074,9 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
     }
+
+    // Substitute the prefill if provided
+    prefill = substituteParams(prefill ?? '');
 
     // Format each message in the prompt, accounting for the provided roles
     for (const message of prompt) {
@@ -3096,12 +3100,17 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
-    // If text completion, convert to text prompt by concatenating all message contents
+    // with Chat Completion, the prefill is an additional assistant message at the end.
+    if (api === 'openai' && prefill) {
+        prompt.push({ role: 'assistant', content: prefill });
+    }
+
+    // if text completion, convert to text prompt by concatenating all message contents and adding the prefill as a promptBias.
     if (api !== 'openai') {
         const joiner = isInstruct ? '' : '\n';
         prompt = prompt.map(message => message.content).join(joiner);
         prompt = api === 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
-        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, '', name1, name2, true, quietToLoud) : '\n');  // add last line
+        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, prefill, name1, name2, true, quietToLoud) : `\n${prefill}`);  // add last line
     }
 
     return prompt;
@@ -3114,12 +3123,13 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
- * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
+ * @param {string} [systemPrompt] System prompt to use.
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
+ * @param {string} [prefill] An optional prefill for the prompt.
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, prefill = '') {
     if (!api) {
         api = main_api;
     }
@@ -3129,7 +3139,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
     let eventHook = () => { };
 
     // construct final prompt from the input. Can either be a string or an array of chat-style messages.
-    prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt);
+    prompt = createRawPrompt(prompt, api, instructOverride, quietToLoud, systemPrompt, prefill);
 
     try {
         if (responseLengthCustomized) {
