@@ -467,7 +467,7 @@ export class ChatCompletionService {
                 return json;
             }
 
-            return {
+            const result = {
                 content: extractMessageFromData(json, this.TYPE),
                 reasoning: extractReasoningFromData(json, {
                     mainApi: this.TYPE,
@@ -475,6 +475,18 @@ export class ChatCompletionService {
                     ignoreShowThoughts: true,
                 }),
             };
+            // Try parse JSON
+            if (data._json_schema) {
+                if (result.content && typeof result.content === 'string') {
+                    try {
+                        result.content = JSON.parse(result.content);
+                    } catch (e) {
+                    }
+                } else if (data.chat_completion_source === 'claude' && json.content) { // Fuck claude
+                    result.content = json.content.find(x => x.type === 'tool_use')?.input;
+                }
+            }
+            return result;
         }
 
         if (!response.ok) {

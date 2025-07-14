@@ -18,6 +18,7 @@ import {
     excludeKeysByYaml,
     color,
     trimTrailingSlash,
+    flattenSchema,
 } from '../../util.js';
 import {
     convertClaudeMessages,
@@ -171,6 +172,21 @@ async function sendClaudeRequest(request, response) {
             if (enableSystemPromptCache && requestBody.tools.length) {
                 requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
+        }
+
+        // Structured output is a forced tool
+        if (request.body._json_schema) {
+            const jsonTool = {
+                name: request.body._json_schema.name,
+                description: request.body._json_schema.description || 'Well-formed JSON object',
+                input_schema: request.body._json_schema.value,
+            };
+            if (!requestBody.tools) {
+                requestBody.tools = [jsonTool];
+            } else {
+                requestBody.tools.push(jsonTool);
+            }
+            requestBody.tool_choice = { type: 'tool', name: request.body._json_schema.name };
         }
 
         if (useWebSearch) {
@@ -363,6 +379,9 @@ async function sendMakerSuiteRequest(request, response) {
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
+    const responseMimeType = request.body.responseMimeType ?? (request.body._json_schema ? 'application/json' : undefined);
+    const responseSchema = request.body.responseSchema ?? (request.body._json_schema ? request.body._json_schema.value : undefined);
+
     const generationConfig = {
         stopSequences: request.body.stop,
         candidateCount: 1,
@@ -370,8 +389,8 @@ async function sendMakerSuiteRequest(request, response) {
         temperature: request.body.temperature,
         topP: request.body.top_p,
         topK: request.body.top_k || undefined,
-        responseMimeType: request.body.responseMimeType,
-        responseSchema: request.body.responseSchema,
+        responseMimeType: responseMimeType,
+        responseSchema: responseSchema,
     };
 
     function getGeminiBody() {
@@ -801,6 +820,13 @@ async function sendCohereRequest(request, response) {
             requestBody.safety_mode = 'OFF';
         }
 
+        if (request.body._json_schema) {
+            requestBody.response_format = {
+                type: 'json_schema',
+                schema: request.body._json_schema.value,
+            };
+        }
+
         console.debug('Cohere request:', requestBody);
 
         const config = {
@@ -989,6 +1015,17 @@ async function sendXaiRequest(request, response) {
                 ],
             };
         }
+
+        if (request.body._json_schema) {
+        bodyParams['response_format'] = {
+            type: 'json_schema',
+            json_schema: {
+                name: request.body._json_schema.name,
+                strict: request.body._json_schema.strict ?? true,
+                schema: request.body._json_schema.value,
+            }
+        }
+    }
 
         const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
@@ -1405,6 +1442,28 @@ router.post('/generate', function (request, response) {
             getPromptNames(request));
     }
 
+    // request.body._json_schema
+    // {
+    //     "name": "WeatherReport",
+    //     "value": {
+    //         "$schema": "http://json-schema.org/draft-04/schema#",
+    //         "type": "object",
+    //         "properties": {
+    //             "Location": {
+    //                 "type": "string"
+    //             }
+    //         },
+    //         "required": [
+    //             "Location"
+    //         ]
+    //     }
+    // }
+
+    if (request.body._json_schema?.value) {
+        request.body._json_schema.value = flattenSchema(request.body._json_schema.value);
+    }
+
+
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
@@ -1478,6 +1537,17 @@ router.post('/generate', function (request, response) {
 
         if (request.body.reasoning_effort) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
+        }
+
+        if (request.body._json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body._json_schema.name,
+                    strict: request.body._json_schema.strict ?? true,
+                    schema: request.body._json_schema.value,
+                }
+            }
         }
 
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
@@ -1574,6 +1644,17 @@ router.post('/generate', function (request, response) {
     if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
         bodyParams['tools'] = request.body.tools;
         bodyParams['tool_choice'] = request.body.tool_choice;
+    }
+
+    if (request.body._json_schema) {
+        bodyParams['response_format'] = {
+            type: 'json_schema',
+            json_schema: {
+                name: request.body._json_schema.name,
+                strict: request.body._json_schema.strict ?? true,
+                schema: request.body._json_schema.value,
+            }
+        }
     }
 
     const requestBody = {

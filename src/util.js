@@ -1213,3 +1213,61 @@ export function getRequestURL(request) {
     }
     throw new TypeError('Invalid request type');
 }
+
+/**
+ * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
+ * @param {object} schema The JSON schema to flatten.
+ * @returns {object} The flattened schema.
+ */
+export function flattenSchema(schema) {
+    if (!schema || typeof schema !== 'object') {
+        return schema;
+    }
+
+    // Deep clone to avoid modifying the original object.
+    const schemaCopy = JSON.parse(JSON.stringify(schema));
+
+    const definitions = schemaCopy.$defs || {};
+    delete schemaCopy.$defs;
+
+    function replaceRefs(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                obj[i] = replaceRefs(obj[i]);
+            }
+            return obj;
+        }
+
+        if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
+            const defName = obj.$ref.split('/').pop();
+            if (definitions[defName]) {
+                return replaceRefs(JSON.parse(JSON.stringify(definitions[defName])));
+            }
+        }
+
+        if ('properties' in obj) {
+            if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
+                obj.additionalProperties = false;
+            }
+        }
+
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                obj[key] = replaceRefs(obj[key]);
+            }
+        }
+        return obj;
+    }
+
+    let flattenedSchema = replaceRefs(schemaCopy);
+
+    if (flattenedSchema.$schema) {
+        delete flattenedSchema.$schema;
+    }
+
+    return flattenedSchema;
+}
