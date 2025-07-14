@@ -1486,6 +1486,11 @@ router.post('/generate', function (request, response) {
         if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
         }
+
+        const isGemini = /google\/gemini/.test(request.body.model);
+        if (isGemini) {
+            bodyParams['safety_settings'] = GEMINI_SAFETY;
+        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
