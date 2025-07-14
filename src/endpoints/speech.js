@@ -120,6 +120,7 @@ pollinations.post('/generate', async (req, res) => {
         url.searchParams.append('model', model);
         url.searchParams.append('voice', voice);
         url.searchParams.append('referrer', 'sillytavern');
+        console.info('Pollinations request URL:', url.toString());
 
         const response = await fetch(url);
 
