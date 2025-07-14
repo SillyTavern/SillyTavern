@@ -3075,6 +3075,9 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
     }
 
+    // Substitute the prefill if provided
+    prefill = substituteParams(prefill ?? '');
+
     // Format each message in the prompt, accounting for the provided roles
     for (const message of prompt) {
         let name = '';
@@ -3107,7 +3110,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
         const joiner = isInstruct ? '' : '\n';
         prompt = prompt.map(message => message.content).join(joiner);
         prompt = api === 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
-        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, prefill, name1, name2, true, quietToLoud) : '\n');  // add last line
+        prompt = prompt + (isInstruct ? formatInstructModePrompt(name2, false, prefill, name1, name2, true, quietToLoud) : `\n${prefill}`);  // add last line
     }
 
     return prompt;
