@@ -916,6 +916,18 @@ async function sendDeepSeekRequest(request, response) {
             });
         }
 
+        // Hack to support JSON schema
+        if (request.body.json_schema) {
+            bodyParams.response_format = {
+                type: 'json_object',
+            };
+            const message = {
+                role: 'user',
+                content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+            };
+            request.body.messages.push(message);
+        }
+
         const postProcessType = String(request.body.model).endsWith('-reasoner')
             ? PROMPT_PROCESSING_TYPE.STRICT_TOOLS
             : PROMPT_PROCESSING_TYPE.SEMI_TOOLS;

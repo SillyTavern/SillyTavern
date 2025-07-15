@@ -4548,6 +4548,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         if (jsonSchema) {
+            unblockGeneration(type);
+            generatedPromptCache = '';
             return extractJsonFromData(data);
         }
 
@@ -5328,20 +5330,41 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
     mainApi = mainApi ?? main_api;
     chatCompletionSource = chatCompletionSource ?? oai_settings.chat_completion_source;
 
-    let result = {};
-    if (data.content) {
-        if (typeof data.content === 'string') {
-            try {
-                result = JSON.parse(data.content);
-            } catch (e) {
-                console.debug('Failed to parse content as JSON.', e);
-            }
-        } else if (mainApi === 'openai' && chatCompletionSource === chat_completion_sources.CLAUDE) {
-            result = data.content.find(x => x.type === 'tool_use')?.input;
+    const tryParse = (/** @type {string} */ value) => {
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            console.debug('Failed to parse content as JSON.', e);
         }
+    };
+
+    let result = {};
+
+    switch (mainApi) {
+        case 'openai': {
+            switch (chatCompletionSource) {
+                case chat_completion_sources.CLAUDE:
+                    result = data?.content?.find(x => x.type === 'tool_use')?.input;
+                    break;
+                case chat_completion_sources.DEEPSEEK:
+                    result = tryParse(data?.choices?.[0]?.message?.content);
+                    break;
+                case chat_completion_sources.VERTEXAI:
+                case chat_completion_sources.MAKERSUITE:
+                case chat_completion_sources.OPENAI:
+                case chat_completion_sources.OPENROUTER:
+                case chat_completion_sources.MISTRALAI:
+                case chat_completion_sources.CUSTOM:
+                case chat_completion_sources.COHERE:
+                case chat_completion_sources.XAI:
+                default:
+                    result = tryParse(data?.content);
+                    break;
+            }
+        } break;
     }
 
-    return JSON.stringify(result);
+    return JSON.stringify(result ?? {});
 }
 
 /**
