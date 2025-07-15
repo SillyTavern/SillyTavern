@@ -2330,29 +2330,31 @@ export function getStoppingStrings(isImpersonate, isContinue) {
 
 /**
  * Background generation based on the provided prompt.
- * @param {string} quiet_prompt Instruction prompt for the AI
- * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
- * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
- * @param {string} quietImage Image to use for the quiet prompt
- * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
+ * @param {string} quietPrompt Instruction prompt for the AI
+ * @param {boolean} [quietToLoud] Whether the message should be sent in a foreground (loud) or background (quiet) mode
+ * @param {boolean} [skipWIAN] Whether to skip addition of World Info and Author's Note into the prompt
+ * @param {string} [quietImage] Image to use for the quiet prompt
+ * @param {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @param {number} force_chid Character ID to use for this generation run. Works in groups only.
- * @returns
+ * @param {number} [forceChId] Character ID to use for this generation run. Works in groups only.
+ * @param {AdditionalRequestOptions} [options={}] Additional generation request options.
+ * @returns {Promise<string>} Generated text. If using structured output, will contain a serialized JSON object.
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, force_chid = null) {
+export async function generateQuietPrompt(quietPrompt, quietToLoud = false, skipWIAN = false, quietImage = null, quietName = null, responseLength = null, forceChId = null, { jsonSchema } = {}) {
     console.log('got into genQuietPrompt');
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let eventHook = () => { };
     try {
         /** @type {GenerateOptions} */
         const options = {
-            quiet_prompt,
+            quiet_prompt: quietPrompt,
             quietToLoud,
             skipWIAN: skipWIAN,
             force_name2: true,
             quietImage: quietImage,
             quietName: quietName,
-            force_chid: force_chid,
+            force_chid: forceChId,
+            jsonSchema: jsonSchema,
         };
         if (responseLengthCustomized) {
             TempResponseLength.save(main_api, responseLength);
@@ -3340,23 +3342,23 @@ function removeLastMessage() {
 
 /**
  * @typedef {object} JsonSchema
- * @property {string} name
- * @property {object} value
- * @property {string} [description]
- * @property {boolean} [strict]
+ * @property {string} name Name of the schema.
+ * @property {object} value JSON schema value.
+ * @property {string} [description] Description of the schema.
+ * @property {boolean} [strict] If true, the schema will be used in strict mode, meaning that only the fields defined in the schema will be allowed.
  *
  * @typedef {object} GenerateOptions
- * @property {boolean} [automatic_trigger]
- * @property {boolean} [force_name2]
- * @property {string} [quiet_prompt]
- * @property {boolean} [quietToLoud]
- * @property {boolean} [skipWIAN]
- * @property {number} [force_chid]
- * @property {AbortSignal} [signal]
- * @property {string} [quietImage]
- * @property {string} [quietName]
- * @property {number} [depth]
- * @property {JsonSchema} [jsonSchema]
+ * @property {boolean} [automatic_trigger] If the generation was triggered automatically (e.g. group auto mode).
+ * @property {boolean} [force_name2] If a char name should be forced to add to the prompt's last line (Text Completion, non-Instruct only).
+ * @property {string} [quiet_prompt] A system instruction to use for the quiet prompt.
+ * @property {boolean} [quietToLoud] Whether the system instruction should be sent in background (quiet) or a foreground (loud) mode.
+ * @property {boolean} [skipWIAN] Skip adding World Info and Author's Note to the prompt.
+ * @property {number} [force_chid] Force character ID to use for the generation. Only works in groups.
+ * @property {AbortSignal} [signal] Abort signal to cancel the generation. If not provided, will create a new AbortController.
+ * @property {string} [quietImage] Image URL to use for the quiet prompt (defaults to empty string)
+ * @property {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
+ * @property {number} [depth] Recursion depth for the generation. Used to prevent infinite loops in tool calls.
+ * @property {JsonSchema} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  */
 
 /**
