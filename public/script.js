@@ -2330,37 +2330,43 @@ export function getStoppingStrings(isImpersonate, isContinue) {
 
 /**
  * Background generation based on the provided prompt.
- * @param {string} quietPrompt Instruction prompt for the AI
- * @param {boolean} [quietToLoud] Whether the message should be sent in a foreground (loud) or background (quiet) mode
- * @param {boolean} [skipWIAN] Whether to skip addition of World Info and Author's Note into the prompt
- * @param {string} [quietImage] Image to use for the quiet prompt
- * @param {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
- * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @param {number} [forceChId] Character ID to use for this generation run. Works in groups only.
- * @param {AdditionalRequestOptions} [options={}] Additional generation request options.
+ * @typedef {object} GenerateQuietPromptParams
+ * @prop {string} [quietPrompt] Instruction prompt for the AI
+ * @prop {boolean} [quietToLoud] Whether the message should be sent in a foreground (loud) or background (quiet) mode
+ * @prop {boolean} [skipWIAN] Whether to skip addition of World Info and Author's Note into the prompt
+ * @prop {string} [quietImage] Image to use for the quiet prompt
+ * @prop {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
+ * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
+ * @prop {number} [forceChId] Character ID to use for this generation run. Works in groups only.
+ * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
+ * @param {GenerateQuietPromptParams} params Parameters for the quiet prompt generation
  * @returns {Promise<string>} Generated text. If using structured output, will contain a serialized JSON object.
  */
-export async function generateQuietPrompt(quietPrompt, quietToLoud = false, skipWIAN = false, quietImage = null, quietName = null, responseLength = null, forceChId = null, { jsonSchema } = {}) {
-    console.log('got into genQuietPrompt');
+export async function generateQuietPrompt({ quietPrompt = '', quietToLoud = false, skipWIAN = false, quietImage = null, quietName = null, responseLength = null, forceChId = null, jsonSchema = null } = {}) {
+    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
+        console.trace('generateQuietPrompt called with positional arguments. Please use an object instead.');
+        [quietPrompt, quietToLoud, skipWIAN, quietImage, quietName, responseLength, forceChId, jsonSchema] = arguments;
+    }
+
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let eventHook = () => { };
     try {
         /** @type {GenerateOptions} */
-        const options = {
-            quiet_prompt: quietPrompt,
-            quietToLoud,
-            skipWIAN: skipWIAN,
+        const generateOptions = {
+            quiet_prompt: quietPrompt ?? '',
+            quietToLoud: quietToLoud ?? false,
+            skipWIAN: skipWIAN ?? false,
             force_name2: true,
-            quietImage: quietImage,
-            quietName: quietName,
-            force_chid: forceChId,
-            jsonSchema: jsonSchema,
+            quietImage: quietImage ?? null,
+            quietName: quietName ?? null,
+            force_chid: forceChId ?? null,
+            jsonSchema: jsonSchema ?? null,
         };
         if (responseLengthCustomized) {
             TempResponseLength.save(main_api, responseLength);
             eventHook = TempResponseLength.setupEventHook(main_api);
         }
-        const result = await Generate('quiet', options);
+        const result = await Generate('quiet', generateOptions);
         return removeReasoningFromString(result);
     } finally {
         if (responseLengthCustomized && TempResponseLength.isCustomized()) {
@@ -3121,18 +3127,25 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 /**
  * Generates a message using the provided prompt.
  * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
- * @param {string | object[]} prompt Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
- * @param {string} api API to use. Main API is used if not specified.
- * @param {boolean} instructOverride true to override instruct mode, false to use the default value
- * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
- * @param {string} [systemPrompt] System prompt to use.
- * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
- * @param {string} [prefill] An optional prefill for the prompt.
- * @param {AdditionalRequestOptions} [options] Additional options for generation
+ * @typedef {object} GenerateRawParams
+ * @prop {string | object[]} [prompt] Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
+ * @prop {string} [api] API to use. Main API is used if not specified.
+ * @prop {boolean} [instructOverride] true to override instruct mode, false to use the default value
+ * @prop {boolean} [quietToLoud] true to generate a message in system mode, false to generate a message in character mode
+ * @prop {string} [systemPrompt] System prompt to use.
+ * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
+ * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
+ * @prop {string} [prefill] An optional prefill for the prompt.
+ * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
+ * @param {GenerateRawParams} params Parameters for generating a message
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, prefill = '', options = {}) {
+export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
+    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
+        console.trace('generateRaw called with positional arguments. Please use an object instead.');
+        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
+    }
+
     if (!api) {
         api = main_api;
     }
@@ -3184,7 +3197,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         if (api === 'koboldhorde') {
             data = await generateHorde(prompt.toString(), generateData, abortController.signal, false);
         } else if (api === 'openai') {
-            data = await sendOpenAIRequest('quiet', generateData, abortController.signal, options);
+            data = await sendOpenAIRequest('quiet', generateData, abortController.signal, { jsonSchema });
         } else {
             const generateUrl = getGenerateUrl(api);
             const response = await fetch(generateUrl, {
@@ -3209,7 +3222,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
             throw new Error(data.response);
         }
 
-        if (options?.jsonSchema) {
+        if (jsonSchema) {
             return extractJsonFromData(data, { mainApi: api });
         }
 
@@ -9315,7 +9328,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null, false, false);
+        const message = await generateRaw({ prompt: text });
         alert(message);
     });
     registerDebugFunction('toggleEventTracing', 'Toggle event tracing', 'Useful to see what triggered a certain event.', () => {

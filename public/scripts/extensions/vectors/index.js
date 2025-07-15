@@ -257,17 +257,17 @@ async function summarizeExtra(element) {
 /**
  * Summarizes messages using the main API method.
  * @param {HashedMessage} element hashed message
- * @returns {Promise<boolean>} Sucess
+ * @returns {Promise<boolean>} Success
  */
 async function summarizeMain(element) {
-    element.text = removeReasoningFromString(await generateRaw(element.text, '', false, false, settings.summary_prompt));
+    element.text = removeReasoningFromString(await generateRaw({ prompt: element.text, systemPrompt: settings.summary_prompt }));
     return true;
 }
 
 /**
  * Summarizes messages using WebLLM.
  * @param {HashedMessage} element hashed message
- * @returns {Promise<boolean>} Sucess
+ * @returns {Promise<boolean>} Success
  */
 async function summarizeWebLLM(element) {
     if (!isWebLlmSupported()) {
@@ -1751,7 +1751,7 @@ jQuery(async () => {
 
     $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
-        eventSource.on(event, (/** @type {string} */ key)=> {
+        eventSource.on(event, (/** @type {string} */ key) => {
             if (key !== SECRET_KEYS.NOMICAI) return;
             $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
         });
