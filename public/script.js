@@ -2338,14 +2338,14 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @prop {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @prop {number} [forceChId] Character ID to use for this generation run. Works in groups only.
- * @prop {AdditionalRequestOptions} [options] Additional generation request options.
+ * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  * @param {GenerateQuietPromptParams} params Parameters for the quiet prompt generation
  * @returns {Promise<string>} Generated text. If using structured output, will contain a serialized JSON object.
  */
-export async function generateQuietPrompt({ quietPrompt = '', quietToLoud = false, skipWIAN = false, quietImage = null, quietName = null, responseLength = null, forceChId = null, options = { jsonSchema: null } } = {}) {
+export async function generateQuietPrompt({ quietPrompt = '', quietToLoud = false, skipWIAN = false, quietImage = null, quietName = null, responseLength = null, forceChId = null, jsonSchema = null } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('generateQuietPrompt called with positional arguments. Please use an object instead.');
-        [quietPrompt, quietToLoud, skipWIAN, quietImage, quietName, responseLength, forceChId, options] = arguments;
+        [quietPrompt, quietToLoud, skipWIAN, quietImage, quietName, responseLength, forceChId, jsonSchema] = arguments;
     }
 
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
@@ -2360,7 +2360,7 @@ export async function generateQuietPrompt({ quietPrompt = '', quietToLoud = fals
             quietImage: quietImage ?? null,
             quietName: quietName ?? null,
             force_chid: forceChId ?? null,
-            jsonSchema: options?.jsonSchema ?? null,
+            jsonSchema: jsonSchema ?? null,
         };
         if (responseLengthCustomized) {
             TempResponseLength.save(main_api, responseLength);
@@ -3136,14 +3136,14 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @prop {string} [prefill] An optional prefill for the prompt.
- * @prop {AdditionalRequestOptions} [options] Additional options for generation
+ * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  * @param {GenerateRawParams} params Parameters for generating a message
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', options = {} } = {}) {
+export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('generateRaw called with positional arguments. Please use an object instead.');
-        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, options] = arguments;
+        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
     }
 
     if (!api) {
@@ -3197,7 +3197,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
         if (api === 'koboldhorde') {
             data = await generateHorde(prompt.toString(), generateData, abortController.signal, false);
         } else if (api === 'openai') {
-            data = await sendOpenAIRequest('quiet', generateData, abortController.signal, options);
+            data = await sendOpenAIRequest('quiet', generateData, abortController.signal, { jsonSchema });
         } else {
             const generateUrl = getGenerateUrl(api);
             const response = await fetch(generateUrl, {
@@ -3222,7 +3222,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
             throw new Error(data.response);
         }
 
-        if (options?.jsonSchema) {
+        if (jsonSchema) {
             return extractJsonFromData(data, { mainApi: api });
         }
 
