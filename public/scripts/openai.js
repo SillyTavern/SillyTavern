@@ -2187,11 +2187,12 @@ function getReasoningEffort() {
  * @param {string} type (impersonate, quiet, continue, etc)
  * @param {Array} messages
  * @param {AbortSignal?} signal
+ * @param {import('../script.js').AdditionalRequestOptions} options
  * @returns {Promise<unknown>}
  * @throws {Error}
  */
 
-async function sendOpenAIRequest(type, messages, signal) {
+async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } = {}) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
@@ -2461,6 +2462,10 @@ async function sendOpenAIRequest(type, messages, signal) {
             delete generate_data.tools;
             delete generate_data.tool_choice;
         }
+    }
+
+    if (jsonSchema) {
+        generate_data.json_schema = jsonSchema;
     }
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
