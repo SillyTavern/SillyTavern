@@ -3695,8 +3695,6 @@ async function generateCallback(args, value) {
         const params = {
             quietPrompt: value,
             quietToLoud: quietToLoud,
-            skipWIAN: false,
-            quietImage: '',
             quietName: char?.name ?? name,
             responseLength: length,
         };
