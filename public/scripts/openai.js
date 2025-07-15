@@ -2187,7 +2187,7 @@ function getReasoningEffort() {
  * @param {string} type (impersonate, quiet, continue, etc)
  * @param {Array} messages
  * @param {AbortSignal?} signal
- * @param {import('../script.js').PureGenerateOptions} options
+ * @param {import('../script.js').AdditionalRequestOptions} options
  * @returns {Promise<unknown>}
  * @throws {Error}
  */

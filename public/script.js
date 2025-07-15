@@ -3127,7 +3127,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @param {string} [prefill] An optional prefill for the prompt.
- * @param {PureGenerateOptions} [options] Additional options for generation
+ * @param {AdditionalRequestOptions} [options] Additional options for generation
  * @returns {Promise<string>} Generated message
  */
 export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames = true, prefill = '', options = {}) {
@@ -5120,8 +5120,7 @@ function setInContextMessages(msgInContextCount, type) {
 }
 
 /**
- * Send a chat completion request to backend
- * @typedef {object} PureGenerateOptions
+ * @typedef {object} AdditionalRequestOptions
  * @property {JsonSchema} [jsonSchema]
  */
 
@@ -5129,7 +5128,7 @@ function setInContextMessages(msgInContextCount, type) {
  * Sends a non-streaming request to the API.
  * @param {string} type Generation type
  * @param {object} data Generation data
- * @param {PureGenerateOptions} [options] Additional options for the generation request
+ * @param {AdditionalRequestOptions} [options] Additional options for the generation request
  * @returns {Promise<object>} Response data from the API
  * @throws {Error|object}
  */
@@ -5161,7 +5160,7 @@ export async function sendGenerationRequest(type, data, options = {}) {
  * Sends a streaming request to the API.
  * @param {string} type Generation type
  * @param {object} data Generation data
- * @param {PureGenerateOptions} [options] Additional options for the generation request
+ * @param {AdditionalRequestOptions} [options] Additional options for the generation request
  * @returns {Promise<any>} Streaming generator
  */
 export async function sendStreamingRequest(type, data, options = {}) {

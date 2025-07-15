@@ -1442,23 +1442,6 @@ router.post('/generate', function (request, response) {
             getPromptNames(request));
     }
 
-    // request.body._json_schema
-    // {
-    //     "name": "WeatherReport",
-    //     "value": {
-    //         "$schema": "http://json-schema.org/draft-04/schema#",
-    //         "type": "object",
-    //         "properties": {
-    //             "Location": {
-    //                 "type": "string"
-    //             }
-    //         },
-    //         "required": [
-    //             "Location"
-    //         ]
-    //     }
-    // }
-
     if (request.body._json_schema?.value) {
         request.body._json_schema.value = flattenSchema(request.body._json_schema.value);
     }
