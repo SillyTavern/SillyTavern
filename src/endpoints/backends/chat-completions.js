@@ -1442,7 +1442,6 @@ router.post('/generate', function (request, response) {
         request.body.json_schema.value = flattenSchema(request.body.json_schema.value);
     }
 
-
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);

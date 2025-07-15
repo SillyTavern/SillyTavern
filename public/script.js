@@ -4511,9 +4511,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 });
             }
         } else {
-            return await sendGenerationRequest(type, generate_data, {
-                jsonSchema,
-            });
+            return await sendGenerationRequest(type, generate_data, { jsonSchema });
         }
     }
 
