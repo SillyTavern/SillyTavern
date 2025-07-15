@@ -5352,6 +5352,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.POLLINATIONS:
                     result = tryParse(data?.choices?.[0]?.message?.content);
                     break;
+                case chat_completion_sources.PERPLEXITY:
+                    result = tryParse(removeReasoningFromString(data?.choices?.[0]?.message?.content));
+                    break;
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.OPENAI:
