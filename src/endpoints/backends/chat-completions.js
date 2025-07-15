@@ -726,6 +726,18 @@ async function sendMistralAIRequest(request, response) {
             requestBody['tool_choice'] = request.body.tool_choice;
         }
 
+        if (request.body.json_schema) {
+            requestBody['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
         const config = {
             method: 'POST',
             headers: {
