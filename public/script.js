@@ -5347,13 +5347,11 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.CLAUDE:
                     result = data?.content?.find(x => x.type === 'tool_use')?.input;
                     break;
-                case chat_completion_sources.VERTEXAI:
-                case chat_completion_sources.MAKERSUITE:
-                    result = tryParse(data?.content);
-                    break;
                 case chat_completion_sources.PERPLEXITY:
                     result = tryParse(removeReasoningFromString(text));
                     break;
+                case chat_completion_sources.VERTEXAI:
+                case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.DEEPSEEK:
                 case chat_completion_sources.AI21:
                 case chat_completion_sources.GROQ:
