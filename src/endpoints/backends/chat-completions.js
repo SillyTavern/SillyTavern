@@ -1154,6 +1154,18 @@ async function sendAimlapiRequest(request, response) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
         const requestBody = {
             'messages': request.body.messages,
             'model': request.body.model,

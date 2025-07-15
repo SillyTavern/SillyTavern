@@ -5350,6 +5350,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.AI21:
                 case chat_completion_sources.GROQ:
                 case chat_completion_sources.POLLINATIONS:
+                case chat_completion_sources.AIMLAPI:
                     result = tryParse(data?.choices?.[0]?.message?.content);
                     break;
                 case chat_completion_sources.PERPLEXITY:
