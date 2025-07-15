@@ -1059,7 +1059,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                             emotionResponse = await generateRaw(text, main_api, false, false, prompt);
                             break;
                         case PROMPT_TYPE.full:
-                            emotionResponse = await generateQuietPrompt(prompt, false, false);
+                            emotionResponse = await generateQuietPrompt({ quietPrompt: prompt });
                             break;
                     }
                 } finally {

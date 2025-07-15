@@ -3681,7 +3681,16 @@ async function generateCallback(args, value) {
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
         const char = findChar({ name: name });
-        const result = await generateQuietPrompt(value, quietToLoud, false, '', char?.name ?? name, length);
+        /** @type {import('../script.js').GenerateQuietPromptParams} */
+        const params = {
+            quietPrompt: value,
+            quietToLoud: quietToLoud,
+            skipWIAN: false,
+            quietImage: '',
+            quietName: char?.name ?? name,
+            responseLength: length,
+        };
+        const result = await generateQuietPrompt(params);
         return result;
     } catch (err) {
         console.error('Error on /gen generation', err);
@@ -4352,7 +4361,7 @@ export async function generateSystemMessage(_, prompt) {
 
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt(prompt, false, false);
+    let message = await generateQuietPrompt({ quietPrompt: prompt });
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
@@ -4609,7 +4618,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
-    let reply = await generateQuietPrompt(text, true, false);
+    let reply = await generateQuietPrompt({ quietPrompt: text, quietToLoud: true });
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {

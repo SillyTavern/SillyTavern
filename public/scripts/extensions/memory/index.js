@@ -677,7 +677,13 @@ async function summarizeChatMain(context, force, skipWIAN) {
     if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder) {
         try {
             inApiCall = true;
-            summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.memory.overrideResponseLength);
+            /** @type {import('../../../script.js').GenerateQuietPromptParams} */
+            const params = {
+                quietPrompt: prompt,
+                skipWIAN: skipWIAN,
+                responseLength: extension_settings.memory.overrideResponseLength,
+            };
+            summary = await generateQuietPrompt(params);
         } finally {
             inApiCall = false;
         }
