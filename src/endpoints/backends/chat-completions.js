@@ -1638,6 +1638,17 @@ router.post('/generate', function (request, response) {
             referrer: 'sillytavern',
             seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
         };
+        // Hack to support JSON schema
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_object',
+            };
+            const message = {
+                role: 'user',
+                content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+            };
+            request.body.messages.push(message);
+        }
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
@@ -1676,7 +1687,7 @@ router.post('/generate', function (request, response) {
         bodyParams['tool_choice'] = request.body.tool_choice;
     }
 
-    if (request.body.json_schema) {
+    if (request.body.json_schema && !bodyParams['response_format']) {
         bodyParams['response_format'] = {
             type: 'json_schema',
             json_schema: {
