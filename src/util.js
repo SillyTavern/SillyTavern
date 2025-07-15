@@ -1225,7 +1225,7 @@ export function flattenSchema(schema) {
     }
 
     // Deep clone to avoid modifying the original object.
-    const schemaCopy = JSON.parse(JSON.stringify(schema));
+    const schemaCopy = structuredClone(schema);
 
     const definitions = schemaCopy.$defs || {};
     delete schemaCopy.$defs;
@@ -1245,7 +1245,7 @@ export function flattenSchema(schema) {
         if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
             const defName = obj.$ref.split('/').pop();
             if (definitions[defName]) {
-                return replaceRefs(JSON.parse(JSON.stringify(definitions[defName])));
+                return replaceRefs(structuredClone(definitions[defName]));
             }
         }
 
@@ -1263,7 +1263,7 @@ export function flattenSchema(schema) {
         return obj;
     }
 
-    let flattenedSchema = replaceRefs(schemaCopy);
+    const flattenedSchema = replaceRefs(schemaCopy);
 
     if (flattenedSchema.$schema) {
         delete flattenedSchema.$schema;

@@ -476,11 +476,13 @@ export class ChatCompletionService {
                 }),
             };
             // Try parse JSON
-            if (data._json_schema) {
+            if (data.json_schema) {
                 if (result.content && typeof result.content === 'string') {
                     try {
                         result.content = JSON.parse(result.content);
-                    } catch (e) { /* empty */ }
+                    } catch (e) {
+                        console.debug('Failed to parse content as JSON.', e);
+                    }
                 } else if (data.chat_completion_source === 'claude' && json.content) { // Fuck claude
                     result.content = json.content.find(x => x.type === 'tool_use')?.input;
                 }

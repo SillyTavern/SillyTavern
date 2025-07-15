@@ -2465,7 +2465,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     if (jsonSchema) {
-        generate_data._json_schema = jsonSchema;
+        generate_data.json_schema = jsonSchema;
     }
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);

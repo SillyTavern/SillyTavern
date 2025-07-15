@@ -175,18 +175,14 @@ async function sendClaudeRequest(request, response) {
         }
 
         // Structured output is a forced tool
-        if (request.body._json_schema) {
+        if (request.body.json_schema) {
             const jsonTool = {
-                name: request.body._json_schema.name,
-                description: request.body._json_schema.description || 'Well-formed JSON object',
-                input_schema: request.body._json_schema.value,
+                name: request.body.json_schema.name,
+                description: request.body.json_schema.description || 'Well-formed JSON object',
+                input_schema: request.body.json_schema.value,
             };
-            if (!requestBody.tools) {
-                requestBody.tools = [jsonTool];
-            } else {
-                requestBody.tools.push(jsonTool);
-            }
-            requestBody.tool_choice = { type: 'tool', name: request.body._json_schema.name };
+            requestBody.tools = [...(requestBody.tools || []), jsonTool];
+            requestBody.tool_choice = { type: 'tool', name: request.body.json_schema.name };
         }
 
         if (useWebSearch) {
@@ -379,8 +375,8 @@ async function sendMakerSuiteRequest(request, response) {
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
-    const responseMimeType = request.body.responseMimeType ?? (request.body._json_schema ? 'application/json' : undefined);
-    const responseSchema = request.body.responseSchema ?? (request.body._json_schema ? request.body._json_schema.value : undefined);
+    const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
+    const responseSchema = request.body.responseSchema ?? (request.body.json_schema ? request.body.json_schema.value : undefined);
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -820,10 +816,10 @@ async function sendCohereRequest(request, response) {
             requestBody.safety_mode = 'OFF';
         }
 
-        if (request.body._json_schema) {
+        if (request.body.json_schema) {
             requestBody.response_format = {
                 type: 'json_schema',
-                schema: request.body._json_schema.value,
+                schema: request.body.json_schema.value,
             };
         }
 
@@ -1016,13 +1012,13 @@ async function sendXaiRequest(request, response) {
             };
         }
 
-        if (request.body._json_schema) {
+        if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
-                    name: request.body._json_schema.name,
-                    strict: request.body._json_schema.strict ?? true,
-                    schema: request.body._json_schema.value,
+                    name: request.body.json_schema.name,
+                    strict: request.body.json_schema.strict ?? true,
+                    schema: request.body.json_schema.value,
                 },
             };
         }
@@ -1442,8 +1438,8 @@ router.post('/generate', function (request, response) {
             getPromptNames(request));
     }
 
-    if (request.body._json_schema?.value) {
-        request.body._json_schema.value = flattenSchema(request.body._json_schema.value);
+    if (request.body.json_schema?.value) {
+        request.body.json_schema.value = flattenSchema(request.body.json_schema.value);
     }
 
 
@@ -1522,13 +1518,13 @@ router.post('/generate', function (request, response) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
         }
 
-        if (request.body._json_schema) {
+        if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
-                    name: request.body._json_schema.name,
-                    strict: request.body._json_schema.strict ?? true,
-                    schema: request.body._json_schema.value,
+                    name: request.body.json_schema.name,
+                    strict: request.body.json_schema.strict ?? true,
+                    schema: request.body.json_schema.value,
                 },
             };
         }
@@ -1634,13 +1630,13 @@ router.post('/generate', function (request, response) {
         bodyParams['tool_choice'] = request.body.tool_choice;
     }
 
-    if (request.body._json_schema) {
+    if (request.body.json_schema) {
         bodyParams['response_format'] = {
             type: 'json_schema',
             json_schema: {
-                name: request.body._json_schema.name,
-                strict: request.body._json_schema.strict ?? true,
-                schema: request.body._json_schema.value,
+                name: request.body.json_schema.name,
+                strict: request.body.json_schema.strict ?? true,
+                schema: request.body.json_schema.value,
             },
         };
     }
