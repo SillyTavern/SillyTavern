@@ -3209,6 +3209,10 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
             throw new Error(data.response);
         }
 
+        if (options?.jsonSchema) {
+            return extractJsonFromData(data, { mainApi: api });
+        }
+
         // format result, exclude user prompt bias
         const message = cleanUpMessage({
             getMessage: extractMessageFromData(data),
@@ -4543,6 +4547,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             throw new Error(data?.response);
         }
 
+        if (jsonSchema) {
+            return extractJsonFromData(data);
+        }
+
         //const getData = await response.json();
         let getMessage = extractMessageFromData(data);
         let title = extractTitleFromData(data);
@@ -5309,6 +5317,31 @@ export function extractMessageFromData(data, activeApi = null) {
         default:
             return '';
     }
+}
+
+/**
+ * Extracts JSON from the response data.
+ * @param {object} data Response data
+ * @returns {string} Extracted JSON string from the response data
+ */
+export function extractJsonFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+    mainApi = mainApi ?? main_api;
+    chatCompletionSource = chatCompletionSource ?? oai_settings.chat_completion_source;
+
+    let result = {};
+    if (data.content) {
+        if (typeof data.content === 'string') {
+            try {
+                result = JSON.parse(data.content);
+            } catch (e) {
+                console.debug('Failed to parse content as JSON.', e);
+            }
+        } else if (mainApi === 'openai' && chatCompletionSource === chat_completion_sources.CLAUDE) {
+            result = data.content.find(x => x.type === 'tool_use')?.input;
+        }
+    }
+
+    return JSON.stringify(result);
 }
 
 /**
