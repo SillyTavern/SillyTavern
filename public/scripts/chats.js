@@ -70,7 +70,7 @@ import { accountStorage } from './util/AccountStorage.js';
  * @returns {Promise<string>} Converted file text
  */
 
-const fileSizeLimit = 1024 * 1024 * 100; // 100 MB
+const fileSizeLimit = 1024 * 1024 * 350; // 350 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
     CHARACTER: 'character',
