@@ -4264,7 +4264,7 @@ async function onPresetImportFileChange(e) {
         body: JSON.stringify({
             apiId: 'openai',
             name: name,
-            preset: importedFile,
+            preset: presetBody,
         }),
     });
 
