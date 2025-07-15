@@ -1487,7 +1487,7 @@ router.post('/generate', function (request, response) {
     }
 
     if (request.body.json_schema?.value) {
-        request.body.json_schema.value = flattenSchema(request.body.json_schema.value);
+        request.body.json_schema.value = flattenSchema(request.body.json_schema.value, request.body.chat_completion_source);
     }
 
     switch (request.body.chat_completion_source) {

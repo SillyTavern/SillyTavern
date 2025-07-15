@@ -17,7 +17,7 @@ import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
-import { LOG_LEVELS } from './constants.js';
+import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
 import { serverDirectory } from './server-directory.js';
 
 /**
@@ -1217,9 +1217,10 @@ export function getRequestURL(request) {
 /**
  * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
  * @param {object} schema The JSON schema to flatten.
+ * @param {string} api The API source, used to determine how to handle certain properties.
  * @returns {object} The flattened schema.
  */
-export function flattenSchema(schema) {
+export function flattenSchema(schema, api) {
     if (!schema || typeof schema !== 'object') {
         return schema;
     }
@@ -1249,7 +1250,10 @@ export function flattenSchema(schema) {
             }
         }
 
-        if ('properties' in obj) {
+        if (api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI) {
+            delete obj.default;
+            delete obj.additionalProperties;
+        } else if ('properties' in obj) {
             if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
                 obj.additionalProperties = false;
             }
