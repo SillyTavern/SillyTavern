@@ -506,7 +506,7 @@ async function summarizeCallback(args, text) {
             case summary_sources.extras:
                 return await callExtrasSummarizeAPI(text);
             case summary_sources.main:
-                return removeReasoningFromString(await generateRaw(text, '', false, false, prompt, extension_settings.memory.overrideResponseLength));
+                return removeReasoningFromString(await generateRaw({ prompt: text, systemPrompt: prompt, responseLength: extension_settings.memory.overrideResponseLength }));
             case summary_sources.webllm: {
                 const messages = [{ role: 'system', content: prompt }, { role: 'user', content: text }].filter(m => m.content);
                 const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
@@ -707,7 +707,13 @@ async function summarizeChatMain(context, force, skipWIAN) {
                 return null;
             }
 
-            const rawSummary = await generateRaw(rawPrompt, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+            /** @type {import('../../../script.js').GenerateRawParams} */
+            const params = {
+                prompt: rawPrompt,
+                systemPrompt: prompt,
+                responseLength: extension_settings.memory.overrideResponseLength,
+            };
+            const rawSummary = await generateRaw(params);
             summary = removeReasoningFromString(rawSummary);
             index = lastUsedIndex;
         } finally {

@@ -1056,7 +1056,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                     inApiCall = true;
                     switch (extension_settings.expressions.promptType) {
                         case PROMPT_TYPE.raw:
-                            emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+                            emotionResponse = await generateRaw({ prompt: text, systemPrompt: prompt });
                             break;
                         case PROMPT_TYPE.full:
                             emotionResponse = await generateQuietPrompt({ quietPrompt: prompt });

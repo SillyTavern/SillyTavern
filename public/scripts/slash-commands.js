@@ -3645,7 +3645,17 @@ async function generateRawCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length, trimNames, prefillPrompt);
+        /** @type {import('../script.js').GenerateRawParams} */
+        const params = {
+            prompt: value,
+            instructOverride: isFalseBoolean(args?.instruct),
+            quietToLoud: quietToLoud,
+            systemPrompt: systemPrompt,
+            responseLength: length,
+            trimNames: trimNames,
+            prefill: prefillPrompt,
+        };
+        const result = await generateRaw(params);
         return result;
     } catch (err) {
         console.error('Error on /genraw generation', err);
