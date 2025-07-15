@@ -477,7 +477,7 @@ export class ChatCompletionService {
             };
             // Try parse JSON
             if (data.json_schema) {
-                result.content = extractJsonFromData(json, { mainApi: this.TYPE, chatCompletionSource: data.chat_completion_source });
+                result.content = JSON.parse(extractJsonFromData(json, { mainApi: this.TYPE, chatCompletionSource: data.chat_completion_source }));
             }
             return result;
         }
