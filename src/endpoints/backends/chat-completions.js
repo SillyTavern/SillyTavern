@@ -630,12 +630,23 @@ async function sendAI21Request(request, response) {
         return response.status(400).send({ error: true });
     }
 
+    const bodyParams = {};
     const controller = new AbortController();
-    console.debug(request.body.messages);
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
+    // Hack to support JSON schema
+    if (request.body.json_schema) {
+        bodyParams.response_format = {
+            type: 'json_object',
+        };
+        const message = {
+            role: 'user',
+            content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+        };
+        request.body.messages.push(message);
+    }
     const convertedPrompt = convertAI21Messages(request.body.messages, getPromptNames(request));
     const body = {
         messages: convertedPrompt,
@@ -646,6 +657,7 @@ async function sendAI21Request(request, response) {
         stop: request.body.stop,
         stream: request.body.stream,
         tools: request.body.tools,
+        ...bodyParams,
     };
     const options = {
         method: 'POST',

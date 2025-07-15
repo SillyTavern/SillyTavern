@@ -5347,6 +5347,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                     result = data?.content?.find(x => x.type === 'tool_use')?.input;
                     break;
                 case chat_completion_sources.DEEPSEEK:
+                case chat_completion_sources.AI21:
                     result = tryParse(data?.choices?.[0]?.message?.content);
                     break;
                 case chat_completion_sources.VERTEXAI:
