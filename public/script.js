@@ -2338,7 +2338,7 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @prop {string} [quietName] Name to use for the quiet prompt (defaults to "System:")
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @prop {number} [forceChId] Character ID to use for this generation run. Works in groups only.
- * @prop {AdditionalRequestOptions} [options={}] Additional generation request options.
+ * @prop {AdditionalRequestOptions} [options] Additional generation request options.
  * @param {GenerateQuietPromptParams} params Parameters for the quiet prompt generation
  * @returns {Promise<string>} Generated text. If using structured output, will contain a serialized JSON object.
  */
