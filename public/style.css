@@ -3064,11 +3064,9 @@ select option:not(:checked) {
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    margin: 5px;
     column-gap: 5px;
 }
 
-#form_character_search_form .menu_button,
 #GroupFavDelOkBack .menu_button {
     margin: 0;
     height: fit-content;
@@ -3078,17 +3076,12 @@ select option:not(:checked) {
 }
 
 #character_sort_order {
-    margin: 0;
     flex: 1;
     border-radius: 5px;
-    height: auto;
 }
 
 #character_search_bar {
-    margin: 0;
     flex: 1;
-    /* padding-left: 0.75em; */
-    height: auto;
 }
 
 #persona_search_bar {
