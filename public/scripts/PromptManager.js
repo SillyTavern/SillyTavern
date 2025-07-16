@@ -454,12 +454,12 @@ class PromptManager {
             const injectionDepthField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth'));
             const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
             const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
-            const depthBlock = /** @type {HTMLElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block'));
-            const orderBlock = /** @type {HTMLElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_order_block'));
+            const depthBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block'));
+            const orderBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_order_block'));
             const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
-            const forbidOverridesBlock = /** @type {HTMLElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
-            const entrySourceBlock = /** @type {HTMLElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
-            const entrySource = /** @type {HTMLElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
+            const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
+            const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
+            const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
 
             nameField.value = prompt.name;
             roleField.value = 'system';
