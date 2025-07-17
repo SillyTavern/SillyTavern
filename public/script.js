@@ -9384,8 +9384,7 @@ function initCharacterSearch() {
     });
 
     searchButton.on('click', function () {
-        const isVisible = searchForm.is(':visible');
-        const newVisibility = !isVisible;
+        const newVisibility = !searchForm.is(':visible');
         searchForm.toggle(newVisibility);
         searchButton.toggleClass('active', newVisibility);
         accountStorage.setItem(storageKey, String(newVisibility));
