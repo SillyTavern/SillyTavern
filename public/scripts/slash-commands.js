@@ -3947,7 +3947,7 @@ async function askCharacter(args, text) {
     try {
         eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
         toastr.info(`Asking ${name} something...`);
-        askResult = await Generate('ask_command');
+        askResult = await Generate('normal');
     } catch (error) {
         restoreCharacter();
         console.error('Error running /ask command', error);
