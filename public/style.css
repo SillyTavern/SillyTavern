@@ -2643,7 +2643,7 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 0px 10px 0px 5px;
+    padding-right: 5px;
 }
 
 #chartokenwarning.menu_button {
@@ -2827,8 +2827,7 @@ input[type="file"] {
     display: flex;
     gap: 5px;
     align-items: center;
-    margin-bottom: 5px;
-    margin-top: 1px;
+    margin: 1px;
 }
 
 #rm_button_bar .menu_button {
