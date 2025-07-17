@@ -9385,10 +9385,11 @@ function initCharacterSearch() {
 
     searchButton.on('click', function () {
         const isVisible = searchForm.is(':visible');
-        searchForm.toggle(!isVisible);
-        searchButton.toggleClass('active', !isVisible);
-        accountStorage.setItem(storageKey, String(!isVisible));
-        if (!isVisible) {
+        const newVisibility = !isVisible;
+        searchForm.toggle(newVisibility);
+        searchButton.toggleClass('active', newVisibility);
+        accountStorage.setItem(storageKey, String(newVisibility));
+        if (newVisibility) {
             searchInput.trigger('focus');
         }
     });
