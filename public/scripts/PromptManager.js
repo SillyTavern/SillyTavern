@@ -1498,19 +1498,12 @@ class PromptManager {
      */
     getPromptCollection(generationType) {
         generationType = String(generationType || 'normal').toLowerCase().trim();
-
-        const shouldTrigger = (/** @type {Prompt} */ prompt) => {
-            if (!Array.isArray(prompt?.injection_trigger)) return true;
-            if (!prompt.injection_trigger.length) return true;
-            return prompt.injection_trigger.includes(generationType);
-        };
-
+        const promptCollection = new PromptCollection();
         const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
-        const promptCollection = new PromptCollection();
         promptOrder.forEach(entry => {
             const prompt = this.getPromptById(entry.identifier);
-            const allowedTrigger = entry.enabled && shouldTrigger(prompt);
+            const allowedTrigger = entry.enabled && this.shouldTrigger(prompt, generationType);
 
             if (!prompt) {
                 return;
@@ -1528,6 +1521,18 @@ class PromptManager {
         });
 
         return promptCollection;
+    }
+
+    /**
+     * Checks if a prompt should be triggered based on its injection triggers.
+     * @param {Prompt} prompt - The prompt to check.
+     * @param {string} generationType - The type of generation to check against.
+     * @returns {boolean} True if the prompt should be triggered, false otherwise.
+     */
+    shouldTrigger(prompt, generationType) {
+        if (!Array.isArray(prompt?.injection_trigger)) return true;
+        if (!prompt.injection_trigger.length) return true;
+        return prompt.injection_trigger.includes(generationType);
     }
 
     /**
