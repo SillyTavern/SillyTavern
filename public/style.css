@@ -2832,10 +2832,9 @@ input[type="file"] {
 }
 
 #rm_button_bar .menu_button {
-    width: calc(var(--mainFontSize) * 1.7);
+    width: calc(var(--mainFontSize) * 1.8);
+    aspect-ratio: 1;
     margin: 0;
-    height: fit-content;
-    aspect-ratio: 1 / 1;
 }
 
 #rm_buttons_container {
@@ -3099,6 +3098,7 @@ select option:not(:checked) {
     flex: 1;
     border-radius: 5px;
     margin: 0;
+    padding: 4px 5px;
 }
 
 #character_search_bar {
