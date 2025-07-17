@@ -6427,6 +6427,11 @@ export function initOpenAI() {
             width: '100%',
             templateResult: getAimlapiModelTemplate,
         });
+        $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
+            placeholder: t`All (default)`,
+            width: '100%',
+            closeOnSelect: false,
+        });
     }
 
     $('#openrouter_providers_chat').on('change', function () {

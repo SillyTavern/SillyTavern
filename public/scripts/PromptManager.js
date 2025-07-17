@@ -6,7 +6,7 @@ import { event_types, eventSource, is_send_press, main_api, substituteParams } f
 import { is_group_generating } from './group-chats.js';
 import { Message, MessageCollection, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
+import { debounce, waitUntilCondition, escapeHtml, uuidv4 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup } from './popup.js';
@@ -78,7 +78,83 @@ const registerPromptManagerMigration = () => {
  * Represents a prompt.
  */
 class Prompt {
-    identifier; role; content; name; system_prompt; position; injection_position; injection_depth; injection_order; forbid_overrides; extension;
+    /**
+     * Unique identifier for the prompt.
+     * @type {string}
+     */
+    identifier;
+
+    /**
+     * Role of the prompt, e.g., 'system', 'user', etc.
+     * @type {string}
+     */
+    role;
+
+    /**
+     * Content of the prompt.
+     * @type {string}
+     */
+    content;
+
+    /**
+     * Display name of the prompt.
+     * @type {string}
+     */
+    name;
+
+    /**
+     * Indicates if the prompt is a system prompt.
+     * @type {boolean}
+     */
+    system_prompt;
+
+    /**
+     * Position of the prompt in the prompt list.
+     * @type {string|number}
+     */
+    position;
+
+    /**
+     * Inject position of the prompt (relative = 0 or in-chat = 1)
+     * @type {number}
+     */
+    injection_position;
+
+    /**
+     * Depth of the prompt in the chat.
+     * @type {number}
+     */
+    injection_depth;
+
+    /**
+     * Order of the prompt in the chat.
+     * @type {number}
+     */
+    injection_order;
+
+    /**
+     * Indicates if the prompt should not be overridden.
+     * @type {boolean}
+     */
+    forbid_overrides;
+
+    /**
+     * Prompt is added by an extension.
+     * @type {boolean}
+     */
+    extension;
+
+    /**
+     * A list of generation type triggers for the prompt injection.
+     * @type {string[]}
+     */
+    injection_trigger;
+
+    /**
+     * Indicates if the prompt is a marker prompt.
+     * @type {boolean}
+     */
+    marker;
 
     /**
      * Create a new Prompt instance.
@@ -89,11 +165,11 @@ class Prompt {
      * @param {string} [param0.content] - The content of the prompt.
      * @param {string} [param0.name] - The name of the prompt.
      * @param {boolean} [param0.system_prompt] - Indicates if the prompt is a system prompt.
-     * @param {string} [param0.position] - The position of the prompt in the prompt list.
+     * @param {string|number} [param0.position] - The position of the prompt in the prompt list.
      * @param {number} [param0.injection_position] - The insert position of the prompt.
      * @param {number} [param0.injection_depth] - The depth of the prompt in the chat.
      * @param {number} [param0.injection_order] - The order of the prompt in the chat.
-     * @param {string} [param0.injection_trigger] - The generation type trigger for the prompt injection.
+     * @param {string[]} [param0.injection_trigger] - The generation type trigger for the prompt injection.
      * @param {boolean} [param0.forbid_overrides] - Indicates if the prompt should not be overridden.
      * @param {boolean} [param0.extension] - Prompt is added by an extension.
      */
@@ -109,7 +185,7 @@ class Prompt {
         this.forbid_overrides = forbid_overrides;
         this.extension = extension ?? false;
         this.injection_order = injection_order ?? DEFAULT_ORDER;
-        this.injection_trigger = injection_trigger ?? '';
+        this.injection_trigger = injection_trigger ?? [];
     }
 }
 
@@ -464,10 +540,13 @@ class PromptManager {
             nameField.value = prompt.name;
             roleField.value = 'system';
             promptField.value = prompt.content ?? '';
-            injectionPositionField.value = prompt.injection_position ?? 0;
-            injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
-            injectionOrderField.value = prompt.injection_order ?? DEFAULT_ORDER;
-            injectionTriggerField.value = prompt.injection_trigger ?? '';
+            injectionPositionField.value = (prompt.injection_position ?? 0).toString();
+            injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
+            injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
+            Array.from(injectionTriggerField.options).forEach(option => {
+                option.selected = false;
+            });
+            injectionTriggerField.dispatchEvent(new Event('change', { bubbles: true }));
             depthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             orderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             forbidOverridesField.checked = prompt.forbid_overrides ?? false;
@@ -487,7 +566,7 @@ class PromptManager {
 
         // Append prompt to selected character
         this.handleAppendPrompt = (event) => {
-            const appendPromptFooter = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
+            const appendPromptFooter = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
             const promptID = appendPromptFooter.value;
             const prompt = this.getPromptById(promptID);
 
@@ -502,7 +581,7 @@ class PromptManager {
         this.handleDeletePrompt = async (event) => {
             Popup.show.confirm(t`Are you sure you want to delete this prompt?`, null).then((userChoice) => {
                 if (!userChoice) return;
-                const appendPromptFooter = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
+                const appendPromptFooter = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
                 const promptID = appendPromptFooter.value;
                 const prompt = this.getPromptById(promptID);
 
@@ -819,7 +898,7 @@ class PromptManager {
         prompt.injection_position = Number(injectionPositionField.value);
         prompt.injection_depth = Number(injectionDepthField.value);
         prompt.injection_order = Number(injectionOrderField.value);
-        prompt.injection_trigger = injectionTriggerField.value;
+        prompt.injection_trigger = Array.from(injectionTriggerField.selectedOptions).map(option => option.value);
         prompt.forbid_overrides = forbidOverridesField.checked;
     }
 
@@ -1157,7 +1236,7 @@ class PromptManager {
     /**
      * Finds and returns a prompt by its identifier.
      * @param {string} identifier - Identifier of the prompt
-     * @returns {Object|null} The prompt object, or null if not found
+     * @returns {Prompt|null} The prompt object, or null if not found
      */
     getPromptById(identifier) {
         return this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null;
@@ -1274,10 +1353,13 @@ class PromptManager {
         roleField.value = prompt.role || 'system';
         promptField.value = prompt.content ?? '';
         promptField.disabled = prompt.marker ?? false;
-        injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
-        injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
-        injectionOrderField.value = prompt.injection_order ?? DEFAULT_ORDER;
-        injectionTriggerField.value = prompt.injection_trigger ?? '';
+        injectionPositionField.value = (prompt.injection_position ?? INJECTION_POSITION.RELATIVE).toString();
+        injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
+        injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
+        Array.from(injectionTriggerField.options).forEach(option => {
+            option.selected = Array.isArray(prompt.injection_trigger) && prompt.injection_trigger.includes(option.value);
+        });
+        injectionTriggerField.dispatchEvent(new Event('change', { bubbles: true }));
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionOrderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionPositionField.removeAttribute('disabled');
@@ -1418,8 +1500,9 @@ class PromptManager {
         generationType = String(generationType || 'normal').toLowerCase().trim();
 
         const shouldTrigger = (/** @type {Prompt} */ prompt) => {
-            if (!prompt?.injection_trigger) return true;
-            return prompt.injection_trigger === generationType;
+            if (!Array.isArray(prompt?.injection_trigger)) return true;
+            if (!prompt.injection_trigger.length) return true;
+            return prompt.injection_trigger.includes(generationType);
         };
 
         const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
@@ -1859,11 +1942,7 @@ class PromptManager {
      * @returns {string} A string representation of an uuid4
      */
     getUuidv4() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            let r = Math.random() * 16 | 0,
-                v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+        return uuidv4();
     }
 
     /**
