@@ -2832,7 +2832,6 @@ input[type="file"] {
     display: flex;
     gap: 5px;
     align-items: center;
-    margin: 1px;
 }
 
 #rm_button_bar .menu_button {
@@ -3083,6 +3082,10 @@ select option:not(:checked) {
     flex-grow: 1;
 }
 
+#charListFixedTop {
+    padding: 1px;
+}
+
 #form_character_search_form {
     display: flex;
     flex-direction: row;
@@ -3107,8 +3110,6 @@ select option:not(:checked) {
 
 #character_search_bar {
     flex: 1;
-    margin-left: 1px;
-    margin-right: 1px;
 }
 
 #rm_button_search {
