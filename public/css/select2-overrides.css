@@ -22,6 +22,7 @@
     position: absolute;
     right: 5px;
     margin-top: 0;  /* compensate for the increased font size */
+    margin-right: 0;
 }
 
 .select2-container .select2-search--inline textarea.select2-search__field {
@@ -94,6 +95,10 @@
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: var(--mainFontFamily);
+}
+
+.select2-container .select2-selection--multiple.select2-selection--clearable {
+    padding-right: 20px;
 }
 
 .select2-container.select2-container--focus .select2-selection--multiple,
