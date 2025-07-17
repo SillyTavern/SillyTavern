@@ -2772,6 +2772,11 @@ input[type="file"] {
     padding: 1px;
 }
 
+#rm_print_characters_pagination .menu_button {
+    margin: 0;
+    padding: 4px 5px;
+}
+
 .bulk_select_checkbox {
     align-self: center;
 }
