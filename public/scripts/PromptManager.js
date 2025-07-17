@@ -79,6 +79,12 @@ const registerPromptManagerMigration = () => {
  */
 class Prompt {
     /**
+     * Indicates if the prompt is enabled.
+     * @type {boolean}
+     */
+    enabled;
+
+    /**
      * Unique identifier for the prompt.
      * @type {string}
      */
@@ -193,7 +199,16 @@ class Prompt {
  * Representing a collection of prompts.
  */
 export class PromptCollection {
+    /**
+     * List of Prompts in the collection.
+     * @type {Prompt[]}
+     */
     collection = [];
+
+    /**
+     * List of identifiers of prompts that have been overridden.
+     * @type {string[]}
+     */
     overriddenPrompts = [];
 
     /**
@@ -208,7 +223,7 @@ export class PromptCollection {
     /**
      * Checks if the provided instances are of the Prompt class.
      *
-     * @param {...any} prompts - Instances to check.
+     * @param {...Prompt} prompts - Instances to check.
      * @throws Will throw an error if one or more instances are not of the Prompt class.
      */
     checkPromptInstance(...prompts) {
@@ -270,6 +285,12 @@ export class PromptCollection {
         return this.index(identifier) !== -1;
     }
 
+    /**
+     * Overrides a prompt at a specific position in the collection.
+     *
+     * @param {Prompt} prompt - The Prompt instance to override.
+     * @param {number} position - The position in the collection to override the Prompt instance.
+     */
     override(prompt, position) {
         this.set(prompt, position);
         this.overriddenPrompts.push(prompt.identifier);
@@ -879,7 +900,7 @@ class PromptManager {
 
     /**
      * Update a prompt with the values from the HTML form.
-     * @param {object} prompt - The prompt to be updated.
+     * @param {Partial<Prompt>} prompt - The prompt to be updated.
      * @returns {void}
      */
     updatePromptWithPromptEditForm(prompt) {
@@ -905,7 +926,7 @@ class PromptManager {
     /**
      * Find a prompt by its identifier and update it with the provided object.
      * @param {string} identifier - The identifier of the prompt.
-     * @param {object} updatePrompt - An object with properties to be updated in the prompt.
+     * @param {Prompt} updatePrompt - An object with properties to be updated in the prompt.
      * @returns {void}
      */
     updatePromptByIdentifier(identifier, updatePrompt) {
@@ -915,7 +936,7 @@ class PromptManager {
 
     /**
      * Iterate over an array of prompts, find each one by its identifier, and update them with the provided data.
-     * @param {object[]} prompts - An array of prompt updates.
+     * @param {Prompt[]} prompts - An array of prompt updates.
      * @returns {void}
      */
     updatePrompts(prompts) {
@@ -937,7 +958,7 @@ class PromptManager {
 
     /**
      * Add a prompt to the current character's prompt list.
-     * @param {object} prompt - The prompt to be added.
+     * @param {Prompt} prompt - The prompt to be added.
      * @param {object} character - The character whose prompt list will be updated.
      * @returns {void}
      */
@@ -950,7 +971,7 @@ class PromptManager {
 
     /**
      * Remove a prompt from the current character's prompt list.
-     * @param {object} prompt - The prompt to be removed.
+     * @param {Prompt} prompt - The prompt to be removed.
      * @param {object} character - The character whose prompt list will be updated.
      * @returns {void}
      */
@@ -964,7 +985,7 @@ class PromptManager {
 
     /**
      * Create a new prompt and add it to the list of prompts.
-     * @param {object} prompt - The prompt to be added.
+     * @param {Partial<Prompt>} prompt - The prompt to be added.
      * @param {string} identifier - The identifier for the new prompt.
      * @returns {void}
      */
@@ -1042,7 +1063,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be inspected.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt is a marker, false otherwise.
      */
     isPromptInspectionAllowed(prompt) {
@@ -1051,7 +1072,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be deleted. System prompts cannot be deleted.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptDeletionAllowed(prompt) {
@@ -1060,7 +1081,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be edited.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be edited, false otherwise.
      */
     isPromptEditAllowed(prompt) {
@@ -1077,7 +1098,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be toggled on or off.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
@@ -1173,7 +1194,7 @@ class PromptManager {
 
     /**
      * Get the prompts for a specific character. Can be filtered to only include enabled prompts.
-     * @returns {object[]} The prompts for the character.
+     * @returns {Prompt[]} The prompts for the character.
      * @param character
      * @param onlyEnabled
      */
@@ -1186,7 +1207,7 @@ class PromptManager {
     /**
      * Get the order of prompts for a specific character. If no character is specified or the character doesn't have a prompt list, an empty array is returned.
      * @param {object|null} character - The character to get the prompt list for.
-     * @returns {object[]} The prompt list for the character, or an empty array.
+     * @returns {Partial<Prompt>[]} The prompt list for the character, or an empty array.
      */
     getPromptOrderForCharacter(character) {
         return !character ? [] : (this.serviceSettings.prompt_order.find(list => String(list.character_id) === String(character.id))?.order ?? []);
@@ -1194,7 +1215,7 @@ class PromptManager {
 
     /**
      * Set the prompts for the manager.
-     * @param {object[]} prompts - The prompts to be set.
+     * @param {Partial<Prompt>[]} prompts - The prompts to be set.
      * @returns {void}
      */
     setPrompts(prompts) {
@@ -1254,9 +1275,9 @@ class PromptManager {
     /**
      * Enriches a generic object, creating a new prompt object in the process
      *
-     * @param {Object} prompt - Prompt object
+     * @param {Partial<Prompt>} prompt - Prompt object
      * @param original
-     * @returns {Object} An object with "role" and "content" properties
+     * @returns {Prompt} An object with "role" and "content" properties
      */
     preparePrompt(prompt, original = null) {
         const groupMembers = this.getActiveGroupCharacters();
@@ -1304,6 +1325,12 @@ class PromptManager {
 
     }
 
+    /**
+     * Updates the quick edit textarea for a specific prompt.
+     * @param {string} identifier - The identifier of the prompt.
+     * @param {Prompt} prompt - The updated prompt object.
+     * @returns {string} The ID of the updated textarea element.
+     */
     updateQuickEdit(identifier, prompt) {
         const elementId = `${identifier}_prompt_quick_edit_textarea`;
         const textarea = /** @type {HTMLTextAreaElement} */(document.getElementById(elementId));
@@ -1331,7 +1358,7 @@ class PromptManager {
 
     /**
      * Loads a given prompt into the edit form fields.
-     * @param {Object} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
+     * @param {Partial<Prompt>} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
      */
     loadPromptIntoEditForm(prompt) {
         const nameField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name'));
