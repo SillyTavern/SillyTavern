@@ -6428,7 +6428,7 @@ export function initOpenAI() {
             templateResult: getAimlapiModelTemplate,
         });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
-            placeholder: t`All (default)`,
+            placeholder: t`All types (default)`,
             width: '100%',
             closeOnSelect: false,
         });
