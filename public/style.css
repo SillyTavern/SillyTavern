@@ -2832,7 +2832,6 @@ input[type="file"] {
 }
 
 #rm_button_bar .menu_button {
-    font-size: calc(var(--mainFontSize) * 1.05);
     width: calc(var(--mainFontSize) * 1.7);
     margin: 0;
     height: fit-content;
@@ -3110,7 +3109,7 @@ select option:not(:checked) {
 
 #rm_button_search {
     align-self: center;
-    font-size: 1.2em;
+    font-size: 1.1em;
     margin: 0 2px;
 }
 
