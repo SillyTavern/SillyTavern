@@ -2823,6 +2823,10 @@ input[type="file"] {
     overflow-y: auto;
 }
 
+#rm_buttons_container {
+    display: contents;
+}
+
 #floatingPrompt,
 #cfgConfig {
     overflow-y: auto;
