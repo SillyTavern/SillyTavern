@@ -26,7 +26,7 @@ import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureI
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
-import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { openWorldInfoEditor, world_names } from './world-info.js';
 import { renderTemplateAsync } from './templates.js';
@@ -37,6 +37,7 @@ import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from '
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { isFirefox } from './browser-fixes.js';
 
 /**
  * @typedef {object} PersonaConnection A connection between a character and a character or group entity
@@ -124,7 +125,7 @@ function reloadUserAvatar(force = false) {
         }
 
         if ($(this).attr('is_user') == 'true' && $(this).attr('force_avatar') == 'false') {
-            avatarImg.attr('src', getUserAvatar(user_avatar));
+            avatarImg.attr('src', getThumbnailUrl('persona', user_avatar));
         }
     });
 }
@@ -179,20 +180,18 @@ function verifyPersonaSearchSortRule() {
  * @returns {JQuery<HTMLElement>} Avatar block
  */
 function getUserAvatarBlock(avatarId) {
-    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
     const template = $('#user_avatar_template .avatar-container').clone();
     const personaName = power_user.personas[avatarId];
     const personaDescription = power_user.persona_descriptions[avatarId]?.description;
+    const personaTitle = power_user.persona_descriptions[avatarId]?.title;
 
     template.find('.ch_name').text(personaName || '[Unnamed Persona]');
     template.find('.ch_description').text(personaDescription || $('#user_avatar_block').attr('no_desc_text')).toggleClass('text_muted', !personaDescription);
+    template.find('.ch_additional_info').text(personaTitle || '');
     template.attr('data-avatar-id', avatarId);
     template.find('.avatar').attr('data-avatar-id', avatarId).attr('title', avatarId);
     template.toggleClass('default_persona', avatarId === power_user.default_persona);
-    let avatarUrl = getUserAvatar(avatarId);
-    if (isFirefox) {
-        avatarUrl += '?t=' + Date.now();
-    }
+    const avatarUrl = getThumbnailUrl('persona', avatarId, isFirefox());
     template.find('img').attr('src', avatarUrl);
 
     // Make sure description block has at least three rows. Otherwise height looks inconsistent. I don't have a better idea for this.
@@ -212,7 +211,7 @@ function getUserAvatarBlock(avatarId) {
 function addMissingPersonas(avatarsList) {
     for (const persona of avatarsList) {
         if (!power_user.personas[persona]) {
-            initPersona(persona, '[Unnamed Persona]', '');
+            initPersona(persona, '[Unnamed Persona]', '', '');
         }
     }
 }
@@ -318,12 +317,9 @@ async function uploadUserAvatar(url, name) {
         formData.append('overwrite_name', name);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
-
     await fetch('/api/avatars/upload', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         cache: 'no-cache',
         body: formData,
     });
@@ -369,12 +365,9 @@ async function changeUserAvatar(e) {
         formData.set('avatar', convertedFile);
     }
 
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
-
     const response = await fetch(url, {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType:true }),
         cache: 'no-cache',
         body: formData,
     });
@@ -386,6 +379,7 @@ async function changeUserAvatar(e) {
         const name = formData.get('overwrite_name');
         if (name) {
             await fetch(getUserAvatar(String(name)), { cache: 'no-cache' });
+            await fetch(getThumbnailUrl('persona', String(name)), { cache: 'no-cache' });
             reloadUserAvatar(true);
         }
 
@@ -417,23 +411,32 @@ export async function createPersona(avatarId) {
 
     const personaDescription = await Popup.show.input(t`Enter a description for this persona:`, t`You can always add or change it later.`, '', { rows: 4 });
 
-    initPersona(avatarId, personaName, personaDescription);
+    initPersona(avatarId, personaName, personaDescription, '');
     if (power_user.persona_show_notifications) {
         toastr.success(t`You can now pick ${personaName} as a persona in the Persona Management menu.`, t`Persona Created`);
     }
 }
 
 async function createDummyPersona() {
-    const personaName = await Popup.show.input(t`Enter a name for this persona:`, null);
+    const popup = new Popup(t`Enter a name for this persona:`, POPUP_TYPE.INPUT, '', {
+        customInputs: [{
+            id: 'persona_title',
+            type: 'text',
+            label: t`Persona Title (optional, display only)`,
+        }],
+    });
 
-    if (!personaName) {
+    const personaName = await popup.show();
+    const personaTitle = String(popup.inputResults.get('persona_title') || '').trim();
+
+    if (!personaName || typeof personaName !== 'string') {
         console.debug('User cancelled creating dummy persona');
         return;
     }
 
     // Date + name (only ASCII) to make it unique
     const avatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
-    initPersona(avatarId, personaName, '');
+    initPersona(avatarId, personaName, '', personaTitle);
     await uploadUserAvatar(default_user_avatar, avatarId);
 }
 
@@ -442,9 +445,10 @@ async function createDummyPersona() {
  * @param {string} avatarId User avatar id
  * @param {string} personaName Name for the persona
  * @param {string} personaDescription Optional description for the persona
+ * @param {string} personaTitle Optional title for the persona
  * @returns {void}
  */
-export function initPersona(avatarId, personaName, personaDescription) {
+export function initPersona(avatarId, personaName, personaDescription, personaTitle) {
     power_user.personas[avatarId] = personaName;
     power_user.persona_descriptions[avatarId] = {
         description: personaDescription || '',
@@ -452,6 +456,7 @@ export function initPersona(avatarId, personaName, personaDescription) {
         depth: DEFAULT_DEPTH,
         role: DEFAULT_ROLE,
         lorebook: '',
+        title: personaTitle || '',
     };
 
     saveSettingsDebounced();
@@ -508,6 +513,7 @@ export async function convertCharacterToPersona(characterId = null) {
         depth: DEFAULT_DEPTH,
         role: DEFAULT_ROLE,
         lorebook: '',
+        title: '',
     };
 
     // If the user is currently using this persona, update the description
@@ -732,13 +738,58 @@ export function autoSelectPersona(name) {
 }
 
 /**
+ * Edits the title of a persona based on the input from a popup.
+ * @param {Popup} popup Popup instance
+ * @param {string} avatarId Avatar ID of the persona to edit
+ * @param {string} currentTitle Current title of the persona
+ */
+async function editPersonaTitle(popup, avatarId, currentTitle) {
+    if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (!power_user.persona_descriptions[avatarId]) {
+        console.warn('Uninitialized persona descriptor for avatar:', avatarId);
+        return;
+    }
+
+    const newTitle = String(popup.inputResults.get('persona_title') || '').trim();
+
+    if (!newTitle && currentTitle) {
+        console.log(`Removed persona title for ${avatarId}`);
+        delete power_user.persona_descriptions[avatarId].title;
+        await getUserAvatars(true, avatarId);
+        saveSettingsDebounced();
+        return;
+    }
+
+    if (newTitle !== currentTitle) {
+        power_user.persona_descriptions[avatarId].title = newTitle;
+        console.log(`Updated persona title for ${avatarId} to ${newTitle}`);
+        await getUserAvatars(true, avatarId);
+        saveSettingsDebounced();
+        return;
+    }
+}
+
+/**
  * Renames the persona with the given avatar ID by showing a popup to enter a new name.
  * @param {string} avatarId - ID of the avatar to rename
  * @returns {Promise<boolean>} A promise that resolves to true if the persona was renamed, false otherwise
  */
 async function renamePersona(avatarId) {
     const currentName = power_user.personas[avatarId];
-    const newName = await Popup.show.input(t`Rename Persona`, t`Enter a new name for this persona:`, currentName);
+    const currentTitle = power_user.persona_descriptions[avatarId]?.title || '';
+    const newName = await Popup.show.input(t`Rename Persona`, t`Enter a new name for this persona:`, currentName, {
+        customInputs: [{
+            id: 'persona_title',
+            type: 'text',
+            label: t`Persona Title (optional, display only)`,
+            defaultState: currentTitle,
+        }],
+        onClose: (popup) => editPersonaTitle(popup, avatarId, currentTitle),
+    });
+
     if (!newName || newName === currentName) {
         console.debug('User cancelled renaming persona or name is unchanged');
         return false;
@@ -795,6 +846,7 @@ async function selectCurrentPersona({ toastPersonaNameChange = true } = {}) {
                 role: DEFAULT_ROLE,
                 lorebook: '',
                 connections: [],
+                title: '',
             };
         }
 
@@ -941,6 +993,7 @@ async function lockPersona(type = 'chat') {
             role: DEFAULT_ROLE,
             lorebook: '',
             connections: [],
+            title: '',
         };
     }
 
@@ -1062,6 +1115,7 @@ function onPersonaDescriptionInput() {
                 depth: Number($('#persona_depth_value').val()),
                 role: Number($('#persona_depth_role').find(':selected').val()),
                 lorebook: '',
+                title: '',
             };
             power_user.persona_descriptions[user_avatar] = object;
         }
@@ -1168,6 +1222,7 @@ function getOrCreatePersonaDescriptor() {
             role: power_user.persona_description_role,
             lorebook: power_user.persona_description_lorebook,
             connections: [],
+            title: '',
         };
         power_user.persona_descriptions[user_avatar] = object;
     }
@@ -1657,7 +1712,7 @@ async function syncUserNameToPersona() {
     for (const mes of chat) {
         if (mes.is_user) {
             mes.name = name1;
-            mes.force_avatar = getUserAvatar(user_avatar);
+            mes.force_avatar = getThumbnailUrl('persona', user_avatar);
         }
     }
 
@@ -1706,6 +1761,7 @@ async function duplicatePersona(avatarId) {
         depth: descriptor?.depth ?? DEFAULT_DEPTH,
         role: descriptor?.role ?? DEFAULT_ROLE,
         lorebook: descriptor?.lorebook ?? '',
+        title: descriptor?.title ?? '',
     };
 
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
@@ -1721,7 +1777,7 @@ async function migrateNonPersonaUser() {
         return;
     }
 
-    initPersona(user_avatar, name1, '');
+    initPersona(user_avatar, name1, '', '');
     setPersonaDescription();
     await getUserAvatars(true, user_avatar);
 }

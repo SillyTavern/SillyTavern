@@ -17,7 +17,7 @@ import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
-import { LOG_LEVELS } from './constants.js';
+import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
 import { serverDirectory } from './server-directory.js';
 
 /**
@@ -1212,4 +1212,66 @@ export function getRequestURL(request) {
         return request.url;
     }
     throw new TypeError('Invalid request type');
+}
+
+/**
+ * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
+ * @param {object} schema The JSON schema to flatten.
+ * @param {string} api The API source, used to determine how to handle certain properties.
+ * @returns {object} The flattened schema.
+ */
+export function flattenSchema(schema, api) {
+    if (!schema || typeof schema !== 'object') {
+        return schema;
+    }
+
+    // Deep clone to avoid modifying the original object.
+    const schemaCopy = structuredClone(schema);
+
+    const definitions = schemaCopy.$defs || {};
+    delete schemaCopy.$defs;
+
+    function replaceRefs(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                obj[i] = replaceRefs(obj[i]);
+            }
+            return obj;
+        }
+
+        if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
+            const defName = obj.$ref.split('/').pop();
+            if (definitions[defName]) {
+                return replaceRefs(structuredClone(definitions[defName]));
+            }
+        }
+
+        if (api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI) {
+            delete obj.default;
+            delete obj.additionalProperties;
+        } else if ('properties' in obj) {
+            if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
+                obj.additionalProperties = false;
+            }
+        }
+
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                obj[key] = replaceRefs(obj[key]);
+            }
+        }
+        return obj;
+    }
+
+    const flattenedSchema = replaceRefs(schemaCopy);
+
+    if (flattenedSchema.$schema) {
+        delete flattenedSchema.$schema;
+    }
+
+    return flattenedSchema;
 }

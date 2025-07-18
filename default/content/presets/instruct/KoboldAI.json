@@ -1,0 +1,22 @@
+{
+    "input_sequence": "{{[INPUT]}}",
+    "output_sequence": "{{[OUPUT]}}",
+    "last_output_sequence": "",
+    "system_sequence": "{{[SYSTEM]}}",
+    "stop_sequence": "",
+    "wrap": true,
+    "macro": true,
+    "names_behavior": "force",
+    "activation_regex": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "first_output_sequence": "",
+    "skip_examples": false,
+    "output_suffix": "{{[OUTPUT_END]}}",
+    "input_suffix": "{{[INPUT_END]}}",
+    "system_suffix": "{{[SYSTEM_END]}}",
+    "user_alignment_message": "",
+    "system_same_as_user": false,
+    "last_system_sequence": "",
+    "name": "KoboldAI"
+}

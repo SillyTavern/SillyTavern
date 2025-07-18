@@ -107,7 +107,6 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: calc(var(--mainFontSize) + 14px);
 }
 
 .delete_entry_button {
@@ -285,4 +284,10 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 
 .world_entry:has(input[name="delay_until_recursion"]:not(:checked)) .world_entry_form_control:has(input[name="delayUntilRecursionLevel"]) {
     display: none;
+}
+
+#WIMultiSelector .select2-container .select2-selection--multiple {
+    max-height: 25vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }

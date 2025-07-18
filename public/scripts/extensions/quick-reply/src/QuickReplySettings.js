@@ -1,5 +1,5 @@
-import { chat_metadata, saveChatDebounced, saveSettingsDebounced } from '../../../../script.js';
-import { extension_settings } from '../../../extensions.js';
+import { chat_metadata, saveSettingsDebounced } from '../../../../script.js';
+import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { QuickReplyConfig } from './QuickReplyConfig.js';
 
 export class QuickReplySettings {
@@ -62,7 +62,7 @@ export class QuickReplySettings {
         saveSettingsDebounced();
         if (this.chatConfig) {
             chat_metadata.quickReply = this.chatConfig.toJSON();
-            saveChatDebounced();
+            saveMetadataDebounced();
         }
         if (this.onSave) {
             this.onSave();

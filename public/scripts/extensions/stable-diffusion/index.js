@@ -51,13 +51,14 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout } from '../../constants.js';
+import { debounce_timeout, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
 import { t } from '../../i18n.js';
+import { oai_settings } from '../../openai.js';
 
 export { MODULE_NAME };
 
@@ -85,6 +86,7 @@ const sources = {
     bfl: 'bfl',
     falai: 'falai',
     xai: 'xai',
+    google: 'google',
 };
 
 const initiators = {
@@ -330,9 +332,14 @@ const defaultSettings = {
 
     // BFL API settings
     bfl_upsampling: false,
+
+    // Google settings
+    google_api: 'makersuite',
+    google_enhance: true,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
+const isVideo = (/** @type {string} */ format) => VIDEO_EXTENSIONS.includes(String(format || '').trim().toLowerCase());
 
 /**
  * Generate interceptor for interactive mode triggers.
@@ -509,6 +516,8 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+    $('#sd_google_api').val(extension_settings.sd.google_api);
+    $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1277,6 +1286,7 @@ async function onModelChange() {
         sources.bfl,
         sources.falai,
         sources.xai,
+        sources.google,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1498,6 +1508,9 @@ async function loadSamplers() {
         case sources.xai:
             samplers = ['N/A'];
             break;
+        case sources.google:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1693,6 +1706,9 @@ async function loadModels() {
             break;
         case sources.xai:
             models = await loadXAIModels();
+            break;
+        case sources.google:
+            models = await loadGoogleModels();
             break;
     }
 
@@ -2023,6 +2039,21 @@ async function loadNovelModels() {
     ];
 }
 
+async function loadGoogleModels() {
+    return [
+        'imagen-4.0-generate-preview-06-06',
+        'imagen-4.0-fast-generate-preview-06-06',
+        'imagen-4.0-ultra-generate-preview-06-06',
+        'imagen-3.0-generate-002',
+        'imagen-3.0-generate-001',
+        'imagen-3.0-fast-generate-001',
+        'imagen-3.0-capability-001',
+        'imagegeneration@006',
+        'imagegeneration@005',
+        'imagegeneration@002',
+    ].map(name => ({ value: name, text: name }));
+}
+
 function loadNovelSchedulers() {
     return ['karras', 'native', 'exponential', 'polyexponential'];
 }
@@ -2103,6 +2134,9 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.xai:
+            schedulers = ['N/A'];
+            break;
+        case sources.google:
             schedulers = ['N/A'];
             break;
     }
@@ -2197,6 +2231,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.xai:
+            vaes = ['N/A'];
+            break;
+        case sources.google:
             vaes = ['N/A'];
             break;
     }
@@ -2440,14 +2477,14 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     if (generationType === generationMode.BACKGROUND) {
         const callbackOriginal = callback;
-        callback = async function (prompt, imagePath, generationType, _negativePromptPrefix, _initiator, prefixedPrompt) {
+        callback = async function (prompt, imagePath, generationType, _negativePromptPrefix, _initiator, prefixedPrompt, format) {
             const imgUrl = `url("${encodeURI(imagePath)}")`;
             await eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt);
+                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt, format);
             } else {
-                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt);
+                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt, format);
             }
         };
     }
@@ -2468,8 +2505,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
 
         // generate the text prompt for the image
-        const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
+        let prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
+
+        // Extension hook for prompt processing
+        const eventData = { prompt, generationType, message, trigger };
+        await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
+        prompt = eventData.prompt; // Allow extensions to modify the prompt
 
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
@@ -2684,7 +2726,7 @@ function getUserAvatarUrl() {
  * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
  */
 async function generatePrompt(quietPrompt) {
-    const reply = await generateQuietPrompt(quietPrompt, false, false);
+    const reply = await generateQuietPrompt({ quietPrompt });
     const processedReply = processReply(reply);
 
     if (!processedReply) {
@@ -2774,6 +2816,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.xai:
                 result = await generateXAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.google:
+                result = await generateGoogleImage(prefixedPrompt, negativePrompt, signal);
+                break;
         }
 
         if (!result.data) {
@@ -2794,8 +2839,8 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback
-        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt)
-        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt);
+        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, result.format)
+        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, result.format);
     return base64Image;
 }
 
@@ -2911,20 +2956,39 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
+ * @param {'google'|'stability'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
-function getClosestAspectRatio(width, height) {
-    const aspectRatios = {
-        '16:9': 16 / 9,
-        '1:1': 1,
-        '21:9': 21 / 9,
-        '2:3': 2 / 3,
-        '3:2': 3 / 2,
-        '4:5': 4 / 5,
-        '5:4': 5 / 4,
-        '9:16': 9 / 16,
-        '9:21': 9 / 21,
-    };
+function getClosestAspectRatio(width, height, source) {
+    function getAspectRatios() {
+        switch (source) {
+            case 'stability':
+                return {
+                    '16:9': 16 / 9,
+                    '1:1': 1,
+                    '21:9': 21 / 9,
+                    '2:3': 2 / 3,
+                    '3:2': 3 / 2,
+                    '4:5': 4 / 5,
+                    '5:4': 5 / 4,
+                    '9:16': 9 / 16,
+                    '9:21': 9 / 21,
+                };
+            case 'google':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
+                    '4:3': 4 / 3,
+                    '3:4': 3 / 4,
+                };
+            default:
+                console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
+                return null;
+        }
+    }
+
+    const aspectRatios = getAspectRatios() || { '1:1': 1 };
 
     const aspectRatio = width / height;
 
@@ -2963,7 +3027,7 @@ async function generateStabilityImage(prompt, negativePrompt, signal) {
                 payload: {
                     prompt: prompt.slice(0, PROMPT_LIMIT),
                     negative_prompt: negativePrompt.slice(0, PROMPT_LIMIT),
-                    aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height),
+                    aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'stability'),
                     seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
                     style_preset: extension_settings.sd.stability_style_preset,
                     output_format: IMAGE_FORMAT,
@@ -3461,7 +3525,8 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
         const text = await promptResult.text();
         throw new Error(text);
     }
-    return { format: 'png', data: await promptResult.text() };
+    const { format, data } = await promptResult.json();
+    return { format, data };
 }
 
 
@@ -3614,7 +3679,41 @@ async function generateFalaiImage(prompt, negativePrompt, signal) {
         return { format: 'jpg', data: data.image };
     } else {
         const text = await result.text();
-        console.log(text);
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image using the Google Vertex AI API.
+ * @param {string} prompt The main instruction used to guide the image generation.
+ * @param {string} negativePrompt The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
+ */
+async function generateGoogleImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/google/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'google'),
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            enhance: extension_settings.sd.google_enhance,
+            api: extension_settings.sd.google_api || 'makersuite',
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+            vertexai_auth_mode: oai_settings.vertexai_auth_mode,
+            vertexai_region: oai_settings.vertexai_region,
+            vertexai_express_project_id: oai_settings.vertexai_express_project_id,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
         throw new Error(text);
     }
 }
@@ -3767,8 +3866,9 @@ async function onComfyDeleteWorkflowClick() {
  * @param {string} additionalNegativePrefix Additional negative prompt used for the image generation
  * @param {string} initiator The initiator of the image generation
  * @param {string} prefixedPrompt Prompt with an attached specific prefix
+ * @param {string} format Format of the image (e.g., 'png', 'jpg')
  */
-async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator, prefixedPrompt) {
+async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, format) {
     const context = getContext();
     const name = context.groupId ? systemUserName : context.name2;
     const template = extension_settings.sd.prompts[generationMode.MESSAGE] || '{{prompt}}';
@@ -3788,6 +3888,12 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
             image_swipes: [image],
         },
     };
+    if (isVideo(format)) {
+        message.extra.video = image;
+        delete message.extra.image;
+        delete message.extra.image_swipes;
+        delete message.extra.inline_image;
+    }
     context.chat.push(message);
     const messageId = context.chat.length - 1;
     await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId, 'extension');
@@ -3908,6 +4014,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.FALAI];
         case sources.xai:
             return secret_state[SECRET_KEYS.XAI];
+        case sources.google:
+            return secret_state[SECRET_KEYS.MAKERSUITE] || secret_state[SECRET_KEYS.VERTEXAI] || secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT];
     }
 }
 
@@ -3969,7 +4077,7 @@ async function sdMessageButton(e) {
         }
     }
 
-    function saveGeneratedImage(prompt, image, generationType, negative) {
+    function saveGeneratedImage(prompt, image, generationType, negative, _initiator, _prefixedPrompt, format) {
         // Some message sources may not create the extra object
         if (typeof message.extra !== 'object' || message.extra === null) {
             message.extra = {};
@@ -3986,17 +4094,24 @@ async function sdMessageButton(e) {
             swipes.push(message.extra.image);
         }
 
-        swipes.push(image);
+        const isVideoFormat = isVideo(format);
 
-        // If already contains an image and it's not inline - leave it as is
-        message.extra.inline_image = !(message.extra.image && !message.extra.inline_image);
-        message.extra.image = image;
+        if (isVideoFormat) {
+            message.extra.video = image;
+        } else {
+            swipes.push(image);
+
+            // If already contains an image and it's not inline - leave it as is
+            message.extra.inline_image = !(message.extra.image && !message.extra.inline_image);
+            message.extra.image = image;
+        }
+
         message.extra.title = prompt;
         message.extra.generationType = generationType;
         message.extra.negative = negative;
         appendMediaToMessage(message, $mes);
 
-        context.saveChat();
+        return context.saveChat();
     }
 }
 
@@ -4089,6 +4204,7 @@ async function onImageSwiped({ message, element, direction }) {
                 const hasNegative = message.extra.negative;
                 const prompt = await refinePrompt(message.extra.title, false);
                 const negativePromptPrefix = hasNegative ? await refinePrompt(message.extra.negative, true) : '';
+                message.extra.title = prompt;
                 const characterName = context.groupId
                     ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
                     : context.characters[context.characterId]?.name;
@@ -4567,6 +4683,15 @@ jQuery(async () => {
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
+
+    $('#sd_google_api').on('input', function () {
+        extension_settings.sd.google_api = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#sd_google_enhance').on('input', function () {
+        extension_settings.sd.google_enhance = $(this).prop('checked');
+        saveSettingsDebounced();
+    });
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {

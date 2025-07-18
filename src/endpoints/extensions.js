@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 import express from 'express';
 import sanitize from 'sanitize-filename';
-import { default as simpleGit } from 'simple-git';
+import { CheckRepoActions, default as simpleGit } from 'simple-git';
 
 import { PUBLIC_DIRECTORIES } from '../constants.js';
 
@@ -145,6 +145,10 @@ router.post('/update', async (request, response) => {
 
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
         const git = simpleGit({ baseDir: extensionPath });
+        const isRepo = await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+        if (!isRepo) {
+            throw new Error(`Directory is not a Git repository at ${extensionPath}`);
+        }
         const currentBranch = await git.branch();
         if (!isUpToDate) {
             await git.pull('origin', currentBranch.current);
@@ -157,10 +161,9 @@ router.post('/update', async (request, response) => {
         const shortCommitHash = fullCommitHash.slice(0, 7);
 
         return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
-
     } catch (error) {
-        console.error('Updating custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
+        console.error('Updating extension failed', error);
+        return response.status(500).send('Internal Server Error. Check the server logs for more details.');
     }
 });
 
@@ -339,6 +342,10 @@ router.post('/version', async (request, response) => {
         const git = simpleGit({ baseDir: extensionPath });
         let currentCommitHash;
         try {
+            const isRepo = await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+            if (!isRepo) {
+                throw new Error(`Directory is not a Git repository at ${extensionPath}`);
+            }
             currentCommitHash = await git.revparse(['HEAD']);
         } catch (error) {
             // it is not a git repo, or has no commits yet, or is a bare repo

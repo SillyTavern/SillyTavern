@@ -16,8 +16,9 @@ class ElevenLabsTtsProvider {
         similarity_boost: 0.75,
         style_exaggeration: 0.00,
         speaker_boost: true,
+        speed: 1.0,
         apiKey: '',
-        model: 'eleven_monolingual_v1',
+        model: 'eleven_turbo_v2_5',
         voiceMap: {},
     };
 
@@ -28,16 +29,23 @@ class ElevenLabsTtsProvider {
             <input id="elevenlabs_tts_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
             <label for="elevenlabs_tts_model">Model</label>
             <select id="elevenlabs_tts_model" class="text_pole">
-                <option value="eleven_monolingual_v1">English v1</option>
-                <option value="eleven_multilingual_v1">Multilingual v1</option>
+                <option value="eleven_v3">Eleven v3</option>
+                <option value="eleven_ttv_v3">Eleven ttv v3</option>
                 <option value="eleven_multilingual_v2">Multilingual v2</option>
-                <option value="eleven_turbo_v2">Turbo v2</option>
+                <option value="eleven_flash_v2_5">Eleven Flash v2.5</option>
+                <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+                <option value="eleven_multilingual_ttv_v2">Multilingual ttv v2</option>
+                <option value="eleven_monolingual_v1">English v1 (Old)</option>
+                <option value="eleven_multilingual_v1">Multilingual v1 (Old)</option>
+                <option value="eleven_turbo_v2">Turbo v2 (Old)</option>
             </select>
             <input id="eleven_labs_connect" class="menu_button" type="button" value="Connect" />
             <label for="elevenlabs_tts_stability">Stability: <span id="elevenlabs_tts_stability_output"></span></label>
             <input id="elevenlabs_tts_stability" type="range" value="${this.defaultSettings.stability}" min="0" max="1" step="0.01" />
             <label for="elevenlabs_tts_similarity_boost">Similarity Boost: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
             <input id="elevenlabs_tts_similarity_boost" type="range" value="${this.defaultSettings.similarity_boost}" min="0" max="1" step="0.01" />
+            <label for="elevenlabs_tts_speed">Speed: <span id="elevenlabs_tts_speed_output"></span></label>
+            <input id="elevenlabs_tts_speed" type="range" value="${this.defaultSettings.speed}" min="0.7" max="1.2" step="0.01" />
             <div id="elevenlabs_tts_v2_options" style="display: none;">
                 <label for="elevenlabs_tts_style_exaggeration">Style Exaggeration: <span id="elevenlabs_tts_style_exaggeration_output"></span></label>
                 <input id="elevenlabs_tts_style_exaggeration" type="range" value="${this.defaultSettings.style_exaggeration}" min="0" max="1" step="0.01" />
@@ -65,7 +73,14 @@ class ElevenLabsTtsProvider {
     }
 
     shouldInvolveExtendedSettings() {
-        return this.settings.model === 'eleven_multilingual_v2';
+        // Models that support extended settings (style_exaggeration, speaker_boost)
+        const modelsWithExtendedSettings = [
+            'eleven_v3',
+            'eleven_ttv_v3',
+            'eleven_multilingual_v2',
+            'eleven_multilingual_ttv_v2',
+        ];
+        return modelsWithExtendedSettings.includes(this.settings.model);
     }
 
     onSettingsChange() {
@@ -74,10 +89,12 @@ class ElevenLabsTtsProvider {
         this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val();
         this.settings.style_exaggeration = $('#elevenlabs_tts_style_exaggeration').val();
         this.settings.speaker_boost = $('#elevenlabs_tts_speaker_boost').is(':checked');
+        this.settings.speed = $('#elevenlabs_tts_speed').val();
         this.settings.model = $('#elevenlabs_tts_model').find(':selected').val();
         $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
         $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
         $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
+        $('#elevenlabs_tts_speed_output').text(this.settings.speed + 'x');
         $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
         saveTtsProviderSettings();
     }
@@ -109,6 +126,7 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_similarity_boost').val(this.settings.similarity_boost);
         $('#elevenlabs_tts_style_exaggeration').val(this.settings.style_exaggeration);
         $('#elevenlabs_tts_speaker_boost').prop('checked', this.settings.speaker_boost);
+        $('#elevenlabs_tts_speed').val(this.settings.speed);
         $('#elevenlabs_tts_api_key').val(this.settings.apiKey);
         $('#elevenlabs_tts_model').val(this.settings.model);
         $('#eleven_labs_connect').on('click', () => { this.onConnectClick(); });
@@ -116,10 +134,12 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_stability').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_style_exaggeration').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_speaker_boost').on('change', this.onSettingsChange.bind(this));
+        $('#elevenlabs_tts_speed').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_model').on('change', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
         $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
         $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
+        $('#elevenlabs_tts_speed_output').text(this.settings.speed + 'x');
         $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
         try {
             await this.checkReady();
@@ -308,6 +328,7 @@ class ElevenLabsTtsProvider {
             voice_settings: {
                 stability: Number(this.settings.stability),
                 similarity_boost: Number(this.settings.similarity_boost),
+                speed: Number(this.settings.speed),
             },
         };
         if (this.shouldInvolveExtendedSettings()) {

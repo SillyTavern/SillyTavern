@@ -1124,6 +1124,7 @@ function registerWorldInfoSlashCommands() {
     async function getEntryFieldCallback(args, uid) {
         const file = args.file;
         const field = args.field || 'content';
+        const tags = getContext().tags;
 
         const entries = await getEntriesFromFile(file);
 
@@ -1143,7 +1144,31 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const fieldValue = entry[field];
+        // handle special cases, otherwise execute default logic
+        let fieldValue;
+        switch (field) {
+            case 'characterFilterNames':
+                if (entry.characterFilter) {
+                    fieldValue = entry.characterFilter.names;
+                }
+                break;
+            case 'characterFilterTags':
+                if (entry.characterFilter) {
+                    if (!entry.characterFilter.tags) {
+                        return '';
+                    }
+                    //Find the tag objects corresponding to each ID in the array, then return the names
+                    fieldValue = tags.filter((tag) => entry.characterFilter.tags.includes(tag.id)).map((tag) => tag.name);
+                }
+                break;
+            case 'characterFilterExclude':
+                if (entry.characterFilter) {
+                    fieldValue = entry.characterFilter.isExclude;
+                }
+                break;
+            default:
+                fieldValue = entry[field];
+        }
 
         if (fieldValue === undefined) {
             return '';
@@ -1189,6 +1214,23 @@ function registerWorldInfoSlashCommands() {
         const file = args.file;
         const uid = args.uid;
         const field = args.field || 'content';
+        const tags = getContext().tags;
+
+        // characterFilter is an object with internal fields we need to access, which may also may be null and need to be populated
+        const createCharacterFilterFieldObjectIfNeeded = (currentEntry) => {
+            if (!currentEntry.characterFilter) {
+                Object.assign(
+                    currentEntry,
+                    {
+                        characterFilter: {
+                            isExclude: false,
+                            names: [],
+                            tags: [],
+                        },
+                    },
+                );
+            }
+        };
 
         if (value === undefined) {
             toastr.warning('Value is required');
@@ -1216,18 +1258,45 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (Array.isArray(entry[field])) {
-            entry[field] = parseStringArray(value);
-        } else if (typeof entry[field] === 'boolean') {
-            entry[field] = isTrueBoolean(value);
-        } else if (typeof entry[field] === 'number') {
-            entry[field] = Number(value);
-        } else {
-            entry[field] = value;
-        }
+        // handle special cases, otherwise execute default logic
+        let tagNames;
+        let charNames;
+        switch (field) {
+            case 'characterFilterNames':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                charNames = parseStringArray(value);
+                entry.characterFilter.names = charNames
+                    .map((name) => getCharaFilename(null, { manualAvatarKey: findChar({ name, allowAvatar: true, preferCurrentChar: false, quiet: true })?.avatar }))
+                    .filter(Boolean)
+                    .filter(onlyUnique);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            case 'characterFilterTags':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                tagNames = parseStringArray(value);
+                //Find the tag objects corresponding to each name in the user array, then return an array of the corresponding IDs
+                entry.characterFilter.tags = tags.filter((tag) => tagNames.includes(tag.name)).map((tag) => tag.id);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            case 'characterFilterExclude':
+                createCharacterFilterFieldObjectIfNeeded(entry);
+                entry.characterFilter.isExclude = isTrueBoolean(value);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            default:
+                if (Array.isArray(entry[field])) {
+                    entry[field] = parseStringArray(value);
+                } else if (typeof entry[field] === 'boolean') {
+                    entry[field] = isTrueBoolean(value);
+                } else if (typeof entry[field] === 'number') {
+                    entry[field] = Number(value);
+                } else {
+                    entry[field] = value;
+                }
 
-        if (originalWIDataKeyMap[field]) {
-            setWIOriginalDataValue(data, uid, originalWIDataKeyMap[field], entry[field]);
+                if (originalWIDataKeyMap[field]) {
+                    setWIOriginalDataValue(data, uid, originalWIDataKeyMap[field], entry[field]);
+                }
         }
 
         await saveWorldInfo(file, data);
@@ -1349,7 +1418,7 @@ function registerWorldInfoSlashCommands() {
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
         wiEntryFields: () => Object.entries(newWorldInfoEntryDefinition).map(([key, value]) =>
-            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`,
+            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : JSON.stringify(value.default))}`,
                 enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
@@ -1830,6 +1899,46 @@ function getWIElement(name) {
 }
 
 /**
+ * Adds missing fields to WI entries that are present in the entry template, but not in the data.
+ * Additionally verify that array/object fields are of the expected type.
+ * @param {any[]} data WI entries
+ * @returns {any[]} Data with backfilled fields
+ */
+function addMissingWorldInfoFields(data) {
+    data.forEach((entry) => {
+        // Add missing fields from the template
+        Object.entries(newWorldInfoEntryTemplate).forEach(([key, value]) => {
+            if (!Object.hasOwn(entry, key)) {
+                entry[key] = structuredClone(value);
+            }
+        });
+
+        // Ensure that the key is always an array
+        if (!Array.isArray(entry.key)) {
+            console.debug('[WI] Fixing invalid "key" field for entry', entry);
+            entry.key = [];
+        }
+
+        // Ensure that the keysecondary is always an array
+        if (!Array.isArray(entry.keysecondary)) {
+            console.debug('[WI] Fixing invalid "keysecondary" field for entry', entry);
+            entry.keysecondary = [];
+        }
+
+        // Ensure that the characterFilter is an object with the expected structure
+        if (!entry.characterFilter || typeof entry.characterFilter !== 'object' || Array.isArray(entry.characterFilter)) {
+            entry.characterFilter = {
+                isExclude: false,
+                names: [],
+                tags: [],
+            };
+        }
+    });
+
+    return data;
+}
+
+/**
  * Sorts the given data based on the selected sort option
  *
  * @param {any[]} data WI entries
@@ -2054,11 +2163,15 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         // Convert the data.entries object into an array
         let entriesArray = Object.keys(data.entries).map(uid => {
             const entry = data.entries[uid];
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+                return null;
+            }
             entry.displayIndex = entry.displayIndex ?? entry.uid;
             return entry;
-        });
+        }).filter(entry => entry !== null);
 
         // Apply the filter and do the chosen sorting
+        entriesArray = addMissingWorldInfoFields(entriesArray);
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
         entriesArray = sortWorldInfoEntries(entriesArray);
 
@@ -3539,7 +3652,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * Use `newEntryTemplate` if you just need the template that contains default values
  *
- * @type {{[key: string]: { default: any, type: string }}}
+ * @type {{[key: string]: { default: any, type: string, excludeFromTemplate?: boolean }}}
  */
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
@@ -3578,10 +3691,13 @@ export const newWorldInfoEntryDefinition = {
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
     delay: { default: null, type: 'number?' },
+    characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true },
+    characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true },
+    characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true },
 };
 
 export const newWorldInfoEntryTemplate = Object.fromEntries(
-    Object.entries(newWorldInfoEntryDefinition).map(([key, value]) => [key, value.default]),
+    Object.entries(newWorldInfoEntryDefinition).filter(([_, value]) => !value.excludeFromTemplate).map(([key, value]) => [key, value.default]),
 );
 
 /**
@@ -5083,6 +5199,10 @@ export function onWorldInfoChange(args, text) {
     return '';
 }
 
+/**
+ * Imports world info from a file.
+ * @param {File} file File to import
+ */
 export async function importWorldInfo(file) {
     if (!file) {
         return;
@@ -5136,28 +5256,34 @@ export async function importWorldInfo(file) {
         return false;
     }
 
-    jQuery.ajax({
-        type: 'POST',
-        url: '/api/worldinfo/import',
-        data: formData,
-        beforeSend: () => { },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (data) {
-            if (data.name) {
-                await updateWorldInfoList();
+    try {
+        const result = await fetch('/api/worldinfo/import', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
+        });
 
-                const newIndex = world_names.indexOf(data.name);
-                if (newIndex >= 0) {
-                    $('#world_editor_select').val(newIndex).trigger('change');
-                }
+        if (!result.ok) {
+            throw new Error(`Failed to import world info: ${result.statusText}`);
+        }
 
-                toastr.success(`World Info "${data.name}" imported successfully!`);
+        const data = await result.json();
+
+        if (data.name) {
+            await updateWorldInfoList();
+
+            const newIndex = world_names.indexOf(data.name);
+            if (newIndex >= 0) {
+                $('#world_editor_select').val(newIndex).trigger('change');
             }
-        },
-        error: (_jqXHR, _exception) => { },
-    });
+
+            toastr.success(t`World Info "${data.name}" imported successfully!`);
+        }
+    } catch (error) {
+        console.error('Error importing world info:', error);
+        toastr.error(t`Failed to import World Info`);
+    }
 }
 
 /**

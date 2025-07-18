@@ -440,7 +440,7 @@ comfy.post('/models', async (request, response) => {
         models.forEach(it => it.text = it.text.replace(/\.[^.]*$/, '').replace(/_/g, ' '));
 
         return response.send(models);
-    } catch (error)     {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -581,15 +581,21 @@ comfy.post('/generate', async (request, response) => {
                 .join('\n') || '';
             throw new Error(`ComfyUI generation did not succeed.\n\n${errorMessages}`.trim());
         }
-        const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+        const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
+        console.debug('ComfyUI outputs:', outputs);
+        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
+        if (!imgInfo) {
+            throw new Error('ComfyUI did not return any recognizable outputs.');
+        }
         const imgUrl = new URL(urlJoin(request.body.url, '/view'));
         imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
         const imgResponse = await fetch(imgUrl);
         if (!imgResponse.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
-        return response.send(Buffer.from(imgBuffer).toString('base64'));
+        return response.send({ format: format, data: Buffer.from(imgBuffer).toString('base64') });
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);
@@ -1154,28 +1160,44 @@ const falai = express.Router();
 falai.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
-        const result = await fetch(modelsUrl);
+        let page = 1;
+        /** @type {any} */
+        let modelsResponse;
+        let models = [];
 
-        if (!result.ok) {
-            console.warn('FAL.AI returned an error.', result.status, result.statusText);
-            throw new Error('FAL.AI request failed.');
-        }
+        do {
+            modelsUrl.searchParams.set('page', page.toString());
+            const result = await fetch(modelsUrl);
 
-        const data = await result.json();
+            if (!result.ok) {
+                console.warn('FAL.AI returned an error.', result.status, result.statusText);
+                throw new Error('FAL.AI request failed.');
+            }
 
-        if (!Array.isArray(data)) {
-            console.warn('FAL.AI returned invalid data.');
-            throw new Error('FAL.AI request failed.');
-        }
+            modelsResponse = await result.json();
+            if (!('items' in modelsResponse) || !Array.isArray(modelsResponse.items)) {
+                console.warn('FAL.AI returned invalid data.');
+                throw new Error('FAL.AI request failed.');
+            }
 
-        const models = data
-            .filter(x => !x.title.toLowerCase().includes('inpainting') &&
-                !x.title.toLowerCase().includes('control') &&
-                !x.title.toLowerCase().includes('upscale') &&
-                !x.title.toLowerCase().includes('lora'))
+            models = models.concat(
+                modelsResponse.items.filter(
+                    x => (
+                        !x.title.toLowerCase().includes('inpainting') &&
+                        !x.title.toLowerCase().includes('control') &&
+                        !x.title.toLowerCase().includes('upscale') &&
+                        !x.title.toLowerCase().includes('lora')
+                    ),
+                ),
+            );
+
+            page = modelsResponse.page + 1;
+        } while (modelsResponse != null && page < modelsResponse.pages);
+
+        const modelOptions = models
             .sort((a, b) => a.title.localeCompare(b.title))
             .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
-        return response.send(models);
+        return response.send(modelOptions);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -1327,17 +1349,6 @@ xai.post('/generate', async (request, response) => {
     }
 });
 
-router.use('/comfy', comfy);
-router.use('/together', together);
-router.use('/drawthings', drawthings);
-router.use('/pollinations', pollinations);
-router.use('/stability', stability);
-router.use('/huggingface', huggingface);
-router.use('/nanogpt', nanogpt);
-router.use('/bfl', bfl);
-router.use('/falai', falai);
-router.use('/xai', xai);
-
 const aimlapi = express.Router();
 
 aimlapi.post('/models', async (request, response) => {
@@ -1422,4 +1433,14 @@ aimlapi.post('/generate-image', async (req, res) => {
     }
 });
 
+router.use('/comfy', comfy);
+router.use('/together', together);
+router.use('/drawthings', drawthings);
+router.use('/pollinations', pollinations);
+router.use('/stability', stability);
+router.use('/huggingface', huggingface);
+router.use('/nanogpt', nanogpt);
+router.use('/bfl', bfl);
+router.use('/falai', falai);
+router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);

@@ -3,14 +3,27 @@ import {
     saveSettingsDebounced,
     getStoppingStrings,
     substituteParams,
-    api_server,
+    setOnlineStatus,
+    resultCheckStatus,
+    main_api,
+    online_status,
+    abortStatusCheck,
+    startStatusLoading,
+    setGenerationParamsFromPreset,
+    eventSource,
+    event_types,
 } from '../script.js';
+import { t } from './i18n.js';
+import { autoSelectInstructPreset } from './instruct-mode.js';
 
 import {
     power_user,
 } from './power-user.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getSortableDelay } from './utils.js';
+
+export let koboldai_settings;
+export let koboldai_setting_names;
 
 export const kai_settings = {
     temp: 1,
@@ -31,6 +44,9 @@ export const kai_settings = {
     use_default_badwordsids: false,
     grammar: '',
     seed: -1,
+    api_server: '',
+    preset_settings: 'gui',
+    extensions: {},
 };
 
 /**
@@ -72,8 +88,56 @@ export function formatKoboldUrl(value) {
     return null;
 }
 
-export function loadKoboldSettings(preset) {
+function selectKoboldGuiPreset() {
+    $('#settings_preset option[value=gui]')
+        .attr('selected', 'true')
+        .trigger('change');
+}
+
+export function loadKoboldSettings(data, preset, settings) {
+    koboldai_setting_names = data.koboldai_setting_names;
+    koboldai_settings = data.koboldai_settings;
+    koboldai_settings.forEach(function (item, i, arr) {
+        koboldai_settings[i] = JSON.parse(item);
+    });
+
+    $('#settings_preset').empty();
+    $('#settings_preset').append('<option value="gui">GUI KoboldAI Settings</option>');
+    const names = {};
+    koboldai_setting_names.forEach(function (item, i, arr) {
+        names[item] = i;
+        $('#settings_preset').append(`<option value=${i}>${item}</option>`);
+    });
+    koboldai_setting_names = names;
+
+    kai_settings.preset_settings = preset.preset_settings ?? settings.preset_settings;
+    kai_settings.api_server = preset.api_server ?? settings.api_server;
+
+    if (kai_settings.preset_settings == 'gui') {
+        selectKoboldGuiPreset();
+    } else {
+        if (typeof koboldai_setting_names[kai_settings.preset_settings] !== 'undefined') {
+            $(`#settings_preset option[value=${koboldai_setting_names[kai_settings.preset_settings]}]`)
+                .attr('selected', 'true');
+        } else {
+            kai_settings.preset_settings = 'gui';
+            selectKoboldGuiPreset();
+        }
+    }
+
+    loadKoboldSettingsFromPreset(preset);
+
+    //Load the API server URL from settings
+    $('#api_url_text').val(kai_settings.api_server);
+}
+
+function loadKoboldSettingsFromPreset(preset) {
     for (const name of Object.keys(kai_settings)) {
+        if (name === 'extensions') {
+            kai_settings.extensions = preset.extensions || {};
+            continue;
+        }
+
         const value = preset[name] ?? defaultValues[name];
         const slider = sliders.find(x => x.name === name);
 
@@ -139,8 +203,7 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         use_default_badwordsids: (kai_flags.can_use_default_badwordsids || isHorde) ? kai_settings.use_default_badwordsids : undefined,
         grammar: (kai_flags.can_use_grammar || isHorde) ? substituteParams(kai_settings.grammar) : undefined,
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
-
-        api_server,
+        api_server: kai_settings.api_server,
     };
     return generate_data;
 }
@@ -350,7 +413,53 @@ function sortItemsByOrder(orderArray) {
     }
 }
 
-jQuery(function () {
+export async function getStatusKobold() {
+    let endpoint = kai_settings.api_server;
+
+    if (!endpoint) {
+        console.warn('No endpoint for status check');
+        setOnlineStatus('no_connection');
+        return resultCheckStatus();
+    }
+
+    try {
+        const response = await fetch('/api/backends/kobold/status', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                main_api,
+                api_server: endpoint,
+            }),
+            signal: abortStatusCheck.signal,
+        });
+
+        const data = await response.json();
+
+        setOnlineStatus(data?.model ?? 'no_connection');
+
+        if (!data.koboldUnitedVersion) {
+            throw new Error(`Missing mandatory Kobold version in data: ${JSON.stringify(data)}`);
+        }
+
+        // Determine instruct mode preset
+        autoSelectInstructPreset(online_status);
+
+        // determine if we can use stop sequence and streaming
+        setKoboldFlags(data.koboldUnitedVersion, data.koboldCppVersion);
+
+        // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+        if (online_status === 'no_connection' && data.response) {
+            toastr.error(data.response, t`API Error`, { timeOut: 5000, preventDuplicates: true });
+        }
+    } catch (err) {
+        console.error('Error getting status', err);
+        setOnlineStatus('no_connection');
+    }
+
+    return resultCheckStatus();
+}
+
+export function initKoboldSettings() {
     sliders.forEach(slider => {
         $(document).on('input', slider.sliderId, function () {
             const value = $(this).val();
@@ -359,6 +468,23 @@ jQuery(function () {
             $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
+    });
+
+    $('#api_button').on('click', function (e) {
+        if ($('#api_url_text').val() != '') {
+            const value = formatKoboldUrl(String($('#api_url_text').val()).trim());
+
+            if (!value) {
+                toastr.error('Please enter a valid URL.');
+                return;
+            }
+
+            $('#api_url_text').val(value);
+            kai_settings.api_server = value;
+            startStatusLoading();
+            saveSettingsDebounced();
+            getStatusKobold();
+        }
     });
 
     $('#streaming_kobold').on('input', function () {
@@ -391,4 +517,29 @@ jQuery(function () {
         sortItemsByOrder(kai_settings.sampler_order);
         saveSettingsDebounced();
     });
-});
+
+    $('#settings_preset').on('change', async function () {
+        if ($('#settings_preset').find(':selected').val() != 'gui') {
+            kai_settings.preset_settings = $('#settings_preset').find(':selected').text();
+            const preset = koboldai_settings[koboldai_setting_names[kai_settings.preset_settings]];
+            loadKoboldSettingsFromPreset(preset);
+            setGenerationParamsFromPreset(preset);
+            $('#kobold_api-settings').find('input').prop('disabled', false);
+            $('#kobold_api-settings').css('opacity', 1.0);
+            $('#kobold_order')
+                .css('opacity', 1)
+                .sortable('enable');
+        } else {
+            kai_settings.preset_settings = 'gui';
+
+            $('#kobold_api-settings').find('input').prop('disabled', true);
+            $('#kobold_api-settings').css('opacity', 0.5);
+
+            $('#kobold_order')
+                .css('opacity', 0.5)
+                .sortable('disable');
+        }
+        saveSettingsDebounced();
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'kobold', name: kai_settings.preset_settings });
+    });
+}

@@ -24,7 +24,7 @@ export class GoogleNativeTtsProvider {
                 <label for="google-tts-api-type">API Type:</label>
                 <select id="google-tts-api-type">
                     <option value="makersuite">Google AI Studio (MakerSuite)</option>
-                    <option value="vertexai">Google Vertex AI</option>
+                    <option value="vertexai" disabled>Google Vertex AI (unsupported)</option>
                 </select>
             </div>
             <div>

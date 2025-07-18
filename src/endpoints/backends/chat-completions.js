@@ -18,6 +18,7 @@ import {
     excludeKeysByYaml,
     color,
     trimTrailingSlash,
+    flattenSchema,
 } from '../../util.js';
 import {
     convertClaudeMessages,
@@ -171,6 +172,17 @@ async function sendClaudeRequest(request, response) {
             if (enableSystemPromptCache && requestBody.tools.length) {
                 requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
+        }
+
+        // Structured output is a forced tool
+        if (request.body.json_schema) {
+            const jsonTool = {
+                name: request.body.json_schema.name,
+                description: request.body.json_schema.description || 'Well-formed JSON object',
+                input_schema: request.body.json_schema.value,
+            };
+            requestBody.tools = [...(requestBody.tools || []), jsonTool];
+            requestBody.tool_choice = { type: 'tool', name: request.body.json_schema.name };
         }
 
         if (useWebSearch) {
@@ -363,6 +375,9 @@ async function sendMakerSuiteRequest(request, response) {
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
+    const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
+    const responseSchema = request.body.responseSchema ?? (request.body.json_schema ? request.body.json_schema.value : undefined);
+
     const generationConfig = {
         stopSequences: request.body.stop,
         candidateCount: 1,
@@ -370,8 +385,8 @@ async function sendMakerSuiteRequest(request, response) {
         temperature: request.body.temperature,
         topP: request.body.top_p,
         topK: request.body.top_k || undefined,
-        responseMimeType: request.body.responseMimeType,
-        responseSchema: request.body.responseSchema,
+        responseMimeType: responseMimeType,
+        responseSchema: responseSchema,
     };
 
     function getGeminiBody() {
@@ -449,6 +464,12 @@ async function sendMakerSuiteRequest(request, response) {
             const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort, model);
             if (Number.isInteger(thinkingBudget)) {
                 thinkingConfig.thinkingBudget = thinkingBudget;
+            }
+
+            // Vertex doesn't allow mixing disabled thinking with includeThoughts
+            if (useVertexAi && thinkingBudget === 0 && thinkingConfig.includeThoughts) {
+                console.info('Thinking budget is 0, but includeThoughts is true. Thoughts will not be included in the response.');
+                thinkingConfig.includeThoughts = false;
             }
 
             generationConfig.thinkingConfig = thinkingConfig;
@@ -609,12 +630,23 @@ async function sendAI21Request(request, response) {
         return response.status(400).send({ error: true });
     }
 
+    const bodyParams = {};
     const controller = new AbortController();
-    console.debug(request.body.messages);
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
+    // Hack to support JSON schema
+    if (request.body.json_schema) {
+        bodyParams.response_format = {
+            type: 'json_object',
+        };
+        const message = {
+            role: 'user',
+            content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+        };
+        request.body.messages.push(message);
+    }
     const convertedPrompt = convertAI21Messages(request.body.messages, getPromptNames(request));
     const body = {
         messages: convertedPrompt,
@@ -625,6 +657,7 @@ async function sendAI21Request(request, response) {
         stop: request.body.stop,
         stream: request.body.stream,
         tools: request.body.tools,
+        ...bodyParams,
     };
     const options = {
         method: 'POST',
@@ -703,6 +736,18 @@ async function sendMistralAIRequest(request, response) {
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             requestBody['tools'] = request.body.tools;
             requestBody['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.json_schema) {
+            requestBody['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
         }
 
         const config = {
@@ -795,6 +840,13 @@ async function sendCohereRequest(request, response) {
             requestBody.safety_mode = 'OFF';
         }
 
+        if (request.body.json_schema) {
+            requestBody.response_format = {
+                type: 'json_schema',
+                schema: request.body.json_schema.value,
+            };
+        }
+
         console.debug('Cohere request:', requestBody);
 
         const config = {
@@ -874,6 +926,18 @@ async function sendDeepSeekRequest(request, response) {
                     delete tool.function.parameters.required;
                 }
             });
+        }
+
+        // Hack to support JSON schema
+        if (request.body.json_schema) {
+            bodyParams.response_format = {
+                type: 'json_object',
+            };
+            const message = {
+                role: 'user',
+                content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+            };
+            request.body.messages.push(message);
         }
 
         const postProcessType = String(request.body.model).endsWith('-reasoner')
@@ -984,6 +1048,17 @@ async function sendXaiRequest(request, response) {
             };
         }
 
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    strict: request.body.json_schema.strict ?? true,
+                    schema: request.body.json_schema.value,
+                },
+            };
+        }
+
         const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
         const requestBody = {
@@ -1077,6 +1152,18 @@ async function sendAimlapiRequest(request, response) {
 
         if (request.body.reasoning_effort) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
         }
 
         const requestBody = {
@@ -1185,6 +1272,10 @@ router.post('/status', async function (request, statusResponse) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = 'https://text.pollinations.ai';
         apiKey = 'NONE';
+        headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
+        apiUrl = API_GROQ;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
@@ -1395,6 +1486,10 @@ router.post('/generate', function (request, response) {
             getPromptNames(request));
     }
 
+    if (request.body.json_schema?.value) {
+        request.body.json_schema.value = flattenSchema(request.body.json_schema.value, request.body.chat_completion_source);
+    }
+
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
@@ -1470,11 +1565,27 @@ router.post('/generate', function (request, response) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
         }
 
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    strict: request.body.json_schema.strict ?? true,
+                    schema: request.body.json_schema.value,
+                },
+            };
+        }
+
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
         const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+        }
+
+        const isGemini = /google\/gemini/.test(request.body.model);
+        if (isGemini) {
+            bodyParams['safety_settings'] = GEMINI_SAFETY;
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
@@ -1497,18 +1608,42 @@ router.post('/generate', function (request, response) {
         apiUrl = API_PERPLEXITY;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+        };
         request.body.messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.STRICT, getPromptNames(request));
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    schema: request.body.json_schema.value,
+                },
+            };
+        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
         apiUrl = API_GROQ;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
         bodyParams = {};
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
         apiUrl = API_NANOGPT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         headers = {};
         bodyParams = {};
+        if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
+            request.body.model = `${request.body.model}:online`;
+        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
         apiUrl = API_01AI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
@@ -1526,6 +1661,17 @@ router.post('/generate', function (request, response) {
             referrer: 'sillytavern',
             seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
         };
+        // Hack to support JSON schema
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_object',
+            };
+            const message = {
+                role: 'user',
+                content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+            };
+            request.body.messages.push(message);
+        }
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
@@ -1562,6 +1708,17 @@ router.post('/generate', function (request, response) {
     if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
         bodyParams['tools'] = request.body.tools;
         bodyParams['tool_choice'] = request.body.tool_choice;
+    }
+
+    if (request.body.json_schema && !bodyParams['response_format']) {
+        bodyParams['response_format'] = {
+            type: 'json_schema',
+            json_schema: {
+                name: request.body.json_schema.name,
+                strict: request.body.json_schema.strict ?? true,
+                schema: request.body.json_schema.value,
+            },
+        };
     }
 
     const requestBody = {

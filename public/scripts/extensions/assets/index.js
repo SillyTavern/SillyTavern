@@ -7,7 +7,7 @@ import { DOMPurify } from '../../../lib.js';
 import { getRequestHeaders, processDroppedFiles, eventSource, event_types } from '../../../script.js';
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
-import { executeSlashCommands } from '../../slash-commands.js';
+import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 import { flashHighlight, getStringHash, isValidUrl } from '../../utils.js';
 import { t } from '../../i18n.js';
@@ -142,7 +142,7 @@ async function downloadAssetsList(url) {
                         const assetDelete = async function () {
                             if (assetType === 'character') {
                                 toastr.error('Go to the characters menu to delete a character.', 'Character deletion not supported');
-                                await executeSlashCommands(`/go ${asset['id']}`);
+                                await executeSlashCommandsWithOptions(`/go ${asset['id']}`);
                                 return;
                             }
                             element.off('click');

@@ -14,7 +14,6 @@ import {
 } from '../script.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
-    getGroupPastChats,
     group_activation_strategy,
     groups,
     openGroupById,
@@ -40,22 +39,42 @@ import {
 
 const bookmarkNameToken = 'Checkpoint #';
 
+/**
+ * Gets the names of existing chats for the current character or group.
+ * @returns {Promise<string[]>} - Returns a promise that resolves to an array of existing chat names.
+ */
 async function getExistingChatNames() {
     if (selected_group) {
-        const data = await getGroupPastChats(selected_group);
-        return data.map(x => x.file_name);
-    } else {
-        const response = await fetch('/api/characters/chats', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        const group = groups.find(x => x.id == selected_group);
+        if (group && Array.isArray(group.chats)) {
+            return [...group.chats];
         }
+
+        return [];
     }
+
+    if (this_chid === undefined) {
+        return [];
+    }
+
+    const character = characters[this_chid];
+    if (!character) {
+        return [];
+    }
+
+    const response = await fetch('/api/characters/chats', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ avatar_url: character.avatar, simple: true }),
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        const chats = Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        return [...chats];
+    }
+
+    return [];
 }
 
 async function getBookmarkName({ isReplace = false, forceName = null } = {}) {

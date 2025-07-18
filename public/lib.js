@@ -21,6 +21,7 @@ import droll from 'droll';
 import morphdom from 'morphdom';
 import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
+import yaml from 'yaml';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -98,6 +99,7 @@ export default {
     morphdom,
     slideToggle,
     chalk,
+    yaml,
 };
 
 export {
@@ -121,4 +123,5 @@ export {
     morphdom,
     slideToggle,
     chalk,
+    yaml,
 };

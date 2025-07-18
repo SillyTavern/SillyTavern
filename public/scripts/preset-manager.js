@@ -1,4 +1,4 @@
-import { Fuse } from '../lib.js';
+import { Fuse, lodash } from '../lib.js';
 
 import {
     amount_gen,
@@ -14,6 +14,7 @@ import {
     novelai_setting_names,
     novelai_settings,
     online_status,
+    saveSettings,
     saveSettingsDebounced,
     this_chid,
 } from '../script.js';
@@ -21,7 +22,7 @@ import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { openai_settings, openai_setting_names } from './openai.js';
+import { openai_settings, openai_setting_names, oai_settings } from './openai.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -36,7 +37,7 @@ import {
     textgenerationwebui_presets,
     textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
-import { download, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
+import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
 import { reasoning_templates } from './reasoning.js';
 
@@ -391,6 +392,9 @@ class PresetManager {
         $(this.select).val(value).trigger('change');
     }
 
+    /**
+     * Updates the preset select element with the current API presets.
+     */
     async updatePreset() {
         const selected = $(this.select).find('option:selected');
         console.log(selected);
@@ -407,6 +411,9 @@ class PresetManager {
         toastr.success(successToast);
     }
 
+    /**
+     * Saves the currently selected preset with a new name.
+     */
     async savePresetAs() {
         const inputValue = this.getSelectedPresetName();
         const popupText = !this.isAdvancedFormatting() ? '<h4>' + t`Hint: Use a character/group name to bind preset to a specific chat.` + '</h4>' : '';
@@ -423,7 +430,14 @@ class PresetManager {
         toastr.success(successToast);
     }
 
-    async savePreset(name, settings) {
+    /**
+     * Saves a preset with the given name and settings.
+     * @param {string} name Name of the preset to save
+     * @param {object} [settings] Settings to save as the preset. If not provided, uses the current preset settings.
+     * @param {object} [options] Options for saving the preset
+     * @param {boolean} [options.skipUpdate=false] If true, skips updating the preset list after saving.
+     */
+    async savePreset(name, settings, { skipUpdate = false } = {}) {
         if (this.apiId === 'instruct' && settings) {
             await checkForSystemPromptInInstructTemplate(name, settings);
         }
@@ -449,9 +463,18 @@ class PresetManager {
         const data = await response.json();
         name = data.name;
 
+        if (skipUpdate) {
+            console.debug(`Preset ${name} saved, but not updating the list`);
+            return;
+        }
+
         this.updateList(name, preset);
     }
 
+    /**
+     * Renames the currently selected preset.
+     * @param {string} newName New name for the preset
+     */
     async renamePreset(newName) {
         const oldName = this.getSelectedPresetName();
         if (equalsIgnoreCaseAndAccents(oldName, newName)) {
@@ -468,9 +491,15 @@ class PresetManager {
 
     }
 
+    /**
+     * Gets a list of presets for the API.
+     * @param {string} [api] API ID. If not specified, uses the current API ID.
+     * @returns {{presets: any[], preset_names: object, settings: object}}
+     */
     getPresetList(api) {
         let presets = [];
         let preset_names = {};
+        let settings = {};
 
         // If no API specified, use the current API
         if (api === undefined) {
@@ -482,50 +511,69 @@ class PresetManager {
             case 'kobold':
                 presets = koboldai_settings;
                 preset_names = koboldai_setting_names;
+                settings = kai_settings;
                 break;
             case 'novel':
                 presets = novelai_settings;
                 preset_names = novelai_setting_names;
+                settings = nai_settings;
                 break;
             case 'textgenerationwebui':
                 presets = textgenerationwebui_presets;
                 preset_names = textgenerationwebui_preset_names;
+                settings = textgen_settings;
                 break;
             case 'openai':
                 presets = openai_settings;
                 preset_names = openai_setting_names;
+                settings = oai_settings;
                 break;
             case 'context':
                 presets = context_presets;
                 preset_names = context_presets.map(x => x.name);
+                settings = power_user.context;
                 break;
             case 'instruct':
                 presets = instruct_presets;
                 preset_names = instruct_presets.map(x => x.name);
+                settings = power_user.instruct;
                 break;
             case 'sysprompt':
                 presets = system_prompts;
                 preset_names = system_prompts.map(x => x.name);
+                settings = power_user.sysprompt;
                 break;
             case 'reasoning':
                 presets = reasoning_templates;
                 preset_names = reasoning_templates.map(x => x.name);
+                settings = power_user.reasoning;
                 break;
             default:
                 console.warn(`Unknown API ID ${api}`);
         }
 
-        return { presets, preset_names };
+        return { presets, preset_names, settings };
     }
 
+    /**
+     * Returns true if the API is keyed, meaning it uses a name to identify presets.
+     */
     isKeyedApi() {
         return this.apiId == 'textgenerationwebui' || this.isAdvancedFormatting();
     }
 
+    /**
+     * Returns true if the API is from Advanced Formatting group.
+     */
     isAdvancedFormatting() {
-        return  ['context', 'instruct', 'sysprompt', 'reasoning'].includes(this.apiId);
+        return ['context', 'instruct', 'sysprompt', 'reasoning'].includes(this.apiId);
     }
 
+    /**
+     * Updates the preset list with a new or existing preset.
+     * @param {string} name Name of the preset
+     * @param {object} preset Preset object
+     */
     updateList(name, preset) {
         const { presets, preset_names } = this.getPresetList();
         const presetExists = this.isKeyedApi() ? preset_names.includes(name) : Object.keys(preset_names).includes(name);
@@ -561,6 +609,11 @@ class PresetManager {
         }
     }
 
+    /**
+     * Gets the preset settings for the given name.
+     * @param {string} name Name of the preset
+     * @returns {object} Preset settings object for the given name
+     */
     getPresetSettings(name) {
         function getSettingsByApiId(apiId) {
             switch (apiId) {
@@ -598,6 +651,7 @@ class PresetManager {
         }
 
         const filteredKeys = [
+            'api_server',
             'preset',
             'streaming',
             'truncation_length',
@@ -607,6 +661,7 @@ class PresetManager {
             'can_use_tokenization',
             'can_use_streaming',
             'preset_settings_novel',
+            'preset_settings',
             'streaming_novel',
             'nai_preamble',
             'model_novel',
@@ -653,7 +708,7 @@ class PresetManager {
             }
         }
 
-        if (!this.isAdvancedFormatting()) {
+        if (!this.isAdvancedFormatting() && this.apiId !== 'openai') {
             settings['genamt'] = amount_gen;
             settings['max_length'] = max_context;
         }
@@ -661,6 +716,11 @@ class PresetManager {
         return settings;
     }
 
+    /**
+     * Retrieves a completion preset by name.
+     * @param {string} name Name of the preset to retrieve
+     * @returns {any} Preset object if found, otherwise undefined
+     */
     getCompletionPresetByName(name) {
         // Retrieve a completion preset by name. Return undefined if not found.
         let { presets, preset_names } = this.getPresetList();
@@ -685,7 +745,10 @@ class PresetManager {
         return preset;
     }
 
-    // pass no arguments to delete current preset
+    /**
+     * Deletes a preset by name. If not provided, deletes the currently selected preset.
+     * @param {string} [name] Name of the preset to delete.
+     */
     async deletePreset(name) {
         const { preset_names, presets } = this.getPresetList();
         const value = name ? (this.isKeyedApi() ? this.findPreset(name) : name) : this.getSelectedPreset();
@@ -726,6 +789,11 @@ class PresetManager {
         return response.ok;
     }
 
+    /**
+     * Retrieves the default preset for the API from the server.
+     * @param {string} name Name of the preset to restore
+     * @returns {Promise<any>} Default preset object, or undefined if the request fails
+     */
     async getDefaultPreset(name) {
         const response = await fetch('/api/presets/restore', {
             method: 'POST',
@@ -740,6 +808,70 @@ class PresetManager {
         }
 
         return await response.json();
+    }
+
+    /**
+     * Reads a preset extension field from the preset.
+     * @param {object} options
+     * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @return {any} The value of the preset extension field, or null if not found.
+     */
+    readPresetExtensionField({ name, path }) {
+        const { settings } = this.getPresetList();
+        const selectedName = this.getSelectedPresetName();
+        const presetName = name || selectedName;
+
+        // Read from settings if the selected preset is the same as the provided name
+        if (settings && selectedName === presetName) {
+            const settingsExtensions = ensurePlainObject(settings.extensions || {});
+            return lodash.get(settingsExtensions, path, null);
+        }
+
+        // Otherwise, read from the preset by name
+        const preset = this.getCompletionPresetByName(presetName);
+        if (!preset) {
+            return null;
+        }
+
+        const presetExtensions = ensurePlainObject(preset.extensions || {});
+        const value = lodash.get(presetExtensions, path, null);
+        return value;
+    }
+
+    /**
+     * Writes a value to a preset extension field.
+     * @param {object} options
+     * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @param {any} options.value Value to write to the preset extension field.
+     * @return {Promise<void>} Resolves when the preset is saved.
+     */
+    async writePresetExtensionField({ name, path, value }) {
+        const { settings } = this.getPresetList();
+        const selectedName = this.getSelectedPresetName();
+        const presetName = name || selectedName;
+
+        // Write to settings if the selected preset is the same as the provided name
+        if (settings && selectedName === presetName) {
+            // Set the value at the specified path
+            settings.extensions = ensurePlainObject(settings.extensions || {});
+            lodash.set(settings.extensions, path, value);
+            await saveSettings();
+        }
+
+        // Also update the preset by name
+        const preset = this.getCompletionPresetByName(presetName);
+        if (!preset) {
+            return;
+        }
+
+        // Set the value at the specified path
+        preset.extensions = ensurePlainObject(preset.extensions || {});
+        lodash.set(preset.extensions, path, value);
+
+        // Save the updated preset
+        await this.savePreset(presetName, preset, { skipUpdate: true });
     }
 }
 
@@ -903,6 +1035,9 @@ export async function initPresetManager() {
 
         await presetManager.renamePreset(newName);
 
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: oldName });
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: apiId, name: newName });
+
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
             $('#update_oai_preset').trigger('click');
@@ -975,6 +1110,7 @@ export async function initPresetManager() {
             return;
         }
 
+        const name = presetManager.getSelectedPresetName();
         const result = await presetManager.deletePreset();
 
         if (result) {
@@ -986,6 +1122,7 @@ export async function initPresetManager() {
         }
 
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {

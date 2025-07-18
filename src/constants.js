@@ -18,6 +18,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     thumbnails: 'thumbnails',
     thumbnailsBg: 'thumbnails/bg',
     thumbnailsAvatar: 'thumbnails/avatar',
+    thumbnailsPersona: 'thumbnails/persona',
     worlds: 'worlds',
     user: 'user',
     avatars: 'User Avatars',
@@ -287,7 +288,7 @@ export const TOGETHERAI_KEYS = [
     'stop',
 ];
 
-// https://github.com/ollama/ollama/blob/main/docs/api.md#request-with-options
+// https://github.com/ollama/ollama/blob/main/docs/api.md#request-8
 export const OLLAMA_KEYS = [
     'num_predict',
     'num_ctx',
@@ -303,9 +304,6 @@ export const OLLAMA_KEYS = [
     'typical_p',
     'seed',
     'repeat_last_n',
-    'mirostat',
-    'mirostat_tau',
-    'mirostat_eta',
     'min_p',
 ];
 
@@ -415,3 +413,26 @@ export const LOG_LEVELS = {
     WARN: 2,
     ERROR: 3,
 };
+
+/**
+ * An array of supported media file extensions.
+ * This is used to validate file uploads and ensure that only supported media types are processed.
+ */
+export const MEDIA_EXTENSIONS = [
+    'bmp',
+    'png',
+    'jpg',
+    'webp',
+    'jpeg',
+    'jfif',
+    'gif',
+    'mp4',
+    'avi',
+    'mov',
+    'wmv',
+    'flv',
+    'webm',
+    '3gp',
+    'mkv',
+    'mpg',
+];

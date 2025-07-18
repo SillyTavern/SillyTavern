@@ -7,7 +7,7 @@ import { renderTemplateAsync } from './templates.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { localizePagination, PAGINATION_TEMPLATE } from './utils.js';
+import { localizePagination, PAGINATION_TEMPLATE, textValueMatcher } from './utils.js';
 
 let mancerModels = [];
 let togetherModels = [];
@@ -34,7 +34,6 @@ const OPENROUTER_PROVIDERS = [
     'Avian',
     'Azure',
     'BaseTen',
-    'Cent-ML',
     'Cerebras',
     'Chutes',
     'Cloudflare',
@@ -56,7 +55,6 @@ const OPENROUTER_PROVIDERS = [
     'InferenceNet',
     'Infermatic',
     'Inflection',
-    'InoCloud',
     'Kluster',
     'Lambda',
     'Liquid',
@@ -64,6 +62,8 @@ const OPENROUTER_PROVIDERS = [
     'Meta',
     'Minimax',
     'Mistral',
+    'Moonshot AI',
+    'Morph',
     'NCompass',
     'Nebius',
     'NextBit',
@@ -144,7 +144,7 @@ export async function loadTogetherAIModels(data) {
     $('#model_togetherai_select').empty();
     for (const model of data) {
         // Hey buddy, I think you've got the wrong door.
-        if (model.display_type === 'image') {
+        if (model.type === 'image') {
             continue;
         }
 
@@ -267,7 +267,7 @@ export async function loadOpenRouterModels(data) {
     for (const model of data) {
         const option = document.createElement('option');
         option.value = model.id;
-        option.text = model.id;
+        option.text = model.name;
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }
@@ -1005,6 +1005,7 @@ export function initTextGenModels() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+            matcher: textValueMatcher,
         });
         $('#vllm_model').select2({
             placeholder: t`Select a model`,

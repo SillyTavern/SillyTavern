@@ -1,6 +1,6 @@
 import { Fuse } from '../../../lib.js';
 
-import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
+import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
@@ -1056,10 +1056,10 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                     inApiCall = true;
                     switch (extension_settings.expressions.promptType) {
                         case PROMPT_TYPE.raw:
-                            emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+                            emotionResponse = await generateRaw({ prompt: text, systemPrompt: prompt });
                             break;
                         case PROMPT_TYPE.full:
-                            emotionResponse = await generateQuietPrompt(prompt, false, false);
+                            emotionResponse = await generateQuietPrompt({ quietPrompt: prompt });
                             break;
                     }
                 } finally {
@@ -1331,7 +1331,7 @@ async function renderFallbackExpressionPicker() {
     defaultPicker.empty();
 
 
-    addOption(OPTION_NO_FALLBACK, '[ No fallback ]', !extension_settings.expressions.fallback_expression);
+    addOption(OPTION_NO_FALLBACK, '[ No fallback ]', !extension_settings.expressions.fallback_expression && !extension_settings.expressions.showDefault);
     addOption(OPTION_EMOJI_FALLBACK, '[ Default emojis ]', !!extension_settings.expressions.showDefault);
 
     for (const expression of expressions) {
@@ -1758,27 +1758,38 @@ async function onExpressionFallbackChanged() {
     saveSettingsDebounced();
 }
 
+/**
+ * Handles the file upload process for a sprite image.
+ * @param {string} url URL to upload the file to
+ * @param {FormData} formData FormData object containing the file and other data to upload
+ * @returns {Promise<any>} - The response data from the server
+ */
 async function handleFileUpload(url, formData) {
     try {
-        const data = await jQuery.ajax({
-            type: 'POST',
-            url: url,
-            data: formData,
-            beforeSend: function () { },
-            cache: false,
-            contentType: false,
-            processData: false,
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
         });
 
+        if (!result.ok) {
+            throw new Error(`Upload failed with status ${result.status}`);
+        }
+
+        const data = await result.json();
+
         // Refresh sprites list
-        const name = formData.get('name');
+        const name = formData.get('name').toString();
         delete spriteCache[name];
         await fetchImagesNoCache();
         await validateImages(name);
 
-        return data;
+        return data ?? {};
     } catch (error) {
+        console.error('Error uploading image:', error);
         toastr.error('Failed to upload image');
+        return {};
     }
 }
 
@@ -1996,7 +2007,11 @@ async function onClickExpressionUploadPackButton() {
         const uploadToast = toastr.info('Please wait...', 'Upload is processing', { timeOut: 0, extendedTimeOut: 0 });
         const { count } = await handleFileUpload('/api/sprites/upload-zip', formData);
         toastr.clear(uploadToast);
-        toastr.success(`Uploaded ${count} image(s) for ${name}`);
+
+        // Only show success message if at least one image was uploaded
+        if (count) {
+            toastr.success(`Uploaded ${count} image(s) for ${name}`);
+        }
 
         // Reset the input
         e.target.form.reset();
@@ -2116,7 +2131,7 @@ function migrateSettings() {
         saveSettingsDebounced();
     }
 
-    if (extension_settings.expressions.showDefault && extension_settings.expressions.fallback_expression !== undefined) {
+    if (extension_settings.expressions.showDefault && extension_settings.expressions.fallback_expression) {
         extension_settings.expressions.showDefault = false;
         saveSettingsDebounced();
     }

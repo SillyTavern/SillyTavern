@@ -688,6 +688,10 @@
         "type": "instruct"
     },
     {
+        "filename": "presets/instruct/KoboldAI.json",
+        "type": "instruct"
+    },
+    {
         "filename": "presets/context/Llama-3-Instruct-Names.json",
         "type": "context"
     },
@@ -817,6 +821,22 @@
     },
     {
         "filename": "presets/context/Dots1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Mistral V7-Tekken.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V7-Tekken.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Moonshot AI.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Moonshot AI.json",
         "type": "context"
     }
 ]

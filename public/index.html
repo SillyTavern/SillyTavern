@@ -300,7 +300,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <small data-tg-type="openrouter">
+                                <small id="prompt_cost_block" data-tg-type="openrouter">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="or_prompt_cost">&ndash;</span>
                                 </small>
                             </div>
@@ -1314,7 +1314,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top nsigma">Top nsigma</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
@@ -1499,7 +1499,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1811,6 +1811,7 @@
                                             <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
                                             <div data-name="dynamic_temperature" draggable="true"><span>Dynamic Temperature</span><small></small></div>
                                             <div data-name="quadratic_sampling" draggable="true"><span>Quadratic / Smooth Sampling</span><small></small></div>
+                                            <div data-name="top_n_sigma" draggable="true"><span>Top Nsigma</span><small></small></div>
                                             <div data-name="top_k" draggable="true"><span>Top K</span><small></small></div>
                                             <div data-name="top_p" draggable="true"><span>Top P</span><small></small></div>
                                             <div data-name="typical_p" draggable="true"><span>Typical P</span><small></small></div>
@@ -1969,7 +1970,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,nanogpt">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -2078,7 +2079,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2092,7 +2093,7 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,perplexity" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
@@ -3165,7 +3166,11 @@
                                         <option value="jamba-mini">jamba-mini</option>
                                         <option value="jamba-large">jamba-large</option>
                                     </optgroup>
-                                    <optgroup label="Jamba 1.6">
+                                    <optgroup label="Jamba 1.7">
+                                        <option value="jamba-1.7-mini">jamba-1.7-mini</option>
+                                        <option value="jamba-1.7-large">jamba-1.7-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6 (Deprecated)">
                                         <option value="jamba-1.6-mini">jamba-1.6-mini</option>
                                         <option value="jamba-1.6-large">jamba-1.6-large</option>
                                     </optgroup>
@@ -3192,12 +3197,15 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
                                         <option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05 → 2.5-pro-exp-03-25</option>
@@ -3362,12 +3370,15 @@
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
                                     <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25" data-mode="full">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
                                         <option value="gemini-2.0-flash-exp" data-mode="full">gemini-2.0-flash-exp</option>
@@ -3409,6 +3420,7 @@
                                         <option value="pixtral-12b-latest">pixtral-12b-latest</option>
                                         <option value="pixtral-large-latest">pixtral-large-latest</option>
                                         <option value="devstral-small-latest">devstral-small-latest</option>
+                                        <option value="devstral-medium-latest">devstral-medium-latest</option>
                                         <option value="magistral-small-latest">magistral-small-latest</option>
                                         <option value="magistral-medium-latest">magistral-medium-latest</option>
                                     </optgroup>
@@ -3424,6 +3436,7 @@
                                         <option value="mistral-small-2409">mistral-small-2409</option>
                                         <option value="mistral-small-2501">mistral-small-2501</option>
                                         <option value="mistral-small-2503">mistral-small-2503</option>
+                                        <option value="mistral-small-2506">mistral-small-2506</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-medium-2505">mistral-medium-2505</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
@@ -3440,6 +3453,8 @@
                                         <option value="pixtral-12b-2409">pixtral-12b-2409</option>
                                         <option value="pixtral-large-2411">pixtral-large-2411</option>
                                         <option value="devstral-small-2505">devstral-small-2505</option>
+                                        <option value="devstral-small-2507">devstral-small-2507</option>
+                                        <option value="devstral-medium-2507">devstral-medium-2507</option>
                                         <option value="magistral-small-2506">magistral-small-2506</option>
                                         <option value="magistral-medium-2506">magistral-medium-2506</option>
                                     </optgroup>
@@ -3458,35 +3473,17 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <optgroup label="Alibaba Cloud">
-                                    <option value="qwen-2.5-32b">qwen-2.5-32b</option>
-                                    <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
-                                </optgroup>
-                                <optgroup label="DeepSeek">
-                                    <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
-                                    <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-                                </optgroup>
-                                <optgroup label="Google">
-                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                                </optgroup>
-                                <optgroup label="Meta">
-                                    <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
-                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
-                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
-                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
-                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
-                                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
-                                    <option value="llama-guard-3-8b">llama-guard-3-8b</option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                </optgroup>
-                                <optgroup label="Mistral AI">
-                                    <option value="mistral-saba-24b">mistral-saba-24b</option>
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                </optgroup>
+                                <option value="qwen/qwen3-32b">qwen/qwen3-32b</option>
+                                <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
+                                <option value="llama-guard-3-8b">llama-guard-3-8b</option>
+                                <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                <option value="mistral-saba-24b">mistral-saba-24b</option>
                             </select>
                         </div>
                         <div id="nanogpt_form" data-source="nanogpt">
@@ -3539,6 +3536,7 @@
                                     <option value="sonar-pro">sonar-pro</option>
                                     <option value="sonar-reasoning">sonar-reasoning</option>
                                     <option value="sonar-reasoning-pro">sonar-reasoning-pro</option>
+                                    <option value="sonar-deep-research">sonar-deep-research</option>
                                 </optgroup>
                                 <optgroup label="Offline Models">
                                     <option value="r1-1776">r1-1776</option>
@@ -3653,6 +3651,7 @@
                             </div>
                             <h4 data-i18n="xAI Model">xAI Model</h4>
                             <select id="model_xai_select">
+                                <option value="grok-4-0709">grok-4-0709</option>
                                 <option value="grok-3-beta">grok-3-beta</option>
                                 <option value="grok-3-fast-beta">grok-3-fast-beta</option>
                                 <option value="grok-3-mini-beta">grok-3-mini-beta</option>
@@ -3704,13 +3703,17 @@
                             </h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
                                 <option data-i18n="prompt_post_processing_none" value="">None</option>
-                                <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles (no tools)</option>
-                                <option data-i18n="prompt_post_processing_merge_tools" value="merge_tools">Merge consecutive roles (with tools)</option>
-                                <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles; no tools)</option>
-                                <option data-i18n="prompt_post_processing_semi_tools" value="semi_tools">Semi-strict (alternating roles; with tools)</option>
-                                <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles; no tools)</option>
-                                <option data-i18n="prompt_post_processing_strict_tools" value="strict_tools">Strict (user first, alternating roles; with tools)</option>
-                                <option data-i18n="prompt_post_processing_single" value="single">Single user message (no tools)</option>
+                                <optgroup label="With Tools">
+                                    <option data-i18n="prompt_post_processing_merge_tools" value="merge_tools">Merge consecutive roles (with tools)</option>
+                                    <option data-i18n="prompt_post_processing_semi_tools" value="semi_tools">Semi-strict (alternating roles; with tools)</option>
+                                    <option data-i18n="prompt_post_processing_strict_tools" value="strict_tools">Strict (user first, alternating roles; with tools)</option>
+                                </optgroup>
+                                <optgroup label="No Tools">
+                                    <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles (no tools)</option>
+                                    <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles; no tools)</option>
+                                    <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles; no tools)</option>
+                                    <option data-i18n="prompt_post_processing_single" value="single">Single user message (no tools)</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="flex-container flex">
@@ -3718,7 +3721,7 @@
                             <div class="api_loading menu_button menu_button_icon" data-i18n="Cancel">Cancel</div>
                             <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon" data-i18n="Additional Parameters">Additional Parameters</div>
                             <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
-                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"><span data-i18n="Test Message">Test Message</span></div>
+                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="Test Message;[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
                         </div>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>
@@ -4231,6 +4234,13 @@
                         </div>
                         <div>
                             <h4 class="standoutHeader" data-i18n="Miscellaneous">Miscellaneous</h4>
+                            <div name="bindModelPresetBlock">
+                                <label for="bind_model_templates" class="checkbox_label">
+                                    <input id="bind_model_templates" type="checkbox" />
+                                    <small data-i18n="Bind Model to Templates">Bind Model to Templates</small>
+                                    <span class="fa-solid fa-circle-question" data-i18n="[title]bind_model_templates_desc" title="When connecting to an API or choosing a model, automatically activate the current Instruct and Context templates if the model name or its chat template matches the currently loaded model."></span>
+                                </label>
+                            </div>
                             <div>
                                 <small>
                                     <span data-i18n="Non-markdown strings">
@@ -4297,7 +4307,7 @@
                                 </span>
                             </div>
                             <div class="range-block-range">
-                                <select id="world_info" class="select2_multi_sameline" multiple>
+                                <select id="world_info" multiple>
                                     <option value="" data-i18n="-- World Info not found --">-- World Info not found -- </option>
                                 </select>
                             </div>
@@ -4790,7 +4800,7 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
-                           <label data-i18n="[title]Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Make animated backgrounds static in the selection menu. This will reduce UI and network lag if you have a large amount. This is only a change for the selection menu.">
+                           <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
                                <input id="background_thumbnails_animation" type="checkbox" />
                                <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
                            </label>
@@ -5924,6 +5934,7 @@
                 <div class="flex-container wide100pLess70px character_select_container">
                     <div class="wide100p character_name_block">
                         <span class="ch_name flex1"></span>
+                        <small class="ch_additional_info"></small>
                     </div>
                     <div class="ch_description"></div>
                     <div class="avatar_container_states buttons_block">
@@ -6270,7 +6281,7 @@
                                 </span>
                             </small>
                             <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
-                            <select class="keyprimaryselect keyselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
+                            <select class="keyprimaryselect keyselect" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
                             <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" style="display: none;"></textarea>
                             <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
                                 ⌨️
@@ -6292,7 +6303,7 @@
                                 </span>
                             </small>
                             <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
-                            <select class="keysecondaryselect keyselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
+                            <select class="keysecondaryselect keyselect" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
                             <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" style="display: none;"></textarea>
                             <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
                                 ⌨️
@@ -6479,7 +6490,7 @@
                             </label>
                         </div>
                         <div class="range-block-range">
-                            <select name="characterFilter" class="select2_multi_sameline" multiple>
+                            <select name="characterFilter" multiple>
                                 <option value="" data-i18n="-- Characters not found --">
                                     -- Characters not found --
                                 </option>
@@ -6716,6 +6727,22 @@
                                 </select>
                                 <div class="text_muted" data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</div>
                             </div>
+                            <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                                <label for="completion_prompt_manager_popup_entry_form_injection_trigger">
+                                    <span data-i18n="Triggers">Triggers</span>
+                                </label>
+                                <select id="completion_prompt_manager_popup_entry_form_injection_trigger" class="text_pole" name="injection_trigger" multiple>
+                                    <option data-i18n="Normal" value="normal">Normal</option>
+                                    <option data-i18n="Continue" value="continue">Continue</option>
+                                    <option data-i18n="Impersonate" value="impersonate">Impersonate</option>
+                                    <option data-i18n="Swipe" value="swipe">Swipe</option>
+                                    <option data-i18n="Regenerate" value="regenerate">Regenerate</option>
+                                    <option data-i18n="Quiet" value="quiet">Quiet</option>
+                                </select>
+                                <div class="text_muted" data-i18n="Filter to specific generation types.">
+                                    Filter to specific generation types.
+                                </div>
+                            </div>
                         </div>
                         <div class="flex-container gap10px">
                             <div class="completion_prompt_manager_popup_entry_form_control flex1">
@@ -6841,19 +6868,19 @@
                         <div class="mes_reasoning"></div>
                     </details>
                     <div class="mes_text"></div>
-                    <div class="mes_img_container">
-                        <div class="mes_img_controls">
-                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
-                            <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
-                            <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
-                        </div>
-                        <div class="mes_img_swipes">
-                            <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
-                            <div class="mes_img_swipe_counter">1/1</div>
-                            <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
-                        </div>
-                        <img class="mes_img" src="" />
-                    </div>
+            <div class="mes_img_container">
+                <div class="mes_img_controls">
+                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
+                    <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
+                </div>
+                <div class="mes_img_swipes">
+                    <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                    <div class="mes_img_swipe_counter">1/1</div>
+                    <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
+                </div>
+                <img class="mes_img" src="" />
+            </div>
                     <div class="mes_bias"></div>
                 </div>
                 <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
@@ -7061,6 +7088,16 @@
                 <div class="mes_file_size"></div>
                 <div class="right_menu_button mes_file_open fa-solid fa-magnifying-glass" title="View contents" data-i18n="[title]View contents"></div>
                 <div class="right_menu_button mes_file_delete fa-solid fa-trash-can" title="Remove the file" data-i18n="[title]Remove the file"></div>
+            </div>
+        </div>
+
+        <div id="message_video_template" class="template_element">
+            <div class="mes_video_container">
+                <div class="mes_video_controls">
+                    <div><!-- Placeholder --></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_video_delete" data-i18n="[title]Delete"></div>
+                </div>
+                <video class="mes_video" controls preload="metadata"></video>
             </div>
         </div>
     </div>

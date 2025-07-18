@@ -23,10 +23,16 @@ export const SECRET_KEYS = {
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
+    DEEPL: 'deepl',
+    LIBRE: 'libre',
+    LIBRE_URL: 'libre_url',
+    LINGVA_URL: 'lingva_url',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
+    ONERING_URL: 'oneringtranslator_url',
+    DEEPLX_URL: 'deeplx_url',
     MAKERSUITE: 'api_key_makersuite',
     VERTEXAI: 'api_key_vertexai',
     SERPAPI: 'api_key_serpapi',
@@ -104,6 +110,12 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.FALAI]: 'FAL.AI',
     [SECRET_KEYS.AZURE_TTS]: 'Azure TTS',
     [SECRET_KEYS.AIMLAPI]: 'AI/ML API',
+    [SECRET_KEYS.DEEPL]: 'DeepL',
+    [SECRET_KEYS.LIBRE]: 'LibreTranslate',
+    [SECRET_KEYS.LIBRE_URL]: 'LibreTranslate Endpoint (e.g. http://127.0.0.1:5000/translate)',
+    [SECRET_KEYS.LINGVA_URL]: 'Lingva Endpoint (e.g. https://lingva.ml/api/v1)',
+    [SECRET_KEYS.ONERING_URL]: 'OneRingTranslator Endpoint (e.g. http://127.0.0.1:4990/translate)',
+    [SECRET_KEYS.DEEPLX_URL]: 'DeepLX Endpoint (e.g. http://127.0.0.1:1188/translate)',
 };
 
 const INPUT_MAP = {
@@ -127,7 +139,6 @@ const INPUT_MAP = {
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
     [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
-    [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
     [SECRET_KEYS.KOBOLDCPP]: '#api_key_koboldcpp',
     [SECRET_KEYS.LLAMACPP]: '#api_key_llamacpp',
     [SECRET_KEYS.COHERE]: '#api_key_cohere',
@@ -150,7 +161,7 @@ const getLabel = () => moment().format('L LT');
  * Resolves the secret key based on the selected API, chat completion source, and text completion type.
  * @returns {string|null} The secret key corresponding to the selected API, or null if no key is found.
  */
-function resolveSecretKey() {
+export function resolveSecretKey() {
     const { mainApi, chatCompletionSettings, textCompletionSettings } = SillyTavern.getContext();
     const chatCompletionSource = chatCompletionSettings.chat_completion_source;
     const textCompletionType = textCompletionSettings.type;

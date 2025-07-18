@@ -61,6 +61,7 @@ import {
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
+    textValueMatcher,
     uuidv4,
 } from './utils.js';
 import { countTokensOpenAIAsync, getTokenizerModel } from './tokenizers.js';
@@ -331,6 +332,7 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
 const default_settings = {
@@ -365,7 +367,7 @@ const default_settings = {
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
     vertexai_model: 'gemini-2.0-flash-001',
-    ai21_model: 'jamba-1.6-large',
+    ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -420,6 +422,7 @@ const default_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
 const oai_settings = {
@@ -454,7 +457,7 @@ const oai_settings = {
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
     vertexai_model: 'gemini-2.0-flash-001',
-    ai21_model: 'jamba-1.6-large',
+    ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -509,6 +512,7 @@ const oai_settings = {
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
+    extensions: {},
 };
 
 export let proxies = [
@@ -1251,12 +1255,12 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
  * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
  * @param {string} options.bias - The bias to be added in the conversation.
  * @param {Object} options.extensionPrompts - An object containing additional prompts.
- * @param {string} options.systemPromptOverride
- * @param {string} options.jailbreakPromptOverride
- * @param {string} options.personaDescription
+ * @param {string} options.systemPromptOverride - Character card override of the main prompt
+ * @param {string} options.jailbreakPromptOverride - Character card override of the PHI
+ * @param {string} options.type - The type of generation that triggered the prompt
  * @returns {Promise<Object>} prompts - The prepared and merged system and user-defined prompts.
  */
-async function preparePromptsForChatCompletion({ scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, personaDescription }) {
+async function preparePromptsForChatCompletion({ scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, type }) {
     const scenarioText = scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : (scenario || '');
     const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : (charPersonality || '');
     const groupNudge = substituteParams(oai_settings.group_nudge_prompt);
@@ -1359,7 +1363,7 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
     }
 
     // This is the prompt order defined by the user
-    const prompts = promptManager.getPromptCollection();
+    const prompts = promptManager.getPromptCollection(type);
 
     // Merge system prompts with prompt manager prompts
     systemPrompts.forEach(prompt => {
@@ -1425,7 +1429,6 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
  * @param {string} content.cyclePrompt - The last prompt used for chat message continuation.
  * @param {string} content.systemPromptOverride - The system prompt override.
  * @param {string} content.jailbreakPromptOverride - The jailbreak prompt override.
- * @param {string} content.personaDescription - The persona description.
  * @param {object} content.extensionPrompts - An array of additional prompts.
  * @param {object[]} content.messages - An array of messages to be used as chat history.
  * @param {string[]} content.messageExamples - An array of messages to be used as dialogue examples.
@@ -1447,7 +1450,6 @@ export async function prepareOpenAIMessages({
     cyclePrompt,
     systemPromptOverride,
     jailbreakPromptOverride,
-    personaDescription,
     messages,
     messageExamples,
 }, dryRun) {
@@ -1474,7 +1476,7 @@ export async function prepareOpenAIMessages({
             extensionPrompts,
             systemPromptOverride,
             jailbreakPromptOverride,
-            personaDescription,
+            type,
         });
 
         // Fill the chat completion with as much context as the budget allows
@@ -1977,6 +1979,24 @@ function saveModelList(data) {
 
         $('#model_google_select').val(oai_settings.google_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
+        $('#model_groq_select').empty();
+        model_list.forEach((model) => {
+            $('#model_groq_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.groq_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.groq_model)) {
+            oai_settings.groq_model = model_list[0].id;
+        }
+
+        $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -2141,6 +2161,7 @@ function getReasoningEffort() {
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.POLLINATIONS,
+        chat_completion_sources.PERPLEXITY,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
@@ -2164,11 +2185,12 @@ function getReasoningEffort() {
  * @param {string} type (impersonate, quiet, continue, etc)
  * @param {Array} messages
  * @param {AbortSignal?} signal
+ * @param {import('../script.js').AdditionalRequestOptions} options
  * @returns {Promise<unknown>}
  * @throws {Error}
  */
 
-async function sendOpenAIRequest(type, messages, signal) {
+async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } = {}) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
@@ -2351,8 +2373,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isPerplexity) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        // Normalize values. 1 == disabled. 0 == is usual disabled state in OpenAI.
-        generate_data['frequency_penalty'] = Math.max(0, Number(oai_settings.freq_pen_openai)) + 1;
+        generate_data['frequency_penalty'] = Number(oai_settings.freq_pen_openai);
         generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
@@ -2394,6 +2415,12 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isXAI) {
+        if (generate_data.model.includes('grok-4')) {
+            delete generate_data.presence_penalty;
+            delete generate_data.frequency_penalty;
+            delete generate_data.stop;
+            delete generate_data.reasoning_effort;
+        }
         if (generate_data.model.includes('grok-3-mini')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
@@ -2433,6 +2460,10 @@ async function sendOpenAIRequest(type, messages, signal) {
             delete generate_data.tools;
             delete generate_data.tool_choice;
         }
+    }
+
+    if (jsonSchema) {
+        generate_data.json_schema = jsonSchema;
     }
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
@@ -2949,13 +2980,15 @@ class Message {
             chat_completion_sources.MISTRALAI,
             chat_completion_sources.VERTEXAI,
         ];
-        if (compressImageSources.includes(oai_settings.chat_completion_source)) {
-            const sizeThreshold = 2 * 1024 * 1024;
-            const dataSize = image.length * 0.75;
-            const maxSide = 1024;
-            if (dataSize > sizeThreshold) {
-                image = await createThumbnail(image, maxSide);
-            }
+        const sizeThreshold = 2 * 1024 * 1024;
+        const dataSize = image.length * 0.75;
+        const safeMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const mimeType = image?.split(';')?.[0]?.split(':')?.[1];
+        if (compressImageSources.includes(oai_settings.chat_completion_source) && dataSize > sizeThreshold) {
+            const maxSide = 2048;
+            image = await createThumbnail(image, maxSide, maxSide);
+        } else if (!safeMimeTypes.includes(mimeType)) {
+            image = await createThumbnail(image, null, null);
         }
         return image;
     }
@@ -3579,6 +3612,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.function_calling = settings.function_calling ?? default_settings.function_calling;
     oai_settings.openrouter_providers = settings.openrouter_providers ?? default_settings.openrouter_providers;
     oai_settings.bind_preset_to_connection = settings.bind_preset_to_connection ?? default_settings.bind_preset_to_connection;
+    oai_settings.extensions = settings.extensions ?? default_settings.extensions;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
@@ -3586,7 +3620,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     if (oai_settings.ai21_model.startsWith('j2-')) {
-        oai_settings.ai21_model = 'jamba-1.6-large';
+        oai_settings.ai21_model = 'jamba-large';
     }
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -3824,7 +3858,6 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
-        chat_completion_sources.GROQ,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4004,12 +4037,17 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         request_images: settings.request_images,
         seed: settings.seed,
         n: settings.n,
+        extensions: settings.extensions,
     };
 
-    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${encodeURIComponent(name)}`, {
+    const savePresetSettings = await fetch('/api/presets/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(presetBody),
+        body: JSON.stringify({
+            apiId: 'openai',
+            name: name,
+            preset: presetBody,
+        }),
     });
 
     if (savePresetSettings.ok) {
@@ -4218,10 +4256,14 @@ async function onPresetImportFileChange(e) {
 
     await eventSource.emit(event_types.OAI_PRESET_IMPORT_READY, { data: presetBody, presetName: name });
 
-    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${encodeURIComponent(name)}`, {
+    const savePresetSettings = await fetch('/api/presets/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: importedFile,
+        body: JSON.stringify({
+            apiId: 'openai',
+            name: name,
+            preset: presetBody,
+        }),
     });
 
     if (!savePresetSettings.ok) {
@@ -4364,16 +4406,17 @@ async function onDeletePresetClick() {
         $('#settings_preset_openai').trigger('change');
     }
 
-    const response = await fetch('/api/presets/delete-openai', {
+    const response = await fetch('/api/presets/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ name: nameToDelete }),
+        body: JSON.stringify({ apiId: 'openai', name: nameToDelete }),
     });
 
     if (!response.ok) {
         toastr.warning(t`Preset was not deleted from server`);
     } else {
         toastr.success(t`Preset deleted`);
+        await eventSource.emit(event_types.PRESET_DELETED, { apiId: 'openai', name: nameToDelete });
     }
 
     saveSettingsDebounced();
@@ -4430,13 +4473,19 @@ function onSettingsPresetChange() {
         settings: oai_settings,
         savePreset: saveOpenAIPreset,
         presetNameBefore: presetNameBefore,
-    }).finally(r => {
+    }).finally(async () => {
         if (oai_settings.bind_preset_to_connection) {
             $('.model_custom_select').empty();
         }
 
         for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
             if (isConnection && !oai_settings.bind_preset_to_connection) {
+                continue;
+            }
+
+            // Extensions don't need UI updates and shouldn't fallback to current settings
+            if (key === 'extensions') {
+                oai_settings.extensions = preset.extensions || {};
                 continue;
             }
 
@@ -4459,7 +4508,8 @@ function onSettingsPresetChange() {
         $('#openai_logit_bias_preset').trigger('change');
 
         saveSettingsDebounced();
-        eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
+        await eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'openai', name: presetName });
     });
 }
 
@@ -4610,13 +4660,17 @@ function getMistralMaxContext(model, isUnlocked) {
         'mistral-small-2409': 32768,
         'mistral-small-2501': 32768,
         'mistral-small-2503': 32768,
-        'mistral-small-latest': 32768,
+        'mistral-small-2506': 131072,
+        'mistral-small-latest': 131072,
         'mistral-tiny': 32768,
         'mistral-tiny-2312': 32768,
         'open-mistral-7b': 32768,
         'open-mixtral-8x7b': 32768,
         'devstral-small-2505': 131072,
+        'devstral-small-2507': 131072,
         'devstral-small-latest': 131072,
+        'devstral-medium-latest': 131072,
+        'devstral-medium-2507': 131072,
         'magistral-medium-latest': 40960,
         'magistral-medium-2506': 40960,
         'magistral-small-latest': 40000,
@@ -4636,6 +4690,13 @@ function getMistralMaxContext(model, isUnlocked) {
 function getGroqMaxContext(model, isUnlocked) {
     if (isUnlocked) {
         return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const contextLength = model_list.find((record) => record.id === model)?.context_window;
+        if (contextLength) {
+            return contextLength;
+        }
     }
 
     const contextMap = {
@@ -4658,6 +4719,9 @@ function getGroqMaxContext(model, isUnlocked) {
         'mistral-saba-24b': max_32k,
         'meta-llama/llama-4-scout-17b-16e-instruct': max_128k,
         'meta-llama/llama-4-maverick-17b-128e-instruct': max_128k,
+        'compound-beta': max_128k,
+        'compound-beta-mini': max_128k,
+        'qwen/qwen3-32b': max_128k,
     };
 
     // Return context size if model found, otherwise default to 128k
@@ -4702,7 +4766,7 @@ async function onModelChange() {
 
     if ($(this).is('#model_ai21_select')) {
         if (value === '' || value.startsWith('j2-')) {
-            value = 'jamba-1.6-large';
+            value = 'jamba-large';
             $('#model_ai21_select').val(value);
         }
 
@@ -4751,6 +4815,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_groq_select')) {
+        if (!value) {
+            console.debug('Null Groq model selected. Ignoring.');
+            return;
+        }
         console.log('Groq model changed to', value);
         oai_settings.groq_model = value;
     }
@@ -5077,6 +5145,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (oai_settings.xai_model.includes('grok-vision')) {
             $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
             $('#openai_max_context').attr('max', max_128k);
         }
@@ -5576,11 +5646,13 @@ export function isImageInliningSupported() {
         'learnlm',
         // MistralAI
         'mistral-small-2503',
+        'mistral-small-2506',
         'mistral-small-latest',
         'mistral-medium-latest',
         'mistral-medium-2505',
         'pixtral',
         // xAI (Grok)
+        'grok-4',
         'grok-2-vision',
         'grok-vision',
     ];
@@ -6346,6 +6418,7 @@ export function initOpenAI() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+            matcher: textValueMatcher,
         });
         $('#model_aimlapi_select').select2({
             placeholder: t`Select a model`,
@@ -6353,6 +6426,11 @@ export function initOpenAI() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAimlapiModelTemplate,
+        });
+        $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
+            placeholder: t`All types (default)`,
+            width: '100%',
+            closeOnSelect: false,
         });
     }
 

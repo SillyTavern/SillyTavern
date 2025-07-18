@@ -1,4 +1,4 @@
-import { ensureImageFormatSupported, getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
+import { ensureImageFormatSupported, getBase64Async, getFileExtension, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { appendMediaToMessage, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
@@ -52,6 +52,10 @@ function migrateSettings() {
 
     if (!extension_settings.caption.template) {
         extension_settings.caption.template = TEMPLATE_DEFAULT;
+    }
+
+    if (!extension_settings.caption.show_in_chat) {
+        extension_settings.caption.show_in_chat = false;
     }
 }
 
@@ -167,6 +171,7 @@ async function sendCaptionedMessage(caption, image) {
         extra: {
             image: image,
             title: messageText,
+            inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
     context.chat.push(message);
@@ -327,11 +332,11 @@ async function getCaptionForFile(file, prompt, quiet) {
         setSpinnerIcon();
         const context = getContext();
         const fileData = await getBase64Async(await ensureImageFormatSupported(file));
-        const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
+        const extension = getFileExtension(file);
         const base64Data = fileData.split(',')[1];
         const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
         if (!quiet) {
-            const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
+            const imagePath = await saveBase64AsFile(base64Data, context.name2, '', extension);
             await sendCaptionedMessage(caption, imagePath);
         }
         return caption;
@@ -594,6 +599,10 @@ jQuery(async function () {
     });
     $('#caption_altEndpoint_enabled').prop('checked', !!(extension_settings.caption.alt_endpoint_enabled)).on('input', () => {
         extension_settings.caption.alt_endpoint_enabled = !!$('#caption_altEndpoint_enabled').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_show_in_chat').prop('checked', !!(extension_settings.caption.show_in_chat)).on('input', () => {
+        extension_settings.caption.show_in_chat = !!$('#caption_show_in_chat').prop('checked');
         saveSettingsDebounced();
     });
 

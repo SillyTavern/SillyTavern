@@ -1,22 +1,30 @@
 import {
+    abortStatusCheck,
     eventSource,
     event_types,
     getRequestHeaders,
     getStoppingStrings,
     main_api,
     max_context,
+    online_status,
+    resultCheckStatus,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
     setOnlineStatus,
+    startStatusLoading,
     substituteParams,
 } from '../script.js';
+import { deriveTemplatesFromChatTemplate } from './chat-templates.js';
 import { t } from './i18n.js';
+import { autoSelectInstructPreset, selectContextPreset, selectInstructPreset } from './instruct-mode.js';
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
+import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
-import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
-import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
+import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels } from './textgen-models.js';
+import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, tokenizers } from './tokenizers.js';
+import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual } from './utils.js';
 
 export const textgen_types = {
@@ -74,6 +82,7 @@ const OOBA_DEFAULT_ORDER = [
     'temperature',
     'dynamic_temperature',
     'quadratic_sampling',
+    'top_n_sigma',
     'top_k',
     'top_p',
     'typical_p',
@@ -216,6 +225,7 @@ const settings = {
     min_keep: 0,
     featherless_model: '',
     generic_model: '',
+    extensions: {},
 };
 
 export {
@@ -298,6 +308,7 @@ export const setting_names = [
     'nsigma',
     'min_keep',
     'generic_model',
+    'extensions',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -423,7 +434,8 @@ function getCustomTokenBans() {
         .concat(settings.global_banned_tokens.split('\n'))
         .concat(textgenerationwebui_banned_in_macros)
         .filter(x => x.length > 0)
-        .filter(onlyUnique);
+        .filter(onlyUnique)
+        .map(x => substituteParams(x));
 
     //debug
     if (textgenerationwebui_banned_in_macros.length) {
@@ -620,7 +632,146 @@ function sortAphroditeItemsByOrder(orderArray) {
     });
 }
 
-jQuery(function () {
+async function getStatusTextgen() {
+    const url = '/api/backends/text-completions/status';
+
+    const endpoint = getTextGenServer();
+
+    if (!endpoint) {
+        console.warn('No endpoint for status check');
+        setOnlineStatus('no_connection');
+        return resultCheckStatus();
+    }
+
+    if ([textgen_types.GENERIC, textgen_types.OOBA].includes(settings.type) && settings.bypass_status_check) {
+        setOnlineStatus(t`Status check bypassed`);
+        return resultCheckStatus();
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                api_server: endpoint,
+                api_type: settings.type,
+            }),
+            signal: abortStatusCheck.signal,
+        });
+
+        const data = await response.json();
+
+        if (settings.type === textgen_types.MANCER) {
+            loadMancerModels(data?.data);
+            setOnlineStatus(settings.mancer_model);
+        } else if (settings.type === textgen_types.TOGETHERAI) {
+            loadTogetherAIModels(data?.data);
+            setOnlineStatus(settings.togetherai_model);
+        } else if (settings.type === textgen_types.OLLAMA) {
+            loadOllamaModels(data?.data);
+            setOnlineStatus(settings.ollama_model || t`Connected`);
+        } else if (settings.type === textgen_types.INFERMATICAI) {
+            loadInfermaticAIModels(data?.data);
+            setOnlineStatus(settings.infermaticai_model);
+        } else if (settings.type === textgen_types.DREAMGEN) {
+            loadDreamGenModels(data?.data);
+            setOnlineStatus(settings.dreamgen_model);
+        } else if (settings.type === textgen_types.OPENROUTER) {
+            loadOpenRouterModels(data?.data);
+            setOnlineStatus(settings.openrouter_model);
+        } else if (settings.type === textgen_types.VLLM) {
+            loadVllmModels(data?.data);
+            setOnlineStatus(settings.vllm_model);
+        } else if (settings.type === textgen_types.APHRODITE) {
+            loadAphroditeModels(data?.data);
+            setOnlineStatus(settings.aphrodite_model);
+        } else if (settings.type === textgen_types.FEATHERLESS) {
+            loadFeatherlessModels(data?.data);
+            setOnlineStatus(settings.featherless_model);
+        } else if (settings.type === textgen_types.TABBY) {
+            loadTabbyModels(data?.data);
+            setOnlineStatus(settings.tabby_model || data?.result);
+        } else if (settings.type === textgen_types.GENERIC) {
+            loadGenericModels(data?.data);
+            setOnlineStatus(settings.generic_model || data?.result || t`Connected`);
+        } else {
+            setOnlineStatus(data?.result);
+        }
+
+        if (!online_status) {
+            setOnlineStatus('no_connection');
+        }
+
+        power_user.chat_template_hash = '';
+
+        // Determine instruct mode preset
+        const autoSelected = autoSelectInstructPreset(online_status);
+
+        const supportsTokenization = response.headers.get('x-supports-tokenization') === 'true';
+        supportsTokenization ? sessionStorage.setItem(TOKENIZER_SUPPORTED_KEY, 'true') : sessionStorage.removeItem(TOKENIZER_SUPPORTED_KEY);
+
+        const wantsInstructDerivation = !autoSelected && (power_user.instruct.enabled && power_user.instruct_derived);
+        const wantsContextDerivation = !autoSelected && power_user.context_derived;
+        const wantsContextSize = power_user.context_size_derived;
+        const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(settings.type);
+
+        if (supportsChatTemplate && (wantsInstructDerivation || wantsContextDerivation || wantsContextSize)) {
+            const response = await fetch('/api/backends/text-completions/props', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    api_server: endpoint,
+                    api_type: settings.type,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data) {
+                    const { chat_template, chat_template_hash } = data;
+                    power_user.chat_template_hash = chat_template_hash;
+
+                    if (wantsContextSize && 'default_generation_settings' in data) {
+                        const backend_max_context = data['default_generation_settings']['n_ctx'];
+                        const old_value = max_context;
+                        if (max_context !== backend_max_context) {
+                            setGenerationParamsFromPreset({ max_length: backend_max_context });
+                        }
+                        if (old_value !== max_context) {
+                            console.log(`Auto-switched max context from ${old_value} to ${max_context}`);
+                            toastr.info(`${old_value} ⇒ ${max_context}`, 'Context Size Changed');
+                        }
+                    }
+                    console.log(`We have chat template ${chat_template.split('\n')[0]}...`);
+                    const { context, instruct } = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
+                    if (wantsContextDerivation && context) {
+                        selectContextPreset(context, { isAuto: true });
+                    }
+                    if (wantsInstructDerivation && power_user.instruct.enabled && instruct) {
+                        selectInstructPreset(instruct, { isAuto: true });
+                    }
+                }
+            }
+        }
+
+        // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+        if (online_status === 'no_connection' && data.response) {
+            toastr.error(data.response, t`API Error`, { timeOut: 5000, preventDuplicates: true });
+        }
+    } catch (err) {
+        if (err instanceof AbortReason) {
+            console.info('Status check aborted.', err.reason);
+        } else {
+            console.error('Error getting status', err);
+
+        }
+        setOnlineStatus('no_connection');
+    }
+
+    return resultCheckStatus();
+}
+
+export function initTextGenSettings() {
     $('#send_banned_tokens_textgenerationwebui').on('change', function () {
         const checked = !!$(this).prop('checked');
         toggleBannedStringsKillSwitch(checked,
@@ -756,9 +907,10 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $('#settings_preset_textgenerationwebui').on('change', function () {
+    $('#settings_preset_textgenerationwebui').on('change', async function () {
         const presetName = $(this).val();
-        selectPreset(presetName);
+        await selectPreset(presetName);
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'textgenerationwebui', name: presetName });
     });
 
     $('#samplerResetButton').off('click').on('click', function () {
@@ -876,7 +1028,38 @@ jQuery(function () {
 
         saveSettingsDebounced();
     });
-});
+
+    $('#api_button_textgenerationwebui').on('click', async function (e) {
+        const keys = [
+            { id: 'api_key_mancer', secret: SECRET_KEYS.MANCER },
+            { id: 'api_key_vllm', secret: SECRET_KEYS.VLLM },
+            { id: 'api_key_aphrodite', secret: SECRET_KEYS.APHRODITE },
+            { id: 'api_key_tabby', secret: SECRET_KEYS.TABBY },
+            { id: 'api_key_togetherai', secret: SECRET_KEYS.TOGETHERAI },
+            { id: 'api_key_ooba', secret: SECRET_KEYS.OOBA },
+            { id: 'api_key_infermaticai', secret: SECRET_KEYS.INFERMATICAI },
+            { id: 'api_key_dreamgen', secret: SECRET_KEYS.DREAMGEN },
+            { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
+            { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
+            { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
+            { id: 'api_key_featherless', secret: SECRET_KEYS.FEATHERLESS },
+            { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
+            { id: 'api_key_generic', secret: SECRET_KEYS.GENERIC },
+        ];
+
+        for (const key of keys) {
+            const keyValue = String($(`#${key.id}`).val()).trim();
+            if (keyValue.length) {
+                await writeSecret(key.secret, keyValue);
+            }
+        }
+
+        validateTextGenUrl();
+        startStatusLoading();
+        saveSettingsDebounced();
+        getStatusTextgen();
+    });
+}
 
 function showTypeSpecificControls(type) {
     $('[data-tg-type]').each(function () {
@@ -919,6 +1102,12 @@ function insertMissingArrayItems(source, target) {
 }
 
 function setSettingByName(setting, value, trigger) {
+    if ('extensions' === setting) {
+        value = value || {};
+        settings.extensions = value;
+        return;
+    }
+
     if (value === null || value === undefined) {
         return;
     }
