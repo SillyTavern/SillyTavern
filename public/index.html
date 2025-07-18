@@ -5522,7 +5522,6 @@
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
                         <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps">
                         </div>
-                        <hr class="wide100p">
                     </div>
                 </div>
 
@@ -5850,13 +5849,15 @@
                     </div>
                     <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                         <div id="charListFixedTop">
-                            <form id="form_character_search_form" action="javascript:void(null);">
-                                <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus "></div>
-                                <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
-                                <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
-                                <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                                <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
-                                <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
+                            <div id="rm_button_bar">
+                                <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus"></div>
+                                <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import"></div>
+                                <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down"></div>
+                                <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear"></div>
+                                <div id="rm_buttons_container">
+                                    <!-- Container for additional buttons added by extensions -->
+                                </div>
+                                <select id="character_sort_order" class="flex1 text_pole textarea_compact" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                     <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
                                     <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                     <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
@@ -5870,12 +5871,15 @@
                                     <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                     <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                                 </select>
-                            </form>
+                                <div id="rm_button_search" class="right_menu_button fa-fw fa-solid fa-search" title="Toggle search bar" data-i18n="[title]Toggle search bar"></div>
+                            </div>
+                            <div id="form_character_search_form">
+                                <input id="character_search_bar" class="text_pole textarea_compact width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                            </div>
                             <div class="rm_tag_controls">
                                 <div class="tags rm_tag_filter"></div>
                                 <div class="tags rm_tag_bogus_drilldown"></div>
                             </div>
-                            <hr>
                         </div>
 
                         <div id="rm_print_characters_pagination">
