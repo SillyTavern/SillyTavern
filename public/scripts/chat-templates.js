@@ -96,7 +96,7 @@ const substr_derivations = [
     ['Moonshot AI', ['<|im_user|>user<|im_middle|>', '<|im_assistant|>assistant<|im_middle|>', '<|im_end|>']],
 
     // Generic cases
-    ['ChatML', '<|im_start|>'],
+    ['ChatML', ['<|im_start|>user', '<|im_start|>assistant', '<|im_end|>']],
 ];
 
 const parse_derivation = derivation => (typeof derivation === 'string') ? {
