@@ -2759,6 +2759,10 @@ input[type="file"] {
     font-size: calc(var(--mainFontSize) * 1.25);
 }
 
+#rm_button_selected_ch h2:empty {
+    display: none;
+}
+
 .selected-right-tab {
     filter: brightness(150%);
 }
