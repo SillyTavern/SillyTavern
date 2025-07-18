@@ -2832,10 +2832,11 @@ input[type="file"] {
     display: flex;
     gap: 5px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 #rm_button_bar .menu_button {
-    width: calc(var(--mainFontSize) * 1.8);
+    width: calc(var(--mainFontSize) * 1.7);
     aspect-ratio: 1;
     margin: 0;
 }
@@ -3105,7 +3106,7 @@ select option:not(:checked) {
     flex: 1;
     border-radius: 5px;
     margin: 0;
-    padding: 4px 5px;
+    min-width: 75px;
 }
 
 #character_search_bar {
@@ -3113,7 +3114,6 @@ select option:not(:checked) {
 }
 
 #rm_button_search {
-    align-self: center;
     font-size: 1.1em;
     margin: 0 2px;
 }
