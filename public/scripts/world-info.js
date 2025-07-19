@@ -4301,7 +4301,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
 
             // Check for generation type trigger filter
             if (Array.isArray(entry.triggers) && entry.triggers.length > 0) {
-                const isTriggered = entry.triggers.some(trigger => equalsIgnoreCaseAndAccents(globalScanData.trigger, trigger));
+                const isTriggered = entry.triggers.includes(globalScanData.trigger);
                 if (!isTriggered) {
                     log(`skipped by generation type trigger filter (${globalScanData.trigger} ∉ ${entry.triggers})`);
                     continue;
