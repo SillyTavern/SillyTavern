@@ -176,7 +176,7 @@ import {
     renderPaginationDropdown,
     paginationDropdownChangeHandler,
 } from './scripts/utils.js';
-import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -3729,7 +3729,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         characterDepthPrompt: charDepthPrompt,
         scenario: scenario,
         creatorNotes: creatorNotes,
-        trigger: String(type || 'normal'),
+        trigger: GENERATION_TYPE_TRIGGERS.includes(type) ? type : 'normal',
     };
     const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
     setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
