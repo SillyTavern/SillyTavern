@@ -1162,7 +1162,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (newWorldInfoEntryTemplate[field] === undefined) {
+        if (!Object.hasOwn(newWorldInfoEntryDefinition, field)) {
             toastr.warning('Valid field name is required');
             return '';
         }
@@ -1190,7 +1190,7 @@ function registerWorldInfoSlashCommands() {
                 }
                 break;
             default:
-                fieldValue = entry[field];
+                fieldValue = entry[field] ?? newWorldInfoEntryDefinition[field]?.default;
         }
 
         if (fieldValue === undefined) {
