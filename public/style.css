@@ -3089,7 +3089,7 @@ select option:not(:checked) {
 }
 
 #charListFixedTop {
-    padding: 1px;
+    padding: 5px;
 }
 
 #form_character_search_form {
