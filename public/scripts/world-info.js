@@ -9,7 +9,7 @@ import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS } from './constants.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -107,6 +107,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {string} characterDepthPrompt Character depth prompt (sometimes referred to as character notes)
  * @property {string} scenario Character defined scenario
  * @property {string} creatorNotes Character creator notes
+ * @property {string} trigger The type that triggered the scan, e.g. 'normal', 'continue', etc.
  */
 
 /**
@@ -144,6 +145,36 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 /**
  * @typedef TimedEffectType Type of timed effect
  * @type {'sticky'|'cooldown'|'delay'}
+ */
+
+/**
+ * @typedef {object} WIPromptResult
+ * @property {string} worldInfoString - Complete world info string
+ * @property {string} worldInfoBefore - World info that goes before the prompt
+ * @property {string} worldInfoAfter - World info that goes after the prompt
+ * @property {Array} worldInfoExamples - Array of example entries
+ * @property {Array} worldInfoDepth - Array of depth entries
+ * @property {Array} anBefore - Array of entries before Author's Note
+ * @property {Array} anAfter - Array of entries after Author's Note
+ */
+
+/**
+ * @typedef {object} WIActivated
+ * @property {string} worldInfoBefore The world info before the chat.
+ * @property {string} worldInfoAfter The world info after the chat.
+ * @property {any[]} EMEntries The entries for examples.
+ * @property {any[]} WIDepthEntries The depth entries.
+ * @property {any[]} ANBeforeEntries The entries before Author's Note.
+ * @property {any[]} ANAfterEntries The entries after Author's Note.
+ * @property {Set<any>} allActivatedEntries All entries.
+ */
+
+/**
+ * @typedef {object} WIEntryFieldDefinition
+ * @property {any} default - Default value for the field
+ * @property {string} type - Type of the field, can be 'string', 'number', 'boolean', 'array', 'enum'
+ * @property {boolean} [excludeFromTemplate=false] - Whether to exclude this field from the template
+ * @property {(value: any) => boolean} [arrayFilter] - Optional filter function for array fields to filter out unwanted values
  */
 // End typedef area
 
@@ -801,14 +832,6 @@ export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOn
  * @param {number} maxContext - The maximum context size of the generation.
  * @param {boolean} isDryRun - If true, the function will not emit any events.
  * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @typedef {object} WIPromptResult
- * @property {string} worldInfoString - Complete world info string
- * @property {string} worldInfoBefore - World info that goes before the prompt
- * @property {string} worldInfoAfter - World info that goes after the prompt
- * @property {Array} worldInfoExamples - Array of example entries
- * @property {Array} worldInfoDepth - Array of depth entries
- * @property {Array} anBefore - Array of entries before Author's Note
- * @property {Array} anAfter - Array of entries after Author's Note
  * @returns {Promise<WIPromptResult>} The world info string and depth.
  */
 export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanData) {
@@ -1139,7 +1162,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (newWorldInfoEntryTemplate[field] === undefined) {
+        if (!Object.hasOwn(newWorldInfoEntryDefinition, field)) {
             toastr.warning('Valid field name is required');
             return '';
         }
@@ -1167,7 +1190,7 @@ function registerWorldInfoSlashCommands() {
                 }
                 break;
             default:
-                fieldValue = entry[field];
+                fieldValue = entry[field] ?? newWorldInfoEntryDefinition[field]?.default;
         }
 
         if (fieldValue === undefined) {
@@ -1253,10 +1276,18 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (newWorldInfoEntryTemplate[field] === undefined) {
+        if (!Object.hasOwn(newWorldInfoEntryDefinition, field)) {
             toastr.warning('Valid field name is required');
             return '';
         }
+
+        // Init a default value for the field if it does not exist
+        if (!Object.hasOwn(entry, field)) {
+            entry[field] = newWorldInfoEntryDefinition[field].default;
+        }
+
+        // Use an array filter if it exists for the field
+        const arrayFilter = newWorldInfoEntryDefinition[field]?.arrayFilter || (() => true);
 
         // handle special cases, otherwise execute default logic
         let tagNames;
@@ -1285,7 +1316,7 @@ function registerWorldInfoSlashCommands() {
                 break;
             default:
                 if (Array.isArray(entry[field])) {
-                    entry[field] = parseStringArray(value);
+                    entry[field] = parseStringArray(value).filter(arrayFilter);
                 } else if (typeof entry[field] === 'boolean') {
                     entry[field] = isTrueBoolean(value);
                 } else if (typeof entry[field] === 'number') {
@@ -2438,6 +2469,7 @@ export const originalWIDataKeyMap = {
     'sticky': 'extensions.sticky',
     'cooldown': 'extensions.cooldown',
     'delay': 'extensions.delay',
+    'triggers': 'extensions.triggers',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -3496,6 +3528,29 @@ export async function getWorldEntry(name, data, entry) {
         automationIdInput.val(entry.automationId ?? '').trigger('input', { noSave: true });
         setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
 
+        // Generation Type Triggers
+        const generationTypeTriggers = editTemplate.find('select[name="triggers"]');
+        generationTypeTriggers.data('uid', entry.uid);
+        generationTypeTriggers.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].triggers = Array.isArray(value) ? value : [];
+            setWIOriginalDataValue(data, uid, 'extensions.triggers', data.entries[uid].triggers);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        if (!isMobile()) {
+            generationTypeTriggers.select2({
+                placeholder: t`All types (default)`,
+                width: '100%',
+                closeOnSelect: false,
+                allowClear: true,
+            });
+        }
+        generationTypeTriggers
+            .val(Array.isArray(entry.triggers) ? entry.triggers : [])
+            .trigger('input', { noSave: true })
+            .trigger('change');
+
         countTokensDebounced(counter, contentInput.val());
 
         editTemplate.find('.inline-drawer-content').css('display', 'none');
@@ -3652,7 +3707,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * Use `newEntryTemplate` if you just need the template that contains default values
  *
- * @type {{[key: string]: { default: any, type: string, excludeFromTemplate?: boolean }}}
+ * @type {{[key: string]: WIEntryFieldDefinition}}
  */
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
@@ -3694,6 +3749,7 @@ export const newWorldInfoEntryDefinition = {
     characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true },
     characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true },
     characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true },
+    triggers: { default: [], type: 'array', arrayFilter: (value) => GENERATION_TYPE_TRIGGERS.includes(value) },
 };
 
 export const newWorldInfoEntryTemplate = Object.fromEntries(
@@ -4143,23 +4199,14 @@ function parseDecorators(content) {
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun Whether to perform a dry run.
  * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @typedef {object} WIActivated
- * @property {string} worldInfoBefore The world info before the chat.
- * @property {string} worldInfoAfter The world info after the chat.
- * @property {any[]} EMEntries The entries for examples.
- * @property {any[]} WIDepthEntries The depth entries.
- * @property {any[]} ANBeforeEntries The entries before Author's Note.
- * @property {any[]} ANAfterEntries The entries after Author's Note.
- * @property {Set<any>} allActivatedEntries All entries.
  * @returns {Promise<WIActivated>} The world info activated.
  */
-
 //MARK: checkWorldInfo
 export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat, globalScanData);
 
-    console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages)${isDryRun ? ' (DRY RUN)' : ''} ---`);
+    console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages, trigger = ${globalScanData.trigger})${isDryRun ? ' (DRY RUN)' : ''} ---`);
 
     // Combine the chat
 
@@ -4231,7 +4278,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
         // Loop and find all entries that can activate here
         let activatedNow = new Set();
 
-        for (let entry of sortedEntries) {
+        for (const entry of sortedEntries) {
             // Logging preparation
             let headerLogged = false;
             function log(...args) {
@@ -4250,6 +4297,15 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
             if (entry.disable == true) {
                 log('disabled');
                 continue;
+            }
+
+            // Check for generation type trigger filter
+            if (Array.isArray(entry.triggers) && entry.triggers.length > 0) {
+                const isTriggered = entry.triggers.includes(globalScanData.trigger);
+                if (!isTriggered) {
+                    log(`skipped by generation type trigger filter (${globalScanData.trigger} ∉ ${entry.triggers})`);
+                    continue;
+                }
             }
 
             // Check if this entry applies to the character or if it's excluded
@@ -4877,6 +4933,7 @@ function convertAgnaiMemoryBook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
         };
     });
 
@@ -4919,6 +4976,7 @@ function convertRisuLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
         };
     });
 
@@ -4966,6 +5024,7 @@ function convertNovelLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
         };
     });
 
@@ -5022,6 +5081,7 @@ export function convertCharacterBook(characterBook) {
             matchScenario: entry.extensions?.match_scenario ?? false,
             matchCreatorNotes: entry.extensions?.match_creator_notes ?? false,
             extensions: entry.extensions ?? {},
+            triggers: entry.extensions?.triggers || [],
         };
     });
 

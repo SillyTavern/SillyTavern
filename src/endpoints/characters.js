@@ -707,6 +707,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 match_character_depth_prompt: entry.matchCharacterDepthPrompt ?? false,
                 match_scenario: entry.matchScenario ?? false,
                 match_creator_notes: entry.matchCreatorNotes ?? false,
+                triggers: entry.triggers ?? [],
             },
         };
 

@@ -6494,6 +6494,30 @@
                             </select>
                         </div>
                     </div>
+                    <div class="flex4">
+                        <div class="flex-container justifySpaceBetween">
+                            <small>
+                                <span data-i18n="Filter to Generation Triggers">
+                                    Filter to Generation Triggers
+                                </span>
+                            </small>
+                            <!-- Not a real control. Used to make label heights even. -->
+                            <label class="checkbox_label" for="__invisible">
+                                <input type="checkbox" name="__invisible">
+                                <span><small>&nbsp;</small></span>
+                            </label>
+                        </div>
+                        <div class="range-block-range">
+                            <select name="triggers" multiple>
+                                <option data-i18n="Normal" value="normal">Normal</option>
+                                <option data-i18n="Continue" value="continue">Continue</option>
+                                <option data-i18n="Impersonate" value="impersonate">Impersonate</option>
+                                <option data-i18n="Swipe" value="swipe">Swipe</option>
+                                <option data-i18n="Regenerate" value="regenerate">Regenerate</option>
+                                <option data-i18n="Quiet" value="quiet">Quiet</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                     <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text">
