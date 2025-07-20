@@ -178,6 +178,17 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  */
 // End typedef area
 
+/** @type {Readonly<WIGlobalScanData>} */
+const defaultGlobalScanData = Object.freeze({
+    trigger: 'normal',
+    personaDescription: '',
+    characterDescription: '',
+    characterPersonality: '',
+    characterDepthPrompt: '',
+    scenario: '',
+    creatorNotes: '',
+});
+
 /**
  * Represents a scanning buffer for one evaluation of World Info.
  */
@@ -4202,7 +4213,7 @@ function parseDecorators(content) {
  * @returns {Promise<WIActivated>} The world info activated.
  */
 //MARK: checkWorldInfo
-export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData) {
+export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat, globalScanData);
 
