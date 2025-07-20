@@ -45,6 +45,7 @@
         "diff-match-patch": "^1.0.5",
         "dompurify": "^3.2.6",
         "droll": "^0.2.1",
+        "env-paths": "^3.0.0",
         "express": "^4.21.0",
         "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
@@ -115,6 +116,7 @@
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",
+        "start:global": "node server.js --global",
         "start:electron": "cd ./src/electron && npm run start",
         "start:deno": "deno run --allow-run --allow-net --allow-read --allow-write --allow-sys --allow-env server.js",
         "start:bun": "bun server.js",
@@ -126,7 +128,7 @@
         "plugins:install": "node plugins install"
     },
     "bin": {
-        "sillytavern": "./server.js"
+        "sillytavern": "./src/server-global.js"
     },
     "rules": {
         "no-path-concat": "off",
