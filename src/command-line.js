@@ -245,7 +245,7 @@ export class CommandLineParser {
             })
             .parseSync();
 
-        const isGlobal = cliArguments.global ?? globalThis.FORCE_GLOBAL_MODE ?? false;
+        const isGlobal = globalThis.FORCE_GLOBAL_MODE ?? cliArguments.global ?? false;
         const defaultConfig = this.getDefaultConfig(isGlobal);
 
         if (isGlobal && cliArguments.configPath) {
