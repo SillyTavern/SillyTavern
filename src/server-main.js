@@ -19,16 +19,6 @@ import bodyParser from 'body-parser';
 import './fetch-patch.js';
 import { serverDirectory } from './server-directory.js';
 
-console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment. Server directory: ${serverDirectory}`);
-
-// Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
-// https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-// Safe to remove once support for Node v20 is dropped.
-if (process.versions && process.versions.node && process.versions.node.match(/20\.[0-2]\.0/)) {
-    // @ts-ignore
-    if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
-}
-
 import { serverEvents, EVENT_NAMES } from './server-events.js';
 import { loadPlugins } from './plugin-loader.js';
 import {
@@ -78,6 +68,14 @@ import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } fro
 import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
 
+// Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
+// https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
+// Safe to remove once support for Node v20 is dropped.
+if (process.versions && process.versions.node && process.versions.node.match(/20\.[0-2]\.0/)) {
+    // @ts-ignore
+    if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
+}
+
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
@@ -89,18 +87,6 @@ const cliArgs = globalThis.COMMAND_LINE_ARGS;
 if (!cliArgs.enableIPv6 && !cliArgs.enableIPv4) {
     console.error('error: You can\'t disable all internet protocols: at least IPv6 or IPv4 must be enabled.');
     process.exit(1);
-}
-
-try {
-    if (cliArgs.dnsPreferIPv6) {
-        dns.setDefaultResultOrder('ipv6first');
-        console.log('Preferring IPv6 for DNS resolution');
-    } else {
-        dns.setDefaultResultOrder('ipv4first');
-        console.log('Preferring IPv4 for DNS resolution');
-    }
-} catch (error) {
-    console.warn('Failed to set DNS resolution order. Possibly unsupported in this Node version.');
 }
 
 const app = express();
@@ -400,8 +386,26 @@ function apply404Middleware() {
     });
 }
 
+/**
+ * Sets the DNS resolution order based on the command line arguments.
+ */
+function setDnsResolutionOrder() {
+    try {
+        if (cliArgs.dnsPreferIPv6) {
+            dns.setDefaultResultOrder('ipv6first');
+            console.log('Preferring IPv6 for DNS resolution');
+        } else {
+            dns.setDefaultResultOrder('ipv4first');
+            console.log('Preferring IPv4 for DNS resolution');
+        }
+    } catch (error) {
+        console.warn('Failed to set DNS resolution order. Possibly unsupported in this Node version.');
+    }
+}
+
 // User storage module needs to be initialized before starting the server
 initUserStorage(globalThis.DATA_ROOT)
+    .then(setDnsResolutionOrder)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
     .then(migrateSystemPrompts)

@@ -330,11 +330,43 @@ chmod +x launcher.sh && ./launcher.sh
 > \[!NOTE]
 > **SillyTavern can be run natively on Android devices using Termux, but we do not provide official support for this use case.**
 >
-> **Please refer to this guide by ArroganceComplex#2659:**
+> **Please refer to the documentation for more information:**
 >
-> * <https://rentry.org/STAI-Termux>
+> * <https://docs.sillytavern.app/installation/android-(termux)/>
 
 **Unsupported platform: android arm LEtime-web.** 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
+
+## Global / Standalone mode
+
+There are two modes of running SillyTavern that differ in how they handle the configuration and data paths.
+
+* **Standalone mode** (default) - uses the `config.yaml` file and `data` directory in the server directory. All data will be constrained to the installation path. This is the recommended mode for most users.
+* **Global mode** - uses the system-wide paths for configuration and data. This is useful for installing SillyTavern as a package or when you want to share the same configuration and data across multiple installations.
+
+> [!NOTE]
+> Installations made by using the [official npm package](https://www.npmjs.com/package/sillytavern) (e.g. `npx sillytavern@latest`) will run in global mode by default.
+
+### Data paths
+
+**Standalone mode** paths are relative to the SillyTavern installation directory:
+
+* **Config path**: `./config.yaml`
+* **Data root**: `./data/`
+
+**Global mode** paths are OS-dependent:
+
+* **Linux**: `~/.local/share/SillyTavern/config.yaml` and `~/.local/share/SillyTavern/data/`
+* **Windows**: `%APPDATA%\SillyTavern\config.yaml` and `%APPDATA%\SillyTavern\data\`
+* **MacOS**: `~/Library/Application Support/SillyTavern/config.yaml` and `~/Library/Application Support/SillyTavern/data/`
+
+### How to run in global mode
+
+> [!WARNING]  
+> `dataRoot` and `configPath` can't be overridden with CLI arguments or config.yaml when running in global mode.
+
+1. Pass the `--global` argument to the server startup command (e.g. `node server.js --global`).
+2. Pass the `--global` argument to the shell startup script (e.g. `Start.bat --global` or `./start.sh --global`).
+3. Use the `start:global` script in the `package.json` file (e.g. `npm run start:global`).
 
 ## Command-line arguments
 
@@ -357,29 +389,30 @@ Start.bat --port 8000 --listen false
 
 | Option                          | Description                                                          | Type     |
 |---------------------------------|----------------------------------------------------------------------|----------|
-| `--version`                     | Show version number                                                  | boolean  |
-| `--configPath`                  | Override the path to the config.yaml file                            | string   |
-| `--dataRoot`                    | Root directory for data storage                                      | string   |
+| `--version`                     | Shows the version number                                             | boolean  |
+| `--global`                      | Forces the use of system-wide paths for application data (see above) | boolean  |
+| `--configPath`                  | Overrides the path to the config.yaml file (standalone mode only)    | string   |
+| `--dataRoot`                    | Sets the root directory for data storage (standalone mode only)      | string   |
 | `--port`                        | Sets the port under which SillyTavern will run                       | number   |
-| `--listen`                      | SillyTavern will listen on all network interfaces                    | boolean  |
+| `--listen`                      | Makes SillyTavern listen on all network interfaces                   | boolean  |
 | `--whitelist`                   | Enables whitelist mode                                               | boolean  |
 | `--basicAuthMode`               | Enables basic authentication                                         | boolean  |
-| `--enableIPv4`                  | Enables IPv4 protocol                                                | boolean  |
-| `--enableIPv6`                  | Enables IPv6 protocol                                                | boolean  |
-| `--listenAddressIPv4`           | Specific IPv4 address to listen to                                   | string   |
-| `--listenAddressIPv6`           | Specific IPv6 address to listen to                                   | string   |
+| `--enableIPv4`                  | Enables the IPv4 protocol                                            | boolean  |
+| `--enableIPv6`                  | Enables the IPv6 protocol                                            | boolean  |
+| `--listenAddressIPv4`           | Specifies the IPv4 address to listen on                              | string   |
+| `--listenAddressIPv6`           | Specifies the IPv6 address to listen on                              | string   |
 | `--dnsPreferIPv6`               | Prefers IPv6 for DNS                                                 | boolean  |
 | `--ssl`                         | Enables SSL                                                          | boolean  |
-| `--certPath`                    | Path to your certificate file                                        | string   |
-| `--keyPath`                     | Path to your private key file                                        | string   |
-| `--browserLaunchEnabled`        | Automatically launch SillyTavern in the browser                      | boolean  |
-| `--browserLaunchHostname`       | Browser launch hostname                                              | string   |
+| `--certPath`                    | Sets the path to your certificate file                               | string   |
+| `--keyPath`                     | Sets the path to your private key file                               | string   |
+| `--browserLaunchEnabled`        | Automatically launches SillyTavern in the browser                    | boolean  |
+| `--browserLaunchHostname`       | Sets the browser launch hostname                                     | string   |
 | `--browserLaunchPort`           | Overrides the port for browser launch                                | string   |
 | `--browserLaunchAvoidLocalhost` | Avoids using 'localhost' for browser launch in auto mode             | boolean  |
-| `--corsProxy`                   | Enables CORS proxy                                                   | boolean  |
-| `--requestProxyEnabled`         | Enables a use of proxy for outgoing requests                         | boolean  |
-| `--requestProxyUrl`             | Request proxy URL (HTTP or SOCKS protocols)                          | string   |
-| `--requestProxyBypass`          | Request proxy bypass list (space separated list of hosts)            | array    |
+| `--corsProxy`                   | Enables the CORS proxy                                               | boolean  |
+| `--requestProxyEnabled`         | Enables the use of a proxy for outgoing requests                     | boolean  |
+| `--requestProxyUrl`             | Sets the request proxy URL (HTTP or SOCKS protocols)                 | string   |
+| `--requestProxyBypass`          | Sets the request proxy bypass list (space-separated list of hosts)   | array    |
 | `--disableCsrf`                 | Disables CSRF protection (NOT RECOMMENDED)                           | boolean  |
 
 ## Remote connections

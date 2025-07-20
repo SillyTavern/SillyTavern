@@ -66,4 +66,9 @@ declare global {
      * Parsed command line arguments.
      */
     var COMMAND_LINE_ARGS: CommandLineArguments;
+
+    /**
+     * Forces a global mode if set to `true` before parsing the CLI arguments.
+     */
+    var FORCE_GLOBAL_MODE: boolean;
 }
