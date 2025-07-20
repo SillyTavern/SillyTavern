@@ -401,8 +401,6 @@ function setDnsResolutionOrder() {
     } catch (error) {
         console.warn('Failed to set DNS resolution order. Possibly unsupported in this Node version.');
     }
-
-    return Promise.resolve();
 }
 
 // User storage module needs to be initialized before starting the server
