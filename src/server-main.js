@@ -389,7 +389,7 @@ function apply404Middleware() {
 /**
  * Sets the DNS resolution order based on the command line arguments.
  */
-async function setDnsResolutionOrder() {
+function setDnsResolutionOrder() {
     try {
         if (cliArgs.dnsPreferIPv6) {
             dns.setDefaultResultOrder('ipv6first');
@@ -401,6 +401,8 @@ async function setDnsResolutionOrder() {
     } catch (error) {
         console.warn('Failed to set DNS resolution order. Possibly unsupported in this Node version.');
     }
+
+    return Promise.resolve();
 }
 
 // User storage module needs to be initialized before starting the server
