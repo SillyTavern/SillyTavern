@@ -165,7 +165,6 @@ export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
     WINDOWAI: 'windowai',
     CLAUDE: 'claude',
-    SCALE: 'scale',
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
