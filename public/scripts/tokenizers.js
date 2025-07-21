@@ -595,22 +595,6 @@ export function getTokenizerModel() {
         return deepseekTokenizer;
     }
 
-    // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
-        if (oai_settings.windowai_model.includes('gpt-4')) {
-            return gpt4Tokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
-            return turboTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('claude')) {
-            return claudeTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
-            return gpt2Tokenizer;
-        }
-    }
-
     // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
     if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model ||
         main_api == 'textgenerationwebui' && textgen_settings.type === textgen_types.OPENROUTER && textgen_settings.openrouter_model) {

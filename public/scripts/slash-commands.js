@@ -4791,7 +4791,6 @@ function getModelOptions(quiet) {
         { id: 'featherless_model', api: 'textgenerationwebui', type: textgen_types.FEATHERLESS },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },
         { id: 'model_claude_select', api: 'openai', type: chat_completion_sources.CLAUDE },
-        { id: 'model_windowai_select', api: 'openai', type: chat_completion_sources.WINDOWAI },
         { id: 'model_openrouter_select', api: 'openai', type: chat_completion_sources.OPENROUTER },
         { id: 'model_ai21_select', api: 'openai', type: chat_completion_sources.AI21 },
         { id: 'model_google_select', api: 'openai', type: chat_completion_sources.MAKERSUITE },
