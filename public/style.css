@@ -3579,10 +3579,10 @@ grammarly-extension {
 }
 
 #spoiler_free_desc {
-    background-color: var(--black30a);
+    /*     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
-    padding: 5px;
+    padding: 5px; */
 }
 
 #creators_notes_div {

@@ -978,7 +978,7 @@ function switchSpoilerMode() {
 function peekSpoilerMode() {
     $('#descriptionWrapper').toggle();
     $('#firstMessageWrapper').toggle();
-    $('#creator_notes_spoiler').toggle();
+    //$('#creator_notes_spoiler').toggle();
     $('#spoiler_free_desc').toggleClass('flex1');
 }
 
