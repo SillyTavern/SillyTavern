@@ -286,6 +286,13 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     display: none;
 }
 
+.world_entry label[for="__invisible"] {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    width: 0;
+}
+
 #WIMultiSelector .select2-container .select2-selection--multiple {
     max-height: 25vh;
     overflow-y: auto;

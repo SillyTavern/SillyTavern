@@ -30,7 +30,7 @@
         "@popperjs/core": "^2.11.8",
         "@zeldafan0225/ai_horde": "^5.2.0",
         "archiver": "^7.0.1",
-        "bing-translate-api": "^4.0.2",
+        "bing-translate-api": "^4.1.0",
         "body-parser": "^1.20.2",
         "bowser": "^2.11.0",
         "bytes": "^3.1.2",
@@ -45,8 +45,9 @@
         "diff-match-patch": "^1.0.5",
         "dompurify": "^3.2.6",
         "droll": "^0.2.1",
+        "env-paths": "^3.0.0",
         "express": "^4.21.0",
-        "form-data": "^4.0.3",
+        "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
         "google-translate-api-browser": "^3.0.1",
         "google-translate-api-x": "^10.7.2",
@@ -67,7 +68,7 @@
         "multer": "^2.0.2",
         "node-fetch": "^3.3.2",
         "node-persist": "^4.0.4",
-        "open": "^10.1.2",
+        "open": "^10.2.0",
         "png-chunk-text": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "proxy-agent": "^6.5.0",
@@ -85,7 +86,7 @@
         "wavefile": "^11.0.0",
         "webpack": "^5.98.0",
         "write-file-atomic": "^5.0.1",
-        "ws": "^8.18.2",
+        "ws": "^8.18.3",
         "yaml": "^2.8.0",
         "yargs": "^17.7.1",
         "yauzl": "^3.2.0"
@@ -115,6 +116,7 @@
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",
+        "start:global": "node server.js --global",
         "start:electron": "cd ./src/electron && npm run start",
         "start:deno": "deno run --allow-run --allow-net --allow-read --allow-write --allow-sys --allow-env server.js",
         "start:bun": "bun server.js",
@@ -126,7 +128,7 @@
         "plugins:install": "node plugins install"
     },
     "bin": {
-        "sillytavern": "./server.js"
+        "sillytavern": "./src/server-global.js"
     },
     "rules": {
         "no-path-concat": "off",
@@ -147,9 +149,9 @@
         "@types/jquery-cropper": "^1.0.4",
         "@types/jquery.transit": "^0.9.33",
         "@types/jqueryui": "^1.12.24",
-        "@types/lodash": "^4.17.17",
+        "@types/lodash": "^4.17.20",
         "@types/mime-types": "^3.0.1",
-        "@types/multer": "^1.4.13",
+        "@types/multer": "^2.0.0",
         "@types/node": "^18.19.84",
         "@types/node-persist": "^3.1.8",
         "@types/png-chunk-text": "^1.0.3",

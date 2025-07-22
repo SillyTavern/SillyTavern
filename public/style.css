@@ -345,8 +345,9 @@ input[type='checkbox']:focus-visible {
 }
 
 .text_muted {
-    font-size: calc(var(--mainFontSize) - 0.2rem);
-    color: var(--white50a);
+    font-size: calc(var(--mainFontSize) - 0.2em);
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
 }
 
 .mes[is_system="true"][ch_name="SillyTavern System"] .mes_text br {
@@ -660,7 +661,7 @@ small {
     margin-right: unset !important;
 }
 
-.mes.smallSysMes .ch_name {
+.mes.smallSysMes:not(:has(.edit_textarea)) .ch_name {
     display: none;
 }
 
@@ -2719,7 +2720,7 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 0px 10px 0px 5px;
+    padding-right: 5px;
 }
 
 #chartokenwarning.menu_button {
@@ -2743,6 +2744,7 @@ input[type="file"] {
     transition: all var(--animation-duration-3x) ease-in-out;
 }
 
+.right_menu_button.active,
 .right_menu_button:hover {
     filter: brightness(150%);
 }
@@ -2833,6 +2835,10 @@ input[type="file"] {
     font-size: calc(var(--mainFontSize) * 1.25);
 }
 
+#rm_button_selected_ch h2:empty {
+    display: none;
+}
+
 .selected-right-tab {
     filter: brightness(150%);
 }
@@ -2845,6 +2851,11 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     padding: 1px;
+}
+
+#rm_print_characters_pagination .menu_button {
+    margin: 0;
+    padding: 4px 5px;
 }
 
 .bulk_select_checkbox {
@@ -2896,6 +2907,23 @@ input[type="file"] {
 
 #rm_extensions_block {
     overflow-y: auto;
+}
+
+#rm_button_bar {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#rm_button_bar .menu_button {
+    width: calc(var(--mainFontSize) * 1.7);
+    aspect-ratio: 1;
+    margin: 0;
+}
+
+#rm_buttons_container {
+    display: contents;
 }
 
 #floatingPrompt,
@@ -3136,15 +3164,17 @@ select option:not(:checked) {
     flex-grow: 1;
 }
 
+#charListFixedTop {
+    padding: 5px;
+}
+
 #form_character_search_form {
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    margin: 5px;
     column-gap: 5px;
 }
 
-#form_character_search_form .menu_button,
 #GroupFavDelOkBack .menu_button {
     margin: 0;
     height: fit-content;
@@ -3154,17 +3184,19 @@ select option:not(:checked) {
 }
 
 #character_sort_order {
-    margin: 0;
     flex: 1;
     border-radius: 5px;
-    height: auto;
+    margin: 0;
+    min-width: 75px;
 }
 
 #character_search_bar {
-    margin: 0;
     flex: 1;
-    /* padding-left: 0.75em; */
-    height: auto;
+}
+
+#rm_button_search {
+    font-size: 1.1em;
+    margin: 0 2px;
 }
 
 #persona_search_bar {
