@@ -3575,14 +3575,6 @@ grammarly-extension {
 #first_message_div {
     display: flex;
     align-items: center;
-    padding-left: 5px;
-}
-
-#spoiler_free_desc {
-    /*     background-color: var(--black30a);
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 5px;
-    padding: 5px; */
 }
 
 #creators_notes_div {
@@ -3591,10 +3583,6 @@ grammarly-extension {
 
 #creators_note_desc_hidden {
     display: none;
-}
-
-#creators_notes_div:has(#spoiler_free_desc_button.fa-eye-slash) #creators_note_desc_hidden {
-    display: initial;
 }
 
 .alternate_greeting details {
