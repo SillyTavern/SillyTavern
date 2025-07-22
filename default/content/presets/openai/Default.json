@@ -2,7 +2,6 @@
     "chat_completion_source": "openai",
     "openai_model": "gpt-4-turbo",
     "claude_model": "claude-3-5-sonnet-20240620",
-    "windowai_model": "",
     "openrouter_model": "OR_Website",
     "openrouter_use_fallback": false,
     "openrouter_group_models": false,
