@@ -796,6 +796,24 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
     return result ? fileName : '';
 }
 
+async function importFromByaf(uploadPath, { request }, preservedFileName) {
+    const data = fs.readFileSync(uploadPath).buffer;
+    fs.unlinkSync(uploadPath);
+    console.info('Importing from BYAF');
+    const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
+
+    if (!manifestBuffer) {
+        throw new Error('Failed to extract manifest.json from BYAF file');
+    }
+
+    const manifest = JSON.parse(manifestBuffer.toString());
+    const characterManifest = manifest?.characters?.[0];
+
+    if (!characterManifest) {
+        throw new Error('Invalid BYAF file: missing character manifest');
+    }
+}
+
 /**
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
