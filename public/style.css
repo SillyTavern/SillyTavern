@@ -2536,7 +2536,11 @@ textarea::placeholder {
 #creator_notes_spoiler {
     border: 0;
     font-size: calc(var(--mainFontSize)*.8);
-    padding-top: 5px;
+    padding: 5px 0;
+}
+
+#creator_notes_spoiler p:last-child {
+    margin-bottom: 0;
 }
 
 @media screen and (max-width: 1000px) {
@@ -3581,12 +3585,20 @@ grammarly-extension {
     align-items: baseline;
 }
 
+#creator_notes_spoiler:empty,
+#creator_notes_empty,
 #creators_note_desc_hidden {
     display: none;
 }
 
-#creators_notes_div:has(#spoiler_free_desc_button.fa-eye-slash) #creators_note_desc_hidden {
-    display: initial;
+#creator_notes_spoiler:empty~#creator_notes_empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    color: var(--SmartThemeEmColor);
 }
 
 .alternate_greeting details {
