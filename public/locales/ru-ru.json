@@ -1749,8 +1749,6 @@
     "dot quota_error": "имеется достаточно кредитов.",
     "If you have sufficient credits, please try again later.": "Если кредитов достаточно, то повторите попытку позднее.",
     "Proxy preset '${0}' not found": "Пресет '${0}' не найден",
-    "Window.ai returned an error": "Window.ai ответил ошибкой",
-    "Extension is not installed": "Расширение не установлено",
     "Update or remove your reverse proxy settings.": "Измените или удалите ваши настройки прокси.",
     "An error occurred while importing prompts. More info available in console.": "В процессе импорта произошла ошибка. Подробную информацию см. в консоли.",
     "Could not import prompts. Export failed validation.": "Не удалось импортировать промпты. Не пройдена валидация при экспорте.",

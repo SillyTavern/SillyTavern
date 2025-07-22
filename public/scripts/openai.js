@@ -171,7 +171,6 @@ export let model_list = [];
 
 export const chat_completion_sources = {
     OPENAI: 'openai',
-    WINDOWAI: 'windowai',
     CLAUDE: 'claude',
     SCALE: 'scale',
     OPENROUTER: 'openrouter',
@@ -261,7 +260,6 @@ export const settingsToUpdate = {
     max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true, false],
     openai_model: ['#model_openai_select', 'openai_model', false, true],
     claude_model: ['#model_claude_select', 'claude_model', false, true],
-    windowai_model: ['#model_windowai_select', 'windowai_model', false, true],
     openrouter_model: ['#model_openrouter_select', 'openrouter_model', false, true],
     openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true, true],
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
@@ -383,7 +381,6 @@ const default_settings = {
     custom_include_body: '',
     custom_exclude_body: '',
     custom_include_headers: '',
-    windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
     openrouter_group_models: false,
@@ -473,7 +470,6 @@ const oai_settings = {
     custom_include_body: '',
     custom_exclude_body: '',
     custom_include_headers: '',
-    windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
     openrouter_group_models: false,
@@ -1591,97 +1587,6 @@ function checkModerationError(data, { quiet = false } = {}) {
     }
 }
 
-async function sendWindowAIRequest(messages, signal, stream) {
-    if (!('ai' in window)) {
-        return showWindowExtensionError();
-    }
-
-    let content = '';
-    let lastContent = '';
-    let finished = false;
-
-    const currentModel = await window.ai.getCurrentModel();
-    let temperature = Number(oai_settings.temp_openai);
-
-    if ((currentModel.includes('claude') || currentModel.includes('palm-2')) && temperature > claude_max_temp) {
-        console.warn(`Claude and PaLM models only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
-        temperature = claude_max_temp;
-    }
-
-    async function* windowStreamingFunction() {
-        while (true) {
-            if (signal.aborted) {
-                return;
-            }
-
-            // unhang UI thread
-            await delay(1);
-
-            if (lastContent !== content) {
-                yield { text: content, swipes: [] };
-            }
-
-            lastContent = content;
-
-            if (finished) {
-                return;
-            }
-        }
-    }
-
-    const onStreamResult = (res, err) => {
-        if (err) return;
-
-        const thisContent = res?.message?.content;
-
-        if (res?.isPartial) {
-            content += thisContent;
-        }
-        else {
-            content = thisContent;
-        }
-    };
-
-    const generatePromise = window.ai.generateText(
-        {
-            messages: messages,
-        },
-        {
-            temperature: temperature,
-            maxTokens: oai_settings.openai_max_tokens,
-            model: oai_settings.windowai_model || null,
-            onStreamResult: onStreamResult,
-        },
-    );
-
-    const handleGeneratePromise = (resolve, reject) => {
-        generatePromise
-            .then((res) => {
-                content = res[0]?.message?.content;
-                finished = true;
-                resolve && resolve(content);
-            })
-            .catch((err) => {
-                finished = true;
-                reject && reject(err);
-                handleWindowError(err);
-            });
-    };
-
-    if (stream) {
-        handleGeneratePromise();
-        return windowStreamingFunction;
-    } else {
-        return new Promise((resolve, reject) => {
-            signal.addEventListener('abort', (reason) => {
-                reject(reason);
-            });
-
-            handleGeneratePromise(resolve, reject);
-        });
-    }
-}
-
 /**
  * Gets the API model for the selected chat completion source.
  * @param {string} source If it's set, ignores active source
@@ -1694,8 +1599,6 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.claude_model;
         case chat_completion_sources.OPENAI:
             return oai_settings.openai_model;
-        case chat_completion_sources.WINDOWAI:
-            return oai_settings.windowai_model;
         case chat_completion_sources.SCALE:
             return '';
         case chat_completion_sources.MAKERSUITE:
@@ -2229,12 +2132,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom || isXAI || isAimlapi);
 
-    // If we're using the window.ai extension, use that instead
-    // Doesn't support logit bias yet
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        return sendWindowAIRequest(messages, signal, stream);
-    }
-
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
@@ -2675,37 +2572,6 @@ function parseOpenAITextLogprobs(logprobs) {
         }
         return { token, topLogprobs };
     });
-}
-
-
-function handleWindowError(err) {
-    const text = parseWindowError(err);
-    toastr.error(text, t`Window.ai returned an error`);
-    throw err;
-}
-
-function parseWindowError(err) {
-    let text = 'Unknown error';
-
-    switch (err) {
-        case 'NOT_AUTHENTICATED':
-            text = 'Incorrect API key / auth';
-            break;
-        case 'MODEL_REJECTED_REQUEST':
-            text = 'AI model refused to fulfill a request';
-            break;
-        case 'PERMISSION_DENIED':
-            text = 'User denied permission to the app';
-            break;
-        case 'REQUEST_NOT_FOUND':
-            text = 'Permission request popup timed out';
-            break;
-        case 'INVALID_REQUEST':
-            text = 'Malformed request';
-            break;
-    }
-
-    return text;
 }
 
 async function calculateLogitBias() {
@@ -3554,7 +3420,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.personality_format = settings.personality_format ?? default_settings.personality_format;
     oai_settings.group_nudge_prompt = settings.group_nudge_prompt ?? default_settings.group_nudge_prompt;
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
-    oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
     oai_settings.openrouter_group_models = settings.openrouter_group_models ?? default_settings.openrouter_group_models;
     oai_settings.openrouter_sort_models = settings.openrouter_sort_models ?? default_settings.openrouter_sort_models;
@@ -3648,8 +3513,6 @@ function loadOpenAISettings(data, settings) {
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).prop('selected', true);
     $('#model_claude_select').val(oai_settings.claude_model);
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).prop('selected', true);
-    $('#model_windowai_select').val(oai_settings.windowai_model);
-    $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).prop('selected', true);
     $('#model_google_select').val(oai_settings.google_model);
     $(`#model_google_select option[value="${oai_settings.google_model}"`).prop('selected', true);
     $('#model_vertexai_select').val(oai_settings.vertexai_model);
@@ -3837,21 +3700,6 @@ function setContinuePostfixControls() {
 }
 
 async function getStatusOpen() {
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        let status;
-
-        if ('ai' in window) {
-            status = t`Valid`;
-        }
-        else {
-            showWindowExtensionError();
-            status = 'no_connection';
-        }
-
-        setOnlineStatus(status);
-        return resultCheckStatus();
-    }
-
     const noValidateSources = [
         chat_completion_sources.SCALE,
         chat_completion_sources.CLAUDE,
@@ -3936,15 +3784,6 @@ async function getStatusOpen() {
     return resultCheckStatus();
 }
 
-function showWindowExtensionError() {
-    toastr.error(t`Get it here:` + ' <a href="https://windowai.io/" target="_blank">windowai.io</a>', t`Extension is not installed`, {
-        escapeHtml: false,
-        timeOut: 0,
-        extendedTimeOut: 0,
-        preventDuplicates: true,
-    });
-}
-
 /**
  * Persist a settings preset with the given name
  *
@@ -3958,7 +3797,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         chat_completion_source: settings.chat_completion_source,
         openai_model: settings.openai_model,
         claude_model: settings.claude_model,
-        windowai_model: settings.windowai_model,
         openrouter_model: settings.openrouter_model,
         openrouter_use_fallback: settings.openrouter_use_fallback,
         openrouter_group_models: settings.openrouter_group_models,
@@ -4553,49 +4391,6 @@ function getMaxContextOpenAI(value) {
     }
 }
 
-function getMaxContextWindowAI(value) {
-    if (oai_settings.max_context_unlocked) {
-        return unlocked_max;
-    }
-    else if (value.endsWith('100k')) {
-        return claude_100k_max;
-    }
-    else if (value.includes('claude')) {
-        return claude_max;
-    }
-    else if (value.includes('gpt-3.5-turbo-1106')) {
-        return max_16k;
-    }
-    else if (value.includes('gpt-3.5-turbo-16k')) {
-        return max_16k;
-    }
-    else if (value.includes('gpt-3.5')) {
-        return max_4k;
-    }
-    else if (value.includes('gpt-4-1106')) {
-        return max_128k;
-    }
-    else if (value.includes('gpt-4-vision')) {
-        return max_128k;
-    }
-    else if (value.includes('gpt-4-32k')) {
-        return max_32k;
-    }
-    else if (value.includes('gpt-4')) {
-        return max_8k;
-    }
-    else if (value.includes('palm-2')) {
-        return max_8k;
-    }
-    else if (value.includes('GPT-NeoXT')) {
-        return max_2k;
-    }
-    else {
-        // default to gpt-3 (4095 tokens)
-        return max_4k;
-    }
-}
-
 /**
  * Get the maximum context size for the Mistral model
  * @param {string} model Model identifier
@@ -4742,11 +4537,6 @@ async function onModelChange() {
         oai_settings.claude_model = value;
         $('#model_claude_select').val(oai_settings.claude_model);
 
-    }
-
-    if ($(this).is('#model_windowai_select')) {
-        console.log('WindowAI model changed to', value);
-        oai_settings.windowai_model = value;
     }
 
     if ($(this).is('#model_openai_select')) {
@@ -4954,25 +4744,6 @@ async function onModelChange() {
 
         oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        if (value == '' && 'ai' in window) {
-            value = (await window.ai.getCurrentModel()) || '';
-        }
-
-        $('#openai_max_context').attr('max', getMaxContextWindowAI(value));
-        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
-        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-
-        if (value.includes('claude') || value.includes('palm-2')) {
-            oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
-            $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
-        }
-        else {
-            oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
-            $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
-        }
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
@@ -5218,10 +4989,6 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        return await getStatusOpen();
-    }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         const api_key_openrouter = String($('#api_key_openrouter').val()).trim();
@@ -5482,9 +5249,6 @@ function toggleChatCompletionForms() {
         else {
             $('#model_openai_select').trigger('change');
         }
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        $('#model_windowai_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         $('#model_scale_select').trigger('change');
@@ -6456,7 +6220,6 @@ export function initOpenAI() {
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
     $('#model_openai_select').on('change', onModelChange);
     $('#model_claude_select').on('change', onModelChange);
-    $('#model_windowai_select').on('change', onModelChange);
     $('#model_scale_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);
     $('#model_vertexai_select').on('change', onModelChange);

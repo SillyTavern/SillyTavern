@@ -6785,10 +6785,6 @@ export function changeMainAPI() {
     main_api = selectedVal;
     setOnlineStatus('no_connection');
 
-    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        $('#api_button_openai').trigger('click');
-    }
-
     if (main_api == 'koboldhorde') {
         getStatusHorde();
         getHordeModels(true);
@@ -9270,7 +9266,7 @@ export async function doNavbarIconClick() {
         for (const el of $openDrawers) {
             $(el).toggleClass('closedDrawer openDrawer');
         }
-        if ($openDrawers.length) {
+        if ($openDrawers.length && animation_duration) {
             await delay(animation_duration);
         }
         icon.toggleClass('openIcon closedIcon');
