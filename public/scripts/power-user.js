@@ -965,23 +965,19 @@ function switchSpoilerMode() {
         $('#descriptionWrapper').hide();
         $('#firstMessageWrapper').hide();
         $('#spoiler_free_desc').addClass('flex1');
-        $('#creator_notes_spoiler').show();
     }
     else {
         $('#descriptionWrapper').show();
         $('#firstMessageWrapper').show();
         $('#spoiler_free_desc').removeClass('flex1');
-        $('#creator_notes_spoiler').hide();
     }
 }
 
 function peekSpoilerMode() {
     $('#descriptionWrapper').toggle();
     $('#firstMessageWrapper').toggle();
-    //$('#creator_notes_spoiler').toggle();
     $('#spoiler_free_desc').toggleClass('flex1');
 }
-
 
 function switchMovingUI() {
     $('.drawer-content.maximized').each(function () {
