@@ -151,6 +151,15 @@ performance:
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
 
+# CACHE BUSTER CONFIGURATION
+# IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
+cacheBuster:
+  # Clear browser cache on first load or after uploading image files
+  enabled: false
+  # Only clear cache for the specified user agent regex pattern
+  # Example: 'firefox|safari' (case-insensitive)
+  userAgentPattern: ''
+
 # Allow secret keys exposure via API
 allowKeysExposure: false
 # Skip new default content checks
