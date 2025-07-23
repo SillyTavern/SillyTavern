@@ -3094,6 +3094,8 @@ select option:not(:checked) {
 
 #charListFixedTop {
     padding: 5px;
+    /*prevent huge taglist from taking up the whole panel */
+    overflow-y: hidden;
 }
 
 #form_character_search_form {
