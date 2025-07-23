@@ -22,6 +22,7 @@ import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
+import { formatByafAsCharacterCard, getCharacterFromByafManifest, getImageBufferFromByafCharacter, getScenarioFromByafManifest } from '../byaf.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
@@ -796,6 +797,27 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
     return result ? fileName : '';
 }
 
+async function importFromByaf(uploadPath, { request }, preservedFileName) {
+    const data = (await fsPromises.readFile(uploadPath)).buffer;
+    await fsPromises.unlink(uploadPath);
+    console.info('Importing from BYAF');
+
+    const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
+    if (!manifestBuffer) {
+        throw new Error('Failed to extract manifest.json from BYAF file');
+    }
+
+    const manifest = JSON.parse(manifestBuffer.toString());
+    const { character, characterPath } = await getCharacterFromByafManifest(data, manifest);
+    const scenario = await getScenarioFromByafManifest(data, manifest);
+    const image = await getImageBufferFromByafCharacter(data, character, characterPath);
+
+    const card = readFromV2(formatByafAsCharacterCard(character, scenario));
+    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(image, JSON.stringify(card), fileName, request);
+    return result ? fileName : '';
+}
+
 /**
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
@@ -1300,6 +1322,7 @@ router.post('/import', async function (request, response) {
         'json': importFromJson,
         'png': importFromPng,
         'charx': importFromCharX,
+        'byaf': importFromByaf,
     };
 
     try {
