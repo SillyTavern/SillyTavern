@@ -22,6 +22,7 @@ import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
+import { formatByafAsCharacterCard, getCharacterFromByafManifest, getImageBufferFromByafCharacter, getScenarioFromByafManifest } from '../byaf.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
@@ -800,18 +801,21 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     const data = fs.readFileSync(uploadPath).buffer;
     fs.unlinkSync(uploadPath);
     console.info('Importing from BYAF');
-    const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
 
+    const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
     if (!manifestBuffer) {
         throw new Error('Failed to extract manifest.json from BYAF file');
     }
 
     const manifest = JSON.parse(manifestBuffer.toString());
-    const characterManifest = manifest?.characters?.[0];
+    const character = await getCharacterFromByafManifest(data, manifest);
+    const scenario = await getScenarioFromByafManifest(data, manifest);
+    const image = await getImageBufferFromByafCharacter(data, character);
 
-    if (!characterManifest) {
-        throw new Error('Invalid BYAF file: missing character manifest');
-    }
+    const card = readFromV2(formatByafAsCharacterCard(character, scenario));
+    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(image, JSON.stringify(card), fileName, request);
+    return result ? fileName : '';
 }
 
 /**
@@ -1318,6 +1322,7 @@ router.post('/import', async function (request, response) {
         'json': importFromJson,
         'png': importFromPng,
         'charx': importFromCharX,
+        'byaf': importFromByaf,
     };
 
     try {
