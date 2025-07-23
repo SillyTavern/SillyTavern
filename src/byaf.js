@@ -117,7 +117,7 @@ export async function getCharacterFromByafManifest(data, manifest) {
 export async function getScenarioFromByafManifest(data, manifest) {
     const scenariosArray = manifest?.scenarios;
 
-    if (!Array.isArray(scenariosArray) || scenariosArray.length == 0) {
+    if (!Array.isArray(scenariosArray) || scenariosArray.length === 0) {
         console.warn('Warning: BYAF manifest contains no scenarios');
         return {};
     }
