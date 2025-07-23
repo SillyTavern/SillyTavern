@@ -2,7 +2,15 @@ import crypto from 'node:crypto';
 import { DEFAULT_USER } from '../constants.js';
 import { getConfigValue } from '../util.js';
 
-export class CacheBuster {
+/**
+ * Sets the Clear-Site-Data header to bust the browser cache.
+ */
+class CacheBuster {
+    /**
+     * @type {Set<string>} Handles/User-Agents that have already been busted.
+     */
+    #keys = new Set();
+
     /**
      * Check if the cache buster is enabled based on the configuration.
      * @returns {boolean} Whether the cache buster is enabled.
@@ -49,28 +57,29 @@ export class CacheBuster {
 
     /**
      * Middleware to bust the browser cache for the current user.
-     * @returns {import('express').RequestHandler}
+     * @type {import('express').RequestHandler}
+     */
+    #middleware(request, response, next) {
+        const handle = request.user?.profile?.handle || DEFAULT_USER.handle;
+        const userAgent = request.headers['user-agent'] || '';
+        const hash = crypto.createHash('sha256').update(userAgent).digest('hex');
+        const key = `${handle}-${hash}`;
+
+        if (this.#keys.has(key)) {
+            return next();
+        }
+
+        this.#keys.add(key);
+        this.bust(request, response);
+        next();
+    }
+
+    /**
+     * Middleware to bust the browser cache for the current user.
+     * @returns {import('express').RequestHandler} The middleware function.
      */
     get middleware() {
-        /**
-         * @type {Set<string>} Handles/User-Agents that have already been busted.
-         */
-        const keys = new Set();
-
-        return (request, response, next) => {
-            const handle = request.user?.profile?.handle || DEFAULT_USER.handle;
-            const userAgent = request.headers['user-agent'] || '';
-            const hash = crypto.createHash('sha256').update(userAgent).digest('hex');
-            const key = `${handle}-${hash}`;
-
-            if (keys.has(key)) {
-                return next();
-            }
-
-            keys.add(key);
-            this.bust(request, response);
-            next();
-        };
+        return this.#middleware.bind(this);
     }
 
     /**
@@ -85,3 +94,7 @@ export class CacheBuster {
         }
     }
 }
+
+// Export a single instance for the entire application
+const instance = new CacheBuster();
+export default instance;
