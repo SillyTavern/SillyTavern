@@ -798,8 +798,8 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
 }
 
 async function importFromByaf(uploadPath, { request }, preservedFileName) {
-    const data = fs.readFileSync(uploadPath).buffer;
-    fs.unlinkSync(uploadPath);
+    const data = (await fsPromises.readFile(uploadPath)).buffer;
+    await fsPromises.unlink(uploadPath);
     console.info('Importing from BYAF');
 
     const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
