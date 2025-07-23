@@ -7,16 +7,33 @@ import { getConfigValue } from '../util.js';
  */
 class CacheBuster {
     /**
-     * @type {Set<string>} Handles/User-Agents that have already been busted.
+     * Handles/User-Agents that have already been busted.
+     * @type {Set<string>}
      */
     #keys = new Set();
 
     /**
-     * Check if the cache buster is enabled based on the configuration.
-     * @returns {boolean} Whether the cache buster is enabled.
+     * User agent regex to match against requests.
+     * @type {RegExp | null}
      */
-    isEnabled() {
-        return !!getConfigValue('cacheBuster.enabled', false, 'boolean');
+    #userAgentRegex = null;
+
+    /**
+     * Whether the cache buster is enabled.
+     * @type {boolean | null}
+     */
+    #isEnabled = null;
+
+    constructor() {
+        this.#isEnabled = !!getConfigValue('cacheBuster.enabled', false, 'boolean');
+        const userAgentPattern = getConfigValue('cacheBuster.userAgentPattern', '');
+        if (userAgentPattern) {
+            try {
+                this.#userAgentRegex = new RegExp(userAgentPattern, 'i');
+            } catch (error) {
+                console.error('Cache Buster: Invalid user agent pattern:', userAgentPattern, error);
+            }
+        }
     }
 
     /**
@@ -27,7 +44,7 @@ class CacheBuster {
      */
     shouldBust(request, response) {
         // If disabled with config, don't do anything
-        if (!this.isEnabled()) {
+        if (!this.#isEnabled) {
             return false;
         }
 
@@ -38,21 +55,14 @@ class CacheBuster {
         }
 
         // Check if the user agent matches the configured pattern
-        const userAgentPattern = getConfigValue('cacheBuster.userAgentPattern', '');
         const userAgent = request.headers['user-agent'] || '';
 
         // Bust cache for all requests if no pattern is set
-        if (!userAgentPattern) {
+        if (!this.#userAgentRegex) {
             return true;
         }
 
-        try {
-            const regex = new RegExp(userAgentPattern, 'i');
-            return regex.test(userAgent);
-        } catch (error) {
-            console.error('Cache Buster: Invalid user agent pattern:', userAgentPattern, error);
-            return false;
-        }
+        return this.#userAgentRegex.test(userAgent);
     }
 
     /**
