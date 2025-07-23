@@ -58,7 +58,7 @@ export const convertByafCharacterBook = (items) => {
             return;
         }
         book.entries.push({
-            keys: replaceByafMacros(item?.key).split(',').map(x => x.trim()).filter(x => x),
+            keys: replaceByafMacros(item?.key).split(',').map(key => key.trim()).filter(Boolean),
             content: replaceByafMacros(item?.value),
             extensions: {},
             enabled: true,
