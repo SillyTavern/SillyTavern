@@ -30,8 +30,8 @@ class CacheBuster {
         if (userAgentPattern) {
             try {
                 this.#userAgentRegex = new RegExp(userAgentPattern, 'i');
-            } catch (error) {
-                console.error('Cache Buster: Invalid user agent pattern:', userAgentPattern, error);
+            } catch {
+                console.error('[Cache Buster] Invalid user agent pattern:', userAgentPattern);
             }
         }
     }
@@ -50,7 +50,7 @@ class CacheBuster {
 
         // If response headers are already sent or response is ended
         if (response.headersSent || response.writableEnded) {
-            console.warn('Cache Buster: Response ended or headers already sent');
+            console.warn('[Cache Buster] Response ended or headers already sent');
             return false;
         }
 
