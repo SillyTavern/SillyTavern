@@ -1,6 +1,8 @@
 
 import sanitize from 'sanitize-filename';
 import { promises as fsPromises } from 'node:fs';
+import path from 'node:path';
+import urlJoin from 'url-join';
 import { DEFAULT_AVATAR_PATH } from './constants.js';
 import { extractFileFromZipBuffer, humanizedISO8601DateTime } from './util.js';
 
@@ -8,8 +10,8 @@ export const replaceByafMacros = (s) =>
     String(s || '')
         .replace(/#{user}:/gi, '{{user}}:')
         .replace(/#{character}:/gi, '{{char}}:')
-        .replace(/{character}/gi, '{{char}}')
-        .replace(/{user}/gi, '{{user}}');
+        .replace(/{character}(?!})/gi, '{{char}}')
+        .replace(/{user}(?!})/gi, '{{user}}');
 
 export const formatByafExampleMessages = (examples) => {
     if (!Array.isArray(examples)) {
@@ -71,7 +73,7 @@ export const convertByafCharacterBook = (items) => {
  * Extracts a character object from BYAF buffer.
  * @param {ArrayBufferLike} data ZIP buffer
  * @param {object} manifest BYAF manifest
- * @returns {Promise<object>} Character object
+ * @returns {Promise<{character:object,characterPath:string}>} Character object
  */
 export async function getCharacterFromByafManifest(data, manifest) {
     const charactersArray = manifest?.characters;
@@ -99,7 +101,8 @@ export async function getCharacterFromByafManifest(data, manifest) {
     }
 
     try {
-        return JSON.parse(characterBuffer.toString());
+        const character = JSON.parse(characterBuffer.toString());
+        return { character, characterPath };
     } catch {
         throw new Error('Invalid BYAF file: character is not a valid JSON');
     }
@@ -147,8 +150,9 @@ export async function getScenarioFromByafManifest(data, manifest) {
  * Extracts an image from BYAF buffer.
  * @param {ArrayBufferLike} data ZIP buffer
  * @param {object} character Character object
+ * @param {string} characterPath Path to the character in the BYAF manifest
  */
-export async function getImageBufferFromByafCharacter(data, character) {
+export async function getImageBufferFromByafCharacter(data, character, characterPath) {
     const defaultAvatarBuffer = await fsPromises.readFile(DEFAULT_AVATAR_PATH);
     const characterImages = character?.images;
 
@@ -157,13 +161,14 @@ export async function getImageBufferFromByafCharacter(data, character) {
         return defaultAvatarBuffer;
     }
 
-    const imagePath = characterImages[0];
+    const imagePath = characterImages[0]?.path;
     if (!imagePath) {
         console.warn('Warning: BYAF character image path is empty');
         return defaultAvatarBuffer;
     }
 
-    const imageBuffer = await extractFileFromZipBuffer(data, imagePath);
+    const fullImagePath = urlJoin(path.dirname(characterPath), imagePath);
+    const imageBuffer = await extractFileFromZipBuffer(data, fullImagePath);
     if (!imageBuffer) {
         console.warn('Warning: failed to extract BYAF character image');
         return defaultAvatarBuffer;
@@ -186,13 +191,13 @@ export function formatByafAsCharacterCard(character, scenario) {
             name: sanitize(character?.name || character?.displayName || ''),
             description: replaceByafMacros(character?.persona),
             personality: '',
-            scenario: replaceByafMacros(character?.narrative),
-            first_mes: replaceByafMacros(character?.firstMessages?.[0]?.text),
+            scenario: replaceByafMacros(scenario?.narrative),
+            first_mes: replaceByafMacros(scenario?.firstMessages?.[0]?.text),
             mes_example: formatByafExampleMessages(scenario?.exampleMessages),
             creator_notes: '',
             system_prompt: replaceByafMacros(scenario?.formattingInstructions),
             post_history_instructions: '',
-            alternate_greetings: formatByafAlternateGreetings(character?.firstMessages),
+            alternate_greetings: formatByafAlternateGreetings(scenario?.firstMessages),
             character_book: convertByafCharacterBook(character?.loreItems),
             tags: [],
             creator: '',

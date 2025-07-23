@@ -808,9 +808,9 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     }
 
     const manifest = JSON.parse(manifestBuffer.toString());
-    const character = await getCharacterFromByafManifest(data, manifest);
+    const { character, characterPath } = await getCharacterFromByafManifest(data, manifest);
     const scenario = await getScenarioFromByafManifest(data, manifest);
-    const image = await getImageBufferFromByafCharacter(data, character);
+    const image = await getImageBufferFromByafCharacter(data, character, characterPath);
 
     const card = readFromV2(formatByafAsCharacterCard(character, scenario));
     const fileName = preservedFileName || getPngName(card.name, request.user.directories);
