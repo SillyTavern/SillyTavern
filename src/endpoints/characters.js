@@ -23,6 +23,7 @@ import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
 import { formatByafAsCharacterCard, getCharacterFromByafManifest, getImageBufferFromByafCharacter, getScenarioFromByafManifest } from '../byaf.js';
+import cacheBuster from '../middleware/cacheBuster.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
@@ -1065,7 +1066,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
             fs.unlinkSync(newAvatarPath);
 
             // Bust cache to reload the new avatar
-            response.setHeader('Clear-Site-Data', '"cache"');
+            cacheBuster.bust(request, response);
         }
 
         return response.sendStatus(200);

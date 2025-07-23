@@ -1,4 +1,3 @@
-
 import sanitize from 'sanitize-filename';
 import { promises as fsPromises } from 'node:fs';
 import path from 'node:path';
