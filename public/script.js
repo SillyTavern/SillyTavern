@@ -10485,6 +10485,9 @@ jQuery(async function () {
             await importCharactersTags(avatarFileNames);
             selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
         }
+
+        // Clear the file input value to allow re-uploading the same file
+        e.target.value = '';
     });
 
     $('#export_button').on('click', function () {
