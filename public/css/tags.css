@@ -157,7 +157,8 @@
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin: 5px 0;
+    margin-top: 5px;
+    margin-bottom: 10px;
     /* not 100% due to margins */
     max-height: 90%;
     /* scroll the list if needed */
