@@ -103,7 +103,8 @@ export async function getCharacterFromByafManifest(data, manifest) {
     try {
         const character = JSON.parse(characterBuffer.toString());
         return { character, characterPath };
-    } catch {
+    } catch (error) {
+        console.error('Failed to parse character JSON from BYAF:', error);
         throw new Error('Invalid BYAF file: character is not a valid JSON');
     }
 }
@@ -140,8 +141,8 @@ export async function getScenarioFromByafManifest(data, manifest) {
 
     try {
         return JSON.parse(scenarioBuffer.toString());
-    } catch {
-        console.warn('Warning: BYAF scenario is not a valid JSON');
+    } catch (error) {
+        console.warn('Warning: BYAF scenario is not a valid JSON', error);
         return {};
     }
 }
