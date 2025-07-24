@@ -4107,7 +4107,7 @@ export async function getSortedEntries() {
             getPersonaLore(),
         ]);
 
-        await eventSource.emit(event_types.WORLDINFO_SORTING, { globalLore, characterLore, chatLore, personaLore });
+        await eventSource.emit(event_types.WORLDINFO_ENTRIES_LOADED, { globalLore, characterLore, chatLore, personaLore });
 
         let entries;
 

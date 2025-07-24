@@ -86,7 +86,7 @@ export const event_types = {
     PRESET_CHANGED: 'preset_changed',
     PRESET_DELETED: 'preset_deleted',
     MAIN_API_CHANGED: 'main_api_changed',
-    WORLDINFO_SORTING: 'worldinfo_sorting',
+    WORLDINFO_ENTRIES_LOADED: 'worldinfo_entries_loaded',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
