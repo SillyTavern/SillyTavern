@@ -28,9 +28,7 @@ export const SECRET_KEYS = {
     LIBRE_URL: 'libre_url',
     LINGVA_URL: 'lingva_url',
     OPENROUTER: 'api_key_openrouter',
-    SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
-    SCALE_COOKIE: 'scale_cookie',
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
     MAKERSUITE: 'api_key_makersuite',
@@ -73,9 +71,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.NOVEL]: 'NovelAI',
     [SECRET_KEYS.CLAUDE]: 'Claude',
     [SECRET_KEYS.OPENROUTER]: 'OpenRouter',
-    [SECRET_KEYS.SCALE]: 'Scale',
     [SECRET_KEYS.AI21]: 'AI21',
-    [SECRET_KEYS.SCALE_COOKIE]: 'Scale (Cookie)',
     [SECRET_KEYS.MAKERSUITE]: 'Google AI Studio',
     [SECRET_KEYS.VERTEXAI]: 'Google Vertex AI (Express Mode)',
     [SECRET_KEYS.VLLM]: 'vLLM',
@@ -125,9 +121,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
     [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
-    [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
-    [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
     [SECRET_KEYS.MAKERSUITE]: '#api_key_makersuite',
     [SECRET_KEYS.VERTEXAI]: '#api_key_vertexai',
     [SECRET_KEYS.VLLM]: '#api_key_vllm',
@@ -189,12 +183,6 @@ export function resolveSecretKey() {
                 case 'full':
                     return SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT;
             }
-        }
-
-        if (chatCompletionSource === chat_completion_sources.SCALE) {
-            return chatCompletionSettings.use_alt_scale
-                ? SECRET_KEYS.SCALE_COOKIE
-                : SECRET_KEYS.SCALE;
         }
 
         const [key] = Object.entries(chat_completion_sources).find(([, value]) => value === chatCompletionSource) ?? [null];

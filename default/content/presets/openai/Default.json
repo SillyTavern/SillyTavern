@@ -225,12 +225,10 @@
             ]
         }
     ],
-    "api_url_scale": "",
     "show_external_models": false,
     "assistant_prefill": "",
     "assistant_impersonation": "",
     "claude_use_sysprompt": false,
-    "use_alt_scale": false,
     "squash_system_messages": false,
     "image_inlining": false,
     "bypass_status_check": false,

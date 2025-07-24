@@ -276,58 +276,6 @@ async function sendClaudeRequest(request, response) {
 }
 
 /**
- * Sends a request to Scale Spellbook API.
- * @param {import("express").Request} request Express request
- * @param {import("express").Response} response Express response
- */
-async function sendScaleRequest(request, response) {
-    const apiUrl = new URL(request.body.api_url_scale).toString();
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.SCALE);
-
-    if (!apiKey) {
-        console.warn('Scale API key is missing.');
-        return response.status(400).send({ error: true });
-    }
-
-    const requestPrompt = convertTextCompletionPrompt(request.body.messages);
-    console.debug('Scale request:', requestPrompt);
-
-    try {
-        const controller = new AbortController();
-        request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
-            controller.abort();
-        });
-
-        const generateResponse = await fetch(apiUrl, {
-            method: 'POST',
-            body: JSON.stringify({ input: { input: requestPrompt } }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${apiKey}`,
-            },
-        });
-
-        if (!generateResponse.ok) {
-            console.warn(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-            return response.status(500).send({ error: true });
-        }
-
-        /** @type {any} */
-        const generateResponseJson = await generateResponse.json();
-        console.debug('Scale response:', generateResponseJson);
-
-        const reply = { choices: [{ 'message': { 'content': generateResponseJson.output } }] };
-        return response.send(reply);
-    } catch (error) {
-        console.error(error);
-        if (!response.headersSent) {
-            return response.status(500).send({ error: true });
-        }
-    }
-}
-
-/**
  * Sends a request to Google AI API.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
@@ -1492,7 +1440,6 @@ router.post('/generate', function (request, response) {
 
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
-        case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.VERTEXAI: return sendMakerSuiteRequest(request, response);

@@ -16,7 +16,7 @@
 
 ---
 
-モバイルデバイスにも適したレイアウト・マルチAPI（KoboldAI/CPP、Horde、NovelAI、Ooba、OpenAI、OpenRouter、Claude、Scale）、VN ライクな Waifu モード、Stable Diffusion、TTS、WorldInfo（伝承本）、カスタマイズ可能なUI、自動翻訳、大量のプロンプトオプション＋サードパーティの拡張機能をインストールする機能
+モバイルデバイスにも適したレイアウト・マルチAPI（KoboldAI/CPP、Horde、NovelAI、Ooba、OpenAI、OpenRouter、Claude）、VN ライクな Waifu モード、Stable Diffusion、TTS、WorldInfo（伝承本）、カスタマイズ可能なUI、自動翻訳、大量のプロンプトオプション＋サードパーティの拡張機能をインストールする機能
 
 [TavernAI](https://github.com/TavernAI/TavernAI) v.1.2.8 のフォークに基づいています。
 

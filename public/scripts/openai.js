@@ -15,14 +15,12 @@ import {
     Generate,
     getExtensionPrompt,
     getExtensionPromptMaxDepth,
-    getNextMessageId,
     getRequestHeaders,
     getStoppingStrings,
     is_send_press,
     main_api,
     name1,
     name2,
-    replaceItemizedPromptText,
     resultCheckStatus,
     saveSettingsDebounced,
     setOnlineStatus,
@@ -129,7 +127,6 @@ const max_200k = 200 * 1000;
 const max_256k = 256 * 1000;
 const max_1mil = 1000 * 1000;
 const max_2mil = 2000 * 1000;
-const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
 const unlocked_max = max_2mil;
@@ -172,7 +169,6 @@ export let model_list = [];
 export const chat_completion_sources = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
-    SCALE: 'scale',
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
@@ -305,7 +301,6 @@ export const settingsToUpdate = {
     stream_openai: ['#stream_toggle', 'stream_openai', true, false],
     prompts: ['', 'prompts', false, false],
     prompt_order: ['', 'prompt_order', false, false],
-    api_url_scale: ['#api_url_scale', 'api_url_scale', false, true],
     show_external_models: ['#openai_show_external_models', 'show_external_models', true, true],
     proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
@@ -315,7 +310,6 @@ export const settingsToUpdate = {
     vertexai_auth_mode: ['#vertexai_auth_mode', 'vertexai_auth_mode', false, true],
     vertexai_region: ['#vertexai_region', 'vertexai_region', false, true],
     vertexai_express_project_id: ['#vertexai_express_project_id', 'vertexai_express_project_id', false, true],
-    use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true, true],
     squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true, false],
     image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
@@ -391,7 +385,6 @@ const default_settings = {
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
-    api_url_scale: '',
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
@@ -401,7 +394,6 @@ const default_settings = {
     vertexai_auth_mode: 'express',
     vertexai_region: 'us-central1',
     vertexai_express_project_id: '',
-    use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
     inline_image_quality: 'low',
@@ -480,7 +472,6 @@ const oai_settings = {
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
-    api_url_scale: '',
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
@@ -490,7 +481,6 @@ const oai_settings = {
     vertexai_auth_mode: 'express',
     vertexai_region: 'us-central1',
     vertexai_express_project_id: '',
-    use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
     inline_image_quality: 'low',
@@ -1599,8 +1589,6 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.claude_model;
         case chat_completion_sources.OPENAI:
             return oai_settings.openai_model;
-        case chat_completion_sources.SCALE:
-            return '';
         case chat_completion_sources.MAKERSUITE:
             return oai_settings.google_model;
         case chat_completion_sources.VERTEXAI:
@@ -2007,54 +1995,6 @@ function getAimlapiModelTemplate(option) {
     `));
 }
 
-async function sendAltScaleRequest(messages, logit_bias, signal, type) {
-    const generate_url = '/api/backends/scale-alt/generate';
-
-    let firstSysMsgs = [];
-    for (let msg of messages) {
-        if (msg.role === 'system') {
-            firstSysMsgs.push(substituteParams(msg.name ? msg.name + ': ' + msg.content : msg.content));
-        } else {
-            break;
-        }
-    }
-
-    let subsequentMsgs = messages.slice(firstSysMsgs.length);
-
-    const joinedSysMsgs = substituteParams(firstSysMsgs.join('\n'));
-    const joinedSubsequentMsgs = subsequentMsgs.reduce((acc, obj) => {
-        return acc + obj.role + ': ' + obj.content + '\n';
-    }, '');
-
-    messages = substituteParams(joinedSubsequentMsgs);
-    const messageId = getNextMessageId(type);
-    replaceItemizedPromptText(messageId, messages);
-
-    const generate_data = {
-        sysprompt: joinedSysMsgs,
-        prompt: messages,
-        temp: Number(oai_settings.temp_openai),
-        top_p: Number(oai_settings.top_p_openai),
-        max_tokens: Number(oai_settings.openai_max_tokens),
-        logit_bias: logit_bias,
-    };
-
-    const response = await fetch(generate_url, {
-        method: 'POST',
-        body: JSON.stringify(generate_data),
-        headers: getRequestHeaders(),
-        signal: signal,
-    });
-
-    if (!response.ok) {
-        tryParseStreamingError(response, await response.text());
-        throw new Error('Scale response does not indicate success.');
-    }
-
-    const data = await response.json();
-    return data.output;
-}
-
 function getReasoningEffort() {
     // These sources expect the effort as string.
     const reasoningEffortSources = [
@@ -2109,7 +2049,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
-    const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isVertexAI = oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
@@ -2128,11 +2067,11 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isOAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model));
+    const stream = oai_settings.stream_openai && !isQuiet && !(isOAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model));
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom || isXAI || isAimlapi);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2143,10 +2082,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     if (Object.keys(logit_bias).length === 0) {
         logit_bias = undefined;
-    }
-
-    if (isScale && oai_settings.use_alt_scale) {
-        return sendAltScaleRequest(messages, logit_bias, signal, type);
     }
 
     const model = getChatCompletionModel();
@@ -2228,10 +2163,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         if (isTextCompletion) {
             generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
         }
-    }
-
-    if (isScale) {
-        generate_data['api_url_scale'] = oai_settings.api_url_scale;
     }
 
     if (isGoogle || isVertexAI) {
@@ -3446,7 +3377,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.vertexai_model = settings.vertexai_model ?? default_settings.vertexai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
-    oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
@@ -3495,9 +3425,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.vertexai_auth_mode !== undefined) oai_settings.vertexai_auth_mode = settings.vertexai_auth_mode;
     if (settings.vertexai_region !== undefined) oai_settings.vertexai_region = settings.vertexai_region;
     if (settings.vertexai_express_project_id !== undefined) oai_settings.vertexai_express_project_id = settings.vertexai_express_project_id;
-    if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
-    $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
     $('#claude_assistant_impersonation').val(oai_settings.assistant_impersonation);
@@ -3558,7 +3486,6 @@ function loadOpenAISettings(data, settings) {
     // Don't display Service Account JSON in textarea - it's stored in backend secrets
     $('#vertexai_service_account_json').val('');
     updateVertexAIServiceAccountStatus();
-    $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
     $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks);
@@ -3701,7 +3628,6 @@ function setContinuePostfixControls() {
 
 async function getStatusOpen() {
     const noValidateSources = [
-        chat_completion_sources.SCALE,
         chat_completion_sources.CLAUDE,
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
@@ -3851,7 +3777,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         stream_openai: settings.stream_openai,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
-        api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
         assistant_impersonation: settings.assistant_impersonation,
@@ -3860,7 +3785,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         vertexai_auth_mode: settings.vertexai_auth_mode,
         vertexai_region: settings.vertexai_region,
         vertexai_express_project_id: settings.vertexai_express_project_id,
-        use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
         inline_image_quality: settings.inline_image_quality,
@@ -4663,17 +4587,6 @@ async function onModelChange() {
         oai_settings.xai_model = value;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else {
-            $('#openai_max_context').attr('max', scale_max);
-        }
-        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
-        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
-    }
-
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -5003,34 +4916,6 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        const api_key_scale = String($('#api_key_scale').val()).trim();
-        const scale_cookie = String($('#scale_cookie').val()).trim();
-
-        if (api_key_scale.length) {
-            await writeSecret(SECRET_KEYS.SCALE, api_key_scale);
-        }
-
-        if (scale_cookie.length) {
-            await writeSecret(SECRET_KEYS.SCALE_COOKIE, scale_cookie);
-        }
-
-        if (!oai_settings.api_url_scale && !oai_settings.use_alt_scale) {
-            console.log('No API URL saved for Scale');
-            return;
-        }
-
-        if (!secret_state[SECRET_KEYS.SCALE] && !oai_settings.use_alt_scale) {
-            console.log('No secret key saved for Scale');
-            return;
-        }
-
-        if (!secret_state[SECRET_KEYS.SCALE_COOKIE] && oai_settings.use_alt_scale) {
-            console.log('No cookie set for Scale');
-            return;
-        }
-    }
-
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         const api_key_makersuite = String($('#api_key_makersuite').val()).trim();
 
@@ -5250,9 +5135,6 @@ function toggleChatCompletionForms() {
             $('#model_openai_select').trigger('change');
         }
     }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        $('#model_scale_select').trigger('change');
-    }
     else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         $('#model_google_select').trigger('change');
     }
@@ -5336,16 +5218,6 @@ function onProxyPasswordShowClick() {
     const type = $input.attr('type') === 'password' ? 'text' : 'password';
     $input.attr('type', type);
     $(this).toggleClass('fa-eye-slash fa-eye');
-}
-
-function updateScaleForm() {
-    if (oai_settings.use_alt_scale) {
-        $('#normal_scale_form').css('display', 'none');
-        $('#alt_scale_form').css('display', '');
-    } else {
-        $('#normal_scale_form').css('display', '');
-        $('#alt_scale_form').css('display', 'none');
-    }
 }
 
 async function onCustomizeParametersClick() {
@@ -5762,12 +5634,6 @@ export function initOpenAI() {
 
     $('#test_api_button').on('click', testApiConnection);
 
-    $('#scale-alt').on('change', function () {
-        oai_settings.use_alt_scale = !!$('#scale-alt').prop('checked');
-        saveSettingsDebounced();
-        updateScaleForm();
-    });
-
     $('#temp_openai').on('input', function () {
         oai_settings.temp_openai = Number($(this).val());
         $('#temp_counter_openai').val(Number($(this).val()).toFixed(2));
@@ -5979,11 +5845,6 @@ export function initOpenAI() {
         if (data?.source !== 'preset') {
             $('#chat_completion_source').trigger('change');
         }
-        saveSettingsDebounced();
-    });
-
-    $('#api_url_scale').on('input', function () {
-        oai_settings.api_url_scale = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -6220,7 +6081,6 @@ export function initOpenAI() {
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
     $('#model_openai_select').on('change', onModelChange);
     $('#model_claude_select').on('change', onModelChange);
-    $('#model_scale_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);
     $('#model_vertexai_select').on('change', onModelChange);
     $('#vertexai_auth_mode').on('change', onVertexAIAuthModeChange);
