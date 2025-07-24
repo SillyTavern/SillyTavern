@@ -11,16 +11,15 @@ import { extractFileFromZipBuffer, humanizedISO8601DateTime } from './util.js';
 export class ByafParser {
     /**
      * @param {ArrayBufferLike} data BYAF ZIP buffer
-     * @private
      */
-    data;
+    #data;
 
     /**
      * Creates an instance of ByafParser.
      * @param {ArrayBufferLike} data BYAF ZIP buffer
      */
     constructor(data) {
-        this.data = data;
+        this.#data = data;
     }
 
     /**
@@ -114,7 +113,7 @@ export class ByafParser {
 
     /**
      * Extracts a character object from BYAF buffer.
-     * @param {object} manifest BYAF manifest
+     * @param {ByafManifest} manifest BYAF manifest
      * @returns {Promise<{character:ByafCharacter,characterPath:string}>} Character object
      * @private
      */
@@ -138,7 +137,7 @@ export class ByafParser {
             throw new Error('Invalid BYAF file: missing character path');
         }
 
-        const characterBuffer = await extractFileFromZipBuffer(this.data, characterPath);
+        const characterBuffer = await extractFileFromZipBuffer(this.#data, characterPath);
         if (!characterBuffer) {
             throw new Error('Invalid BYAF file: failed to extract character JSON');
         }
@@ -176,7 +175,7 @@ export class ByafParser {
             return {};
         }
 
-        const scenarioBuffer = await extractFileFromZipBuffer(this.data, scenarioPath);
+        const scenarioBuffer = await extractFileFromZipBuffer(this.#data, scenarioPath);
         if (!scenarioBuffer) {
             console.warn('Warning: failed to extract BYAF scenario JSON');
             return {};
@@ -213,7 +212,7 @@ export class ByafParser {
         }
 
         const fullImagePath = urlJoin(path.dirname(characterPath), imagePath);
-        const imageBuffer = await extractFileFromZipBuffer(this.data, fullImagePath);
+        const imageBuffer = await extractFileFromZipBuffer(this.#data, fullImagePath);
         if (!imageBuffer) {
             console.warn('Warning: failed to extract BYAF character image');
             return defaultAvatarBuffer;
@@ -232,8 +231,6 @@ export class ByafParser {
      */
     getCharacterCard(manifest, character, scenario) {
         return {
-            // @ts-ignore Non-standard spec extension
-            create_date: humanizedISO8601DateTime(),
             spec: 'chara_card_v2',
             spec_version: '2.0',
             data: {
@@ -253,6 +250,8 @@ export class ByafParser {
                 character_version: '',
                 extensions: {},
             },
+            // @ts-ignore Non-standard spec extension
+            create_date: humanizedISO8601DateTime(),
         };
     }
 
@@ -262,7 +261,7 @@ export class ByafParser {
      * @private
      */
     async getManifest() {
-        const manifestBuffer = await extractFileFromZipBuffer(this.data, 'manifest.json');
+        const manifestBuffer = await extractFileFromZipBuffer(this.#data, 'manifest.json');
         if (!manifestBuffer) {
             throw new Error('Failed to extract manifest.json from BYAF file');
         }
