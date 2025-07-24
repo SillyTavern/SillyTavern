@@ -22,7 +22,7 @@ import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
-import { formatByafAsCharacterCard, getCharacterFromByafManifest, getImageBufferFromByafCharacter, getScenarioFromByafManifest } from '../byaf.js';
+import { ByafParser } from '../byaf.js';
 import cacheBuster from '../middleware/cacheBuster.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
@@ -803,19 +803,10 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     await fsPromises.unlink(uploadPath);
     console.info('Importing from BYAF');
 
-    const manifestBuffer = await extractFileFromZipBuffer(data, 'manifest.json');
-    if (!manifestBuffer) {
-        throw new Error('Failed to extract manifest.json from BYAF file');
-    }
-
-    const manifest = JSON.parse(manifestBuffer.toString());
-    const { character, characterPath } = await getCharacterFromByafManifest(data, manifest);
-    const scenario = await getScenarioFromByafManifest(data, manifest);
-    const image = await getImageBufferFromByafCharacter(data, character, characterPath);
-
-    const card = readFromV2(formatByafAsCharacterCard(character, scenario));
+    const byafData = await new ByafParser(data).parse();
+    const card = readFromV2(byafData.card);
     const fileName = preservedFileName || getPngName(card.name, request.user.directories);
-    const result = await writeCharacterData(image, JSON.stringify(card), fileName, request);
+    const result = await writeCharacterData(byafData.image, JSON.stringify(card), fileName, request);
     return result ? fileName : '';
 }
 
