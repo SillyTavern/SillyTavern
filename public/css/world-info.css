@@ -291,6 +291,7 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     pointer-events: none;
     opacity: 0;
     width: 0;
+    overflow: hidden;
 }
 
 #WIMultiSelector .select2-container .select2-selection--multiple {

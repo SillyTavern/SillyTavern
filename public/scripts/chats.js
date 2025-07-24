@@ -2021,7 +2021,8 @@ export function initChatUtilities() {
         reloadCurrentChat();
     });
 
-    $('#creators_note_styles_button').on('click', function () {
+    $('#creators_note_styles_button').on('click', function (e) {
+        e.stopPropagation();
         openGlobalStylesPreferenceDialog();
     });
 

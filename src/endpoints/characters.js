@@ -22,6 +22,8 @@ import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
+import { ByafParser } from '../byaf.js';
+import cacheBuster from '../middleware/cacheBuster.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
@@ -796,6 +798,18 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
     return result ? fileName : '';
 }
 
+async function importFromByaf(uploadPath, { request }, preservedFileName) {
+    const data = (await fsPromises.readFile(uploadPath)).buffer;
+    await fsPromises.unlink(uploadPath);
+    console.info('Importing from BYAF');
+
+    const byafData = await new ByafParser(data).parse();
+    const card = readFromV2(byafData.card);
+    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(byafData.image, JSON.stringify(card), fileName, request);
+    return result ? fileName : '';
+}
+
 /**
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
@@ -1043,7 +1057,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
             fs.unlinkSync(newAvatarPath);
 
             // Bust cache to reload the new avatar
-            response.setHeader('Clear-Site-Data', '"cache"');
+            cacheBuster.bust(request, response);
         }
 
         return response.sendStatus(200);
@@ -1300,6 +1314,7 @@ router.post('/import', async function (request, response) {
         'json': importFromJson,
         'png': importFromPng,
         'charx': importFromCharX,
+        'byaf': importFromByaf,
     };
 
     try {

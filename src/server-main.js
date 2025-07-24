@@ -44,7 +44,7 @@ import getWhitelistMiddleware from './middleware/whitelist.js';
 import accessLoggerMiddleware, { getAccessLogPath, migrateAccessLog } from './middleware/accessLogWriter.js';
 import multerMonkeyPatch from './middleware/multerMonkeyPatch.js';
 import initRequestProxy from './request-proxy.js';
-import getCacheBusterMiddleware from './middleware/cacheBuster.js';
+import cacheBuster from './middleware/cacheBuster.js';
 import corsProxyMiddleware from './middleware/corsProxy.js';
 import {
     getVersion,
@@ -185,7 +185,7 @@ if (!cliArgs.disableCsrf) {
 
 // Static files
 // Host index page
-app.get('/', getCacheBusterMiddleware(), (request, response) => {
+app.get('/', cacheBuster.middleware, (request, response) => {
     if (shouldRedirectToLogin(request)) {
         const query = request.url.split('?')[1];
         const redirectUrl = query ? `/login?${query}` : '/login';
