@@ -166,7 +166,7 @@ async function sendClaudeRequest(request, response) {
             requestBody.tools = request.body.tools
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
-                .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+                .map(fn => ({ name: fn.name, description: fn.description, input_schema: flattenSchema(fn.parameters, request.body.chat_completion_source) }));
 
             if (enableSystemPromptCache && requestBody.tools.length) {
                 requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
