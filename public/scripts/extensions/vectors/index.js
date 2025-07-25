@@ -36,6 +36,7 @@ import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandRetur
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
 import { removeReasoningFromString } from '../../reasoning.js';
+import { oai_settings } from '../../openai.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -50,7 +51,7 @@ export const EXTENSION_PROMPT_TAG = '3_vectors';
 export const EXTENSION_PROMPT_TAG_DB = '4_vectors_data_bank';
 
 // Force solo chunks for sources that don't support batching.
-const getBatchSize = () => ['transformers', 'palm', 'ollama'].includes(settings.source) ? 1 : 5;
+const getBatchSize = () => ['transformers', 'ollama'].includes(settings.source) ? 1 : 5;
 
 const settings = {
     // For both
@@ -796,6 +797,14 @@ function getVectorsRequestBody(args = {}) {
             break;
         case 'palm':
             body.model = extension_settings.vectors.google_model;
+            body.api = 'makersuite';
+            break;
+        case 'vertexai':
+            body.model = extension_settings.vectors.google_model;
+            body.api = 'vertexai';
+            body.vertexai_auth_mode = oai_settings.vertexai_auth_mode;
+            body.vertexai_region = oai_settings.vertexai_region;
+            body.vertexai_express_project_id = oai_settings.vertexai_express_project_id;
             break;
         default:
             break;
@@ -881,6 +890,7 @@ async function insertVectorItems(collectionId, items) {
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
         settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
@@ -1098,7 +1108,7 @@ function toggleSettings() {
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
     $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
-    $('#google_vectorsModel').toggle(settings.source === 'palm');
+    $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
     if (settings.source === 'webllm') {
         loadWebLlmModels();
