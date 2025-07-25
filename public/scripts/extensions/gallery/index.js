@@ -604,6 +604,9 @@ function makeDragImg(id, url) {
         }
         draggableElem.id = uniqueId;
 
+        // Add the galleryImageDraggable to have unique class
+        draggableElem.classList.add('galleryImageDraggable');
+
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
         //and has no padding unlike other non-zoomed-avatar draggables
