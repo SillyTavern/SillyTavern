@@ -9,39 +9,67 @@ import { getGoogleApiConfig } from '../endpoints/google.js';
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getMakerSuiteBatchVector(texts, model, request) {
-    const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'batchEmbedContents');
+    const isVertex = request.body.api === 'vertexai';
 
-    const body = {
-        requests: texts.map(text => ({
-            model: `models/${model}`,
-            content: {
-                parts: [
-                    { text: text },
-                ],
-            },
-        })),
-    };
+    if (isVertex) {
+        const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'predict');
 
-    const response = await fetch(url, {
-        body: JSON.stringify(body),
-        method: 'POST',
-        headers: headers,
-    });
+        const body = {
+            instances: texts.map(text => ({ content: text })),
+        };
 
-    if (!response.ok) {
-        const text = await response.text();
-        console.warn(`${apiName} request failed`, response.statusText, text);
-        throw new Error(`${apiName} request failed`);
+        const response = await fetch(url, {
+            body: JSON.stringify(body),
+            method: 'POST',
+            headers: headers,
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.warn(`${apiName} batch request failed`, response.statusText, text);
+            throw new Error(`${apiName} batch request failed`);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        if (!Array.isArray(data?.predictions)) {
+            throw new Error(`${apiName} did not return an array`);
+        }
+
+        const embeddings = data.predictions.map(p => p.embeddings.values);
+        return embeddings;
+    } else {
+        // Google AI Studio (MakerSuite)
+        const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'batchEmbedContents');
+
+        const body = {
+            requests: texts.map(text => ({
+                model: `models/${model}`,
+                content: { parts: [{ text }] },
+            })),
+        };
+
+        const response = await fetch(url, {
+            body: JSON.stringify(body),
+            method: 'POST',
+            headers: headers,
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.warn(`${apiName} batch request failed`, response.statusText, text);
+            throw new Error(`${apiName} batch request failed`);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        if (!Array.isArray(data?.embeddings)) {
+            throw new Error(`${apiName} did not return an array`);
+        }
+
+        const embeddings = data.embeddings.map(embedding => embedding.values);
+        return embeddings;
     }
-
-    /** @type {any} */
-    const data = await response.json();
-    if (!Array.isArray(data?.embeddings)){
-        throw new Error(`${apiName} did not return an array`);
-    }
-
-    const embeddings = data.embeddings.map(embedding => embedding.values);
-    return embeddings;
 }
 
 /**
