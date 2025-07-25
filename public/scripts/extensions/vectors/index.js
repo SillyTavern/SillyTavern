@@ -51,7 +51,7 @@ export const EXTENSION_PROMPT_TAG = '3_vectors';
 export const EXTENSION_PROMPT_TAG_DB = '4_vectors_data_bank';
 
 // Force solo chunks for sources that don't support batching.
-const getBatchSize = () => ['transformers', 'palm', 'vertexai', 'ollama'].includes(settings.source) ? 1 : 5;
+const getBatchSize = () => ['transformers', 'ollama'].includes(settings.source) ? 1 : 5;
 
 const settings = {
     // For both
