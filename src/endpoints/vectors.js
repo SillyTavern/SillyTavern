@@ -32,6 +32,7 @@ const SOURCES = [
     'vllm',
     'webllm',
     'koboldcpp',
+    'vertexai',
 ];
 
 /**
@@ -56,7 +57,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'extras':
             return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return getMakerSuiteVector(text, directories, sourceSettings.model);
+        case 'vertexai':
+            return getMakerSuiteVector(text, sourceSettings.model, sourceSettings.request);
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
@@ -105,7 +107,8 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await getMakerSuiteBatchVector(batch, directories, sourceSettings.model));
+            case 'vertexai':
+                results.push(...await getMakerSuiteBatchVector(batch, sourceSettings.model, sourceSettings.request));
                 break;
             case 'cohere':
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
@@ -178,8 +181,10 @@ function getSourceSettings(source, request) {
                 model: getConfigValue('extensions.models.embedding', ''),
             };
         case 'palm':
+        case 'vertexai':
             return {
                 model: String(request.body.model || 'text-embedding-004'),
+                request: request, // Pass the request object to get API key and URL
             };
         case 'mistral':
             return {
