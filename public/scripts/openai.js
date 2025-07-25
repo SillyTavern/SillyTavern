@@ -4392,8 +4392,10 @@ function getMistralMaxContext(model, isUnlocked) {
         'devstral-medium-2507': 131072,
         'magistral-medium-latest': 40960,
         'magistral-medium-2506': 40960,
-        'magistral-small-latest': 40000,
+        'magistral-small-latest': 40960,
         'magistral-small-2506': 40000,
+        'magistral-small-2507': 40960,
+        'magistral-medium-2507': 40960,
     };
 
     // Return context size if model found, otherwise default to 32k
