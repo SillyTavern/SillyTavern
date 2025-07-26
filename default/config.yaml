@@ -100,7 +100,7 @@ disableCsrfProtection: false
 securityOverride: false
 # -- LOGGING CONFIGURATION --
 logging:
-  # Enable access logging to access.log file
+  # Enable access logging to access.log file and console output
   # Records new connections with timestamp, IP address and user agent
   enableAccessLog: true
   # Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)

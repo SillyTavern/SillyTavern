@@ -158,12 +158,8 @@
     flex-wrap: wrap;
     align-items: flex-start;
     margin-top: 5px;
-    margin-bottom: 10px;
-    /* not 100% due to margins */
-    max-height: 90%;
-    /* scroll the list if needed */
+    max-height: 40dvh;
     overflow-y: auto;
-
 }
 
 .rm_tag_filter .tag {

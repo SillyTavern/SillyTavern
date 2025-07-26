@@ -107,11 +107,10 @@ async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
-    const isClaude3or4 = /^claude-(3|opus-4|sonnet-4)/.test(request.body.model);
-    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean') && isClaude3or4;
+    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
     let cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
-    // Disabled if not an integer or negative, or if the model doesn't support it
-    if (!Number.isInteger(cachingAtDepth) || cachingAtDepth < 0 || !isClaude3or4) {
+    // Disabled if not an integer or negative
+    if (!Number.isInteger(cachingAtDepth) || cachingAtDepth < 0) {
         cachingAtDepth = -1;
     }
 
@@ -128,7 +127,7 @@ async function sendClaudeRequest(request, response) {
         });
         const additionalHeaders = {};
         const betaHeaders = ['output-128k-2025-02-19'];
-        const useTools = isClaude3or4 && Array.isArray(request.body.tools) && request.body.tools.length > 0;
+        const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model);
@@ -167,7 +166,7 @@ async function sendClaudeRequest(request, response) {
             requestBody.tools = request.body.tools
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
-                .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+                .map(fn => ({ name: fn.name, description: fn.description, input_schema: flattenSchema(fn.parameters, request.body.chat_completion_source) }));
 
             if (enableSystemPromptCache && requestBody.tools.length) {
                 requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };

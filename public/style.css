@@ -295,6 +295,11 @@ table.responsiveTable {
     outline: 1px solid var(--interactable-outline-color);
 }
 
+/* Prevent the outline from being cut off by hiding the overflow */
+.tag.interactable:focus-visible {
+    outline-offset: -1px;
+}
+
 /* The specific input controls can always have a faint outline, even on mouse interaction, to give a better hint */
 select:focus-visible,
 input:focus-visible,
@@ -3094,8 +3099,6 @@ select option:not(:checked) {
 
 #charListFixedTop {
     padding: 5px;
-    /*prevent huge taglist from taking up the whole panel */
-    overflow-y: hidden;
 }
 
 #form_character_search_form {
@@ -3122,6 +3125,7 @@ select option:not(:checked) {
 
 #character_search_bar {
     flex: 1;
+    margin-bottom: 0;
 }
 
 #rm_button_search {
