@@ -12,22 +12,6 @@ class MiniMaxTtsProvider {
     separator = ' . ';
     audioElement = document.createElement('audio');
 
-    constructor() {
-        this.loadCSS();
-    }
-
-    loadCSS() {
-        const cssId = 'minimax-tts-css';
-        if (!document.getElementById(cssId)) {
-            const link = document.createElement('link');
-            link.id = cssId;
-            link.rel = 'stylesheet';
-            link.type = 'text/css';
-            link.href = '/css/minimax-tts.css';
-            document.head.appendChild(link);
-        }
-    }
-
     defaultSettings = {
         apiKey: '',
         groupId: '',
