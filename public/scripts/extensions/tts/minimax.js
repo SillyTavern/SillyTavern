@@ -1065,8 +1065,8 @@ class MiniMaxTtsProvider {
             'hi-IN': 'hi_IN',
         };
 
-        // Return mapped language or default to en_US
-        return languageMap[languageCode] || 'en_US';
+        // Return mapped language or default to auto
+        return languageMap[languageCode] || 'auto';
     }
 
     /**
