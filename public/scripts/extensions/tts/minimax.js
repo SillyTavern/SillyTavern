@@ -1,4 +1,5 @@
 import { getPreviewString, initVoiceMap, saveTtsProviderSettings } from './index.js';
+import { getRequestHeaders } from '../../../script.js';
 
 export { MiniMaxTtsProvider };
 
@@ -754,255 +755,61 @@ class MiniMaxTtsProvider {
         }
 
         const requestBody = {
-            model: this.settings.model || 'speech-02-hd',
             text: inputText,
-            stream: false,
-            voice_setting: {
-                voice_id: voiceId,
-                speed: Number(this.settings.speed) || 1.0,
-                vol: Number(this.settings.volume) || 1.0,
-                pitch: Number(this.settings.pitch) || 1.0,
-            },
-            audio_setting: {
-                sample_rate: Number(this.settings.audioSampleRate) || 32000,
-                bitrate: Number(this.settings.bitrate) || 128000,
-                format: this.settings.format || 'mp3',
-                channel: 1,
-            },
+            voiceId: voiceId,
+            apiKey: this.settings.apiKey,
+            groupId: this.settings.groupId,
+            apiHost: this.settings.apiHost,
+            model: this.settings.model || 'speech-02-hd',
+            speed: Number(this.settings.speed) || 1.0,
+            volume: Number(this.settings.volume) || 1.0,
+            pitch: Number(this.settings.pitch) || 1.0,
+            audioSampleRate: Number(this.settings.audioSampleRate) || 32000,
+            bitrate: Number(this.settings.bitrate) || 128000,
+            format: this.settings.format || 'mp3',
+            language: language,
         };
 
-        // Add language parameter if provided
-        if (language) {
-            requestBody.lang = language;
-        }
-
-        const apiUrl = `${this.settings.apiHost}/v1/t2a_v2?GroupId=${this.settings.groupId}`;
-
         console.debug('MiniMax TTS Request:', {
-            url: apiUrl,
-            body: requestBody,
+            body: { ...requestBody, voiceId: '[REDACTED]' },
         });
 
         try {
-            // Use SillyTavern's CORS proxy to avoid CORS issues
-            const proxyUrl = `/proxy/${encodeURIComponent(apiUrl)}`;
-            const response = await fetch(proxyUrl, {
+            const response = await fetch('/api/minimax/generate-voice', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'MM-API-Source': 'SillyTavern-TTS',
-                },
+                headers: getRequestHeaders(),
                 body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}`;
-                // Clone response to avoid "body stream already read" error
-                const responseClone = response.clone();
 
                 try {
-                    // Try to parse JSON error response
+                    // Try to parse JSON error response from backend
                     const errorData = await response.json();
-                    console.error('MiniMax TTS generation error (JSON):', errorData);
-
-                    // Check for MiniMax specific error format
-                    const baseResp = errorData?.base_resp;
-                    if (baseResp && baseResp.status_code !== 0) {
-                        if (baseResp.status_code === 1004) {
-                            errorMessage = 'Authentication failed - Please check your API key and API host';
-                        } else {
-                            errorMessage = `API Error: ${baseResp.status_msg}`;
-                        }
-                    } else {
-                        errorMessage = errorData.error?.message || errorData.message || errorData.detail || `HTTP ${response.status}`;
-                    }
+                    console.error('MiniMax TTS backend error:', errorData);
+                    errorMessage = errorData.error || errorMessage;
                 } catch (jsonError) {
-                    // If not JSON, try to read text using cloned response
+                    // If not JSON, try to read text
                     try {
-                        const errorText = await responseClone.text();
-                        console.error('MiniMax TTS generation error (Text):', errorText);
-                        // Truncate very long error messages (likely containing audio data)
-                        if (errorText && errorText.length > 500) {
-                            errorMessage = `HTTP ${response.status}: Response too large (${errorText.length} characters)`;
-                        } else {
-                            errorMessage = errorText || `HTTP ${response.status}`;
-                        }
+                        const errorText = await response.text();
+                        console.error('MiniMax TTS backend error (Text):', errorText);
+                        errorMessage = errorText || errorMessage;
                     } catch (textError) {
                         console.error('MiniMax TTS: Failed to read error response:', textError);
-                        errorMessage = `HTTP ${response.status}: Unable to read error details`;
                     }
                 }
+
                 toastr.error(`${errorMessage}`, 'MiniMax TTS Generation Failed');
                 const error = new Error(errorMessage);
-                console.error('MiniMax TTS fetchTtsGeneration HTTP error:', error.message);
+                console.error('MiniMax TTS fetchTtsGeneration error:', error.message);
                 throw error;
             }
 
-            // According to official documentation, MiniMax API returns JSON format with hex-encoded audio data
-            const contentType = response.headers.get('content-type');
+            // Backend handles all the complex processing and returns audio data directly
+            console.debug('MiniMax TTS: Audio response received from backend');
+            return response;
 
-            // First, let's check if the response might be base64 encoded by the proxy
-            let responseData;
-            try {
-                // Try to parse as JSON first
-                responseData = await response.json();
-                console.debug('MiniMax TTS Response (JSON):', responseData);
-            } catch (jsonError) {
-                console.debug('MiniMax TTS: Failed to parse as JSON, trying as text:', jsonError);
-                // If JSON parsing fails, try to read as text and check if it's base64
-                const responseText = await response.text();
-                console.debug('MiniMax TTS Response (Text):', responseText.substring(0, 200) + '...');
-
-                // Check if the response looks like base64
-                if (/^[A-Za-z0-9+/]+=*$/.test(responseText.trim())) {
-                    console.debug('MiniMax TTS: Response appears to be base64 encoded, attempting to decode');
-                    try {
-                        const decodedText = atob(responseText.trim());
-                        responseData = JSON.parse(decodedText);
-                        console.debug('MiniMax TTS Response (Decoded):', responseData);
-                    } catch (decodeError) {
-                        console.error('MiniMax TTS: Failed to decode base64 response:', decodeError);
-                        throw new Error(`Invalid response format: ${decodeError.message}`);
-                    }
-                } else {
-                    throw new Error('Invalid response format: not JSON and not base64');
-                }
-            }
-
-            if (contentType && contentType.includes('application/json') || responseData) {
-
-                // Check for error codes in response data first
-                const baseResp = responseData?.base_resp;
-                if (baseResp && baseResp.status_code !== 0) {
-                    let errorMessage;
-                    if (baseResp.status_code === 1004) {
-                        errorMessage = 'Authentication failed - Please check your API key and API host';
-                    } else {
-                        errorMessage = `API Error: ${baseResp.status_msg}`;
-                    }
-                    console.error('MiniMax TTS: API error:', baseResp);
-                    toastr.error(errorMessage, 'MiniMax TTS Generation Failed');
-                    const error = new Error(errorMessage);
-                    console.error('MiniMax TTS fetchTtsGeneration API error:', error.message);
-                    throw error;
-                }
-
-                if (responseData.data && (responseData.data.audio || responseData.data.url)) {
-                    // Check if audio is returned in URL format
-                    if (responseData.data.url) {
-                        console.debug('MiniMax TTS: Received audio URL:', responseData.data.url);
-                        // If URL is returned, fetch audio data using CORS proxy
-                        const audioProxyUrl = `/proxy/${encodeURIComponent(responseData.data.url)}`;
-                        const audioResponse = await fetch(audioProxyUrl);
-                        if (!audioResponse.ok) {
-                            const error = new Error(`Failed to fetch audio from URL: ${audioResponse.status}`);
-                            console.error('MiniMax TTS fetchTtsGeneration URL fetch error:', error.message);
-                            throw error;
-                        }
-                        return audioResponse;
-                    }
-
-                    // Process hex-encoded audio data
-                    const hexAudio = responseData.data.audio;
-
-                    // Ensure hex string is valid
-                    if (!hexAudio || typeof hexAudio !== 'string') {
-                        const error = new Error('Invalid audio data format: missing or invalid hex string');
-                        console.error('MiniMax TTS fetchTtsGeneration hex validation error:', error.message);
-                        throw error;
-                    }
-
-                    // Remove possible prefix and spaces
-                    const cleanHex = hexAudio.replace(/^0x/, '').replace(/\s/g, '');
-
-                    // Validate hex string format
-                    if (!/^[0-9a-fA-F]*$/.test(cleanHex)) {
-                        const error = new Error('Invalid audio data format: not a valid hex string');
-                        console.error('MiniMax TTS fetchTtsGeneration hex format error:', error.message);
-                        throw error;
-                    }
-
-                    // Ensure hex string length is even
-                    const paddedHex = cleanHex.length % 2 === 0 ? cleanHex : '0' + cleanHex;
-
-                    try {
-                        // Convert hex string to byte array
-                        const audioBytes = new Uint8Array(paddedHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-
-                        // Validate converted data
-                        if (audioBytes.length === 0) {
-                            const error = new Error('Audio data conversion resulted in empty array');
-                            console.error('MiniMax TTS fetchTtsGeneration conversion error:', error.message);
-                            throw error;
-                        }
-
-                        console.debug(`MiniMax TTS: Converted ${paddedHex.length} hex characters to ${audioBytes.length} bytes`);
-
-                        // Create audio blob with correct MIME type
-                        const mimeType = this.getAudioMimeType(this.settings.format);
-                        const audioBlob = new Blob([audioBytes], { type: mimeType });
-
-                        // Validate generated blob
-                        if (audioBlob.size === 0) {
-                            const error = new Error('Generated audio blob is empty');
-                            console.error('MiniMax TTS fetchTtsGeneration blob error:', error.message);
-                            throw error;
-                        }
-
-                        console.debug(`MiniMax TTS: Generated audio blob of size ${audioBlob.size} bytes with MIME type ${mimeType}`);
-
-                        // Create a simulated Response object
-                        return new Response(audioBlob, {
-                            status: 200,
-                            statusText: 'OK',
-                            headers: new Headers({
-                                'content-type': mimeType,
-                                'content-length': audioBlob.size.toString(),
-                            }),
-                        });
-
-                    } catch (conversionError) {
-                        console.error('MiniMax TTS: Audio conversion error:', conversionError);
-                        const error = new Error(`Audio data conversion failed: ${conversionError.message}`);
-                        console.error('MiniMax TTS fetchTtsGeneration conversion failed:', error.message);
-                        throw error;
-                    }
-                } else {
-                    // Handle error response
-                    const errorMessage = responseData.base_resp?.status_msg || responseData.error?.message || 'Unknown error';
-                    // Log the full response for debugging, but don't include audio data in error messages
-                    const logData = { ...responseData };
-                    if (logData.data && logData.data.audio) {
-                        logData.data.audio = `[Audio data: ${logData.data.audio.length} characters]`;
-                    }
-                    console.error('MiniMax TTS: API error:', logData);
-                    toastr.error(`API Error: ${errorMessage}`, 'MiniMax TTS Generation Failed');
-                    const error = new Error(`API Error: ${errorMessage}`);
-                    console.error('MiniMax TTS fetchTtsGeneration data error:', error.message);
-                    throw error;
-                }
-            } else {
-                // If not JSON format, might be direct audio stream (legacy compatibility)
-                if (contentType && contentType.startsWith('audio/')) {
-                    return response;
-                } else {
-                    // Try to read error information
-                    let errorMessage = 'Invalid response format';
-                    try {
-                        const errorText = await response.text();
-                        console.error('MiniMax TTS: Unexpected response format:', contentType, errorText);
-                        errorMessage = errorText || 'Invalid response format';
-                    } catch (textError) {
-                        console.error('MiniMax TTS: Failed to read response:', textError);
-                        errorMessage = `Invalid response format (Content-Type: ${contentType || 'unknown'})`;
-                    }
-                    toastr.error(`API Error: ${errorMessage}`, 'MiniMax TTS Generation Failed');
-                    const error = new Error(`API Error: ${errorMessage}`);
-                    console.error('MiniMax TTS fetchTtsGeneration format error:', error.message);
-                    throw error;
-                }
-            }
         } catch (error) {
             console.error('Error in MiniMax TTS generation:', error);
             throw error;
