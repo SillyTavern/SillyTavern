@@ -25,6 +25,16 @@ SillyTavern (or ST for short) is a locally installed user interface that allows 
 
 Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 200 contributors and 2 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
 
+## Our Vision
+
+1. We aim to empower users with as much utility and control over their LLM prompts as possible. The steep learning curve is part of the fun!
+2. We do not provide any online or hosted services, nor programmatically track any user data.
+3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
+
+### Do I need a powerful PC to run SillyTavern?
+
+The hardware requirements are minimal: it will run on anything that can run NodeJS 18 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM, but actual requirements may vary depending on the model and backend you choose to use.
+
 ## Questions or suggestions?
 
 ### Discord server
