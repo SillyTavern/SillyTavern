@@ -224,4 +224,4 @@ router.post('/generate-voice', async (request, response) => {
     }
 });
 
-export default router;
+export { router };
