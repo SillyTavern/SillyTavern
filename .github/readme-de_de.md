@@ -62,7 +62,7 @@ Oder nimm direkt Kontakt mit den Entwicklern auf:
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/9b5f32f0-c3b3-4102-b3f5-0e9213c0f50f">
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/913fdbaa-7d33-42f1-ae2c-89dca41c53d1">
 
-## ⌛ Installation
+## Installation
 
 Für detaillierte Installationsanweisungen besuche bitte unsere Dokumentation:
 

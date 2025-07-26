@@ -62,7 +62,7 @@ SillyTavern(짧게는 ST)은 텍스트 생성 LLM, 이미지 생성 엔진, TTS 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/9b5f32f0-c3b3-4102-b3f5-0e9213c0f50f">
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/913fdbaa-7d33-42f1-ae2c-89dca41c53d1">
 
-## ⌛ 설치
+## 설치
 
 자세한 설치 방법은 저희의 문서를 확인하세요:
 
