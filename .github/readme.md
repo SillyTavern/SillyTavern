@@ -31,7 +31,7 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over
 2. We do not provide any online or hosted services, nor programmatically track any user data.
 3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
 
-### Do I need a powerful PC to run SillyTavern?
+## Do I need a powerful PC to run SillyTavern?
 
 The hardware requirements are minimal: it will run on anything that can run NodeJS 18 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM, but actual requirements may vary depending on the model and backend you choose to use.
 
