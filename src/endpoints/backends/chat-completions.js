@@ -334,9 +334,9 @@ async function sendMakerSuiteRequest(request, response) {
         topK: request.body.top_k || undefined,
         responseMimeType: responseMimeType,
         responseSchema: responseSchema,
-        seed: request.body.seed || undefined,
-        presencePenalty: request.body.presence_penalty || undefined,
-        frequencyPenalty: request.body.frequency_penalty || undefined,
+        seed: request.body.seed ?? undefined,
+        presencePenalty: request.body.presence_penalty ?? undefined,
+        frequencyPenalty: request.body.frequency_penalty ?? undefined,
     };
 
     function getGeminiBody() {
