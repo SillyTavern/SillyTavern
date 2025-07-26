@@ -128,6 +128,7 @@ const ttsProviders = {
     GSVI: GSVITtsProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Kokoro: KokoroTtsProvider,
+    MiniMax: MiniMaxTtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,
@@ -139,7 +140,6 @@ const ttsProviders = {
     'TTS WebUI': TtsWebuiProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
-    MiniMax: MiniMaxTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;

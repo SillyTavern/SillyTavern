@@ -12,10 +12,26 @@ class MiniMaxTtsProvider {
     separator = ' . ';
     audioElement = document.createElement('audio');
 
+    constructor() {
+        this.loadCSS();
+    }
+
+    loadCSS() {
+        const cssId = 'minimax-tts-css';
+        if (!document.getElementById(cssId)) {
+            const link = document.createElement('link');
+            link.id = cssId;
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = '/css/minimax-tts.css';
+            document.head.appendChild(link);
+        }
+    }
+
     defaultSettings = {
         apiKey: '',
         groupId: '',
-        apiHost: 'https://api.minimax.chat',
+        apiHost: 'https://api.minimaxi.chat',
         model: 'speech-02-hd',
         voiceMap: {},
         speed: 1.0,
@@ -60,8 +76,8 @@ class MiniMaxTtsProvider {
             <div class="tts_block">
                 <label for="minimax_tts_api_host">API Host</label>
                 <select id="minimax_tts_api_host" class="text_pole">
-                    <option value="https://api.minimax.chat">Mainland China (api.minimax.chat)</option>
                     <option value="https://api.minimaxi.chat">Global (api.minimaxi.chat)</option>
+                    <option value="https://api.minimax.chat">Mainland China (api.minimax.chat)</option>
                 </select>
             </div>
             <div class="tts_block">
@@ -304,33 +320,20 @@ class MiniMaxTtsProvider {
         container.empty();
 
         if (this.settings.customModels.length === 0) {
-            container.append('<div style="color: #888; font-style: italic;">No custom models added</div>');
+            container.append('<div class="minimax-empty-list">No custom models added</div>');
             return;
         }
 
         this.settings.customModels.forEach(model => {
-            const modelDiv = $('<div></div>')
-                .css({
-                    'display': 'flex',
-                    'justify-content': 'space-between',
-                    'align-items': 'center',
-                    'padding': '8px',
-                    'background': '#333',
-                    'margin': '5px 0',
-                    'border-radius': '4px',
-                });
+            const modelDiv = $('<div></div>').addClass('minimax-custom-item');
 
-            const modelInfo = $('<span></span>');
-            const modelName = $('<strong></strong>').text(model.name);
-            const modelId = $('<small></small>').css('color', '#aaa').text(`(${model.id})`);
-            modelInfo.append(modelName).append(' ').append(modelId);
+            const modelInfo = $('<div></div>').addClass('minimax-custom-item-info');
+            const modelName = $('<div></div>').addClass('minimax-custom-item-name').text(model.name);
+            const modelId = $('<div></div>').addClass('minimax-custom-item-details').text(`(${model.id})`);
+            modelInfo.append(modelName).append(modelId);
 
             const removeBtn = $('<button></button>')
-                .addClass('menu_button')
-                .css({
-                    'padding': '4px 8px',
-                    'font-size': '12px',
-                })
+                .addClass('menu_button minimax-custom-item-remove')
                 .text('Remove')
                 .on('click', () => {
                     try {
@@ -352,33 +355,20 @@ class MiniMaxTtsProvider {
         container.empty();
 
         if (this.settings.customVoices.length === 0) {
-            container.append('<div style="color: #888; font-style: italic;">No custom voices added</div>');
+            container.append('<div class="minimax-empty-list">No custom voices added</div>');
             return;
         }
 
         this.settings.customVoices.forEach(voice => {
-            const voiceDiv = $('<div></div>')
-                .css({
-                    'display': 'flex',
-                    'justify-content': 'space-between',
-                    'align-items': 'center',
-                    'padding': '8px',
-                    'background': '#333',
-                    'margin': '5px 0',
-                    'border-radius': '4px',
-                });
+            const voiceDiv = $('<div></div>').addClass('minimax-custom-item');
 
-            const voiceInfo = $('<span></span>');
-            const voiceName = $('<strong></strong>').text(voice.name);
-            const voiceDetails = $('<small></small>').css('color', '#aaa').text(`(${voice.voice_id}) - ${voice.lang}`);
-            voiceInfo.append(voiceName).append(' ').append(voiceDetails);
+            const voiceInfo = $('<div></div>').addClass('minimax-custom-item-info');
+            const voiceName = $('<div></div>').addClass('minimax-custom-item-name').text(voice.name);
+            const voiceDetails = $('<div></div>').addClass('minimax-custom-item-details').text(`(${voice.voice_id}) - ${voice.lang}`);
+            voiceInfo.append(voiceName).append(voiceDetails);
 
             const removeBtn = $('<button></button>')
-                .addClass('menu_button')
-                .css({
-                    'padding': '4px 8px',
-                    'font-size': '12px',
-                })
+                .addClass('menu_button minimax-custom-item-remove')
                 .text('Remove')
                 .on('click', () => {
                     try {
@@ -750,11 +740,6 @@ class MiniMaxTtsProvider {
 
         console.debug('MiniMax TTS Request:', {
             url: apiUrl,
-            headers: {
-                'Authorization': `Bearer ${this.settings.apiKey.substring(0, 10)}...`,
-                'Content-Type': 'application/json',
-                'MM-API-Source': 'SillyTavern-TTS',
-            },
             body: requestBody,
         });
 

@@ -1,0 +1,33 @@
+.minimax-custom-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #333;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+.minimax-custom-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.minimax-custom-item-name {
+    font-weight: bold;
+}
+
+.minimax-custom-item-details {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.minimax-custom-item-remove {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.minimax-empty-list {
+    color: #888;
+    font-style: italic;
+}

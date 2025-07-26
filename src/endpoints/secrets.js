@@ -54,8 +54,6 @@ export const SECRET_KEYS = {
     SERPER: 'api_key_serper',
     AIMLAPI: 'api_key_aimlapi',
     XAI: 'api_key_xai',
-    MINIMAX: 'api_key_minimax',
-    MINIMAX_GROUP_ID: 'minimax_group_id',
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
 };
 
