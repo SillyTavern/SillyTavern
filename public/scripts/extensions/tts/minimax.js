@@ -31,7 +31,7 @@ class MiniMaxTtsProvider {
     defaultSettings = {
         apiKey: '',
         groupId: '',
-        apiHost: 'https://api.minimaxi.chat',
+        apiHost: 'https://api.minimax.io',
         model: 'speech-02-hd',
         voiceMap: {},
         speed: 1.0,
@@ -76,6 +76,7 @@ class MiniMaxTtsProvider {
             <div class="tts_block">
                 <label for="minimax_tts_api_host">API Host</label>
                 <select id="minimax_tts_api_host" class="text_pole">
+                    <option value="https://api.minimax.io">Official (api.minimax.io)</option>
                     <option value="https://api.minimaxi.chat">Global (api.minimaxi.chat)</option>
                     <option value="https://api.minimax.chat">Mainland China (api.minimax.chat)</option>
                 </select>
@@ -111,7 +112,7 @@ class MiniMaxTtsProvider {
                 <select id="minimax_tts_format" class="text_pole">
                     <option value="mp3">MP3</option>
                     <option value="wav">WAV</option>
-                    <option value="pcm">PCM</option>
+                    <option value="flac">FLAC</option>
                 </select>
             </div>
 
@@ -281,16 +282,19 @@ class MiniMaxTtsProvider {
             return;
         }
 
+        // Convert display name to standard language code before saving
+        const standardLangCode = this.convertDisplayNameToLanguageCode(voiceLang);
+
         this.settings.customVoices.push({
             name: voiceName,
             voice_id: voiceId,
-            lang: voiceLang,
+            lang: standardLangCode,
             preview_url: null,
         });
 
         $('#minimax_custom_voice_name').val('');
         $('#minimax_custom_voice_id').val('');
-        $('#minimax_custom_voice_lang').val('Chinese');
+        $('#minimax_custom_voice_lang').val('auto');
 
         this.updateCustomVoicesDisplay();
         initVoiceMap(); // Update TTS extension voiceMap
@@ -394,6 +398,42 @@ class MiniMaxTtsProvider {
         return [...MiniMaxTtsProvider.defaultVoices, ...this.settings.customVoices];
     }
 
+    /**
+     * Convert display names to standard language codes
+     * @param {string} displayName Language display name
+     * @returns {string} Standard language code
+     */
+    convertDisplayNameToLanguageCode(displayName) {
+        const displayNameToCode = {
+            'Chinese': 'zh-CN',
+            'Chinese,Yue': 'zh-TW',
+            'English': 'en-US',
+            'Japanese': 'ja-JP',
+            'Korean': 'ko-KR',
+            'French': 'fr-FR',
+            'German': 'de-DE',
+            'Spanish': 'es-ES',
+            'Portuguese': 'pt-BR',
+            'Italian': 'it-IT',
+            'Arabic': 'ar-SA',
+            'Russian': 'ru-RU',
+            'Turkish': 'tr-TR',
+            'Dutch': 'nl-NL',
+            'Ukrainian': 'uk-UA',
+            'Vietnamese': 'vi-VN',
+            'Indonesian': 'id-ID',
+            'Thai': 'th-TH',
+            'Polish': 'pl-PL',
+            'Romanian': 'ro-RO',
+            'Greek': 'el-GR',
+            'Czech': 'cs-CZ',
+            'Finnish': 'fi-FI',
+            'Hindi': 'hi-IN',
+        };
+
+        return displayNameToCode[displayName] || displayName;
+    }
+
     updateModelSelect(models) {
         const modelSelect = $('#minimax_tts_model');
         const currentValue = modelSelect.val();
@@ -438,7 +478,7 @@ class MiniMaxTtsProvider {
 
         $('#minimax_tts_api_key').val(this.settings.apiKey);
         $('#minimax_tts_group_id').val(this.settings.groupId);
-        $('#minimax_tts_api_host').val(this.settings.apiHost || 'https://api.minimax.chat');
+        $('#minimax_tts_api_host').val(this.settings.apiHost || 'https://api.minimax.io');
         $('#minimax_tts_model').val(this.settings.model);
         $('#minimax_tts_speed').val(this.settings.speed);
         $('#minimax_tts_volume').val(this.settings.volume);
@@ -640,7 +680,19 @@ class MiniMaxTtsProvider {
             voiceId = customVoiceId.trim();
         }
 
-        return await this.fetchTtsGeneration(text, voiceId);
+        // Get the voice object to determine language
+        let language = null;
+        try {
+            const voice = await this.getVoice(voiceId);
+            if (voice && voice.lang) {
+                language = this.mapLanguageToMiniMaxFormat(voice.lang);
+                console.debug(`MiniMax TTS: Using voice language ${voice.lang}, API language: ${language}`);
+            }
+        } catch (error) {
+            console.debug('MiniMax TTS: Could not determine voice language, using default');
+        }
+
+        return await this.fetchTtsGeneration(text, voiceId, language);
     }
 
     async fetchTtsVoiceObjects() {
@@ -708,7 +760,7 @@ class MiniMaxTtsProvider {
         return mimeTypes[format] || 'audio/mpeg';
     }
 
-    async fetchTtsGeneration(inputText, voiceId) {
+    async fetchTtsGeneration(inputText, voiceId, language = null) {
         console.info(`Generating new MiniMax TTS for voice_id ${voiceId}`);
 
         if (!this.settings.apiKey || !this.settings.groupId) {
@@ -733,10 +785,14 @@ class MiniMaxTtsProvider {
                 format: this.settings.format || 'mp3',
                 channel: 1,
             },
-            group_id: this.settings.groupId,
         };
 
-        const apiUrl = `${this.settings.apiHost}/v1/t2a_v2`;
+        // Add language parameter if provided
+        if (language) {
+            requestBody.lang = language;
+        }
+
+        const apiUrl = `${this.settings.apiHost}/v1/t2a_v2?GroupId=${this.settings.groupId}`;
 
         console.debug('MiniMax TTS Request:', {
             url: apiUrl,
@@ -744,7 +800,9 @@ class MiniMaxTtsProvider {
         });
 
         try {
-            const response = await fetch(apiUrl, {
+            // Use SillyTavern's CORS proxy to avoid CORS issues
+            const proxyUrl = `/proxy/${encodeURIComponent(apiUrl)}`;
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.settings.apiKey}`,
@@ -780,7 +838,12 @@ class MiniMaxTtsProvider {
                     try {
                         const errorText = await responseClone.text();
                         console.error('MiniMax TTS generation error (Text):', errorText);
-                        errorMessage = errorText || `HTTP ${response.status}`;
+                        // Truncate very long error messages (likely containing audio data)
+                        if (errorText && errorText.length > 500) {
+                            errorMessage = `HTTP ${response.status}: Response too large (${errorText.length} characters)`;
+                        } else {
+                            errorMessage = errorText || `HTTP ${response.status}`;
+                        }
                     } catch (textError) {
                         console.error('MiniMax TTS: Failed to read error response:', textError);
                         errorMessage = `HTTP ${response.status}: Unable to read error details`;
@@ -794,9 +857,36 @@ class MiniMaxTtsProvider {
 
             // According to official documentation, MiniMax API returns JSON format with hex-encoded audio data
             const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const responseData = await response.json();
-                console.debug('MiniMax TTS Response:', responseData);
+
+            // First, let's check if the response might be base64 encoded by the proxy
+            let responseData;
+            try {
+                // Try to parse as JSON first
+                responseData = await response.json();
+                console.debug('MiniMax TTS Response (JSON):', responseData);
+            } catch (jsonError) {
+                console.debug('MiniMax TTS: Failed to parse as JSON, trying as text:', jsonError);
+                // If JSON parsing fails, try to read as text and check if it's base64
+                const responseText = await response.text();
+                console.debug('MiniMax TTS Response (Text):', responseText.substring(0, 200) + '...');
+
+                // Check if the response looks like base64
+                if (/^[A-Za-z0-9+/]+=*$/.test(responseText.trim())) {
+                    console.debug('MiniMax TTS: Response appears to be base64 encoded, attempting to decode');
+                    try {
+                        const decodedText = atob(responseText.trim());
+                        responseData = JSON.parse(decodedText);
+                        console.debug('MiniMax TTS Response (Decoded):', responseData);
+                    } catch (decodeError) {
+                        console.error('MiniMax TTS: Failed to decode base64 response:', decodeError);
+                        throw new Error(`Invalid response format: ${decodeError.message}`);
+                    }
+                } else {
+                    throw new Error('Invalid response format: not JSON and not base64');
+                }
+            }
+
+            if (contentType && contentType.includes('application/json') || responseData) {
 
                 // Check for error codes in response data first
                 const baseResp = responseData?.base_resp;
@@ -818,8 +908,9 @@ class MiniMaxTtsProvider {
                     // Check if audio is returned in URL format
                     if (responseData.data.url) {
                         console.debug('MiniMax TTS: Received audio URL:', responseData.data.url);
-                        // If URL is returned, fetch audio data directly
-                        const audioResponse = await fetch(responseData.data.url);
+                        // If URL is returned, fetch audio data using CORS proxy
+                        const audioProxyUrl = `/proxy/${encodeURIComponent(responseData.data.url)}`;
+                        const audioResponse = await fetch(audioProxyUrl);
                         if (!audioResponse.ok) {
                             const error = new Error(`Failed to fetch audio from URL: ${audioResponse.status}`);
                             console.error('MiniMax TTS fetchTtsGeneration URL fetch error:', error.message);
@@ -896,7 +987,12 @@ class MiniMaxTtsProvider {
                 } else {
                     // Handle error response
                     const errorMessage = responseData.base_resp?.status_msg || responseData.error?.message || 'Unknown error';
-                    console.error('MiniMax TTS: API error:', responseData);
+                    // Log the full response for debugging, but don't include audio data in error messages
+                    const logData = { ...responseData };
+                    if (logData.data && logData.data.audio) {
+                        logData.data.audio = `[Audio data: ${logData.data.audio.length} characters]`;
+                    }
+                    console.error('MiniMax TTS: API error:', logData);
                     toastr.error(`API Error: ${errorMessage}`, 'MiniMax TTS Generation Failed');
                     const error = new Error(`API Error: ${errorMessage}`);
                     console.error('MiniMax TTS fetchTtsGeneration data error:', error.message);
@@ -930,6 +1026,50 @@ class MiniMaxTtsProvider {
     }
 
     /**
+     * Map language codes to MiniMax API supported language format
+     * @param {string} lang Language code or display name
+     * @returns {string} MiniMax API language format
+     */
+    mapLanguageToMiniMaxFormat(lang) {
+        // Convert display name to language code if needed
+        const languageCode = this.convertDisplayNameToLanguageCode(lang);
+
+        // Then map language codes to MiniMax API format
+        const languageMap = {
+            'zh-CN': 'zh_CN',
+            'zh-TW': 'zh_TW',
+            'en-US': 'en_US',
+            'en-GB': 'en_GB',
+            'en-AU': 'en_AU',
+            'en-IN': 'en_IN',
+            'ja-JP': 'ja_JP',
+            'ko-KR': 'ko_KR',
+            'fr-FR': 'fr_FR',
+            'de-DE': 'de_DE',
+            'es-ES': 'es_ES',
+            'pt-BR': 'pt_BR',
+            'it-IT': 'it_IT',
+            'ar-SA': 'ar_SA',
+            'ru-RU': 'ru_RU',
+            'tr-TR': 'tr_TR',
+            'nl-NL': 'nl_NL',
+            'uk-UA': 'uk_UA',
+            'vi-VN': 'vi_VN',
+            'id-ID': 'id_ID',
+            'th-TH': 'th_TH',
+            'pl-PL': 'pl_PL',
+            'ro-RO': 'ro_RO',
+            'el-GR': 'el_GR',
+            'cs-CZ': 'cs_CZ',
+            'fi-FI': 'fi_FI',
+            'hi-IN': 'hi_IN',
+        };
+
+        // Return mapped language or default to en_US
+        return languageMap[languageCode] || 'en_US';
+    }
+
+    /**
      * Preview TTS for a given voice ID.
      * @param {string} voiceId Voice ID
      */
@@ -939,8 +1079,15 @@ class MiniMaxTtsProvider {
 
         try {
             const voice = await this.getVoice(voiceId);
-            const text = getPreviewString(voice.lang || 'zh-CN');
-            const response = await this.fetchTtsGeneration(text, voiceId);
+            // Get preview text based on voice language, defaulting to en-US
+            const previewLang = voice.lang || 'en-US';
+            const text = getPreviewString(previewLang);
+
+            // Map the language to MiniMax API format for the request
+            const apiLang = this.mapLanguageToMiniMaxFormat(previewLang);
+            console.debug(`MiniMax TTS: Using preview language ${previewLang}, API language: ${apiLang}`);
+
+            const response = await this.fetchTtsGeneration(text, voiceId, apiLang);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -950,26 +1097,49 @@ class MiniMaxTtsProvider {
             }
 
             const audio = await response.blob();
-            const url = URL.createObjectURL(audio);
+            console.debug(`MiniMax TTS: Audio blob size: ${audio.size}, type: ${audio.type}`);
+
+            // Use the same method as other TTS providers - convert to base64 data URL
+            const { getBase64Async } = await import('../../utils.js');
+            const srcUrl = await getBase64Async(audio);
+            console.debug('MiniMax TTS: Base64 data URL created');
 
             // Clean up previous event listener to prevent memory leaks
             this.audioElement.onended = null;
+            this.audioElement.onerror = null;
 
-            this.audioElement.src = url;
-            this.audioElement.play();
+            this.audioElement.src = srcUrl;
+            this.audioElement.volume = Math.min(this.settings.volume || 1.0, 1.0); // HTML audio element max is 1.0
+
+            // Add error handler for audio element
+            this.audioElement.onerror = (e) => {
+                console.error('MiniMax TTS: Audio element error:', e);
+                console.error('MiniMax TTS: Audio element error details:', {
+                    error: this.audioElement.error,
+                    networkState: this.audioElement.networkState,
+                    readyState: this.audioElement.readyState,
+                    src: this.audioElement.src,
+                });
+
+                toastr.error('Audio playback failed. The audio format may not be supported by your browser.');
+            };
+
+            try {
+                await this.audioElement.play();
+                console.debug('MiniMax TTS: Audio playback started successfully');
+            } catch (playError) {
+                console.error('MiniMax TTS: Play error:', playError);
+                throw new Error(`Audio playback failed: ${playError.message}`);
+            }
+
             this.audioElement.onended = () => {
-                URL.revokeObjectURL(url);
                 this.audioElement.onended = null;
+                this.audioElement.onerror = null;
             };
 
         } catch (error) {
             console.error('MiniMax TTS Preview Error:', error);
             toastr.error(`Could not generate preview: ${error.message}`);
         }
-    }
-
-    // Interface method for history (not used by MiniMax TTS)
-    async fetchTtsFromHistory(history_item_id) {
-        return Promise.resolve(history_item_id);
     }
 }
