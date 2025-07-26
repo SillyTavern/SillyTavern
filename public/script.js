@@ -1205,7 +1205,7 @@ export async function getCharacters() {
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
     });
-    if (response.ok === true) {
+    if (response.ok) {
         const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
         characters.splice(0, characters.length);
         const getData = await response.json();
@@ -1234,6 +1234,12 @@ export async function getCharacters() {
 
         await getGroups();
         await printCharacters(true);
+    } else {
+        console.error('Failed to fetch characters:', response.statusText);
+        const errorData = await response.json();
+        if (errorData?.overflow) {
+            await Popup.show.text(t`Character data length limit reached`, t`To resolve this, set "performance.lazyLoadCharacters" to "true" in config.yaml and restart the server.`);
+        }
     }
 }
 

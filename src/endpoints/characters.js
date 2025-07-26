@@ -1213,7 +1213,8 @@ router.post('/all', async function (request, response) {
         return response.send(data);
     } catch (err) {
         console.error(err);
-        response.sendStatus(500);
+        const isRangeError = err instanceof RangeError;
+        response.status(500).send({ overflow: isRangeError, error: true });
     }
 });
 
