@@ -965,23 +965,22 @@ function switchSpoilerMode() {
         $('#descriptionWrapper').hide();
         $('#firstMessageWrapper').hide();
         $('#spoiler_free_desc').addClass('flex1');
-        $('#creator_notes_spoiler').show();
+        $('#creators_note_desc_hidden').show();
     }
     else {
         $('#descriptionWrapper').show();
         $('#firstMessageWrapper').show();
         $('#spoiler_free_desc').removeClass('flex1');
-        $('#creator_notes_spoiler').hide();
+        $('#creators_note_desc_hidden').hide();
     }
 }
 
 function peekSpoilerMode() {
     $('#descriptionWrapper').toggle();
     $('#firstMessageWrapper').toggle();
-    $('#creator_notes_spoiler').toggle();
     $('#spoiler_free_desc').toggleClass('flex1');
+    $('#creators_note_desc_hidden').toggle();
 }
-
 
 function switchMovingUI() {
     $('.drawer-content.maximized').each(function () {
@@ -3825,7 +3824,8 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
-    $('#spoiler_free_desc_button').on('click', function () {
+    $('#spoiler_free_desc_button').on('click', function (e) {
+        e.stopPropagation();
         peekSpoilerMode();
         $(this).toggleClass('fa-eye fa-eye-slash');
     });

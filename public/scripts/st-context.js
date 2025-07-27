@@ -52,6 +52,7 @@ import {
     getCharacterCardFields,
     swipe_right,
     swipe_left,
+    generateRaw,
 } from '../script.js';
 import {
     extension_settings,
@@ -170,6 +171,7 @@ export function getContext() {
         ModuleWorkerWrapper,
         getTokenizerModel,
         generateQuietPrompt,
+        generateRaw,
         writeExtensionField,
         getThumbnailUrl,
         selectCharacterById,

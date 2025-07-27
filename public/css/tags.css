@@ -157,7 +157,9 @@
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin: 5px;
+    margin-top: 5px;
+    max-height: 40dvh;
+    overflow-y: auto;
 }
 
 .rm_tag_filter .tag {

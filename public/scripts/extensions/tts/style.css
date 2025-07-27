@@ -125,3 +125,5 @@
 #at-status_info {
     color: lightgreen;
 }
+
+@import './css/minimax-tts.css';

@@ -421,7 +421,7 @@ async function autoBackgroundCommand() {
 
     const list = options.map(option => `- ${option.text}`).join('\n');
     const prompt = stringFormat(autoBgPrompt, list);
-    const reply = await generateQuietPrompt(prompt, false, false);
+    const reply = await generateQuietPrompt({ quietPrompt: prompt });
     const fuse = new Fuse(options, { keys: ['text'] });
     const bestMatch = fuse.search(reply, { limit: 1 });
 

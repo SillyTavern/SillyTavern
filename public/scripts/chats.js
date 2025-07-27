@@ -70,7 +70,7 @@ import { accountStorage } from './util/AccountStorage.js';
  * @returns {Promise<string>} Converted file text
  */
 
-const fileSizeLimit = 1024 * 1024 * 100; // 100 MB
+const fileSizeLimit = 1024 * 1024 * 350; // 350 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
     CHARACTER: 'character',
@@ -2021,7 +2021,8 @@ export function initChatUtilities() {
         reloadCurrentChat();
     });
 
-    $('#creators_note_styles_button').on('click', function () {
+    $('#creators_note_styles_button').on('click', function (e) {
+        e.stopPropagation();
         openGlobalStylesPreferenceDialog();
     });
 

@@ -2726,7 +2726,7 @@ function getUserAvatarUrl() {
  * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
  */
 async function generatePrompt(quietPrompt) {
-    const reply = await generateQuietPrompt(quietPrompt, false, false);
+    const reply = await generateQuietPrompt({ quietPrompt });
     const processedReply = processReply(reply);
 
     if (!processedReply) {

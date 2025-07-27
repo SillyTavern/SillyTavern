@@ -1,6 +1,6 @@
 import { Fuse } from '../../../lib.js';
 
-import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
+import { characters, eventSource, event_types, generateQuietPrompt, generateRaw, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
@@ -1056,10 +1056,10 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                     inApiCall = true;
                     switch (extension_settings.expressions.promptType) {
                         case PROMPT_TYPE.raw:
-                            emotionResponse = await generateRaw(text, main_api, false, false, prompt);
+                            emotionResponse = await generateRaw({ prompt: text, systemPrompt: prompt });
                             break;
                         case PROMPT_TYPE.full:
-                            emotionResponse = await generateQuietPrompt(prompt, false, false);
+                            emotionResponse = await generateQuietPrompt({ quietPrompt: prompt });
                             break;
                     }
                 } finally {

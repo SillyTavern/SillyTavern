@@ -1672,17 +1672,18 @@ export function initDefaultSlashCommands() {
         returns: 'generated text',
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
+                'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
             ),
             new SlashCommandNamedArgument(
                 'instruct', 'use instruct mode', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
             ),
             new SlashCommandNamedArgument(
-                'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false,
+                'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false, false, '[]',
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'as',
                 description: 'role of the output prompt',
+                defaultValue: 'system',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
                     new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.assistant),
@@ -1690,10 +1691,16 @@ export function initDefaultSlashCommands() {
                 ],
             }),
             new SlashCommandNamedArgument(
-                'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING], false,
+                'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
             new SlashCommandNamedArgument(
-                'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER], false,
+                'prefill', 'prefill prompt at the end', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
+                'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
+                'trim', 'trim {{user}} and {{char}} prefixes from the output', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
             ),
         ],
         unnamedArgumentList: [
@@ -3628,7 +3635,9 @@ async function generateRawCallback(args, value) {
     const as = args?.as || 'system';
     const quietToLoud = as === 'char';
     const systemPrompt = resolveVariable(args?.system) || '';
+    const prefillPrompt = resolveVariable(args?.prefill) || '';
     const length = Number(resolveVariable(args?.length) ?? 0) || 0;
+    const trimNames = !isFalseBoolean(args?.trim);
 
     try {
         if (lock) {
@@ -3636,7 +3645,17 @@ async function generateRawCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length);
+        /** @type {import('../script.js').GenerateRawParams} */
+        const params = {
+            prompt: value,
+            instructOverride: isFalseBoolean(args?.instruct),
+            quietToLoud: quietToLoud,
+            systemPrompt: systemPrompt,
+            responseLength: length,
+            trimNames: trimNames,
+            prefill: prefillPrompt,
+        };
+        const result = await generateRaw(params);
         return result;
     } catch (err) {
         console.error('Error on /genraw generation', err);
@@ -3672,7 +3691,14 @@ async function generateCallback(args, value) {
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
         const char = findChar({ name: name });
-        const result = await generateQuietPrompt(value, quietToLoud, false, '', char?.name ?? name, length);
+        /** @type {import('../script.js').GenerateQuietPromptParams} */
+        const params = {
+            quietPrompt: value,
+            quietToLoud: quietToLoud,
+            quietName: char?.name ?? name,
+            responseLength: length,
+        };
+        const result = await generateQuietPrompt(params);
         return result;
     } catch (err) {
         console.error('Error on /gen generation', err);
@@ -3921,7 +3947,7 @@ async function askCharacter(args, text) {
     try {
         eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
         toastr.info(`Asking ${name} something...`);
-        askResult = await Generate('ask_command');
+        askResult = await Generate('normal');
     } catch (error) {
         restoreCharacter();
         console.error('Error running /ask command', error);
@@ -4343,7 +4369,7 @@ export async function generateSystemMessage(_, prompt) {
 
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt(prompt, false, false);
+    let message = await generateQuietPrompt({ quietPrompt: prompt });
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
@@ -4600,7 +4626,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
-    let reply = await generateQuietPrompt(text, true, false);
+    let reply = await generateQuietPrompt({ quietPrompt: text, quietToLoud: true });
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {
@@ -4765,7 +4791,6 @@ function getModelOptions(quiet) {
         { id: 'featherless_model', api: 'textgenerationwebui', type: textgen_types.FEATHERLESS },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },
         { id: 'model_claude_select', api: 'openai', type: chat_completion_sources.CLAUDE },
-        { id: 'model_windowai_select', api: 'openai', type: chat_completion_sources.WINDOWAI },
         { id: 'model_openrouter_select', api: 'openai', type: chat_completion_sources.OPENROUTER },
         { id: 'model_ai21_select', api: 'openai', type: chat_completion_sources.AI21 },
         { id: 'model_google_select', api: 'openai', type: chat_completion_sources.MAKERSUITE },
