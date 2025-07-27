@@ -3796,7 +3796,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 coreChat.splice(coreChat.length - 1, 0, { mes: jailbreak, is_user: true });
             }
             else {
+                // This operation will result in the injectedIndices indexes being off by one
                 coreChat.push({ mes: jailbreak, is_user: true });
+                // Add +1 to the elements to correct for the new PHI/Jailbreak message.
+                injectedIndices.forEach((e,idx) => injectedIndices[idx] = e + 1);
             }
         }
     }
