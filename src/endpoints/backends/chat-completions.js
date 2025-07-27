@@ -324,8 +324,6 @@ async function sendMakerSuiteRequest(request, response) {
 
     const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
     const responseSchema = request.body.responseSchema ?? (request.body.json_schema ? request.body.json_schema.value : undefined);
-    const presencePenalty = !isGemma && !isLearnLM ? (request.body.presence_penalty ?? undefined) : undefined;
-    const frequencyPenalty = !isGemma && !isLearnLM ? (request.body.frequency_penalty ?? undefined) : undefined;
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -336,9 +334,7 @@ async function sendMakerSuiteRequest(request, response) {
         topK: request.body.top_k || undefined,
         responseMimeType: responseMimeType,
         responseSchema: responseSchema,
-        seed: request.body.seed ?? undefined,
-        presencePenalty: presencePenalty,
-        frequencyPenalty: frequencyPenalty,
+        seed: request.body.seed,
     };
 
     function getGeminiBody() {
