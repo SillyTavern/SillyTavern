@@ -15,8 +15,6 @@ class MiniMaxTtsProvider {
     audioElement = document.createElement('audio');
 
     defaultSettings = {
-        apiKey: '',
-        groupId: '',
         apiHost: 'https://api.minimax.io',
         model: 'speech-02-hd',
         voiceMap: {},
@@ -689,7 +687,7 @@ class MiniMaxTtsProvider {
 
     async fetchTtsVoiceObjects() {
         try {
-            if (!this.settings.apiKey || !this.settings.groupId) {
+            if (!secret_state[SECRET_KEYS.MINIMAX] || !secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]) {
                 console.warn('MiniMax TTS: API Key and Group ID required for fetching voices');
                 console.warn('Using all available voices (default + custom). Please check your API credentials');
                 return this.getAllVoices();
@@ -755,7 +753,7 @@ class MiniMaxTtsProvider {
     async fetchTtsGeneration(inputText, voiceId, language = null) {
         console.info(`Generating new MiniMax TTS for voice_id ${voiceId}`);
 
-        if (!this.settings.apiKey || !this.settings.groupId) {
+        if (!secret_state[SECRET_KEYS.MINIMAX] || !secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]) {
             const error = new Error('API Key and Group ID are required');
             console.error('MiniMax TTS fetchTtsGeneration error:', error.message);
             throw error;
@@ -764,8 +762,6 @@ class MiniMaxTtsProvider {
         const requestBody = {
             text: inputText,
             voiceId: voiceId,
-            apiKey: this.settings.apiKey,
-            groupId: this.settings.groupId,
             apiHost: this.settings.apiHost,
             model: this.settings.model || 'speech-02-hd',
             speed: Number(this.settings.speed) || 1.0,
