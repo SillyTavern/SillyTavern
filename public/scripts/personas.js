@@ -1432,6 +1432,12 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
     // Cache persona list to check if they exist
     const userAvatars = await getUserAvatars(doRender);
 
+    // Check if the user avatar is set and exists in the list of user avatars
+    if (userAvatars.length && !userAvatars.includes(user_avatar)) {
+        console.log(`User avatar ${user_avatar} not found in user avatars list, pick the first available one`);
+        setUserAvatar(userAvatars[0], { toastPersonaNameChange: false, navigateToCurrent: true });
+    }
+
     // Define a persona for this chat
     let chatPersona = '';
 
