@@ -126,4 +126,4 @@
     color: lightgreen;
 }
 
-@import 'minimax-tts.css';
+@import './css/minimax-tts.css';
