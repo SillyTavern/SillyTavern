@@ -6448,11 +6448,7 @@ async function read_avatar_load(input) {
         const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url').toString()), {
             method: 'GET',
-            cache: 'no-cache',
-            headers: {
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-            },
+            cache: 'reload',
         });
 
         const messages = $('.mes').toArray();
@@ -10854,7 +10850,7 @@ jQuery(async function () {
                             data.set(file, characters[this_chid].avatar);
                             await processDroppedFiles([file], data);
                             await openCharacterChat(chatFile);
-                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'no-cache' });
+                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'reload' });
                         } catch {
                             toastr.error('Failed to replace the character card.', 'Something went wrong');
                         }
