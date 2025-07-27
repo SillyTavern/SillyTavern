@@ -238,7 +238,7 @@ export function resolveVariable(name, scope = null) {
 export function getVariableMacros() {
     return [
         // Replace {{setvar::name::value}} with empty string and set the variable name to value
-        { regex: /{{setvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setvar::([^:]+)::([^}]*)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
         // Replace {{addvar::name::value}} with empty string and add value to the variable value
         { regex: /{{addvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { addLocalVariable(name.trim(), value); return ''; } },
         // Replace {{incvar::name}} with empty string and increment the variable name by 1
@@ -248,7 +248,7 @@ export function getVariableMacros() {
         // Replace {{getvar::name}} with the value of the variable name
         { regex: /{{getvar::([^}]+)}}/gi, replace: (_, name) => getLocalVariable(name.trim()) },
         // Replace {{setglobalvar::name::value}} with empty string and set the global variable name to value
-        { regex: /{{setglobalvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setglobalvar::([^:]+)::([^}]*)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
         // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
         { regex: /{{addglobalvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { addGlobalVariable(name.trim(), value); return ''; } },
         // Replace {{incglobalvar::name}} with empty string and increment the global variable name by 1
@@ -321,7 +321,7 @@ async function listVariablesCallback(args) {
  */
 async function whileCallback(args, value) {
     if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
-    const isGuardOff = isFalseBoolean(args.guard);
+    const isGuardOff = isFalseBoolean(args.guard?.toString());
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
     /**@type {string|SlashCommandClosure} */
     let command;
@@ -380,7 +380,7 @@ async function timesCallback(args, value) {
         [repeats, ...command] = /**@type {string}*/(value).split(' ');
         command = command.join(' ');
     }
-    const isGuardOff = isFalseBoolean(args.guard);
+    const isGuardOff = isFalseBoolean(args.guard?.toString());
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
     let result;
     for (let i = 0; i < iterations; i++) {

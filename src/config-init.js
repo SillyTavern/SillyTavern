@@ -118,6 +118,12 @@ const keyMigrationMap = [
         newKey: 'browserLaunch.avoidLocalhost',
         migrate: (value) => value,
     },
+    {
+        oldKey: 'extras.promptExpansionModel',
+        newKey: 'extras.promptExpansionModel',
+        migrate: () => void 0,
+        remove: true,
+    },
 ];
 
 /**

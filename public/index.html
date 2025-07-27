@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -2132,7 +2132,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,scale,custom">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2802,7 +2802,6 @@
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
-                                <option value="scale">Scale</option>
                                 <option value="xai">xAI (Grok)</option>
                             </optgroup>
                         </select>
@@ -3022,10 +3021,7 @@
                                         <option value="claude-3-5-haiku-latest">claude-3-5-haiku-latest</option>
                                         <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022</option>
                                         <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
-                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                         <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
-                                        <option value="claude-2.1">claude-2.1</option>
-                                        <option value="claude-2.0">claude-2.0</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -3098,36 +3094,6 @@
                                 <i class="fa-solid fa-lightbulb"></i>
                                 <span data-i18n="To use instruct formatting, switch to OpenRouter under Text Completion API.">To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
                             </small>
-                        </form>
-                        <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <div id="normal_scale_form">
-                                <h4 data-i18n="Scale API Key">Scale API Key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" value="" autocomplete="off">
-                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_scale"></div>
-                                </div>
-                                <div data-for="api_key_scale" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
-                                </div>
-                                <h4>Scale API URL</h4>
-                                <input id="api_url_scale" name="api_url_scale" class="text_pole" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
-                            </div>
-                            <div id="alt_scale_form">
-                                <h4>Scale Cookie (_jwt)</h4>
-                                <div class="flex-container">
-                                    <input id="scale_cookie" name="scale_cookie" class="text_pole flex1" value="" autocomplete="off">
-                                    <div title="Clear your cookie" data-i18n="[title]Clear your cookie" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="scale_cookie"></div>
-                                </div>
-                                <div data-for="scale_cookie" class="neutral_warning">
-                                    For privacy reasons, your cookie will be hidden after you click 'Connect'.
-                                </div>
-                            </div>
-                            <!-- Its only purpose is to trigger max context size check -->
-                            <select id="model_scale_select" class="displayNone"></select>
-                            <label for="scale-alt" class="checkbox_label">
-                                <input id="scale-alt" type="checkbox" checked>
-                                <span data-i18n="Alt Method">Alt Method</span>
-                            </label>
                         </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>
@@ -3436,6 +3402,8 @@
                                         <option value="devstral-medium-2507">devstral-medium-2507</option>
                                         <option value="magistral-small-2506">magistral-small-2506</option>
                                         <option value="magistral-medium-2506">magistral-medium-2506</option>
+                                        <option value="magistral-small-2507">magistral-small-2507</option>
+                                        <option value="magistral-medium-2507">magistral-medium-2507</option>
                                     </optgroup>
                                     <optgroup id="mistralai_other_models" label="Other"></optgroup>
                                 </select>
@@ -5624,19 +5592,26 @@
                                     </div>
                                 </div>
                             </div>
-                            <hr>
-                            <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
-                                <div id="creators_notes_div" class="title_restorable flexGap5">
-                                    <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
-                                    <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
-                                    <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
-                                    <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                            <div id="spoiler_free_desc" class="inline-drawer flex-container flexFlowColumn flexNoGap">
+                                <div class="inline-drawer-toggle inline-drawer-header padding0 gap5px standoutHeader">
+                                    <div id="creators_notes_div" class="title_restorable flexGap5 wide100p ">
+                                        <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
+                                        <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
+                                        <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                                    </div>
+                                    <div class="flex-container widthFitContent">
+                                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down interactable"></div>
+                                    </div>
                                 </div>
-                                <div id="creator_notes_spoiler" class="flex1"></div>
-                                <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                                <div class="inline-drawer-content">
+                                    <div id="creator_notes_spoiler"></div>
+                                    <div id="creator_notes_empty" data-i18n="No Creator's Notes provided.">
+                                        No Creator's Notes provided.
+                                    </div>
+                                </div>
                             </div>
+                            <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
                             <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
-                                <hr>
                                 <div id="description_div" class="title_restorable">
                                     <div class="flex-container alignitemscenter">
                                         <span data-i18n="Character Description" class="mdhotkey_location">Description</span>
@@ -5829,10 +5804,10 @@
                     </div>
                     <div id="rm_character_import" class="right_menu" style="display: none;">
                         <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
+                            <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx, .byaf" name="avatar">
                             <input id="character_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off">
                         </form>
-                        <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
+                        <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx, .byaf" name="replace_avatar" hidden>
                     </div>
                     <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                         <div id="charListFixedTop">

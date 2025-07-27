@@ -1205,7 +1205,7 @@ export async function getCharacters() {
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
     });
-    if (response.ok === true) {
+    if (response.ok) {
         const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
         characters.splice(0, characters.length);
         const getData = await response.json();
@@ -1234,6 +1234,12 @@ export async function getCharacters() {
 
         await getGroups();
         await printCharacters(true);
+    } else {
+        console.error('Failed to fetch characters:', response.statusText);
+        const errorData = await response.json();
+        if (errorData?.overflow) {
+            await Popup.show.text(t`Character data length limit reached`, t`To resolve this, set "performance.lazyLoadCharacters" to "true" in config.yaml and restart the server.`);
+        }
     }
 }
 
@@ -2689,11 +2695,9 @@ export function parseMesExamples(examplesStr, isInstruct) {
 }
 
 export function isStreamingEnabled() {
-    const noStreamSources = [chat_completion_sources.SCALE];
     return (
         (main_api == 'openai' &&
             oai_settings.stream_openai &&
-            !noStreamSources.includes(oai_settings.chat_completion_source) &&
             !(oai_settings.chat_completion_source == chat_completion_sources.OPENAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model))
         )
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
@@ -8836,6 +8840,7 @@ export async function processDroppedFiles(files, data = new Map()) {
 
     const allowedExtensions = [
         'charx',
+        'byaf',
     ];
 
     const avatarFileNames = [];
@@ -8899,7 +8904,7 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     }
 
     const ext = file.name.match(/\.(\w+)$/);
-    if (!ext || !(['json', 'png', 'yaml', 'yml', 'charx'].includes(ext[1].toLowerCase()))) {
+    if (!ext || !(['json', 'png', 'yaml', 'yml', 'charx', 'byaf'].includes(ext[1].toLowerCase()))) {
         return;
     }
 
@@ -10484,6 +10489,9 @@ jQuery(async function () {
             await importCharactersTags(avatarFileNames);
             selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
         }
+
+        // Clear the file input value to allow re-uploading the same file
+        e.target.value = '';
     });
 
     $('#export_button').on('click', function () {
