@@ -397,7 +397,7 @@ async function changeUserAvatar(e) {
             await createPersona(dataPath);
         }
 
-        await getUserAvatars(true, overwriteName || dataPath);
+        await getUserAvatars(true, dataPath || overwriteName);
     }
 
     // Will allow to select the same file twice in a row
