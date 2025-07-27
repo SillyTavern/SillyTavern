@@ -1,6 +1,7 @@
 import { getPreviewString, initVoiceMap, saveTtsProviderSettings } from './index.js';
 import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { getBase64Async } from '../../utils.js';
 
 export { MiniMaxTtsProvider };
 
@@ -894,7 +895,6 @@ class MiniMaxTtsProvider {
             console.debug(`MiniMax TTS: Audio blob size: ${audio.size}, type: ${audio.type}`);
 
             // Use the same method as other TTS providers - convert to base64 data URL
-            const { getBase64Async } = await import('../../utils.js');
             const srcUrl = await getBase64Async(audio);
             console.debug('MiniMax TTS: Base64 data URL created');
 
