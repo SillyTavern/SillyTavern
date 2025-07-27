@@ -1,5 +1,6 @@
 import { getPreviewString, initVoiceMap, saveTtsProviderSettings } from './index.js';
-import { getRequestHeaders } from '../../../script.js';
+import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 
 export { MiniMaxTtsProvider };
 
@@ -50,13 +51,13 @@ class MiniMaxTtsProvider {
     get settingsHtml() {
         return `
         <div class="minimax_tts_settings">
-            <div class="tts_block">
-                <label for="minimax_tts_api_key">API Key</label>
-                <input id="minimax_tts_api_key" type="password" class="text_pole" placeholder="Enter your MiniMax API key"/>
+            <div id="api_key_minimax" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_minimax">
+                <i class="fa-solid fa-key"></i>
+                <span>Click to set API Key</span>
             </div>
-            <div class="tts_block">
-                <label for="minimax_tts_group_id">Group ID</label>
-                <input id="minimax_tts_group_id" type="text" class="text_pole" placeholder="Enter your MiniMax Group ID"/>
+            <div id="minimax_group_id" class="menu_button menu_button_icon manage-api-keys" data-key="minimax_group_id">
+                <i class="fa-solid fa-key"></i>
+                <span>Click to set Group ID</span>
             </div>
             <div class="tts_block">
                 <label for="minimax_tts_api_host">API Host</label>
@@ -173,13 +174,26 @@ class MiniMaxTtsProvider {
         `;
     }
 
+    constructor() {
+        this.handler = async function (/** @type {string} */ key) {
+            if (![SECRET_KEYS.MINIMAX, SECRET_KEYS.MINIMAX_GROUP_ID].includes(key)) return;
+            $('#api_key_minimax').toggleClass('success', !!secret_state[SECRET_KEYS.MINIMAX]);
+            $('#minimax_group_id').toggleClass('success', !!secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]);
+            await this.onRefreshClick();
+        }.bind(this);
+    }
+
+    dispose() {
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.removeListener(event, this.handler);
+        });
+    }
+
     onSettingsChange() {
-        this.settings.apiKey = $('#minimax_tts_api_key').val();
-        this.settings.groupId = $('#minimax_tts_group_id').val();
         this.settings.apiHost = $('#minimax_tts_api_host').val();
-        this.settings.speed = parseFloat($('#minimax_tts_speed').val());
-        this.settings.volume = parseFloat($('#minimax_tts_volume').val());
-        this.settings.pitch = parseFloat($('#minimax_tts_pitch').val());
+        this.settings.speed = parseFloat($('#minimax_tts_speed').val().toString());
+        this.settings.volume = parseFloat($('#minimax_tts_volume').val().toString());
+        this.settings.pitch = parseFloat($('#minimax_tts_pitch').val().toString());
         this.settings.model = $('#minimax_tts_model').find(':selected').val();
         this.settings.format = $('#minimax_tts_format').find(':selected').val();
         this.settings.customVoiceId = $('#minimax_tts_custom_voice_id').val();
@@ -192,8 +206,8 @@ class MiniMaxTtsProvider {
     }
 
     addCustomModel() {
-        const modelId = $('#minimax_custom_model_id').val().trim();
-        const modelName = $('#minimax_custom_model_name').val().trim();
+        const modelId = $('#minimax_custom_model_id').val().toString().trim();
+        const modelName = $('#minimax_custom_model_name').val().toString().trim();
 
         if (!modelId || !modelName) {
             toastr.error('Please enter model ID and name');
@@ -228,7 +242,6 @@ class MiniMaxTtsProvider {
         toastr.success('Model added successfully');
     }
 
-
     removeCustomModel(modelId) {
         this.settings.customModels = this.settings.customModels.filter(m => m.id !== modelId);
         this.updateCustomModelsDisplay();
@@ -238,11 +251,10 @@ class MiniMaxTtsProvider {
         toastr.success('Model removed successfully');
     }
 
-
     addCustomVoice() {
-        const voiceName = $('#minimax_custom_voice_name').val().trim();
-        const voiceId = $('#minimax_custom_voice_id').val().trim();
-        const voiceLang = $('#minimax_custom_voice_lang').val();
+        const voiceName = $('#minimax_custom_voice_name').val().toString().trim();
+        const voiceId = $('#minimax_custom_voice_id').val().toString().trim();
+        const voiceLang = $('#minimax_custom_voice_lang').val().toString().trim();
 
         if (!voiceName || !voiceId) {
             toastr.error('Please enter voice name and ID');
@@ -461,8 +473,6 @@ class MiniMaxTtsProvider {
         if (!this.settings.customModels) this.settings.customModels = [];
         if (!this.settings.customVoices) this.settings.customVoices = [];
 
-        $('#minimax_tts_api_key').val(this.settings.apiKey);
-        $('#minimax_tts_group_id').val(this.settings.groupId);
         $('#minimax_tts_api_host').val(this.settings.apiHost || 'https://api.minimax.io');
         $('#minimax_tts_model').val(this.settings.model);
         $('#minimax_tts_speed').val(this.settings.speed);
@@ -487,8 +497,6 @@ class MiniMaxTtsProvider {
                 toastr.error(`Refresh failed: ${error.message}`);
             }
         });
-        $('#minimax_tts_api_key').on('input', this.onSettingsChange.bind(this));
-        $('#minimax_tts_group_id').on('input', this.onSettingsChange.bind(this));
         $('#minimax_tts_api_host').on('change', this.onSettingsChange.bind(this));
         $('#minimax_tts_speed').on('input', this.onSettingsChange.bind(this));
         $('#minimax_tts_volume').on('input', this.onSettingsChange.bind(this));
@@ -539,11 +547,6 @@ class MiniMaxTtsProvider {
             }
         });
 
-        // Set global reference for remove button calls (using namespace)
-        if (!window.SillyTavern) window.SillyTavern = {};
-        if (!window.SillyTavern.extensions) window.SillyTavern.extensions = {};
-        window.SillyTavern.extensions.minimaxProvider = this;
-
         $('#minimax_tts_speed_output').text(this.settings.speed.toFixed(1));
         $('#minimax_tts_volume_output').text(this.settings.volume.toFixed(1));
         $('#minimax_tts_pitch_output').text(this.settings.pitch.toFixed(1));
@@ -562,8 +565,14 @@ class MiniMaxTtsProvider {
             console.debug('MiniMax: Voice map initialization failed, but continuing');
         }
 
+        $('#api_key_minimax').toggleClass('success', !!secret_state[SECRET_KEYS.MINIMAX]);
+        $('#minimax_group_id').toggleClass('success', !!secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]);
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.on(event, this.handler);
+        });
+
         // Only check ready status when API credentials are available
-        if (this.settings.apiKey && this.settings.groupId) {
+        if (secret_state[SECRET_KEYS.MINIMAX] && secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]) {
             try {
                 await this.checkReady();
                 console.debug('MiniMax TTS: Settings loaded and ready');
@@ -577,7 +586,7 @@ class MiniMaxTtsProvider {
 
     // Perform a simple readiness check
     async checkReady() {
-        if (!this.settings.apiKey || !this.settings.groupId) {
+        if (!secret_state[SECRET_KEYS.MINIMAX] || !secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]) {
             const error = new Error('API Key and Group ID are required');
             console.error('MiniMax TTS checkReady error:', error.message);
             throw error;
@@ -609,10 +618,6 @@ class MiniMaxTtsProvider {
     }
 
     async onConnectClick() {
-        // Update API key and group ID
-        this.settings.apiKey = $('#minimax_tts_api_key').val();
-        this.settings.groupId = $('#minimax_tts_group_id').val();
-
         try {
             await this.checkReady();
             await initVoiceMap(); // Update voice map after connection

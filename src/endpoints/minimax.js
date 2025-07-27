@@ -1,6 +1,8 @@
 import express from 'express';
+import fetch from 'node-fetch';
+import { readSecret, SECRET_KEYS } from './secrets.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 // Audio format MIME type mapping
 const getAudioMimeType = (format) => {
@@ -19,8 +21,6 @@ router.post('/generate-voice', async (request, response) => {
         const {
             text,
             voiceId,
-            apiKey,
-            groupId,
             apiHost = 'https://api.minimax.io',
             model = 'speech-02-hd',
             speed = 1.0,
@@ -31,6 +31,9 @@ router.post('/generate-voice', async (request, response) => {
             format = 'mp3',
             language,
         } = request.body;
+
+        const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+        const groupId = readSecret(request.user.directories, SECRET_KEYS.MINIMAX_GROUP_ID);
 
         // Validate required parameters
         if (!text || !voiceId || !apiKey || !groupId) {
@@ -83,6 +86,7 @@ router.post('/generate-voice', async (request, response) => {
 
             try {
                 // Try to parse JSON error response
+                /** @type {any} */
                 const errorData = await apiResponse.json();
                 console.error('MiniMax TTS API error (JSON):', errorData);
 
@@ -118,6 +122,7 @@ router.post('/generate-voice', async (request, response) => {
         }
 
         // Parse the response
+        /** @type {any} */
         let responseData;
         try {
             responseData = await apiResponse.json();
@@ -223,5 +228,3 @@ router.post('/generate-voice', async (request, response) => {
         return response.status(500).json({ error: 'Internal server error' });
     }
 });
-
-export { router };

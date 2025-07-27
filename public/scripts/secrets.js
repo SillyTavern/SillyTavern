@@ -62,6 +62,8 @@ export const SECRET_KEYS = {
     FALAI: 'api_key_falai',
     XAI: 'api_key_xai',
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
+    MINIMAX: 'api_key_minimax',
+    MINIMAX_GROUP_ID: 'minimax_group_id',
 };
 
 const FRIENDLY_NAMES = {
@@ -112,6 +114,8 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.LINGVA_URL]: 'Lingva Endpoint (e.g. https://lingva.ml/api/v1)',
     [SECRET_KEYS.ONERING_URL]: 'OneRingTranslator Endpoint (e.g. http://127.0.0.1:4990/translate)',
     [SECRET_KEYS.DEEPLX_URL]: 'DeepLX Endpoint (e.g. http://127.0.0.1:1188/translate)',
+    [SECRET_KEYS.MINIMAX]: 'MiniMax TTS',
+    [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
 };
 
 const INPUT_MAP = {
