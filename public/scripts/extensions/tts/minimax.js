@@ -51,13 +51,15 @@ class MiniMaxTtsProvider {
     get settingsHtml() {
         return `
         <div class="minimax_tts_settings">
-            <div id="api_key_minimax" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_minimax">
-                <i class="fa-solid fa-key"></i>
-                <span>Click to set API Key</span>
-            </div>
-            <div id="minimax_group_id" class="menu_button menu_button_icon manage-api-keys" data-key="minimax_group_id">
-                <i class="fa-solid fa-key"></i>
-                <span>Click to set Group ID</span>
+            <div class="tts_block justifyCenter">
+                <div id="api_key_minimax" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_minimax">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Click to set API Key</span>
+                </div>
+                <div id="minimax_group_id" class="menu_button menu_button_icon manage-api-keys" data-key="minimax_group_id">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Click to set Group ID</span>
+                </div>
             </div>
             <div class="tts_block">
                 <label for="minimax_tts_api_host">API Host</label>
@@ -109,15 +111,15 @@ class MiniMaxTtsProvider {
             </div>
 
             <hr>
-            <div id="minimax_custom_voice_cloning" class="tts_block">
+            <div id="minimax_custom_voice_cloning" class="tts_block flexFlowColumn">
                 <h4>Custom Voice Management</h4>
-                <div class="tts_block">
+                <div class="tts_block wide100p">
                     <input id="minimax_custom_voice_name" type="text" class="text_pole" placeholder="Voice Name"/>
                 </div>
-                <div class="tts_block">
+                <div class="tts_block wide100p">
                     <input id="minimax_custom_voice_id" type="text" class="text_pole" placeholder="Voice ID (from MiniMax platform)"/>
                 </div>
-                <div class="tts_block">
+                <div class="tts_block wide100p">
                     <select id="minimax_custom_voice_lang" class="text_pole">
                         <option value="auto">Auto Detect</option>
                         <option value="Chinese">Chinese (中文)</option>
@@ -153,12 +155,12 @@ class MiniMaxTtsProvider {
             </div>
 
             <hr>
-            <div id="minimax_custom_model_management" class="tts_block">
+            <div id="minimax_custom_model_management" class="tts_block flexFlowColumn">
                 <h4>Custom Model Management</h4>
-                <div class="tts_block">
+                <div class="tts_block wide100p">
                     <input id="minimax_custom_model_id" type="text" class="text_pole" placeholder="Model ID"/>
                 </div>
-                <div class="tts_block">
+                <div class="tts_block wide100p">
                     <input id="minimax_custom_model_name" type="text" class="text_pole" placeholder="Model Name"/>
                 </div>
                 <div class="tts_block">
