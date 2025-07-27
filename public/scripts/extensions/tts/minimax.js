@@ -167,10 +167,6 @@ class MiniMaxTtsProvider {
                 </div>
                 <div id="minimax_custom_models_list" style="margin-top: 10px;"></div>
             </div>
-
-            <hr>
-            <div id="tts_voicemap_block"></div>
-            <hr>
         </div>
         `;
     }
