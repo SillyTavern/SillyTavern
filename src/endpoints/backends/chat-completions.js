@@ -334,6 +334,7 @@ async function sendMakerSuiteRequest(request, response) {
         topK: request.body.top_k || undefined,
         responseMimeType: responseMimeType,
         responseSchema: responseSchema,
+        seed: request.body.seed,
     };
 
     function getGeminiBody() {
