@@ -2268,6 +2268,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.MISTRALAI,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.COHERE,
+        chat_completion_sources.GROQ,
         chat_completion_sources.NANOGPT,
         chat_completion_sources.XAI,
         chat_completion_sources.POLLINATIONS,
