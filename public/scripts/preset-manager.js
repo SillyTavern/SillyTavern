@@ -1122,7 +1122,6 @@ export async function initPresetManager() {
         }
 
         saveSettingsDebounced();
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {
