@@ -65,6 +65,7 @@ const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
+const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1220,6 +1221,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_GROQ;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
+        apiUrl = API_MOONSHOT;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
         apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
@@ -1609,6 +1614,11 @@ router.post('/generate', function (request, response) {
             };
             request.body.messages.push(message);
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
+        apiUrl = API_MOONSHOT;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+        headers = {};
+        bodyParams = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
