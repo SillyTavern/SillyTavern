@@ -178,7 +178,6 @@ export const chat_completion_sources = {
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
-    ZEROONEAI: '01ai',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',
@@ -271,7 +270,6 @@ export const settingsToUpdate = {
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
-    zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
@@ -365,7 +363,6 @@ const default_settings = {
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
     nanogpt_model: 'gpt-4o-mini',
-    zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4o-mini-2024-07-18',
     xai_model: 'grok-3-beta',
@@ -452,7 +449,6 @@ const oai_settings = {
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.1-70b-versatile',
     nanogpt_model: 'gpt-4o-mini',
-    zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4-turbo',
     xai_model: 'grok-3-beta',
@@ -1607,8 +1603,6 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.perplexity_model;
         case chat_completion_sources.GROQ:
             return oai_settings.groq_model;
-        case chat_completion_sources.ZEROONEAI:
-            return oai_settings.zerooneai_model;
         case chat_completion_sources.NANOGPT:
             return oai_settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
@@ -1720,23 +1714,6 @@ function saveModelList(data) {
         if (!oai_settings.custom_model && model_list.length > 0) {
             $('#model_custom_select').val(model_list[0].id).trigger('change');
         }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI) {
-        $('#model_01ai_select').empty();
-        model_list.forEach((model) => {
-            $('#model_01ai_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
-        });
-
-        if (!oai_settings.zerooneai_model && model_list.length > 0) {
-            oai_settings.zerooneai_model = model_list[0].id;
-        }
-
-        $('#model_01ai_select').val(oai_settings.zerooneai_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
@@ -2057,7 +2034,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
     const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
     const isGroq = oai_settings.chat_completion_source == chat_completion_sources.GROQ;
-    const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
     const isAimlapi = oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI;
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
@@ -2213,17 +2189,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         delete generate_data.logit_bias;
         delete generate_data.top_logprobs;
         delete generate_data.n;
-    }
-
-    // https://platform.01.ai/docs#request-body
-    if (is01AI) {
-        delete generate_data.logprobs;
-        delete generate_data.logit_bias;
-        delete generate_data.top_logprobs;
-        delete generate_data.n;
-        delete generate_data.frequency_penalty;
-        delete generate_data.presence_penalty;
-        delete generate_data.stop;
     }
 
     // https://api-docs.deepseek.com/api/create-chat-completion
@@ -3378,7 +3343,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.nanogpt_model = settings.nanogpt_model ?? default_settings.nanogpt_model;
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
-    oai_settings.zerooneai_model = settings.zerooneai_model ?? default_settings.zerooneai_model;
     oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
     oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
@@ -3472,7 +3436,6 @@ function loadOpenAISettings(data, settings) {
     $(`#model_nanogpt_select option[value="${oai_settings.nanogpt_model}"`).prop('selected', true);
     $('#model_deepseek_select').val(oai_settings.deepseek_model);
     $(`#model_deepseek_select option[value="${oai_settings.deepseek_model}"`).prop('selected', true);
-    $('#model_01ai_select').val(oai_settings.zerooneai_model);
     $('#model_aimlapi_select').val(oai_settings.aimlapi_model);
     $(`#model_aimlapi_select option[value="${oai_settings.aimlapi_model}"`).prop('selected', true);
     $('#model_xai_select').val(oai_settings.xai_model);
@@ -3748,7 +3711,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         cohere_model: settings.cohere_model,
         perplexity_model: settings.perplexity_model,
         groq_model: settings.groq_model,
-        zerooneai_model: settings.zerooneai_model,
         xai_model: settings.xai_model,
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
@@ -4572,11 +4534,6 @@ async function onModelChange() {
         oai_settings.deepseek_model = value;
     }
 
-    if (value && $(this).is('#model_01ai_select')) {
-        console.log('01.AI model changed to', value);
-        oai_settings.zerooneai_model = value;
-    }
-
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -4770,30 +4727,6 @@ async function onModelChange() {
         $('#openai_max_context').attr('max', unlocked_max);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        }
-        else if (['yi-large'].includes(oai_settings.zerooneai_model)) {
-            $('#openai_max_context').attr('max', max_32k);
-        }
-        else if (['yi-vision'].includes(oai_settings.zerooneai_model)) {
-            $('#openai_max_context').attr('max', max_16k);
-        }
-        else if (['yi-large-turbo'].includes(oai_settings.zerooneai_model)) {
-            $('#openai_max_context').attr('max', max_4k);
-        }
-        else {
-            $('#openai_max_context').attr('max', max_16k);
-        }
-
-        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
-        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-
-        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
@@ -5094,19 +5027,6 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI) {
-        const api_key_01ai = String($('#api_key_01ai').val()).trim();
-
-        if (api_key_01ai.length) {
-            await writeSecret(SECRET_KEYS.ZEROONEAI, api_key_01ai);
-        }
-
-        if (!secret_state[SECRET_KEYS.ZEROONEAI]) {
-            console.log('No secret key saved for 01.AI');
-            return;
-        }
-    }
-
     if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
         const api_key_xai = String($('#api_key_xai').val()).trim();
 
@@ -5178,9 +5098,6 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         $('#model_nanogpt_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI) {
-        $('#model_01ai_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         $('#model_custom_select').trigger('change');
@@ -5281,8 +5198,6 @@ export function isImageInliningSupported() {
         'o1',
         'o3',
         'o4-mini',
-        // 01.AI (Yi)
-        'yi-vision',
         // Claude
         'claude-3',
         'claude-opus-4',
@@ -5324,8 +5239,6 @@ export function isImageInliningSupported() {
             return true;
         case chat_completion_sources.CUSTOM:
             return true;
-        case chat_completion_sources.ZEROONEAI:
-            return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
         case chat_completion_sources.MISTRALAI:
             return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
         case chat_completion_sources.COHERE:
@@ -6120,7 +6033,6 @@ export function initOpenAI() {
     $('#model_groq_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
-    $('#model_01ai_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);

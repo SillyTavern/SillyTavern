@@ -61,10 +61,6 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.VLLM);
         }
 
-        if (request.body.api === 'zerooneai') {
-            key = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
-        }
-
         if (request.body.api === 'aimlapi') {
             key = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
         }
@@ -126,10 +122,6 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'custom') {
             apiUrl = `${request.body.server_url}/chat/completions`;
-        }
-
-        if (request.body.api === 'zerooneai') {
-            apiUrl = 'https://api.lingyiwanwu.com/v1/chat/completions';
         }
 
         if (request.body.api === 'aimlapi') {

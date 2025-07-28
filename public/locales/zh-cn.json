@@ -460,8 +460,6 @@
     "prompt_post_processing_merge": "合并相同角色连续的发言",
     "prompt_post_processing_semi": "半严格（强制对话角色交替）",
     "prompt_post_processing_strict": "严格（强制对话角色交替、用户最先）",
-    "01.AI API Key": "01.AI API密钥",
-    "01.AI Model": "01.AI 模型",
     "Additional Parameters": "附加参数",
     "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "通过发送简短的测试消息验证您的API连接。请注意，您将因此消耗额度！",
     "Test Message": "发送测试消息",

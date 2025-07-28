@@ -1426,8 +1426,6 @@
     "prompt_post_processing_merge": "Fusionner les rôles consécutifs",
     "prompt_post_processing_semi": "Semi-strict (rôles alternés)",
     "prompt_post_processing_strict": "Strict (l'utilisateur d'abord, rôles alternés)",
-    "01.AI API Key": "01.Clé IA API",
-    "01.AI Model": "01.Modèle IA",
     "Additional Parameters": "Paramètres supplémentaires",
     "Import Advanced Formatting settings": "Importer les paramètres de formatage avancé\n\nVous pouvez également fournir des fichiers hérités pour les modèles Instruct et Context..",
     "Master Import": "Master Import",
