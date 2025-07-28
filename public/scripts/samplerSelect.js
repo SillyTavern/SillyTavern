@@ -28,7 +28,7 @@ async function showSamplerSelectPopup() {
 
     const listContainer = $('<div id="apiSamplersList" class="flex-container flexNoGap"></div>');
     const APISamplers = await listSamplers(main_api);
-    listContainer.append(APISamplers);
+    listContainer.append(APISamplers.toString());
     html.append(listContainer);
 
     const showPromise = new Popup(html, POPUP_TYPE.TEXT, null, { wide: true, large: true, allowVerticalScrolling: true }).show();
@@ -419,7 +419,7 @@ export async function validateDisabledSamplers(redraw = false) {
         }
         if (redraw) {
             let samplersHTML = await listSamplers(main_api);
-            $('#apiSamplersList').empty().append(samplersHTML);
+            $('#apiSamplersList').empty().append(samplersHTML.toString());
             setSamplerListListeners();
         }
 
