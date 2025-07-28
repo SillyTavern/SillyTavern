@@ -4760,7 +4760,7 @@ async function doChatInject(messages, isContinue) {
 
         if (roleMessages.length) {
             const depth = isContinue && i === 0 ? 1 : i;
-            const injectIdx = depth + totalInsertedMessages;
+            const injectIdx = Math.min(depth + totalInsertedMessages, messages.length);
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
             injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
