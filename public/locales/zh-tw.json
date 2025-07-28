@@ -1547,8 +1547,6 @@
     "Width of a node, in pixels at zoom level 1.0.": "縮放等級為 1.0 時，節點的像素寬度。",
     "world_button_title": "角色背景設定\n「Shift+點選」可開啟「連結至世界資訊」彈窗",
     "# of Beams": "# of Beams",
-    "01.AI API Key": "01.AI API 金鑰",
-    "01.AI Model": "01.AI 模型",
     "Additional Parameters": "其他參數",
     "All": "全部",
     "Allow fallback models": "允許回退模型",

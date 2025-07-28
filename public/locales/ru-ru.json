@@ -1619,8 +1619,6 @@
     "Do not proceed if you do not agree to this!": "Не продолжайте, если не согласны с этими условиями!",
     "Relative (to other prompts in prompt manager) or In-chat @ Depth.": "Относительно других промтов в менеджере, либо на опред. глубину в чате.",
     "prompt_manager_in_chat": "На глубине в чате",
-    "01.AI API Key": "Ключ от API 01.AI",
-    "01.AI Model": "Модель 01.AI",
     "Load a custom asset list or select": "Загрузите набор внешних ресурсов или выберите",
     "Install Extension": "Установить расширение",
     "to install 3rd party extensions.": ", чтобы установить стороннее расширение.",
