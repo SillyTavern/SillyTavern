@@ -108,6 +108,10 @@ router.post('/caption-image', async (request, response) => {
         let apiUrl = '';
 
         if (request.body.api === 'openrouter') {
+            const userIdentifier = getConfigValue('userIdentifier');
+            if (userIdentifier) {
+                request.body.user = userIdentifier;
+            }
             apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
             Object.assign(headers, OPENROUTER_HEADERS);
         }

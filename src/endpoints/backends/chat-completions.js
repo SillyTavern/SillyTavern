@@ -1480,6 +1480,11 @@ router.post('/generate', function (request, response) {
             'include_reasoning': Boolean(request.body.include_reasoning),
         };
 
+        const userIdentifier = getConfigValue('userIdentifier');
+        if (userIdentifier) {
+            bodyParams['user'] = userIdentifier;
+        }
+
         if (request.body.min_p !== undefined) {
             bodyParams['min_p'] = request.body.min_p;
         }
