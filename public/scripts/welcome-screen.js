@@ -18,7 +18,10 @@ import {
     openCharacterChat,
     printCharactersDebounced,
     renameGroupOrCharacterChat,
+    saveSettingsDebounced,
     selectCharacterById,
+    setActiveCharacter,
+    setActiveGroup,
     system_avatar,
     system_message_types,
     this_chid,
@@ -296,6 +299,8 @@ async function openRecentCharacterChat(avatarId, fileName) {
 
     try {
         await selectCharacterById(characterId);
+        setActiveCharacter(avatarId);
+        saveSettingsDebounced();
         const currentChatId = getCurrentChatId();
         if (currentChatId === fileName) {
             console.debug(`Chat ${fileName} is already open.`);
@@ -322,6 +327,8 @@ async function openRecentGroupChat(groupId, fileName) {
 
     try {
         await openGroupById(groupId);
+        setActiveGroup(groupId);
+        saveSettingsDebounced();
         const currentChatId = getCurrentChatId();
         if (currentChatId === fileName) {
             console.debug(`Chat ${fileName} is already open.`);
