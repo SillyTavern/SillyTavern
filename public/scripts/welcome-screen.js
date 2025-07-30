@@ -110,7 +110,7 @@ async function unshallowPermanentAssistant() {
  * @returns {string} Greeting message
 */
 function getAssistantGreeting(character) {
-    const defaultGreeting = t`If you're connected to an API, try asking me something!`;
+    const defaultGreeting = t`If you're connected to an API, try asking me something!` + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`;
 
     if (!character) {
         return defaultGreeting;
@@ -129,7 +129,7 @@ function sendAssistantMessage() {
     const message = {
         name: name,
         force_avatar: avatar,
-        mes: greeting + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
+        mes: greeting,
         is_system: false,
         is_user: false,
         send_date: getMessageTimeStamp(),
