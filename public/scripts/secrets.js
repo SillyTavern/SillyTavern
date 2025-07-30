@@ -63,6 +63,7 @@ export const SECRET_KEYS = {
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
     MINIMAX: 'api_key_minimax',
     MINIMAX_GROUP_ID: 'minimax_group_id',
+    MOONSHOT: 'api_key_moonshot',
 };
 
 const FRIENDLY_NAMES = {
@@ -114,6 +115,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.DEEPLX_URL]: 'DeepLX Endpoint (e.g. http://127.0.0.1:1188/translate)',
     [SECRET_KEYS.MINIMAX]: 'MiniMax TTS',
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
+    [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
 };
 
 const INPUT_MAP = {
@@ -148,6 +150,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AIMLAPI]: '#api_key_aimlapi',
     [SECRET_KEYS.XAI]: '#api_key_xai',
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
+    [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
 };
 
 const getLabel = () => moment().format('L LT');

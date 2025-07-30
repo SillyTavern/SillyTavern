@@ -238,6 +238,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'aimlapi' && !secret_state[SECRET_KEYS.AIMLAPI]) {
         throw new Error('AI/ML API key is not set.');
     }
+
+    if (multimodalApi === 'moonshot' && !secret_state[SECRET_KEYS.MOONSHOT]) {
+        throw new Error('Moonshot AI API key is not set.');
+    }
 }
 
 /**

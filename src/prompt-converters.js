@@ -53,15 +53,16 @@ export function getPromptNames(request) {
  * Adds an assistant prefix to the last message.
  * @param {any[]} prompt Prompt messages array
  * @param {any[]} tools Array of tool definitions
+ * @param {string} property The property to set the prefix on
  * @returns {any[]} Transformed messages array
  */
-export function addAssistantPrefix(prompt, tools) {
+export function addAssistantPrefix(prompt, tools, property) {
     if (!prompt.length) {
         return prompt;
     }
     const hasAnyTools = (Array.isArray(tools) && tools.length > 0) || prompt.some(x => x.role === 'tool');
     if (!hasAnyTools && prompt[prompt.length - 1].role === 'assistant') {
-        prompt[prompt.length - 1].prefix = true;
+        prompt[prompt.length - 1][property] = true;
     }
     return prompt;
 }
