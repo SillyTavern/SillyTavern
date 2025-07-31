@@ -8,6 +8,10 @@
         </div>
         <div class="inline-drawer-content">
             <div class="flex-container">
+                <div id="create_folder" class="menu_button menu_button_icon" title="New Folder">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <small>+ Folder</small>
+                </div>
                 <div id="open_regex_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_global_script_desc" title="New global regex script">
                     <i class="fa-solid fa-pen-to-square"></i>
                     <small data-i18n="ext_regex_new_global_script">+ Global</small>
@@ -26,6 +30,16 @@
                     <i class="fa-solid fa-edit"></i>
                     <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
                 </label>
+            </div>
+             <div class="flex-container">
+                <div id="regex_collapse_all" class="menu_button menu_button_icon" title="Collapse All Folders">
+                    <i class="fa-solid fa-compress"></i>
+                    <small>Collapse All</small>
+                </div>
+                <div id="regex_expand_all" class="menu_button menu_button_icon" title="Expand All Folders">
+                    <i class="fa-solid fa-expand"></i>
+                    <small>Expand All</small>
+                </div>
             </div>
             <div class="regex_bulk_operations flex-container justifyCenter">
                 <div id="bulk_select_all_toggle" class="menu_button menu_button_icon" title="Toggle Select All">
@@ -49,6 +63,7 @@
                 </div>
             </div>
             <hr />
+            <div id="regex_folders_container" class="flex-container flexFlowColumn"></div>
             <div id="global_scripts_block" class="padding5">
                 <div>
                     <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
