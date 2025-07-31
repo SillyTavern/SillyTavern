@@ -10,9 +10,20 @@
 }
 
 .regex-script-container {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    min-height: 25px; /* For better drag-drop experience */
+    border-radius: 5px;
+    padding: 2px;
 }
+.sortable-placeholder {
+    height: 30px;
+    background-color: var(--SillyThemeAccent);
+    border: 1px dashed var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    margin: 1px 0;
+}
+
 
 .regex-script-container:empty::after {
     content: attr(no-scripts-text);
@@ -20,6 +31,9 @@
     opacity: 0.7;
     display: block;
     text-align: center;
+    padding: 5px;
+    border: 1px dashed var(--SmartThemeBorderColor);
+    border-radius: 5px;
 }
 
 #scoped_scripts_block {
@@ -62,6 +76,7 @@
     padding: 0 5px;
     margin-top: 1px;
     margin-bottom: 1px;
+    background-color: var(--SillyThemeBotMessageBg);
 }
 
 .regex-script-label:has(.disable_regex:checked) .regex_script_name {
@@ -147,4 +162,55 @@ input.enable_scoped {
 
 .regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_checkbox {
     display: inline-grid;
+}
+
+/* Folder styles */
+.regex-folder {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background-color: var(--SillyThemeBg);
+    transition: all var(--animation-duration-2x) ease-in-out;
+}
+
+.folder-header {
+    padding: 5px;
+    background-color: var(--SillyThemeMenuBg);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 9px 9px 0 0;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.regex-folder.collapsed .folder-header {
+    border-bottom-color: transparent;
+    border-radius: 9px;
+}
+
+.folder-header .folder-name {
+    font-weight: bold;
+}
+
+.folder-header .folder-toggle-icon {
+    margin-left: auto;
+    transition: transform var(--animation-duration-2x) ease-in-out;
+}
+
+.regex-folder.collapsed .folder-toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.folder-content {
+    padding: 5px;
+    max-height: 500px; /* or some large value */
+    overflow: hidden;
+    transition: all var(--animation-duration-2x) ease-in-out, padding var(--animation-duration-2x) ease-in-out;
+}
+
+.regex-folder.collapsed .folder-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
 }

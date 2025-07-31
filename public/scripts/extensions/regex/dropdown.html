@@ -8,6 +8,10 @@
         </div>
         <div class="inline-drawer-content">
             <div class="flex-container">
+                <div id="create_folder" class="menu_button menu_button_icon" title="New Folder">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <small>+ Folder</small>
+                </div>
                 <div id="open_regex_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_global_script_desc" title="New global regex script">
                     <i class="fa-solid fa-pen-to-square"></i>
                     <small data-i18n="ext_regex_new_global_script">+ Global</small>
@@ -49,6 +53,7 @@
                 </div>
             </div>
             <hr />
+            <div id="regex_folders_container" class="flex-container flexFlowColumn"></div>
             <div id="global_scripts_block" class="padding5">
                 <div>
                     <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
