@@ -237,7 +237,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks,  stripLocalTagsForDisplay,  stripLocalTagsForPrompt } from './scripts/chats.js';
 import { getPresetManager, initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
@@ -1533,6 +1533,9 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         }
     }
 
+    // —— strip <local>…</local> tags from display (keep inner text) ——  
+    mes = stripLocalTagsForDisplay(mes, power_user.hide_local_tags);
+    
     mesForShowdownParse = mes;
 
     // Force isSystem = false on comment messages so they get formatted properly
@@ -3796,7 +3799,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 coreChat.splice(coreChat.length - 1, 0, { mes: jailbreak, is_user: true });
             }
             else {
+                // This operation will result in the injectedIndices indexes being off by one
                 coreChat.push({ mes: jailbreak, is_user: true });
+                // Add +1 to the elements to correct for the new PHI/Jailbreak message.
+                injectedIndices.forEach((e, idx) => injectedIndices[idx] = e + 1);
             }
         }
     }
@@ -4330,6 +4336,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const eventData = { prompt: finalPrompt, dryRun: dryRun };
     await eventSource.emit(event_types.GENERATE_AFTER_COMBINE_PROMPTS, eventData);
     finalPrompt = eventData.prompt;
+    
+    // strip ALL <local>…</local> blocks if the user has that toggle on
+    finalPrompt = stripLocalTagsForPrompt(finalPrompt, power_user.hide_local_tags)
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
@@ -4388,6 +4397,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 messages: oaiMessages,
                 messageExamples: oaiMessageExamples,
             }, dryRun);
+
+            // if the toggle is on, strip all <local>…</local> from each content
+            prompt = prompt.map(m => ({
+            ...m,
+            content: stripLocalTagsForPrompt(m.content, power_user.hide_local_tags)
+            }));
+        
+            
             generate_data = { prompt: prompt };
 
             // TODO: move these side-effects somewhere else, so this switch-case solely sets generate_data
@@ -4757,7 +4774,7 @@ async function doChatInject(messages, isContinue) {
 
         if (roleMessages.length) {
             const depth = isContinue && i === 0 ? 1 : i;
-            const injectIdx = depth + totalInsertedMessages;
+            const injectIdx = Math.min(depth + totalInsertedMessages, messages.length);
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
             injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
@@ -5314,28 +5331,33 @@ function parseAndSaveLogprobs(data, continueFrom) {
  * @returns {string} Extracted message
  */
 export function extractMessageFromData(data, activeApi = null) {
-    if (typeof data === 'string') {
-        return data;
-    }
+    function getResult() {
+        if (typeof data === 'string') {
+            return data;
+        }
 
-    switch (activeApi ?? main_api) {
-        case 'kobold':
-            return data.results[0].text;
-        case 'koboldhorde':
-            return data.text;
-        case 'textgenerationwebui':
-            return data.choices?.[0]?.text
+        switch (activeApi ?? main_api) {
+            case 'kobold':
+                return data.results[0].text;
+            case 'koboldhorde':
+                return data.text;
+            case 'textgenerationwebui':
+                return data.choices?.[0]?.text
                 ?? data.choices?.[0]?.message?.content
                 ?? data.content
                 ?? data.response
                 ?? '';
-        case 'novel':
-            return data.output;
-        case 'openai':
-            return data?.content?.find(p => p.type === 'text')?.text ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? data?.message?.content?.[0]?.text ?? data?.message?.tool_plan ?? '';
-        default:
-            return '';
+            case 'novel':
+                return data.output;
+            case 'openai':
+                return data?.content?.find(p => p.type === 'text')?.text ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? data?.message?.content?.[0]?.text ?? data?.message?.tool_plan ?? '';
+            default:
+                return '';
+        }
     }
+
+    const result = getResult();
+    return Array.isArray(result) ? result.map(x => x.text).filter(x => x).join('') : result;
 }
 
 /**
@@ -6448,11 +6470,7 @@ async function read_avatar_load(input) {
         const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url').toString()), {
             method: 'GET',
-            cache: 'no-cache',
-            headers: {
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-            },
+            cache: 'reload',
         });
 
         const messages = $('.mes').toArray();
@@ -10854,7 +10872,7 @@ jQuery(async function () {
                             data.set(file, characters[this_chid].avatar);
                             await processDroppedFiles([file], data);
                             await openCharacterChat(chatFile);
-                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'no-cache' });
+                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'reload' });
                         } catch {
                             toastr.error('Failed to replace the character card.', 'Something went wrong');
                         }
