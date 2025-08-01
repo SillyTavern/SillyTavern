@@ -4693,20 +4693,17 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (['command-light-nightly', 'command-light', 'command'].includes(oai_settings.cohere_model)) {
-            $('#openai_max_context').attr('max', max_4k);
-        }
-        else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-nightly'].includes(oai_settings.cohere_model)) {
-            $('#openai_max_context').attr('max', max_128k);
-        }
         else if (['command-a-03-2025'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_256k);
         }
-        else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
-            $('#openai_max_context').attr('max', max_8k);
+        else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-a-vision-07-2025', 'command-nightly'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_128k);
         }
         else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_8k);
         }
         else {
             $('#openai_max_context').attr('max', max_4k);
@@ -5267,6 +5264,7 @@ export function isImageInliningSupported() {
         'claude-sonnet-4',
         // Cohere
         'c4ai-aya-vision',
+        'command-a-vision',
         // Google AI Studio
         'gemini-1.5',
         'gemini-2.0',
