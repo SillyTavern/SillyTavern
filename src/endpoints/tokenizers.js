@@ -59,6 +59,7 @@ export const TEXT_COMPLETION_MODELS = [
 
 const CHARS_PER_TOKEN = 3.35;
 const IS_DOWNLOAD_ALLOWED = getConfigValue('enableDownloadableTokenizers', true, 'boolean');
+const gunzip = promisify(zlib.gunzip);
 
 /**
  * Gets a path to the tokenizer model. Downloads the model if it's a URL.
@@ -99,6 +100,14 @@ async function getPathToTokenizer(model, fallbackModel) {
 
         const cachedFile = path.join(CACHE_PATH, fileName);
         if (fs.existsSync(cachedFile)) {
+            // If the file was downloaded manually
+            if (isCompressed) {
+                const compressedBuffer = await fs.promises.readFile(cachedFile);
+                const decompressedBuffer = await gunzip(new Uint8Array(compressedBuffer).buffer);
+                writeFileAtomicSync(uncompressedPath, decompressedBuffer);
+                await fs.promises.unlink(cachedFile);
+                return uncompressedPath;
+            }
             return cachedFile;
         }
 
@@ -114,7 +123,6 @@ async function getPathToTokenizer(model, fallbackModel) {
 
         const arrayBuffer = await response.arrayBuffer();
         if (isCompressed) {
-            const gunzip = promisify(zlib.gunzip);
             const decompressedBuffer = await gunzip(arrayBuffer);
             writeFileAtomicSync(uncompressedPath, decompressedBuffer);
             return uncompressedPath;
