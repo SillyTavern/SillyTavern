@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
+import zlib from 'node:zlib';
+import { promisify } from 'node:util';
 
 import express from 'express';
 import fetch from 'node-fetch';
@@ -61,7 +63,7 @@ const IS_DOWNLOAD_ALLOWED = getConfigValue('enableDownloadableTokenizers', true,
 /**
  * Gets a path to the tokenizer model. Downloads the model if it's a URL.
  * @param {string} model Model URL or path
- * @param {string|undefined} fallbackModel Fallback model path\
+ * @param {string|undefined} fallbackModel Fallback model path
  * @returns {Promise<string>} Path to the tokenizer model
  */
 async function getPathToTokenizer(model, fallbackModel) {
@@ -87,6 +89,14 @@ async function getPathToTokenizer(model, fallbackModel) {
             fs.mkdirSync(CACHE_PATH, { recursive: true });
         }
 
+        // If an uncompressed version exists, return it
+        const isCompressed = path.extname(fileName) === '.gz';
+        const uncompressedName = path.basename(fileName, '.gz');
+        const uncompressedPath = path.join(CACHE_PATH, uncompressedName);
+        if (isCompressed && fs.existsSync(uncompressedPath)) {
+            return uncompressedPath;
+        }
+
         const cachedFile = path.join(CACHE_PATH, fileName);
         if (fs.existsSync(cachedFile)) {
             return cachedFile;
@@ -103,6 +113,13 @@ async function getPathToTokenizer(model, fallbackModel) {
         }
 
         const arrayBuffer = await response.arrayBuffer();
+        if (isCompressed) {
+            const gunzip = promisify(zlib.gunzip);
+            const decompressedBuffer = await gunzip(arrayBuffer);
+            writeFileAtomicSync(uncompressedPath, decompressedBuffer);
+            return uncompressedPath;
+        }
+
         writeFileAtomicSync(cachedFile, Buffer.from(arrayBuffer));
         return cachedFile;
     } catch (error) {
@@ -203,7 +220,8 @@ class WebTokenizer {
 
         try {
             const pathToModel = await getPathToTokenizer(this.#model, this.#fallbackModel);
-            const arrayBuffer = fs.readFileSync(pathToModel).buffer;
+            const fileBuffer = await fs.promises.readFile(pathToModel);
+            const arrayBuffer = Buffer.from(fileBuffer).buffer;
             this.#instance = await Tokenizer.fromJSON(arrayBuffer);
             console.info('Instantiated the tokenizer for', path.parse(pathToModel).name);
             return this.#instance;
@@ -223,11 +241,11 @@ const spp_gemma = new SentencePieceTokenizer('src/tokenizers/gemma.model');
 const spp_jamba = new SentencePieceTokenizer('src/tokenizers/jamba.model');
 const claude_tokenizer = new WebTokenizer('src/tokenizers/claude.json');
 const llama3_tokenizer = new WebTokenizer('src/tokenizers/llama3.json');
-const commandRTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-r.json', 'src/tokenizers/llama3.json');
-const commandATokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-a.json', 'src/tokenizers/llama3.json');
-const qwen2Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json', 'src/tokenizers/llama3.json');
-const nemoTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json', 'src/tokenizers/llama3.json');
-const deepseekTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/deepseek.json', 'src/tokenizers/llama3.json');
+const commandRTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-r.json.gz', 'src/tokenizers/llama3.json');
+const commandATokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-a.json.gz', 'src/tokenizers/llama3.json');
+const qwen2Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json.gz', 'src/tokenizers/llama3.json');
+const nemoTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json.gz', 'src/tokenizers/llama3.json');
+const deepseekTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/deepseek.json.gz', 'src/tokenizers/llama3.json');
 
 export const sentencepieceTokenizers = [
     'llama',
@@ -1092,7 +1110,7 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
 
         /** @type {any} */
         const data = await result.json();
-        const count =  (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
+        const count = (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
         const ids = (data?.tokens ?? data?.ids ?? []);
 
         return response.send({ count, ids });
