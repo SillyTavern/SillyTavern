@@ -17,7 +17,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
@@ -3232,7 +3232,7 @@ export async function getWorldEntry(name, data, entry) {
             return;
         }
         const wrapper = document.createElement('div');
-        wrapper.textContent = t`Move '${sourceName}' to:`;
+        wrapper.textContent = t`Move/Copy '${sourceName}' to:`;
         const container = document.createElement('div');
         container.appendChild(wrapper);
         container.appendChild(select);
@@ -3240,10 +3240,15 @@ export async function getWorldEntry(name, data, entry) {
         select.addEventListener('change', function () {
             selectedWorldIndex = this.value === '' ? -1 : Number(this.value);
         });
-        const popupConfirm = await callGenericPopup(container, POPUP_TYPE.CONFIRM, '', {
-            okButton: t`Move`,
+        const popup = new Popup(container, POPUP_TYPE.CONFIRM, '', {
             cancelButton: t`Cancel`,
+            customButtons: [
+                { text: t`Move`, result: POPUP_RESULT.CUSTOM1 },
+                { text: t`Copy`, result: POPUP_RESULT.CUSTOM2 },
+            ],
         });
+        popup.okButton.style.display = 'none'; // Hide the default OK button
+        const popupConfirm = await popup.show();
         if (!popupConfirm) return;
         if (selectedWorldIndex === -1) return;
         const selectedValue = world_names[selectedWorldIndex];
@@ -3251,7 +3256,8 @@ export async function getWorldEntry(name, data, entry) {
             toastr.warning(t`Please select a target lorebook.`);
             return;
         }
-        await moveWorldInfoEntry(sourceWorld, selectedValue, sourceUid);
+        const deleteOriginal = popupConfirm === POPUP_RESULT.CUSTOM1;
+        await moveWorldInfoEntry(sourceWorld, selectedValue, sourceUid, { deleteOriginal });
     });
 
     let drawerInitialized = false;
@@ -5422,9 +5428,11 @@ export async function assignLorebookToChat(event) {
  * @param {string} sourceName - The name of the source lorebook file.
  * @param {string} targetName - The name of the target lorebook file.
  * @param {string|number} uid - The UID of the entry to move from the source lorebook.
+ * @param {Object} options - Additional options for the move operation.
+ * @param {boolean} [options.deleteOriginal=true] - Whether to delete the original entry from the source lorebook after moving it.
  * @returns {Promise<boolean>} True if the move was successful, false otherwise.
  */
-export async function moveWorldInfoEntry(sourceName, targetName, uid) {
+export async function moveWorldInfoEntry(sourceName, targetName, uid, { deleteOriginal = true } = {}) {
     if (sourceName === targetName) {
         return false;
     }
@@ -5466,7 +5474,6 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
 
         const entryToMove = structuredClone(sourceData.entries[entryUidString]);
 
-
         const newUid = getFreeWorldEntryUid(targetData);
         if (newUid === null) {
             console.error(`[WI Move] Failed to get a free UID in '${targetName}'.`);
@@ -5480,20 +5487,20 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
 
         targetData.entries[newUid] = entryToMove;
 
-        delete sourceData.entries[entryUidString];
-        // Remove from originalData if it exists
-        deleteWIOriginalDataValue(sourceData, entryUidString);
-        // TODO: setWIOriginalDataValue
-        console.debug(`[WI Move] Removed entry UID ${entryUidString} from source '${sourceName}'.`);
-
+        if (deleteOriginal) {
+            delete sourceData.entries[entryUidString];
+            // Remove from originalData if it exists
+            deleteWIOriginalDataValue(sourceData, entryUidString);
+            // TODO: setWIOriginalDataValue
+            console.debug(`[WI Move] Removed entry UID ${entryUidString} from source '${sourceName}'.`);
+        }
 
         await saveWorldInfo(targetName, targetData, true);
         console.debug(`[WI Move] Saved target lorebook '${targetName}'.`);
         await saveWorldInfo(sourceName, sourceData, true);
         console.debug(`[WI Move] Saved source lorebook '${sourceName}'.`);
 
-
-        console.log(`[WI Move] ${entryToMove.comment} moved successfully to '${targetName}'.`);
+        console.log(`[WI Move] ${entryToMove.comment} ${deleteOriginal ? 'moved' : 'copied'} successfully to '${targetName}'.`);
 
         // Check if the currently viewed book in the editor is the source or target and reload it
         const currentEditorBookIndex = Number($('#world_editor_select').val());
@@ -5503,6 +5510,10 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
                 reloadEditor(currentEditorBookName);
             }
         }
+
+        toastr.success(deleteOriginal
+            ? t`Entry moved successfully from '${sourceName}' to '${targetName}'.`
+            : t`Entry copied successfully to '${targetName}'.`);
 
         return true;
     } catch (error) {
