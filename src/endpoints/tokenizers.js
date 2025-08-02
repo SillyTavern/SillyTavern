@@ -103,7 +103,7 @@ async function getPathToTokenizer(model, fallbackModel) {
             // If the file was downloaded manually
             if (isCompressed) {
                 const compressedBuffer = await fs.promises.readFile(cachedFile);
-                const decompressedBuffer = await gunzip(new Uint8Array(compressedBuffer).buffer);
+                const decompressedBuffer = await gunzip(new Uint8Array(compressedBuffer));
                 writeFileAtomicSync(uncompressedPath, decompressedBuffer);
                 await fs.promises.unlink(cachedFile);
                 return uncompressedPath;
