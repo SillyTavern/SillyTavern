@@ -2688,7 +2688,7 @@ export function parseMesExamples(examplesStr, isInstruct) {
     }
 
     const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-    const blockHeading = (main_api === "openai" || isInstruct) ? "<START>\n" : exampleSeparator;
+    const blockHeading = (main_api === 'openai' || isInstruct) ? '<START>\n' : exampleSeparator;
     const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
     return splitExamples;
