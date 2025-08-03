@@ -1,6 +1,6 @@
 import { DOMPurify, Popper } from '../lib.js';
 
-import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
+import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
 import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
@@ -382,11 +382,40 @@ async function getManifests(names) {
 }
 
 /**
+ * Compares two semantic version strings.
+ * @param {string} v1
+ * @param {string} v2
+ * @returns {number} If v1 > v2, returns 1; if v1 < v2, returns -1; if v1 === v2, returns 0.
+ */
+function compareSemanticVersions(v1, v2){
+    var v1p = v1.split('.');
+    var v2p = v2.split('.');
+
+    for (var i = 0; i < v1p.length; ++i) {
+        if (v2p.length === i) {
+            return 1;
+        }
+        if (v1p[i] === v2p[i]) {
+            continue;
+        }
+        if (v1p[i] > v2p[i]) {
+            return 1;
+        }
+        return -1;
+    }
+    if (v1.length !== v2.length) {
+        return -1;
+    }
+    return 0;
+}
+
+/**
  * Tries to activate all available extensions that are not already active.
  * @returns {Promise<void>}
  */
 async function activateExtensions() {
     extensionLoadErrors.clear();
+    const clientVersion = CLIENT_VERSION.split(':')[1];
     const extensions = Object.entries(manifests).sort((a, b) => sortManifestsByOrder(a[1], b[1]));
     const extensionNames = extensions.map(x => x[0]);
     const promises = [];
@@ -396,10 +425,16 @@ async function activateExtensions() {
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
         const extensionDependencies = manifest.dependencies;
+        const minClientVersion = manifest.minimum_client_version;
         const displayName = manifest.display_name || name;
 
         if (activeExtensions.has(name)) {
             continue;
+        }
+        // Client version requirement: pass if 'minimum_client_version' is undefined or null.
+        let meetsClientMinimumVersion = true;
+        if (minClientVersion !== undefined) {
+            meetsClientMinimumVersion = compareSemanticVersions(clientVersion, minClientVersion) >= 0;
         }
 
         // Module requirements: pass if 'requires' is undefined, null, or not an array; check subset if it's an array
@@ -438,7 +473,7 @@ async function activateExtensions() {
 
         const isDisabled = extension_settings.disabledExtensions.includes(name);
 
-        if (meetsModuleRequirements && meetsExtensionDeps && !isDisabled) {
+        if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
                 const promise = addExtensionLocale(name, manifest).finally(() =>
@@ -465,6 +500,9 @@ async function activateExtensions() {
                 console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
                 extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
             }
+        } else if (!meetsClientMinimumVersion && !isDisabled) {
+            console.warn(t`Extension "${name}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
+            extensionLoadErrors.add(t`Extension "${displayName}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
         }
     }
 
