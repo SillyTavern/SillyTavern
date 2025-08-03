@@ -103,7 +103,7 @@ async function getPathToTokenizer(model, fallbackModel) {
             // If the file was downloaded manually
             if (isCompressed) {
                 const compressedBuffer = await fs.promises.readFile(cachedFile);
-                const decompressedBuffer = await gunzip(new Uint8Array(compressedBuffer));
+                const decompressedBuffer = await gunzip(compressedBuffer);
                 writeFileAtomicSync(uncompressedPath, decompressedBuffer);
                 await fs.promises.unlink(cachedFile);
                 return uncompressedPath;
@@ -229,8 +229,7 @@ class WebTokenizer {
         try {
             const pathToModel = await getPathToTokenizer(this.#model, this.#fallbackModel);
             const fileBuffer = await fs.promises.readFile(pathToModel);
-            const arrayBuffer = new Uint8Array(fileBuffer).buffer;
-            this.#instance = await Tokenizer.fromJSON(arrayBuffer);
+            this.#instance = await Tokenizer.fromJSON(fileBuffer);
             console.info('Instantiated the tokenizer for', path.parse(pathToModel).name);
             return this.#instance;
         } catch (error) {
