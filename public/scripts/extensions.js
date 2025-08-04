@@ -10,6 +10,7 @@ import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { versionCompare } from './kai-settings.js';
 
 export {
     getContext,
@@ -381,33 +382,6 @@ async function getManifests(names) {
     return obj;
 }
 
-/**
- * Compares two semantic version strings.
- * @param {string} v1
- * @param {string} v2
- * @returns {number} If v1 > v2, returns 1; if v1 < v2, returns -1; if v1 === v2, returns 0.
- */
-function compareSemanticVersions(v1, v2){
-    var v1p = v1.split('.');
-    var v2p = v2.split('.');
-
-    for (var i = 0; i < v1p.length; ++i) {
-        if (v2p.length === i) {
-            return 1;
-        }
-        if (v1p[i] === v2p[i]) {
-            continue;
-        }
-        if (v1p[i] > v2p[i]) {
-            return 1;
-        }
-        return -1;
-    }
-    if (v1.length !== v2.length) {
-        return -1;
-    }
-    return 0;
-}
 
 /**
  * Tries to activate all available extensions that are not already active.
@@ -434,7 +408,7 @@ async function activateExtensions() {
         // Client version requirement: pass if 'minimum_client_version' is undefined or null.
         let meetsClientMinimumVersion = true;
         if (minClientVersion !== undefined) {
-            meetsClientMinimumVersion = compareSemanticVersions(clientVersion, minClientVersion) >= 0;
+            meetsClientMinimumVersion = versionCompare(clientVersion, minClientVersion);
         }
 
         // Module requirements: pass if 'requires' is undefined, null, or not an array; check subset if it's an array
