@@ -1731,8 +1731,9 @@ router.post('/generate', function (request, response) {
         try {
             controller.signal.throwIfAborted();
             const fetchResponse = await fetch(endpointUrl, config);
+            const contentType = fetchResponse.headers.get('Content-Type')?.toLowerCase() || '';
 
-            if (request.body.stream) {
+            if (request.body.stream || contentType.includes('text/event-stream')) {
                 console.info('Streaming request in progress');
                 forwardFetchResponse(fetchResponse, response);
                 return;
