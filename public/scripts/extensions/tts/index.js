@@ -476,7 +476,7 @@ async function tts(text, voiceId, char) {
         await addAudioJob(response, char);
     }
 
-    let response = await ttsProvider.generateTts(text, voiceId);
+    let response = await ttsProvider.generateTts(text, voiceId, char);
 
     // If async generator, process every chunk as it comes in
     if (typeof response[Symbol.asyncIterator] === 'function') {
@@ -1007,7 +1007,7 @@ function getCharacters(unrestricted) {
     return characters.filter(onlyUnique);
 }
 
-function sanitizeId(input) {
+export function sanitizeId(input) {
     // Remove any non-alphanumeric characters except underscore (_) and hyphen (-)
     let sanitized = encodeURIComponent(input).replace(/[^a-zA-Z0-9-_]/g, '');
 
