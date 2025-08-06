@@ -271,19 +271,27 @@ router.post('/generate-voice', async (request, response) => {
             return response.sendStatus(400);
         }
 
+        const requestBody = {
+            input: request.body.text,
+            response_format: 'mp3',
+            voice: request.body.voice ?? 'alloy',
+            speed: request.body.speed ?? 1,
+            model: request.body.model ?? 'tts-1',
+        };
+
+        if (request.body.instructions) {
+            requestBody.instructions = request.body.instructions;
+        }
+
+        console.debug('OpenAI TTS request', requestBody);
+
         const result = await fetch('https://api.openai.com/v1/audio/speech', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${key}`,
             },
-            body: JSON.stringify({
-                input: request.body.text,
-                response_format: 'mp3',
-                voice: request.body.voice ?? 'alloy',
-                speed: request.body.speed ?? 1,
-                model: request.body.model ?? 'tts-1',
-            }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!result.ok) {
