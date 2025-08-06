@@ -239,6 +239,7 @@ export const power_user = {
         system_same_as_user: false,
         /** @deprecated Use output_suffix instead */
         separator_sequence: '',
+        sequences_as_stop_strings: true,
     },
 
     context: {
