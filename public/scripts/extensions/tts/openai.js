@@ -136,7 +136,7 @@ class OpenAITtsProvider {
         if ($('#openai-instructions-container').length === 0) {
             const containerHtml = `
                 <div id="openai-instructions-container" style="display: none;">
-                    <span>Voice Instructions (GPT-4o Mini TTS)</span><br>    
+                    <span>Voice Instructions (GPT-4o Mini TTS)</span><br>
                     <small>Customize how each character speaks</small>
                     <div id="openai-character-instructions"></div>
                 </div>
@@ -157,19 +157,23 @@ class OpenAITtsProvider {
             const sanitizedName = sanitizeId(char);
             const savedInstructions = this.settings.characterInstructions?.[char] || '';
 
-            const html = `
-                <div class="character-instructions" style="margin-bottom: 10px;">
-                    <label for="openai_char_${sanitizedName}">${char}:</label>
-                    <textarea id="openai_char_${sanitizedName}" 
-                            placeholder="e.g., 'Speak cheerfully and energetically'" 
-                            style="width: 100%; height: 60px;">${savedInstructions}</textarea>
-                </div>
-            `;
-
-            $('#openai-character-instructions').append(html);
-            $(`#openai_char_${sanitizedName}`).on('input', () => {
-                this.saveCharacterInstructions(char, $(`#openai_char_${sanitizedName}`).val());
+            const instructionBlock = document.createElement('div');
+            const label = document.createElement('label');
+            const textArea = document.createElement('textarea');
+            instructionBlock.appendChild(label);
+            instructionBlock.appendChild(textArea);
+            instructionBlock.className = 'character-instructions';
+            label.setAttribute('for', `openai_char_${sanitizedName}`);
+            label.innerText = `${char}:`;
+            textArea.id = `openai_char_${sanitizedName}`;
+            textArea.placeholder = 'e.g., "Speak cheerfully and energetically"';
+            textArea.className = 'textarea_compact autoSetHeight';
+            textArea.value = savedInstructions;
+            textArea.addEventListener('input', () => {
+                this.saveCharacterInstructions(char, textArea.value);
             });
+
+            $('#openai-character-instructions').append(instructionBlock);
         }
     }
 
