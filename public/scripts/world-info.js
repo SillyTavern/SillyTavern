@@ -2481,6 +2481,7 @@ export const originalWIDataKeyMap = {
     'cooldown': 'extensions.cooldown',
     'delay': 'extensions.delay',
     'triggers': 'extensions.triggers',
+    'ignoreBudget': 'extensions.ignore_budget',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -3092,31 +3093,6 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 }
 
 /**
- * Helper to handle ignore context budget switch.
- * @param {object} params - Parameters for handling the toggle.
- * @param {JQuery<HTMLElement>} params.entryIgnoreBudgetSwitch - The toggle element for the switch.
- * @param {object} params.entry - The entry object containing the state.
- * @param {object} params.data - The data object containing entries.
- * @param {string} params.name - The name of the world info to save changes to.
- * @param {JQuery<HTMLElement>} params.template - The template element for the entry.
- */
-function handleEntryIgnoreBudgetSwitchHelper({ entryIgnoreBudgetSwitch, entry, data, name, template }) {
-    entryIgnoreBudgetSwitch.data('uid', entry.uid);
-    entryIgnoreBudgetSwitch.on('click', async function () {
-        const uid = entry.uid;
-        data.entries[uid].ignoreBudget = !data.entries[uid].ignoreBudget;
-        const isActive = data.entries[uid].ignoreBudget;
-        setWIOriginalDataValue(data, uid, 'enabled', isActive);
-        entryIgnoreBudgetSwitch.toggleClass('fa-toggle-off', !isActive);
-        entryIgnoreBudgetSwitch.toggleClass('fa-toggle-on', isActive);
-        await saveWorldInfo(name, data);
-    });
-    const isActive = entry.ignoreBudget;
-    entryIgnoreBudgetSwitch.toggleClass('fa-toggle-off', !isActive);
-    entryIgnoreBudgetSwitch.toggleClass('fa-toggle-on', isActive);
-}
-
-/**
  * Main function to build the WI entry editor template.
  * @param {string} name - The name of the world info file.
  * @param {object} data - The world info data object.
@@ -3206,12 +3182,6 @@ export async function getWorldEntry(name, data, entry) {
     // Kill switch
     handleEntryKillSwitchHelper({
         entryKillSwitch: headerTemplate.find('div[name="entryKillSwitch"]'),
-        entry, data, name, template: headerTemplate,
-    });
-
-    // Ignore budget switch
-    handleEntryIgnoreBudgetSwitchHelper({
-        entryIgnoreBudgetSwitch: headerTemplate.find('div[name="entryIgnoreBudgetSwitch"]'),
         entry, data, name, template: headerTemplate,
     });
 
@@ -3598,6 +3568,18 @@ export async function getWorldEntry(name, data, entry) {
             .val(Array.isArray(entry.triggers) ? entry.triggers : [])
             .trigger('input', { noSave: true })
             .trigger('change');
+
+        // Ignore budget
+        const ignoreBudgetInput = editTemplate.find('input[name="ignoreBudget"]');
+        ignoreBudgetInput.data('uid', entry.uid);
+        ignoreBudgetInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            data.entries[uid].ignoreBudget = value;
+            setWIOriginalDataValue(data, uid, 'extensions.ignore_budget', data.entries[uid].ignoreBudget);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        ignoreBudgetInput.prop('checked', entry.ignoreBudget ?? false).trigger('input', { noSave: true });
 
         countTokensDebounced(counter, contentInput.val());
 
@@ -4557,8 +4539,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         let ignoresBudget = newEntries.filter(e => e.ignoreBudget).length;
 
         for (const entry of newEntries) {
-            ignoresBudget -= entry.ignoreBudget;
-            if (token_budget_overflowed && !entry.ignoresBudget) {
+            ignoresBudget -= (entry.ignoreBudget ? 1 : 0);
+            if (token_budget_overflowed && !entry.ignoreBudget) {
                 if (ignoresBudget > 0) {
                     continue;
                 }
@@ -4997,6 +4979,7 @@ function convertAgnaiMemoryBook(inputObj) {
             cooldown: null,
             delay: null,
             triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -5040,6 +5023,7 @@ function convertRisuLorebook(inputObj) {
             cooldown: null,
             delay: null,
             triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -5088,6 +5072,7 @@ function convertNovelLorebook(inputObj) {
             cooldown: null,
             delay: null,
             triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -5145,6 +5130,7 @@ export function convertCharacterBook(characterBook) {
             matchCreatorNotes: entry.extensions?.match_creator_notes ?? false,
             extensions: entry.extensions ?? {},
             triggers: entry.extensions?.triggers || [],
+            ignoreBudget: entry.extensions?.ignore_budget ?? false,
         };
     });
 
