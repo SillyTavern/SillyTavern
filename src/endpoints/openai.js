@@ -283,6 +283,8 @@ router.post('/generate-voice', async (request, response) => {
             requestBody.instructions = request.body.instructions;
         }
 
+        console.debug('OpenAI TTS request', requestBody);
+
         const result = await fetch('https://api.openai.com/v1/audio/speech', {
             method: 'POST',
             headers: {
