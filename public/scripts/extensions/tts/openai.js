@@ -1,4 +1,4 @@
-import { getRequestHeaders } from '../../../script.js';
+import { getRequestHeaders, substituteParams } from '../../../script.js';
 import { saveTtsProviderSettings, sanitizeId } from './index.js';
 
 export { OpenAITtsProvider };
@@ -233,7 +233,7 @@ class OpenAITtsProvider {
         if (this.settings.model === 'gpt-4o-mini-tts' && characterName) {
             const instructions = this.settings.characterInstructions?.[characterName];
             if (instructions && instructions.trim()) {
-                requestBody.instructions = instructions;
+                requestBody.instructions = substituteParams(instructions);
             }
         }
 
