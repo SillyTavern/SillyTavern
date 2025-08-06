@@ -3092,6 +3092,31 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 }
 
 /**
+ * Helper to handle ignore context budget switch.
+ * @param {object} params - Parameters for handling the toggle.
+ * @param {JQuery<HTMLElement>} params.entryIgnoreBudgetSwitch - The toggle element for the switch.
+ * @param {object} params.entry - The entry object containing the state.
+ * @param {object} params.data - The data object containing entries.
+ * @param {string} params.name - The name of the world info to save changes to.
+ * @param {JQuery<HTMLElement>} params.template - The template element for the entry.
+ */
+function handleEntryIgnoreBudgetSwitchHelper({ entryIgnoreBudgetSwitch, entry, data, name, template }) {
+    entryIgnoreBudgetSwitch.data('uid', entry.uid);
+    entryIgnoreBudgetSwitch.on('click', async function () {
+        const uid = entry.uid;
+        data.entries[uid].ignoreBudget = !data.entries[uid].ignoreBudget;
+        const isActive = data.entries[uid].ignoreBudget;
+        setWIOriginalDataValue(data, uid, 'enabled', isActive);
+        entryIgnoreBudgetSwitch.toggleClass('fa-toggle-off', !isActive);
+        entryIgnoreBudgetSwitch.toggleClass('fa-toggle-on', isActive);
+        await saveWorldInfo(name, data);
+    });
+    const isActive = entry.ignoreBudget;
+    entryIgnoreBudgetSwitch.toggleClass('fa-toggle-off', !isActive);
+    entryIgnoreBudgetSwitch.toggleClass('fa-toggle-on', isActive);
+}
+
+/**
  * Main function to build the WI entry editor template.
  * @param {string} name - The name of the world info file.
  * @param {object} data - The world info data object.
@@ -3181,6 +3206,12 @@ export async function getWorldEntry(name, data, entry) {
     // Kill switch
     handleEntryKillSwitchHelper({
         entryKillSwitch: headerTemplate.find('div[name="entryKillSwitch"]'),
+        entry, data, name, template: headerTemplate,
+    });
+
+    // Ignore budget switch
+    handleEntryIgnoreBudgetSwitchHelper({
+        entryIgnoreBudgetSwitch: headerTemplate.find('div[name="entryIgnoreBudgetSwitch"]'),
         entry, data, name, template: headerTemplate,
     });
 
@@ -3739,6 +3770,7 @@ export const newWorldInfoEntryDefinition = {
     order: { default: 100, type: 'number' },
     position: { default: 0, type: 'number' },
     disable: { default: false, type: 'boolean' },
+    ignoreBudget: { default: false, type: 'boolean' },
     excludeRecursion: { default: false, type: 'boolean' },
     preventRecursion: { default: false, type: 'boolean' },
     matchPersonaDescription: { default: false, type: 'boolean' },
@@ -4522,7 +4554,17 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         console.debug('[WI] --- PROBABILITY CHECKS ---');
         !newEntries.length && console.debug('[WI] No probability checks to do');
 
+        let ignoresBudget = newEntries.filter(e => e.ignoreBudget).length;
+
         for (const entry of newEntries) {
+            ignoresBudget -= entry.ignoreBudget;
+            if (token_budget_overflowed && !entry.ignoresBudget) {
+                if (ignoresBudget > 0) {
+                    continue;
+                }
+                break;
+            }
+
             function verifyProbability() {
                 // If we don't need to roll, it's always true
                 if (!entry.useProbability || entry.probability === 100) {
@@ -4556,16 +4598,18 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             entry.content = substituteParams(entry.content);
             newContent += `${entry.content}\n`;
 
-            if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
-                console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
-                if (world_info_overflow_alert) {
-                    console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
-                    toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
-                } else {
-                    console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+            if (!entry.ignoreBudget && (textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
+                if (!token_budget_overflowed) {
+                    console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
+                    if (world_info_overflow_alert) {
+                        console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+                        toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
+                    } else {
+                        console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+                    }
+                    token_budget_overflowed = true;
                 }
-                token_budget_overflowed = true;
-                break;
+                continue;
             }
 
             allActivatedEntries.set(`${entry.world}.${entry.uid}`, entry);
