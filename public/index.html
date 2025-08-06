@@ -6337,25 +6337,35 @@
                                             (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
                                             <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                         </span>
-                                        <div>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="excludeRecursion" />
-                                                <span data-i18n="Non-recursable (will not be activated by another)">
-                                                    Non-recursable (will not be activated by another)
-                                                </span>
-                                            </label>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="preventRecursion" />
-                                                <span data-i18n="Prevent further recursion (this entry will not activate others)">
-                                                    Prevent further recursion (will not activate others)
-                                                </span>
-                                            </label>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="delay_until_recursion" />
-                                                <span data-i18n="Delay until recursion (can only be activated on recursive checking)">
-                                                    Delay until recursion (can only be activated on recursive checking)
-                                                </span>
-                                            </label>
+                                        <div class="flex-container">
+                                            <div class="flex-container flexFlowColumn">
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will not be recursively activated by other entries.">
+                                                    <input type="checkbox" name="excludeRecursion" />
+                                                    <span data-i18n="Non-recursable">
+                                                        Non-recursable
+                                                    </span>
+                                                </label>
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will not activate other entries recursively." data-i18n="[title]This entry will not activate other entries recursively.">
+                                                    <input type="checkbox" name="preventRecursion" />
+                                                    <span data-i18n="Prevent further recursion">
+                                                        Prevent further recursion
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="flex-container flexFlowColumn">
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry can only be activated on recursive checking." data-i18n="[title]This entry can only be activated on recursive checking.">
+                                                    <input type="checkbox" name="delay_until_recursion" />
+                                                    <span data-i18n="Delay until recursion">
+                                                        Delay until recursion
+                                                    </span>
+                                                </label>
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will be included ignoring budget constraints, assuming all other checks pass." data-i18n="[title]This entry will be included ignoring budget constraints, assuming all other checks pass.">
+                                                    <input type="checkbox" name="ignoreBudget" />
+                                                    <span data-i18n="Ignore budget">
+                                                        Ignore budget
+                                                    </span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </span>
                                 </small>
