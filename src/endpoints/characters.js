@@ -673,6 +673,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             secondary_keys: entry.keysecondary,
             comment: entry.comment,
             content: entry.content,
+            essential: entry.essential,
             constant: entry.constant,
             selective: entry.selective,
             insertion_order: entry.order,

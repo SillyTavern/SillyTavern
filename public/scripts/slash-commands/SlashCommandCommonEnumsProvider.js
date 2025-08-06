@@ -61,6 +61,7 @@ export const enumIcons = {
     assistant: '🤖',
 
     // WI Icons
+    essential: '🟣',
     constant: '🔵',
     normal: '🟢',
     disabled: '❌',
@@ -83,6 +84,7 @@ export const enumIcons = {
      * @returns {string} The corresponding WI icon
      */
     getWiStatusIcon: (entry) => {
+        if (entry.essential) return enumIcons.essential;
         if (entry.constant) return enumIcons.constant;
         if (entry.disable) return enumIcons.disabled;
         if (entry.vectorized) return enumIcons.vectorized;

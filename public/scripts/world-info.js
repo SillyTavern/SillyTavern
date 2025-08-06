@@ -2023,8 +2023,8 @@ export function sortWorldInfoEntries(data, { customSort = null } = {}) {
     } else if (sortRule === 'priority') {
         // First constant, then normal, then disabled.
         primarySort = (a, b) => {
-            const aValue = a.disable ? 2 : a.constant ? 0 : 1;
-            const bValue = b.disable ? 2 : b.constant ? 0 : 1;
+            const aValue = a.disable ? 2 : a.constant || a.essential ? 0 : 1;
+            const bValue = b.disable ? 2 : b.constant || a.essential ? 0 : 1;
             return aValue - bValue;
         };
     } else {
@@ -3038,29 +3038,15 @@ function handleEntryStateSelectorHelper({ entryStateSelector, entry, data, name 
     entryStateSelector.on('input', async function (_, { noSave = false } = {}) {
         const uid = entry.uid;
         const value = $(this).val();
-        switch (value) {
-            case 'constant':
-                data.entries[uid].constant = true;
-                data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'constant', true);
-                setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                break;
-            case 'normal':
-                data.entries[uid].constant = false;
-                data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'constant', false);
-                setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                break;
-            case 'vectorized':
-                data.entries[uid].constant = false;
-                data.entries[uid].vectorized = true;
-                setWIOriginalDataValue(data, uid, 'constant', false);
-                setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
-                break;
-        }
+        data.entries[uid].essential  = value === 'essential';
+        data.entries[uid].constant   = value === 'constant';
+        data.entries[uid].vectorized = value === 'vectorized';
+        setWIOriginalDataValue(data, uid, 'essential',             value === 'essential');
+        setWIOriginalDataValue(data, uid, 'constant',              value === 'constant');
+        setWIOriginalDataValue(data, uid, 'extensions.vectorized', value === 'vectorized');
         !noSave && await saveWorldInfo(name, data);
     });
-    const entryState = () => entry.constant === true ? 'constant' : entry.vectorized === true ? 'vectorized' : 'normal';
+    const entryState = () => entry.essential === true ? 'essential' : entry.constant === true ? 'constant' : entry.vectorized === true ? 'vectorized' : 'normal';
     entryStateSelector.find(`option[value=${entryState()}]`).prop('selected', true).trigger('input', { noSave: true });
 }
 
@@ -4296,6 +4282,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
 
         // Loop and find all entries that can activate here
         let activatedNow = new Set();
+        let essentialNow = new Set();
 
         for (const entry of sortedEntries) {
             // Logging preparation
@@ -4405,6 +4392,13 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             }
 
             // Now do checks for immediate activations
+            if (entry.essential) {
+                log('activated because of essential');
+                essentialNow.add(entry);
+                activatedNow.add(entry);
+                continue;
+            }
+
             if (entry.constant) {
                 log('activated because of constant');
                 activatedNow.add(entry);
@@ -4568,8 +4562,18 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                 break;
             }
 
+            essentialNow.delete(entry);
             allActivatedEntries.set(`${entry.world}.${entry.uid}`, entry);
             console.debug(`[WI] Entry ${entry.uid} activation successful, adding to prompt`, entry);
+        }
+
+        // Add missing essential entries
+        for (const entry of essentialNow) {
+            // Substitute macros inline, for both this checking and also future processing
+            entry.content = substituteParams(entry.content);
+            newContent += `${entry.content}\n`;
+            allActivatedEntries.set(`${entry.world}.${entry.uid}`, entry);
+            console.debug(`[WI] Essential Entry ${entry.uid} activation successful, adding to prompt`, entry);
         }
 
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
@@ -5066,6 +5070,7 @@ export function convertCharacterBook(characterBook) {
             keysecondary: entry.secondary_keys || [],
             comment: entry.comment || '',
             content: entry.content,
+            essential: entry.essential || false,
             constant: entry.constant || false,
             selective: entry.selective || false,
             order: entry.insertion_order,
