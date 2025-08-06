@@ -332,7 +332,7 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
                 first_output_sequence,
                 last_output_sequence,
                 system_sequence,
-                last_system_sequence
+                last_system_sequence,
             );
         }
 
