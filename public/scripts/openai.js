@@ -1999,7 +1999,9 @@ function getReasoningEffort() {
         case reasoning_effort_types.auto:
             return undefined;
         case reasoning_effort_types.min:
-            return reasoning_effort_types.low;
+            return chat_completion_sources.OPENAI === oai_settings.chat_completion_source && /^gpt-5/.test(oai_settings.openai_model)
+                ? reasoning_effort_types.min
+                : reasoning_effort_types.low;
         case reasoning_effort_types.max:
             return reasoning_effort_types.high;
         default:

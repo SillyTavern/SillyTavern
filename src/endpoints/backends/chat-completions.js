@@ -1647,8 +1647,26 @@ router.post('/generate', function (request, response) {
 
     // A few of OpenAIs reasoning models support reasoning effort
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-        if (['o1', 'o3-mini', 'o3-mini-2025-01-31', 'o4-mini', 'o4-mini-2025-04-16', 'o3', 'o3-2025-04-16'].includes(request.body.model)) {
-            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        const reasoningEffortModels = [
+            'o1',
+            'o3-mini',
+            'o3-mini-2025-01-31',
+            'o4-mini',
+            'o4-mini-2025-04-16',
+            'o3',
+            'o3-2025-04-16',
+            'gpt-5',
+            'gpt-5-2025-08-07',
+            'gpt-5-mini',
+            'gpt-5-mini-2025-08-07',
+            'gpt-5-nano',
+            'gpt-5-nano-2025-08-07',
+        ];
+        const reasoningEffortMap = {
+            min: 'minimal',
+        };
+        if (reasoningEffortModels.includes(request.body.model)) {
+            bodyParams['reasoning_effort'] = reasoningEffortMap[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 
