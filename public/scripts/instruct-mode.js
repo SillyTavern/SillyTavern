@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString, resetScrollHeight } from './utils.js';
+import { onlyUnique, regexFromString, resetScrollHeight } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -44,6 +44,7 @@ const controls = [
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
     { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
+    { id: 'instruct_sequences_as_stop_strings', property: 'sequences_as_stop_strings', isCheckbox: true },
 ];
 
 /**
@@ -79,6 +80,7 @@ function migrateInstructModeSettings(settings) {
         skip_examples: false,
         system_same_as_user: false,
         names_behavior: names_behavior_types.FORCE,
+        sequences_as_stop_strings: true,
     };
 
     for (let key in defaults) {
@@ -321,15 +323,20 @@ export function getInstructStoppingSequences({ customInstruct = null, useStopStr
 
         const combined_sequence = [
             stop_sequence,
-            input_sequence,
-            output_sequence,
-            first_output_sequence,
-            last_output_sequence,
-            system_sequence,
-            last_system_sequence,
-        ].join('\n');
+        ];
 
-        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
+        if (instruct.sequences_as_stop_strings) {
+            combined_sequence.push(
+                input_sequence,
+                output_sequence,
+                first_output_sequence,
+                last_output_sequence,
+                system_sequence,
+                last_system_sequence,
+            );
+        }
+
+        combined_sequence.join('\n').split('\n').filter(onlyUnique).forEach(addInstructSequence);
     }
 
     if (useStopStrings ?? power_user.context.use_stop_strings) {
