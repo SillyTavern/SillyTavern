@@ -5718,6 +5718,49 @@ export function initWorldInfo() {
         }, { buttonStyle: true, closeDrawer: true });
     }
 
+    //**************************WORLD EDITOR SELECT*************************//
+    // Use select2 for the world editor select to filter and search for worlds to edit
+    // Makes it easier to find the world you want to edit in case of many worlds
+    // Limits the input length to 50 characters
+    //**************************WORLD EDITOR SELECT*************************//
+    if (!isMobile()) {
+        $('#world_editor_select').select2({
+            width: '100%',
+            placeholder: t`--- Pick to Edit ---`,
+            allowClear: false,
+            closeOnSelect: true,
+            multiple: false,
+            minimumInputLength: 0,
+            maximumInputLength: 50,
+            language: {
+                inputTooShort: function() { return t`Please enter 0 or more characters`; },
+                inputTooLong: function() { return t`Please delete 0 or more characters`; },
+                noResults: function() { return t`No worlds found`; },
+                searching: function() { return t`Searching...`; },
+            },
+            matcher: function(params, data) {
+                if (params.term.trim() === '') return data;
+                if (typeof data.text === 'undefined') return null;
+                if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) return data;
+                return null;
+            },
+            templateResult: function(data) {
+                if (!data.id) return data.text;
+                return $(`<span class="world-editor-option">
+                    <i class="fa-solid fa-book"></i>
+                    <span class="world-name">${data.text}</span>
+                </span>`);
+            },
+            templateSelection: function(data) {
+                if (!data.id) return data.text;
+                return $(`<span class="world-editor-selection">
+                    <i class="fa-solid fa-book"></i>
+                    <span class="world-name">${data.text}</span>
+                </span>`);
+            },
+        });
+    }
+
     $('#WorldInfo').on('scroll', () => {
         $('.world_entry input[name="group"], .world_entry input[name="automationId"]').each((_, el) => {
             const instance = $(el).autocomplete('instance');

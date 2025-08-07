@@ -6296,3 +6296,59 @@ body:not(.movingUI) .drawer-content.maximized {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
 }
+
+/* World Editor Select2 Styling */
+.world-editor-option, .world-editor-selection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.world-editor-option i, .world-editor-selection i {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.world-name {
+    flex: 1;
+}
+
+/* Selection 2 styling for clearer UX */
+.select2-container--default .select2-selection--single {
+    height: 38px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+    padding-left: 12px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+
+/* Search input styling */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+/* Dropdown styling */
+.select2-dropdown {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.select2-results__option {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.select2-results__option--highlighted[aria-selected] {
+    background-color: #007bff !important;
+    color: white;
+}
