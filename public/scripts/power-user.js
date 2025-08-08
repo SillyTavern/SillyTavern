@@ -1868,6 +1868,47 @@ export function getContextSettings() {
 // TODO: Maybe add a refresh button to reset settings to preset
 // TODO: Add "global state" if a preset doesn't set the power_user checkboxes
 async function loadContextSettings() {
+    /**
+     * Auto-fix missing fields in the story string
+     * @param {ContextSettings} contextSettings Context settings instance
+     */
+    function autoFixStoryString(contextSettings) {
+        // Already migrated, no need to fix
+        if (!contextControls || Object.hasOwn(contextSettings, 'story_string_position')) {
+            return;
+        }
+
+        let storyString = contextSettings.story_string || '';
+
+        /**
+         * @param {string} field Missing field name
+         * @param {'start'|'end'} position Position of auto-fix
+         * @returns {string} Auto-fixed story string (if any fixes were applied)
+         */
+        function autoFixMissingField(field, position) {
+            if (!storyString.includes(`{{${field}}}`)) {
+                console.warn(`[Story String Validation] Story String is missing a field: ${field}. Adding it at the ${position}.`);
+                const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
+                const firstCurlyPosition = storyString.includes('{{') ? storyString.indexOf('{{') : 0;
+                const lastCurlyPosition = storyString.includes('}}') ? storyString.lastIndexOf('}}') + '}}'.length : storyString.length;
+                const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
+                const endPosition = Math.min(lastTrimPosition, lastCurlyPosition);
+                storyString = position === 'start'
+                    ? storyString.substring(0, firstCurlyPosition) + fieldTemplate + storyString.substring(firstCurlyPosition)
+                    : storyString.substring(0, endPosition) + fieldTemplate + storyString.substring(endPosition);
+            }
+            return storyString;
+        }
+
+        storyString = autoFixMissingField('anchorBefore', 'start');
+        storyString = autoFixMissingField('anchorAfter', 'end');
+
+        contextSettings.story_string = storyString;
+    }
+
+    // Migrate story string to add missing fields
+    autoFixStoryString(power_user.context);
+
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -1926,6 +1967,9 @@ async function loadContextSettings() {
         if (!preset) {
             return;
         }
+
+        // Migrate story string to add missing fields
+        autoFixStoryString(preset);
 
         power_user.context.preset = name;
 
@@ -2180,24 +2224,6 @@ function validateStoryString(storyString, params) {
         }
     }
 
-    /**
-     * Auto-fix missing field in the story string
-     * @param {string} field Missing field name
-     * @param {'start'|'end'} position Position of auto-fix
-     * @returns {string} Auto-fixed story string (if any fixes were applied)
-     */
-    function autoFixMissingField(field, position) {
-        if (!storyString.includes(`{{${field}}}`) && params[field]) {
-            console.warn(`[Story String Validation] Story String is missing a field: ${field}. Consider adding it to the story string template.`);
-            const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
-            const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
-            storyString = position === 'start'
-                ? fieldTemplate + storyString
-                : storyString.substring(0, lastTrimPosition) + fieldTemplate + storyString.substring(lastTrimPosition);
-        }
-        return storyString;
-    }
-
     validateMissingField('description');
     validateMissingField('personality');
     validateMissingField('persona');
@@ -2212,9 +2238,6 @@ function validateStoryString(storyString, params) {
     }
 
     accountStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
-
-    storyString = autoFixMissingField('anchorBefore', 'start');
-    storyString = autoFixMissingField('anchorAfter', 'end');
 
     return storyString;
 }
