@@ -2161,8 +2161,11 @@ export function renderStoryString(params, { customStoryString = null, customInst
     try {
         const instructSettings = structuredClone(customInstructSettings ?? power_user.instruct);
         const contextSettings = structuredClone(customContextSettings ?? power_user.context);
-        const storyString = validateStoryString(customStoryString ?? contextSettings.story_string, params);
+        const storyString = customStoryString ?? contextSettings.story_string;
         const storyStringPosition = contextSettings.story_string_position ?? extension_prompt_types.IN_PROMPT;
+
+        // Validate and log possible warnings/errors
+        validateStoryString(storyString, params);
 
         // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(storyString, { noEscape: true });
@@ -2196,7 +2199,6 @@ export function renderStoryString(params, { customStoryString = null, customInst
  *
  * @param {string} storyString - The story string
  * @param {Object} params - The story string parameters
- * @returns {string} Auto-fixed story string (if any fixes were applied)
  */
 function validateStoryString(storyString, params) {
     /** @type {{hashCache: {[hash: string]: {fieldsWarned: {[key: string]: boolean}}}}} */
@@ -2238,8 +2240,6 @@ function validateStoryString(storyString, params) {
     }
 
     accountStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
-
-    return storyString;
 }
 
 
