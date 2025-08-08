@@ -4288,14 +4288,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             let combinedPrompt = (
                 power_user.context.story_string_tail
                     ?
-                mesExmString +
-                mesSendString.replace('__SILLYTAVERN__STORY_STRING_TAIL__', storyStringWrapped) +
-                generatedPromptCache
+                    mesExmString +
+                    mesSendString.replace('__SILLYTAVERN__STORY_STRING_TAIL__', storyStringWrapped) +
+                    generatedPromptCache
                     :
-                storyStringWrapped +
-                mesExmString +
-                mesSendString +
-                generatedPromptCache
+                    storyStringWrapped +
+                    mesExmString +
+                    mesSendString +
+                    generatedPromptCache
             );
 
             combinedPrompt = combinedPrompt.replace(/\r/gm, '');
