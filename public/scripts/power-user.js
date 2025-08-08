@@ -1883,25 +1883,25 @@ async function loadContextSettings() {
         /**
          * @param {string} field Missing field name
          * @param {'start'|'end'} position Position of auto-fix
-         * @returns {string} Auto-fixed story string (if any fixes were applied)
          */
         function autoFixMissingField(field, position) {
-            if (!storyString.includes(`{{${field}}}`)) {
-                console.warn(`[Story String Validation] Story String is missing a field: ${field}. Adding it at the ${position}.`);
-                const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
-                const firstCurlyPosition = storyString.includes('{{') ? storyString.indexOf('{{') : 0;
-                const lastCurlyPosition = storyString.includes('}}') ? storyString.lastIndexOf('}}') + '}}'.length : storyString.length;
-                const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
-                const endPosition = Math.min(lastTrimPosition, lastCurlyPosition);
-                storyString = position === 'start'
-                    ? storyString.substring(0, firstCurlyPosition) + fieldTemplate + storyString.substring(firstCurlyPosition)
-                    : storyString.substring(0, endPosition) + fieldTemplate + storyString.substring(endPosition);
+            if (storyString.includes(`{{${field}}}`)) {
+                return;
             }
-            return storyString;
+
+            console.warn(`[Story String Validation] Story String is missing a field: ${field}. Adding it at the ${position}.`);
+            const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
+            const firstCurlyPosition = storyString.includes('{{') ? storyString.indexOf('{{') : 0;
+            const lastCurlyPosition = storyString.includes('}}') ? storyString.lastIndexOf('}}') + '}}'.length : storyString.length;
+            const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
+            const endPosition = Math.min(lastTrimPosition, lastCurlyPosition);
+            storyString = position === 'start'
+                ? storyString.substring(0, firstCurlyPosition) + fieldTemplate + storyString.substring(firstCurlyPosition)
+                : storyString.substring(0, endPosition) + fieldTemplate + storyString.substring(endPosition);
         }
 
-        storyString = autoFixMissingField('anchorBefore', 'start');
-        storyString = autoFixMissingField('anchorAfter', 'end');
+        autoFixMissingField('anchorBefore', 'start');
+        autoFixMissingField('anchorAfter', 'end');
 
         contextSettings.story_string = storyString;
     }
