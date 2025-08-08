@@ -464,10 +464,7 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
  * @deprecated Currently doesn't do anything useful.
  */
 export function formatInstructModeSystemPrompt(systemPrompt, _customInstruct = null) {
-    if (!systemPrompt) {
-        return '';
-    }
-    return systemPrompt;
+    return systemPrompt || '';
 }
 
 /**
