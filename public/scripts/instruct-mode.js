@@ -89,6 +89,19 @@ function migrateInstructModeSettings(settings) {
             settings[key] = defaults[key];
         }
     }
+
+    const obsoleteFields = [
+        'names',
+        'names_force_groups',
+        'system_sequence_prefix',
+        'system_sequence_suffix',
+    ];
+
+    for (const field of obsoleteFields) {
+        if (Object.hasOwn(settings, field)) {
+            delete settings[field];
+        }
+    }
 }
 
 /**
