@@ -4272,7 +4272,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             let storyStringWrapped = beforeScenarioAnchor + storyString + afterScenarioAnchor;
 
             if (power_user.context.story_string_tail) {
-                finalMesSend[finalMesSend.length - 1].extensionPrompts.splice(0, 0, storyStringWrapped);
+                let insertion_point = finalMesSend.length - power_user.context.story_string_tail_depth;
+                if (insertion_point < 0) {
+                    insertion_point = 0;
+                }
+                if (insertion_point >= finalMesSend.length) {
+                    insertion_point = finalMesSend.length - 1;
+                }
+                finalMesSend[insertion_point].extensionPrompts.splice(0, 0, storyStringWrapped);
                 storyStringWrapped = '';
             }
 

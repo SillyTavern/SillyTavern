@@ -3836,12 +3836,17 @@
                                         <input id="context_names_as_stop_strings" type="checkbox" />
                                         <small data-i18n="Names as Stop Strings">Names as Stop Strings</small>
                                     </label>
-                                    <label class="checkbox_label" title="Place the Story String as a system message near the end of the context (at Depth=1), for increased adherence during longer chats." for="context_story_string_tail">
-                                        <input id="context_story_string_tail" type="checkbox" />
-                                        <small data-i18n="Keep Story String Near End of Chat">
-                                            Keep Story String Near End of Chat
-                                        </small>
-                                    </label>
+                                    <div class="flex-container alignitemscenter wide100p">
+                                        <label class="checkbox_label" title="Place the Story String as a system message near the end of the context (at Depth=1), for increased adherence during longer chats." for="context_story_string_tail">
+                                            <input id="context_story_string_tail" type="checkbox" />
+                                            <small data-i18n="Keep Story String Near End of Chat at Depth">
+                                                Keep Story String Near End of Chat at Depth
+                                            </small>
+                                        </label>
+                                        <div class="flex-container flexNoGap">
+                                            <input title="Depth" class="text_pole wideMax100px margin0" type="number" id="context_story_string_tail_depth" data-i18n="[title]Depth" placeholder="" min="0" max="9999" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

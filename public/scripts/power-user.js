@@ -250,6 +250,7 @@ export const power_user = {
         use_stop_strings: true,
         names_as_stop_strings: true,
         story_string_tail: false,
+        story_string_tail_depth: 1,
     },
 
     instruct_derived: false,
@@ -349,6 +350,7 @@ const contextControls = [
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
     { id: 'context_names_as_stop_strings', property: 'names_as_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: true },
     { id: 'context_story_string_tail', property: 'story_string_tail', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
+    { id: 'context_story_string_tail_depth', property: 'story_string_tail_depth', isCheckbox: false, isGlobalSetting: false },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
