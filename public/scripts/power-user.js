@@ -2136,7 +2136,7 @@ export function renderStoryString(params, { customStoryString = null, customInst
         output = output.replace(/^\n+/, '');
 
         // add a newline to the end of the story string if it doesn't have one
-        if (output.length > 0 && !output.endsWith('\n') && storyStringPosition != extension_prompt_types.IN_CHAT) {
+        if (output.length > 0 && !output.endsWith('\n') && storyStringPosition !== extension_prompt_types.IN_CHAT) {
             if (!instructSettings.enabled || instructSettings.wrap) {
                 output += '\n';
             }
