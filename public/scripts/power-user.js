@@ -2178,7 +2178,7 @@ export function renderStoryString(params, { customStoryString = null, customInst
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n') && storyStringPosition !== extension_prompt_types.IN_CHAT) {
-            if (!instructSettings.enabled || !instructSettings.story_string_suffix) {
+            if (!instructSettings.enabled || (instructSettings.wrap && !instructSettings.story_string_suffix)) {
                 output += '\n';
             }
         }
