@@ -3764,11 +3764,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
     }
 
-    if (power_user.context.story_string_tail) {
-        // we add a placeholder here and then replace it later
-        setExtensionPrompt('story_string_tail', '__SILLYTAVERN__STORY_STRING_TAIL__', 1, 1, false, extension_prompt_roles.SYSTEM);
-    }
-
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
         // Add all depth WI entries to prompt
@@ -4274,6 +4269,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         // Flattens the multiple prompt objects to a string.
         const combine = () => {
+            let storyStringWrapped = beforeScenarioAnchor + storyString + afterScenarioAnchor;
+
+            if (power_user.context.story_string_tail) {
+                finalMesSend[finalMesSend.length - 1].extensionPrompts.splice(0, 0, storyStringWrapped);
+                storyStringWrapped = '';
+            }
+
             // Right now, everything is suffixed with a newline
             mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
 
@@ -4283,19 +4285,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             // add chat preamble
             mesSendString = addChatsPreamble(mesSendString);
 
-            const storyStringWrapped = beforeScenarioAnchor + storyString + afterScenarioAnchor;
-
             let combinedPrompt = (
-                power_user.context.story_string_tail
-                    ?
-                    mesExmString +
-                    mesSendString.replace('__SILLYTAVERN__STORY_STRING_TAIL__', storyStringWrapped) +
-                    generatedPromptCache
-                    :
-                    storyStringWrapped +
-                    mesExmString +
-                    mesSendString +
-                    generatedPromptCache
+                storyStringWrapped +
+                mesExmString +
+                mesSendString +
+                generatedPromptCache
             );
 
             combinedPrompt = combinedPrompt.replace(/\r/gm, '');
