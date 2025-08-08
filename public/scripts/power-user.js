@@ -27,6 +27,8 @@ import {
     doNewChat,
     online_status,
     messageFormatting,
+    extension_prompt_types,
+    extension_prompt_roles,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -227,8 +229,8 @@ export const power_user = {
         first_output_sequence: '',
         last_input_sequence: '',
         last_output_sequence: '',
-        system_sequence_prefix: '',
-        system_sequence_suffix: '',
+        story_string_prefix: '',
+        story_string_suffix: '',
         stop_sequence: '',
         wrap: true,
         macro: true,
@@ -249,6 +251,9 @@ export const power_user = {
         example_separator: defaultExampleSeparator,
         use_stop_strings: true,
         names_as_stop_strings: true,
+        story_string_position: extension_prompt_types.IN_PROMPT,
+        story_string_role: extension_prompt_roles.SYSTEM,
+        story_string_depth: 1,
     },
 
     instruct_derived: false,
@@ -347,6 +352,9 @@ const contextControls = [
     { id: 'context_chat_start', property: 'chat_start', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
     { id: 'context_names_as_stop_strings', property: 'names_as_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: true },
+    { id: 'context_story_string_position', property: 'story_string_position', isCheckbox: false, isGlobalSetting: false, defaultValue: extension_prompt_types.IN_PROMPT, trigger: true },
+    { id: 'context_story_string_depth', property: 'story_string_depth', isCheckbox: false, isGlobalSetting: false, defaultValue: 1 },
+    { id: 'context_story_string_role', property: 'story_string_role', isCheckbox: false, isGlobalSetting: false, defaultValue: extension_prompt_roles.SYSTEM },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
@@ -1881,7 +1889,10 @@ async function loadContextSettings() {
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
         $element.on('input', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            let value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            if (typeof control.defaultValue === 'number') {
+                value = Number(value);
+            }
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
@@ -1893,6 +1904,10 @@ async function loadContextSettings() {
             }
             saveSettingsDebounced();
         });
+
+        if (control.trigger) {
+            $element.trigger('input');
+        }
     });
 
     context_presets.forEach((preset) => {
@@ -2095,12 +2110,15 @@ export function fuzzySearchGroups(searchValue, fuzzySearchCaches = null) {
  * @param {object} [options] Additional options.
  * @param {string} [options.customStoryString] Custom story string template.
  * @param {InstructSettings} [options.customInstructSettings] Custom instruct settings.
+ * @param {ContextSettings} [options.customContextSettings] Custom context settings.
  * @returns {string} The rendered story string.
  */
-export function renderStoryString(params, { customStoryString = null, customInstructSettings = null } = {}) {
+export function renderStoryString(params, { customStoryString = null, customInstructSettings = null, customContextSettings = null } = {}) {
     try {
-        const storyString = customStoryString ?? power_user.context.story_string;
         const instructSettings = structuredClone(customInstructSettings ?? power_user.instruct);
+        const contextSettings = structuredClone(customContextSettings ?? power_user.context);
+        const storyString = customStoryString ?? contextSettings.story_string;
+        const storyStringPosition = contextSettings.story_string_position ?? extension_prompt_types.IN_PROMPT;
 
         // Validate and log possible warnings/errors
         validateStoryString(storyString, params);
@@ -2118,7 +2136,7 @@ export function renderStoryString(params, { customStoryString = null, customInst
         output = output.replace(/^\n+/, '');
 
         // add a newline to the end of the story string if it doesn't have one
-        if (output.length > 0 && !output.endsWith('\n')) {
+        if (output.length > 0 && !output.endsWith('\n') && storyStringPosition != extension_prompt_types.IN_CHAT) {
             if (!instructSettings.enabled || instructSettings.wrap) {
                 output += '\n';
             }
@@ -3270,6 +3288,11 @@ jQuery(() => {
 
     $('#context_size_derived').on('change', function () {
         $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
+    });
+
+    $('#context_story_string_position').on('input', function () {
+        const value = Number($(this).val());
+        $('#context_story_string_inject_settings').toggle(value === extension_prompt_types.IN_CHAT);
     });
 
     $('#bind_model_templates').on('input', function () {

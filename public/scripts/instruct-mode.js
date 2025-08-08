@@ -1,6 +1,6 @@
 'use strict';
 
-import { name1, name2, online_status, saveSettingsDebounced, substituteParams } from '../script.js';
+import { extension_prompt_types, name1, name2, online_status, saveSettingsDebounced, substituteParams } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { parseExampleIntoIndividual } from './openai.js';
 import {
@@ -24,8 +24,8 @@ const controls = [
     { id: 'instruct_enabled', property: 'enabled', isCheckbox: true },
     { id: 'instruct_wrap', property: 'wrap', isCheckbox: true },
     { id: 'instruct_macro', property: 'macro', isCheckbox: true },
-    { id: 'instruct_system_sequence_prefix', property: 'system_sequence_prefix', isCheckbox: false },
-    { id: 'instruct_system_sequence_suffix', property: 'system_sequence_suffix', isCheckbox: false },
+    { id: 'instruct_story_string_prefix', property: 'story_string_prefix', isCheckbox: false },
+    { id: 'instruct_story_string_suffix', property: 'story_string_suffix', isCheckbox: false },
     { id: 'instruct_input_sequence', property: 'input_sequence', isCheckbox: false },
     { id: 'instruct_input_suffix', property: 'input_suffix', isCheckbox: false },
     { id: 'instruct_output_sequence', property: 'output_sequence', isCheckbox: false },
@@ -81,6 +81,8 @@ function migrateInstructModeSettings(settings) {
         system_same_as_user: false,
         names_behavior: names_behavior_types.FORCE,
         sequences_as_stop_strings: true,
+        story_string_prefix: '',
+        story_string_suffix: '',
     };
 
     for (let key in defaults) {
@@ -445,29 +447,48 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 /**
  * Formats instruct mode system prompt.
  * @param {string} systemPrompt System prompt string.
- * @param {InstructSettings} customInstruct Custom instruct mode settings.
+ * @param {InstructSettings} _customInstruct Custom instruct mode settings.
  * @returns {string} Formatted instruct mode system prompt.
+ * @deprecated Currently doesn't do anything useful.
  */
-export function formatInstructModeSystemPrompt(systemPrompt, customInstruct = null) {
+export function formatInstructModeSystemPrompt(systemPrompt, _customInstruct = null) {
     if (!systemPrompt) {
         return '';
     }
-
-    const instruct = structuredClone(customInstruct ?? power_user.instruct);
-
-    const separator = instruct.wrap ? '\n' : '';
-
-    if (instruct.system_sequence_prefix) {
-        // TODO: Replace with a proper 'System' prompt entity name input
-        const prefix = instruct.system_sequence_prefix.replace(/{{name}}/gi, 'System');
-        systemPrompt = prefix + separator + systemPrompt;
-    }
-
-    if (instruct.system_sequence_suffix) {
-        systemPrompt = systemPrompt + separator + instruct.system_sequence_suffix;
-    }
-
     return systemPrompt;
+}
+
+/**
+ * Formats instruct mode story string.
+ * @param {string} storyString Story string and anchors
+ * @param {object} [params]
+ * @param {ContextSettings} [params.customContext] Custom context settings.
+ * @param {InstructSettings} [params.customInstruct] Custom instruct mode settings.
+ * @returns {string} Formatted instruct mode story string.
+ */
+export function formatInstructModeStoryString(storyString, { customContext = null, customInstruct = null } = {}) {
+    if (!storyString) {
+        return '';
+    }
+
+    const instructSettings = structuredClone(customInstruct ?? power_user.instruct);
+    const contextSettings = structuredClone(customContext ?? power_user.context);
+    const storyStringPosition = contextSettings.story_string_position ?? extension_prompt_types.IN_PROMPT;
+
+    // Only wrap if not in-chat position (it will be wrapped by message sequences instead)
+    const applySequences = storyStringPosition !== extension_prompt_types.IN_CHAT;
+    const separator = instructSettings.wrap ? '\n' : '';
+    if (applySequences && instructSettings.story_string_prefix) {
+        // TODO: Replace with a proper 'System' prompt entity name input
+        const prefix = instructSettings.story_string_prefix.replace(/{{name}}/gi, 'System');
+        storyString = prefix + separator + storyString;
+    }
+
+    if (applySequences && instructSettings.story_string_suffix) {
+        storyString = storyString + separator + instructSettings.story_string_suffix;
+    }
+
+    return storyString;
 }
 
 /**
@@ -644,13 +665,13 @@ export function getInstructMacros(env) {
     const instructMacros = [
         // Instruct template macros
         {
-            key: 'instructSystemPromptPrefix',
-            value: power_user.instruct.system_sequence_prefix,
+            key: 'instructStoryStringPrefix',
+            value: power_user.instruct.story_string_prefix,
             enabled: power_user.instruct.enabled,
         },
         {
-            key: 'instructSystemPromptSuffix',
-            value: power_user.instruct.system_sequence_suffix,
+            key: 'instructStoryStringSuffix',
+            value: power_user.instruct.story_string_suffix,
             enabled: power_user.instruct.enabled,
         },
         {
