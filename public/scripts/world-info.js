@@ -5725,39 +5725,11 @@ export function initWorldInfo() {
     //**************************WORLD EDITOR SELECT*************************//
     if (!isMobile()) {
         $('#world_editor_select').select2({
-            width: '100%',
+            width: '30%',
             placeholder: t`--- Pick to Edit ---`,
-            allowClear: false,
+            allowClear: true,
             closeOnSelect: true,
             multiple: false,
-            minimumInputLength: 0,
-            maximumInputLength: 50,
-            language: {
-                inputTooShort: function() { return t`Please enter 0 or more characters`; },
-                inputTooLong: function() { return t`Please delete 0 or more characters`; },
-                noResults: function() { return t`No worlds found`; },
-                searching: function() { return t`Searching...`; },
-            },
-            matcher: function(params, data) {
-                if (params.term.trim() === '') return data;
-                if (typeof data.text === 'undefined') return null;
-                if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) return data;
-                return null;
-            },
-            templateResult: function(data) {
-                if (!data.id) return data.text;
-                return $(`<span class="world-editor-option">
-                    <i class="fa-solid fa-book"></i>
-                    <span class="world-name">${data.text}</span>
-                </span>`);
-            },
-            templateSelection: function(data) {
-                if (!data.id) return data.text;
-                return $(`<span class="world-editor-selection">
-                    <i class="fa-solid fa-book"></i>
-                    <span class="world-name">${data.text}</span>
-                </span>`);
-            },
         });
     }
 
