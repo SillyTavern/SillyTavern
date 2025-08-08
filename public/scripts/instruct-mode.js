@@ -485,7 +485,7 @@ export function formatInstructModeStoryString(storyString, { customContext = nul
     }
 
     if (applySequences && instructSettings.story_string_suffix) {
-        storyString = storyString + separator + instructSettings.story_string_suffix;
+        storyString = storyString + instructSettings.story_string_suffix;
     }
 
     return storyString;

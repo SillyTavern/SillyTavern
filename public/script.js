@@ -3779,7 +3779,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // Collect before / after story string injections
-    const beforeScenarioAnchor = (await getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT)).trimStart();
+    const beforeScenarioAnchor = await getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT);
     const afterScenarioAnchor = await getExtensionPrompt(extension_prompt_types.IN_PROMPT);
 
     const storyStringParams = {
@@ -3794,13 +3794,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         wiAfter: worldInfoAfter,
         loreBefore: worldInfoBefore,
         loreAfter: worldInfoAfter,
+        anchorBefore: beforeScenarioAnchor.trim(),
+        anchorAfter: afterScenarioAnchor.trim(),
         mesExamples: mesExamplesArray.join(''),
         mesExamplesRaw: mesExamplesRawArray.join(''),
     };
 
     // Render the story string and combine with injections
     const storyString = renderStoryString(storyStringParams);
-    let combinedStoryString = ((x) => (isInstruct ? formatInstructModeStoryString(x) : x))([beforeScenarioAnchor, storyString, afterScenarioAnchor].join(''));
+    let combinedStoryString = isInstruct ? formatInstructModeStoryString(storyString) : storyString;
 
     // Inject the story string as in-chat prompt (if needed)
     const applyStoryStringInject = main_api !== 'openai' && power_user.context.story_string_position === extension_prompt_types.IN_CHAT;

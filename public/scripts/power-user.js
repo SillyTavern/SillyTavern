@@ -2117,11 +2117,8 @@ export function renderStoryString(params, { customStoryString = null, customInst
     try {
         const instructSettings = structuredClone(customInstructSettings ?? power_user.instruct);
         const contextSettings = structuredClone(customContextSettings ?? power_user.context);
-        const storyString = customStoryString ?? contextSettings.story_string;
+        const storyString = validateStoryString(customStoryString ?? contextSettings.story_string, params);
         const storyStringPosition = contextSettings.story_string_position ?? extension_prompt_types.IN_PROMPT;
-
-        // Validate and log possible warnings/errors
-        validateStoryString(storyString, params);
 
         // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(storyString, { noEscape: true });
@@ -2137,7 +2134,7 @@ export function renderStoryString(params, { customStoryString = null, customInst
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n') && storyStringPosition !== extension_prompt_types.IN_CHAT) {
-            if (!instructSettings.enabled || instructSettings.wrap) {
+            if (!instructSettings.enabled || !instructSettings.story_string_suffix) {
                 output += '\n';
             }
         }
@@ -2155,6 +2152,7 @@ export function renderStoryString(params, { customStoryString = null, customInst
  *
  * @param {string} storyString - The story string
  * @param {Object} params - The story string parameters
+ * @returns {string} Auto-fixed story string (if any fixes were applied)
  */
 function validateStoryString(storyString, params) {
     /** @type {{hashCache: {[hash: string]: {fieldsWarned: {[key: string]: boolean}}}}} */
@@ -2182,6 +2180,24 @@ function validateStoryString(storyString, params) {
         }
     }
 
+    /**
+     * Auto-fix missing field in the story string
+     * @param {string} field Missing field name
+     * @param {'start'|'end'} position Position of auto-fix
+     * @returns {string} Auto-fixed story string (if any fixes were applied)
+     */
+    function autoFixMissingField(field, position) {
+        if (!storyString.includes(`{{${field}}}`) && params[field]) {
+            console.warn(`[Story String Validation] Story String is missing a field: ${field}. Consider adding it to the story string template.`);
+            const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
+            const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
+            storyString = position === 'start'
+                ? fieldTemplate + storyString
+                : storyString.substring(0, lastTrimPosition) + fieldTemplate + storyString.substring(lastTrimPosition);
+        }
+        return storyString;
+    }
+
     validateMissingField('description');
     validateMissingField('personality');
     validateMissingField('persona');
@@ -2196,6 +2212,11 @@ function validateStoryString(storyString, params) {
     }
 
     accountStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
+
+    storyString = autoFixMissingField('anchorBefore', 'start');
+    storyString = autoFixMissingField('anchorAfter', 'end');
+
+    return storyString;
 }
 
 
