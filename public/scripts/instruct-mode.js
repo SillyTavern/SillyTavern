@@ -76,7 +76,6 @@ function migrateInstructModeSettings(settings) {
         last_system_sequence: '',
         first_input_sequence: '',
         last_input_sequence: '',
-        names_force_groups: true,
         skip_examples: false,
         system_same_as_user: false,
         names_behavior: names_behavior_types.FORCE,
