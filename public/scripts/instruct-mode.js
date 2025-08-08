@@ -480,12 +480,13 @@ export function formatInstructModeStoryString(storyString, { customContext = nul
     const separator = instructSettings.wrap ? '\n' : '';
     if (applySequences && instructSettings.story_string_prefix) {
         // TODO: Replace with a proper 'System' prompt entity name input
-        const prefix = instructSettings.story_string_prefix.replace(/{{name}}/gi, 'System');
+        const prefix = substituteParams(instructSettings.story_string_prefix).replace(/{{name}}/gi, 'System');
         storyString = prefix + separator + storyString;
     }
 
     if (applySequences && instructSettings.story_string_suffix) {
-        storyString = storyString + instructSettings.story_string_suffix;
+        const suffix = substituteParams(instructSettings.story_string_suffix);
+        storyString = storyString + suffix;
     }
 
     return storyString;
