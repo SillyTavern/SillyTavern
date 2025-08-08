@@ -6,9 +6,8 @@
     "stop_sequence": "<|im_end|>",
     "wrap": false,
     "macro": true,
+    "names_behavior": "force",
     "activation_regex": "",
-    "system_sequence_prefix": "",
-    "system_sequence_suffix": "",
     "first_output_sequence": "",
     "skip_examples": false,
     "output_suffix": "<|im_end|>",
@@ -19,6 +18,8 @@
     "last_system_sequence": "",
     "first_input_sequence": "",
     "last_input_sequence": "",
-    "names_behavior": "force",
+    "sequences_as_stop_strings": true,
+    "story_string_prefix": "<|im_system|>system<|im_middle|>",
+    "story_string_suffix": "<|im_end|>",
     "name": "Moonshot AI"
 }
