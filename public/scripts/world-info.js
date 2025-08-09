@@ -5697,6 +5697,14 @@ export function initWorldInfo() {
 
     // Not needed on mobile
     if (!isMobile()) {
+        $('#world_editor_select').select2({
+            placeholder: t`--- Pick to Edit ---`,
+            searchInputPlaceholder: t`Search...`,
+            allowClear: true,
+            closeOnSelect: true,
+            multiple: false,
+        });
+
         $('#world_info').select2({
             width: '100%',
             placeholder: t`No Worlds active. Click here to select.`,
@@ -5716,21 +5724,6 @@ export function initWorldInfo() {
                 console.warn('lets not reload an already loaded list yes?');
             }
         }, { buttonStyle: true, closeDrawer: true });
-    }
-
-    //**************************WORLD EDITOR SELECT*************************//
-    // Use select2 for the world editor select to filter and search for worlds to edit
-    // Makes it easier to find the world you want to edit in case of many worlds
-    // Limits the input length to 50 characters
-    //**************************WORLD EDITOR SELECT*************************//
-    if (!isMobile()) {
-        $('#world_editor_select').select2({
-            width: '30%',
-            placeholder: t`--- Pick to Edit ---`,
-            allowClear: true,
-            closeOnSelect: true,
-            multiple: false,
-        });
     }
 
     $('#WorldInfo').on('scroll', () => {
