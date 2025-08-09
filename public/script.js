@@ -5338,11 +5338,7 @@ export function extractMessageFromData(data, activeApi = null) {
             case 'koboldhorde':
                 return data.text;
             case 'textgenerationwebui':
-                return data.choices?.[0]?.text
-                    ?? data.choices?.[0]?.message?.content
-                    ?? data.content
-                    ?? data.response
-                    ?? '';
+                return data.choices?.[0]?.text ?? data.choices?.[0]?.message?.content ?? data.content ?? data.response ?? '';
             case 'novel':
                 return data.output;
             case 'openai':
