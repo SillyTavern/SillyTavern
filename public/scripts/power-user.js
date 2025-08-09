@@ -1874,7 +1874,7 @@ async function loadContextSettings() {
      */
     function autoFixStoryString(contextSettings) {
         // Already migrated, no need to fix
-        if (!contextControls || Object.hasOwn(contextSettings, 'story_string_position')) {
+        if (!contextSettings || Object.hasOwn(contextSettings, 'story_string_position')) {
             return;
         }
 
