@@ -19,7 +19,7 @@
     "first_input_sequence": "",
     "last_input_sequence": "",
     "sequences_as_stop_strings": true,
-    "story_string_prefix": "",
-    "story_string_suffix": "",
+    "story_string_prefix": "{{[SYSTEM]}}",
+    "story_string_suffix": "{{[SYSTEM_END]}}",
     "name": "KoboldAI"
 }
