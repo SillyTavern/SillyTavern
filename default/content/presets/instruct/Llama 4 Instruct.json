@@ -8,8 +8,6 @@
     "macro": true,
     "names_behavior": "force",
     "activation_regex": "",
-    "system_sequence_prefix": "",
-    "system_sequence_suffix": "",
     "first_output_sequence": "",
     "skip_examples": false,
     "output_suffix": "<|eot|>",
@@ -18,5 +16,10 @@
     "user_alignment_message": "",
     "system_same_as_user": false,
     "last_system_sequence": "",
+    "first_input_sequence": "",
+    "last_input_sequence": "",
+    "sequences_as_stop_strings": true,
+    "story_string_prefix": "<|begin_of_text|><|header_start|>system<|header_end|>\n\n",
+    "story_string_suffix": "<|eot|>",
     "name": "Llama 4 Instruct"
 }

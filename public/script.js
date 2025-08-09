@@ -176,7 +176,7 @@ import {
     renderPaginationDropdown,
     paginationDropdownChangeHandler,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -217,8 +217,8 @@ import {
     formatInstructModeChat,
     formatInstructModePrompt,
     formatInstructModeExamples,
+    formatInstructModeStoryString,
     getInstructStoppingSequences,
-    formatInstructModeSystemPrompt,
 } from './scripts/instruct-mode.js';
 import { initLocales, t } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -3108,7 +3108,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeSystemPrompt(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -3577,7 +3577,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             system = power_user.prefer_character_prompt && system
                 ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
                 : baseChatReplace(power_user.sysprompt.content, name1, name2);
-            system = isInstruct ? formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.sysprompt.content)) : system;
+            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
         } else {
             // Nullify if it's not enabled
             system = '';
@@ -3591,13 +3591,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
         groupDepthPrompts.forEach((value, index) => {
             const role = getExtensionPromptRoleByName(value.role);
-            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
+            setExtensionPrompt(inject_ids.DEPTH_PROMPT_INDEX(index), value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
         });
     } else {
         const depthPromptText = charDepthPrompt || '';
         const depthPromptDepth = characters[this_chid]?.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
         const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid]?.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
+        setExtensionPrompt(inject_ids.DEPTH_PROMPT, depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
@@ -3723,7 +3723,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
-    setExtensionPrompt('QUIET_PROMPT', quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
+    setExtensionPrompt(inject_ids.QUIET_PROMPT, quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
     const chatForWI = coreChat.map(x => world_info_include_names ? `${x.name}: ${x.mes}` : x.mes).reverse();
     /** @type {import('./scripts/world-info.js').WIGlobalScanData} */
     const globalScanData = {
@@ -3736,7 +3736,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         trigger: GENERATION_TYPE_TRIGGERS.includes(type) ? type : 'normal',
     };
     const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
-    setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
+    setExtensionPrompt(inject_ids.QUIET_PROMPT, '', extension_prompt_types.IN_PROMPT, 0, true);
 
     // Add message example WI
     for (const example of worldInfoExamples) {
@@ -3771,11 +3771,54 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (Array.isArray(worldInfoDepth)) {
             worldInfoDepth.forEach((e) => {
                 const joinedEntries = e.entries.join('\n');
-                setExtensionPrompt(`customDepthWI-${e.depth}-${e.role}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
+                setExtensionPrompt(inject_ids.CUSTOM_WI_DEPTH_ROLE(e.depth, e.role), joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
             });
         }
     } else {
         console.log('skipping WIAN');
+    }
+
+    // Collect before / after story string injections
+    const beforeScenarioAnchor = await getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT);
+    const afterScenarioAnchor = await getExtensionPrompt(extension_prompt_types.IN_PROMPT);
+
+    const storyStringParams = {
+        description: description,
+        personality: personality,
+        persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
+        scenario: scenario,
+        system: system,
+        char: name2,
+        user: name1,
+        wiBefore: worldInfoBefore,
+        wiAfter: worldInfoAfter,
+        loreBefore: worldInfoBefore,
+        loreAfter: worldInfoAfter,
+        anchorBefore: beforeScenarioAnchor.trim(),
+        anchorAfter: afterScenarioAnchor.trim(),
+        mesExamples: mesExamplesArray.join(''),
+        mesExamplesRaw: mesExamplesRawArray.join(''),
+    };
+
+    // Render the story string and combine with injections
+    const storyString = renderStoryString(storyStringParams);
+    let combinedStoryString = isInstruct ? formatInstructModeStoryString(storyString) : storyString;
+
+    // Inject the story string as in-chat prompt (if needed)
+    const applyStoryStringInject = main_api !== 'openai' && power_user.context.story_string_position === extension_prompt_types.IN_CHAT;
+    if (applyStoryStringInject) {
+        const depth = power_user.context.story_string_depth ?? 1;
+        const role = power_user.context.story_string_role ?? extension_prompt_roles.SYSTEM;
+        setExtensionPrompt(inject_ids.STORY_STRING, combinedStoryString, extension_prompt_types.IN_CHAT, depth, false, role);
+        // Remove to prevent duplication
+        combinedStoryString = '';
+    } else {
+        setExtensionPrompt(inject_ids.STORY_STRING, '', extension_prompt_types.IN_CHAT, 0);
+    }
+
+    // Story string rendered, safe to remove
+    if (power_user.strip_examples) {
+        mesExamplesArray = [];
     }
 
     // Inject all Depth prompts. Chat Completion does it separately
@@ -3867,33 +3910,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, force_output_sequence.FIRST);
     }
 
-    // Call combined AN into Generate
-    const beforeScenarioAnchor = (await getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT)).trimStart();
-    const afterScenarioAnchor = await getExtensionPrompt(extension_prompt_types.IN_PROMPT);
-
-    const storyStringParams = {
-        description: description,
-        personality: personality,
-        persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
-        scenario: scenario,
-        system: system,
-        char: name2,
-        user: name1,
-        wiBefore: worldInfoBefore,
-        wiAfter: worldInfoAfter,
-        loreBefore: worldInfoBefore,
-        loreAfter: worldInfoAfter,
-        mesExamples: mesExamplesArray.join(''),
-        mesExamplesRaw: mesExamplesRawArray.join(''),
-    };
-
-    const storyString = renderStoryString(storyStringParams);
-
-    // Story string rendered, safe to remove
-    if (power_user.strip_examples) {
-        mesExamplesArray = [];
-    }
-
     let oaiMessages = [];
     let oaiMessageExamples = [];
 
@@ -3913,9 +3929,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     async function getMessagesTokenCount() {
         const encodeString = [
-            beforeScenarioAnchor,
-            storyString,
-            afterScenarioAnchor,
+            combinedStoryString,
             examplesString,
             userAlignmentMessage,
             chatString,
@@ -4177,9 +4191,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         setPromptString();
         const jointMessages = mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
         const prompt = [
-            beforeScenarioAnchor,
-            storyString,
-            afterScenarioAnchor,
+            combinedStoryString,
             mesExmString,
             addChatsPreamble(addChatsSeparator(jointMessages)),
             '\n',
@@ -4278,14 +4290,12 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             // add chat preamble
             mesSendString = addChatsPreamble(mesSendString);
 
-            let combinedPrompt = beforeScenarioAnchor +
-                storyString +
-                afterScenarioAnchor +
-                mesExmString +
-                mesSendString +
-                generatedPromptCache;
-
-            combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+            let combinedPrompt = [
+                combinedStoryString,
+                mesExmString,
+                mesSendString,
+                generatedPromptCache,
+            ].join('').replace(/\r/gm, '');
 
             if (power_user.collapse_newlines) {
                 combinedPrompt = collapseNewlines(combinedPrompt);
@@ -4774,7 +4784,7 @@ async function doChatInject(messages, isContinue) {
 function flushWIDepthInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
     for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith('customDepthWI')) {
+        if (key.startsWith(inject_ids.CUSTOM_WI_DEPTH)) {
             delete extension_prompts[key];
         }
     }
@@ -5328,11 +5338,7 @@ export function extractMessageFromData(data, activeApi = null) {
             case 'koboldhorde':
                 return data.text;
             case 'textgenerationwebui':
-                return data.choices?.[0]?.text
-                ?? data.choices?.[0]?.message?.content
-                ?? data.content
-                ?? data.response
-                ?? '';
+                return data.choices?.[0]?.text ?? data.choices?.[0]?.message?.content ?? data.content ?? data.response ?? '';
             case 'novel':
                 return data.output;
             case 'openai':
@@ -7707,7 +7713,7 @@ export function getExtensionPromptRoleByName(roleName) {
  */
 export function removeDepthPrompts() {
     for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith('DEPTH_PROMPT')) {
+        if (key.startsWith(inject_ids.DEPTH_PROMPT)) {
             delete extension_prompts[key];
         }
     }

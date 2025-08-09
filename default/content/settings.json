@@ -160,8 +160,6 @@
             "macro": true,
             "names_behavior": "force",
             "activation_regex": "",
-            "system_sequence_prefix": "",
-            "system_sequence_suffix": "",
             "first_output_sequence": "",
             "skip_examples": false,
             "output_suffix": "\n\n",
