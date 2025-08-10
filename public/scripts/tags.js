@@ -393,6 +393,10 @@ function createTagMapFromList(listElement, key) {
  * @returns {Tag[]} A list of tags
  */
 function getTagsList(key, sort = true) {
+    if (key === null || key === undefined) {
+        return [];
+    }
+
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
         return [];
@@ -1547,6 +1551,44 @@ function onTagsBackupClick() {
     download(blob, filename, 'application/json');
 }
 
+async function onTagsPruneClick() {
+    // Get tags which have zero tag map entries
+    const allTagsInTagMaps = new Set(Object.values(tag_map).flat());
+    const tagsToPrune = tags.filter(tag => !allTagsInTagMaps.has(tag.id));
+
+    // Get tag maps referring to deleted entities
+    const allEntityKeys = new Set([...characters.map(c => String(c.avatar)), ...groups.map(g => String(g.id))]);
+    const tagMapsToPrune = Object.keys(tag_map).filter(key => !allEntityKeys.has(key));
+
+    if (!tagsToPrune.length && !tagMapsToPrune.length) {
+        toastr.info(t`No unused tags or references found.`);
+        return;
+    }
+
+    const confirm = await Popup.show.confirm(t`Prune ${tagsToPrune.length} tags and ${tagMapsToPrune.length} references`, t`Are you sure you want to remove all unused tags and references to missing or deleted characters and groups?`);
+
+    if (!confirm) {
+        return;
+    }
+
+    for (const tag of tagsToPrune) {
+        tags.splice(tags.indexOf(tag), 1);
+    }
+
+    for (const key of tagMapsToPrune) {
+        delete tag_map[key];
+    }
+
+    printCharactersDebounced();
+    saveSettingsDebounced();
+
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
+
+    toastr.success(t`Unused tags pruned successfully.`);
+}
+
 function onTagCreateClick() {
     const tagName = getFreeName('New Tag', tags.map(x => x.name));
     const tag = createNewTag(tagName);
@@ -2198,6 +2240,7 @@ export function initTags() {
     $(document).on('click', '.tag_view_create', onTagCreateClick);
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
+    $(document).on('click', '.tag_view_prune', onTagsPruneClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
