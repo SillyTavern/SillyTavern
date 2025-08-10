@@ -1083,6 +1083,44 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sysgen',
         callback: generateSystemMessage,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'trim',
+                description: 'Trim the output by the last sentence boundary',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                isRequired: false,
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'compact',
+                description: 'Use a compact layout for the message',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                isRequired: false,
+                acceptsMultiple: false,
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'Position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values (including -0) are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Optional custom display name to use for this system narrator message.',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], true,
@@ -1629,6 +1667,14 @@ export function initDefaultSlashCommands() {
         callback: generateCallback,
         returns: 'generated text',
         namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'trim',
+                description: 'Trim the output by the last sentence boundary',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                isRequired: false,
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
             new SlashCommandNamedArgument(
                 'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
             ),
@@ -3679,6 +3725,7 @@ async function generateCallback(args, value) {
     // Prevent generate recursion
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     const lock = isTrueBoolean(args?.lock);
+    const trim = isTrueBoolean(args?.trim?.toString());
     const as = args?.as || 'system';
     const quietToLoud = as === 'char';
     const length = Number(resolveVariable(args?.length) ?? 0) || 0;
@@ -3697,6 +3744,7 @@ async function generateCallback(args, value) {
             quietToLoud: quietToLoud,
             quietName: char?.name ?? name,
             responseLength: length,
+            trimToSentence: trim,
         };
         const result = await generateQuietPrompt(params);
         return result;
@@ -4358,7 +4406,7 @@ async function continueChatCallback(args, prompt) {
     return '';
 }
 
-export async function generateSystemMessage(_, prompt) {
+export async function generateSystemMessage(args, prompt) {
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
     if (!prompt) {
@@ -4367,13 +4415,14 @@ export async function generateSystemMessage(_, prompt) {
         return '';
     }
 
-    // Generate and regex the output if applicable
-    toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt({ quietPrompt: prompt });
-    message = getRegexedString(message, regex_placement.SLASH_COMMAND);
+    const trim = isTrueBoolean(args?.trim?.toString());
 
-    sendNarratorMessage(_, message);
-    return '';
+    // Generate and regex the output if applicable
+    const toast = toastr.info('Please wait', 'Generating...');
+    const message = await generateQuietPrompt({ quietPrompt: prompt, trimToSentence: trim });
+    toastr.clear(toast);
+
+    return await sendNarratorMessage(args, getRegexedString(message, regex_placement.SLASH_COMMAND));
 }
 
 function setStoryModeCallback() {
