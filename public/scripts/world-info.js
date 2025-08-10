@@ -1916,14 +1916,19 @@ export async function updateWorldInfoList() {
     });
 
     if (result.ok) {
-        var data = await result.json();
+        const data = await result.json();
+        const editorSelected = String($('#world_editor_select').find(':selected').text());
         world_names = data.world_names?.length ? data.world_names : [];
         $('#world_info').find('option[value!=""]').remove();
         $('#world_editor_select').find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
-            $('#world_info').append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
-            $('#world_editor_select').append(`<option value='${i}'>${item}</option>`);
+            const globalListOption = new Option(item, i.toString());
+            globalListOption.selected = selected_world_info.includes(item);
+            const editorListOption = new Option(item, i.toString());
+            editorListOption.selected = editorSelected === item;
+            $('#world_info').append(globalListOption);
+            $('#world_editor_select').append(editorListOption);
         });
     }
 }
@@ -5738,6 +5743,14 @@ export function initWorldInfo() {
 
     // Not needed on mobile
     if (!isMobile()) {
+        $('#world_editor_select').select2({
+            placeholder: t`--- Pick to Edit ---`,
+            searchInputPlaceholder: t`Search...`,
+            allowClear: true,
+            closeOnSelect: true,
+            multiple: false,
+        });
+
         $('#world_info').select2({
             width: '100%',
             placeholder: t`No Worlds active. Click here to select.`,
