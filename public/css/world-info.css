@@ -185,6 +185,14 @@
     min-width: 6em;
 }
 
+#world_editor_select~.select2-container {
+    overflow: hidden;
+}
+
+#world_editor_select~.select2-container .select2-selection--single .select2-selection__rendered {
+    padding-right: 30px;
+}
+
 #world_editor_select~.select2-container .select2-selection .select2-selection__clear {
     right: 20px;
     display: flex;
