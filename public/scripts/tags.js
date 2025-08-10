@@ -2205,18 +2205,14 @@ function restoreSavedTagFilters() {
             ACTIONABLE_TAGS.FAV.filter_state = favState;
             entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
             groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
-            toggleTagThreeState($(`${CHARACTER_FILTER_SELECTOR} .tag[id='${ACTIONABLE_TAGS.FAV.id}']`), { stateOverride: favState, simulateClick: true });
-            toggleTagThreeState($(`${GROUP_FILTER_SELECTOR} .tag[id='${ACTIONABLE_TAGS.FAV.id}']`), { stateOverride: favState, simulateClick: true });
         }
         if (groupState) {
             ACTIONABLE_TAGS.GROUP.filter_state = groupState;
             entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
-            toggleTagThreeState($(`${CHARACTER_FILTER_SELECTOR} .tag[id='${ACTIONABLE_TAGS.GROUP.id}']`), { stateOverride: groupState, simulateClick: true });
         }
         if (folderState) {
             ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
             entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
-            toggleTagThreeState($(`${CHARACTER_FILTER_SELECTOR} .tag[id='${ACTIONABLE_TAGS.FOLDER.id}']`), { stateOverride: folderState, simulateClick: true });
         }
     } catch (e) {
         console.warn('Failed to restore actionable filter states from account storage', e);
