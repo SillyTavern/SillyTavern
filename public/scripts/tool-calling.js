@@ -724,7 +724,7 @@ export class ToolManager {
         }
 
         for (const toolCall of toolCalls) {
-            if (typeof toolCall.function !== 'object') {
+            if (!toolCall || !toolCall.function || typeof toolCall.function !== 'object') {
                 continue;
             }
 
