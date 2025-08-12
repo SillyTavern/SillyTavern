@@ -179,6 +179,7 @@ export const CHAT_COMPLETION_SOURCES = {
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
+    FIREWORKS: 'fireworks',
 };
 
 /**

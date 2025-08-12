@@ -185,6 +185,7 @@ export const chat_completion_sources = {
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
+    FIREWORKS: 'fireworks',
 };
 
 const character_names_behavior = {
@@ -458,6 +459,7 @@ const oai_settings = {
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     moonshot_model: 'kimi-latest',
+    fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1620,6 +1622,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.pollinations_model;
         case chat_completion_sources.MOONSHOT:
             return oai_settings.moonshot_model;
+        case chat_completion_sources.FIREWORKS:
+            return oai_settings.fireworks_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1871,6 +1875,40 @@ function saveModelList(data) {
         }
 
         $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
+        // Clear only the "-- Connect to the API --" option
+        $('#model_fireworks_select option[value=""]').remove();
+        // Add API models to the existing static options
+        model_list.forEach((model) => {
+            // Check if this model is already in the static list
+            if ($(`#model_fireworks_select option[value="${model.id}"]`).length === 0) {
+                $('#model_fireworks_select').append(
+                    $('<option>', {
+                        value: model.id,
+                        text: model.id,
+                    }));
+            }
+        });
+
+        // Re-add the "Connect to API" option at the end
+        $('#model_fireworks_select').append(
+            $('<option>', {
+                value: '',
+                text: '-- Connect to the API --',
+            }));
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.fireworks_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.fireworks_model)) {
+            // Keep the default model if it exists, otherwise use first API model
+            const defaultExists = $(`#model_fireworks_select option[value="${oai_settings.fireworks_model}"]`).length > 0;
+            if (!defaultExists && model_list.length > 0) {
+                oai_settings.fireworks_model = model_list[0].id;
+            }
+        }
+
+        $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
     }
 }
 
@@ -4627,6 +4665,15 @@ async function onModelChange() {
         oai_settings.moonshot_model = value;
     }
 
+    if ($(this).is('#model_fireworks_select')) {
+        if (!value) {
+            console.debug('Null Fireworks model selected. Ignoring.');
+            return;
+        }
+        console.log('Fireworks model changed to', value);
+        oai_settings.fireworks_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -5206,6 +5253,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
+        $('#model_fireworks_select').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -6139,6 +6189,7 @@ export function initOpenAI() {
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
+    $('#model_fireworks_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
