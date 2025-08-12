@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -652,6 +653,54 @@ function parseSoulkynUrl(url) {
 }
 
 /**
+ * Generate Soulkyn API headers.
+ * @param {string} slug Slug of the character
+ * @returns {Promise<object>} API headers
+ */
+async function generateSoulkynApiHeaders(slug) {
+    // Extract JS bundle URL from HTML
+    const personaUrl = `https://soulkyn.com/l/en-US/@${slug}`;
+    const personaResult = await fetch(personaUrl, {
+        headers: { 'User-Agent': USER_AGENT },
+    });
+    const html = await personaResult.text();
+    const bundleMatch = html.match(/<script[^>]+src="(\/assets\/index-[^"]+\.js)"/);
+    if (!bundleMatch) {
+        const msg = `Failed to extract website JS bundle: ${personaUrl}`;
+        console.error('Soulkyn returned error', msg);
+        throw new Error(`Failed to download character: ${msg}`);
+    }
+    const bundleUrl = `https://soulkyn.com${bundleMatch[1]}`;
+
+    // Extract key from bundle code
+    const bundleResult = await fetch(bundleUrl, { headers: { 'User-Agent': USER_AGENT } });
+    const jsCode = await bundleResult.text();
+    // The key length is currently 28 characters, but we allow a range to accommodate future changes
+    const keyMatch = jsCode.match(/const\s+\w+\s*=\s*['"]([a-f0-9]{20,60})['"]/i);
+    if (!keyMatch) {
+        const msg = 'Failed to extract key from JS bundle';
+        console.error('Soulkyn returned error', msg);
+        throw new Error(`Failed to download character: ${msg}`);
+    }
+    const keyHex = keyMatch[1];
+
+    // Create API headers
+    const timestamp = Date.now().toString();
+    const apiPath = `Sk/public/Persona/${slug}`;
+    const message = `GET${apiPath}${timestamp}`;
+    const keyBytes = Buffer.from(keyHex, 'utf8');
+    const msgBytes = Buffer.from(message, 'utf8');
+    const hmac = crypto.createHmac('sha256', keyBytes);
+    hmac.update(msgBytes);
+    const signature = hmac.digest('base64');
+
+    return {
+        'X-Timestamp': timestamp,
+        'X-Signature': signature,
+    };
+}
+
+/**
  * Download Soulkyn character card
  * @param {string} slug Slug of the character
  * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string} | null>}
@@ -679,9 +728,14 @@ async function downloadSoulkynCharacter(slug) {
     const normalizeContent = (str) => soulkynReplacements.reduce((acc, { pattern, replacement }) => acc.replace(pattern, replacement), str);
 
     try {
+        // Extract API data
         const url = `https://soulkyn.com/_special/rest/Sk/public/Persona/${slug}`;
         const result = await fetch(url, {
-            headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': USER_AGENT,
+                ...(await generateSoulkynApiHeaders(slug)),
+            },
         });
         if (result.ok) {
             /** @type {any} */
@@ -812,12 +866,15 @@ async function downloadSoulkynCharacter(slug) {
             const fileType = 'image/png';
 
             return { buffer, fileName, fileType };
+        } else {
+            const msg = `Failed to retrieve API data: ${result.status} ${await result.text()}`;
+            console.error('Soulkyn returned error', msg);
+            throw new Error(`Failed to download character: ${msg}`);
         }
     } catch (error) {
         console.error('Error downloading character:', error);
         throw error;
     }
-    return null;
 }
 
 /** * Check if the given string is a valid Perchance UUID.
