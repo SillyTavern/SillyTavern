@@ -28,6 +28,7 @@ import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { renderTemplateAsync } from './templates.js';
 import { t, translate } from './i18n.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -63,6 +64,12 @@ const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
+
+const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
+    GROUP: 'TagFilterState_GROUP',
+    FAV: 'TagFilterState_FAV',
+    FOLDER: 'TagFilterState_FOLDER',
+});
 
 /** @enum {number} */
 export const tag_filter_type = {
@@ -331,12 +338,14 @@ function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
 
 /**
  * Applies the favorite filter to the character list.
- * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ * @param {FilterHelper} _filterHelper Instance of FilterHelper class. Unused since it needs to be applied to both filters.
  */
-function filterByFav(filterHelper) {
+function filterByFav(_filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FAV.filter_state = state;
-    filterHelper.setFilterData(FILTER_TYPES.FAV, state);
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FAV, state);
+    entitiesFilter.setFilterData(FILTER_TYPES.FAV, state);
+    groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, state);
 }
 
 /**
@@ -346,6 +355,7 @@ function filterByFav(filterHelper) {
 function filterByGroups(filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.GROUP.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP, state);
     filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
 }
 
@@ -363,6 +373,7 @@ function filterByFolder(filterHelper) {
 
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER, state);
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
 }
 
@@ -2220,6 +2231,36 @@ function extractCharacterAvatar(avatarSrc) {
     }
 }
 
+function restoreSavedTagFilters() {
+    try {
+        const validStates = new Set(Object.keys(FILTER_STATES));
+        const readState = (/** @type {string} */ storageKey) => {
+            const v = accountStorage.getItem(storageKey);
+            return v && validStates.has(v) ? v : null;
+        };
+
+        const favState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
+        const groupState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
+        const folderState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
+
+        if (favState) {
+            ACTIONABLE_TAGS.FAV.filter_state = favState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+            groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+        }
+        if (groupState) {
+            ACTIONABLE_TAGS.GROUP.filter_state = groupState;
+            entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
+        }
+        if (folderState) {
+            ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
+        }
+    } catch (e) {
+        console.warn('Failed to restore actionable filter states from account storage', e);
+    }
+}
+
 export function initTags() {
     createTagInput('#tagInput', '#tagList', { tagOptions: { removable: true } });
     createTagInput('#groupTagInput', '#groupTagList', { tagOptions: { removable: true } });
@@ -2281,4 +2322,5 @@ export function initTags() {
     }
 
     registerTagsSlashCommands();
+    restoreSavedTagFilters();
 }

@@ -276,40 +276,36 @@ export async function RA_CountCharTokens() {
  * The character or group is selected (clicked) if it is found.
  */
 async function RA_autoloadchat() {
-    if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
-        // active character is the name, we should look it up in the character list and get the id
-        if (active_character !== null && active_character !== undefined) {
-            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
-            if (active_character_id !== -1) {
-                await selectCharacterById(active_character_id);
+    // active character is the name, we should look it up in the character list and get the id
+    if (active_character !== null && active_character !== undefined) {
+        const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+        if (active_character_id !== -1) {
+            await selectCharacterById(active_character_id);
 
-                // Do a little tomfoolery to spoof the tag selector
-                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
-                applyTagsOnCharacterSelect.call(selectedCharElement);
-            } else {
-                setActiveCharacter(null);
-                saveSettingsDebounced();
-                console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
-            }
+            // Do a little tomfoolery to spoof the tag selector
+            const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
+            applyTagsOnCharacterSelect.call(selectedCharElement);
+        } else {
+            setActiveCharacter(null);
+            saveSettingsDebounced();
+            console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
         }
+    }
 
-        if (active_group !== null && active_group !== undefined) {
-            if (active_character) {
-                console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+    if (active_group !== null && active_group !== undefined) {
+        if (active_character) {
+            console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+            setActiveGroup(null);
+            saveSettingsDebounced();
+        } else {
+            const result = await openGroupById(String(active_group));
+            if (!result) {
                 setActiveGroup(null);
                 saveSettingsDebounced();
-            } else {
-                const result = await openGroupById(String(active_group));
-                if (!result) {
-                    setActiveGroup(null);
-                    saveSettingsDebounced();
-                    console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
-                }
+                console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
             }
         }
-
-        // if the character list hadn't been loaded yet, try again.
-    } else { setTimeout(RA_autoloadchat, 100); }
+    }
 }
 
 export async function favsToHotswap() {
