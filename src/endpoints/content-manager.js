@@ -369,7 +369,7 @@ async function downloadChubLorebook(id) {
 
 async function downloadChubCharacter(id) {
     const [creatorName, projectName] = id.split('/');
-    const result = await fetch(`https://api.chub.ai/api/characters/${creatorName}/${projectName}`, {
+    const result = await fetch(`https://api.chub.ai/api/characters/${creatorName}/${projectName}?full=true`, {
         method: 'GET',
         headers: { 'Accept': 'application/json', 'User-Agent': USER_AGENT },
     });
@@ -382,25 +382,48 @@ async function downloadChubCharacter(id) {
 
     /** @type {any} */
     const metadata = await result.json();
-    const downloadUrl = metadata.node?.max_res_url;
+    const { definition, topics } = metadata.node;
 
-    if (!downloadUrl) {
-        throw new Error('Download URL not found in character metadata');
+    /** @type {TavernCardV2} */
+    const characterCard = {
+        data: {
+            name: definition.name,
+            description: definition.personality,
+            personality: definition.tavern_personality,
+            scenario: definition.scenario,
+            first_mes: definition.first_message,
+            mes_example: definition.example_dialogs,
+            creator_notes: definition.description,
+            system_prompt: definition.system_prompt,
+            post_history_instructions: definition.post_history_instructions,
+            alternate_greetings: definition.alternate_greetings,
+            tags: topics,
+            creator: creatorName,
+            character_version: '',
+            character_book: definition.embedded_lorebook,
+            extensions: definition.extensions,
+        },
+        spec: 'chara_card_v2',
+        spec_version: '2.0',
+    };
+
+    const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+    const defaultAvatarBuffer = fs.readFileSync(defaultAvatarPath);
+
+    let imageBuffer = defaultAvatarBuffer;
+
+    const imageUrl = metadata.node?.max_res_url;
+
+    if (imageUrl) {
+        const downloadResult = await fetch(imageUrl);
+        if (downloadResult.ok) {
+            imageBuffer = Buffer.from(await downloadResult.arrayBuffer());
+        }
     }
 
-    const downloadResult = await fetch(downloadUrl);
-
-    if (!downloadResult.ok) {
-        const text = await downloadResult.text();
-        console.error('Chub returned error', downloadResult.statusText, text);
-        throw new Error('Failed to download character');
-    }
-
-    const buffer = Buffer.from(await downloadResult.arrayBuffer());
-    const fileName =
-        downloadResult.headers.get('content-disposition')?.split('filename=')[1]?.replace(/["']/g, '') ||
-        `${sanitize(projectName)}.png`;
-    const fileType = downloadResult.headers.get('content-type');
+    const buffer = write(imageBuffer, JSON.stringify(characterCard));
+    const fileName = `${sanitize(characterCard.data.name)}.png`;
+    const fileType = 'image/png';
 
     return { buffer, fileName, fileType };
 }
