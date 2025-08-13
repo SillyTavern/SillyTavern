@@ -1074,6 +1074,13 @@ function setReasoningEventHandlers() {
         }
     });
 
+    $(document).on('click', '.mes_reasoning_close_all', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        $('.mes_reasoning_details[open] .mes_reasoning_header').trigger('click');
+    });
+
     $(document).on('click', '.mes_reasoning_edit_done', async function (e) {
         e.stopPropagation();
         e.preventDefault();
