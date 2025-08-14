@@ -4970,6 +4970,7 @@ async function onModelChange() {
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
     saveSettingsDebounced();
+    updateFeatureSupportFlags();
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
 }
 
@@ -5726,7 +5727,20 @@ function updateVertexAIServiceAccountStatus(isValid = false, message = '') {
     }
 }
 
+function updateFeatureSupportFlags() {
+    const featureFlags = {
+        openai_function_calling_supported: ToolManager.isToolCallingSupported(),
+        openai_image_inlining_supported: isImageInliningSupported(),
+        openai_video_inlining_supported: isVideoInliningSupported(),
+    };
 
+    for (const [key, value] of Object.entries(featureFlags)) {
+        const element = document.getElementById(key);
+        if (element) {
+            element.dataset.ccToggle = String(value);
+        }
+    }
+}
 
 export function initOpenAI() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -5950,6 +5964,7 @@ export function initOpenAI() {
         saveSettingsDebounced();
         reconnectOpenAi();
         forceCharacterEditorTokenize();
+        updateFeatureSupportFlags();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 

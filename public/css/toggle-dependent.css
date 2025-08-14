@@ -530,3 +530,17 @@ label[for="trim_spaces"]:not(:has(input:checked)) small {
 label[for="bind_preset_to_connection"]:has(input:checked) {
     color: var(--active);
 }
+
+#openai_settings input[type="checkbox"]:not(:checked)~[data-cc-toggle],
+#openai_settings [data-cc-toggle="false"]>.icon-supported,
+#openai_settings [data-cc-toggle="true"]>.icon-unsupported {
+    display: none;
+}
+
+#openai_settings [data-cc-toggle="true"]>.icon-supported {
+    color: var(--active);
+}
+
+#openai_settings [data-cc-toggle="false"]>.icon-unsupported {
+    color: var(--golden);
+}
