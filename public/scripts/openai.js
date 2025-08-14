@@ -1878,34 +1878,18 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
-        // Clear only the "-- Connect to the API --" option
-        $('#model_fireworks_select option[value=""]').remove();
-        // Add API models to the existing static options
+        $('#model_fireworks_select').empty();
         model_list.forEach((model) => {
-            // Check if this model is already in the static list
-            if ($(`#model_fireworks_select option[value="${model.id}"]`).length === 0) {
-                $('#model_fireworks_select').append(
-                    $('<option>', {
-                        value: model.id,
-                        text: model.id,
-                    }));
-            }
+            $('#model_fireworks_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
         });
-
-        // Re-add the "Connect to API" option at the end
-        $('#model_fireworks_select').append(
-            $('<option>', {
-                value: '',
-                text: '-- Connect to the API --',
-            }));
 
         const selectedModel = model_list.find(model => model.id === oai_settings.fireworks_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.fireworks_model)) {
-            // Keep the default model if it exists, otherwise use first API model
-            const defaultExists = $(`#model_fireworks_select option[value="${oai_settings.fireworks_model}"]`).length > 0;
-            if (!defaultExists && model_list.length > 0) {
-                oai_settings.fireworks_model = model_list[0].id;
-            }
+            oai_settings.fireworks_model = model_list[0].id;
         }
 
         $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
