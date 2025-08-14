@@ -18,7 +18,10 @@ import {
     openCharacterChat,
     printCharactersDebounced,
     renameGroupOrCharacterChat,
+    saveSettingsDebounced,
     selectCharacterById,
+    setActiveCharacter,
+    setActiveGroup,
     system_avatar,
     system_message_types,
     this_chid,
@@ -107,7 +110,7 @@ async function unshallowPermanentAssistant() {
  * @returns {string} Greeting message
 */
 function getAssistantGreeting(character) {
-    const defaultGreeting = t`If you're connected to an API, try asking me something!`;
+    const defaultGreeting = t`If you're connected to an API, try asking me something!` + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`;
 
     if (!character) {
         return defaultGreeting;
@@ -126,7 +129,7 @@ function sendAssistantMessage() {
     const message = {
         name: name,
         force_avatar: avatar,
-        mes: greeting + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
+        mes: greeting,
         is_system: false,
         is_user: false,
         send_date: getMessageTimeStamp(),
@@ -296,6 +299,8 @@ async function openRecentCharacterChat(avatarId, fileName) {
 
     try {
         await selectCharacterById(characterId);
+        setActiveCharacter(avatarId);
+        saveSettingsDebounced();
         const currentChatId = getCurrentChatId();
         if (currentChatId === fileName) {
             console.debug(`Chat ${fileName} is already open.`);
@@ -322,6 +327,8 @@ async function openRecentGroupChat(groupId, fileName) {
 
     try {
         await openGroupById(groupId);
+        setActiveGroup(groupId);
+        saveSettingsDebounced();
         const currentChatId = getCurrentChatId();
         if (currentChatId === fileName) {
             console.debug(`Chat ${fileName} is already open.`);

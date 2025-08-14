@@ -1,3 +1,6 @@
+@import './css/minimax-tts.css';
+@import './css/openai-tts.css';
+
 .voice_preview {
     margin: 0.25rem 0.5rem;
     display: flex;

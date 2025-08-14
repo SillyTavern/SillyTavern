@@ -1,10 +1,10 @@
 import { DOMPurify, Popper } from '../lib.js';
 
-import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
+import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
 import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
-import { delay, isSubsetOf, sanitizeSelector, setValueByPath } from './utils.js';
+import { delay, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
 import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
@@ -387,6 +387,7 @@ async function getManifests(names) {
  */
 async function activateExtensions() {
     extensionLoadErrors.clear();
+    const clientVersion = CLIENT_VERSION.split(':')[1];
     const extensions = Object.entries(manifests).sort((a, b) => sortManifestsByOrder(a[1], b[1]));
     const extensionNames = extensions.map(x => x[0]);
     const promises = [];
@@ -396,10 +397,16 @@ async function activateExtensions() {
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
         const extensionDependencies = manifest.dependencies;
+        const minClientVersion = manifest.minimum_client_version;
         const displayName = manifest.display_name || name;
 
         if (activeExtensions.has(name)) {
             continue;
+        }
+        // Client version requirement: pass if 'minimum_client_version' is undefined or null.
+        let meetsClientMinimumVersion = true;
+        if (minClientVersion !== undefined) {
+            meetsClientMinimumVersion = versionCompare(clientVersion, minClientVersion);
         }
 
         // Module requirements: pass if 'requires' is undefined, null, or not an array; check subset if it's an array
@@ -438,7 +445,7 @@ async function activateExtensions() {
 
         const isDisabled = extension_settings.disabledExtensions.includes(name);
 
-        if (meetsModuleRequirements && meetsExtensionDeps && !isDisabled) {
+        if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
                 const promise = addExtensionLocale(name, manifest).finally(() =>
@@ -465,6 +472,9 @@ async function activateExtensions() {
                 console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
                 extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
             }
+        } else if (!meetsClientMinimumVersion && !isDisabled) {
+            console.warn(t`Extension "${name}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
+            extensionLoadErrors.add(t`Extension "${displayName}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
         }
     }
 

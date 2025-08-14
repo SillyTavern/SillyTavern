@@ -6,6 +6,8 @@ import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyAp
 declare global {
     // Custom types
     declare type InstructSettings = typeof power_user.instruct;
+    declare type ContextSettings = typeof power_user.context;
+    declare type ReasoningSettings = typeof power_user.reasoning;
 
     // Global namespace modules
     interface Window {

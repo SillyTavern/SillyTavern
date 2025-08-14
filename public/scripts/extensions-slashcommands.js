@@ -9,7 +9,8 @@ import { equalsIgnoreCaseAndAccents, isFalseBoolean, isTrueBoolean } from './uti
 
 /**
  * @param {'enable' | 'disable' | 'toggle'} action - The action to perform on the extension
- * @returns {(args: {[key: string]: string | SlashCommandClosure}, extensionName: string | SlashCommandClosure) => Promise<string>}
+ * @typedef {import('./slash-commands/SlashCommand.js').NamedArguments | import('./slash-commands/SlashCommand.js').NamedArgumentsCapture} NamedArgumentsAssignment
+ * @returns {(args: NamedArgumentsAssignment, extensionName: string | SlashCommandClosure) => Promise<string>}
  */
 function getExtensionActionCallback(action) {
     return async (args, extensionName) => {
@@ -20,7 +21,7 @@ function getExtensionActionCallback(action) {
             return '';
         }
 
-        const reload = !isFalseBoolean(args?.reload);
+        const reload = !isFalseBoolean(args?.reload?.toString());
         const internalExtensionName = findExtension(extensionName);
         if (!internalExtensionName) {
             toastr.warning(`Extension ${extensionName} does not exist.`);
@@ -186,8 +187,8 @@ export function registerExtensionSlashCommands() {
             if (args?.state instanceof SlashCommandClosure) throw new Error('\'state\' argument cannot be a closure.');
             if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
 
-            const action = isTrueBoolean(args?.state) ? 'enable' :
-                isFalseBoolean(args?.state) ? 'disable' :
+            const action = isTrueBoolean(args?.state?.toString()) ? 'enable' :
+                isFalseBoolean(args?.state?.toString()) ? 'disable' :
                     'toggle';
 
             return await getExtensionActionCallback(action)(args, extensionName);

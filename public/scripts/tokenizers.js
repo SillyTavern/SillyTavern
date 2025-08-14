@@ -708,10 +708,6 @@ export function getTokenizerModel() {
         }
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
-        return yiTokenizer;
-    }
-
     // Default to Turbo 3.5
     return turboTokenizer;
 }

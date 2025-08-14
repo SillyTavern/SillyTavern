@@ -20,7 +20,7 @@ import {
     power_user,
 } from './power-user.js';
 import { getEventSourceStream } from './sse-stream.js';
-import { getSortableDelay } from './utils.js';
+import { getSortableDelay, versionCompare } from './utils.js';
 
 export let koboldai_settings;
 export let koboldai_setting_names;
@@ -386,16 +386,6 @@ export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
     kai_flags.can_use_min_p = versionCompare(koboldCppVersion, MIN_MIN_P_KCPPVERSION);
     const isKoboldCpp = versionCompare(koboldCppVersion, '1.0.0');
     $('#koboldcpp_hint').toggleClass('displayNone', !isKoboldCpp);
-}
-
-/**
- * Compares two version numbers, returning true if srcVersion >= minVersion
- * @param {string} srcVersion The current version.
- * @param {string} minVersion The target version number to test against
- * @returns {boolean} True if srcVersion >= minVersion, false if not
- */
-function versionCompare(srcVersion, minVersion) {
-    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 /**

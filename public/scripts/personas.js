@@ -317,14 +317,20 @@ async function uploadUserAvatar(url, name) {
         formData.append('overwrite_name', name);
     }
 
-    await fetch('/api/avatars/upload', {
+    const response = await fetch('/api/avatars/upload', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
         cache: 'no-cache',
         body: formData,
     });
 
-    await getUserAvatars(true, name);
+    if (!response.ok) {
+        throw new Error(`Failed to upload avatar: ${response.statusText}`);
+    }
+
+    // Get the actual path from the response
+    const data = await response.json();
+    await getUserAvatars(true, data?.path || name);
 }
 
 async function changeUserAvatar(e) {
@@ -367,7 +373,7 @@ async function changeUserAvatar(e) {
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: getRequestHeaders({ omitContentType:true }),
+        headers: getRequestHeaders({ omitContentType: true }),
         cache: 'no-cache',
         body: formData,
     });
@@ -375,21 +381,23 @@ async function changeUserAvatar(e) {
     if (response.ok) {
         const data = await response.json();
 
+        const overwriteName = formData.get('overwrite_name');
+        const dataPath = data?.path;
+
         // If the user uploaded a new avatar, we want to make sure it's not cached
-        const name = formData.get('overwrite_name');
-        if (name) {
-            await fetch(getUserAvatar(String(name)), { cache: 'no-cache' });
-            await fetch(getThumbnailUrl('persona', String(name)), { cache: 'no-cache' });
+        if (overwriteName && dataPath) {
+            await fetch(getUserAvatar(String(dataPath)), { cache: 'reload' });
+            await fetch(getThumbnailUrl('persona', String(dataPath)), { cache: 'reload' });
             reloadUserAvatar(true);
         }
 
-        if (!name && data.path) {
+        if (!overwriteName && dataPath) {
             await getUserAvatars();
-            await delay(500);
-            await createPersona(data.path);
+            await delay(1);
+            await createPersona(dataPath);
         }
 
-        await getUserAvatars(true, name || data.path);
+        await getUserAvatars(true, dataPath || overwriteName);
     }
 
     // Will allow to select the same file twice in a row
@@ -1423,6 +1431,12 @@ function getPersonaTemporaryLockInfo() {
 async function loadPersonaForCurrentChat({ doRender = false } = {}) {
     // Cache persona list to check if they exist
     const userAvatars = await getUserAvatars(doRender);
+
+    // Check if the user avatar is set and exists in the list of user avatars
+    if (userAvatars.length && !userAvatars.includes(user_avatar)) {
+        console.log(`User avatar ${user_avatar} not found in user avatars list, pick the first available one`);
+        setUserAvatar(userAvatars[0], { toastPersonaNameChange: false, navigateToCurrent: true });
+    }
 
     // Define a persona for this chat
     let chatPersona = '';

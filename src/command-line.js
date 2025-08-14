@@ -4,7 +4,7 @@ import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 import ipRegex from 'ip-regex';
 import envPaths from 'env-paths';
-import { canResolve, color, getConfigValue, stringToBool } from './util.js';
+import { color, getConfigValue, stringToBool } from './util.js';
 import { initConfig } from './config-init.js';
 
 /**
@@ -314,10 +314,8 @@ export class CommandLineParser {
             },
             getBrowserLaunchHostname: async function ({ useIPv6, useIPv4 }) {
                 if (this.browserLaunchHostname === 'auto') {
-                    const localhostResolve = await canResolve('localhost', useIPv6, useIPv4);
-
                     if (useIPv6 && useIPv4) {
-                        return (this.browserLaunchAvoidLocalhost || !localhostResolve) ? '[::1]' : 'localhost';
+                        return this.browserLaunchAvoidLocalhost ? '[::1]' : 'localhost';
                     }
 
                     if (useIPv6) {

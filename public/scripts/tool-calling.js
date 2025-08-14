@@ -605,6 +605,13 @@ export class ToolManager {
             }
         }
 
+        if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.fireworks_model);
+            if (currentModel) {
+                return currentModel.supports_tools;
+            }
+        }
+
         const supportedSources = [
             chat_completion_sources.OPENAI,
             chat_completion_sources.CUSTOM,
@@ -620,6 +627,8 @@ export class ToolManager {
             chat_completion_sources.AI21,
             chat_completion_sources.XAI,
             chat_completion_sources.POLLINATIONS,
+            chat_completion_sources.MOONSHOT,
+            chat_completion_sources.FIREWORKS,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
@@ -723,7 +732,7 @@ export class ToolManager {
         }
 
         for (const toolCall of toolCalls) {
-            if (typeof toolCall.function !== 'object') {
+            if (!toolCall || !toolCall.function || typeof toolCall.function !== 'object') {
                 continue;
             }
 

@@ -9,6 +9,10 @@ import { QuickReply } from './QuickReply.js';
 export class QuickReplySet {
     /**@type {QuickReplySet[]}*/ static list = [];
 
+    /**
+     * @param {Partial<QuickReplySet>} props
+     * @returns {QuickReplySet}
+     */
     static from(props) {
         props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
         const instance = Object.assign(new this(), props);

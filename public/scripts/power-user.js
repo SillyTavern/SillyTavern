@@ -27,6 +27,8 @@ import {
     doNewChat,
     online_status,
     messageFormatting,
+    extension_prompt_types,
+    extension_prompt_roles,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -227,8 +229,8 @@ export const power_user = {
         first_output_sequence: '',
         last_input_sequence: '',
         last_output_sequence: '',
-        system_sequence_prefix: '',
-        system_sequence_suffix: '',
+        story_string_prefix: '',
+        story_string_suffix: '',
         stop_sequence: '',
         wrap: true,
         macro: true,
@@ -239,6 +241,7 @@ export const power_user = {
         system_same_as_user: false,
         /** @deprecated Use output_suffix instead */
         separator_sequence: '',
+        sequences_as_stop_strings: true,
     },
 
     context: {
@@ -248,6 +251,9 @@ export const power_user = {
         example_separator: defaultExampleSeparator,
         use_stop_strings: true,
         names_as_stop_strings: true,
+        story_string_position: extension_prompt_types.IN_PROMPT,
+        story_string_role: extension_prompt_roles.SYSTEM,
+        story_string_depth: 1,
     },
 
     instruct_derived: false,
@@ -346,6 +352,9 @@ const contextControls = [
     { id: 'context_chat_start', property: 'chat_start', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
     { id: 'context_names_as_stop_strings', property: 'names_as_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: true },
+    { id: 'context_story_string_position', property: 'story_string_position', isCheckbox: false, isGlobalSetting: false, defaultValue: extension_prompt_types.IN_PROMPT, trigger: true },
+    { id: 'context_story_string_depth', property: 'story_string_depth', isCheckbox: false, isGlobalSetting: false, defaultValue: 1 },
+    { id: 'context_story_string_role', property: 'story_string_role', isCheckbox: false, isGlobalSetting: false, defaultValue: extension_prompt_roles.SYSTEM },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
@@ -1859,6 +1868,47 @@ export function getContextSettings() {
 // TODO: Maybe add a refresh button to reset settings to preset
 // TODO: Add "global state" if a preset doesn't set the power_user checkboxes
 async function loadContextSettings() {
+    /**
+     * Auto-fix missing fields in the story string
+     * @param {ContextSettings} contextSettings Context settings instance
+     */
+    function autoFixStoryString(contextSettings) {
+        // Already migrated, no need to fix
+        if (!contextSettings || Object.hasOwn(contextSettings, 'story_string_position')) {
+            return;
+        }
+
+        let storyString = contextSettings.story_string || '';
+
+        /**
+         * @param {string} field Missing field name
+         * @param {'start'|'end'} position Position of auto-fix
+         */
+        function autoFixMissingField(field, position) {
+            if (storyString.includes(`{{${field}}}`)) {
+                return;
+            }
+
+            console.warn(`[Story String Validation] Story String is missing a field: ${field}. Adding it at the ${position}.`);
+            const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
+            const firstCurlyPosition = storyString.includes('{{') ? storyString.indexOf('{{') : 0;
+            const lastCurlyPosition = storyString.includes('}}') ? storyString.lastIndexOf('}}') + '}}'.length : storyString.length;
+            const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
+            const endPosition = Math.min(lastTrimPosition, lastCurlyPosition);
+            storyString = position === 'start'
+                ? storyString.substring(0, firstCurlyPosition) + fieldTemplate + storyString.substring(firstCurlyPosition)
+                : storyString.substring(0, endPosition) + fieldTemplate + storyString.substring(endPosition);
+        }
+
+        autoFixMissingField('anchorBefore', 'start');
+        autoFixMissingField('anchorAfter', 'end');
+
+        contextSettings.story_string = storyString;
+    }
+
+    // Migrate story string to add missing fields
+    autoFixStoryString(power_user.context);
+
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -1880,7 +1930,10 @@ async function loadContextSettings() {
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
         $element.on('input', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            let value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            if (typeof control.defaultValue === 'number') {
+                value = Number(value);
+            }
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
@@ -1892,6 +1945,10 @@ async function loadContextSettings() {
             }
             saveSettingsDebounced();
         });
+
+        if (control.trigger) {
+            $element.trigger('input');
+        }
     });
 
     context_presets.forEach((preset) => {
@@ -1910,6 +1967,9 @@ async function loadContextSettings() {
         if (!preset) {
             return;
         }
+
+        // Migrate story string to add missing fields
+        autoFixStoryString(preset);
 
         power_user.context.preset = name;
 
@@ -2094,12 +2154,15 @@ export function fuzzySearchGroups(searchValue, fuzzySearchCaches = null) {
  * @param {object} [options] Additional options.
  * @param {string} [options.customStoryString] Custom story string template.
  * @param {InstructSettings} [options.customInstructSettings] Custom instruct settings.
+ * @param {ContextSettings} [options.customContextSettings] Custom context settings.
  * @returns {string} The rendered story string.
  */
-export function renderStoryString(params, { customStoryString = null, customInstructSettings = null } = {}) {
+export function renderStoryString(params, { customStoryString = null, customInstructSettings = null, customContextSettings = null } = {}) {
     try {
-        const storyString = customStoryString ?? power_user.context.story_string;
         const instructSettings = structuredClone(customInstructSettings ?? power_user.instruct);
+        const contextSettings = structuredClone(customContextSettings ?? power_user.context);
+        const storyString = customStoryString ?? contextSettings.story_string;
+        const storyStringPosition = contextSettings.story_string_position ?? extension_prompt_types.IN_PROMPT;
 
         // Validate and log possible warnings/errors
         validateStoryString(storyString, params);
@@ -2117,8 +2180,8 @@ export function renderStoryString(params, { customStoryString = null, customInst
         output = output.replace(/^\n+/, '');
 
         // add a newline to the end of the story string if it doesn't have one
-        if (output.length > 0 && !output.endsWith('\n')) {
-            if (!instructSettings.enabled || instructSettings.wrap) {
+        if (output.length > 0 && !output.endsWith('\n') && storyStringPosition !== extension_prompt_types.IN_CHAT) {
+            if (!instructSettings.enabled || (instructSettings.wrap && !instructSettings.story_string_suffix)) {
                 output += '\n';
             }
         }
@@ -3269,6 +3332,11 @@ jQuery(() => {
 
     $('#context_size_derived').on('change', function () {
         $('#context_size_derived').prop('checked', !!power_user.context_size_derived);
+    });
+
+    $('#context_story_string_position').on('input', function () {
+        const value = Number($(this).val());
+        $('#context_story_string_inject_settings').toggle(value === extension_prompt_types.IN_CHAT);
     });
 
     $('#bind_model_templates').on('input', function () {

@@ -163,10 +163,6 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Anthropic (Claude) API key is not set.');
     }
 
-    if (multimodalApi === 'zerooneai' && !secret_state[SECRET_KEYS.ZEROONEAI]) {
-        throw new Error('01.AI API key is not set.');
-    }
-
     if (multimodalApi === 'groq' && !secret_state[SECRET_KEYS.GROQ]) {
         throw new Error('Groq API key is not set.');
     }
@@ -241,6 +237,10 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (multimodalApi === 'aimlapi' && !secret_state[SECRET_KEYS.AIMLAPI]) {
         throw new Error('AI/ML API key is not set.');
+    }
+
+    if (multimodalApi === 'moonshot' && !secret_state[SECRET_KEYS.MOONSHOT]) {
+        throw new Error('Moonshot AI API key is not set.');
     }
 }
 

@@ -14,7 +14,9 @@ import {
 } from '../script.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
+    DEFAULT_AUTO_MODE_DELAY,
     group_activation_strategy,
+    group_generation_mode,
     groups,
     openGroupById,
     openGroupChat,
@@ -295,8 +297,6 @@ export async function convertSoloToGroupChat() {
     const chatName = humanizedDateTime();
     const chats = [chatName];
     const members = [character.avatar];
-    const activationStrategy = group_activation_strategy.NATURAL;
-    const allowSelfResponses = false;
     const favChecked = character.fav || character.fav == 'true';
     /** @type {any} */
     const metadata = Object.assign({}, chat_metadata);
@@ -309,13 +309,16 @@ export async function convertSoloToGroupChat() {
             name: name,
             members: members,
             avatar_url: avatar,
-            allow_self_responses: activationStrategy,
-            activation_strategy: allowSelfResponses,
+            allow_self_responses: false,
+            activation_strategy: group_activation_strategy.NATURAL,
             disabled_members: [],
             chat_metadata: metadata,
             fav: favChecked,
             chat_id: chatName,
             chats: chats,
+            hideMutedSprites: false,
+            generation_mode: group_generation_mode.SWAP,
+            auto_mode_delay: DEFAULT_AUTO_MODE_DELAY,
         }),
     });
 

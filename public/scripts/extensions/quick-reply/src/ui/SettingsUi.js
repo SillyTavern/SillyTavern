@@ -470,10 +470,10 @@ export class SettingsUi {
                 toastr.error(`A Quick Reply Set named "${newName}" already exists.`);
                 return;
             }
-            const newQrSet = QuickReplySet.from(JSON.parse(JSON.stringify(this.currentQrSet)));
+            const newQrSet = QuickReplySet.from(this.currentQrSet.toJSON());
             newQrSet.name = newName;
-            newQrSet.qrList = this.currentQrSet.qrList.map(qr => QuickReply.from(JSON.parse(JSON.stringify(qr))));
-            newQrSet.addQuickReply();
+            newQrSet.qrList = this.currentQrSet.qrList.map(qr => QuickReply.from(qr.toJSON()));
+            newQrSet.init();
             const idx = QuickReplySet.list.findIndex(it => it.name.toLowerCase().localeCompare(newName.toLowerCase()) == 1);
             if (idx > -1) {
                 QuickReplySet.list.splice(idx, 0, newQrSet);

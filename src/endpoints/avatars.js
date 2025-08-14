@@ -53,7 +53,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
             cacheBuster.bust(request, response);
         }
 
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
+        const filename = sanitize(request.body.overwrite_name || `${Date.now()}.png`);
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
         fs.unlinkSync(pathToUpload);

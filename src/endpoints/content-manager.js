@@ -369,7 +369,7 @@ async function downloadChubLorebook(id) {
 
 async function downloadChubCharacter(id) {
     const [creatorName, projectName] = id.split('/');
-    const result = await fetch(`https://api.chub.ai/api/characters/${creatorName}/${projectName}`, {
+    const result = await fetch(`https://api.chub.ai/api/characters/${creatorName}/${projectName}?full=true`, {
         method: 'GET',
         headers: { 'Accept': 'application/json', 'User-Agent': USER_AGENT },
     });
@@ -382,25 +382,48 @@ async function downloadChubCharacter(id) {
 
     /** @type {any} */
     const metadata = await result.json();
-    const downloadUrl = metadata.node?.max_res_url;
+    const { definition, topics } = metadata.node;
 
-    if (!downloadUrl) {
-        throw new Error('Download URL not found in character metadata');
+    /** @type {TavernCardV2} */
+    const characterCard = {
+        data: {
+            name: definition.name,
+            description: definition.personality,
+            personality: definition.tavern_personality,
+            scenario: definition.scenario,
+            first_mes: definition.first_message,
+            mes_example: definition.example_dialogs,
+            creator_notes: definition.description,
+            system_prompt: definition.system_prompt,
+            post_history_instructions: definition.post_history_instructions,
+            alternate_greetings: definition.alternate_greetings,
+            tags: topics,
+            creator: creatorName,
+            character_version: '',
+            character_book: definition.embedded_lorebook,
+            extensions: definition.extensions,
+        },
+        spec: 'chara_card_v2',
+        spec_version: '2.0',
+    };
+
+    const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+    const defaultAvatarBuffer = fs.readFileSync(defaultAvatarPath);
+
+    let imageBuffer = defaultAvatarBuffer;
+
+    const imageUrl = metadata.node?.max_res_url;
+
+    if (imageUrl) {
+        const downloadResult = await fetch(imageUrl);
+        if (downloadResult.ok) {
+            imageBuffer = Buffer.from(await downloadResult.arrayBuffer());
+        }
     }
 
-    const downloadResult = await fetch(downloadUrl);
-
-    if (!downloadResult.ok) {
-        const text = await downloadResult.text();
-        console.error('Chub returned error', downloadResult.statusText, text);
-        throw new Error('Failed to download character');
-    }
-
-    const buffer = Buffer.from(await downloadResult.arrayBuffer());
-    const fileName =
-        downloadResult.headers.get('content-disposition')?.split('filename=')[1]?.replace(/["']/g, '') ||
-        `${sanitize(projectName)}.png`;
-    const fileType = downloadResult.headers.get('content-type');
+    const buffer = write(imageBuffer, JSON.stringify(characterCard));
+    const fileName = `${sanitize(characterCard.data.name)}.png`;
+    const fileType = 'image/png';
 
     return { buffer, fileName, fileType };
 }
@@ -639,187 +662,6 @@ async function downloadRisuCharacter(uuid) {
     return { buffer, fileName, fileType };
 }
 
-/**
- * Parse Soulkyn URL to extract the character slug.
- * @param {string} url Soulkyn character URL
- * @returns {string | null} Slug of the character
- */
-function parseSoulkynUrl(url) {
-    // Example: https://soulkyn.com/l/en-US/@kayla-marie
-    const pattern = /^https:\/\/soulkyn\.com\/l\/[a-z]{2}-[A-Z]{2}\/@([\w\d-]+)/i;
-    const match = url.match(pattern);
-    return match ? match[1] : null;
-}
-
-/**
- * Download Soulkyn character card
- * @param {string} slug Slug of the character
- * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string} | null>}
- */
-async function downloadSoulkynCharacter(slug) {
-    const soulkynReplacements = [
-        // https://soulkyn.com/l/en-US/help/character-backgrounds-advanced#variables-you-can-use-in-character-background-text
-        { pattern: /__USER_?NAME__/gi, replacement: '{{user}}' },
-        { pattern: /__PERSONA_?NAME__/gi, replacement: '{{char}}' },
-        // ST doesn't support gender-specific pronoun macros
-        { pattern: /__U_PRONOUN_1__/gi, replacement: 'they' },
-        { pattern: /__U_PRONOUN_2__/gi, replacement: 'them' },
-        { pattern: /__U_PRONOUN_3__/gi, replacement: 'their' },
-        { pattern: /__U_PRONOUN_4__/gi, replacement: 'themselves' },
-        { pattern: /__(USER_)?PRONOUN__/gi, replacement: 'they' },
-        { pattern: /__(USER_)?CPRONOUN__/gi, replacement: 'them' },
-        { pattern: /__(USER_)?UPRONOUN__/gi, replacement: 'their' },
-        // HTML tags -> Markdown syntax
-        { pattern: /<(strong|b)>/gi, replacement: '**' },
-        { pattern: /<\/(strong|b)>/gi, replacement: '**' },
-        { pattern: /<(em|i)>/gi, replacement: '*' },
-        { pattern: /<\/(em|i)>/gi, replacement: '*' },
-    ];
-
-    const normalizeContent = (str) => soulkynReplacements.reduce((acc, { pattern, replacement }) => acc.replace(pattern, replacement), str);
-
-    try {
-        const url = `https://soulkyn.com/_special/rest/Sk/public/Persona/${slug}`;
-        const result = await fetch(url, {
-            headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
-        });
-        if (result.ok) {
-            /** @type {any} */
-            const soulkynCharData = await result.json();
-
-            if (soulkynCharData.result !== 'success') {
-                console.error('Soulkyn returned error', soulkynCharData.message);
-                throw new Error(`Failed to download character: ${soulkynCharData.message}`);
-            }
-
-            // Fetch avatar
-            let avatarBuffer = null;
-            if (soulkynCharData.data?.Avatar?.FWSUUID) {
-                const avatarUrl = `https://rub.soulkyn.com/${soulkynCharData.data.Avatar.FWSUUID}/`;
-                const avatarResult = await fetch(avatarUrl, { headers: { 'User-Agent': USER_AGENT } });
-
-                if (avatarResult.ok) {
-                    const avatarContentType = avatarResult.headers.get('content-type');
-                    if (avatarContentType === 'image/png') {
-                        avatarBuffer = Buffer.from(await avatarResult.arrayBuffer());
-                    } else {
-                        console.warn(`Soulkyn character (${slug}) avatar is not PNG: ${avatarContentType}`);
-                    }
-                } else {
-                    console.warn(`Soulkyn character (${slug}) avatar download failed: ${avatarResult.status}`);
-                }
-            } else {
-                console.warn(`Soulkyn character (${slug}) does not have an avatar`);
-            }
-
-            // Fallback to default avatar
-            if (!avatarBuffer) {
-                const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
-                avatarBuffer = fs.readFileSync(defaultAvatarPath);
-            }
-
-            const d = soulkynCharData.data;
-            soulkynReplacements.push({ pattern: d.Username, replacement: '{{char}}' });
-
-            // Parse Soulkyn data into character chard
-            const charData = {
-                name: d.Username,
-                first_mes: '',
-                tags: [],
-                description: '',
-                creator: d.User.Username,
-                creator_notes: '',
-                alternate_greetings: [],
-                character_version: '',
-                mes_example: '',
-                post_history_instructions: '',
-                system_prompt: '',
-                scenario: '',
-                personality: '',
-                extensions: {
-                    soulkyn_slug: slug,
-                    soulkyn_id: d.UUID,
-                },
-            };
-
-            if (d?.PersonaIntroText) {
-                const match = d.PersonaIntroText.match(/^(?:\[Scenario:\s*([\s\S]*?)\]\s*)?([\s\S]*)$/);
-                if (match) {
-                    if (match[1]) {
-                        charData.scenario = normalizeContent(match[1].trim());
-                    }
-                    charData.first_mes = normalizeContent(match[2].trim());
-                }
-            }
-
-            const descriptionArr = ['Name: {{char}}'];
-            if (d?.Version?.Age) {
-                descriptionArr.push(`Age: ${d.Version.Age}`);
-            }
-            if (d?.Version?.Gender) {
-                descriptionArr.push(`Gender: ${d.Version.Gender}`);
-            }
-            if (d?.Version?.Race?.Name && !d.Version.Race.Name.match(/no preset/i)) {
-                let race = d.Version.Race.Name;
-                if (d.Version.Race?.Description) {
-                    race += ` (${d.Version.Race.Description})`;
-                }
-                descriptionArr.push(`Race: ${race}`);
-            }
-            if (d?.PersonalityType) {
-                descriptionArr.push(`Personality type: ${d.PersonalityType}`);
-            }
-            if (Array.isArray(d?.Version?.PropertyPersonality)) {
-                const traits = d.Version.PropertyPersonality.map((t) => t.Value).join(', ');
-                descriptionArr.push(`Personality Traits: ${traits}`);
-            }
-            if (Array.isArray(d?.Version?.PropertyPhysical)) {
-                const traits = d.Version.PropertyPhysical.map((t) => t.Value).join(', ');
-                descriptionArr.push(`Physical Traits: ${traits}`);
-            }
-            if (Array.isArray(d?.Clothes?.Preset)) {
-                descriptionArr.push(`Clothes: ${d.Clothes.Preset.join(', ')}`);
-            }
-            if (d?.Avatar?.Caption) {
-                descriptionArr.push(`Image description featuring {{char}}: ${d.Avatar.Caption.replace(/\n+/g, ' ')}`);
-            }
-            if (d?.Version?.WelcomeMessage) {
-                if (charData.first_mes) {
-                    descriptionArr.push(`{{char}}'s self-description: "${d.Version.WelcomeMessage}"`);
-                } else {
-                    // Some characters lack `PersonaIntroText`. In that case we use `Version.WelcomeMessage` for `first_mes`
-                    charData.first_mes = normalizeContent(d.Version.WelcomeMessage);
-                }
-            }
-            charData.description = normalizeContent(descriptionArr.join('\n'));
-
-            if (Array.isArray(d?.Version?.ChatExamplesValue)) {
-                charData.mes_example = d.Version.ChatExamplesValue.map((example) => `<START>\n${normalizeContent(example)}`).join('\n');
-            }
-
-            if (Array.isArray(d?.PersonaTags)) {
-                charData.tags = d.PersonaTags.map((t) => t.Slug);
-            }
-
-            // Character card
-            const buffer = write(avatarBuffer, JSON.stringify({
-                'spec': 'chara_card_v2',
-                'spec_version': '2.0',
-                'data': charData,
-            }));
-
-            const fileName = `${sanitize(d.UUID)}.png`;
-            const fileType = 'image/png';
-
-            return { buffer, fileName, fileType };
-        }
-    } catch (error) {
-        console.error('Error downloading character:', error);
-        throw error;
-    }
-    return null;
-}
-
 /** * Check if the given string is a valid Perchance UUID.
  * @param {string} uuid UUID string to check
  * @returns {boolean} True if the UUID is valid, false otherwise
@@ -921,13 +763,14 @@ async function downloadPerchanceCharacter(slug) {
     return null;
 }
 
-/** * Extracts Perchance character data from a gzipped response.
+/**
+ * Extracts Perchance character data from a gzipped response.
  * @param {import('node-fetch').Response} result Fetch response containing gzipped character data
  * @returns {Promise<Object>} Parsed Perchance character data
  * @throws {Error} If the character data is invalid or missing required fields
  */
 async function extractPerchanceCharacterFromGz(result) {
-    const compressedBuffer = Buffer.from(await result.arrayBuffer());
+    const compressedBuffer = await result.arrayBuffer();
     const decompressedBuffer = zlib.gunzipSync(compressedBuffer);
 
     // inside the gz file, there is a file of the same name without extensions, but it is a json file
@@ -1062,7 +905,6 @@ router.post('/importURL', async (request, response) => {
         const isPygmalionContent = host.includes('pygmalion.chat');
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
         const isRisu = host.includes('realm.risuai.net');
-        const isSoulkyn = host.includes('soulkyn.com');
         const isPerchance = host.includes('perchance.org');
         const isGeneric = isHostWhitelisted(host);
 
@@ -1112,13 +954,6 @@ router.post('/importURL', async (request, response) => {
 
             type = 'character';
             result = await downloadRisuCharacter(uuid);
-        } else if (isSoulkyn) {
-            const soulkynSlug = parseSoulkynUrl(url);
-            if (!soulkynSlug) {
-                return response.sendStatus(404);
-            }
-            type = 'character';
-            result = await downloadSoulkynCharacter(soulkynSlug);
         } else if (isPerchance) {
             const perchanceSlug = parsePerchanceSlug(url);
             if (!perchanceSlug) {

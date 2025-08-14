@@ -28,6 +28,7 @@ import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { renderTemplateAsync } from './templates.js';
 import { t, translate } from './i18n.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -63,6 +64,12 @@ const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
+
+const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
+    GROUP: 'TagFilterState_GROUP',
+    FAV: 'TagFilterState_FAV',
+    FOLDER: 'TagFilterState_FOLDER',
+});
 
 /** @enum {number} */
 export const tag_filter_type = {
@@ -331,12 +338,14 @@ function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
 
 /**
  * Applies the favorite filter to the character list.
- * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ * @param {FilterHelper} _filterHelper Instance of FilterHelper class. Unused since it needs to be applied to both filters.
  */
-function filterByFav(filterHelper) {
+function filterByFav(_filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FAV.filter_state = state;
-    filterHelper.setFilterData(FILTER_TYPES.FAV, state);
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FAV, state);
+    entitiesFilter.setFilterData(FILTER_TYPES.FAV, state);
+    groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, state);
 }
 
 /**
@@ -346,6 +355,7 @@ function filterByFav(filterHelper) {
 function filterByGroups(filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.GROUP.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP, state);
     filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
 }
 
@@ -363,6 +373,7 @@ function filterByFolder(filterHelper) {
 
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER, state);
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
 }
 
@@ -393,6 +404,10 @@ function createTagMapFromList(listElement, key) {
  * @returns {Tag[]} A list of tags
  */
 function getTagsList(key, sort = true) {
+    if (key === null || key === undefined) {
+        return [];
+    }
+
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
         return [];
@@ -1547,6 +1562,44 @@ function onTagsBackupClick() {
     download(blob, filename, 'application/json');
 }
 
+async function onTagsPruneClick() {
+    // Get tags which have zero tag map entries
+    const allTagsInTagMaps = new Set(Object.values(tag_map).flat());
+    const tagsToPrune = tags.filter(tag => !allTagsInTagMaps.has(tag.id));
+
+    // Get tag maps referring to deleted entities
+    const allEntityKeys = new Set([...characters.map(c => String(c.avatar)), ...groups.map(g => String(g.id))]);
+    const tagMapsToPrune = Object.keys(tag_map).filter(key => !allEntityKeys.has(key));
+
+    if (!tagsToPrune.length && !tagMapsToPrune.length) {
+        toastr.info(t`No unused tags or references found.`);
+        return;
+    }
+
+    const confirm = await Popup.show.confirm(t`Prune ${tagsToPrune.length} tags and ${tagMapsToPrune.length} references`, t`Are you sure you want to remove all unused tags and references to missing or deleted characters and groups?`);
+
+    if (!confirm) {
+        return;
+    }
+
+    for (const tag of tagsToPrune) {
+        tags.splice(tags.indexOf(tag), 1);
+    }
+
+    for (const key of tagMapsToPrune) {
+        delete tag_map[key];
+    }
+
+    printCharactersDebounced();
+    saveSettingsDebounced();
+
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
+
+    toastr.success(t`Unused tags pruned successfully.`);
+}
+
 function onTagCreateClick() {
     const tagName = getFreeName('New Tag', tags.map(x => x.name));
     const tag = createNewTag(tagName);
@@ -2178,6 +2231,36 @@ function extractCharacterAvatar(avatarSrc) {
     }
 }
 
+function restoreSavedTagFilters() {
+    try {
+        const validStates = new Set(Object.keys(FILTER_STATES));
+        const readState = (/** @type {string} */ storageKey) => {
+            const v = accountStorage.getItem(storageKey);
+            return v && validStates.has(v) ? v : null;
+        };
+
+        const favState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
+        const groupState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
+        const folderState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
+
+        if (favState) {
+            ACTIONABLE_TAGS.FAV.filter_state = favState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+            groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+        }
+        if (groupState) {
+            ACTIONABLE_TAGS.GROUP.filter_state = groupState;
+            entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
+        }
+        if (folderState) {
+            ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
+        }
+    } catch (e) {
+        console.warn('Failed to restore actionable filter states from account storage', e);
+    }
+}
+
 export function initTags() {
     createTagInput('#tagInput', '#tagList', { tagOptions: { removable: true } });
     createTagInput('#groupTagInput', '#groupTagList', { tagOptions: { removable: true } });
@@ -2198,6 +2281,7 @@ export function initTags() {
     $(document).on('click', '.tag_view_create', onTagCreateClick);
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
+    $(document).on('click', '.tag_view_prune', onTagsPruneClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
@@ -2238,4 +2322,5 @@ export function initTags() {
     }
 
     registerTagsSlashCommands();
+    restoreSavedTagFilters();
 }

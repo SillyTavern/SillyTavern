@@ -171,17 +171,32 @@
 #world_editor_select {
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 10em;
 }
 
+#world_editor_select,
+#world_editor_select~.select2-container,
+#world_info_sort_order,
 #world_info_search {
-    width: 10em;
-    min-width: 10em;
-    flex-grow: 1;
+    flex: 1;
 }
 
-#world_info_sort_order {
-    width: 7em;
+#world_info_sort_order,
+#world_info_search {
+    min-width: 6em;
+}
+
+#world_editor_select~.select2-container {
+    overflow: hidden;
+}
+
+#world_editor_select~.select2-container .select2-selection--single .select2-selection__rendered {
+    padding-right: 30px;
+}
+
+#world_editor_select~.select2-container .select2-selection .select2-selection__clear {
+    right: 20px;
+    display: flex;
+    align-items: center;
 }
 
 .world_entry .killSwitch.fa-toggle-on {

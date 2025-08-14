@@ -4598,6 +4598,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_reasoning_actions {
     margin: 0;
     margin-top: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 .mes_edit_buttons .menu_button,
@@ -4615,7 +4616,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_reasoning_actions .edit_button {
-    margin-bottom: 0.5em;
     opacity: 1;
     filter: brightness(0.7);
 }

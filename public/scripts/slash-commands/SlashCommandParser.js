@@ -226,7 +226,7 @@ export class SlashCommandParser {
 
         function getQuotedRunRegex() {
             try {
-                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)(\\||$|\\s)');
+                return new RegExp('(".+?(?<!\\\\)")|((?:[^\\s\\|"]|"[^"]*")*)(\\||$|\\s)');
             } catch {
                 // fallback for browsers that don't support lookbehind
                 return /(".+?")|(\S+?)(\||$|\s)/;
