@@ -1880,6 +1880,9 @@ function saveModelList(data) {
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').empty();
         model_list.forEach((model) => {
+            if (!model?.supports_chat) {
+                return;
+            }
             $('#model_fireworks_select').append(
                 $('<option>', {
                     value: model.id,
@@ -5204,6 +5207,19 @@ async function onConnectButtonClick(e) {
 
         if (!secret_state[SECRET_KEYS.MOONSHOT]) {
             console.log('No secret key saved for Moonshot');
+            return;
+        }
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
+        const api_key_fireworks = String($('#api_key_fireworks').val()).trim();
+
+        if (api_key_fireworks.length) {
+            await writeSecret(SECRET_KEYS.FIREWORKS, api_key_fireworks);
+        }
+
+        if (!secret_state[SECRET_KEYS.FIREWORKS]) {
+            console.log('No secret key saved for Fireworks');
             return;
         }
     }
