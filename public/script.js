@@ -9549,7 +9549,7 @@ jQuery(async function () {
             return;
         }
 
-        const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 1;
+        const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 5;
 
         // Resume autoscroll if the user scrolls to the bottom
         if (scrollLock && scrollIsAtBottom) {
@@ -9561,8 +9561,7 @@ jQuery(async function () {
             scrollLock = true;
         }
     };
-    chatElementScroll.addEventListener('wheel', chatScrollHandler, { passive: true });
-    chatElementScroll.addEventListener('touchmove', chatScrollHandler, { passive: true });
+    chatElementScroll.addEventListener('scroll', chatScrollHandler, { passive: true });
 
     $(document).on('click', '.mes', function () {
         //when a 'delete message' parent div is clicked
