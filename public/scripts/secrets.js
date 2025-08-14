@@ -60,6 +60,7 @@ export const SECRET_KEYS = {
     AIMLAPI: 'api_key_aimlapi',
     FALAI: 'api_key_falai',
     XAI: 'api_key_xai',
+    FIREWORKS: 'api_key_fireworks',
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
     MINIMAX: 'api_key_minimax',
     MINIMAX_GROUP_ID: 'minimax_group_id',
@@ -107,6 +108,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.FALAI]: 'FAL.AI',
     [SECRET_KEYS.AZURE_TTS]: 'Azure TTS',
     [SECRET_KEYS.AIMLAPI]: 'AI/ML API',
+    [SECRET_KEYS.FIREWORKS]: 'Fireworks AI',
     [SECRET_KEYS.DEEPL]: 'DeepL',
     [SECRET_KEYS.LIBRE]: 'LibreTranslate',
     [SECRET_KEYS.LIBRE_URL]: 'LibreTranslate Endpoint (e.g. http://127.0.0.1:5000/translate)',
@@ -151,6 +153,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.XAI]: '#api_key_xai',
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
+    [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
 };
 
 const getLabel = () => moment().format('L LT');
