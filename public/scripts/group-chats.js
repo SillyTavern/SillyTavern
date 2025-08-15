@@ -877,7 +877,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
         }
         else if (type === 'swipe' || type === 'continue') {
-            activatedMembers = activateSwipe(group.members, { allowSystem: type === 'continue' });
+            activatedMembers = activateSwipe(group.members, { allowSystem: false });
 
             if (activatedMembers.length === 0) {
                 toastr.warning(t`Deleted group member swiped. To get a reply, add them back to the group.`);
