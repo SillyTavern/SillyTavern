@@ -3745,6 +3745,7 @@ async function generateCallback(args, value) {
             quietName: char?.name ?? name,
             responseLength: length,
             trimToSentence: trim,
+            forceChId: char ? characters.indexOf(char) : null,
         };
         const result = await generateQuietPrompt(params);
         return result;
