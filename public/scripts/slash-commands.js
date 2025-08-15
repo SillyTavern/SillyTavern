@@ -3737,7 +3737,7 @@ async function generateCallback(args, value) {
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
-        const char = findChar({ name: name });
+        const char = name ? findChar({ name: name }) : null;
         /** @type {import('../script.js').GenerateQuietPromptParams} */
         const params = {
             quietPrompt: value,
