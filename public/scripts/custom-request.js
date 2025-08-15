@@ -256,7 +256,7 @@ export class TextCompletionService {
                                 message.role,
                                 message.content,
                                 message.role === 'user',
-                                false,
+                                message.role === 'system',
                                 undefined,
                                 undefined,
                                 undefined,
@@ -389,8 +389,8 @@ export class TextCompletionService {
 
         // Initialize base payload with common parameters
         let payload = {
-            'temperature': settings.temp ? Number(settings.temp) : undefined,
-            'min_p': settings.min_p ? Number(settings.min_p) : undefined,
+            'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
+            'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
         };
 
         // Remove undefined values to avoid API errors
@@ -573,7 +573,7 @@ export class ChatCompletionService {
 
         // Initialize base payload with common parameters
         const payload = {
-            temperature: settings.temperature ? Number(settings.temperature) : undefined,
+            temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
         };
 
         // Remove undefined values to avoid API errors
