@@ -163,7 +163,7 @@ export async function hideChatMessageRange(start, end, unhide, nameFitler = null
     hideSwipeButtons();
     showSwipeButtons();
 
-    saveChatDebounced();
+    await saveChatConditional();
 }
 
 /**
