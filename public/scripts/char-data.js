@@ -99,6 +99,7 @@
 * @property {number} substituteRegex - Whether the regex should be substituted
 * @property {number} minDepth - The minimum depth
 * @property {number} maxDepth - The maximum depth
+* @property {boolean} enableNamedCaptureGroups - Whether to enable named capture groups syntax (${name})
 */
 
 /**

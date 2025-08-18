@@ -61,7 +61,7 @@
                     <small data-i18n="Replace With">Replace With</small>
                 </label>
                 <div>
-                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex or $1, $2, etc. for capture groups." rows="2"></textarea>
+                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex, $1, $2, etc. for numbered capture groups, or ${name} for named capture groups (when enabled)." rows="2"></textarea>
                 </div>
             </div>
             <div class="flex1">
@@ -144,6 +144,10 @@
                         <option value="1" data-i18n="Substitute (raw)">Substitute (raw)</option>
                         <option value="2" data-i18n="Substitute (escaped)">Substitute (escaped)</option>
                     </select>
+                </label>
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_named_capture_groups_desc" title="Enable named capture groups syntax (${name}) in the replace string. This feature may break backward compatibility with existing scripts.">
+                    <input type="checkbox" name="enable_named_capture_groups" />
+                    <span data-i18n="Enable Named Capture Groups">Enable Named Capture Groups</span>
                 </label>
                 <span>
                     <small data-i18n="Ephemerality">Ephemerality</small>

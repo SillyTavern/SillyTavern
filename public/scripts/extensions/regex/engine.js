@@ -163,9 +163,24 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     newString = rawString.replace(findRegex, function (match) {
         const args = [...arguments];
         const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
-        const replaceWithGroups = replaceString.replaceAll(/\$(\d+)/g, (_, num) => {
-            // Get a full match or a capture group
-            const match = args[Number(num)];
+
+        // Handle both numbered and named capture groups
+        let replaceWithGroups = replaceString;
+
+        // Handle numbered capture groups ($1, $2, etc.) and named capture groups (${name})
+        const captureGroupRegex = regexScript.enableNamedCaptureGroups ?
+            /\$(\d+)|\$\{([^}]+)\}/g :
+            /\$(\d+)/g;
+
+        replaceWithGroups = replaceWithGroups.replaceAll(captureGroupRegex, (_, num, groupName) => {
+            if (num) {
+                // Handle numbered capture groups ($1, $2, etc.)
+                match = args[Number(num)];
+            } else if (groupName && regexScript.enableNamedCaptureGroups) {
+                // Handle named capture groups (${name})
+                const groups = args[args.length - 1];
+                match = groups && typeof groups === 'object' && groups[groupName];
+            }
 
             // No match found - return the empty string
             if (!match) {
@@ -174,8 +189,6 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
 
             // Remove trim strings from the match
             const filteredMatch = filterString(match, regexScript.trimStrings, { characterOverride });
-
-            // TODO: Handle overlay here
 
             return filteredMatch;
         });

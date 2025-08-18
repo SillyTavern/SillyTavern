@@ -242,6 +242,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
             editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
             editorHtml.find('input[name="run_on_edit"]').prop('checked', existingScript.runOnEdit ?? false);
+            editorHtml.find('input[name="enable_named_capture_groups"]').prop('checked', existingScript.enableNamedCaptureGroups ?? false);
             editorHtml.find('select[name="substitute_regex"]').val(existingScript.substituteRegex ?? substitute_find_regex.NONE);
             editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
             editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
@@ -289,6 +290,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             promptOnly: false,
             markdownOnly: false,
             runOnEdit: false,
+            enableNamedCaptureGroups: editorHtml.find('input[name="enable_named_capture_groups"]').prop('checked'),
             minDepth: null,
             maxDepth: null,
             placement: null,
@@ -320,6 +322,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             markdownOnly: editorHtml.find('input[name="only_format_display"]').prop('checked'),
             promptOnly: editorHtml.find('input[name="only_format_prompt"]').prop('checked'),
             runOnEdit: editorHtml.find('input[name="run_on_edit"]').prop('checked'),
+            enableNamedCaptureGroups: editorHtml.find('input[name="enable_named_capture_groups"]').prop('checked'),
             substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
             minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
             maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
