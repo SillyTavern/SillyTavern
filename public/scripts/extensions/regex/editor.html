@@ -134,6 +134,10 @@
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
                 </label>
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_named_capture_groups_desc" title="Enable named capture groups syntax (${name}) in the replace string. This feature may break backward compatibility with existing scripts.">
+                    <input type="checkbox" name="enable_named_capture_groups" />
+                    <span data-i18n="Enable Named Capture Groups">Enable Named Capture Groups</span>
+                </label>
                 <label class="checkbox flex-container flexNoGap marginBot5" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute &lcub;&lcub;macros&rcub;&rcub; in Find Regex before running it">
                     <span>
                         <small data-i18n="Macro in Find Regex">Macros in Find Regex</small>
@@ -144,10 +148,6 @@
                         <option value="1" data-i18n="Substitute (raw)">Substitute (raw)</option>
                         <option value="2" data-i18n="Substitute (escaped)">Substitute (escaped)</option>
                     </select>
-                </label>
-                <label class="checkbox flex-container" data-i18n="[title]ext_regex_named_capture_groups_desc" title="Enable named capture groups syntax (${name}) in the replace string. This feature may break backward compatibility with existing scripts.">
-                    <input type="checkbox" name="enable_named_capture_groups" />
-                    <span data-i18n="Enable Named Capture Groups">Enable Named Capture Groups</span>
                 </label>
                 <span>
                     <small data-i18n="Ephemerality">Ephemerality</small>
