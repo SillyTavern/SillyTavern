@@ -14,7 +14,6 @@ import {
     name1,
     name2,
     reloadCurrentChat,
-    saveChatDebounced,
     saveSettingsDebounced,
     showSwipeButtons,
     this_chid,
