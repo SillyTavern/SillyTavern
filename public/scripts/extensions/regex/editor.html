@@ -61,7 +61,7 @@
                     <small data-i18n="Replace With">Replace With</small>
                 </label>
                 <div>
-                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex, $1, $2, etc. for numbered capture groups, or ${name} for named capture groups (when enabled)." rows="3"></textarea>
+                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex, $1, $2, etc. for numbered capture groups, or $&lt;name&gt; for named capture groups." rows="3"></textarea>
                 </div>
             </div>
             <div class="flex1">
@@ -133,10 +133,6 @@
                 <label class="checkbox flex-container" data-i18n="[title]ext_regex_run_on_edit_desc" title="Run the regex script when the message belonging a to specified role(s) is edited.">
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
-                </label>
-                <label class="checkbox flex-container" data-i18n="[title]ext_regex_named_capture_groups_desc" title="Enable named capture groups syntax (${name}) in the replace string. This feature may break backward compatibility with existing scripts.">
-                    <input type="checkbox" name="enable_named_capture_groups" />
-                    <span data-i18n="Enable Named Capture Groups">Enable Named Capture Groups</span>
                 </label>
                 <label class="checkbox flex-container flexNoGap marginBot5" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute &lcub;&lcub;macros&rcub;&rcub; in Find Regex before running it">
                     <span>

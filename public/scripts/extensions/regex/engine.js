@@ -164,20 +164,13 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         const args = [...arguments];
         const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
 
-        // Handle both numbered and named capture groups
-        let replaceWithGroups = replaceString;
-
-        // Handle numbered capture groups ($1, $2, etc.) and named capture groups (${name})
-        const captureGroupRegex = regexScript.enableNamedCaptureGroups ?
-            /\$(\d+)|\$\{([^}]+)\}/g :
-            /\$(\d+)/g;
-
-        replaceWithGroups = replaceWithGroups.replaceAll(captureGroupRegex, (_, num, groupName) => {
+        // Handle numbered capture replaceString ($1, $2, etc.) and named capture groups (${name})
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d+)|\$<([^>]+)>/g, (_, num, groupName) => {
             if (num) {
                 // Handle numbered capture groups ($1, $2, etc.)
                 match = args[Number(num)];
-            } else if (groupName && regexScript.enableNamedCaptureGroups) {
-                // Handle named capture groups (${name})
+            } else if (groupName) {
+                // Handle named capture groups ($<name>)
                 const groups = args[args.length - 1];
                 match = groups && typeof groups === 'object' && groups[groupName];
             }
