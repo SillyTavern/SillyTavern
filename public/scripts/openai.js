@@ -276,6 +276,7 @@ export const settingsToUpdate = {
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
+    fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
@@ -372,6 +373,7 @@ const default_settings = {
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     moonshot_model: 'kimi-latest',
+    fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -3405,6 +3407,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
     oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
+    oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3777,6 +3780,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
         moonshot_model: settings.moonshot_model,
+        fireworks_model: settings.fireworks_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
