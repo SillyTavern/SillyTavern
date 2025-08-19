@@ -277,6 +277,7 @@ export const settingsToUpdate = {
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
+    fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
@@ -3435,6 +3436,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
+    oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -4407,10 +4409,12 @@ function getMistralMaxContext(model, isUnlocked) {
     }
 
     const contextMap = {
+        'codestral-2405': 32768,
         'codestral-2411-rc5': 262144,
         'codestral-2412': 262144,
         'codestral-2501': 262144,
-        'codestral-latest': 262144,
+        'codestral-2508': 256000,
+        'codestral-latest': 256000,
         'codestral-mamba-2407': 262144,
         'codestral-mamba-latest': 262144,
         'open-codestral-mamba': 262144,
@@ -4433,13 +4437,13 @@ function getMistralMaxContext(model, isUnlocked) {
         'pixtral-large-latest': 131072,
         'open-mixtral-8x22b': 65536,
         'open-mixtral-8x22b-2404': 65536,
-        'codestral-2405': 32768,
         'mistral-embed': 32768,
         'mistral-large-2402': 32768,
         'mistral-medium': 131072,
         'mistral-medium-2312': 32768,
         'mistral-medium-2505': 131072,
-        'mistral-medium-latest': 131072,
+        'mistral-medium-2508': 262144,
+        'mistral-medium-latest': 262144,
         'mistral-moderation-2411': 32768,
         'mistral-moderation-latest': 32768,
         'mistral-ocr-2503': 32768,
@@ -5461,6 +5465,7 @@ export function isImageInliningSupported() {
         'mistral-small-latest',
         'mistral-medium-latest',
         'mistral-medium-2505',
+        'mistral-medium-2508',
         'pixtral',
         // xAI (Grok)
         'grok-4',

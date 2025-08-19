@@ -24,6 +24,23 @@ export let openRouterModels = [];
  * @type {string[]}
  */
 const OPENROUTER_PROVIDERS = [
+    'AnyScale',
+    'Cent-ML',
+    'HuggingFace',
+    'Hyperbolic 2',
+    'Lepton',
+    'Lynn 2',
+    'Lynn',
+    'Mancer',
+    'Modal',
+    'OctoAI',
+    'Recursal',
+    'Reflection',
+    'Replicate',
+    'SambaNova 2',
+    'SF Compute',
+    'Together 2',
+    '01.AI',
     'AI21',
     'AionLabs',
     'Alibaba',
@@ -55,6 +72,7 @@ const OPENROUTER_PROVIDERS = [
     'InferenceNet',
     'Infermatic',
     'Inflection',
+    'InoCloud',
     'Kluster',
     'Lambda',
     'Liquid',
@@ -81,7 +99,9 @@ const OPENROUTER_PROVIDERS = [
     'Together',
     'Ubicloud',
     'Venice',
+    'WandB',
     'xAI',
+    'Z.AI',
 ];
 
 export async function loadOllamaModels(data) {
