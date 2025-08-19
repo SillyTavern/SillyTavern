@@ -201,7 +201,6 @@ const init = async () => {
             ...(settings.charConfig?.setList ?? []),
             ...settings.config.setList,
         ]
-            .filter(it => it.isVisible)
             .map(it => it.set.qrList)
             .flat()
             .find(it=>it.label == name)
