@@ -184,9 +184,9 @@ export const chat_completion_sources = {
     AIMLAPI: 'aimlapi',
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
-    COMETAPI: 'cometapi',
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
+    COMETAPI: 'cometapi',
 };
 
 const character_names_behavior = {
@@ -278,6 +278,7 @@ export const settingsToUpdate = {
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
+    cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
