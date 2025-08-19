@@ -1,4 +1,4 @@
-import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, this_chid, saveSettingsDebounced } from '../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, this_chid, characters } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
@@ -10,6 +10,7 @@ import { SlashCommandHandler } from './src/SlashCommandHandler.js';
 import { ButtonUi } from './src/ui/ButtonUi.js';
 import { SettingsUi } from './src/ui/SettingsUi.js';
 import { debounceAsync } from '../../utils.js';
+import { selected_group } from '../../group-chats.js';
 export { debounceAsync };
 
 
@@ -155,19 +156,21 @@ const onCharChanged = async () => {
     lastCharId = this_chid;
 
     // If no character is loaded, there's nothing more to do.
-    if (!this_chid) {
+    /** @type {import('../../char-data.js').v1CharData} */
+    const character = characters[this_chid];
+    if (!character || selected_group) {
         buttons.refresh();
         manager.rerender();
         return false;
     }
 
     // Get the character-specific config from the local settings storage.
-    let charConfig = settings.characterConfigs[this_chid];
+    let charConfig = settings.characterConfigs[character.avatar];
 
     // If no config exists for this character, create a new one.
     if (!charConfig) {
         charConfig = QuickReplyConfig.from({ setList: [] });
-        settings.characterConfigs[this_chid] = charConfig;
+        settings.characterConfigs[character.avatar] = charConfig;
     }
 
     charConfig.scope = 'character';
@@ -175,16 +178,12 @@ const onCharChanged = async () => {
     charConfig.onSave = () => settings.save();
     settings.charConfig = charConfig;
 
-
     // The parent onChatChanged will call UI refresh methods.
     return false;
 };
 
 
 const init = async () => {
-    if (!extension_settings.character_allowed_quickreply) {
-        extension_settings.character_allowed_quickreply = [];
-    }
     await loadSets();
     await loadSettings();
     log('settings: ', settings);
@@ -247,16 +246,13 @@ const finalizeInit = async () => {
 };
 await init();
 
-const purgeEmbeddedQuickReplySets = ({ character }) => {
+const purgeCharacterQuickReplySets = ({ character }) => {
+    // Remove the character's Quick Reply Sets from the settings.
     const avatar = character?.avatar;
-
-    if (avatar && extension_settings.character_allowed_quickreply?.includes(avatar)) {
-        const index = extension_settings.character_allowed_quickreply.indexOf(avatar);
-        if (index !== -1) {
-            extension_settings.character_allowed_quickreply.splice(index, 1);
-            saveSettingsDebounced();
-            log(`Removed character avatar ${avatar} from Quick Reply whitelist.`);
-        }
+    if (avatar && avatar in settings.characterConfigs) {
+        log(`Purging Quick Reply Sets for character: ${avatar}`);
+        delete settings.characterConfigs[avatar];
+        settings.save();
     }
 };
 
@@ -290,7 +286,7 @@ const onChatChanged = async (chatIdx) => {
     await autoExec.handleChatChanged();
 };
 eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
-eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedQuickReplySets);
+eventSource.on(event_types.CHARACTER_DELETED, purgeCharacterQuickReplySets);
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
@@ -321,4 +317,3 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
-

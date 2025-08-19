@@ -8,7 +8,6 @@ import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
     /**@type {QuickReplySet[]}*/ static list = [];
-    /**@type {function(QuickReplySet):void}*/ static onScopedSetSave;
 
     /**
      * @param {Partial<QuickReplySet>} props
@@ -386,9 +385,6 @@ export class QuickReplySet {
 
         if (response.ok) {
             this.rerender();
-            if (QuickReplySet.onScopedSetSave) {
-                QuickReplySet.onScopedSetSave(this);
-            }
         } else {
             warn(`Failed to save Quick Reply Set: ${this.name}`);
             console.error('QR could not be saved', response);
