@@ -1308,74 +1308,15 @@ router.post('/status', async function (request, statusResponse) {
     }
 
     try {
-        let response;
+        const response = await fetch(apiUrl + '/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + apiKey,
+                ...headers,
+            },
+        });
 
-        // For CometAPI, use our filtered endpoint internally
-        if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
-            // Use the filtering logic directly
-            try {
-                const originalResponse = await fetch(apiUrl + '/models', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': 'Bearer ' + apiKey,
-                        'Accept': 'application/json',
-                    },
-                });
-
-                if (!originalResponse.ok) {
-                    throw new Error(`HTTP ${originalResponse.status}`);
-                }
-
-                /** @type {any} */
-                const originalData = await originalResponse.json();
-                const models = originalData?.data || originalData?.models || originalData || [];
-                // Apply the same filtering logic as in cometapi.js
-                const filteredModels = models.filter(model => {
-                    const modelId = model.id.toLowerCase();
-
-                    // Filter out image generation models
-                    const imageGenPatterns = [
-                        'dall-e', 'dalle', 'midjourney', 'mj_', 'stable-diffusion', 'sd-',
-                        'flux-', 'playground-v', 'ideogram', 'recraft-', 'black-forest-labs',
-                        '/recraft-v3', 'recraftv3', 'stability-ai/', 'sdxl',
-                    ];
-
-                    // Filter out video generation models
-                    const videoGenPatterns = [
-                        'runway', 'luma_', 'luma-', 'veo', 'kling_', 'minimax_video', 'hunyuan-t1',
-                    ];
-
-                    // Filter out audio/music generation models
-                    const audioGenPatterns = ['suno_', 'tts', 'whisper'];
-
-                    // Filter out utility models
-                    const utilityPatterns = ['embedding', 'search-gpts', 'files_retrieve', 'moderation'];
-
-                    const isImageModel = imageGenPatterns.some(pattern => modelId.includes(pattern));
-                    const isVideoModel = videoGenPatterns.some(pattern => modelId.includes(pattern));
-                    const isAudioModel = audioGenPatterns.some(pattern => modelId.includes(pattern));
-                    const isUtilityModel = utilityPatterns.some(pattern => modelId.includes(pattern));
-
-                    return !isImageModel && !isVideoModel && !isAudioModel && !isUtilityModel;
-                });
-
-                statusResponse.send({ data: filteredModels });
-                return;
-            } catch (error) {
-                console.error('CometAPI filtering error:', error);
-                // Fallback to original behavior
-            }
-        } else {
-            response = await fetch(apiUrl + '/models', {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + apiKey,
-                    ...headers,
-                },
-            });
-        }
-
-        if (response && response.ok) {
+        if (response.ok) {
             /** @type {any} */
             let data = await response.json();
 
@@ -1726,7 +1667,7 @@ router.post('/generate', function (request, response) {
             ? setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema)
             : addAssistantPrefix(request.body.messages, [], 'partial');
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
-        apiUrl = 'https://api.cometapi.com/v1';
+        apiUrl = API_COMETAPI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
         headers = {};
         bodyParams = {};

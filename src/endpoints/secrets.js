@@ -53,12 +53,12 @@ export const SECRET_KEYS = {
     SERPER: 'api_key_serper',
     AIMLAPI: 'api_key_aimlapi',
     XAI: 'api_key_xai',
-    COMETAPI: 'cometapi_api_key',
     FIREWORKS: 'api_key_fireworks',
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
     MINIMAX: 'api_key_minimax',
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
+    COMETAPI: 'api_key_cometapi',
 };
 
 /**
