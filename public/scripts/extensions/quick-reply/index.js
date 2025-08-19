@@ -197,9 +197,9 @@ const init = async () => {
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [
+            ...settings.config.setList,
             ...(settings.chatConfig?.setList ?? []),
             ...(settings.charConfig?.setList ?? []),
-            ...settings.config.setList,
         ]
             .map(it => it.set.qrList)
             .flat()
