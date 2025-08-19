@@ -10,6 +10,10 @@ export class QuickReplySet {
     /**@type {QuickReplySet[]}*/ static list = [];
    /**@type {function(QuickReplySet):void}*/ static onScopedSetSave;
 
+    /**
+     * @param {Partial<QuickReplySet>} props
+     * @returns {QuickReplySet}
+     */
     static from(props) {
         const qrList = props.qrList;
         props.qrList = [];

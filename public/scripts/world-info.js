@@ -9,7 +9,7 @@ import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS } from './constants.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -17,7 +17,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
@@ -107,6 +107,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {string} characterDepthPrompt Character depth prompt (sometimes referred to as character notes)
  * @property {string} scenario Character defined scenario
  * @property {string} creatorNotes Character creator notes
+ * @property {string} trigger The type that triggered the scan, e.g. 'normal', 'continue', etc.
  */
 
 /**
@@ -145,7 +146,48 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @typedef TimedEffectType Type of timed effect
  * @type {'sticky'|'cooldown'|'delay'}
  */
+
+/**
+ * @typedef {object} WIPromptResult
+ * @property {string} worldInfoString - Complete world info string
+ * @property {string} worldInfoBefore - World info that goes before the prompt
+ * @property {string} worldInfoAfter - World info that goes after the prompt
+ * @property {Array} worldInfoExamples - Array of example entries
+ * @property {Array} worldInfoDepth - Array of depth entries
+ * @property {Array} anBefore - Array of entries before Author's Note
+ * @property {Array} anAfter - Array of entries after Author's Note
+ */
+
+/**
+ * @typedef {object} WIActivated
+ * @property {string} worldInfoBefore The world info before the chat.
+ * @property {string} worldInfoAfter The world info after the chat.
+ * @property {any[]} EMEntries The entries for examples.
+ * @property {any[]} WIDepthEntries The depth entries.
+ * @property {any[]} ANBeforeEntries The entries before Author's Note.
+ * @property {any[]} ANAfterEntries The entries after Author's Note.
+ * @property {Set<any>} allActivatedEntries All entries.
+ */
+
+/**
+ * @typedef {object} WIEntryFieldDefinition
+ * @property {any} default - Default value for the field
+ * @property {string} type - Type of the field, can be 'string', 'number', 'boolean', 'array', 'enum'
+ * @property {boolean} [excludeFromTemplate=false] - Whether to exclude this field from the template
+ * @property {(value: any) => boolean} [arrayFilter] - Optional filter function for array fields to filter out unwanted values
+ */
 // End typedef area
+
+/** @type {Readonly<WIGlobalScanData>} */
+const defaultGlobalScanData = Object.freeze({
+    trigger: 'normal',
+    personaDescription: '',
+    characterDescription: '',
+    characterPersonality: '',
+    characterDepthPrompt: '',
+    scenario: '',
+    creatorNotes: '',
+});
 
 /**
  * Represents a scanning buffer for one evaluation of World Info.
@@ -801,14 +843,6 @@ export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOn
  * @param {number} maxContext - The maximum context size of the generation.
  * @param {boolean} isDryRun - If true, the function will not emit any events.
  * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @typedef {object} WIPromptResult
- * @property {string} worldInfoString - Complete world info string
- * @property {string} worldInfoBefore - World info that goes before the prompt
- * @property {string} worldInfoAfter - World info that goes after the prompt
- * @property {Array} worldInfoExamples - Array of example entries
- * @property {Array} worldInfoDepth - Array of depth entries
- * @property {Array} anBefore - Array of entries before Author's Note
- * @property {Array} anAfter - Array of entries after Author's Note
  * @returns {Promise<WIPromptResult>} The world info string and depth.
  */
 export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanData) {
@@ -1139,7 +1173,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (newWorldInfoEntryTemplate[field] === undefined) {
+        if (!Object.hasOwn(newWorldInfoEntryDefinition, field)) {
             toastr.warning('Valid field name is required');
             return '';
         }
@@ -1167,7 +1201,7 @@ function registerWorldInfoSlashCommands() {
                 }
                 break;
             default:
-                fieldValue = entry[field];
+                fieldValue = entry[field] ?? newWorldInfoEntryDefinition[field]?.default;
         }
 
         if (fieldValue === undefined) {
@@ -1253,10 +1287,18 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        if (newWorldInfoEntryTemplate[field] === undefined) {
+        if (!Object.hasOwn(newWorldInfoEntryDefinition, field)) {
             toastr.warning('Valid field name is required');
             return '';
         }
+
+        // Init a default value for the field if it does not exist
+        if (!Object.hasOwn(entry, field)) {
+            entry[field] = newWorldInfoEntryDefinition[field].default;
+        }
+
+        // Use an array filter if it exists for the field
+        const arrayFilter = newWorldInfoEntryDefinition[field]?.arrayFilter || (() => true);
 
         // handle special cases, otherwise execute default logic
         let tagNames;
@@ -1285,7 +1327,7 @@ function registerWorldInfoSlashCommands() {
                 break;
             default:
                 if (Array.isArray(entry[field])) {
-                    entry[field] = parseStringArray(value);
+                    entry[field] = parseStringArray(value).filter(arrayFilter);
                 } else if (typeof entry[field] === 'boolean') {
                     entry[field] = isTrueBoolean(value);
                 } else if (typeof entry[field] === 'number') {
@@ -1874,14 +1916,19 @@ export async function updateWorldInfoList() {
     });
 
     if (result.ok) {
-        var data = await result.json();
+        const data = await result.json();
+        const editorSelected = String($('#world_editor_select').find(':selected').text());
         world_names = data.world_names?.length ? data.world_names : [];
         $('#world_info').find('option[value!=""]').remove();
         $('#world_editor_select').find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
-            $('#world_info').append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
-            $('#world_editor_select').append(`<option value='${i}'>${item}</option>`);
+            const globalListOption = new Option(item, i.toString());
+            globalListOption.selected = selected_world_info.includes(item);
+            const editorListOption = new Option(item, i.toString());
+            editorListOption.selected = editorSelected === item;
+            $('#world_info').append(globalListOption);
+            $('#world_editor_select').append(editorListOption);
         });
     }
 }
@@ -2438,6 +2485,8 @@ export const originalWIDataKeyMap = {
     'sticky': 'extensions.sticky',
     'cooldown': 'extensions.cooldown',
     'delay': 'extensions.delay',
+    'triggers': 'extensions.triggers',
+    'ignoreBudget': 'extensions.ignore_budget',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -3189,7 +3238,7 @@ export async function getWorldEntry(name, data, entry) {
             return;
         }
         const wrapper = document.createElement('div');
-        wrapper.textContent = t`Move '${sourceName}' to:`;
+        wrapper.textContent = t`Move/Copy '${sourceName}' to:`;
         const container = document.createElement('div');
         container.appendChild(wrapper);
         container.appendChild(select);
@@ -3197,10 +3246,15 @@ export async function getWorldEntry(name, data, entry) {
         select.addEventListener('change', function () {
             selectedWorldIndex = this.value === '' ? -1 : Number(this.value);
         });
-        const popupConfirm = await callGenericPopup(container, POPUP_TYPE.CONFIRM, '', {
-            okButton: t`Move`,
+        const popup = new Popup(container, POPUP_TYPE.CONFIRM, '', {
             cancelButton: t`Cancel`,
+            customButtons: [
+                { text: t`Move`, result: POPUP_RESULT.CUSTOM1 },
+                { text: t`Copy`, result: POPUP_RESULT.CUSTOM2 },
+            ],
         });
+        popup.okButton.style.display = 'none'; // Hide the default OK button
+        const popupConfirm = await popup.show();
         if (!popupConfirm) return;
         if (selectedWorldIndex === -1) return;
         const selectedValue = world_names[selectedWorldIndex];
@@ -3208,7 +3262,8 @@ export async function getWorldEntry(name, data, entry) {
             toastr.warning(t`Please select a target lorebook.`);
             return;
         }
-        await moveWorldInfoEntry(sourceWorld, selectedValue, sourceUid);
+        const deleteOriginal = popupConfirm === POPUP_RESULT.CUSTOM1;
+        await moveWorldInfoEntry(sourceWorld, selectedValue, sourceUid, { deleteOriginal });
     });
 
     let drawerInitialized = false;
@@ -3496,6 +3551,41 @@ export async function getWorldEntry(name, data, entry) {
         automationIdInput.val(entry.automationId ?? '').trigger('input', { noSave: true });
         setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
 
+        // Generation Type Triggers
+        const generationTypeTriggers = editTemplate.find('select[name="triggers"]');
+        generationTypeTriggers.data('uid', entry.uid);
+        generationTypeTriggers.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].triggers = Array.isArray(value) ? value : [];
+            setWIOriginalDataValue(data, uid, 'extensions.triggers', data.entries[uid].triggers);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        if (!isMobile()) {
+            generationTypeTriggers.select2({
+                placeholder: t`All types (default)`,
+                width: '100%',
+                closeOnSelect: false,
+                allowClear: true,
+            });
+        }
+        generationTypeTriggers
+            .val(Array.isArray(entry.triggers) ? entry.triggers : [])
+            .trigger('input', { noSave: true })
+            .trigger('change');
+
+        // Ignore budget
+        const ignoreBudgetInput = editTemplate.find('input[name="ignoreBudget"]');
+        ignoreBudgetInput.data('uid', entry.uid);
+        ignoreBudgetInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            data.entries[uid].ignoreBudget = value;
+            setWIOriginalDataValue(data, uid, 'extensions.ignore_budget', data.entries[uid].ignoreBudget);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        ignoreBudgetInput.prop('checked', entry.ignoreBudget ?? false).trigger('input', { noSave: true });
+
         countTokensDebounced(counter, contentInput.val());
 
         editTemplate.find('.inline-drawer-content').css('display', 'none');
@@ -3652,7 +3742,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * Use `newEntryTemplate` if you just need the template that contains default values
  *
- * @type {{[key: string]: { default: any, type: string, excludeFromTemplate?: boolean }}}
+ * @type {{[key: string]: WIEntryFieldDefinition}}
  */
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
@@ -3667,6 +3757,7 @@ export const newWorldInfoEntryDefinition = {
     order: { default: 100, type: 'number' },
     position: { default: 0, type: 'number' },
     disable: { default: false, type: 'boolean' },
+    ignoreBudget: { default: false, type: 'boolean' },
     excludeRecursion: { default: false, type: 'boolean' },
     preventRecursion: { default: false, type: 'boolean' },
     matchPersonaDescription: { default: false, type: 'boolean' },
@@ -3694,6 +3785,7 @@ export const newWorldInfoEntryDefinition = {
     characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true },
     characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true },
     characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true },
+    triggers: { default: [], type: 'array', arrayFilter: (value) => GENERATION_TYPE_TRIGGERS.includes(value) },
 };
 
 export const newWorldInfoEntryTemplate = Object.fromEntries(
@@ -4040,6 +4132,8 @@ export async function getSortedEntries() {
             getPersonaLore(),
         ]);
 
+        await eventSource.emit(event_types.WORLDINFO_ENTRIES_LOADED, { globalLore, characterLore, chatLore, personaLore });
+
         let entries;
 
         switch (Number(world_info_character_strategy)) {
@@ -4143,23 +4237,14 @@ function parseDecorators(content) {
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun Whether to perform a dry run.
  * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @typedef {object} WIActivated
- * @property {string} worldInfoBefore The world info before the chat.
- * @property {string} worldInfoAfter The world info after the chat.
- * @property {any[]} EMEntries The entries for examples.
- * @property {any[]} WIDepthEntries The depth entries.
- * @property {any[]} ANBeforeEntries The entries before Author's Note.
- * @property {any[]} ANAfterEntries The entries after Author's Note.
- * @property {Set<any>} allActivatedEntries All entries.
  * @returns {Promise<WIActivated>} The world info activated.
  */
-
 //MARK: checkWorldInfo
-export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData) {
+export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat, globalScanData);
 
-    console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages)${isDryRun ? ' (DRY RUN)' : ''} ---`);
+    console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages, trigger = ${globalScanData.trigger})${isDryRun ? ' (DRY RUN)' : ''} ---`);
 
     // Combine the chat
 
@@ -4231,7 +4316,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
         // Loop and find all entries that can activate here
         let activatedNow = new Set();
 
-        for (let entry of sortedEntries) {
+        for (const entry of sortedEntries) {
             // Logging preparation
             let headerLogged = false;
             function log(...args) {
@@ -4250,6 +4335,15 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
             if (entry.disable == true) {
                 log('disabled');
                 continue;
+            }
+
+            // Check for generation type trigger filter
+            if (Array.isArray(entry.triggers) && entry.triggers.length > 0) {
+                const isTriggered = entry.triggers.includes(globalScanData.trigger);
+                if (!isTriggered) {
+                    log(`skipped by generation type trigger filter (${globalScanData.trigger} ∉ ${entry.triggers})`);
+                    continue;
+                }
             }
 
             // Check if this entry applies to the character or if it's excluded
@@ -4447,7 +4541,17 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
         console.debug('[WI] --- PROBABILITY CHECKS ---');
         !newEntries.length && console.debug('[WI] No probability checks to do');
 
+        let ignoresBudget = newEntries.filter(e => e.ignoreBudget).length;
+
         for (const entry of newEntries) {
+            ignoresBudget -= (entry.ignoreBudget ? 1 : 0);
+            if (token_budget_overflowed && !entry.ignoreBudget) {
+                if (ignoresBudget > 0) {
+                    continue;
+                }
+                break;
+            }
+
             function verifyProbability() {
                 // If we don't need to roll, it's always true
                 if (!entry.useProbability || entry.probability === 100) {
@@ -4481,16 +4585,18 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData)
             entry.content = substituteParams(entry.content);
             newContent += `${entry.content}\n`;
 
-            if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
-                console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
-                if (world_info_overflow_alert) {
-                    console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
-                    toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
-                } else {
-                    console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+            if (!entry.ignoreBudget && (textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
+                if (!token_budget_overflowed) {
+                    console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
+                    if (world_info_overflow_alert) {
+                        console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+                        toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
+                    } else {
+                        console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
+                    }
+                    token_budget_overflowed = true;
                 }
-                token_budget_overflowed = true;
-                break;
+                continue;
             }
 
             allActivatedEntries.set(`${entry.world}.${entry.uid}`, entry);
@@ -4877,6 +4983,8 @@ function convertAgnaiMemoryBook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -4919,6 +5027,8 @@ function convertRisuLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -4966,6 +5076,8 @@ function convertNovelLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            triggers: [],
+            ignoreBudget: false,
         };
     });
 
@@ -5022,6 +5134,8 @@ export function convertCharacterBook(characterBook) {
             matchScenario: entry.extensions?.match_scenario ?? false,
             matchCreatorNotes: entry.extensions?.match_creator_notes ?? false,
             extensions: entry.extensions ?? {},
+            triggers: entry.extensions?.triggers || [],
+            ignoreBudget: entry.extensions?.ignore_budget ?? false,
         };
     });
 
@@ -5199,6 +5313,10 @@ export function onWorldInfoChange(args, text) {
     return '';
 }
 
+/**
+ * Imports world info from a file.
+ * @param {File} file File to import
+ */
 export async function importWorldInfo(file) {
     if (!file) {
         return;
@@ -5252,28 +5370,34 @@ export async function importWorldInfo(file) {
         return false;
     }
 
-    jQuery.ajax({
-        type: 'POST',
-        url: '/api/worldinfo/import',
-        data: formData,
-        beforeSend: () => { },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (data) {
-            if (data.name) {
-                await updateWorldInfoList();
+    try {
+        const result = await fetch('/api/worldinfo/import', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
+        });
 
-                const newIndex = world_names.indexOf(data.name);
-                if (newIndex >= 0) {
-                    $('#world_editor_select').val(newIndex).trigger('change');
-                }
+        if (!result.ok) {
+            throw new Error(`Failed to import world info: ${result.statusText}`);
+        }
 
-                toastr.success(`World Info "${data.name}" imported successfully!`);
+        const data = await result.json();
+
+        if (data.name) {
+            await updateWorldInfoList();
+
+            const newIndex = world_names.indexOf(data.name);
+            if (newIndex >= 0) {
+                $('#world_editor_select').val(newIndex).trigger('change');
             }
-        },
-        error: (_jqXHR, _exception) => { },
-    });
+
+            toastr.success(t`World Info "${data.name}" imported successfully!`);
+        }
+    } catch (error) {
+        console.error('Error importing world info:', error);
+        toastr.error(t`Failed to import World Info`);
+    }
 }
 
 /**
@@ -5339,9 +5463,11 @@ export async function assignLorebookToChat(event) {
  * @param {string} sourceName - The name of the source lorebook file.
  * @param {string} targetName - The name of the target lorebook file.
  * @param {string|number} uid - The UID of the entry to move from the source lorebook.
+ * @param {Object} options - Additional options for the move operation.
+ * @param {boolean} [options.deleteOriginal=true] - Whether to delete the original entry from the source lorebook after moving it.
  * @returns {Promise<boolean>} True if the move was successful, false otherwise.
  */
-export async function moveWorldInfoEntry(sourceName, targetName, uid) {
+export async function moveWorldInfoEntry(sourceName, targetName, uid, { deleteOriginal = true } = {}) {
     if (sourceName === targetName) {
         return false;
     }
@@ -5383,7 +5509,6 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
 
         const entryToMove = structuredClone(sourceData.entries[entryUidString]);
 
-
         const newUid = getFreeWorldEntryUid(targetData);
         if (newUid === null) {
             console.error(`[WI Move] Failed to get a free UID in '${targetName}'.`);
@@ -5397,20 +5522,20 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
 
         targetData.entries[newUid] = entryToMove;
 
-        delete sourceData.entries[entryUidString];
-        // Remove from originalData if it exists
-        deleteWIOriginalDataValue(sourceData, entryUidString);
-        // TODO: setWIOriginalDataValue
-        console.debug(`[WI Move] Removed entry UID ${entryUidString} from source '${sourceName}'.`);
-
+        if (deleteOriginal) {
+            delete sourceData.entries[entryUidString];
+            // Remove from originalData if it exists
+            deleteWIOriginalDataValue(sourceData, entryUidString);
+            // TODO: setWIOriginalDataValue
+            console.debug(`[WI Move] Removed entry UID ${entryUidString} from source '${sourceName}'.`);
+        }
 
         await saveWorldInfo(targetName, targetData, true);
         console.debug(`[WI Move] Saved target lorebook '${targetName}'.`);
         await saveWorldInfo(sourceName, sourceData, true);
         console.debug(`[WI Move] Saved source lorebook '${sourceName}'.`);
 
-
-        console.log(`[WI Move] ${entryToMove.comment} moved successfully to '${targetName}'.`);
+        console.log(`[WI Move] ${entryToMove.comment} ${deleteOriginal ? 'moved' : 'copied'} successfully to '${targetName}'.`);
 
         // Check if the currently viewed book in the editor is the source or target and reload it
         const currentEditorBookIndex = Number($('#world_editor_select').val());
@@ -5420,6 +5545,10 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid) {
                 reloadEditor(currentEditorBookName);
             }
         }
+
+        toastr.success(deleteOriginal
+            ? t`Entry moved successfully from '${sourceName}' to '${targetName}'.`
+            : t`Entry copied successfully to '${targetName}'.`);
 
         return true;
     } catch (error) {
@@ -5614,6 +5743,14 @@ export function initWorldInfo() {
 
     // Not needed on mobile
     if (!isMobile()) {
+        $('#world_editor_select').select2({
+            placeholder: t`--- Pick to Edit ---`,
+            searchInputPlaceholder: t`Search...`,
+            allowClear: true,
+            closeOnSelect: true,
+            multiple: false,
+        });
+
         $('#world_info').select2({
             width: '100%',
             placeholder: t`No Worlds active. Click here to select.`,

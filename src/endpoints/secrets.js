@@ -21,9 +21,7 @@ export const SECRET_KEYS = {
     LIBRE_URL: 'libre_url',
     LINGVA_URL: 'lingva_url',
     OPENROUTER: 'api_key_openrouter',
-    SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
-    SCALE_COOKIE: 'scale_cookie',
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
     MAKERSUITE: 'api_key_makersuite',
@@ -43,7 +41,6 @@ export const SECRET_KEYS = {
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
     FEATHERLESS: 'api_key_featherless',
-    ZEROONEAI: 'api_key_01ai',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
@@ -56,7 +53,11 @@ export const SECRET_KEYS = {
     SERPER: 'api_key_serper',
     AIMLAPI: 'api_key_aimlapi',
     XAI: 'api_key_xai',
+    FIREWORKS: 'api_key_fireworks',
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
+    MINIMAX: 'api_key_minimax',
+    MINIMAX_GROUP_ID: 'minimax_group_id',
+    MOONSHOT: 'api_key_moonshot',
 };
 
 /**

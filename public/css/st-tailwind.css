@@ -470,14 +470,6 @@
     margin-left: 20px;
 }
 
-/*used to fix smallness of certain FontAwesome glyph which break button squareness*/
-/*currently used on: CharList Import*/
-
-.faSmallFontSquareFix {
-    font-size: calc(var(--mainFontSize) *1.25);
-    width: calc(var(--mainFontSize) *1.95);
-}
-
 .textarea_compact {
     font-size: calc(var(--mainFontSize) * 0.95);
     line-height: 1.2;

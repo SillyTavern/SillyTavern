@@ -102,6 +102,19 @@ export function deepMerge(target, source) {
     return output;
 }
 
+/**
+ * Ensures that the provided object is a plain object.
+ * @param {object} obj Object to ensure is a plain object
+ * @return {object} A plain object, or an empty object if the input is not an object.
+ */
+export function ensurePlainObject(obj) {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+        return {};
+    }
+
+    return obj;
+}
+
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -1453,6 +1466,31 @@ export function getFileExtension(file) {
 }
 
 /**
+ * Converts UTF-8 string into Base64-encoded string.
+ *
+ * @param {string} text The UTF-8 string
+ * @returns {string} The Base64-encoded string
+ */
+export function convertTextToBase64(text) {
+    const encoder = new TextEncoder();
+    const utf8Bytes = encoder.encode(text);
+    /**
+     * return `true` if `Uint8Array.prototype.toBase64` function is supported.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/toBase64|MDN Reference}
+     */
+    if ('toBase64' in Uint8Array.prototype) {
+        return utf8Bytes.toBase64();
+    }
+    // Creates binary string, where each character's code point directly matches the byte value (0-255).
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < utf8Bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode(...utf8Bytes.subarray(i, i + chunkSize));
+    }
+    return window.btoa(binaryString);
+}
+
+/**
  * Loads either a CSS or JS file and appends it to the appropriate document section.
  *
  * @param {string} url - The URL of the file to be loaded.
@@ -2461,4 +2499,64 @@ export function clearInfoBlock(target) {
         infoBlock.className = '';
         infoBlock.innerHTML = '';
     }
+}
+
+/**
+ * Provides a matcher function for select2 that matches both the text and value of options.
+ * @param {import('select2').SearchOptions} params
+ * @param {import('select2').OptGroupData|import('select2').OptionData} data
+ * @return {import('select2').OptGroupData|import('select2').OptionData|null}
+ */
+export function textValueMatcher(params, data) {
+    // Always return the object if there is nothing to compare
+    if (params.term == null || params.term.trim() === '') {
+        return data;
+    }
+
+    // Do a recursive check for options with children
+    if (data.children && data.children.length > 0) {
+        // Clone the data object if there are children
+        // This is required as we modify the object to remove any non-matches
+        const match = $.extend(true, {}, data);
+
+        // Check each child of the option
+        for (let c = data.children.length - 1; c >= 0; c--) {
+            const child = data.children[c];
+
+            const matches = textValueMatcher(params, child);
+
+            // If there wasn't a match, remove the object in the array
+            if (matches == null) {
+                match.children.splice(c, 1);
+            }
+        }
+
+        // If any children matched, return the new object
+        if (match.children.length > 0) {
+            return match;
+        }
+
+        // If there were no matching children, check just the plain object
+        return textValueMatcher(params, match);
+    }
+
+    const textMatch = compareIgnoreCaseAndAccents(data.text, params.term, (a, b) => a.indexOf(b) > -1);
+    const valueMatch = data.element instanceof HTMLOptionElement && compareIgnoreCaseAndAccents(data.element.value, params.term, (a, b) => a.indexOf(b) > -1);
+
+    if (textMatch || valueMatch) {
+        return data;
+    }
+
+    // If it doesn't contain the term, don't return anything
+    return null;
+}
+
+/**
+ * Compares two version numbers, returning true if srcVersion >= minVersion
+ * @param {string} srcVersion The current version.
+ * @param {string} minVersion The target version number to test against
+ * @returns {boolean} True if srcVersion >= minVersion, false if not
+ */
+export function versionCompare(srcVersion, minVersion) {
+    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }

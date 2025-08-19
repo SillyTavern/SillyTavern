@@ -421,7 +421,7 @@ async function autoBackgroundCommand() {
 
     const list = options.map(option => `- ${option.text}`).join('\n');
     const prompt = stringFormat(autoBgPrompt, list);
-    const reply = await generateQuietPrompt(prompt, false, false);
+    const reply = await generateQuietPrompt({ quietPrompt: prompt });
     const fuse = new Fuse(options, { keys: ['text'] });
     const bestMatch = fuse.search(reply, { limit: 1 });
 
@@ -524,7 +524,7 @@ async function resolveImageUrl(bg, isCustom) {
             ? bg
             : getThumbnailUrl('bg', bg);
 
-    return `url('${thumbnailUrl}')`;
+    return `url("${thumbnailUrl}")`;
 }
 
 /**
@@ -636,12 +636,9 @@ async function uploadBackground(formData) {
             return;
         }
 
-        const headers = getRequestHeaders();
-        delete headers['Content-Type'];
-
         const response = await fetch('/api/backgrounds/upload', {
             method: 'POST',
-            headers: headers,
+            headers: getRequestHeaders({ omitContentType: true }),
             body: formData,
             cache: 'no-cache',
         });

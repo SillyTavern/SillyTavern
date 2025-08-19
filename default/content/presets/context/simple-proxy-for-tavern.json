@@ -1,8 +1,12 @@
 {
-    "story_string": "## {{char}}\n- You're \"{{char}}\" in this never-ending roleplay with \"{{user}}\".\n### Input:\n{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}### Response:\n(OOC) Understood. I will take this info into account for the roleplay. (end OOC)",
+    "story_string": "{{#if anchorBefore}}{{anchorBefore}}\n{{/if}}{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{#if anchorAfter}}{{anchorAfter}}\n{{/if}}",
     "example_separator": "### New Roleplay:",
     "chat_start": "### New Roleplay:",
     "use_stop_strings": false,
+    "names_as_stop_strings": true,
+    "story_string_position": 0,
+    "story_string_depth": 1,
+    "story_string_role": 0,
     "always_force_name2": true,
     "trim_sentences": false,
     "single_line": false,

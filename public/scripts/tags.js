@@ -28,6 +28,7 @@ import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { renderTemplateAsync } from './templates.js';
 import { t, translate } from './i18n.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -63,6 +64,12 @@ const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
+
+const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
+    GROUP: 'TagFilterState_GROUP',
+    FAV: 'TagFilterState_FAV',
+    FOLDER: 'TagFilterState_FOLDER',
+});
 
 /** @enum {number} */
 export const tag_filter_type = {
@@ -136,7 +143,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
- * @property {boolean} is_hidden_on_character_card - Whether this tag is hidden on the character card
+ * @property {boolean} [is_hidden_on_character_card] - Whether this tag is hidden on the character card
  *
  * @property {function} [action] - An optional function that gets executed when this tag is an actionable tag and is clicked on.
  * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
@@ -331,12 +338,14 @@ function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
 
 /**
  * Applies the favorite filter to the character list.
- * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ * @param {FilterHelper} _filterHelper Instance of FilterHelper class. Unused since it needs to be applied to both filters.
  */
-function filterByFav(filterHelper) {
+function filterByFav(_filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FAV.filter_state = state;
-    filterHelper.setFilterData(FILTER_TYPES.FAV, state);
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FAV, state);
+    entitiesFilter.setFilterData(FILTER_TYPES.FAV, state);
+    groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, state);
 }
 
 /**
@@ -346,6 +355,7 @@ function filterByFav(filterHelper) {
 function filterByGroups(filterHelper) {
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.GROUP.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP, state);
     filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
 }
 
@@ -363,6 +373,7 @@ function filterByFolder(filterHelper) {
 
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
+    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER, state);
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
 }
 
@@ -393,6 +404,10 @@ function createTagMapFromList(listElement, key) {
  * @returns {Tag[]} A list of tags
  */
 function getTagsList(key, sort = true) {
+    if (key === null || key === undefined) {
+        return [];
+    }
+
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
         return [];
@@ -685,6 +700,8 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
     addTagsToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
+
+    applyCharacterTagsToMessageDivs();
 
     // need to return false to keep the input clear
     return false;
@@ -1237,6 +1254,8 @@ function onTagRemoveClick(event) {
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
     removeTagFromEntity(tag, characterIds, { tagElement: tagElement });
+
+    applyCharacterTagsToMessageDivs();
 }
 
 // @ts-ignore
@@ -1301,7 +1320,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
             select: (e, u) => selectTag(e, u, listSelector, { tagListOptions: tagListOptions }),
             minLength: 0,
         })
-        .focus(onTagInputFocus); // <== show tag list on click
+        .on('focus', onTagInputFocus); // <== show tag list on click
 }
 
 async function onViewTagsListClick() {
@@ -1543,6 +1562,44 @@ function onTagsBackupClick() {
     download(blob, filename, 'application/json');
 }
 
+async function onTagsPruneClick() {
+    // Get tags which have zero tag map entries
+    const allTagsInTagMaps = new Set(Object.values(tag_map).flat());
+    const tagsToPrune = tags.filter(tag => !allTagsInTagMaps.has(tag.id));
+
+    // Get tag maps referring to deleted entities
+    const allEntityKeys = new Set([...characters.map(c => String(c.avatar)), ...groups.map(g => String(g.id))]);
+    const tagMapsToPrune = Object.keys(tag_map).filter(key => !allEntityKeys.has(key));
+
+    if (!tagsToPrune.length && !tagMapsToPrune.length) {
+        toastr.info(t`No unused tags or references found.`);
+        return;
+    }
+
+    const confirm = await Popup.show.confirm(t`Prune ${tagsToPrune.length} tags and ${tagMapsToPrune.length} references`, t`Are you sure you want to remove all unused tags and references to missing or deleted characters and groups?`);
+
+    if (!confirm) {
+        return;
+    }
+
+    for (const tag of tagsToPrune) {
+        tags.splice(tags.indexOf(tag), 1);
+    }
+
+    for (const key of tagMapsToPrune) {
+        delete tag_map[key];
+    }
+
+    printCharactersDebounced();
+    saveSettingsDebounced();
+
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
+
+    toastr.success(t`Unused tags pruned successfully.`);
+}
+
 function onTagCreateClick() {
     const tagName = getFreeName('New Tag', tags.map(x => x.name));
     const tag = createNewTag(tagName);
@@ -1718,6 +1775,8 @@ async function onTagDeleteClick() {
 
     printCharactersDebounced();
     saveSettingsDebounced();
+
+    applyCharacterTagsToMessageDivs();
 }
 
 function onTagRenameInput() {
@@ -1728,6 +1787,8 @@ function onTagRenameInput() {
     $(this).attr('dirty', '');
     $(`.tag[id="${id}"] .tag_name`).text(newName);
     saveSettingsDebounced();
+
+    applyCharacterTagsToMessageDivs();
 }
 
 /**
@@ -1738,7 +1799,6 @@ function onTagRenameInput() {
  * @param {string} cssProperty - The CSS property to apply the color to
  */
 function onTagColorize(evt, setColor, cssProperty) {
-    console.debug(evt);
     const isDefaultColor = $(evt.target).data('default-color') === evt.detail.rgba;
     $(evt.target).closest('.tag_view_color_picker').find('.link_icon').toggle(!isDefaultColor);
 
@@ -1749,7 +1809,6 @@ function onTagColorize(evt, setColor, cssProperty) {
     $(evt.target).closest('.tag_view_item').find('.tag_view_name').css(cssProperty, newColor);
     const tag = tags.find(x => x.id === id);
     setColor(tag, newColor);
-    console.debug(tag);
     saveSettingsDebounced();
 
     // Debounce redrawing color of the tag in other elements
@@ -1855,7 +1914,8 @@ function registerTagsSlashCommands() {
             }),
         ],
         unnamedArgumentList: [
-            SlashCommandArgument.fromProps({ description: 'tag name',
+            SlashCommandArgument.fromProps({
+                description: 'tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.tagsForChar('not-existing'),
@@ -1892,7 +1952,8 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({ name: 'name',
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
                 description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
@@ -1900,7 +1961,8 @@ function registerTagsSlashCommands() {
             }),
         ],
         unnamedArgumentList: [
-            SlashCommandArgument.fromProps({ description: 'tag name',
+            SlashCommandArgument.fromProps({
+                description: 'tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 /**@param {SlashCommandExecutor} executor */
@@ -2004,6 +2066,201 @@ function registerTagsSlashCommands() {
     }));
 }
 
+/**
+ * Function to apply character tags to message divs when rendering the chat
+ * @param {object} options Options for applying character tags
+ * @param {number|number[]} [options.mesIds=[]] An id or array of message IDs to filter by.
+ * If empty, all messages will be processed.
+ * @returns {void}
+ * @description This function iterates through the chat messages and applies character tags
+ */
+export function applyCharacterTagsToMessageDivs({ mesIds = [] } = {}) {
+    try {
+        const messagesFilter = buildMessagesFilter(mesIds);
+        const messages = $('#chat').children(messagesFilter);
+
+        // Clear existing tags
+        messages.each(function () {
+            const element = this; // Get the raw DOM element
+
+            for (const attr of [...element.attributes]) {
+                if (attr.name.startsWith('data-char-tag-') || attr.name === 'data-char-tags') {
+                    element.removeAttribute(attr.name);
+                }
+            }
+        });
+
+        const tagsList = tags, characterTagData = tag_map;
+
+        if (!tagsList?.length || !characterTagData) {
+            return;
+        }
+
+        const tagNamesById = tagsList.reduce((acc, tag) => {
+            acc[tag.id] = tag.name;
+            return acc;
+        }, {});
+
+        const characterTagsCache = new Map();
+
+        // Iterate each message div
+        messages.each(function () {
+            const $this = $(this); // Store the jQuery object
+            const avatarFileName = extractCharacterAvatar($this.find('.avatar img').attr('src'));
+
+            if (!avatarFileName) {
+                return;
+            }
+
+            let tagsForCharacter = characterTagsCache.get(avatarFileName);
+
+            // If tags are NOT in the cache, compute and store them
+            if (!tagsForCharacter) {
+                const tagIds = characterTagData[avatarFileName];
+                if (tagIds?.length) {
+                    const tagNames = tagIds
+                        .map(id => tagNamesById[id])
+                        .filter(Boolean);
+
+                    if (tagNames.length) {
+                        tagsForCharacter = {
+                            tagNames,
+                            joinedTagNames: tagNames
+                                .map(name => name?.replace(/,/g, ' ')) // replace commas with spaces to avoid issues with tag names containing commas
+                                .join(','),
+                        };
+                        // Add the newly computed tags to the cache
+                        characterTagsCache.set(avatarFileName, tagsForCharacter);
+                    }
+                }
+            }
+
+            // If we have tags (either from cache or newly computed), apply them
+            if (tagsForCharacter) {
+                applyTags($this, tagsForCharacter);
+            }
+        });
+    } catch (error) {
+        console.error('Error applying character tags to message divs:', error);
+    }
+}
+
+/**
+ * Builds a jQuery selector string to filter messages by their IDs.
+ * @param {number|number[]} mesIds - An id or array of message IDs to filter by.
+ * @returns {string} A jQuery selector string that matches messages with the specified IDs.
+ * If mesIds is empty, it returns '.mes' to select all messages.
+ * @example
+ * buildMessagesFilter([1, 5]); // Returns '.mes[mesid="1"],.mes[mesid="5"]'
+ * buildMessagesFilter([]); // Returns '.mes'
+ */
+function buildMessagesFilter(mesIds) {
+    const allMessages = '.mes';
+
+    if (!mesIds) {
+        return allMessages; // If no mesIds provided, select all messages
+    }
+
+    const mesIdsArray = Array.isArray(mesIds) ? mesIds : [mesIds];
+
+    if (mesIdsArray?.length) {
+        // Create a valid jQuery selector for multiple attribute values.
+        // Example output: '.mes[mesid="1"],.mes[mesid="5"]'
+        return mesIdsArray.map(id => `.mes[mesid="${id}"]`).join(',');
+    }
+
+    // If mesIds is empty, select all messages.
+    return allMessages;
+}
+
+/**
+ * Helper function to apply all necessary data attributes to a DOM element.
+ * @param {JQuery<HTMLElement>} $element - The jQuery object for the message div.
+ * @param {object} tagData - An object containing tag information.
+ * @param {string[]} tagData.tagNames - An array of tag names.
+ * @param {string} tagData.joinedTagNames - A comma-separated string of tag names.
+ */
+function applyTags($element, tagData) {
+    $element.attr('data-char-tags', tagData.joinedTagNames);
+    tagData.tagNames.forEach(tagName => {
+        const normalizedTagName = normalizeTagName(tagName);
+
+        if (!normalizedTagName) {
+            return; // Skip empty tag names
+        }
+
+        $element.attr(`data-char-tag-${normalizedTagName}`, '');
+    });
+}
+
+/**
+ * Normalizes a tag name by trimming, converting spaces to hyphens, replacing accented characters,
+ * removing special characters, and converting to lowercase.
+ * @param {string} name The tag name to normalize.
+ * @returns {string} The normalized tag name.
+ */
+function normalizeTagName(name) {
+    if (!name?.trim()) {
+        return '';
+    }
+
+    // Normalize the tag name by trimming, converting spaces to hyphens, replacing accented characters, removing special characters, and converting to lowercase
+    return name.trim()
+        .normalize('NFD') // Normalize accented characters
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+        .replace(/[^a-zA-Z0-9\s_-]/g, '') // Remove special characters except spaces, underscores, and hyphens
+        .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
+        .toLowerCase();
+}
+
+/** Extracts the character avatar file name from the avatar source URL.
+ * @param {string} avatarSrc The source URL of the character avatar.
+ * @returns {string|null} The normalized avatar file name, or null if the input is falsy or doesn't contain a valid file name.
+ */
+function extractCharacterAvatar(avatarSrc) {
+    if (!avatarSrc) {
+        return null;
+    }
+
+    try {
+        const url = new URL(avatarSrc, window.location.origin);
+        return url?.searchParams.get('file');
+    } catch (error) {
+        console.error('Unable to parse character avatar using avatarSrc', avatarSrc, error);
+        return null;
+    }
+}
+
+function restoreSavedTagFilters() {
+    try {
+        const validStates = new Set(Object.keys(FILTER_STATES));
+        const readState = (/** @type {string} */ storageKey) => {
+            const v = accountStorage.getItem(storageKey);
+            return v && validStates.has(v) ? v : null;
+        };
+
+        const favState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
+        const groupState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
+        const folderState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
+
+        if (favState) {
+            ACTIONABLE_TAGS.FAV.filter_state = favState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+            groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+        }
+        if (groupState) {
+            ACTIONABLE_TAGS.GROUP.filter_state = groupState;
+            entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
+        }
+        if (folderState) {
+            ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
+            entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
+        }
+    } catch (e) {
+        console.warn('Failed to restore actionable filter states from account storage', e);
+    }
+}
+
 export function initTags() {
     createTagInput('#tagInput', '#tagList', { tagOptions: { removable: true } });
     createTagInput('#groupTagInput', '#groupTagList', { tagOptions: { removable: true } });
@@ -2012,13 +2269,19 @@ export function initTags() {
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
     $(document).on('click', '.tag_remove', onTagRemoveClick);
     $(document).on('input', '.tag_input', onTagInput);
-    $(document).on('click', '.tags_view', onViewTagsListClick);
+    $(document).on('click', '.tags_view', function (event) {
+        // 1. Prevent the label from toggling the checkbox
+        event.preventDefault();
+        // 2. Open the tag view list dialog
+        onViewTagsListClick();
+    });
     $(document).on('click', '.tag_delete', onTagDeleteClick);
     $(document).on('click', '.tag_as_folder', onTagAsFolderClick);
     $(document).on('input', '.tag_view_name', onTagRenameInput);
     $(document).on('click', '.tag_view_create', onTagCreateClick);
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
+    $(document).on('click', '.tag_view_prune', onTagsPruneClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
@@ -2059,4 +2322,5 @@ export function initTags() {
     }
 
     registerTagsSlashCommands();
+    restoreSavedTagFilters();
 }

@@ -11,7 +11,8 @@ import { getNomicAIBatchVector, getNomicAIVector } from '../vectors/nomicai-vect
 import { getOpenAIVector, getOpenAIBatchVector } from '../vectors/openai-vectors.js';
 import { getTransformersVector, getTransformersBatchVector } from '../vectors/embedding.js';
 import { getExtrasVector, getExtrasBatchVector } from '../vectors/extras-vectors.js';
-import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/makersuite-vectors.js';
+import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/google-vectors.js';
+import { getVertexVector, getVertexBatchVector } from '../vectors/google-vectors.js';
 import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors.js';
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
@@ -32,6 +33,7 @@ const SOURCES = [
     'vllm',
     'webllm',
     'koboldcpp',
+    'vertexai',
 ];
 
 /**
@@ -56,7 +58,9 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'extras':
             return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return getMakerSuiteVector(text, directories);
+            return getMakerSuiteVector(text, sourceSettings.model, sourceSettings.request);
+        case 'vertexai':
+            return getVertexVector(text, sourceSettings.model, sourceSettings.request);
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
@@ -105,7 +109,10 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await getMakerSuiteBatchVector(batch, directories));
+                results.push(...await getMakerSuiteBatchVector(batch, sourceSettings.model, sourceSettings.request));
+                break;
+            case 'vertexai':
+                results.push(...await getVertexBatchVector(batch, sourceSettings.model, sourceSettings.request));
                 break;
             case 'cohere':
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
@@ -178,8 +185,10 @@ function getSourceSettings(source, request) {
                 model: getConfigValue('extensions.models.embedding', ''),
             };
         case 'palm':
+        case 'vertexai':
             return {
                 model: String(request.body.model || 'text-embedding-004'),
+                request: request, // Pass the request object to get API key and URL
             };
         case 'mistral':
             return {

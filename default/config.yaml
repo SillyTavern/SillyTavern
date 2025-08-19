@@ -100,7 +100,7 @@ disableCsrfProtection: false
 securityOverride: false
 # -- LOGGING CONFIGURATION --
 logging:
-  # Enable access logging to access.log file
+  # Enable access logging to access.log file and console output
   # Records new connections with timestamp, IP address and user agent
   enableAccessLog: true
   # Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
@@ -150,6 +150,15 @@ performance:
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
+
+# CACHE BUSTER CONFIGURATION
+# IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
+cacheBuster:
+  # Clear browser cache on first load or after uploading image files
+  enabled: false
+  # Only clear cache for the specified user agent regex pattern
+  # Example: 'firefox|safari' (case-insensitive)
+  userAgentPattern: ''
 
 # Allow secret keys exposure via API
 allowKeysExposure: false

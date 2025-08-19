@@ -10,6 +10,7 @@ import { getImages, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { applyAvatarCropResize } from './characters.js';
 import { invalidateThumbnail } from './thumbnails.js';
+import cacheBuster from '../middleware/cacheBuster.js';
 
 export const router = express.Router();
 
@@ -49,10 +50,10 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         // Remove previous thumbnail and bust cache if overwriting
         if (request.body.overwrite_name) {
             invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.overwrite_name));
-            response.setHeader('Clear-Site-Data', '"cache"');
+            cacheBuster.bust(request, response);
         }
 
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
+        const filename = sanitize(request.body.overwrite_name || `${Date.now()}.png`);
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
         fs.unlinkSync(pathToUpload);

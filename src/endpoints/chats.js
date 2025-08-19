@@ -33,7 +33,7 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
  */
 function backupChat(directory, name, chat) {
     try {
-        if (!isBackupEnabled) {
+        if (!isBackupEnabled || !fs.existsSync(directory)) {
             return;
         }
 

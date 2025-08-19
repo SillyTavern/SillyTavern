@@ -6,7 +6,7 @@ import { event_types, eventSource, is_send_press, main_api, substituteParams } f
 import { is_group_generating } from './group-chats.js';
 import { Message, MessageCollection, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
+import { debounce, waitUntilCondition, escapeHtml, uuidv4 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup } from './popup.js';
@@ -29,6 +29,7 @@ function debouncePromise(func, delay) {
 }
 
 const DEFAULT_DEPTH = 4;
+const DEFAULT_ORDER = 100;
 
 /**
  * @enum {number}
@@ -77,25 +78,108 @@ const registerPromptManagerMigration = () => {
  * Represents a prompt.
  */
 class Prompt {
-    identifier; role; content; name; system_prompt; position; injection_position; injection_depth; injection_order; forbid_overrides; extension;
+    /**
+     * Indicates if the prompt is enabled.
+     * @type {boolean}
+     */
+    enabled;
+
+    /**
+     * Unique identifier for the prompt.
+     * @type {string}
+     */
+    identifier;
+
+    /**
+     * Role of the prompt, e.g., 'system', 'user', etc.
+     * @type {string}
+     */
+    role;
+
+    /**
+     * Content of the prompt.
+     * @type {string}
+     */
+    content;
+
+    /**
+     * Display name of the prompt.
+     * @type {string}
+     */
+    name;
+
+    /**
+     * Indicates if the prompt is a system prompt.
+     * @type {boolean}
+     */
+    system_prompt;
+
+    /**
+     * Position of the prompt in the prompt list.
+     * @type {string|number}
+     */
+    position;
+
+    /**
+     * Inject position of the prompt (relative = 0 or in-chat = 1)
+     * @type {number}
+     */
+    injection_position;
+
+    /**
+     * Depth of the prompt in the chat.
+     * @type {number}
+     */
+    injection_depth;
+
+    /**
+     * Order of the prompt in the chat.
+     * @type {number}
+     */
+    injection_order;
+
+    /**
+     * Indicates if the prompt should not be overridden.
+     * @type {boolean}
+     */
+    forbid_overrides;
+
+    /**
+     * Prompt is added by an extension.
+     * @type {boolean}
+     */
+    extension;
+
+    /**
+     * A list of generation type triggers for the prompt injection.
+     * @type {string[]}
+     */
+    injection_trigger;
+
+    /**
+     * Indicates if the prompt is a marker prompt.
+     * @type {boolean}
+     */
+    marker;
 
     /**
      * Create a new Prompt instance.
      *
-     * @param {Object} param0 - Object containing the properties of the prompt.
-     * @param {string} param0.identifier - The unique identifier of the prompt.
-     * @param {string} param0.role - The role associated with the prompt.
-     * @param {string} param0.content - The content of the prompt.
+     * @param {Object} [param0] - Object containing the properties of the prompt.
+     * @param {string} [param0.identifier] - The unique identifier of the prompt.
+     * @param {string} [param0.role] - The role associated with the prompt.
+     * @param {string} [param0.content] - The content of the prompt.
      * @param {string} [param0.name] - The name of the prompt.
      * @param {boolean} [param0.system_prompt] - Indicates if the prompt is a system prompt.
-     * @param {string} [param0.position] - The position of the prompt in the prompt list.
+     * @param {string|number} [param0.position] - The position of the prompt in the prompt list.
      * @param {number} [param0.injection_position] - The insert position of the prompt.
      * @param {number} [param0.injection_depth] - The depth of the prompt in the chat.
      * @param {number} [param0.injection_order] - The order of the prompt in the chat.
+     * @param {string[]} [param0.injection_trigger] - The generation type trigger for the prompt injection.
      * @param {boolean} [param0.forbid_overrides] - Indicates if the prompt should not be overridden.
      * @param {boolean} [param0.extension] - Prompt is added by an extension.
      */
-    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order } = {}) {
+    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order, injection_trigger } = {}) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
@@ -106,7 +190,8 @@ class Prompt {
         this.injection_position = injection_position;
         this.forbid_overrides = forbid_overrides;
         this.extension = extension ?? false;
-        this.injection_order = injection_order ?? 100;
+        this.injection_order = injection_order ?? DEFAULT_ORDER;
+        this.injection_trigger = injection_trigger ?? [];
     }
 }
 
@@ -114,7 +199,16 @@ class Prompt {
  * Representing a collection of prompts.
  */
 export class PromptCollection {
+    /**
+     * List of Prompts in the collection.
+     * @type {Prompt[]}
+     */
     collection = [];
+
+    /**
+     * List of identifiers of prompts that have been overridden.
+     * @type {string[]}
+     */
     overriddenPrompts = [];
 
     /**
@@ -129,7 +223,7 @@ export class PromptCollection {
     /**
      * Checks if the provided instances are of the Prompt class.
      *
-     * @param {...any} prompts - Instances to check.
+     * @param {...Prompt} prompts - Instances to check.
      * @throws Will throw an error if one or more instances are not of the Prompt class.
      */
     checkPromptInstance(...prompts) {
@@ -191,6 +285,12 @@ export class PromptCollection {
         return this.index(identifier) !== -1;
     }
 
+    /**
+     * Overrides a prompt at a specific position in the collection.
+     *
+     * @param {Prompt} prompt - The Prompt instance to override.
+     * @param {number} position - The position in the collection to override the Prompt instance.
+     */
     override(prompt, position) {
         this.set(prompt, position);
         this.overriddenPrompts.push(prompt.identifier);
@@ -274,7 +374,7 @@ class PromptManager {
         this.tryGenerate = async () => { };
 
         /** Called to persist the configuration, must return a promise */
-        this.saveServiceSettings = () => { };
+        this.saveServiceSettings = () => { return Promise.resolve(); };
 
         /** Toggle prompt button click */
         this.handleToggle = () => { };
@@ -444,32 +544,51 @@ class PromptManager {
                     break;
             }
 
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value = prompt.name;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value = 'system';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content ?? '';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order').value = prompt.injection_order ?? 100;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_order_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block').style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').disabled = prompt.marker ?? false;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block').style.display = isPulledPrompt ? '' : 'none';
+            const nameField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name'));
+            const roleField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role'));
+            const promptField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt'));
+            const injectionPositionField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position'));
+            const injectionDepthField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth'));
+            const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
+            const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
+            const depthBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block'));
+            const orderBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_order_block'));
+            const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
+            const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
+            const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
+            const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
+
+            nameField.value = prompt.name;
+            roleField.value = 'system';
+            promptField.value = prompt.content ?? '';
+            injectionPositionField.value = (prompt.injection_position ?? 0).toString();
+            injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
+            injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
+            Array.from(injectionTriggerField.options).forEach(option => {
+                option.selected = false;
+            });
+            injectionTriggerField.dispatchEvent(new Event('change', { bubbles: true }));
+            depthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+            orderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+            forbidOverridesField.checked = prompt.forbid_overrides ?? false;
+            forbidOverridesBlock.style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
+            promptField.disabled = prompt.marker ?? false;
+            entrySourceBlock.style.display = isPulledPrompt ? '' : 'none';
 
             if (isPulledPrompt) {
                 const sourceName = this.promptSources[promptId];
-                document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source').textContent = sourceName;
+                entrySource.textContent = sourceName;
             }
 
             if (!this.systemPrompts.includes(promptId)) {
-                document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').removeAttribute('disabled');
+                injectionPositionField.removeAttribute('disabled');
             }
         };
 
         // Append prompt to selected character
         this.handleAppendPrompt = (event) => {
-            const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
+            const appendPromptFooter = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
+            const promptID = appendPromptFooter.value;
             const prompt = this.getPromptById(promptID);
 
             if (prompt) {
@@ -483,7 +602,8 @@ class PromptManager {
         this.handleDeletePrompt = async (event) => {
             Popup.show.confirm(t`Are you sure you want to delete this prompt?`, null).then((userChoice) => {
                 if (!userChoice) return;
-                const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
+                const appendPromptFooter = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt'));
+                const promptID = appendPromptFooter.value;
                 const prompt = this.getPromptById(promptID);
 
                 if (prompt && true === this.isPromptDeletionAllowed(prompt)) {
@@ -566,6 +686,7 @@ class PromptManager {
                     fileOpener.accept = '.json';
 
                     fileOpener.addEventListener('change', (event) => {
+                        if (!(event.target instanceof HTMLInputElement)) return;
                         const file = event.target.files[0];
                         if (!file) return;
 
@@ -575,7 +696,7 @@ class PromptManager {
                             const fileContent = event.target.result;
 
                             try {
-                                const data = JSON.parse(fileContent);
+                                const data = JSON.parse(fileContent.toString());
                                 this.import(data);
                             } catch (err) {
                                 toastr.error(t`An error occurred while importing prompts. More info available in console.`);
@@ -615,7 +736,7 @@ class PromptManager {
 
                 // Update edit form if present
                 // @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetParent
-                const popupEditFormPrompt = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
+                const popupEditFormPrompt = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt'));
                 if (popupEditFormPrompt.offsetParent) {
                     popupEditFormPrompt.value = prompt.content;
                 }
@@ -673,6 +794,7 @@ class PromptManager {
 
         // Trigger re-render when token settings are changed
         document.getElementById('openai_max_context').addEventListener('change', (event) => {
+            if (!(event.target instanceof HTMLInputElement)) return;
             this.serviceSettings.openai_max_context = event.target.value;
             if (this.activeCharacter) this.renderDebounced();
         });
@@ -778,23 +900,33 @@ class PromptManager {
 
     /**
      * Update a prompt with the values from the HTML form.
-     * @param {object} prompt - The prompt to be updated.
+     * @param {Partial<Prompt>} prompt - The prompt to be updated.
      * @returns {void}
      */
     updatePromptWithPromptEditForm(prompt) {
-        prompt.name = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value;
-        prompt.role = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value;
-        prompt.content = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value;
-        prompt.injection_position = Number(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value);
-        prompt.injection_depth = Number(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value);
-        prompt.injection_order = Number(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order').value);
-        prompt.forbid_overrides = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked;
+        const nameField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name'));
+        const roleField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role'));
+        const promptField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt'));
+        const injectionPositionField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position'));
+        const injectionDepthField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth'));
+        const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
+        const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
+        const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
+
+        prompt.name = nameField.value;
+        prompt.role = roleField.value;
+        prompt.content = promptField.value;
+        prompt.injection_position = Number(injectionPositionField.value);
+        prompt.injection_depth = Number(injectionDepthField.value);
+        prompt.injection_order = Number(injectionOrderField.value);
+        prompt.injection_trigger = Array.from(injectionTriggerField.selectedOptions).map(option => option.value);
+        prompt.forbid_overrides = forbidOverridesField.checked;
     }
 
     /**
      * Find a prompt by its identifier and update it with the provided object.
      * @param {string} identifier - The identifier of the prompt.
-     * @param {object} updatePrompt - An object with properties to be updated in the prompt.
+     * @param {Prompt} updatePrompt - An object with properties to be updated in the prompt.
      * @returns {void}
      */
     updatePromptByIdentifier(identifier, updatePrompt) {
@@ -804,7 +936,7 @@ class PromptManager {
 
     /**
      * Iterate over an array of prompts, find each one by its identifier, and update them with the provided data.
-     * @param {object[]} prompts - An array of prompt updates.
+     * @param {Prompt[]} prompts - An array of prompt updates.
      * @returns {void}
      */
     updatePrompts(prompts) {
@@ -826,7 +958,7 @@ class PromptManager {
 
     /**
      * Add a prompt to the current character's prompt list.
-     * @param {object} prompt - The prompt to be added.
+     * @param {Prompt} prompt - The prompt to be added.
      * @param {object} character - The character whose prompt list will be updated.
      * @returns {void}
      */
@@ -839,7 +971,7 @@ class PromptManager {
 
     /**
      * Remove a prompt from the current character's prompt list.
-     * @param {object} prompt - The prompt to be removed.
+     * @param {Prompt} prompt - The prompt to be removed.
      * @param {object} character - The character whose prompt list will be updated.
      * @returns {void}
      */
@@ -853,7 +985,7 @@ class PromptManager {
 
     /**
      * Create a new prompt and add it to the list of prompts.
-     * @param {object} prompt - The prompt to be added.
+     * @param {Partial<Prompt>} prompt - The prompt to be added.
      * @param {string} identifier - The identifier for the new prompt.
      * @returns {void}
      */
@@ -931,7 +1063,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be inspected.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt is a marker, false otherwise.
      */
     isPromptInspectionAllowed(prompt) {
@@ -940,7 +1072,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be deleted. System prompts cannot be deleted.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptDeletionAllowed(prompt) {
@@ -949,7 +1081,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be edited.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be edited, false otherwise.
      */
     isPromptEditAllowed(prompt) {
@@ -966,7 +1098,7 @@ class PromptManager {
 
     /**
      * Check whether a prompt can be toggled on or off.
-     * @param {object} prompt - The prompt to check.
+     * @param {Prompt} prompt - The prompt to check.
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
@@ -1062,7 +1194,7 @@ class PromptManager {
 
     /**
      * Get the prompts for a specific character. Can be filtered to only include enabled prompts.
-     * @returns {object[]} The prompts for the character.
+     * @returns {Prompt[]} The prompts for the character.
      * @param character
      * @param onlyEnabled
      */
@@ -1075,7 +1207,7 @@ class PromptManager {
     /**
      * Get the order of prompts for a specific character. If no character is specified or the character doesn't have a prompt list, an empty array is returned.
      * @param {object|null} character - The character to get the prompt list for.
-     * @returns {object[]} The prompt list for the character, or an empty array.
+     * @returns {Partial<Prompt>[]} The prompt list for the character, or an empty array.
      */
     getPromptOrderForCharacter(character) {
         return !character ? [] : (this.serviceSettings.prompt_order.find(list => String(list.character_id) === String(character.id))?.order ?? []);
@@ -1083,7 +1215,7 @@ class PromptManager {
 
     /**
      * Set the prompts for the manager.
-     * @param {object[]} prompts - The prompts to be set.
+     * @param {Partial<Prompt>[]} prompts - The prompts to be set.
      * @returns {void}
      */
     setPrompts(prompts) {
@@ -1125,7 +1257,7 @@ class PromptManager {
     /**
      * Finds and returns a prompt by its identifier.
      * @param {string} identifier - Identifier of the prompt
-     * @returns {Object|null} The prompt object, or null if not found
+     * @returns {Prompt|null} The prompt object, or null if not found
      */
     getPromptById(identifier) {
         return this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null;
@@ -1143,9 +1275,9 @@ class PromptManager {
     /**
      * Enriches a generic object, creating a new prompt object in the process
      *
-     * @param {Object} prompt - Prompt object
+     * @param {Partial<Prompt>} prompt - Prompt object
      * @param original
-     * @returns {Object} An object with "role" and "content" properties
+     * @returns {Prompt} An object with "role" and "content" properties
      */
     preparePrompt(prompt, original = null) {
         const groupMembers = this.getActiveGroupCharacters();
@@ -1184,7 +1316,7 @@ class PromptManager {
 
         const debouncedSaveServiceSettings = debouncePromise(() => this.saveServiceSettings(), 300);
 
-        const textarea = document.getElementById(textareaIdentifier);
+        const textarea = /** @type {HTMLTextAreaElement} */(document.getElementById(textareaIdentifier));
         textarea.addEventListener('blur', () => {
             prompt.content = textarea.value;
             this.updatePromptByIdentifier(identifier, prompt);
@@ -1193,9 +1325,15 @@ class PromptManager {
 
     }
 
+    /**
+     * Updates the quick edit textarea for a specific prompt.
+     * @param {string} identifier - The identifier of the prompt.
+     * @param {Prompt} prompt - The updated prompt object.
+     * @returns {string} The ID of the updated textarea element.
+     */
     updateQuickEdit(identifier, prompt) {
         const elementId = `${identifier}_prompt_quick_edit_textarea`;
-        const textarea = document.getElementById(elementId);
+        const textarea = /** @type {HTMLTextAreaElement} */(document.getElementById(elementId));
         textarea.value = prompt.content;
 
         return elementId;
@@ -1220,30 +1358,35 @@ class PromptManager {
 
     /**
      * Loads a given prompt into the edit form fields.
-     * @param {Object} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
+     * @param {Partial<Prompt>} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
      */
     loadPromptIntoEditForm(prompt) {
-        const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
-        const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
-        const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
-        const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
-        const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
-        const injectionOrderField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order');
-        const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
-        const injectionOrderBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_order_block');
-        const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
-        const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
-        const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
-        const entrySource = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source');
+        const nameField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name'));
+        const roleField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role'));
+        const promptField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt'));
+        const injectionPositionField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position'));
+        const injectionDepthField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth'));
+        const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
+        const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
+        const injectionDepthBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block'));
+        const injectionOrderBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_order_block'));
+        const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
+        const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
+        const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
+        const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
         const isPulledPrompt = Object.keys(this.promptSources).includes(prompt.identifier);
 
         nameField.value = prompt.name ?? '';
         roleField.value = prompt.role || 'system';
         promptField.value = prompt.content ?? '';
         promptField.disabled = prompt.marker ?? false;
-        injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
-        injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
-        injectionOrderField.value = prompt.injection_order ?? 100;
+        injectionPositionField.value = (prompt.injection_position ?? INJECTION_POSITION.RELATIVE).toString();
+        injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
+        injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
+        Array.from(injectionTriggerField.options).forEach(option => {
+            option.selected = Array.isArray(prompt.injection_trigger) && prompt.injection_trigger.includes(option.value);
+        });
+        injectionTriggerField.dispatchEvent(new Event('change', { bubbles: true }));
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionOrderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionPositionField.removeAttribute('disabled');
@@ -1335,17 +1478,19 @@ class PromptManager {
         const editArea = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_edit');
         editArea.style.display = 'none';
 
-        const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
-        const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
-        const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
-        const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
-        const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
-        const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
-        const injectionOrderBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_order_block');
-        const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
-        const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
-        const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
-        const entrySource = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source');
+        const nameField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name'));
+        const roleField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role'));
+        const promptField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt'));
+        const injectionPositionField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position'));
+        const injectionDepthField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth'));
+        const injectionDepthBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block'));
+        const injectionOrderBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_order_block'));
+        const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
+        const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
+        const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
+        const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
+        const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
+        const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
 
         nameField.value = '';
         roleField.selectedIndex = 0;
@@ -1353,7 +1498,9 @@ class PromptManager {
         promptField.disabled = false;
         injectionPositionField.selectedIndex = 0;
         injectionPositionField.removeAttribute('disabled');
-        injectionDepthField.value = DEFAULT_DEPTH;
+        injectionDepthField.value = DEFAULT_DEPTH.toString();
+        injectionOrderField.value = DEFAULT_ORDER.toString();
+        injectionTriggerField.value = '';
         injectionDepthBlock.style.visibility = 'unset';
         injectionOrderBlock.style.visibility = 'unset';
         forbidOverridesBlock.style.visibility = 'unset';
@@ -1373,26 +1520,46 @@ class PromptManager {
 
     /**
      * Returns a full list of prompts whose content markers have been substituted.
+     * @param {string} generationType - The type of generation, e.g., 'continue' or 'quiet'.
      * @returns {PromptCollection} A PromptCollection object
      */
-    getPromptCollection() {
+    getPromptCollection(generationType) {
+        generationType = String(generationType || 'normal').toLowerCase().trim();
+        const promptCollection = new PromptCollection();
         const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
-        const promptCollection = new PromptCollection();
         promptOrder.forEach(entry => {
-            if (true === entry.enabled) {
-                const prompt = this.getPromptById(entry.identifier);
-                if (prompt) promptCollection.add(this.preparePrompt(prompt));
-            } else if (!entry.enabled && entry.identifier === 'main') {
+            const prompt = this.getPromptById(entry.identifier);
+            const allowedTrigger = entry.enabled && this.shouldTrigger(prompt, generationType);
+
+            if (!prompt) {
+                return;
+            }
+
+            if (allowedTrigger) {
+                promptCollection.add(this.preparePrompt(prompt));
+            } else if (entry.identifier === 'main') {
                 // Some extensions require main prompt to be present for relative inserts.
                 // So we make a GMO-free vegan replacement.
-                const prompt = structuredClone(this.getPromptById(entry.identifier));
-                prompt.content = '';
-                if (prompt) promptCollection.add(this.preparePrompt(prompt));
+                const replacementPrompt = structuredClone(prompt);
+                replacementPrompt.content = '';
+                promptCollection.add(this.preparePrompt(replacementPrompt));
             }
         });
 
         return promptCollection;
+    }
+
+    /**
+     * Checks if a prompt should be triggered based on its injection triggers.
+     * @param {Prompt} prompt - The prompt to check.
+     * @param {string} generationType - The type of generation to check against.
+     * @returns {boolean} True if the prompt should be triggered, false otherwise.
+     */
+    shouldTrigger(prompt, generationType) {
+        if (!Array.isArray(prompt?.injection_trigger)) return true;
+        if (!prompt.injection_trigger.length) return true;
+        return prompt.injection_trigger.includes(generationType);
     }
 
     /**
@@ -1807,11 +1974,7 @@ class PromptManager {
      * @returns {string} A string representation of an uuid4
      */
     getUuidv4() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            let r = Math.random() * 16 | 0,
-                v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+        return uuidv4();
     }
 
     /**

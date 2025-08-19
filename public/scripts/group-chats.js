@@ -126,7 +126,7 @@ export const group_generation_mode = {
     APPEND_DISABLED: 2,
 };
 
-const DEFAULT_AUTO_MODE_DELAY = 5;
+export const DEFAULT_AUTO_MODE_DELAY = 5;
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 let autoModeWorker = null;
@@ -311,7 +311,7 @@ export function getGroupNames() {
  * @returns {number|Object} 0-based character ID or key-value object if full is true
  */
 export function findGroupMemberId(arg, full = false) {
-    arg = arg?.trim();
+    arg = arg?.toString()?.trim();
 
     if (!arg) {
         console.warn('WARN: No argument provided for findGroupMemberId');
@@ -870,14 +870,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
         } else if (type === 'quiet') {
-            activatedMembers = activateSwipe(group.members);
+            activatedMembers = activateSwipe(group.members, { allowSystem: true }).slice(0, 1);
 
             if (activatedMembers.length === 0) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
         else if (type === 'swipe' || type === 'continue') {
-            activatedMembers = activateSwipe(group.members);
+            activatedMembers = activateSwipe(group.members, { allowSystem: false });
 
             if (activatedMembers.length === 0) {
                 toastr.warning(t`Deleted group member swiped. To get a reply, add them back to the group.`);
@@ -921,7 +921,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         for (const chId of activatedMembers) {
             throwIfAborted();
             deactivateSendButtons();
-            const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
             if (power_user.show_group_chat_queue) {
@@ -930,6 +929,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
 
             // Wait for generation to finish
+            const generateType = ['swipe', 'impersonate', 'quiet', 'continue'].includes(type) ? type : 'normal';
             textResult = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
             let messageChunk = textResult?.messageChunk;
 
@@ -984,15 +984,21 @@ function activateImpersonate(members) {
 /**
  * Activates a group member based on the last message.
  * @param {string[]} members Array of group member avatar ids
+ * @param {Object} [options] Options object
+ * @param {boolean} [options.allowSystem] Whether to allow system messages
  * @returns {number[]} Array of character ids
  */
-function activateSwipe(members) {
+function activateSwipe(members, { allowSystem = false } = {}) {
     let activatedNames = [];
     const lastMessage = chat[chat.length - 1];
 
-    if (lastMessage.is_user || lastMessage.is_system || lastMessage.extra?.type === system_message_types.NARRATOR) {
+    if (!lastMessage) {
+        return [];
+    }
+
+    if (lastMessage.is_user || (!allowSystem && lastMessage.is_system) || lastMessage.extra?.type === system_message_types.NARRATOR) {
         for (const message of chat.slice().reverse()) {
-            if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR) {
+            if (message.is_user || (!allowSystem && message.is_system) || message.extra?.type === system_message_types.NARRATOR) {
                 continue;
             }
 
@@ -1194,7 +1200,8 @@ export async function editGroup(id, immediately, reload = true) {
     }
 
     if (id === selected_group) {
-        group['chat_metadata'] = structuredClone(chat_metadata);
+        // structuredClone may cause issues if metadata has non-cloneable references
+        group['chat_metadata'] = JSON.parse(JSON.stringify(chat_metadata));
     }
 
     if (immediately) {
@@ -1358,7 +1365,7 @@ function isGroupMember(group, avatarId) {
     }
 }
 
-function getGroupCharacters({ doFilter, onlyMembers } = {}) {
+function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
     function sortMembersFn(a, b) {
         const membersArray = thisGroup?.members ?? newGroupMembers;
         const aIndex = membersArray.indexOf(a.item.avatar);
@@ -1757,7 +1764,7 @@ async function onGroupActionClick(event) {
 
 function updateFavButtonState(state) {
     fav_grp_checked = state;
-    $('#rm_group_fav').val(fav_grp_checked);
+    $('#rm_group_fav').val(String(fav_grp_checked));
     $('#group_favorite_button').toggleClass('fav_on', fav_grp_checked);
     $('#group_favorite_button').toggleClass('fav_off', !fav_grp_checked);
 }
@@ -2047,11 +2054,9 @@ export async function deleteGroupChat(groupId, chatId) {
  * @param {EventTarget} eventTarget Element that triggered the import
  */
 export async function importGroupChat(formData, eventTarget) {
-    const headers = getRequestHeaders();
-    delete headers['Content-Type'];
     const fetchResult = await fetch('/api/chats/group/import', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders({ omitContentType: true }),
         body: formData,
         cache: 'no-cache',
     });

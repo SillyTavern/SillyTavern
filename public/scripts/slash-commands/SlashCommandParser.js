@@ -226,7 +226,7 @@ export class SlashCommandParser {
 
         function getQuotedRunRegex() {
             try {
-                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)(\\||$|\\s)');
+                return new RegExp('(".+?(?<!\\\\)")|((?:[^\\s\\|"]|"[^"]*")*)(\\||$|\\s)');
             } catch {
                 // fallback for browsers that don't support lookbehind
                 return /(".+?")|(\S+?)(\||$|\s)/;
@@ -637,6 +637,7 @@ export class SlashCommandParser {
     replaceGetvar(value) {
         return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
+            cmd = cmd.toLowerCase();
             const startIdx = this.index - value.length + idx;
             const endIdx = this.index - value.length + idx + match.length;
             // store pipe

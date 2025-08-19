@@ -131,6 +131,11 @@ async function backupSettings() {
  */
 function backupUserSettings(handle, preventDuplicates) {
     const userDirectories = getUserDirectories(handle);
+
+    if (!fs.existsSync(userDirectories.root)) {
+        return;
+    }
+
     const backupFile = path.join(userDirectories.backups, `${getSettingsBackupFilePrefix(handle)}${generateTimestamp()}.json`);
     const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
 

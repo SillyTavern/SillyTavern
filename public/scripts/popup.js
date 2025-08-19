@@ -293,7 +293,7 @@ export class Popup {
                 label.setAttribute('for', input.id);
 
                 const inputElement = document.createElement('input');
-                inputElement.classList.add('text_pole');
+                inputElement.classList.add('text_pole', 'result-control');
                 inputElement.type = 'text';
                 inputElement.id = input.id;
                 inputElement.value = String(input.defaultState ?? '');

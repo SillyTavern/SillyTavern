@@ -52,12 +52,14 @@ import {
     getCharacterCardFields,
     swipe_right,
     swipe_left,
+    generateRaw,
 } from '../script.js';
 import {
     extension_settings,
     ModuleWorkerWrapper,
     renderExtensionTemplate,
     renderExtensionTemplateAsync,
+    saveMetadataDebounced,
     writeExtensionField,
 } from './extensions.js';
 import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
@@ -108,6 +110,7 @@ export function getContext() {
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
+        saveMetadataDebounced,
         streamingProcessor,
         eventSource,
         eventTypes: event_types,
@@ -170,6 +173,7 @@ export function getContext() {
         ModuleWorkerWrapper,
         getTokenizerModel,
         generateQuietPrompt,
+        generateRaw,
         writeExtensionField,
         getThumbnailUrl,
         selectCharacterById,

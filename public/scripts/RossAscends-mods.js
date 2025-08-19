@@ -4,7 +4,6 @@ import {
     characters,
     online_status,
     main_api,
-    api_server,
     is_send_press,
     max_context,
     saveSettingsDebounced,
@@ -42,6 +41,7 @@ import { debounce_timeout } from './constants.js';
 import { Popup } from './popup.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getCurrentUserHandle } from './user.js';
+import { kai_settings } from './kai-settings.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
 var LPanelPin = document.getElementById('lm_button_panel_pin');
@@ -111,12 +111,12 @@ export function humanizeGenTime(total_gen_time) {
     let hours = time_spent % 24;
     time_spent = Math.floor(time_spent / 24);
     let days = time_spent;
-    time_spent = '';
-    if (days > 0) { time_spent += `${days} Days, `; }
-    if (hours > 0) { time_spent += `${hours} Hours, `; }
-    if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
-    time_spent += `${seconds} Seconds`;
-    return time_spent;
+    let result = '';
+    if (days > 0) { result += `${days} Days, `; }
+    if (hours > 0) { result += `${hours} Hours, `; }
+    if (minutes > 0) { result += `${minutes} Minutes, `; }
+    result += `${seconds} Seconds`;
+    return result;
 }
 
 /**
@@ -276,40 +276,36 @@ export async function RA_CountCharTokens() {
  * The character or group is selected (clicked) if it is found.
  */
 async function RA_autoloadchat() {
-    if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
-        // active character is the name, we should look it up in the character list and get the id
-        if (active_character !== null && active_character !== undefined) {
-            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
-            if (active_character_id !== -1) {
-                await selectCharacterById(active_character_id);
+    // active character is the name, we should look it up in the character list and get the id
+    if (active_character !== null && active_character !== undefined) {
+        const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+        if (active_character_id !== -1) {
+            await selectCharacterById(active_character_id);
 
-                // Do a little tomfoolery to spoof the tag selector
-                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
-                applyTagsOnCharacterSelect.call(selectedCharElement);
-            } else {
-                setActiveCharacter(null);
-                saveSettingsDebounced();
-                console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
-            }
+            // Do a little tomfoolery to spoof the tag selector
+            const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
+            applyTagsOnCharacterSelect.call(selectedCharElement);
+        } else {
+            setActiveCharacter(null);
+            saveSettingsDebounced();
+            console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
         }
+    }
 
-        if (active_group !== null && active_group !== undefined) {
-            if (active_character) {
-                console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+    if (active_group !== null && active_group !== undefined) {
+        if (active_character) {
+            console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+            setActiveGroup(null);
+            saveSettingsDebounced();
+        } else {
+            const result = await openGroupById(String(active_group));
+            if (!result) {
                 setActiveGroup(null);
                 saveSettingsDebounced();
-            } else {
-                const result = await openGroupById(String(active_group));
-                if (!result) {
-                    setActiveGroup(null);
-                    saveSettingsDebounced();
-                    console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
-                }
+                console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
             }
         }
-
-        // if the character list hadn't been loaded yet, try again.
-    } else { setTimeout(RA_autoloadchat, 100); }
+    }
 }
 
 export async function favsToHotswap() {
@@ -371,7 +367,7 @@ function RA_autoconnect(PrevApi) {
     if (online_status === 'no_connection' && power_user.auto_connect) {
         switch (main_api) {
             case 'kobold':
-                if (api_server && isValidUrl(api_server)) {
+                if (kai_settings.api_server && isValidUrl(kai_settings.api_server)) {
                     $('#api_button').trigger('click');
                 }
                 break;
@@ -397,8 +393,6 @@ function RA_autoconnect(PrevApi) {
             case 'openai':
                 if (((secret_state[SECRET_KEYS.OPENAI] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
                     || ((secret_state[SECRET_KEYS.CLAUDE] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
-                    || ((secret_state[SECRET_KEYS.SCALE] || secret_state[SECRET_KEYS.SCALE_COOKIE]) && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
-                    || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
@@ -408,11 +402,12 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
-                    || (secret_state[SECRET_KEYS.ZEROONEAI] && oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
                     || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
                     || (secret_state[SECRET_KEYS.XAI] && oai_settings.chat_completion_source == chat_completion_sources.XAI)
                     || (secret_state[SECRET_KEYS.AIMLAPI] && oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI)
+                    || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
+                    || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
@@ -434,19 +429,19 @@ function OpenNavPanels() {
         //auto-open R nav if locked and previously open
         if (accountStorage.getItem('NavLockOn') == 'true' && accountStorage.getItem('NavOpened') == 'true') {
             //console.log("RA -- clicking right nav to open");
-            $('#rightNavDrawerIcon').click();
+            $('#rightNavDrawerIcon').trigger('click');
         }
 
         //auto-open L nav if locked and previously open
         if (accountStorage.getItem('LNavLockOn') == 'true' && accountStorage.getItem('LNavOpened') == 'true') {
             console.debug('RA -- clicking left nav to open');
-            $('#leftNavDrawerIcon').click();
+            $('#leftNavDrawerIcon').trigger('click');
         }
 
         //auto-open WI if locked and previously open
         if (accountStorage.getItem('WINavLockOn') == 'true' && accountStorage.getItem('WINavOpened') == 'true') {
             console.debug('RA -- clicking WI to open');
-            $('#WIDrawerIcon').click();
+            $('#WIDrawerIcon').trigger('click');
         }
     }
 }
@@ -531,7 +526,8 @@ export function dragElement($elmnt) {
             return;
         }
 
-        const style = getComputedStyle($target[0]);
+        const element = /** @type {HTMLElement} */ ($target[0]);
+        const style = getComputedStyle(element);
         height = parseInt(style.height);
         width = parseInt(style.width);
         top = parseInt(style.top);
@@ -711,7 +707,7 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
-    $('#main_api').change(function () {
+    $('#main_api').on('change', function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
     });
@@ -834,11 +830,11 @@ export function initRossMods() {
     });
 
     var chatbarInFocus = false;
-    $('#send_textarea').focus(function () {
+    $('#send_textarea').on('focus', function () {
         chatbarInFocus = true;
     });
 
-    $('#send_textarea').blur(function () {
+    $('#send_textarea').on('blur', function () {
         chatbarInFocus = false;
     });
 
@@ -846,8 +842,8 @@ export function initRossMods() {
         OpenNavPanels();
     }, 300);
 
-    $(SelectedCharacterTab).click(function () { accountStorage.setItem('SelectedNavTab', 'rm_button_selected_ch'); });
-    $('#rm_button_characters').click(function () { accountStorage.setItem('SelectedNavTab', 'rm_button_characters'); });
+    $(SelectedCharacterTab).on('click', function () { accountStorage.setItem('SelectedNavTab', 'rm_button_selected_ch'); });
+    $('#rm_button_characters').on('click', function () { accountStorage.setItem('SelectedNavTab', 'rm_button_characters'); });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
 
@@ -932,7 +928,7 @@ export function initRossMods() {
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
             if (SwipeButR.css('display') === 'flex') {
-                SwipeButR.click();
+                SwipeButR.trigger('click');
             }
         }
     });
@@ -956,7 +952,7 @@ export function initRossMods() {
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
             if (SwipeButL.css('display') === 'flex') {
-                SwipeButL.click();
+                SwipeButL.trigger('click');
             }
         }
     });
@@ -1159,7 +1155,7 @@ export function initRossMods() {
                 const lastMes = document.querySelector('.last_mes');
                 const editMes = lastMes.querySelector('.mes_block .mes_edit');
                 if (editMes !== null) {
-                    $(editMes).click();
+                    $(editMes).trigger('click');
                     return;
                 }
             }

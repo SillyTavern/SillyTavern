@@ -1,10 +1,10 @@
 import { localforage } from '../lib.js';
-import { characters, main_api, api_server, nai_settings, online_status, this_chid } from '../script.js';
+import { characters, main_api, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
-import { kai_flags } from './kai-settings.js';
+import { kai_flags, kai_settings } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
@@ -586,29 +586,8 @@ export function getTokenizerModel() {
     const nemoTokenizer = 'nemo';
     const deepseekTokenizer = 'deepseek';
 
-    // Assuming no one would use it for different models.. right?
-    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        return gpt4Tokenizer;
-    }
-
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         return deepseekTokenizer;
-    }
-
-    // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
-        if (oai_settings.windowai_model.includes('gpt-4')) {
-            return gpt4Tokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
-            return turboTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('claude')) {
-            return claudeTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
-            return gpt2Tokenizer;
-        }
     }
 
     // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
@@ -727,10 +706,6 @@ export function getTokenizerModel() {
         if (oai_settings.groq_model.includes('gemma')) {
             return gemmaTokenizer;
         }
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
-        return yiTokenizer;
     }
 
     // Default to Turbo 3.5
@@ -911,7 +886,7 @@ function countTokensFromKoboldAPI(str, resolve) {
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].count,
         data: JSON.stringify({
             text: str,
-            url: api_server,
+            url: kai_settings.api_server,
         }),
         dataType: 'json',
         contentType: 'application/json',
@@ -1062,7 +1037,7 @@ function getTextTokensFromKoboldAPI(str, resolve) {
         url: TOKENIZER_URLS[tokenizers.API_KOBOLD].encode,
         data: JSON.stringify({
             text: str,
-            url: api_server,
+            url: kai_settings.api_server,
         }),
         dataType: 'json',
         contentType: 'application/json',

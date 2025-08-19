@@ -28,3 +28,27 @@ export const IGNORE_SYMBOL = Symbol.for('ignore');
  * https://ai.google.dev/gemini-api/docs/video-understanding#supported-formats
  */
 export const VIDEO_EXTENSIONS = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv', 'mpg'];
+
+/**
+ * Known generation triggers that can be passed to Generate function.
+ */
+export const GENERATION_TYPE_TRIGGERS = [
+    'normal',
+    'continue',
+    'impersonate',
+    'swipe',
+    'regenerate',
+    'quiet',
+];
+
+/**
+ * Known injection IDs and helper functions for system extensions handling.
+ */
+export const inject_ids = {
+    STORY_STRING: '__STORY_STRING__',
+    QUIET_PROMPT: 'QUIET_PROMPT',
+    DEPTH_PROMPT: 'DEPTH_PROMPT',
+    DEPTH_PROMPT_INDEX: (index) => `DEPTH_PROMPT_${index}`,
+    CUSTOM_WI_DEPTH: 'customDepthWI',
+    CUSTOM_WI_DEPTH_ROLE: (depth, role) => `customDepthWI_${depth}_${role}`,
+};

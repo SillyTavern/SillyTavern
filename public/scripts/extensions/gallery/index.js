@@ -324,7 +324,6 @@ async function showCharGallery(deleteModeState = false) {
         await delay(100);
         await initGallery(items, url);
     } catch (err) {
-        console.trace();
         console.error(err);
     }
 }
@@ -605,6 +604,9 @@ function makeDragImg(id, url) {
         }
         draggableElem.id = uniqueId;
 
+        // Add the galleryImageDraggable to have unique class
+        draggableElem.classList.add('galleryImageDraggable');
+
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
         //and has no padding unlike other non-zoomed-avatar draggables
@@ -734,7 +736,6 @@ async function listGalleryCommand(args) {
         return JSON.stringify(items.map(it => it.src));
 
     } catch (err) {
-        console.trace();
         console.error(err);
     }
     return JSON.stringify([]);

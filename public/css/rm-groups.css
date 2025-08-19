@@ -6,6 +6,7 @@
     align-items: center;
 }
 
+#rm_group_chats_block .tag.filterByFolder,
 #rm_group_chats_block .tag.filterByGroups {
     display: none;
 }

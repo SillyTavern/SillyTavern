@@ -9,19 +9,6 @@ import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { renderExtensionTemplateAsync } from '../../extensions.js';
 import { t } from '../../i18n.js';
 
-function rgb2hex(rgb) {
-    rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
-    return (rgb && rgb.length === 4) ? '#' +
-        ('0' + parseInt(rgb[1], 10).toString(16)).slice(-2) +
-        ('0' + parseInt(rgb[2], 10).toString(16)).slice(-2) +
-        ('0' + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
-}
-
-$('button').click(function () {
-    var hex = rgb2hex($('input').val());
-    $('.result').html(hex);
-});
-
 async function doTokenCounter() {
     const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
     const html = await renderExtensionTemplateAsync('token-counter', 'window', { tokenizerName });

@@ -41,7 +41,7 @@ function startServer() {
         const sillyTavernRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
         process.chdir(sillyTavernRoot);
 
-        import('../../server.js');
+        import('../server-global.js');
     });
 }
 

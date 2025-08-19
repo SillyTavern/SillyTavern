@@ -435,10 +435,10 @@ jQuery(async function () {
 
                     const chatCompletionApis = {
                         'openrouter': SECRET_KEYS.OPENROUTER,
-                        'zerooneai': SECRET_KEYS.ZEROONEAI,
                         'groq': SECRET_KEYS.GROQ,
                         'cohere': SECRET_KEYS.COHERE,
                         'aimlapi': SECRET_KEYS.AIMLAPI,
+                        'moonshot': SECRET_KEYS.MOONSHOT,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {

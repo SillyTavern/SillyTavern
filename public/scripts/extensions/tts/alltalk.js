@@ -296,20 +296,20 @@ class AllTalkTtsProvider {
             const ttsNarrateDialoguesCheckbox = document.getElementById('tts_narrate_dialogues');
             if (this.settings.narrator_enabled) {
                 ttsPassAsterisksCheckbox.checked = false;
-                $('#tts_pass_asterisks').click();
+                $('#tts_pass_asterisks').trigger('click');
                 $('#tts_pass_asterisks').trigger('change');
             }
             if (!this.settings.narrator_enabled) {
                 ttsPassAsterisksCheckbox.checked = true;
-                $('#tts_pass_asterisks').click();
+                $('#tts_pass_asterisks').trigger('click');
                 $('#tts_pass_asterisks').trigger('change');
             }
             if (this.settings.narrator_enabled) {
                 ttsNarrateQuotedCheckbox.checked = true;
                 ttsNarrateDialoguesCheckbox.checked = true;
-                $('#tts_narrate_quoted').click();
+                $('#tts_narrate_quoted').trigger('click');
                 $('#tts_narrate_quoted').trigger('change');
-                $('#tts_narrate_dialogues').click();
+                $('#tts_narrate_dialogues').trigger('click');
                 $('#tts_narrate_dialogues').trigger('change');
             }
             atNarratorSelect.value = this.settings.narrator_enabled.toString();
@@ -783,21 +783,21 @@ class AllTalkTtsProvider {
 
                 if (narratorOption === 'true') {
                     ttsPassAsterisksCheckbox.checked = false;
-                    $('#tts_pass_asterisks').click();
+                    $('#tts_pass_asterisks').trigger('click');
                     $('#tts_pass_asterisks').trigger('change');
                     ttsNarrateQuotedCheckbox.checked = true;
                     ttsNarrateDialoguesCheckbox.checked = true;
-                    $('#tts_narrate_quoted').click();
+                    $('#tts_narrate_quoted').trigger('click');
                     $('#tts_narrate_quoted').trigger('change');
-                    $('#tts_narrate_dialogues').click();
+                    $('#tts_narrate_dialogues').trigger('click');
                     $('#tts_narrate_dialogues').trigger('change');
                 } else if (narratorOption === 'silent') {
                     ttsPassAsterisksCheckbox.checked = false;
-                    $('#tts_pass_asterisks').click();
+                    $('#tts_pass_asterisks').trigger('click');
                     $('#tts_pass_asterisks').trigger('change');
                 } else {
                     ttsPassAsterisksCheckbox.checked = true;
-                    $('#tts_pass_asterisks').click();
+                    $('#tts_pass_asterisks').trigger('click');
                     $('#tts_pass_asterisks').trigger('change');
                 }
 

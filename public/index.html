@@ -300,7 +300,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <small data-tg-type="openrouter">
+                                <small id="prompt_cost_block" data-tg-type="openrouter">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="or_prompt_cost">&ndash;</span>
                                 </small>
                             </div>
@@ -652,7 +652,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom,xai,aimlapi">
+                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot">
                                     <div class="range-block-title" data-i18n="Multiple swipes per generation">
                                         Multiple swipes per generation
                                     </div>
@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai,pollinations">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -980,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1314,7 +1314,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,aphrodite,koboldcpp,llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top nsigma">Top nsigma</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
@@ -1811,6 +1811,7 @@
                                             <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
                                             <div data-name="dynamic_temperature" draggable="true"><span>Dynamic Temperature</span><small></small></div>
                                             <div data-name="quadratic_sampling" draggable="true"><span>Quadratic / Smooth Sampling</span><small></small></div>
+                                            <div data-name="top_n_sigma" draggable="true"><span>Top Nsigma</span><small></small></div>
                                             <div data-name="top_k" draggable="true"><span>Top K</span><small></small></div>
                                             <div data-name="top_p" draggable="true"><span>Top P</span><small></small></div>
                                             <div data-name="typical_p" draggable="true"><span>Typical P</span><small></small></div>
@@ -1969,7 +1970,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,nanogpt">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -1983,10 +1984,14 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
+                                            <div id="openai_function_calling_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
                                         </label>
                                         <div class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
@@ -1994,10 +1999,14 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,01ai,xai,pollinations">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
+                                            <div id="openai_image_inlining_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it. Use the</span>
@@ -2006,7 +2015,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2023,6 +2032,10 @@
                                         <label for="openai_video_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_video_inlining" type="checkbox" />
                                             <span data-i18n="Send inline videos">Send inline videos</span>
+                                            <div id="openai_video_inlining_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
                                         </label>
                                         <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it. Use the</span>
@@ -2064,7 +2077,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2078,7 +2091,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2092,7 +2105,7 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,perplexity" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
@@ -2131,7 +2144,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,scale,custom">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2787,22 +2800,21 @@
                                 <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                             </optgroup>
                             <optgroup>
-                                <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="deepseek">DeepSeek</option>
+                                <option value="fireworks">Fireworks AI</option>
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
                                 <option value="vertexai">Google Vertex AI</option>
                                 <option value="mistralai">MistralAI</option>
+                                <option value="moonshot">Moonshot AI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
-                                <option value="scale">Scale</option>
-                                <option value="windowai">Window AI</option>
                                 <option value="xai">xAI (Grok)</option>
                             </optgroup>
                         </select>
@@ -2920,6 +2932,15 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5">
+                                        <option value="gpt-5">gpt-5</option>
+                                        <option value="gpt-5-2025-08-07">gpt-5-2025-08-07</option>
+                                        <option value="gpt-5-chat-latest">gpt-5-chat-latest</option>
+                                        <option value="gpt-5-mini">gpt-5-mini</option>
+                                        <option value="gpt-5-mini-2025-08-07">gpt-5-mini-2025-08-07</option>
+                                        <option value="gpt-5-nano">gpt-5-nano</option>
+                                        <option value="gpt-5-nano-2025-08-07">gpt-5-nano-2025-08-07</option>
+                                    </optgroup>
                                     <optgroup label="GPT-4o">
                                         <option value="gpt-4o">gpt-4o</option>
                                         <option value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</option>
@@ -3010,6 +3031,8 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-1">claude-opus-4-1</option>
+                                        <option value="claude-opus-4-1-20250805">claude-opus-4-1-20250805</option>
                                         <option value="claude-opus-4-0">claude-opus-4-0</option>
                                         <option value="claude-opus-4-20250514">claude-opus-4-20250514</option>
                                         <option value="claude-sonnet-4-0">claude-sonnet-4-0</option>
@@ -3022,31 +3045,8 @@
                                         <option value="claude-3-5-haiku-latest">claude-3-5-haiku-latest</option>
                                         <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022</option>
                                         <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
-                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                         <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
-                                        <option value="claude-2.1">claude-2.1</option>
-                                        <option value="claude-2.0">claude-2.0</option>
                                     </optgroup>
-                                </select>
-                            </div>
-                        </form>
-                        <form id="windowai_form" data-source="windowai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <div>
-                                <h4 data-i18n="Window AI Model">Window AI Model</h4>
-                                <select id="model_windowai_select">
-                                    <option data-i18n="Use extension settings" value="">Use extension settings</option>
-                                    <option value="openai/gpt-3.5-turbo">openai/gpt-3.5-turbo</option>
-                                    <option value="openai/gpt-3.5-turbo-16k">openai/gpt-3.5-turbo-16k</option>
-                                    <option value="openai/gpt-4">openai/gpt-4</option>
-                                    <option value="openai/gpt-4-32k">openai/gpt-4-32k</option>
-                                    <option value="anthropic/claude-instant-v1">anthropic/claude-instant-v1</option>
-                                    <option value="anthropic/claude-instant-v1-100k">anthropic/claude-instant-v1-100k</option>
-                                    <option value="anthropic/claude-v1">anthropic/claude-v1</option>
-                                    <option value="anthropic/claude-v1-100k">anthropic/claude-v1-100k</option>
-                                    <option value="google/palm-2-chat-bison">google/palm-2-chat-bison</option>
-                                    <option value="google/palm-2-codechat-bison">google/palm-2-codechat-bison</option>
-                                    <option value="togethercomputer/GPT-NeoXT-Chat-Base-20B">togethercomputer/GPT-NeoXT-Chat-Base-20B</option>
-                                    <option value="cohere/command-nightly">cohere/command-nightly</option>
                                 </select>
                             </div>
                         </form>
@@ -3119,36 +3119,6 @@
                                 <span data-i18n="To use instruct formatting, switch to OpenRouter under Text Completion API.">To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
                             </small>
                         </form>
-                        <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <div id="normal_scale_form">
-                                <h4 data-i18n="Scale API Key">Scale API Key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" value="" autocomplete="off">
-                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_scale"></div>
-                                </div>
-                                <div data-for="api_key_scale" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
-                                </div>
-                                <h4>Scale API URL</h4>
-                                <input id="api_url_scale" name="api_url_scale" class="text_pole" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
-                            </div>
-                            <div id="alt_scale_form">
-                                <h4>Scale Cookie (_jwt)</h4>
-                                <div class="flex-container">
-                                    <input id="scale_cookie" name="scale_cookie" class="text_pole flex1" value="" autocomplete="off">
-                                    <div title="Clear your cookie" data-i18n="[title]Clear your cookie" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="scale_cookie"></div>
-                                </div>
-                                <div data-for="scale_cookie" class="neutral_warning">
-                                    For privacy reasons, your cookie will be hidden after you click 'Connect'.
-                                </div>
-                            </div>
-                            <!-- Its only purpose is to trigger max context size check -->
-                            <select id="model_scale_select" class="displayNone"></select>
-                            <label for="scale-alt" class="checkbox_label">
-                                <input id="scale-alt" type="checkbox" checked>
-                                <span data-i18n="Alt Method">Alt Method</span>
-                            </label>
-                        </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>
                             <div class="flex-container">
@@ -3165,7 +3135,11 @@
                                         <option value="jamba-mini">jamba-mini</option>
                                         <option value="jamba-large">jamba-large</option>
                                     </optgroup>
-                                    <optgroup label="Jamba 1.6">
+                                    <optgroup label="Jamba 1.7">
+                                        <option value="jamba-1.7-mini">jamba-1.7-mini</option>
+                                        <option value="jamba-1.7-large">jamba-1.7-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6 (Deprecated)">
                                         <option value="jamba-1.6-mini">jamba-1.6-mini</option>
                                         <option value="jamba-1.6-large">jamba-1.6-large</option>
                                     </optgroup>
@@ -3200,6 +3174,7 @@
                                         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
                                         <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
@@ -3208,6 +3183,7 @@
                                         <option value="gemini-exp-1206">gemini-exp-1206 → 2.5-pro-exp-03-25</option>
                                         <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
                                         <option value="gemini-2.0-flash-exp-image-generation">gemini-2.0-flash-exp-image-generation</option>
+                                        <option value="gemini-2.0-flash-preview-image-generation">gemini-2.0-flash-preview-image-generation</option>
                                         <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
                                         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
                                         <option value="gemini-2.0-flash-thinking-exp-01-21">gemini-2.0-flash-thinking-exp-01-21 → 2.5-flash-preview-04-17</option>
@@ -3216,6 +3192,7 @@
                                         <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
                                         <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite-preview-02-05</option>
                                         <option value="gemini-2.0-flash-lite-preview">gemini-2.0-flash-lite-preview</option>
+                                        <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
                                     </optgroup>
                                     <optgroup label="Gemini 1.5">
                                         <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
@@ -3226,6 +3203,7 @@
                                         <option value="gemini-1.5-flash-002">gemini-1.5-flash-002</option>
                                         <option value="gemini-1.5-flash-001">gemini-1.5-flash-001</option>
                                         <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                                        <option value="gemini-1.5-flash-8b-latest">gemini-1.5-flash-8b-latest</option>
                                         <option value="gemini-1.5-flash-8b-001">gemini-1.5-flash-8b-001</option>
                                         <option value="gemini-1.5-flash-8b-exp-0924">gemini-1.5-flash-8b-exp-0924</option>
                                         <option value="gemini-1.5-flash-8b-exp-0827">gemini-1.5-flash-8b-exp-0827</option>
@@ -3233,6 +3211,7 @@
                                     </optgroup>
                                     <optgroup label="Gemma">
                                         <option value="gemma-3n-e4b-it">gemma-3n-e4b-it</option>
+                                        <option value="gemma-3n-e2b-it">gemma-3n-e2b-it</option>
                                         <option value="gemma-3-27b-it">gemma-3-27b-it</option>
                                         <option value="gemma-3-12b-it">gemma-3-12b-it</option>
                                         <option value="gemma-3-4b-it">gemma-3-4b-it</option>
@@ -3373,6 +3352,7 @@
                                         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                         <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
                                         <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
@@ -3415,6 +3395,7 @@
                                         <option value="pixtral-12b-latest">pixtral-12b-latest</option>
                                         <option value="pixtral-large-latest">pixtral-large-latest</option>
                                         <option value="devstral-small-latest">devstral-small-latest</option>
+                                        <option value="devstral-medium-latest">devstral-medium-latest</option>
                                         <option value="magistral-small-latest">magistral-small-latest</option>
                                         <option value="magistral-medium-latest">magistral-medium-latest</option>
                                     </optgroup>
@@ -3430,6 +3411,7 @@
                                         <option value="mistral-small-2409">mistral-small-2409</option>
                                         <option value="mistral-small-2501">mistral-small-2501</option>
                                         <option value="mistral-small-2503">mistral-small-2503</option>
+                                        <option value="mistral-small-2506">mistral-small-2506</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-medium-2505">mistral-medium-2505</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
@@ -3446,8 +3428,12 @@
                                         <option value="pixtral-12b-2409">pixtral-12b-2409</option>
                                         <option value="pixtral-large-2411">pixtral-large-2411</option>
                                         <option value="devstral-small-2505">devstral-small-2505</option>
+                                        <option value="devstral-small-2507">devstral-small-2507</option>
+                                        <option value="devstral-medium-2507">devstral-medium-2507</option>
                                         <option value="magistral-small-2506">magistral-small-2506</option>
                                         <option value="magistral-medium-2506">magistral-medium-2506</option>
+                                        <option value="magistral-small-2507">magistral-small-2507</option>
+                                        <option value="magistral-medium-2507">magistral-medium-2507</option>
                                     </optgroup>
                                     <optgroup id="mistralai_other_models" label="Other"></optgroup>
                                 </select>
@@ -3464,35 +3450,17 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <optgroup label="Alibaba Cloud">
-                                    <option value="qwen-2.5-32b">qwen-2.5-32b</option>
-                                    <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
-                                </optgroup>
-                                <optgroup label="DeepSeek">
-                                    <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
-                                    <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-                                </optgroup>
-                                <optgroup label="Google">
-                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                                </optgroup>
-                                <optgroup label="Meta">
-                                    <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
-                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
-                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
-                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
-                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
-                                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
-                                    <option value="llama-guard-3-8b">llama-guard-3-8b</option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                </optgroup>
-                                <optgroup label="Mistral AI">
-                                    <option value="mistral-saba-24b">mistral-saba-24b</option>
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                </optgroup>
+                                <option value="qwen/qwen3-32b">qwen/qwen3-32b</option>
+                                <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
+                                <option value="llama-guard-3-8b">llama-guard-3-8b</option>
+                                <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                <option value="mistral-saba-24b">mistral-saba-24b</option>
                             </select>
                         </div>
                         <div id="nanogpt_form" data-source="nanogpt">
@@ -3529,6 +3497,22 @@
                                 </select>
                             </div>
                         </div>
+                        <div id="fireworks_form" data-source="fireworks">
+                            <h4 data-i18n="Fireworks AI API Key">Fireworks AI API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_fireworks" name="api_key_fireworks" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_fireworks"></div>
+                            </div>
+                            <div data-for="api_key_fireworks" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Fireworks AI Model">Fireworks AI Model</h4>
+                                <select id="model_fireworks_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="perplexity_form" data-source="perplexity">
                             <h4 data-i18n="Perplexity API Key">Perplexity API Key</h4>
                             <div class="flex-container">
@@ -3545,6 +3529,7 @@
                                     <option value="sonar-pro">sonar-pro</option>
                                     <option value="sonar-reasoning">sonar-reasoning</option>
                                     <option value="sonar-reasoning-pro">sonar-reasoning-pro</option>
+                                    <option value="sonar-deep-research">sonar-deep-research</option>
                                 </optgroup>
                                 <optgroup label="Offline Models">
                                     <option value="r1-1776">r1-1776</option>
@@ -3587,6 +3572,7 @@
                                         <option value="command-r-plus-08-2024">command-r-plus-08-2024</option>
                                         <option value="command-r7b-12-2024">command-r7b-12-2024</option>
                                         <option value="command-a-03-2025">command-a-03-2025</option>
+                                        <option value="command-a-vision-07-2025">command-a-vision-07-2025</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>
@@ -3627,23 +3613,6 @@
                                 <select id="model_custom_select" class="text_pole model_custom_select"></select>
                             </div>
                         </form>
-                        <div id="01ai_form" data-source="01ai">
-                            <h4>
-                                <a data-i18n="01.AI API Key" href="https://platform.lingyiwanwu.com/" target="_blank" rel="noopener noreferrer">
-                                    01.AI API Key
-                                </a>
-                            </h4>
-                            <div class="flex-container">
-                                <input id="api_key_01ai" name="api_key_01ai" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_01ai"></div>
-                            </div>
-                            <div data-for="api_key_01ai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                For privacy reasons, your API key will be hidden after you click 'Connect'.
-                            </div>
-                            <h4 data-i18n="01.AI Model">01.AI Model</h4>
-                            <select id="model_01ai_select">
-                            </select>
-                        </div>
                         <div id="xai_form" data-source="xai">
                             <h4>
                                 <a data-i18n="xAI API Key" href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">
@@ -3659,6 +3628,7 @@
                             </div>
                             <h4 data-i18n="xAI Model">xAI Model</h4>
                             <select id="model_xai_select">
+                                <option value="grok-4-0709">grok-4-0709</option>
                                 <option value="grok-3-beta">grok-3-beta</option>
                                 <option value="grok-3-fast-beta">grok-3-fast-beta</option>
                                 <option value="grok-3-mini-beta">grok-3-mini-beta</option>
@@ -3671,7 +3641,7 @@
                         </div>
                         <div id="aimlapi_form" data-source="aimlapi">
                             <h4>
-                                <span>AI/ML API Key</span>
+                                <span data-i18n="AI/ML API Key">AI/ML API Key</span>
                             </h4>
                             <div class="flex-container">
                                 <input id="api_key_aimlapi" name="api_key_aimlapi" class="text_pole flex1" value="" type="text" autocomplete="off">
@@ -3680,7 +3650,7 @@
                             <div data-for="api_key_aimlapi" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
-                            <h4>AI/ML Model</h4>
+                            <h4 data-i18n="AI/ML Model">AI/ML Model</h4>
                             <select id="model_aimlapi_select">
                             </select>
                         </div>
@@ -3698,6 +3668,33 @@
                                     Avoid sending sensitive information. Provider's outputs may include ads.
                                 </span>
                             </div>
+                        </div>
+                        <div id="moonshot_form" data-source="moonshot">
+                            <h4>
+                                <a data-i18n="Moonshot AI API Key" href="https://platform.moonshot.ai/console/api-keys" target="_blank" rel="noopener noreferrer">
+                                    Moonshot AI API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_moonshot" name="api_key_moonshot" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_moonshot"></div>
+                            </div>
+                            <div data-for="api_key_moonshot" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="Moonshot AI Model">Moonshot AI Model</h4>
+                            <select id="model_moonshot_select">
+                                <option value="kimi-k2-0711-preview">kimi-k2-0711-preview</option>
+                                <option value="moonshot-v1-8k">moonshot-v1-8k</option>
+                                <option value="moonshot-v1-32k">moonshot-v1-32k</option>
+                                <option value="moonshot-v1-128k">moonshot-v1-128k</option>
+                                <option value="moonshot-v1-auto">moonshot-v1-auto</option>
+                                <option value="kimi-latest">kimi-latest</option>
+                                <option value="moonshot-v1-8k-vision-preview">moonshot-v1-8k-vision-preview</option>
+                                <option value="moonshot-v1-32k-vision-preview">moonshot-v1-32k-vision-preview</option>
+                                <option value="moonshot-v1-128k-vision-preview">moonshot-v1-128k-vision-preview</option>
+                                <option value="kimi-thinking-preview">kimi-thinking-preview</option>
+                            </select>
                         </div>
                         <div id="prompt_post_processing_form">
                             <h4>
@@ -3806,6 +3803,35 @@
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
                                 <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                <div class="flex-container flexFlowColumn">
+                                    <div id="context_story_string_position_block">
+                                        <label for="context_story_string_position">
+                                            <small data-i18n="Position:">Position:</small>
+                                        </label>
+                                        <select id="context_story_string_position" class="text_pole">
+                                            <option value="0" data-i18n="Default (top of context)">Default (top of context)</option>
+                                            <option value="1" data-i18n="In-chat @ Depth">In-chat @ Depth</option>
+                                        </select>
+                                    </div>
+                                    <div id="context_story_string_inject_settings" class="flex-container">
+                                        <div class="flex1">
+                                            <label for="context_story_string_depth">
+                                                <small data-i18n="Depth:">Depth:</small>
+                                            </label>
+                                            <input type="number" id="context_story_string_depth" class="text_pole" min="0" max="">
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="context_story_string_role">
+                                                <small data-i18n="Role:">Role:</small>
+                                            </label>
+                                            <select id="context_story_string_role" class="text_pole">
+                                                <option data-i18n="System" value="0">System</option>
+                                                <option data-i18n="User" value="1">User</option>
+                                                <option data-i18n="Assistant" value="2">Assistant</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
@@ -3926,6 +3952,10 @@
                                     <input id="instruct_macro" type="checkbox" />
                                     <small data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</small>
                                 </label>
+                                <label for="instruct_sequences_as_stop_strings" class="checkbox_label">
+                                    <input id="instruct_sequences_as_stop_strings" type="checkbox" />
+                                    <small data-i18n="Sequences as Stop Strings">Sequences as Stop Strings</small>
+                                </label>
                                 <label for="instruct_skip_examples" class="checkbox_label">
                                     <input id="instruct_skip_examples" type="checkbox" />
                                     <small data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</small>
@@ -3950,7 +3980,31 @@
                                     </span>
                                 </b>
                             </h4>
-                            <!-- We keep one auto-open so the user would know what is going on in the picked template -->
+                            <!-- We keep some auto-open so the user would know what is going on in the picked template -->
+                            <details open>
+                                <summary>
+                                    <span data-i18n="Story String Sequences">Story String Sequences</span>
+                                    <small class="fa-solid fa-question-circle" title="Used in Default position only." data-i18n="[title]Used in Default position only."></small>
+                                </summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before a Story String." data-i18n="[title]Inserted before a Story String.">
+                                        <label for="instruct_story_string_prefix">
+                                            <small data-i18n="Story String Prefix">Story String Prefix</small>
+                                        </label>
+                                        <div>
+                                            <textarea id="instruct_story_string_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted after a Story String." data-i18n="[title]Inserted after a Story String.">
+                                        <label for="instruct_story_string_suffix">
+                                            <small data-i18n="Story String Suffix">Story String Suffix</small>
+                                        </label>
+                                        <div>
+                                            <textarea id="instruct_story_string_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
                             <details open>
                                 <summary data-i18n="User Message Sequences">User Message Sequences</summary>
                                 <div class="flex-container">
@@ -3994,27 +4048,6 @@
                                         <input id="instruct_system_same_as_user" type="checkbox" />
                                         <small data-i18n="System same as User">System same as User</small>
                                     </label>
-                                </div>
-                            </details>
-                            <details>
-                                <summary data-i18n="System Prompt Sequences">System Prompt Sequences</summary>
-                                <div class="flex-container">
-                                    <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
-                                        <label for="instruct_system_sequence_prefix">
-                                            <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
-                                        </label>
-                                        <div>
-                                            <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="flexAuto" title="Inserted after a System prompt." data-i18n="[title]Inserted after a System prompt.">
-                                        <label for="instruct_system_sequence_suffix">
-                                            <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
-                                        </label>
-                                        <div>
-                                            <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                        </div>
-                                    </div>
                                 </div>
                             </details>
                             <details>
@@ -4440,28 +4473,30 @@
                     </div>
                     <div id="world_popup">
                         <hr>
-                        <div class="flex-container alignitemscenter gap3px">
+                        <div class="flex-container alignitemscenter">
                             <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
                             <div id="world_create_button" class="menu_button menu_button_icon">
                                 <i class="fa-solid fa-globe"></i>
                                 <span data-i18n="New">New</span>
                             </div>
                             <small data-i18n="or">or</small>
-                            <select id="world_editor_select" class="margin0">
+                            <select id="world_editor_select">
                                 <option value="" data-i18n="--- Pick to Edit ---">--- Pick to Edit ---</option>
                             </select>
-                            <div id="world_popup_name_button" class="menu_button fa-pencil fa-solid" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
-                            <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
-                            <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
-                            <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
-                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
-                            <div id="world_apply_current_sorting" class="menu_button fa-solid fa-solid fa-arrow-down-9-1" title="Apply current sorting as Order" data-i18n="[title]Apply current sorting as Order"></div>
                             <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
                             <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
+                            <div id="world_popup_name_button" class="menu_button fa-pencil fa-solid" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
                             <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
+                        </div>
+                        <div class="flex-container alignitemscenter">
+                            <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
+                            <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
+                            <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
+                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
+                            <div id="world_apply_current_sorting" class="menu_button fa-solid fa-solid fa-arrow-down-9-1" title="Apply current sorting as Order" data-i18n="[title]Apply current sorting as Order"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
-                            <select id="world_info_sort_order" class="margin0">
+                            <select id="world_info_sort_order" class="text_pole textarea_compact">
                                 <option data-rule="search" value="14" data-i18n="Search" hidden>Search</option>
                                 <option data-rule="priority" value="0" data-i18n="Priority">Priority</option>
                                 <option data-rule="custom" value="13" data-i18n="Custom">Custom</option>
@@ -4807,10 +4842,10 @@
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
-                           <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
-                               <input id="background_thumbnails_animation" type="checkbox" />
-                               <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
-                           </label>
+                            <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
+                                <input id="background_thumbnails_animation" type="checkbox" />
+                                <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
+                            </label>
                             <label class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <small data-i18n="Show avatar filenames">Show avatar filenames</small>
@@ -5323,6 +5358,7 @@
                         <div id="message_limit_container" class="extension_container"></div>
                         <div id="injects_container" class="extension_container"></div>
                         <div id="accuweather_container" class="extension_container"></div>
+                        <div id="dice_container" class="extension_container"></div>
                     </div>
                     <hr class="wide100p margin0">
                     <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
@@ -5529,7 +5565,6 @@
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
                         <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps">
                         </div>
-                        <hr class="wide100p">
                     </div>
                 </div>
 
@@ -5645,19 +5680,26 @@
                                     </div>
                                 </div>
                             </div>
-                            <hr>
-                            <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
-                                <div id="creators_notes_div" class="title_restorable flexGap5">
-                                    <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
-                                    <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
-                                    <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
-                                    <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                            <div id="spoiler_free_desc" class="inline-drawer flex-container flexFlowColumn flexNoGap">
+                                <div class="inline-drawer-toggle inline-drawer-header padding0 gap5px standoutHeader">
+                                    <div id="creators_notes_div" class="title_restorable flexGap5 wide100p ">
+                                        <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
+                                        <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
+                                        <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                                    </div>
+                                    <div class="flex-container widthFitContent">
+                                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down interactable"></div>
+                                    </div>
                                 </div>
-                                <div id="creator_notes_spoiler" class="flex1"></div>
-                                <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                                <div class="inline-drawer-content">
+                                    <div id="creator_notes_spoiler"></div>
+                                    <div id="creator_notes_empty" data-i18n="No Creator's Notes provided.">
+                                        No Creator's Notes provided.
+                                    </div>
+                                </div>
                             </div>
+                            <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
                             <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
-                                <hr>
                                 <div id="description_div" class="title_restorable">
                                     <div class="flex-container alignitemscenter">
                                         <span data-i18n="Character Description" class="mdhotkey_location">Description</span>
@@ -5850,20 +5892,22 @@
                     </div>
                     <div id="rm_character_import" class="right_menu" style="display: none;">
                         <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
+                            <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx, .byaf" name="avatar">
                             <input id="character_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off">
                         </form>
-                        <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
+                        <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx, .byaf" name="replace_avatar" hidden>
                     </div>
                     <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                         <div id="charListFixedTop">
-                            <form id="form_character_search_form" action="javascript:void(null);">
-                                <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus "></div>
-                                <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
-                                <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
-                                <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                                <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
-                                <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
+                            <div id="rm_button_bar">
+                                <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus"></div>
+                                <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import"></div>
+                                <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down"></div>
+                                <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear"></div>
+                                <div id="rm_buttons_container">
+                                    <!-- Container for additional buttons added by extensions -->
+                                </div>
+                                <select id="character_sort_order" class="flex1 text_pole textarea_compact" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                     <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
                                     <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                     <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
@@ -5877,12 +5921,15 @@
                                     <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                     <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                                 </select>
-                            </form>
+                                <div id="rm_button_search" class="right_menu_button fa-fw fa-solid fa-search" title="Toggle search bar" data-i18n="[title]Toggle search bar"></div>
+                            </div>
+                            <div id="form_character_search_form">
+                                <input id="character_search_bar" class="text_pole textarea_compact width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                            </div>
                             <div class="rm_tag_controls">
                                 <div class="tags rm_tag_filter"></div>
                                 <div class="tags rm_tag_bogus_drilldown"></div>
                             </div>
-                            <hr>
                         </div>
 
                         <div id="rm_print_characters_pagination">
@@ -5934,6 +5981,7 @@
                 <div class="flex-container wide100pLess70px character_select_container">
                     <div class="wide100p character_name_block">
                         <span class="ch_name flex1"></span>
+                        <small class="ch_additional_info"></small>
                     </div>
                     <div class="ch_description"></div>
                     <div class="avatar_container_states buttons_block">
@@ -6365,25 +6413,35 @@
                                             (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
                                             <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                         </span>
-                                        <div>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="excludeRecursion" />
-                                                <span data-i18n="Non-recursable (will not be activated by another)">
-                                                    Non-recursable (will not be activated by another)
-                                                </span>
-                                            </label>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="preventRecursion" />
-                                                <span data-i18n="Prevent further recursion (this entry will not activate others)">
-                                                    Prevent further recursion (will not activate others)
-                                                </span>
-                                            </label>
-                                            <label class="checkbox flex-container alignitemscenter flexNoGap">
-                                                <input type="checkbox" name="delay_until_recursion" />
-                                                <span data-i18n="Delay until recursion (can only be activated on recursive checking)">
-                                                    Delay until recursion (can only be activated on recursive checking)
-                                                </span>
-                                            </label>
+                                        <div class="flex-container">
+                                            <div class="flex-container flexFlowColumn">
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will not be recursively activated by other entries.">
+                                                    <input type="checkbox" name="excludeRecursion" />
+                                                    <span data-i18n="Non-recursable">
+                                                        Non-recursable
+                                                    </span>
+                                                </label>
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will not activate other entries recursively." data-i18n="[title]This entry will not activate other entries recursively.">
+                                                    <input type="checkbox" name="preventRecursion" />
+                                                    <span data-i18n="Prevent further recursion">
+                                                        Prevent further recursion
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="flex-container flexFlowColumn">
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry can only be activated on recursive checking." data-i18n="[title]This entry can only be activated on recursive checking.">
+                                                    <input type="checkbox" name="delay_until_recursion" />
+                                                    <span data-i18n="Delay until recursion">
+                                                        Delay until recursion
+                                                    </span>
+                                                </label>
+                                                <label class="checkbox flex-container alignitemscenter flexNoGap" title="This entry will be included ignoring budget constraints, assuming all other checks pass." data-i18n="[title]This entry will be included ignoring budget constraints, assuming all other checks pass.">
+                                                    <input type="checkbox" name="ignoreBudget" />
+                                                    <span data-i18n="Ignore budget">
+                                                        Ignore budget
+                                                    </span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </span>
                                 </small>
@@ -6493,6 +6551,30 @@
                                 <option value="" data-i18n="-- Characters not found --">
                                     -- Characters not found --
                                 </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex4">
+                        <div class="flex-container justifySpaceBetween">
+                            <small>
+                                <span data-i18n="Filter to Generation Triggers">
+                                    Filter to Generation Triggers
+                                </span>
+                            </small>
+                            <!-- Not a real control. Used to make label heights even. -->
+                            <label class="checkbox_label" for="__invisible">
+                                <input type="checkbox" name="__invisible">
+                                <span><small>&nbsp;</small></span>
+                            </label>
+                        </div>
+                        <div class="range-block-range">
+                            <select name="triggers" multiple>
+                                <option data-i18n="Normal" value="normal">Normal</option>
+                                <option data-i18n="Continue" value="continue">Continue</option>
+                                <option data-i18n="Impersonate" value="impersonate">Impersonate</option>
+                                <option data-i18n="Swipe" value="swipe">Swipe</option>
+                                <option data-i18n="Regenerate" value="regenerate">Regenerate</option>
+                                <option data-i18n="Quiet" value="quiet">Quiet</option>
                             </select>
                         </div>
                     </div>
@@ -6630,7 +6712,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <i class="menu_button move_entry_button fa-solid fa-right-left" title="Move Entry to Another Lorebook" data-i18n="[title]Move Entry to Another Lorebook"></i>
+                            <i class="menu_button move_entry_button fa-solid fa-right-left" title="Move/Copy Entry to Another Lorebook" data-i18n="[title]Move/Copy Entry to Another Lorebook"></i>
                             <i class="menu_button duplicate_entry_button fa-solid fa-paste" title="Duplicate world info entry" data-i18n="[title]Duplicate world info entry" type="submit" value=""></i>
                             <i class="menu_button delete_entry_button fa-solid fa-trash-can" title="Delete world info entry" data-i18n="[title]Delete world info entry" type="submit" value=""></i>
                         </div>
@@ -6726,6 +6808,22 @@
                                 </select>
                                 <div class="text_muted" data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</div>
                             </div>
+                            <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                                <label for="completion_prompt_manager_popup_entry_form_injection_trigger">
+                                    <span data-i18n="Triggers">Triggers</span>
+                                </label>
+                                <select id="completion_prompt_manager_popup_entry_form_injection_trigger" class="text_pole" name="injection_trigger" multiple>
+                                    <option data-i18n="Normal" value="normal">Normal</option>
+                                    <option data-i18n="Continue" value="continue">Continue</option>
+                                    <option data-i18n="Impersonate" value="impersonate">Impersonate</option>
+                                    <option data-i18n="Swipe" value="swipe">Swipe</option>
+                                    <option data-i18n="Regenerate" value="regenerate">Regenerate</option>
+                                    <option data-i18n="Quiet" value="quiet">Quiet</option>
+                                </select>
+                                <div class="text_muted" data-i18n="Filter to specific generation types.">
+                                    Filter to specific generation types.
+                                </div>
+                            </div>
                         </div>
                         <div class="flex-container gap10px">
                             <div class="completion_prompt_manager_popup_entry_form_control flex1">
@@ -6776,9 +6874,9 @@
                             <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt" placeholder="The prompt to be sent." data-i18n="[placeholder]The prompt to be sent."></textarea>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_footer">
-                            <a id="completion_prompt_manager_popup_entry_form_close" title="close" data-i18n="[title]close" class="fa-solid fa-close menu_button"></a>
-                            <a id="completion_prompt_manager_popup_entry_form_reset" title="reset" data-i18n="[title]reset" class="fa-solid fa-undo menu_button"></a>
-                            <a id="completion_prompt_manager_popup_entry_form_save" title="save" data-i18n="[title]save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
+                            <a id="completion_prompt_manager_popup_entry_form_close" title="Close" data-i18n="[title]close" class="fa-solid fa-close menu_button"></a>
+                            <a id="completion_prompt_manager_popup_entry_form_reset" title="Reset" data-i18n="[title]reset" class="fa-solid fa-undo menu_button"></a>
+                            <a id="completion_prompt_manager_popup_entry_form_save" title="Save" data-i18n="[title]save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
                         </div>
                     </form>
                 </div>
@@ -6844,6 +6942,7 @@
                                 <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm Edit"></div>
                                 <div class="mes_reasoning_delete menu_button edit_button fa-solid fa-trash-can" title="Remove reasoning" data-i18n="[title]Remove reasoning"></div>
                                 <div class="mes_reasoning_edit_cancel menu_button edit_button fa-solid fa-xmark" title="Cancel edit" data-i18n="[title]Cancel edit"></div>
+                                <div class="mes_reasoning_close_all mes_button fa-solid fa-minimize" title="Collapse all reasoning blocks" data-i18n="[title]Collapse all reasoning blocks"></div>
                                 <div class="mes_reasoning_copy mes_button fa-solid fa-copy" title="Copy reasoning" data-i18n="[title]Copy reasoning"></div>
                                 <div class="mes_reasoning_edit mes_button fa-solid fa-pencil" title="Edit reasoning" data-i18n="[title]Edit reasoning"></div>
                             </div>
@@ -6851,19 +6950,19 @@
                         <div class="mes_reasoning"></div>
                     </details>
                     <div class="mes_text"></div>
-            <div class="mes_img_container">
-                <div class="mes_img_controls">
-                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
-                    <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
-                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
-                </div>
-                <div class="mes_img_swipes">
-                    <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
-                    <div class="mes_img_swipe_counter">1/1</div>
-                    <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
-                </div>
-                <img class="mes_img" src="" />
-            </div>
+                    <div class="mes_img_container">
+                        <div class="mes_img_controls">
+                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
+                            <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
+                            <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
+                        </div>
+                        <div class="mes_img_swipes">
+                            <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                            <div class="mes_img_swipe_counter">1/1</div>
+                            <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
+                        </div>
+                        <img class="mes_img" src="" />
+                    </div>
                     <div class="mes_bias"></div>
                 </div>
                 <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
@@ -7453,7 +7552,7 @@
                     <div id="leftSendForm" class="alignContentCenter">
                         <div id="options_button" class="fa-solid fa-bars interactable"></div>
                     </div>
-                    <textarea id="send_textarea" name="text" class="mdHotkeys" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
+                    <textarea id="send_textarea" name="text" class="mdHotkeys" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help" autocomplete="off"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
                         <div id="stscript_continue" title="Continue script execution" class="stscript_btn stscript_continue" data-i18n="[title]Continue script execution">
                             <i class="fa-solid fa-play"></i>
