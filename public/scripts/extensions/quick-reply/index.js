@@ -1,6 +1,5 @@
-import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, characters, this_chid, saveSettingsDebounced, reloadCurrentChat } from '../../../script.js';
-import { extension_settings, writeExtensionField } from '../../extensions.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, this_chid, saveSettingsDebounced } from '../../../script.js';
+import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
@@ -52,7 +51,6 @@ let buttons;
 let autoExec;
 /** @type {QuickReplyApi} */
 export let quickReplyApi;
-const overwrittenGlobalSets = new Map();
 /** A counter to prevent re-entrant, overlapping executions of onChatChanged */
 let changeId = 0;
 
@@ -129,8 +127,8 @@ const loadSettings = async () => {
     }
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
-       settings.config.scope = 'global';
-       settings.config.onSave = () => settings.save();
+        settings.config.scope = 'global';
+        settings.config.onSave = () => settings.save();
     } catch (ex) {
         settings = QuickReplySettings.from(defaultSettings);
     }
@@ -200,10 +198,10 @@ const init = async () => {
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [
-           ...(settings.chatConfig?.setList ?? []),
-           ...(settings.charConfig?.setList ?? []),
-           ...settings.config.setList,
-       ]
+            ...(settings.chatConfig?.setList ?? []),
+            ...(settings.charConfig?.setList ?? []),
+            ...settings.config.setList,
+        ]
             .filter(it => it.isVisible)
             .map(it => it.set.qrList)
             .flat()
@@ -279,10 +277,10 @@ const onChatChanged = async (chatIdx) => {
     }
 
     if (chatIdx) {
-       const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
-       chatConfig.scope = 'chat';
-       chatConfig.onSave = () => settings.save();
-       settings.chatConfig = chatConfig;
+        const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
+        chatConfig.scope = 'chat';
+        chatConfig.onSave = () => settings.save();
+        settings.chatConfig = chatConfig;
     } else {
         settings.chatConfig = null;
     }

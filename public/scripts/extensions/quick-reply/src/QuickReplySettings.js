@@ -35,16 +35,16 @@ export class QuickReplySettings {
             this.hookConfig(this._chatConfig);
         }
     }
-   get charConfig() {
-       return this._charConfig;
-   }
-   set charConfig(value) {
-       if (this._charConfig != value) {
-           this.unhookConfig(this._charConfig);
-           this._charConfig = value;
-           this.hookConfig(this._charConfig);
-       }
-   }
+    get charConfig() {
+        return this._charConfig;
+    }
+    set charConfig(value) {
+        if (this._charConfig != value) {
+            this.unhookConfig(this._charConfig);
+            this._charConfig = value;
+            this.hookConfig(this._charConfig);
+        }
+    }
 
     /**@type {Function}*/ onSave;
     /**@type {Function}*/ onRequestEditSet;
@@ -55,7 +55,7 @@ export class QuickReplySettings {
     init() {
         this.hookConfig(this.config);
         this.hookConfig(this.chatConfig);
-       this.hookConfig(this.charConfig);
+        this.hookConfig(this.charConfig);
     }
 
     hookConfig(config) {

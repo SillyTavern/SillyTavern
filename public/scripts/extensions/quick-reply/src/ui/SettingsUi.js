@@ -251,7 +251,7 @@ export class SettingsUi {
         this.prepareGeneralSettings();
         this.prepareGlobalSetList();
         this.prepareChatSetList();
-       this.prepareCharacterSetList();
+        this.prepareCharacterSetList();
         this.prepareQrEditor();
     }
 
@@ -328,13 +328,13 @@ export class SettingsUi {
                 }
             }
         }
-       if (this.settings.charConfig) {
-           for (let i = this.settings.charConfig.setList.length - 1; i >= 0; i--) {
-               if (this.settings.charConfig.setList[i].set == qrs) {
-                   this.settings.charConfig.setList.splice(i, 1);
-               }
-           }
-       }
+        if (this.settings.charConfig) {
+            for (let i = this.settings.charConfig.setList.length - 1; i >= 0; i--) {
+                if (this.settings.charConfig.setList[i].set == qrs) {
+                    this.settings.charConfig.setList.splice(i, 1);
+                }
+            }
+        }
         this.settings.save();
     }
 
@@ -361,11 +361,11 @@ export class SettingsUi {
                     set.set.name = newName;
                 }
             });
-           this.settings.charConfig?.setList.forEach(set => {
-               if (set.set.name === oldName) {
-                   set.set.name = newName;
-               }
-           });
+            this.settings.charConfig?.setList.forEach(set => {
+                if (set.set.name === oldName) {
+                    set.set.name = newName;
+                }
+            });
             this.settings.save();
 
             // Update the option in the current selected QR dropdown. All others will be refreshed via the prepare calls below.
@@ -378,7 +378,7 @@ export class SettingsUi {
             this.onQrSetChange();
             this.prepareGlobalSetList();
             this.prepareChatSetList();
-           this.prepareCharacterSetList();
+            this.prepareCharacterSetList();
 
             console.info(`Quick Reply Set renamed from ""${oldName}" to "${newName}".`);
         }
@@ -402,7 +402,7 @@ export class SettingsUi {
                     this.onQrSetChange();
                     this.prepareGlobalSetList();
                     this.prepareChatSetList();
-                   this.prepareCharacterSetList();
+                    this.prepareCharacterSetList();
                 }
             } else {
                 const qrs = new QuickReplySet();
@@ -427,7 +427,7 @@ export class SettingsUi {
                 this.onQrSetChange();
                 this.prepareGlobalSetList();
                 this.prepareChatSetList();
-               this.prepareCharacterSetList();
+                this.prepareCharacterSetList();
             }
         }
     }
@@ -463,7 +463,7 @@ export class SettingsUi {
                         this.onQrSetChange();
                         this.prepareGlobalSetList();
                         this.prepareChatSetList();
-                       this.prepareCharacterSetList();
+                        this.prepareCharacterSetList();
                     }
                 } else {
                     const idx = QuickReplySet.list.findIndex(it=>it.name.toLowerCase().localeCompare(qrs.name.toLowerCase()) == 1);
@@ -486,7 +486,7 @@ export class SettingsUi {
                     this.onQrSetChange();
                     this.prepareGlobalSetList();
                     this.prepareChatSetList();
-                   this.prepareCharacterSetList();
+                    this.prepareCharacterSetList();
                 }
             }
         } catch (ex) {
@@ -537,7 +537,7 @@ export class SettingsUi {
             this.onQrSetChange();
             this.prepareGlobalSetList();
             this.prepareChatSetList();
-           this.prepareCharacterSetList();
+            this.prepareCharacterSetList();
         }
     }
 
