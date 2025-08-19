@@ -5,6 +5,10 @@ import { QuickReplyConfig } from './QuickReplyConfig.js';
 export class QuickReplySettings {
     static from(props) {
         props.config = QuickReplyConfig.from(props.config);
+        props.characterConfigs = props.characterConfigs ?? {};
+        for (const key of Object.keys(props.characterConfigs)) {
+            props.characterConfigs[key] = QuickReplyConfig.from(props.characterConfigs[key]);
+        }
         const instance = Object.assign(new this(), props);
         instance.init();
         return instance;
@@ -18,8 +22,9 @@ export class QuickReplySettings {
     /**@type {Boolean}*/ isPopout = false;
     /**@type {Boolean}*/ showPopoutButton = true;
     /**@type {QuickReplyConfig}*/ config;
+    /**@type {{[key:string]: QuickReplyConfig}}*/ characterConfigs = {};
     /**@type {QuickReplyConfig}*/ _chatConfig;
-   /**@type {QuickReplyConfig}*/ _charConfig;
+    /**@type {QuickReplyConfig}*/ _charConfig;
     get chatConfig() {
         return this._chatConfig;
     }
@@ -88,12 +93,17 @@ export class QuickReplySettings {
     }
 
     toJSON() {
+        const characterConfigs = {};
+        for (const key of Object.keys(this.characterConfigs)) {
+            characterConfigs[key] = this.characterConfigs[key].toJSON();
+        }
         return {
             isEnabled: this.isEnabled,
             isCombined: this.isCombined,
             isPopout: this.isPopout,
             showPopoutButton: this.showPopoutButton,
             config: this.config,
+            characterConfigs,
         };
     }
 }

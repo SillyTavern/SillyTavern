@@ -149,186 +149,36 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
 
 
 
-const saveScopedSets = debounceAsync(async () => {
-    if (!this_chid) return;
-    const char = characters[this_chid];
-    if (!char) return;
-
-    if (!settings.charConfig) return;
-
-    const newData = settings.charConfig.setList.map(link => {
-        const setData = link.set.toJSON();
-        // Manually add isVisible to the saved data, as it's part of the link, not the set itself.
-        setData.isVisible = link.isVisible;
-        return setData;
-    });
-
-    const oldData = char.data?.extensions?.quickReply_sets ?? [];
-
-    // Deep compare old and new data. Only save if different to prevent loops.
-    if (JSON.stringify(oldData) === JSON.stringify(newData)) {
-        return;
-    }
-
-    await writeExtensionField(this_chid, 'quickReply_sets', newData);
-    log('Scoped sets saved to character card.');
-
-    // Refresh the UI to reflect the changes immediately.
-    buttons.refresh();
-    manager.rerender();
-});
-
-
-
-
 const onCharChanged = async () => {
     if (lastCharId === this_chid) return false;
 
-    // Phase 1: Unload the old character's sets and restore any overwritten global sets.
-    const oldCharConfig = settings.charConfig;
-    if (oldCharConfig) {
-        for (const link of oldCharConfig.setList) {
-            const setToUnload = link.set;
-            if (!setToUnload || setToUnload.scope !== 'character') continue;
-
-            const listIndex = QuickReplySet.list.indexOf(setToUnload);
-            if (listIndex === -1) continue;
-
-            if (overwrittenGlobalSets.has(setToUnload.name)) {
-                QuickReplySet.list[listIndex] = overwrittenGlobalSets.get(setToUnload.name);
-                overwrittenGlobalSets.delete(setToUnload.name);
-            } else {
-                QuickReplySet.list.splice(listIndex, 1);
-            }
-        }
-    }
-    overwrittenGlobalSets.clear(); // Clear any leftovers.
-
-    // Phase 2: Load the new character's sets.
-    lastCharId = this_chid;
+    // Unload the old character's config and update the character ID cache.
     settings.charConfig = null;
+    lastCharId = this_chid;
 
+    // If no character is loaded, there's nothing more to do.
     if (!this_chid) {
         buttons.refresh();
         manager.rerender();
         return false;
     }
 
-    const char = characters[this_chid];
-    const embeddedSetsData = char.data?.extensions?.quickReply_sets ?? [];
+    // Get the character-specific config from the local settings storage.
+    let charConfig = settings.characterConfigs[this_chid];
 
-    // If there are no sets, configure empty and exit.
-    if (!embeddedSetsData || embeddedSetsData.length === 0) {
-        settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
-        buttons.refresh();
-        manager.rerender();
-        return false;
+    // If no config exists for this character, create a new one.
+    if (!charConfig) {
+        charConfig = QuickReplyConfig.from({ setList: [] });
+        settings.characterConfigs[this_chid] = charConfig;
     }
 
-    // If there are sets, check for authorization, regex-style.
-    const avatar = char?.avatar;
-    const allowed = extension_settings.character_allowed_quickreply ?? [];
-    if (avatar && !allowed.includes(avatar)) {
-        const dangerWarningText = `
-            <div class="red_text">
-                <h4>DANGER: EMBEDDED SCRIPTS</h4>
-                This character contains embedded scripts (Quick Replies).<br>
-                These scripts are created by the character's author and have the same permissions as any other extension.<br>
-                <b>They can be used to:</b>
-                <ul>
-                    <li>Read, modify, or delete your chats and characters.</li>
-                    <li>Connect to external services and send your data.</li>
-                    <li>Modify SillyTavern's user interface or behavior.</li>
-                </ul>
-                <br>
-                <b>Only authorize characters from authors you trust.</b>
-            </div>
-        `;
-        const confirm = await callGenericPopup(
-            dangerWarningText,
-            POPUP_TYPE.CONFIRM,
-            '',
-            {
-                okButton: 'Authorize',
-                cancelButton: 'Deny',
-                wide: true,
-                customInputs: [
-                    {
-                        id: 'qr_script_danger_ack',
-                        label: 'I understand that using embedded scripts can be dangerous.',
-                        type: 'checkbox',
-                    },
-                    {
-                        id: 'qr_script_no_report_ack',
-                        label: 'I will NOT report issues related to any damages or data loss related to the use of embedded scripts.',
-                        type: 'checkbox',
-                    },
-                ],
-                onClosing: (popup) => {
-                    // Only validate if the user is trying to confirm.
-                    if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
-                        return true;
-                    }
-
-                    const danger_ack = popup.inputResults.get('qr_script_danger_ack');
-                    const noreport_ack = popup.inputResults.get('qr_script_no_report_ack');
-
-                    if (!danger_ack || !noreport_ack) {
-                        toastr.warning('You must accept both conditions to authorize embedded scripts.');
-                        return false; // Prevent closing
-                    }
-                    return true; // Allow closing
-                },
-            },
-        );
-
-        if (confirm === POPUP_RESULT.AFFIRMATIVE) {
-            allowed.push(avatar);
-            extension_settings.character_allowed_quickreply = allowed;
-            saveSettingsDebounced();
-            lastCharId = null; // Force a re-run of the logic after reload
-            await reloadCurrentChat(); // Crucial step: reload to apply the new permission state.
-            return true; // Stop further execution, as reload will trigger a new onCharChanged.
-        } else {
-            // User denied permission. Don't load sets.
-            settings.charConfig = QuickReplyConfig.from({ setList: [], scope: 'character', onSave: saveScopedSets });
-            buttons.refresh();
-            manager.rerender();
-            return false;
-        }
-    }
+    charConfig.scope = 'character';
+    // The main settings save function will handle persistence.
+    charConfig.onSave = () => settings.save();
+    settings.charConfig = charConfig;
 
 
-    // Load sets from character data
-    for (const qrsData of embeddedSetsData) {
-        qrsData.scope = 'character'; // Explicitly mark as a character-scoped set
-        const newSet = QuickReplySet.from(qrsData);
-        const existingSet = QuickReplySet.get(newSet.name);
-
-        if (existingSet) {
-            // It's an overwrite. Store the original global set to restore it later.
-            if (existingSet.scope === 'global') {
-                overwrittenGlobalSets.set(existingSet.name, existingSet);
-            }
-            const listIndex = QuickReplySet.list.indexOf(existingSet);
-            QuickReplySet.list[listIndex] = newSet;
-        } else {
-            // It's a new set, just add it to the list.
-            QuickReplySet.list.push(newSet);
-        }
-    }
-
-    const charSetConfig = QuickReplyConfig.from({
-        scope: 'character',
-        setList: embeddedSetsData.map(qrsData => ({
-            set: qrsData.name,
-            isVisible: qrsData.isVisible !== false, // Restore visibility
-        })),
-    });
-    charSetConfig.onSave = saveScopedSets;
-    settings.charConfig = charSetConfig;
-
-    // The parent onChatChanged will call buttons.refresh() and manager.rerender()
+    // The parent onChatChanged will call UI refresh methods.
     return false;
 };
 
@@ -347,7 +197,6 @@ const init = async () => {
     buttons = new ButtonUi(settings);
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
-   QuickReplySet.onScopedSetSave = () => saveScopedSets();
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [
