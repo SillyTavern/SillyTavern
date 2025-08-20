@@ -24,23 +24,10 @@ export let openRouterModels = [];
  * @type {string[]}
  */
 const OPENROUTER_PROVIDERS = [
-    'AnyScale',
-    'Cent-ML',
-    'HuggingFace',
-    'Hyperbolic 2',
-    'Lepton',
-    'Lynn 2',
-    'Lynn',
-    'Mancer',
-    'Modal',
-    'OctoAI',
-    'Recursal',
-    'Reflection',
-    'Replicate',
-    'SambaNova 2',
-    'SF Compute',
-    'Together 2',
-    '01.AI',
+    // An alphabetically separate set of very-dead providers is kept at the top of the list in the docs.
+    // These do not appear outside the docs: Anyscale, Cent-ML, HuggingFace ... SF Compute, Together 2, 01.AI
+    // As a visual check, AI21 is the topmost provider in the sidebar of https://openrouter.ai/models, thus we want to copy from this point and below.
+    // Providers endpoint: https://openrouter.ai/api/v1/providers
     'AI21',
     'AionLabs',
     'Alibaba',
