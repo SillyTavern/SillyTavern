@@ -52,10 +52,6 @@ let buttons;
 let autoExec;
 /** @type {QuickReplyApi} */
 export let quickReplyApi;
-/** A counter to prevent re-entrant, overlapping executions of onChatChanged */
-let changeId = 0;
-
-
 
 
 const loadSets = async () => {
@@ -129,7 +125,7 @@ const loadSettings = async () => {
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
         settings.config.scope = 'global';
-        settings.config.onSave = () => settings.save();
+        settings.config.onUpdate = () => settings.save();
     } catch (ex) {
         settings = QuickReplySettings.from(defaultSettings);
     }
@@ -145,11 +141,8 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
     }
 };
 
-
-
-
-const onCharChanged = async () => {
-    if (lastCharId === this_chid) return false;
+const handleCharChange = () => {
+    if (lastCharId === this_chid) return;
 
     // Unload the old character's config and update the character ID cache.
     settings.charConfig = null;
@@ -159,9 +152,7 @@ const onCharChanged = async () => {
     /** @type {import('../../char-data.js').v1CharData} */
     const character = characters[this_chid];
     if (!character || selected_group) {
-        buttons.refresh();
-        manager.rerender();
-        return false;
+        return;
     }
 
     // Get the character-specific config from the local settings storage.
@@ -175,13 +166,9 @@ const onCharChanged = async () => {
 
     charConfig.scope = 'character';
     // The main settings save function will handle persistence.
-    charConfig.onSave = () => settings.save();
+    charConfig.onUpdate = () => settings.save();
     settings.charConfig = charConfig;
-
-    // The parent onChatChanged will call UI refresh methods.
-    return false;
 };
-
 
 const init = async () => {
     await loadSets();
@@ -257,24 +244,14 @@ const purgeCharacterQuickReplySets = ({ character }) => {
 
 
 const onChatChanged = async (chatIdx) => {
-    const localChangeId = ++changeId;
-    log('CHAT_CHANGED', chatIdx, `ID: ${localChangeId}`);
+    log('CHAT_CHANGED', chatIdx);
 
-    // onCharChanged can trigger a reload, which will fire a new CHAT_CHANGED event.
-    // We get a signal back to know if we should abort this execution path.
-    const didReload = await onCharChanged();
-
-    // If a newer execution has started (changeId changed) or if onCharChanged triggered
-    // a reload, this instance is obsolete and should be aborted.
-    if (localChangeId !== changeId || didReload) {
-        log(`Aborting CHAT_CHANGED ID: ${localChangeId} (current: ${changeId}, reloaded: ${didReload})`);
-        return;
-    }
+    handleCharChange();
 
     if (chatIdx) {
         const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
         chatConfig.scope = 'chat';
-        chatConfig.onSave = () => settings.save();
+        chatConfig.onUpdate = () => settings.save();
         settings.chatConfig = chatConfig;
     } else {
         settings.chatConfig = null;

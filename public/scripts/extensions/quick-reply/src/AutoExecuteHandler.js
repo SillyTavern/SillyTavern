@@ -43,8 +43,8 @@ export class AutoExecuteHandler {
         };
         return [
             ...getFromConfig(this.settings.config),
-            ...getFromConfig(this.settings.charConfig),
             ...getFromConfig(this.settings.chatConfig),
+            ...getFromConfig(this.settings.charConfig),
         ];
     }
 
@@ -94,8 +94,8 @@ export class AutoExecuteHandler {
 
         const qrList = [
             ...getFromConfig(this.settings.config),
-            ...getFromConfig(this.settings.charConfig),
             ...getFromConfig(this.settings.chatConfig),
+            ...getFromConfig(this.settings.charConfig),
         ];
 
         await this.performAutoExecute(qrList);

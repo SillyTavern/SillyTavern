@@ -15,7 +15,7 @@ export class QuickReplySet {
      */
     static from(props) {
         const qrList = props.qrList;
-        props.qrList = [];
+        props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
         const instance = Object.assign(new this(), props);
         instance.qrList = (qrList ?? []).map(it=>QuickReply.from(it));
         instance.init();
@@ -30,7 +30,7 @@ export class QuickReplySet {
     }
 
     /**@type {string}*/ name;
-    /**@type {'global'|'character'}*/ scope = 'global';
+    /**@type {'global'|'chat'|'character'}*/ scope = 'global';
     /**@type {boolean}*/ disableSend = false;
     /**@type {boolean}*/ placeBeforeInput = false;
     /**@type {boolean}*/ injectInput = false;

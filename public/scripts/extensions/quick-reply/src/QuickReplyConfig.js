@@ -6,7 +6,7 @@ export class QuickReplyConfig {
     /**@type {QuickReplySetLink[]}*/ setList = [];
     /**@type {'global'|'chat'|'character'}*/ scope;
 
-    /**@type {Function}*/ onSave;
+    /**@type {Function}*/ onUpdate;
     /**@type {Function}*/ onRequestEditSet;
 
     /**@type {HTMLElement}*/ dom;
@@ -41,14 +41,14 @@ export class QuickReplyConfig {
             this.hookQuickReplyLink(qrl);
             this.setList.push(qrl);
             this.setListDom.append(qrl.renderSettings(this.setList.length - 1));
-            this.save();
+            this.update();
         }
     }
     removeSet(qrs) {
         const idx = this.setList.findIndex(it=>it.set == qrs);
         if (idx > -1) {
             this.setList.splice(idx, 1);
-            this.save();
+            this.update();
             this.updateSetListDom();
         }
     }
@@ -87,7 +87,7 @@ export class QuickReplyConfig {
             it.setAttribute('data-order', String(idx));
             return qrl;
         });
-        this.save();
+        this.update();
     }
 
 
@@ -98,18 +98,18 @@ export class QuickReplyConfig {
      */
     hookQuickReplyLink(qrl) {
         qrl.onDelete = ()=>this.deleteQuickReplyLink(qrl);
-        qrl.onUpdate = ()=>this.save();
+        qrl.onUpdate = ()=>this.update();
         qrl.onRequestEditSet = ()=>this.requestEditSet(qrl.set);
     }
 
     deleteQuickReplyLink(qrl) {
         this.setList.splice(this.setList.indexOf(qrl), 1);
-        this.save();
+        this.update();
     }
 
-    save() {
-        if (this.onSave) {
-            this.onSave(this);
+    update() {
+        if (this.onUpdate) {
+            this.onUpdate(this);
         }
     }
 
