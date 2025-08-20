@@ -242,6 +242,18 @@ const purgeCharacterQuickReplySets = ({ character }) => {
     }
 };
 
+const updateCharacterQuickReplySets = (oldAvatar, newAvatar) => {
+    // Update the character's Quick Reply Sets in the settings.
+    if (oldAvatar && newAvatar && oldAvatar !== newAvatar) {
+        log(`Updating Quick Reply Sets for character: ${oldAvatar} -> ${newAvatar}`);
+        if (settings.characterConfigs[oldAvatar]) {
+            settings.characterConfigs[newAvatar] = settings.characterConfigs[oldAvatar];
+            delete settings.characterConfigs[oldAvatar];
+            settings.save();
+        }
+    }
+};
+
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
@@ -263,6 +275,7 @@ const onChatChanged = async (chatIdx) => {
 };
 eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
 eventSource.on(event_types.CHARACTER_DELETED, purgeCharacterQuickReplySets);
+eventSource.on(event_types.CHARACTER_RENAMED, updateCharacterQuickReplySets);
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
