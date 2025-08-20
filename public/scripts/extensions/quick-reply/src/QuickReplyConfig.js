@@ -4,7 +4,7 @@ import { QuickReplySet } from './QuickReplySet.js';
 
 export class QuickReplyConfig {
     /**@type {QuickReplySetLink[]}*/ setList = [];
-    /**@type {Boolean}*/ isGlobal;
+    /**@type {'global'|'chat'|'character'}*/ scope;
 
     /**@type {Function}*/ onUpdate;
     /**@type {Function}*/ onRequestEditSet;

@@ -18,6 +18,7 @@ export class SettingsUi {
     /**@type {HTMLElement}*/ globalSetList;
 
     /**@type {HTMLElement}*/ chatSetList;
+    /**@type {HTMLElement}*/ characterSetList;
 
     /**@type {QuickReplySet}*/ currentQrSet;
     /**@type {HTMLInputElement}*/ disableSend;
@@ -107,6 +108,25 @@ export class SettingsUi {
         }
         this.dom.querySelector('#qr--chat').replaceWith(clone);
     }
+    prepareCharacterSetList() {
+        const dom = this.template.querySelector('#qr--character');
+        const clone = /** @type {HTMLElement} */ (dom.cloneNode(true));
+
+        if (!this.settings.charConfig) {
+            const setListContainer = /** @type {HTMLElement} */ (clone.querySelector('.qr--setList'));
+            setListContainer.innerHTML = '';
+            const info = document.createElement('div');
+            info.textContent = 'No character is currently loaded.';
+            setListContainer.append(info);
+        } else {
+            // Let the config object handle its own rendering. It will render an empty list if there are no sets,
+            // but the "add" button will always be functional.
+            this.settings.charConfig.renderSettingsInto(clone);
+        }
+
+        // Replace the old DOM element with our newly prepared clone.
+        this.dom.querySelector('#qr--character').replaceWith(clone);
+    }
 
     prepareQrEditor() {
         // qr editor
@@ -174,21 +194,26 @@ export class SettingsUi {
         });
         let initialColorChange = true;
         this.color = this.dom.querySelector('#qr--color');
+        // @ts-ignore
         this.color.color = this.currentQrSet?.color ?? 'transparent';
         this.color.addEventListener('change', (evt)=>{
             if (!this.dom.closest('body')) return;
             const qrs = this.currentQrSet;
             if (initialColorChange) {
                 initialColorChange = false;
+                // @ts-ignore
                 this.color.color = qrs.color;
                 return;
             }
+            // @ts-ignore
             qrs.color = evt.detail.rgb;
             qrs.save();
             this.currentQrSet.updateColor();
         });
+        // @ts-ignore
         this.dom.querySelector('#qr--colorClear').addEventListener('click', (evt)=>{
             const qrs = this.currentQrSet;
+            // @ts-ignore
             this.color.color = 'transparent';
             qrs.save();
             this.currentQrSet.updateColor();
@@ -207,6 +232,7 @@ export class SettingsUi {
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;
+        // @ts-ignore
         this.color.color = this.currentQrSet.color ?? 'transparent';
         this.onlyBorderColor.checked = this.currentQrSet.onlyBorderColor;
         this.qrList.innerHTML = '';
@@ -225,6 +251,7 @@ export class SettingsUi {
         this.prepareGeneralSettings();
         this.prepareGlobalSetList();
         this.prepareChatSetList();
+        this.prepareCharacterSetList();
         this.prepareQrEditor();
     }
 
@@ -301,6 +328,13 @@ export class SettingsUi {
                 }
             }
         }
+        if (this.settings.charConfig) {
+            for (let i = this.settings.charConfig.setList.length - 1; i >= 0; i--) {
+                if (this.settings.charConfig.setList[i].set == qrs) {
+                    this.settings.charConfig.setList.splice(i, 1);
+                }
+            }
+        }
         this.settings.save();
     }
 
@@ -327,6 +361,11 @@ export class SettingsUi {
                     set.set.name = newName;
                 }
             });
+            this.settings.charConfig?.setList.forEach(set => {
+                if (set.set.name === oldName) {
+                    set.set.name = newName;
+                }
+            });
             this.settings.save();
 
             // Update the option in the current selected QR dropdown. All others will be refreshed via the prepare calls below.
@@ -339,6 +378,7 @@ export class SettingsUi {
             this.onQrSetChange();
             this.prepareGlobalSetList();
             this.prepareChatSetList();
+            this.prepareCharacterSetList();
 
             console.info(`Quick Reply Set renamed from ""${oldName}" to "${newName}".`);
         }
@@ -362,6 +402,7 @@ export class SettingsUi {
                     this.onQrSetChange();
                     this.prepareGlobalSetList();
                     this.prepareChatSetList();
+                    this.prepareCharacterSetList();
                 }
             } else {
                 const qrs = new QuickReplySet();
@@ -386,6 +427,7 @@ export class SettingsUi {
                 this.onQrSetChange();
                 this.prepareGlobalSetList();
                 this.prepareChatSetList();
+                this.prepareCharacterSetList();
             }
         }
     }
@@ -421,6 +463,7 @@ export class SettingsUi {
                         this.onQrSetChange();
                         this.prepareGlobalSetList();
                         this.prepareChatSetList();
+                        this.prepareCharacterSetList();
                     }
                 } else {
                     const idx = QuickReplySet.list.findIndex(it=>it.name.toLowerCase().localeCompare(qrs.name.toLowerCase()) == 1);
@@ -443,6 +486,7 @@ export class SettingsUi {
                     this.onQrSetChange();
                     this.prepareGlobalSetList();
                     this.prepareChatSetList();
+                    this.prepareCharacterSetList();
                 }
             }
         } catch (ex) {
@@ -493,6 +537,7 @@ export class SettingsUi {
             this.onQrSetChange();
             this.prepareGlobalSetList();
             this.prepareChatSetList();
+            this.prepareCharacterSetList();
         }
     }
 
