@@ -95,6 +95,9 @@ export class QuickReplySettings {
     toJSON() {
         const characterConfigs = {};
         for (const key of Object.keys(this.characterConfigs)) {
+            if (this.characterConfigs[key]?.setList?.length === 0) {
+                continue;
+            }
             characterConfigs[key] = this.characterConfigs[key].toJSON();
         }
         return {
