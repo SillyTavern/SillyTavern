@@ -54,6 +54,8 @@ let autoExec;
 export let quickReplyApi;
 
 
+
+
 const loadSets = async () => {
     const response = await fetch('/api/settings/get', {
         method: 'POST',
@@ -253,7 +255,6 @@ const updateCharacterQuickReplySets = (oldAvatar, newAvatar) => {
         }
     }
 };
-
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);

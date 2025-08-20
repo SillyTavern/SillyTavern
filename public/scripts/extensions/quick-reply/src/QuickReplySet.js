@@ -14,11 +14,9 @@ export class QuickReplySet {
      * @returns {QuickReplySet}
      */
     static from(props) {
-        const qrList = props.qrList;
         props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
         const instance = Object.assign(new this(), props);
-        instance.qrList = (qrList ?? []).map(it=>QuickReply.from(it));
-        instance.init();
+        // instance.init();
         return instance;
     }
 
