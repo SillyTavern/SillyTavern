@@ -626,6 +626,13 @@ export class ToolManager {
             }
         }
 
+        if (oai_settings.chat_completion_source === chat_completion_sources.AIMLAPI && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.aimlapi_model);
+            if (Array.isArray(currentModel?.features)) {
+                return currentModel.features.includes('openai/chat-completion.function');
+            }
+        }
+
         const supportedSources = [
             chat_completion_sources.OPENAI,
             chat_completion_sources.CUSTOM,

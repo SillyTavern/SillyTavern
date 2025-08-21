@@ -5439,7 +5439,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.XAI:
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
-            return visionSupportedModels.some(model => oai_settings.aimlapi_model.includes(model));
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
         case chat_completion_sources.POLLINATIONS:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
         case chat_completion_sources.MOONSHOT:
@@ -6086,6 +6086,7 @@ export function initOpenAI() {
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
+        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
