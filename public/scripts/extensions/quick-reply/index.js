@@ -308,7 +308,11 @@ const onNewChat = async () => {
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
 
-const onBeforeGeneration = async () => {
+const onBeforeGeneration = async (_generationType, _options = {}, isDryRun = false) => {
+    if (isDryRun) {
+        console.log('[QR2] Before-generation hook skipped due to dryRun.');
+        return;
+    }
     await autoExec.handleBeforeGeneration();
 };
-eventSource.on(event_types.GENERATION_STARTED, (...args) => executeIfReadyElseQueue(onBeforeGeneration, args));
+eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (...args) => executeIfReadyElseQueue(onBeforeGeneration, args));
