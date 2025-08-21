@@ -78,6 +78,11 @@ export class AutoExecuteHandler {
         await this.performAutoExecute(this.getCommands('executeOnNewChat'));
     }
 
+    async handleBeforeGeneration() {
+        if (!this.checkExecute()) return;
+        await this.performAutoExecute(this.getCommands('executeBeforeGeneration'));
+    }
+
     /**
      * @param {any[]} entries Set of activated entries
      */

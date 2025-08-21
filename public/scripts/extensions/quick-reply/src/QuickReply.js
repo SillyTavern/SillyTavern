@@ -46,6 +46,7 @@ export class QuickReply {
     /**@type {boolean}*/ executeOnChatChange = false;
     /**@type {boolean}*/ executeOnGroupMemberDraft = false;
     /**@type {boolean}*/ executeOnNewChat = false;
+    /**@type {boolean}*/ executeBeforeGeneration = false;
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
@@ -1065,6 +1066,13 @@ export class QuickReply {
                 this.updateContext();
             });
             /**@type {HTMLInputElement}*/
+            const executeBeforeGeneration = dom.querySelector('#qr--executeBeforeGeneration');
+            executeBeforeGeneration.checked = this.executeBeforeGeneration;
+            executeBeforeGeneration.addEventListener('click', ()=>{
+                this.executeBeforeGeneration = executeBeforeGeneration.checked;
+                this.updateContext();
+            });
+            /**@type {HTMLInputElement}*/
             const executeOnNewChat = dom.querySelector('#qr--executeOnNewChat');
             executeOnNewChat.checked = this.executeOnNewChat;
             executeOnNewChat.addEventListener('click', ()=>{
@@ -1919,6 +1927,7 @@ export class QuickReply {
             executeOnChatChange: this.executeOnChatChange,
             executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
             executeOnNewChat: this.executeOnNewChat,
+            executeBeforeGeneration: this.executeBeforeGeneration,
             automationId: this.automationId,
         };
     }
