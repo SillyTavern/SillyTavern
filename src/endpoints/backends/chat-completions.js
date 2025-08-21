@@ -1835,3 +1835,57 @@ router.post('/generate', function (request, response) {
         }
     }
 });
+
+const pollinations = express.Router();
+
+pollinations.post('/models/multimodal', async (_req, res) => {
+    try {
+        const response = await fetch('https://text.pollinations.ai/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            return res.json([]);
+        }
+
+        const multimodalModels = data.filter(m => m?.vision).map(m => m.name);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.use('/pollinations', pollinations);
+
+const aimlapi = express.Router();
+
+aimlapi.post('/models/multimodal', async (_req, res) => {
+    try {
+        const response = await fetch('https://api.aimlapi.com/v1/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data?.data)) {
+            return res.json([]);
+        }
+
+        const multimodalModels = data.data.filter(m => m?.features?.includes('openai/chat-completion.vision')).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.use('/aimlapi', aimlapi);
