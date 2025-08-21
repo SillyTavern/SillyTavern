@@ -1,4 +1,4 @@
-import { chat, chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, this_chid, characters } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
@@ -10,6 +10,7 @@ import { SlashCommandHandler } from './src/SlashCommandHandler.js';
 import { ButtonUi } from './src/ui/ButtonUi.js';
 import { SettingsUi } from './src/ui/SettingsUi.js';
 import { debounceAsync } from '../../utils.js';
+import { selected_group } from '../../group-chats.js';
 export { debounceAsync };
 
 
@@ -39,6 +40,8 @@ const defaultSettings = {
 let isReady = false;
 /** @type {Function[]}*/
 let executeQueue = [];
+/** @type {string}*/
+let lastCharId;
 /** @type {QuickReplySettings}*/
 let settings;
 /** @type {SettingsUi} */
@@ -82,6 +85,7 @@ const loadSets = async () => {
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
                     qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
+                    qr.executeBeforeGeneration = slot.autoExecute_beforeGeneration ?? false;
                     qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
@@ -123,6 +127,8 @@ const loadSettings = async () => {
     }
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
+        settings.config.scope = 'global';
+        settings.config.onUpdate = () => settings.save();
     } catch (ex) {
         settings = QuickReplySettings.from(defaultSettings);
     }
@@ -138,8 +144,34 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
     }
 };
 
+const handleCharChange = () => {
+    if (lastCharId === this_chid) return;
 
+    // Unload the old character's config and update the character ID cache.
+    settings.charConfig = null;
+    lastCharId = this_chid;
 
+    // If no character is loaded, there's nothing more to do.
+    /** @type {import('../../char-data.js').v1CharData} */
+    const character = characters[this_chid];
+    if (!character || selected_group) {
+        return;
+    }
+
+    // Get the character-specific config from the local settings storage.
+    let charConfig = settings.characterConfigs[character.avatar];
+
+    // If no config exists for this character, create a new one.
+    if (!charConfig) {
+        charConfig = QuickReplyConfig.from({ setList: [] });
+        settings.characterConfigs[character.avatar] = charConfig;
+    }
+
+    charConfig.scope = 'character';
+    // The main settings save function will handle persistence.
+    charConfig.onUpdate = () => settings.save();
+    settings.charConfig = charConfig;
+};
 
 const init = async () => {
     await loadSets();
@@ -154,8 +186,12 @@ const init = async () => {
     settings.onSave = ()=>buttons.refresh();
 
     window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
-        let qr = [...settings.config.setList, ...(settings.chatConfig?.setList ?? [])]
-            .map(it=>it.set.qrList)
+        let qr = [
+            ...settings.config.setList,
+            ...(settings.chatConfig?.setList ?? []),
+            ...(settings.charConfig?.setList ?? []),
+        ]
+            .map(it => it.set.qrList)
             .flat()
             .find(it=>it.label == name)
             ;
@@ -199,10 +235,38 @@ const finalizeInit = async () => {
 };
 await init();
 
+const purgeCharacterQuickReplySets = ({ character }) => {
+    // Remove the character's Quick Reply Sets from the settings.
+    const avatar = character?.avatar;
+    if (avatar && avatar in settings.characterConfigs) {
+        log(`Purging Quick Reply Sets for character: ${avatar}`);
+        delete settings.characterConfigs[avatar];
+        settings.save();
+    }
+};
+
+const updateCharacterQuickReplySets = (oldAvatar, newAvatar) => {
+    // Update the character's Quick Reply Sets in the settings.
+    if (oldAvatar && newAvatar && oldAvatar !== newAvatar) {
+        log(`Updating Quick Reply Sets for character: ${oldAvatar} -> ${newAvatar}`);
+        if (settings.characterConfigs[oldAvatar]) {
+            settings.characterConfigs[newAvatar] = settings.characterConfigs[oldAvatar];
+            delete settings.characterConfigs[oldAvatar];
+            settings.save();
+        }
+    }
+};
+
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
+
+    handleCharChange();
+
     if (chatIdx) {
-        settings.chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
+        const chatConfig = QuickReplyConfig.from(chat_metadata.quickReply ?? {});
+        chatConfig.scope = 'chat';
+        chatConfig.onUpdate = () => settings.save();
+        settings.chatConfig = chatConfig;
     } else {
         settings.chatConfig = null;
     }
@@ -212,6 +276,8 @@ const onChatChanged = async (chatIdx) => {
     await autoExec.handleChatChanged();
 };
 eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
+eventSource.on(event_types.CHARACTER_DELETED, purgeCharacterQuickReplySets);
+eventSource.on(event_types.CHARACTER_RENAMED, updateCharacterQuickReplySets);
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
@@ -242,3 +308,16 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
+
+const onBeforeGeneration = async (_generationType, _options = {}, isDryRun = false) => {
+    if (isDryRun) {
+        log('Before-generation hook skipped due to dryRun.');
+        return;
+    }
+    if (selected_group && this_chid === undefined) {
+        log('Before-generation hook skipped for event before group wrapper.');
+        return;
+    }
+    await autoExec.handleBeforeGeneration();
+};
+eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (...args) => executeIfReadyElseQueue(onBeforeGeneration, args));

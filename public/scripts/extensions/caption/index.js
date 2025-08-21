@@ -488,8 +488,13 @@ jQuery(async function () {
         $('#img_file').on('change', (e) => onSelectImage(e.originalEvent, '', false));
     }
     async function switchMultimodalBlocks() {
-        await addOpenRouterModels();
+        await addRemoteEndpointModels();
         const isMultimodal = extension_settings.caption.source === 'multimodal';
+        if (!extension_settings.caption.multimodal_model) {
+            const dropdown = $('#caption_multimodal_model');
+            const options = dropdown.find(`option[data-type="${extension_settings.caption.multimodal_api}"]`);
+            extension_settings.caption.multimodal_model = String(options.first().val());
+        }
         $('#caption_multimodal_block').toggle(isMultimodal);
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
@@ -504,35 +509,42 @@ jQuery(async function () {
         const html = await renderExtensionTemplateAsync('caption', 'settings', { TEMPLATE_DEFAULT, PROMPT_DEFAULT });
         $('#caption_container').append(html);
     }
-    async function addOpenRouterModels() {
-        const dropdown = document.getElementById('caption_multimodal_model');
-        if (!(dropdown instanceof HTMLSelectElement)) {
-            return;
-        }
-        if (extension_settings.caption.source !== 'multimodal' || extension_settings.caption.multimodal_api !== 'openrouter') {
-            return;
-        }
-        const options = Array.from(dropdown.options);
-        const response = await fetch('/api/openrouter/models/multimodal', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-        });
-        if (!response.ok) {
-            return;
-        }
-        const modelIds = await response.json();
-        if (Array.isArray(modelIds) && modelIds.length > 0) {
-            modelIds.forEach((modelId) => {
-                if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId)) {
-                    return;
-                }
-                const option = document.createElement('option');
-                option.value = modelId;
-                option.textContent = modelId;
-                option.dataset.type = 'openrouter';
-                dropdown.add(option);
+
+    async function addRemoteEndpointModels() {
+        async function processEndpoint(api, url) {
+            const dropdown = document.getElementById('caption_multimodal_model');
+            if (!(dropdown instanceof HTMLSelectElement)) {
+                return;
+            }
+            if (extension_settings.caption.source !== 'multimodal' || extension_settings.caption.multimodal_api !== api) {
+                return;
+            }
+            const options = Array.from(dropdown.options);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: getRequestHeaders(),
             });
+            if (!response.ok) {
+                return;
+            }
+            const modelIds = await response.json();
+            if (Array.isArray(modelIds) && modelIds.length > 0) {
+                modelIds.sort().forEach((modelId) => {
+                    if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId)) {
+                        return;
+                    }
+                    const option = document.createElement('option');
+                    option.value = modelId;
+                    option.textContent = modelId;
+                    option.dataset.type = api;
+                    dropdown.add(option);
+                });
+            }
         }
+
+        await processEndpoint('openrouter', '/api/openrouter/models/multimodal');
+        await processEndpoint('aimlapi', '/api/backends/chat-completions/aimlapi/models/multimodal');
+        await processEndpoint('pollinations', '/api/backends/chat-completions/pollinations/models/multimodal');
     }
 
     await addSettings();
@@ -550,9 +562,9 @@ jQuery(async function () {
     $('#caption_prompt').val(extension_settings.caption.prompt);
     $('#caption_template').val(extension_settings.caption.template);
     $('#caption_refine_mode').on('input', onRefineModeInput);
-    $('#caption_source').on('change', () => {
+    $('#caption_source').on('change', async () => {
         extension_settings.caption.source = String($('#caption_source').val());
-        switchMultimodalBlocks();
+        await switchMultimodalBlocks();
         saveSettingsDebounced();
     });
     $('#caption_prompt').on('input', () => {
@@ -581,13 +593,12 @@ jQuery(async function () {
         $('#ollama_download_model').trigger('click');
         $('#dialogue_popup_input').val(presetModel);
     });
-    $('#caption_multimodal_api').on('change', () => {
+    $('#caption_multimodal_api').on('change', async () => {
         const api = String($('#caption_multimodal_api').val());
-        const model = String($(`#caption_multimodal_model option[data-type="${api}"]`).first().val());
         extension_settings.caption.multimodal_api = api;
-        extension_settings.caption.multimodal_model = model;
+        extension_settings.caption.multimodal_model = '';
+        await switchMultimodalBlocks();
         saveSettingsDebounced();
-        switchMultimodalBlocks();
     });
     $('#caption_multimodal_model').on('change', () => {
         extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());

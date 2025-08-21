@@ -3707,6 +3707,7 @@ async function getStatusOpen() {
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
         setOnlineStatus(status);
+        updateFeatureSupportFlags();
         return resultCheckStatus();
     }
 
@@ -3778,6 +3779,7 @@ async function getStatusOpen() {
         }
     }
 
+    updateFeatureSupportFlags();
     return resultCheckStatus();
 }
 
@@ -4931,7 +4933,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         } else if (['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_64k);
+            $('#openai_max_context').attr('max', max_128k);
         } else if (oai_settings.deepseek_model == 'deepseek-coder') {
             $('#openai_max_context').attr('max', max_16k);
         } else {
@@ -5491,17 +5493,17 @@ export function isImageInliningSupported() {
         case chat_completion_sources.CLAUDE:
             return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
-            return true;
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.modality === 'text+image->text');
         case chat_completion_sources.CUSTOM:
             return true;
         case chat_completion_sources.MISTRALAI:
-            return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.mistralai_model)?.capabilities?.vision);
         case chat_completion_sources.COHERE:
             return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         case chat_completion_sources.XAI:
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
-            return visionSupportedModels.some(model => oai_settings.aimlapi_model.includes(model));
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
         case chat_completion_sources.POLLINATIONS:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
         case chat_completion_sources.COMETAPI:
@@ -6102,6 +6104,7 @@ export function initOpenAI() {
 
     $('#openai_image_inlining').on('input', function () {
         oai_settings.image_inlining = !!$(this).prop('checked');
+        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
@@ -6112,6 +6115,7 @@ export function initOpenAI() {
 
     $('#openai_video_inlining').on('input', function () {
         oai_settings.video_inlining = !!$(this).prop('checked');
+        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
@@ -6122,6 +6126,7 @@ export function initOpenAI() {
 
     $('#openai_function_calling').on('input', function () {
         oai_settings.function_calling = !!$(this).prop('checked');
+        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
@@ -6147,6 +6152,7 @@ export function initOpenAI() {
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
+        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 

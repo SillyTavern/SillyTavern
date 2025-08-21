@@ -8266,11 +8266,14 @@ function openAlternateGreetings() {
  */
 function addAlternateGreeting(template, greeting, index, getArray, popup) {
     const greetingBlock = $('#alternate_greeting_form_template .alternate_greeting').clone();
-    greetingBlock.find('.alternate_greeting_text').on('input', async function () {
-        const value = $(this).val();
-        const array = getArray();
-        array[index] = value;
-    }).val(greeting);
+    greetingBlock.find('.alternate_greeting_text')
+        .attr('id', `alternate_greeting_${index}`)
+        .on('input', async function () {
+            const value = $(this).val();
+            const array = getArray();
+            array[index] = value;
+        }).val(greeting);
+    greetingBlock.find('.editor_maximize').attr('data-for', `alternate_greeting_${index}`);
     greetingBlock.find('.greeting_index').text(index + 1);
     greetingBlock.find('.delete_alternate_greeting').on('click', async function (event) {
         event.preventDefault();
@@ -9231,6 +9234,7 @@ async function removeCharacterFromUI() {
     await getCharacters();
     await printMessages();
     saveSettingsDebounced();
+    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 /**
