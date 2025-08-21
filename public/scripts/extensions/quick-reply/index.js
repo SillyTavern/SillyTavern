@@ -85,6 +85,7 @@ const loadSets = async () => {
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
                     qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
+                    qr.executeBeforeGeneration = slot.autoExecute_beforeGeneration ?? false;
                     qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
