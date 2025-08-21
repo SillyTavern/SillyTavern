@@ -184,6 +184,7 @@ export const chat_completion_sources = {
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
+    AZURE_OPENAI: 'azure_openai',
 };
 
 const character_names_behavior = {
@@ -324,6 +325,12 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    azure_base_url: ['#azure_base_url', 'azure_base_url', false, true],
+    azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
+    azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
+    azure_openai_model: ['#azure_openai_model', 'azure_openai_model', false, true],
+
+
     extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
@@ -370,6 +377,10 @@ const default_settings = {
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     moonshot_model: 'kimi-latest',
+    azure_base_url: '',
+    azure_deployment_name: '',
+    azure_api_version: '2024-02-15-preview',
+    azure_openai_model: '',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -457,6 +468,10 @@ const oai_settings = {
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     moonshot_model: 'kimi-latest',
+    azure_base_url: '',
+    azure_deployment_name: '',
+    azure_api_version: '2024-02-15-preview',
+    azure_openai_model: '',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1619,6 +1634,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.pollinations_model;
         case chat_completion_sources.MOONSHOT:
             return oai_settings.moonshot_model;
+        case chat_completion_sources.AZURE_OPENAI:
+            return oai_settings.azure_openai_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -2045,6 +2062,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
+    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2089,6 +2107,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'request_images': Boolean(oai_settings.request_images),
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
     };
+
+    // Add Azure-specific settings to generate_data if Azure OpenAI is selected
+    if (isAzureOpenAI) { // Use the new isAzureOpenAI constant
+        generate_data.azure_base_url = oai_settings.azure_base_url;
+        generate_data.azure_deployment_name = oai_settings.azure_deployment_name;
+        generate_data.azure_api_version = oai_settings.azure_api_version;
+        // The 'model' field will be present but is handled (deleted) by the backend for Azure.
+    }
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
@@ -3366,6 +3392,10 @@ function loadOpenAISettings(data, settings) {
     oai_settings.custom_include_headers = settings.custom_include_headers ?? default_settings.custom_include_headers;
     oai_settings.custom_prompt_post_processing = settings.custom_prompt_post_processing ?? default_settings.custom_prompt_post_processing;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
+    oai_settings.azure_base_url = settings.azure_base_url ?? default_settings.azure_base_url;
+    oai_settings.azure_deployment_name = settings.azure_deployment_name ?? default_settings.azure_deployment_name;
+    oai_settings.azure_api_version = settings.azure_api_version ?? default_settings.azure_api_version;
+    oai_settings.azure_openai_model = settings.azure_openai_model ?? default_settings.azure_openai_model;
     oai_settings.vertexai_model = settings.vertexai_model ?? default_settings.vertexai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
@@ -3460,6 +3490,11 @@ function loadOpenAISettings(data, settings) {
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
+    $('#azure_base_url').val(oai_settings.azure_base_url);
+    $('#azure_deployment_name').val(oai_settings.azure_deployment_name);
+    $('#azure_api_version').val(oai_settings.azure_api_version);
+    $('#azure_openai_model').val(oai_settings.azure_openai_model);
+
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
@@ -3643,6 +3678,11 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
+        data.azure_base_url = oai_settings.azure_base_url;
+        data.azure_api_version = oai_settings.azure_api_version;
+    }
+
     const validateProxySources = [
         chat_completion_sources.CLAUDE,
         chat_completion_sources.OPENAI,
@@ -3739,6 +3779,10 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         vertexai_model: settings.vertexai_model,
+        azure_base_url: settings.azure_base_url,
+        azure_deployment_name: settings.azure_deployment_name,
+        azure_api_version: settings.azure_api_version,
+        azure_openai_model: settings.azure_openai_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -4603,6 +4647,19 @@ async function onModelChange() {
         oai_settings.moonshot_model = value;
     }
 
+    if ($(this).is('#azure_openai_model')) {
+        console.log('Azure OpenAI model changed to', value);
+        oai_settings.azure_openai_model = value;
+        // Since this is a read-only input, direct user change is unlikely.
+        // If dynamic max_context/temp are needed for Azure models, add similar logic here:
+        // const maxContext = getAzureMaxContext(value, oai_settings.max_context_unlocked); // You'd need to define getAzureMaxContext
+        // $('#openai_max_context').attr('max', maxContext);
+        // oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        // $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        // // Similarly for temperature if Azure models have specific ranges
+        // $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -5119,6 +5176,15 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        const api_key_azure_openai = String($('#api_key_azure_openai').val()).trim();
+
+        // If a new key has been entered in the text box, save it before connecting.
+        if (api_key_azure_openai.length) {
+            await writeSecret(SECRET_KEYS.AZURE_OPENAI, api_key_azure_openai);
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -5183,6 +5249,12 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
     }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        // Optionally trigger a change if there's any specific logic tied to the model select
+        // For Azure, the model is set by the verify button, so this might not be strictly necessary
+        // but good for consistency or if a preset loads a model.
+        // $('#azure_openai_model').trigger('change'); // If you add dynamic max_context/temp for Azure
+    }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
         $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
@@ -5196,13 +5268,59 @@ async function testApiConnection() {
         return;
     }
 
+    // Determine the message for the test request based on the source
+    const testMessages = [{ 'role': 'user', 'content': 'Hi' }];
+    let successMessage = t`API connection successful!`;
+    let errorMessage = t`Could not get a reply from API. Check your connection settings / API key and try again.`;
+
+    // Special handling for Azure OpenAI
+    if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
+        const baseUrl = String($('#azure_base_url').val()).trim();
+        const deploymentName = String($('#azure_deployment_name').val()).trim();
+        const apiVersion = String($('#azure_api_version').val()).trim();
+
+        if (!baseUrl || !deploymentName || !apiVersion) {
+            toastr.error('Azure Base URL, Deployment Name, and API Version are required for verification.');
+            $('#azure_openai_status_message').text('Missing required Azure settings.');
+            return;
+        }
+
+        // Ensure the API key is present (it should have been saved by onConnectButtonClick)
+        if (!secret_state[SECRET_KEYS.AZURE_OPENAI]) {
+            toastr.error('Azure OpenAI API key is not saved. Please enter and save your key.');
+            $('#azure_openai_status_message').text('API key not saved.');
+            return;
+        }
+
+        // Update status messages specifically for Azure
+        successMessage = t`Azure OpenAI connection successful! Model fetched: `;
+        errorMessage = t`Could not connect to Azure OpenAI. Check settings, deployment, and API key.`;
+    }
+
     try {
-        const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }], new AbortController().signal);
+        // sendOpenAIRequest will handle routing to the backend's /generate endpoint
+        // The backend will then construct the correct Azure OpenAI request.
+        const reply = await sendOpenAIRequest('quiet', testMessages, new AbortController().signal);
         console.log(reply);
-        toastr.success(t`API connection successful!`);
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
+            const modelName = reply?.model || 'Unknown Model'; // Extract model from the response
+            oai_settings.azure_openai_model = modelName; // Save to settings
+            $('#azure_openai_model').val(modelName); // Update UI
+            $('#azure_openai_status_message').text(successMessage + modelName);
+            toastr.success(successMessage + modelName);
+        } else {
+            toastr.success(successMessage);
+            // For other sources, if they have a model display, update it here if necessary
+        }
     }
     catch (err) {
-        toastr.error(t`Could not get a reply from API. Check your connection settings / API key and try again.`);
+        console.error('API Test Error:', err);
+        toastr.error(errorMessage);
+        if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
+            $('#azure_openai_status_message').text(errorMessage);
+            $('#azure_openai_model').val('');
+        }
     }
 }
 
@@ -5617,6 +5735,26 @@ function updateVertexAIServiceAccountStatus(isValid = false, message = '') {
     }
 }
 
+/**
+ * Updates the #azure_complete_url input field based on Azure OpenAI settings.
+ */
+function updateAzureCompleteUrl() {
+    const baseUrl = String($('#azure_base_url').val()).trim();
+    const deploymentName = String($('#azure_deployment_name').val()).trim();
+    const apiVersion = String($('#azure_api_version').val()).trim();
+
+    let completeUrl = 'Dynamically generated URL'; // Default placeholder
+
+    if (baseUrl && deploymentName && apiVersion) {
+        // Sanitize trailing slash from base URL
+        const sanitizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        completeUrl = `${sanitizedBaseUrl}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
+    }
+
+    $('#azure_complete_url').val(completeUrl);
+}
+
+
 
 
 export function initOpenAI() {
@@ -5951,6 +6089,44 @@ export function initOpenAI() {
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
         saveSettingsDebounced();
+    });
+
+    // Add input listeners for Azure OpenAI settings to update oai_settings and save
+    $('#azure_base_url').on('input', function () {
+        oai_settings.azure_base_url = String($(this).val());
+        updateAzureCompleteUrl(); // Keep this to update the URL preview
+        saveSettingsDebounced();
+    });
+
+    $('#azure_deployment_name').on('input', function () {
+        oai_settings.azure_deployment_name = String($(this).val());
+        updateAzureCompleteUrl(); // Keep this to update the URL preview
+        saveSettingsDebounced();
+    });
+
+    $('#azure_api_version').on('input change', function () {
+        oai_settings.azure_api_version = String($(this).val());
+        updateAzureCompleteUrl(); // Keep this to update the URL preview
+        saveSettingsDebounced();
+    });
+
+    // Bind the Azure Verify button
+    $('#azure_openai_verify_button').on('click', async function() {
+        // Set a loading state
+        $('#azure_openai_status_message').text('Verifying connection and fetching model...');
+        $('#azure_openai_model').val('Fetching...');
+
+        try {
+            // Call testApiConnection, which will now handle Azure specifically
+            // Pass 'azure_openai' as a specific source indicator if testApiConnection needs it,
+            // or rely on oai_settings.chat_completion_source
+            await testApiConnection();
+            // testApiConnection will update the model and status message directly
+        } catch (error) {
+            console.error('Azure verification failed:', error);
+            $('#azure_openai_status_message').text('Verification failed. Check settings and API key.');
+            $('#azure_openai_model').val('');
+        }
     });
 
     $('#names_behavior').on('input', function () {

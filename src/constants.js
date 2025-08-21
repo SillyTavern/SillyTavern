@@ -179,6 +179,7 @@ export const CHAT_COMPLETION_SOURCES = {
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
+    AZURE_OPENAI: 'azure_openai',
 };
 
 /**

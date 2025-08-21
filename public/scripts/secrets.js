@@ -47,6 +47,7 @@ export const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    AZURE_OPENAI: 'api_key_azure_openai',
     FEATHERLESS: 'api_key_featherless',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
@@ -116,6 +117,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MINIMAX]: 'MiniMax TTS',
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
+    [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
 };
 
 const INPUT_MAP = {
@@ -151,6 +153,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.XAI]: '#api_key_xai',
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
+    [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
 };
 
 const getLabel = () => moment().format('L LT');
@@ -187,6 +190,10 @@ export function resolveSecretKey() {
                 case 'full':
                     return SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT;
             }
+        }
+        // ADD THIS BLOCK FOR AZURE OPENAI
+        if (chatCompletionSource === chat_completion_sources.AZURE_OPENAI) {
+            return SECRET_KEYS.AZURE_OPENAI;
         }
 
         const [key] = Object.entries(chat_completion_sources).find(([, value]) => value === chatCompletionSource) ?? [null];

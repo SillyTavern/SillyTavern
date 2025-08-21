@@ -652,7 +652,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot">
+                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Multiple swipes per generation">
                                         Multiple swipes per generation
                                     </div>
@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -980,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -2132,7 +2132,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,azure_openai">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2790,6 +2790,7 @@
                             <optgroup>
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
+                                <option value="azure_openai">Azure OpenAI</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="deepseek">DeepSeek</option>
@@ -3656,6 +3657,56 @@
                                 <option value="kimi-thinking-preview">kimi-thinking-preview</option>
                             </select>
                         </div>
+                        <form id="azure_openai_settings" data-source="azure_openai">
+                            <!-- Azure API Key -->
+                            <h4 data-i18n="Azure API Key">Azure API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_azure_openai" data-setting="api_key_azure_openai" class="text_pole flex1" type="password" autocomplete="off" placeholder="Enter your Azure API Key">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_azure_openai"></div>
+                            </div>
+                            <div class="description" data-i18n="Your Azure OpenAI API key.">Your Azure OpenAI API key.</div>
+
+                            <!-- Azure Base URL -->
+                            <h4 data-i18n="Azure Base Url">Azure Base Url</h4>
+                            <div class="flex-container">
+                                <input id="azure_base_url" data-setting="azure_base_url" class="text_pole wide100p" type="text" placeholder="https://your-resource.openai.azure.com/">
+                            </div>
+                            <div class="description" data-i18n="The base URL of your Azure OpenAI resource.">The base URL of your Azure OpenAI resource.</div>
+
+                            <!-- Azure Deployment Name -->
+                            <h4 data-i18n="Deployment Name">Deployment Name</h4>
+                            <div class="flex-container">
+                                <input id="azure_deployment_name" data-setting="azure_deployment_name" class="text_pole wide100p" type="text" placeholder="your-deployment-name">
+                            </div>
+                            <div class="description" data-i18n="The name of your model deployment in Azure.">The name of your model deployment in Azure.</div>
+
+                            <!-- Azure API Version Dropdown -->
+                            <h4 data-i18n="API Version">API Version</h4>
+                            <div class="flex-container">
+                                <select id="azure_api_version" data-setting="azure_api_version" class="text_pole wide100p">
+                                    <option value="2024-02-15-preview">2024-02-15-preview</option>
+                                    <option value="2024-02-01">2024-02-01</option>
+                                    <option value="2023-12-01-preview">2023-12-01-preview</option>
+                                    <option value="2023-07-01-preview">2023-07-01-preview</option>
+                                </select>
+                            </div>
+                            <div class="description" data-i18n="Select a supported API version.">Select a supported API version.</div>
+
+                            <!-- Complete URL -->
+                            <h4 data-i18n="Complete URL">Complete URL</h4>
+                            <div class="flex-container">
+                                <input id="azure_complete_url" class="text_pole wide100p" type="text" readonly placeholder="Dynamically generated URL">
+                            </div>
+                            <div class="description" data-i18n="This URL is generated dynamically from the fields above.">This URL is generated dynamically from the fields above.</div>
+
+                            <!-- Verify Button and Model Display -->
+                            <h4 data-i18n="Model Name">Model Name</h4>
+                            <div class="flex-container">
+                                <input id="azure_openai_model" data-setting="azure_openai_model" class="text_pole flex1" type="text" readonly placeholder="Click 'Verify' to fetch model name">
+                                <button id="azure_openai_verify_button" type="button" class="menu_button" data-i18n="Verify & Fetch">Verify & Fetch</button>
+                            </div>
+                            <div id="azure_openai_status_message" class="description"></div> <!-- For status messages like "Success!" or "Error!" -->
+                        </form>
                         <div id="prompt_post_processing_form">
                             <h4>
                                 <span data-i18n="Prompt Post-Processing">
