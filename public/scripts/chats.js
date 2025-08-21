@@ -1924,7 +1924,10 @@ export function initChatUtilities() {
         embedMessageFile(messageId, messageBlock);
     });
 
-    $(document).on('click', '.editor_maximize', async function () {
+    $(document).on('click', '.editor_maximize', async function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
         const contentEditable = bro.is('[contenteditable]');
