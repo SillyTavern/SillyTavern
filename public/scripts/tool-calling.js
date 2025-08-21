@@ -650,6 +650,7 @@ export class ToolManager {
             chat_completion_sources.POLLINATIONS,
             chat_completion_sources.MOONSHOT,
             chat_completion_sources.FIREWORKS,
+            chat_completion_sources.COMETAPI,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
