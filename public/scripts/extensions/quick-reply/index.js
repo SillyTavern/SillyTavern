@@ -310,7 +310,11 @@ eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(on
 
 const onBeforeGeneration = async (_generationType, _options = {}, isDryRun = false) => {
     if (isDryRun) {
-        console.log('[QR2] Before-generation hook skipped due to dryRun.');
+        log('Before-generation hook skipped due to dryRun.');
+        return;
+    }
+    if (selected_group && this_chid === undefined) {
+        log('Before-generation hook skipped for event before group wrapper.');
         return;
     }
     await autoExec.handleBeforeGeneration();
