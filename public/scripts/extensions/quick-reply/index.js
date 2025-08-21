@@ -85,6 +85,7 @@ const loadSets = async () => {
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
                     qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
+                    qr.executeBeforeGeneration = slot.autoExecute_beforeGeneration ?? false;
                     qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
@@ -307,3 +308,16 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
+
+const onBeforeGeneration = async (_generationType, _options = {}, isDryRun = false) => {
+    if (isDryRun) {
+        log('Before-generation hook skipped due to dryRun.');
+        return;
+    }
+    if (selected_group && this_chid === undefined) {
+        log('Before-generation hook skipped for event before group wrapper.');
+        return;
+    }
+    await autoExec.handleBeforeGeneration();
+};
+eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (...args) => executeIfReadyElseQueue(onBeforeGeneration, args));
