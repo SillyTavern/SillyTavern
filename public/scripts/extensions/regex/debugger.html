@@ -1,0 +1,204 @@
+<div id="regex_debugger_popup" class="popup" style="width: 80%; max-width: 1200px;">
+    <div class="popup_header">
+        <span data-i18n="ext_regex_debugger_title">Advanced Regex Chain Debugger</span>
+        <div class="popup_close">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+    </div>
+    <div class="popup_content">
+        <div class="regex-debugger-container">
+            <!-- Left Panel: Rules List -->
+            <div class="regex-debugger-rules-list">
+                <h3><i class="fa-solid fa-list-ol"></i> <span data-i18n="ext_regex_debugger_active_rules">Active Rules</span></h3>
+                <div class="flex-container">
+                     <button id="regex_debugger_save_order" class="menu_button menu_button_icon" title="Save current rule order">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span data-i18n="ext_regex_debugger_save_order">Save Order</span>
+                    </button>
+                </div>
+                <ul id="regex_debugger_rules" class="sortable-list">
+                    <!-- Rules will be dynamically inserted here -->
+                </ul>
+            </div>
+
+            <!-- Right Panel: Tester -->
+            <div class="regex-debugger-tester">
+                <h3><i class="fa-solid fa-vial"></i> <span data-i18n="ext_regex_debugger_testing_area">Testing Area</span></h3>
+                <div class="regex-debugger-io">
+                    <div class="regex-debugger-input">
+                        <label for="regex_debugger_raw_input" data-i18n="ext_regex_debugger_raw_input">Raw Input</label>
+                        <textarea id="regex_debugger_raw_input" class="text_pole" rows="8"></textarea>
+                    </div>
+                    <div class="flex-container" style="justify-content: space-between; align-items: center;">
+                        <button id="regex_debugger_run_test" class="menu_button menu_button_icon" title="Run the test pipeline">
+                            <i class="fa-solid fa-play"></i>
+                            <span data-i18n="ext_regex_debugger_run_test">Run Test</span>
+                        </button>
+                        <div class="flex-container">
+                            <div class="radio_group">
+                                <label><input type="radio" name="display_mode" value="replace" checked> <span data-i18n="ext_regex_debugger_display_replace">Replace</span></label>
+                                <label><input type="radio" name="display_mode" value="highlight"> <span data-i18n="ext_regex_debugger_display_highlight">Highlight</span></label>
+                            </div>
+                            <select id="regex_debugger_render_mode" style="margin-left: 10px;">
+                                <option value="text" data-i18n="ext_regex_debugger_render_text">Render as Text</option>
+                                <option value="message" data-i18n="ext_regex_debugger_render_message">Render as Message</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="regex-debugger-results">
+                        <h4><i class="fa-solid fa-shoe-prints"></i> <span data-i18n="ext_regex_debugger_step_by_step">Step-by-step Transformation</span></h4>
+                        <div id="regex_debugger_steps_output" class="results-box"></div>
+                        <h4><i class="fa-solid fa-flag-checkered"></i> <span data-i18n="ext_regex_debugger_final_output">Final Output</span></h4>
+                        <div id="regex_debugger_final_output" class="results-box final-output"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template for a single rule in the list -->
+<template id="regex_debugger_rule_template">
+    <li class="regex-debugger-rule" draggable="true">
+        <i class="fa-solid fa-grip-vertical handle"></i>
+        <label class="checkbox">
+            <input type="checkbox" class="rule-enabled" checked>
+        </label>
+        <div class="rule-details">
+            <span class="rule-name"></span>
+            <code class="rule-regex"></code>
+            <small class="rule-scope"></small>
+        </div>
+        <div class="menu_button menu_button_icon edit_rule" title="Edit Rule"><i class="fa-solid fa-pencil"></i></div>
+    </li>
+</template>
+
+<!-- Template for a single step result -->
+<template id="regex_debugger_step_template">
+    <div class="step-result">
+        <div class="step-header">
+            <strong></strong>
+        </div>
+        <pre class="step-output"></pre>
+    </div>
+</template>
+
+<style>
+.regex-debugger-container {
+    display: grid;
+    grid-template-columns: 1.2fr 1.8fr;
+    gap: 15px;
+    height: 70vh;
+}
+.regex-debugger-rules-list, .regex-debugger-tester {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.regex-debugger-rules-list h3, .regex-debugger-tester h3, .regex-debugger-results h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text_color);
+}
+#regex_debugger_rules {
+    list-style-type: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    overflow-y: auto;
+    border: 1px solid var(--border_color);
+    border-radius: 5px;
+    background-color: var(--background_color);
+}
+.regex-debugger-rule {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border_color);
+    cursor: grab;
+    background-color: var(--background_popup);
+}
+.regex-debugger-rule:last-child {
+    border-bottom: none;
+}
+.regex-debugger-rule .handle {
+    margin-right: 10px;
+    color: var(--text_color_dim);
+}
+.regex-debugger-rule .rule-details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-grow: 1;
+    margin-right: 10px;
+}
+.regex-debugger-rule .rule-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: bold;
+}
+.regex-debugger-rule .rule-regex {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.8em;
+    color: var(--text_color_dim);
+    margin-top: 2px;
+    background-color: var(--background_color);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: var(--font_mono);
+}
+.regex-debugger-rule .rule-scope {
+    font-size: 0.8em;
+    color: var(--text_color_dim);
+}
+.regex-debugger-io {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+}
+.regex-debugger-input {
+    display: flex;
+    flex-direction: column;
+}
+.regex-debugger-input label {
+    margin-bottom: 5px;
+}
+.results-box {
+    border: 1px solid var(--border_color);
+    border-radius: 5px;
+    padding: 10px;
+    background-color: var(--background_color);
+    overflow-y: auto;
+    min-height: 100px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.regex-debugger-results {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+    overflow: hidden;
+}
+#regex_debugger_steps_output {
+    flex-grow: 1;
+}
+.final-output {
+    min-height: 80px;
+}
+.step-result {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    border-bottom: 1px dashed var(--border_color);
+}
+.step-result:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+.step-header strong {
+    color: var(--link_color);
+}
+</style>

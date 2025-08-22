@@ -94,6 +94,11 @@ async function saveRegexScript(regexScript, existingScriptIndex, isScoped) {
     if (currentChatId !== undefined && currentChatId !== null) {
         await reloadCurrentChat();
     }
+
+    const debuggerPopup = $('#regex_debugger_popup');
+    if (debuggerPopup.length) {
+        populateDebuggerRuleList(debuggerPopup.parent());
+    }
 }
 
 async function deleteRegexScript({ id, isScoped }) {
@@ -327,6 +332,206 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
 
         saveRegexScript(newRegexScript, existingScriptIndex, isScoped);
     }
+}
+
+const escapeHtml = (unsafe) => {
+    if (typeof unsafe !== 'string') return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+function getHighlightedHtml(text, matches) {
+    if (typeof text !== 'string') return '';
+    if (!matches || matches.length === 0) return escapeHtml(text);
+    let lastIndex = 0;
+    const parts = [];
+    [...matches]
+        .sort((a, b) => a.index - b.index)
+        .forEach(match => {
+            if (match.index === undefined || match.index < lastIndex) return;
+            parts.push(escapeHtml(text.substring(lastIndex, match.index)));
+            parts.push(
+                `<mark class="yellow_hl">${escapeHtml(match.text)}</mark>`
+            );
+            lastIndex = match.index + match.length;
+        });
+    parts.push(escapeHtml(text.substring(lastIndex)));
+    return parts.join('');
+}
+
+function executeRegexScriptForDebugging(script, text) {
+    let err;
+    let p = script.findRegex;
+    const lm = p.match(/^\/(.+)\/([gimdsuy]*)$/);
+    let f = script.regexFlags || '';
+    if (lm) {
+        p = lm[1];
+        f = lm[2] || f;
+    }
+    let regex;
+    try {
+        regex = new RegExp(p, f);
+    } catch (e) {
+        err = `Compile error: ${e.message}`;
+    }
+    if (err || !regex) return { output: text, matches: [], error: err || 'Failed to compile regex' };
+
+    const collectedMatches = [];
+    let outputText = text;
+
+    try {
+        const allMatchesIterator = text.matchAll(regex);
+        for (const match of allMatchesIterator) {
+            collectedMatches.push({
+                index: match.index,
+                length: match[0].length,
+                text: match[0],
+            });
+        }
+        if (script.replaceString !== undefined) {
+            outputText = text.replace(regex, script.replaceString);
+        }
+    } catch (e) {
+        err = (err ? err + '; ' : '') + `Replace error: ${e.message}`;
+        outputText = text;
+    }
+
+    return { output: outputText, matches: collectedMatches, error: err };
+}
+
+function populateDebuggerRuleList(container) {
+    const ruleList = container.find('#regex_debugger_rules');
+    const ruleTemplate = container.find('#regex_debugger_rule_template');
+    if (!ruleList.length || !ruleTemplate.length) return;
+
+    ruleList.empty();
+
+    const globalScripts = (extension_settings.regex ? JSON.parse(JSON.stringify(extension_settings.regex)) : []).map((s) => ({ ...s, isScoped: false }));
+    const scopedScripts = (this_chid !== undefined && characters[this_chid]?.data?.extensions?.regex_scripts ? JSON.parse(JSON.stringify(characters[this_chid].data.extensions.regex_scripts)) : []).map((s) => ({...s, isScoped: true }));
+
+    globalScripts.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    scopedScripts.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    const allScripts = [...globalScripts, ...scopedScripts];
+    
+    container.data('allScripts', allScripts);
+
+    allScripts.forEach(script => {
+        if (!script.id) script.id = uuidv4();
+        const ruleElementContent = $(ruleTemplate.prop('content')).clone();
+
+        const ruleElement = ruleElementContent.find('.regex-debugger-rule');
+        ruleElement.attr('data-id', script.id);
+        ruleElement.attr('data-isscoped', script.isScoped);
+        ruleElement.find('.rule-name').text(script.scriptName);
+        ruleElement.find('.rule-scope').text(script.isScoped ? 'Scoped' : 'Global');
+        ruleElement.find('.rule-enabled').prop('checked', !script.disabled);
+        
+        ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
+
+        ruleList.append(ruleElementContent);
+    });
+}
+
+/**
+ * Opens the regex debugger.
+ * @returns {Promise<void>}
+ */
+async function onRegexDebuggerOpenClick() {
+    const debuggerHtml = $(await renderExtensionTemplateAsync('regex', 'debugger'));
+    const ruleList = debuggerHtml.find('#regex_debugger_rules');
+    const stepTemplate = debuggerHtml.find('#regex_debugger_step_template');
+
+    populateDebuggerRuleList(debuggerHtml);
+
+    // @ts-ignore
+    ruleList.sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+
+    debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
+        const allScripts = debuggerHtml.data('allScripts');
+        const rawInput = String(debuggerHtml.find('#regex_debugger_raw_input').val());
+        const stepsOutput = debuggerHtml.find('#regex_debugger_steps_output');
+        const finalOutput = debuggerHtml.find('#regex_debugger_final_output');
+        const displayMode = debuggerHtml.find('input[name="display_mode"]:checked').val();
+        stepsOutput.empty();
+        finalOutput.empty();
+
+        let textForNextStep = rawInput;
+
+        ruleList.find('li').each(function() {
+            const ruleElement = $(this);
+            if (!ruleElement.find('.rule-enabled').is(':checked')) return;
+
+            const scriptId = ruleElement.data('id');
+            const script = allScripts.find(s => s.id === scriptId);
+
+            if (script) {
+                const result = executeRegexScriptForDebugging(script, textForNextStep);
+                const stepElement = $(stepTemplate.prop('content')).clone();
+                stepElement.find('.step-header strong').text(`After: ${script.scriptName}`);
+
+                if (displayMode === 'highlight') {
+                    const highlightedHtml = getHighlightedHtml(textForNextStep, result.matches);
+                    stepElement.find('.step-output').html(highlightedHtml);
+                } else {
+                    stepElement.find('.step-output').text(result.output);
+                }
+                
+                if (result.error) {
+                    const errorEl = $(`<div class="warning_text text_rose-500">${result.error}</div>`);
+                    stepElement.append(errorEl);
+                }
+
+                stepsOutput.append(stepElement);
+                textForNextStep = result.output;
+            }
+        });
+
+        const renderMode = debuggerHtml.find('#regex_debugger_render_mode').val();
+        if (renderMode === 'message') {
+            const messageBlock = $('<div class="mes"><div class="mes_text"></div></div>');
+            messageBlock.find('.mes_text').text(textForNextStep);
+            finalOutput.append(messageBlock);
+        } else {
+            finalOutput.text(textForNextStep);
+        }
+    });
+
+    debuggerHtml.find('#regex_debugger_save_order').on('click', async function() {
+        const allScripts = debuggerHtml.data('allScripts');
+        const newGlobalScripts = [];
+        const newScopedScripts = [];
+
+        ruleList.find('li').each(function(index) {
+            const ruleElement = $(this);
+            const scriptId = ruleElement.data('id');
+            const originalScript = allScripts.find(s => s.id === scriptId);
+
+            if (originalScript) {
+                const scriptToSave = { ...originalScript, order: index };
+                if (scriptToSave.isScoped) {
+                    newScopedScripts.push(scriptToSave);
+                } else {
+                    newGlobalScripts.push(scriptToSave);
+                }
+            }
+        });
+
+        extension_settings.regex = newGlobalScripts.filter(s => !s.isScoped).map(({ isScoped, ...s }) => s);
+        if (this_chid !== undefined) {
+            await writeExtensionField(this_chid, 'regex_scripts', newScopedScripts.filter(s => s.isScoped).map(({ isScoped, ...s }) => s));
+        }
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+        toastr.success(t`Regex script order saved!`);
+        populateDebuggerRuleList(debuggerHtml);
+    });
+
+    await callGenericPopup(debuggerHtml, POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
 }
 
 /**
@@ -606,6 +811,7 @@ jQuery(async () => {
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false, false);
     });
+    $('#open_regex_debugger').on('click', onRegexDebuggerOpenClick);
     $('#open_scoped_editor').on('click', function () {
         if (this_chid === undefined) {
             toastr.error(t`No character selected.`);
@@ -726,6 +932,7 @@ jQuery(async () => {
         },
     ];
     for (const { selector, setter, getter } of sortableDatas) {
+        // @ts-ignore
         $(selector).sortable({
             delay: getSortableDelay(),
             stop: async function () {
@@ -778,6 +985,7 @@ jQuery(async () => {
     });
 
     await loadRegexScripts();
+    // @ts-ignore
     $('#saved_regex_scripts').sortable('enable');
 
     const localEnumProviders = {
