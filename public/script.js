@@ -4170,26 +4170,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return lastMesString;
     }
 
-    // Clean up the already generated prompt for seamless addition
-    function cleanupPromptCache(promptCache) {
-        // Remove the first occurrance of character's name
-        if (promptCache.trimStart().startsWith(`${name2}:`)) {
-            promptCache = promptCache.replace(`${name2}:`, '').trimStart();
-        }
-
-        // Remove the first occurrance of prompt bias
-        if (promptCache.trimStart().startsWith(promptBias)) {
-            promptCache = promptCache.replace(promptBias, '');
-        }
-
-        // Add a space if prompt cache doesn't start with one
-        if (!/^\s/.test(promptCache) && !isInstruct) {
-            promptCache = ' ' + promptCache;
-        }
-
-        return promptCache;
-    }
-
     async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
@@ -4276,11 +4256,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                         ? promptBias.trimStart()
                         : ` ${promptBias.trimStart()}`;
             }
-        }
-
-        // Prune from prompt cache if it exists
-        if (generatedPromptCache.length !== 0) {
-            generatedPromptCache = cleanupPromptCache(generatedPromptCache);
         }
 
         // Flattens the multiple prompt objects to a string.
