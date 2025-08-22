@@ -180,6 +180,7 @@ export const CHAT_COMPLETION_SOURCES = {
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
+    COMETAPI: 'cometapi',
 };
 
 /**
