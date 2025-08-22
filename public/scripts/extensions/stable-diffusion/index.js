@@ -306,6 +306,7 @@ const defaultSettings = {
     novel_sm: false,
     novel_sm_dyn: false,
     novel_decrisper: false,
+    novel_variety_boost: false,
 
     // OpenAI settings
     openai_style: 'vivid',
@@ -482,6 +483,7 @@ async function loadSettings() {
     $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
     $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
     $('#sd_novel_decrisper').prop('checked', extension_settings.sd.novel_decrisper);
+    $('#sd_novel_variety_boost').prop('checked', extension_settings.sd.novel_variety_boost);
     $('#sd_pollinations_enhance').prop('checked', extension_settings.sd.pollinations_enhance);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
@@ -1052,6 +1054,11 @@ function onNovelSmDynInput() {
 
 function onNovelDecrisperInput() {
     extension_settings.sd.novel_decrisper = !!$('#sd_novel_decrisper').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onNovelVarietyBoostInput() {
+    extension_settings.sd.novel_variety_boost = !!$('#sd_novel_variety_boost').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -3234,6 +3241,7 @@ async function generateNovelImage(prompt, negativePrompt, signal) {
             negative_prompt: negativePrompt,
             upscale_ratio: extension_settings.sd.hr_scale,
             decrisper: extension_settings.sd.novel_decrisper,
+            variety_boost: extension_settings.sd.novel_variety_boost,
             sm: sm,
             sm_dyn: sm_dyn,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
@@ -4654,6 +4662,7 @@ jQuery(async () => {
     $('#sd_novel_sm').on('input', onNovelSmInput);
     $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
     $('#sd_novel_decrisper').on('input', onNovelDecrisperInput);
+    $('#sd_novel_variety_boost').on('input', onNovelVarietyBoostInput);
     $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
