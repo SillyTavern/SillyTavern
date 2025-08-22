@@ -570,9 +570,9 @@ export function dragElement($elmnt) {
                 if (top + $elmnt.height() >= winHeight) $elmnt.css('height', winHeight - top - 1 + 'px');
                 if (left + $elmnt.width() >= winWidth) $elmnt.css('width', winWidth - left - 1 + 'px');
             }
-            if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
-                $elmnt.css('width', width - 1 + 'px');
-            }
+            //if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
+            //    $elmnt.css('width', width - 1 + 'px');
+            // }
             $elmnt.css({ left, top });
             $elmnt.off('mouseup').on('mouseup', () => {
                 if (
