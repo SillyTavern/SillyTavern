@@ -1469,7 +1469,7 @@ router.post('/status', async function (request, statusResponse) {
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to Azure endpoint.' });
         }
 
-        } else {
+    } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
     }
