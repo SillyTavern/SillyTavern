@@ -1400,69 +1400,61 @@ router.post('/status', async function (request, statusResponse) {
 
         try {
             // ---- A) GET /models: fast sanity check for endpoint + api key + api version ----
-            const modelsRes = await fetch(modelsUrl, {
+            const apiConfigTest = await fetch(modelsUrl, {
                 method: 'GET',
                 headers: { 'api-key': apiKey, 'Accept': 'application/json' },
             });
 
-            if (!modelsRes.ok) {
+            if (!apiConfigTest.ok) {
                 let errText = '';
 
                 try {
-                    errText = await modelsRes.text();
+                    errText = await apiConfigTest.text();
                 } catch (e) {
                     console.warn('Failed to read error text from Azure response:', e);
                 }
-                console.warn('Azure OpenAI GET /models failed:', modelsRes.status, modelsRes.statusText, errText || '');
+                console.warn('Azure OpenAI GET /models failed:', apiConfigTest.status, apiConfigTest.statusText, errText || '');
                 const message =
-                    modelsRes.status === 401 || modelsRes.status === 403 ? 'Invalid API key or insufficient permissions.' :
-                        modelsRes.status === 404 ? 'Endpoint URL appears incorrect (404).' :
-                            modelsRes.status === 400 ? 'API version may be invalid for this resource.' :
-                                `Azure Models endpoint error: ${modelsRes.statusText}`;
-                return statusResponse.status(modelsRes.status).send({ error: true, message });
+                    apiConfigTest.status === 401 || apiConfigTest.status === 403 ? 'Invalid API key or insufficient permissions.' :
+                        apiConfigTest.status === 404 ? 'Endpoint URL appears incorrect (404).' :
+                            apiConfigTest.status === 400 ? 'API version may be invalid for this resource.' :
+                                `Azure Models endpoint error: ${apiConfigTest.statusText}`;
+                return statusResponse.status(apiConfigTest.status).send({ error: true, message });
             }
 
             // ---- B) POST /chat/completions: verify deployment + read model ----
             // Use a tiny, deterministic probe payload. This ensures JSON (non-streaming), minimal cost & latency.
-            const probePayload = {
+            const modelPayload = {
                 messages: [
-                    { role: 'system', content: 'connectivity probe' },
-                    { role: 'user', content: 'ping' },
+                    { role: 'user', content: 'Say word Hi' },
                 ],
-                temperature: 0,
                 max_tokens: 1,
                 stream: false,
             };
 
-            const postRes = await fetch(chatUrl, {
+            const modelRequest = await fetch(chatUrl, {
                 method: 'POST',
                 headers: {
-                    'api-key': apiKey,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json',
                 },
-                body: JSON.stringify(probePayload),
+                body: JSON.stringify(modelPayload),
             });
 
             // Parse response safely even if server mislabels content-type
-            let postJson;
-            const ct = postRes.headers.get('content-type') || '';
-            if (ct.includes('application/json')) {
-                postJson = await postRes.json();
-            } else {
-                const raw = await postRes.text();
-                try { postJson = JSON.parse(raw); } catch { postJson = { raw }; }
+
+            let modelResponse;
+            try {
+                const contentType = modelRequest.headers.get('content-type') || '';
+                const raw = await modelRequest.text();
+                modelResponse = contentType.includes('application/json') ? JSON.parse(raw) : { raw };
+            } catch {
+                modelResponse = { raw: 'Failed to parse response' };
             }
 
-            if (!postRes.ok) {
-                const msg = postJson?.error?.message || `Azure API Error: ${postRes.statusText}`;
-                console.warn('Azure OpenAI chat completion probe failed:', postRes.status, msg);
-                return statusResponse.status(postRes.status).send({ error: true, message: msg });
-            }
 
             // The Azure chat completion response is an OBJECT with a "model" string (not an array).
             // We convert it into the *array* shape your caller expects.
-            const modelId = postJson?.model || azure_deployment_name;
+            const modelId = modelResponse?.model || azure_deployment_name;
 
             console.info(color.green('Azure OpenAI connection successful. Detected model:'), modelId);
 
