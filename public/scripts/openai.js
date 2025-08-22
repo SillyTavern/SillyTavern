@@ -1888,7 +1888,7 @@ function saveModelList(data) {
 
         $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
     }
-// --- Azure OpenAI: populate #azure_openai_model from the single returned item ---
+    // --- Azure OpenAI: populate #azure_openai_model from the single returned item ---
     if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         const $el = $('#azure_openai_model');
         if ($el.length === 0) {
@@ -5307,7 +5307,7 @@ function toggleChatCompletionForms() {
     });
 }
 
-	async function testApiConnection() {
+async function testApiConnection() {
     // Check if the previous request is still in progress
     if (is_send_press) {
         toastr.info(t`Please wait for the previous request to complete.`);

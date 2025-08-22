@@ -1389,7 +1389,7 @@ router.post('/status', async function (request, statusResponse) {
             console.warn('Azure OpenAI status check failed: missing config from frontend.');
             return statusResponse.status(400).send({
                 error: true,
-                message: 'Azure configuration is incomplete.'
+                message: 'Azure configuration is incomplete.',
             });
         }
 
@@ -1402,18 +1402,23 @@ router.post('/status', async function (request, statusResponse) {
             // ---- A) GET /models: fast sanity check for endpoint + api key + api version ----
             const modelsRes = await fetch(modelsUrl, {
                 method: 'GET',
-                headers: { 'api-key': apiKey, 'Accept': 'application/json' }
+                headers: { 'api-key': apiKey, 'Accept': 'application/json' },
             });
 
             if (!modelsRes.ok) {
                 let errText = '';
-                try { errText = await modelsRes.text(); } catch {}
+
+                try {
+                    errText = await modelsRes.text();
+                } catch (e) {
+                    console.warn('Failed to read error text from Azure response:', e);
+                }
                 console.warn('Azure OpenAI GET /models failed:', modelsRes.status, modelsRes.statusText, errText || '');
                 const message =
                     modelsRes.status === 401 || modelsRes.status === 403 ? 'Invalid API key or insufficient permissions.' :
-                    modelsRes.status === 404 ? 'Endpoint URL appears incorrect (404).' :
-                    modelsRes.status === 400 ? 'API version may be invalid for this resource.' :
-                    `Azure Models endpoint error: ${modelsRes.statusText}`;
+                        modelsRes.status === 404 ? 'Endpoint URL appears incorrect (404).' :
+                            modelsRes.status === 400 ? 'API version may be invalid for this resource.' :
+                                `Azure Models endpoint error: ${modelsRes.statusText}`;
                 return statusResponse.status(modelsRes.status).send({ error: true, message });
             }
 
@@ -1422,11 +1427,11 @@ router.post('/status', async function (request, statusResponse) {
             const probePayload = {
                 messages: [
                     { role: 'system', content: 'connectivity probe' },
-                    { role: 'user', content: 'ping' }
+                    { role: 'user', content: 'ping' },
                 ],
                 temperature: 0,
                 max_tokens: 1,
-                stream: false
+                stream: false,
             };
 
             const postRes = await fetch(chatUrl, {
@@ -1434,9 +1439,9 @@ router.post('/status', async function (request, statusResponse) {
                 headers: {
                     'api-key': apiKey,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
                 },
-                body: JSON.stringify(probePayload)
+                body: JSON.stringify(probePayload),
             });
 
             // Parse response safely even if server mislabels content-type
@@ -1463,7 +1468,7 @@ router.post('/status', async function (request, statusResponse) {
 
             // --- Consistent response: ALWAYS an array of { id } ---
             return statusResponse.send(/** @type {{ data: Array<{ id: string }> }} */({
-                data: [{ id: modelId }]
+                data: [{ id: modelId }],
             }));
 
         } catch (error) {
