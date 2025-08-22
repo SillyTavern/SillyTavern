@@ -1189,45 +1189,47 @@ async function sendAimlapiRequest(request, response) {
  * @param {express.Response} response Express response object
  */
 async function sendAzureOpenAIRequest(request, response) {
-    // Destructure necessary parameters from the request body (which is generate_data from frontend)
-    const {
-        azure_base_url,
-        azure_deployment_name,
-        azure_api_version,
-        messages,
-        model, // This 'model' field WILL be present from frontend's generate_data. We need to remove it.
-        stream,
-        // Include other common OpenAI-compatible parameters that Azure expects in the body
-        temperature,
-        max_tokens,
-        presence_penalty,
-        frequency_penalty,
-        top_p,
-        stop,
-        logit_bias,
-        seed,
-        n,
-        user_name,
-        tools,
-        tool_choice,
-    } = request.body;
 
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
+
+    // --- Construct Request Body for Azure OpenAI ---
+    // Azure OpenAI expects an OpenAI-compatible body, but without the 'model' field
+    // as the deployment name in the URL serves that purpose.
+    const requestBody = {
+        messages: request.body.messages,
+        temperature: request.body.temperature,
+        max_tokens: request.body.max_tokens,
+        stream: request.body.stream,
+        presence_penalty: request.body.presence_penalty,
+        frequency_penalty: request.body.frequency_penalty,
+        top_p: request.body.top_p,
+        stop: request.body.stop,
+        logit_bias: request.body.logit_bias,
+        seed: request.body.seed,
+        tools: request.body.tools,
+        tool_choice: request.body.tool_choice,
+    };
+
+    const AzureOpenAIData = {
+        azure_base_url: request.body.azure_base_url,
+        azure_deployment_name: request.body.azure_deployment_name,
+        azure_api_version: request.body.azure_api_version,
+    };
 
     // --- Basic validation ---
     if (!apiKey) {
         console.error('Azure OpenAI API key is missing.');
         return response.status(401).send({ error: { message: 'Azure OpenAI API key is missing.' } });
     }
-    if (!azure_base_url || !azure_deployment_name || !azure_api_version) {
+    if (!AzureOpenAIData.azure_base_url || !AzureOpenAIData.azure_deployment_name || !AzureOpenAIData.azure_api_version) {
         console.error('Azure OpenAI configuration (Base URL, Deployment Name, API Version) is incomplete.');
         return response.status(400).send({ error: { message: 'Azure OpenAI configuration is incomplete.' } });
     }
 
     // --- Construct Azure API URL ---
     // Ensure no double slashes if base_url already ends with one
-    const sanitizedBaseUrl = azure_base_url.endsWith('/') ? azure_base_url.slice(0, -1) : azure_base_url;
-    const azureApiUrl = `${sanitizedBaseUrl}/openai/deployments/${azure_deployment_name}/chat/completions?api-version=${azure_api_version}`;
+    const sanitizedBaseUrl = AzureOpenAIData.azure_base_url.endsWith('/') ? AzureOpenAIData.azure_base_url.slice(0, -1) : AzureOpenAIData.azure_base_url;
+    const azureApiUrl = `${sanitizedBaseUrl}/openai/deployments/${AzureOpenAIData.azure_deployment_name}/chat/completions?api-version=${AzureOpenAIData.azure_api_version}`;
 
     // --- Define Azure-specific Headers ---
     const azureHeaders = {
@@ -1235,40 +1237,7 @@ async function sendAzureOpenAIRequest(request, response) {
         'Content-Type': 'application/json',
     };
 
-    // --- Construct Request Body for Azure OpenAI ---
-    // Azure OpenAI expects an OpenAI-compatible body, but without the 'model' field
-    // as the deployment name in the URL serves that purpose.
-    const requestBody = {
-        messages: messages,
-        temperature: temperature,
-        max_tokens: max_tokens,
-        stream: stream,
-        presence_penalty: presence_penalty,
-        frequency_penalty: frequency_penalty,
-        top_p: top_p,
-        stop: stop,
-        logit_bias: logit_bias,
-        seed: seed,
-        n: n,
-        user: user_name,
-        tools: tools,
-        tool_choice: tool_choice,
-    };
-
-    // CRITICAL FIX: Remove 'model' from the request body for Azure OpenAI
-    delete requestBody.model;
-
-    // Clean up any undefined optional parameters to ensure a clean request body
-    for (const key in requestBody) {
-        if (requestBody[key] === undefined) {
-            delete requestBody[key];
-        }
-    }
-
     console.log(color.blue('--- Preparing Azure OpenAI Request ---'));
-    console.debug('Request URL:', azureApiUrl);
-    console.debug('Request Headers:', { ...azureHeaders, 'api-key': `sk-...${apiKey.slice(-4)}` });
-    console.debug('Request Body:', JSON.stringify(requestBody, null, 2));
 
     try {
         const controller = new AbortController();
@@ -1285,8 +1254,7 @@ async function sendAzureOpenAIRequest(request, response) {
         });
 
         console.log(color.blue('--- Received Azure OpenAI Response ---'));
-        console.debug('Response Status:', apiResponse.status, apiResponse.statusText);
-        console.debug('Response Headers:', JSON.stringify(Object.fromEntries(apiResponse.headers.entries()), null, 2));
+
 
         if (!apiResponse.ok) {
             const errorText = await apiResponse.text();
@@ -1300,14 +1268,10 @@ async function sendAzureOpenAIRequest(request, response) {
         }
 
         // --- Handle Streaming vs. Non-Streaming Responses ---
-        if (stream) {
-            // Forward the stream directly to the frontend response
-            // Make sure 'forwardFetchResponse' is available/imported
-            // Example: apiResponse.body.pipe(response);
+        if (request.body.stream) {
             forwardFetchResponse(apiResponse, response); // Assuming this helper exists
         } else {
             const data = await apiResponse.json();
-            console.debug('Azure OpenAI Response JSON (from external API):', data);
             response.send(data);
         }
 
@@ -1417,40 +1381,97 @@ router.post('/status', async function (request, statusResponse) {
             return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AZURE_OPENAI) {
-        const { azure_base_url, azure_api_version } = request.body;
+        const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
 
-        if (!apiKey || !azure_base_url || !azure_api_version) {
-            console.warn('Azure OpenAI status check failed: missing config (Base URL, API Version, or Key).');
-            return statusResponse.status(400).send({ error: true, message: 'Azure configuration is incomplete.' });
+        // 1) Validate
+        if (!apiKey || !azure_base_url || !azure_deployment_name || !azure_api_version) {
+            console.warn('Azure OpenAI status check failed: missing config from frontend.');
+            return statusResponse.status(400).send({
+                error: true,
+                message: 'Azure configuration is incomplete.'
+            });
         }
 
-        const sanitizedBaseUrl = azure_base_url.endsWith('/') ? azure_base_url.slice(0, -1) : azure_base_url;
-        const azureApiUrl = `${sanitizedBaseUrl}/openai/models?api-version=${azure_api_version}`;
+        // 2) Build URLs
+        const base = azure_base_url.endsWith('/') ? azure_base_url.slice(0, -1) : azure_base_url;
+        const modelsUrl = `${base}/openai/models?api-version=${encodeURIComponent(azure_api_version)}`;
+        const chatUrl = `${base}/openai/deployments/${encodeURIComponent(azure_deployment_name)}/chat/completions?api-version=${encodeURIComponent(azure_api_version)}`;
 
         try {
-            const modelsResponse = await fetch(azureApiUrl, {
+            // ---- A) GET /models: fast sanity check for endpoint + api key + api version ----
+            const modelsRes = await fetch(modelsUrl, {
                 method: 'GET',
-                headers: { 'api-key': apiKey },
+                headers: { 'api-key': apiKey, 'Accept': 'application/json' }
             });
 
-            if (modelsResponse.ok) {
-                const modelsJson = await modelsResponse.json();
-                console.info(color.green('Azure OpenAI connection successful.'));
-                return statusResponse.send(modelsJson);
-            } else {
-                const errorText = await modelsResponse.text();
-                console.warn(`Azure OpenAI status check failed: ${modelsResponse.status} - ${errorText}`);
-                return statusResponse.status(modelsResponse.status).send({ error: true, message: `Azure API Error: ${errorText}` });
+            if (!modelsRes.ok) {
+                let errText = '';
+                try { errText = await modelsRes.text(); } catch {}
+                console.warn('Azure OpenAI GET /models failed:', modelsRes.status, modelsRes.statusText, errText || '');
+                const message =
+                    modelsRes.status === 401 || modelsRes.status === 403 ? 'Invalid API key or insufficient permissions.' :
+                    modelsRes.status === 404 ? 'Endpoint URL appears incorrect (404).' :
+                    modelsRes.status === 400 ? 'API version may be invalid for this resource.' :
+                    `Azure Models endpoint error: ${modelsRes.statusText}`;
+                return statusResponse.status(modelsRes.status).send({ error: true, message });
             }
+
+            // ---- B) POST /chat/completions: verify deployment + read model ----
+            // Use a tiny, deterministic probe payload. This ensures JSON (non-streaming), minimal cost & latency.
+            const probePayload = {
+                messages: [
+                    { role: 'system', content: 'connectivity probe' },
+                    { role: 'user', content: 'ping' }
+                ],
+                temperature: 0,
+                max_tokens: 1,
+                stream: false
+            };
+
+            const postRes = await fetch(chatUrl, {
+                method: 'POST',
+                headers: {
+                    'api-key': apiKey,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(probePayload)
+            });
+
+            // Parse response safely even if server mislabels content-type
+            let postJson;
+            const ct = postRes.headers.get('content-type') || '';
+            if (ct.includes('application/json')) {
+                postJson = await postRes.json();
+            } else {
+                const raw = await postRes.text();
+                try { postJson = JSON.parse(raw); } catch { postJson = { raw }; }
+            }
+
+            if (!postRes.ok) {
+                const msg = postJson?.error?.message || `Azure API Error: ${postRes.statusText}`;
+                console.warn('Azure OpenAI chat completion probe failed:', postRes.status, msg);
+                return statusResponse.status(postRes.status).send({ error: true, message: msg });
+            }
+
+            // The Azure chat completion response is an OBJECT with a "model" string (not an array).
+            // We convert it into the *array* shape your caller expects.
+            const modelId = postJson?.model || azure_deployment_name;
+
+            console.info(color.green('Azure OpenAI connection successful. Detected model:'), modelId);
+
+            // --- Consistent response: ALWAYS an array of { id } ---
+            return statusResponse.send(/** @type {{ data: Array<{ id: string }> }} */({
+                data: [{ id: modelId }]
+            }));
+
         } catch (error) {
             console.error('Azure OpenAI status check connection error:', error);
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to Azure endpoint.' });
         }
-    } else {
-        console.warn('This chat completion source is not supported yet.');
-        return statusResponse.status(400).send({ error: true });
     }
+
 
     if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.warn('Chat Completion API key is missing.');

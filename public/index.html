@@ -3684,9 +3684,15 @@
                             <h4 data-i18n="API Version">API Version</h4>
                             <div class="flex-container">
                                 <select id="azure_api_version" data-setting="azure_api_version" class="text_pole wide100p">
+                                    <option value="2025-04-01-preview">2025-04-01-preview</option>
+                                    <option value="2024-10-21">2024-10-21</option>
+                                    <option value="2024-10-01">2024-10-01</option>
+                                    <option value="2024-07-01">2024-07-01</option>
+                                    <option value="2024-06-01-preview">2024-06-01-preview</option>
                                     <option value="2024-02-15-preview">2024-02-15-preview</option>
                                     <option value="2024-02-01">2024-02-01</option>
                                     <option value="2023-12-01-preview">2023-12-01-preview</option>
+                                    <option value="2023-11-01">2023-11-01</option>
                                     <option value="2023-07-01-preview">2023-07-01-preview</option>
                                 </select>
                             </div>
@@ -3703,7 +3709,6 @@
                             <h4 data-i18n="Model Name">Model Name</h4>
                             <div class="flex-container">
                                 <input id="azure_openai_model" data-setting="azure_openai_model" class="text_pole flex1" type="text" readonly placeholder="Click 'Verify' to fetch model name">
-                                <button id="azure_openai_verify_button" type="button" class="menu_button" data-i18n="Verify & Fetch">Verify & Fetch</button>
                             </div>
                             <div id="azure_openai_status_message" class="description"></div> <!-- For status messages like "Success!" or "Error!" -->
                         </form>
