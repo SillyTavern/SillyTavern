@@ -419,23 +419,22 @@ function executeRegexScriptForDebugging(script, text) {
 }
 
 function populateDebuggerRuleList(container) {
-    const ruleList = container.find('#regex_debugger_rules');
+    const rulesContainer = container.find('#regex_debugger_rules');
     const ruleTemplate = container.find('#regex_debugger_rule_template');
-    if (!ruleList.length || !ruleTemplate.length) {
+    if (!rulesContainer.length || !ruleTemplate.length) {
         console.error('Regex Debugger: Could not find rule list or template in the DOM.');
         return;
     }
 
-    ruleList.empty();
+    rulesContainer.empty(); // Clear the main container
 
     const allScripts = getRegexScripts();
     if (!allScripts || allScripts.length === 0) {
-        ruleList.append('<li style="padding: 10px; text-align: center; color: var(--text_color_dim);">No regex rules found.</li>');
+        rulesContainer.append('<div style="padding: 10px; text-align: center; color: var(--text_color_dim);">No regex rules found.</div>');
         return;
     }
 
     const globalScriptIds = new Set((extension_settings.regex ?? []).map(s => s.id));
-
     const globalScripts = [];
     const scopedScripts = [];
 
@@ -452,6 +451,7 @@ function populateDebuggerRuleList(container) {
         }
     });
 
+    // Store all scripts for the "Run Test" logic
     container.data('allScripts', [...globalScripts, ...scopedScripts]);
 
     const renderRule = (script) => {
@@ -469,10 +469,9 @@ function populateDebuggerRuleList(container) {
         // @ts-ignore
         ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
 
-        // FEATURE: Jump to step
         ruleElement.on('click', function(event) {
             if ($(event.target).is('input, .menu_button, .menu_button i, .handle')) {
-                return; // Don't trigger if clicking an interactive element
+                return;
             }
             const scriptId = $(this).data('id');
             const stepElement = $(`#step-result-${scriptId}`);
@@ -483,17 +482,21 @@ function populateDebuggerRuleList(container) {
             }
         });
 
-        ruleList.append(ruleElementContent);
+        return ruleElementContent;
     };
 
     if (globalScripts.length > 0) {
-        ruleList.append('<li class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Global Rules</li>');
-        globalScripts.forEach(renderRule);
+        rulesContainer.append('<div class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Global Rules</div>');
+        const globalList = $('<ul id="regex_debugger_rules_global" class="sortable-list"></ul>');
+        globalScripts.forEach(script => globalList.append(renderRule(script)));
+        rulesContainer.append(globalList);
     }
 
     if (scopedScripts.length > 0) {
-        ruleList.append('<li class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Scoped Rules</li>');
-        scopedScripts.forEach(renderRule);
+        rulesContainer.append('<div class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Scoped Rules</div>');
+        const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
+        scopedScripts.forEach(script => scopedList.append(renderRule(script)));
+        rulesContainer.append(scopedList);
     }
 }
 
@@ -505,16 +508,23 @@ async function onRegexDebuggerOpenClick() {
     const templateContent = await renderExtensionTemplateAsync('regex', 'debugger');
     const debuggerHtml = $('<div>').html(templateContent);
 
-    const ruleList = debuggerHtml.find('#regex_debugger_rules');
     const stepTemplate = debuggerHtml.find('#regex_debugger_step_template');
 
     populateDebuggerRuleList(debuggerHtml);
 
     // @ts-ignore
-    ruleList.sortable({ handle: '.handle', delay: getSortableDelay(), items: 'li:not(.list-header)' }).disableSelection();
+    debuggerHtml.find('#regex_debugger_rules_global').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+    // @ts-ignore
+    debuggerHtml.find('#regex_debugger_rules_scoped').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
 
     debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
         const allScripts = debuggerHtml.data('allScripts');
+        // Now that the popup is open, we can use global selectors to find the lists
+        const orderedRuleIds = [
+            ...$('#regex_debugger_rules_global').find('li.regex-debugger-rule').map((i, el) => $(el).data('id')).get(),
+            ...$('#regex_debugger_rules_scoped').find('li.regex-debugger-rule').map((i, el) => $(el).data('id')).get(),
+        ];
+
         const rawInput = String($('#regex_debugger_raw_input').val());
         const stepsOutput = $('#regex_debugger_steps_output');
         const finalOutput = $('#regex_debugger_final_output');
@@ -528,11 +538,10 @@ async function onRegexDebuggerOpenClick() {
         if (!allScripts) return;
         let textForNextStep = rawInput;
 
-        $('#regex_debugger_rules').find('li:not(.list-header)').each(function() {
-            const ruleElement = $(this);
+        orderedRuleIds.forEach(scriptId => {
+            const ruleElement = $(`#regex_debugger_rules [data-id="${scriptId}"]`);
             if (!ruleElement.find('.rule-enabled').is(':checked')) return;
 
-            const scriptId = ruleElement.data('id');
             const script = allScripts.find(s => s.id === scriptId);
 
             if (script) {
@@ -559,7 +568,6 @@ async function onRegexDebuggerOpenClick() {
 
         const renderMode = $('#regex_debugger_render_mode').val();
         if (renderMode === 'message') {
-            // FINAL FIX: Directly use `messageFormatting` to render the content without side effects.
             const formattedHtml = messageFormatting(textForNextStep, 'Debugger', true, false, null);
             const messageBlock = $('<div class="mes"><div class="mes_text"></div></div>');
             messageBlock.find('.mes_text').html(formattedHtml);
@@ -570,22 +578,18 @@ async function onRegexDebuggerOpenClick() {
     });
 
     debuggerHtml.find('#regex_debugger_save_order').on('click', async function() {
-        const globalIds = new Set((extension_settings.regex ?? []).map(s => s.id));
         const allKnownScripts = getRegexScripts();
-        const newGlobalScripts = [];
-        const newScopedScripts = [];
 
-        $('#regex_debugger_rules').find('li:not(.list-header)').each(function() {
+        const newGlobalScripts = $('#regex_debugger_rules_global').children('li').map(function() {
             const scriptId = $(this).data('id');
-            const originalScript = allKnownScripts.find(s => s.id === scriptId);
-            if (originalScript) {
-                if (globalIds.has(originalScript.id)) {
-                    newGlobalScripts.push(originalScript);
-                } else {
-                    newScopedScripts.push(originalScript);
-                }
-            }
-        });
+            return allKnownScripts.find(s => s.id === scriptId);
+        }).get().filter(Boolean);
+
+        const newScopedScripts = $('#regex_debugger_rules_scoped').children('li').map(function() {
+            const scriptId = $(this).data('id');
+            return allKnownScripts.find(s => s.id === scriptId);
+        }).get().filter(Boolean);
+
 
         extension_settings.regex = newGlobalScripts;
         if (this_chid !== undefined) {
@@ -595,7 +599,14 @@ async function onRegexDebuggerOpenClick() {
         saveSettingsDebounced();
         await loadRegexScripts();
         toastr.success(t`Regex script order saved!`);
-        populateDebuggerRuleList($('div:has(> #regex_debugger_rules)'));
+
+        // Re-populate and re-initialize sortable in the currently open popup
+        const currentPopupContent = $('div:has(> #regex_debugger_rules)');
+        populateDebuggerRuleList(currentPopupContent);
+        // @ts-ignore
+        currentPopupContent.find('#regex_debugger_rules_global').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+        // @ts-ignore
+        currentPopupContent.find('#regex_debugger_rules_scoped').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
     });
 
     debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
