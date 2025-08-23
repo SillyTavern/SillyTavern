@@ -380,7 +380,7 @@ function executeRegexScriptForDebugging(script, text) {
         if (!originalRegex) throw new Error('Invalid regex string');
     } catch (e) {
         err = `Compile error: ${e.message}`;
-        return { output: text, matches: [], error: err };
+        return { output: text, matches: [], error: err, matchCount: 0, matchedCharsCount: 0 };
     }
 
     // To use matchAll for highlighting, we need a separate regex that is GUARANTEED to be global.
@@ -389,33 +389,33 @@ function executeRegexScriptForDebugging(script, text) {
         const flagsForMatchAll = originalRegex.flags.includes('g') ? originalRegex.flags : originalRegex.flags + 'g';
         globalRegex = new RegExp(originalRegex.source, flagsForMatchAll);
     } catch (e) {
-        // This should not happen if originalRegex compiled, but as a safeguard:
-        return { output: text, matches: [], error: `Compile error for global regex: ${e.message}` };
+        return { output: text, matches: [], error: `Compile error for global regex: ${e.message}`, matchCount: 0, matchedCharsCount: 0 };
     }
 
     const collectedMatches = [];
     let outputText = text;
+    let matchedCharsCount = 0;
 
     try {
-        // Use the guaranteed global regex for finding all matches for highlighting.
         const allMatchesIterator = text.matchAll(globalRegex);
         for (const match of allMatchesIterator) {
+            const matchText = match[0];
             collectedMatches.push({
                 index: match.index,
-                length: match[0].length,
-                text: match[0],
+                length: matchText.length,
+                text: matchText,
             });
+            matchedCharsCount += matchText.length;
         }
+
         if (script.replaceString !== undefined) {
-            // Use the original regex for replacement to respect the user's `g` flag setting.
             outputText = text.replace(originalRegex, script.replaceString);
         }
     } catch (e) {
         err = (err ? err + '; ' : '') + `Replace error: ${e.message}`;
-        outputText = text;
     }
 
-    return { output: outputText, matches: collectedMatches, error: err };
+    return { output: outputText, matches: collectedMatches, error: err, matchCount: collectedMatches.length, matchedCharsCount };
 }
 
 function populateDebuggerRuleList(container) {
@@ -529,7 +529,6 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
         const allScripts = debuggerHtml.data('allScripts');
-        // Now that the popup is open, we can use global selectors to find the lists
         const orderedRuleIds = [
             ...$('#regex_debugger_rules_global').find('li.regex-debugger-rule').map((i, el) => $(el).data('id')).get(),
             ...$('#regex_debugger_rules_scoped').find('li.regex-debugger-rule').map((i, el) => $(el).data('id')).get(),
@@ -544,9 +543,12 @@ async function onRegexDebuggerOpenClick() {
         const displayMode = $('input[name="display_mode"]:checked').val();
         stepsOutput.empty();
         finalOutput.empty();
+        $('#regex_debugger_final_summary').remove(); // Clear previous summary
 
         if (!allScripts) return;
         let textForNextStep = rawInput;
+        let totalMatches = 0;
+        let totalMatchedChars = 0;
 
         orderedRuleIds.forEach(scriptId => {
             const ruleElement = $(`#regex_debugger_rules [data-id="${scriptId}"]`);
@@ -556,10 +558,17 @@ async function onRegexDebuggerOpenClick() {
 
             if (script) {
                 const result = executeRegexScriptForDebugging(script, textForNextStep);
-                const stepElement = $(stepTemplate.prop('content')).clone();
+                totalMatches += result.matchCount;
+                totalMatchedChars += result.matchedCharsCount;
 
+                const stepElement = $(stepTemplate.prop('content')).clone();
                 stepElement.attr('id', `step-result-${script.id}`);
-                stepElement.find('.step-header strong').text(`After: ${script.scriptName}`);
+                const stepHeader = stepElement.find('.step-header');
+                stepHeader.find('strong').text(`After: ${script.scriptName}`);
+
+                // Add step metrics
+                const metricsHtml = `<span class="step-metrics">Matches: ${result.matchCount}, Chars: ${result.matchedCharsCount}</span>`;
+                stepHeader.append(metricsHtml);
 
                 if (displayMode === 'highlight') {
                     stepElement.find('.step-output').html(getHighlightedHtml(textForNextStep, result.matches));
@@ -568,13 +577,22 @@ async function onRegexDebuggerOpenClick() {
                 }
 
                 if (result.error) {
-                    stepElement.find('.step-header').append($(`<div class="warning_text text_rose-500">${result.error}</div>`));
+                    stepHeader.append($(`<div class="warning_text text_rose-500">${result.error}</div>`));
                 }
 
                 stepsOutput.append(stepElement);
                 textForNextStep = result.output;
             }
         });
+
+        // Add final summary
+        const summaryHtml = `
+            <div id="regex_debugger_final_summary" class="regex-debugger-summary">
+                <strong>Total Matches:</strong> ${totalMatches} | <strong>Total Matched Chars:</strong> ${totalMatchedChars}
+            </div>
+        `;
+        finalOutput.before(summaryHtml);
+
 
         const renderMode = $('#regex_debugger_render_mode').val();
         if (renderMode === 'message') {
@@ -589,17 +607,8 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_save_order').on('click', async function() {
         const allKnownScripts = getRegexScripts();
-
-        const newGlobalScripts = $('#regex_debugger_rules_global').children('li').map(function() {
-            const scriptId = $(this).data('id');
-            return allKnownScripts.find(s => s.id === scriptId);
-        }).get().filter(Boolean);
-
-        const newScopedScripts = $('#regex_debugger_rules_scoped').children('li').map(function() {
-            const scriptId = $(this).data('id');
-            return allKnownScripts.find(s => s.id === scriptId);
-        }).get().filter(Boolean);
-
+        const newGlobalScripts = $('#regex_debugger_rules_global').children('li').map((_, el) => allKnownScripts.find(s => s.id === $(el).data('id'))).get().filter(Boolean);
+        const newScopedScripts = $('#regex_debugger_rules_scoped').children('li').map((_, el) => allKnownScripts.find(s => s.id === $(el).data('id'))).get().filter(Boolean);
 
         extension_settings.regex = newGlobalScripts;
         if (this_chid !== undefined) {
@@ -610,7 +619,6 @@ async function onRegexDebuggerOpenClick() {
         await loadRegexScripts();
         toastr.success(t`Regex script order saved!`);
 
-        // Re-populate and re-initialize sortable in the currently open popup
         const currentPopupContent = $('div:has(> #regex_debugger_rules)');
         populateDebuggerRuleList(currentPopupContent);
         // @ts-ignore

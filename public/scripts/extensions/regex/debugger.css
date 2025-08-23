@@ -78,3 +78,26 @@
     padding: 8px 10px;
     background-color: var(--background_color);
 }
+
+/* Styles for statistics */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.step-metrics {
+    font-size: 0.8em;
+    color: var(--text_color_dim);
+    font-weight: normal;
+}
+
+.regex-debugger-summary {
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border_color);
+    background-color: var(--background_bg2_color);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9em;
+}
