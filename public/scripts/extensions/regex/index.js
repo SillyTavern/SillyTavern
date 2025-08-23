@@ -1,4 +1,4 @@
-import { characters, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
+import { addOneMessage, characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
@@ -372,19 +372,33 @@ function executeRegexScriptForDebugging(script, text) {
         p = lm[1];
         f = lm[2] || f;
     }
-    let regex;
+
+    let originalRegex;
     try {
-        regex = new RegExp(p, f);
+        // This is the regex exactly as the user defined it.
+        originalRegex = new RegExp(p, f);
     } catch (e) {
         err = `Compile error: ${e.message}`;
     }
-    if (err || !regex) return { output: text, matches: [], error: err || 'Failed to compile regex' };
+    if (err || !originalRegex) return { output: text, matches: [], error: err || 'Failed to compile regex' };
+
+
+    // FIX: To use matchAll for highlighting, we need a separate regex that is GUARANTEED to be global.
+    let globalRegex;
+    try {
+        const flagsForMatchAll = f.includes('g') ? f : f + 'g';
+        globalRegex = new RegExp(p, flagsForMatchAll);
+    } catch (e) {
+        // This should not happen if originalRegex compiled, but as a safeguard:
+        return { output: text, matches: [], error: `Compile error for global regex: ${e.message}` };
+    }
 
     const collectedMatches = [];
     let outputText = text;
 
     try {
-        const allMatchesIterator = text.matchAll(regex);
+        // Use the guaranteed global regex for finding all matches for highlighting.
+        const allMatchesIterator = text.matchAll(globalRegex);
         for (const match of allMatchesIterator) {
             collectedMatches.push({
                 index: match.index,
@@ -393,7 +407,8 @@ function executeRegexScriptForDebugging(script, text) {
             });
         }
         if (script.replaceString !== undefined) {
-            outputText = text.replace(regex, script.replaceString);
+            // Use the original regex for replacement to respect the user's `g` flag setting.
+            outputText = text.replace(originalRegex, script.replaceString);
         }
     } catch (e) {
         err = (err ? err + '; ' : '') + `Replace error: ${e.message}`;
@@ -406,34 +421,80 @@ function executeRegexScriptForDebugging(script, text) {
 function populateDebuggerRuleList(container) {
     const ruleList = container.find('#regex_debugger_rules');
     const ruleTemplate = container.find('#regex_debugger_rule_template');
-    if (!ruleList.length || !ruleTemplate.length) return;
+    if (!ruleList.length || !ruleTemplate.length) {
+        console.error('Regex Debugger: Could not find rule list or template in the DOM.');
+        return;
+    }
 
     ruleList.empty();
 
-    const globalScripts = (extension_settings.regex ? JSON.parse(JSON.stringify(extension_settings.regex)) : []).map((s) => ({ ...s, isScoped: false }));
-    const scopedScripts = (this_chid !== undefined && characters[this_chid]?.data?.extensions?.regex_scripts ? JSON.parse(JSON.stringify(characters[this_chid].data.extensions.regex_scripts)) : []).map((s) => ({...s, isScoped: true }));
+    const allScripts = getRegexScripts();
+    if (!allScripts || allScripts.length === 0) {
+        ruleList.append('<li style="padding: 10px; text-align: center; color: var(--text_color_dim);">No regex rules found.</li>');
+        return;
+    }
 
-    globalScripts.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
-    scopedScripts.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
-    const allScripts = [...globalScripts, ...scopedScripts];
-    
-    container.data('allScripts', allScripts);
+    const globalScriptIds = new Set((extension_settings.regex ?? []).map(s => s.id));
+
+    const globalScripts = [];
+    const scopedScripts = [];
 
     allScripts.forEach(script => {
+        const scriptCopy = { ...script };
+        if (globalScriptIds.has(script.id)) {
+            // @ts-ignore
+            scriptCopy.isScoped = false;
+            globalScripts.push(scriptCopy);
+        } else {
+            // @ts-ignore
+            scriptCopy.isScoped = true;
+            scopedScripts.push(scriptCopy);
+        }
+    });
+
+    container.data('allScripts', [...globalScripts, ...scopedScripts]);
+
+    const renderRule = (script) => {
         if (!script.id) script.id = uuidv4();
         const ruleElementContent = $(ruleTemplate.prop('content')).clone();
-
         const ruleElement = ruleElementContent.find('.regex-debugger-rule');
+
         ruleElement.attr('data-id', script.id);
-        ruleElement.attr('data-isscoped', script.isScoped);
+        // @ts-ignore
         ruleElement.find('.rule-name').text(script.scriptName);
+        ruleElement.find('.rule-regex').text(script.findRegex);
+        // @ts-ignore
         ruleElement.find('.rule-scope').text(script.isScoped ? 'Scoped' : 'Global');
         ruleElement.find('.rule-enabled').prop('checked', !script.disabled);
-        
+        // @ts-ignore
         ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
 
+        // FEATURE: Jump to step
+        ruleElement.on('click', function(event) {
+            if ($(event.target).is('input, .menu_button, .menu_button i, .handle')) {
+                return; // Don't trigger if clicking an interactive element
+            }
+            const scriptId = $(this).data('id');
+            const stepElement = $(`#step-result-${scriptId}`);
+            if (stepElement.length) {
+                stepElement.get(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                stepElement.css('transition', 'background-color 0.5s').css('background-color', 'var(--highlight_color)');
+                setTimeout(() => stepElement.css('background-color', ''), 1000);
+            }
+        });
+
         ruleList.append(ruleElementContent);
-    });
+    };
+
+    if (globalScripts.length > 0) {
+        ruleList.append('<li class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Global Rules</li>');
+        globalScripts.forEach(renderRule);
+    }
+
+    if (scopedScripts.length > 0) {
+        ruleList.append('<li class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Scoped Rules</li>');
+        scopedScripts.forEach(renderRule);
+    }
 }
 
 /**
@@ -441,27 +502,33 @@ function populateDebuggerRuleList(container) {
  * @returns {Promise<void>}
  */
 async function onRegexDebuggerOpenClick() {
-    const debuggerHtml = $(await renderExtensionTemplateAsync('regex', 'debugger'));
+    const templateContent = await renderExtensionTemplateAsync('regex', 'debugger');
+    const debuggerHtml = $('<div>').html(templateContent);
+
     const ruleList = debuggerHtml.find('#regex_debugger_rules');
     const stepTemplate = debuggerHtml.find('#regex_debugger_step_template');
 
     populateDebuggerRuleList(debuggerHtml);
 
     // @ts-ignore
-    ruleList.sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+    ruleList.sortable({ handle: '.handle', delay: getSortableDelay(), items: 'li:not(.list-header)' }).disableSelection();
 
     debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
         const allScripts = debuggerHtml.data('allScripts');
-        const rawInput = String(debuggerHtml.find('#regex_debugger_raw_input').val());
-        const stepsOutput = debuggerHtml.find('#regex_debugger_steps_output');
-        const finalOutput = debuggerHtml.find('#regex_debugger_final_output');
-        const displayMode = debuggerHtml.find('input[name="display_mode"]:checked').val();
+        const rawInput = String($('#regex_debugger_raw_input').val());
+        const stepsOutput = $('#regex_debugger_steps_output');
+        const finalOutput = $('#regex_debugger_final_output');
+
+        if (!stepsOutput.length || !finalOutput.length) return;
+
+        const displayMode = $('input[name="display_mode"]:checked').val();
         stepsOutput.empty();
         finalOutput.empty();
 
+        if (!allScripts) return;
         let textForNextStep = rawInput;
 
-        ruleList.find('li').each(function() {
+        $('#regex_debugger_rules').find('li:not(.list-header)').each(function() {
             const ruleElement = $(this);
             if (!ruleElement.find('.rule-enabled').is(':checked')) return;
 
@@ -471,18 +538,18 @@ async function onRegexDebuggerOpenClick() {
             if (script) {
                 const result = executeRegexScriptForDebugging(script, textForNextStep);
                 const stepElement = $(stepTemplate.prop('content')).clone();
+
+                stepElement.attr('id', `step-result-${script.id}`);
                 stepElement.find('.step-header strong').text(`After: ${script.scriptName}`);
 
                 if (displayMode === 'highlight') {
-                    const highlightedHtml = getHighlightedHtml(textForNextStep, result.matches);
-                    stepElement.find('.step-output').html(highlightedHtml);
+                    stepElement.find('.step-output').html(getHighlightedHtml(textForNextStep, result.matches));
                 } else {
                     stepElement.find('.step-output').text(result.output);
                 }
-                
+
                 if (result.error) {
-                    const errorEl = $(`<div class="warning_text text_rose-500">${result.error}</div>`);
-                    stepElement.append(errorEl);
+                    stepElement.find('.step-header').append($(`<div class="warning_text text_rose-500">${result.error}</div>`));
                 }
 
                 stepsOutput.append(stepElement);
@@ -490,10 +557,12 @@ async function onRegexDebuggerOpenClick() {
             }
         });
 
-        const renderMode = debuggerHtml.find('#regex_debugger_render_mode').val();
+        const renderMode = $('#regex_debugger_render_mode').val();
         if (renderMode === 'message') {
+            // FINAL FIX: Directly use `messageFormatting` to render the content without side effects.
+            const formattedHtml = messageFormatting(textForNextStep, 'Debugger', true, false, null);
             const messageBlock = $('<div class="mes"><div class="mes_text"></div></div>');
-            messageBlock.find('.mes_text').text(textForNextStep);
+            messageBlock.find('.mes_text').html(formattedHtml);
             finalOutput.append(messageBlock);
         } else {
             finalOutput.text(textForNextStep);
@@ -501,37 +570,47 @@ async function onRegexDebuggerOpenClick() {
     });
 
     debuggerHtml.find('#regex_debugger_save_order').on('click', async function() {
-        const allScripts = debuggerHtml.data('allScripts');
+        const globalIds = new Set((extension_settings.regex ?? []).map(s => s.id));
+        const allKnownScripts = getRegexScripts();
         const newGlobalScripts = [];
         const newScopedScripts = [];
 
-        ruleList.find('li').each(function(index) {
-            const ruleElement = $(this);
-            const scriptId = ruleElement.data('id');
-            const originalScript = allScripts.find(s => s.id === scriptId);
-
+        $('#regex_debugger_rules').find('li:not(.list-header)').each(function() {
+            const scriptId = $(this).data('id');
+            const originalScript = allKnownScripts.find(s => s.id === scriptId);
             if (originalScript) {
-                const scriptToSave = { ...originalScript, order: index };
-                if (scriptToSave.isScoped) {
-                    newScopedScripts.push(scriptToSave);
+                if (globalIds.has(originalScript.id)) {
+                    newGlobalScripts.push(originalScript);
                 } else {
-                    newGlobalScripts.push(scriptToSave);
+                    newScopedScripts.push(originalScript);
                 }
             }
         });
 
-        extension_settings.regex = newGlobalScripts.filter(s => !s.isScoped).map(({ isScoped, ...s }) => s);
+        extension_settings.regex = newGlobalScripts;
         if (this_chid !== undefined) {
-            await writeExtensionField(this_chid, 'regex_scripts', newScopedScripts.filter(s => s.isScoped).map(({ isScoped, ...s }) => s));
+            await writeExtensionField(this_chid, 'regex_scripts', newScopedScripts);
         }
 
         saveSettingsDebounced();
         await loadRegexScripts();
         toastr.success(t`Regex script order saved!`);
-        populateDebuggerRuleList(debuggerHtml);
+        populateDebuggerRuleList($('div:has(> #regex_debugger_rules)'));
     });
 
-    await callGenericPopup(debuggerHtml, POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
+    debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
+        const content = $('#regex_debugger_steps_output').html();
+        const popupContent = $(`<div class="expanded-regex-output" style="height: 70vh; overflow-y: auto;"></div>`).html(content);
+        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: true });
+    });
+    debuggerHtml.find('#regex_debugger_expand_final').on('click', function() {
+        const content = $('#regex_debugger_final_output').html();
+        const popupContent = $(`<div style="height: 70vh; overflow-y: auto;"></div>`).html(content);
+        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
+    });
+
+    const popupTitle = 'Advanced Regex Chain Debugger';
+    await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, popupTitle, { wide: true, allowVerticalScrolling: true });
 }
 
 /**
