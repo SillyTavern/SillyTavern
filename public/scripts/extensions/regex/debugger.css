@@ -1,0 +1,80 @@
+/* Styles for the debugger UI */
+.regex-debugger-rule {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border_color);
+    cursor: pointer;
+    background-color: var(--background_color);
+}
+.regex-debugger-rule:hover {
+    background-color: var(--background_hover_color);
+}
+.regex-debugger-rule .handle {
+    cursor: grab;
+    margin-right: 10px;
+}
+.regex-debugger-rule .rule-details {
+    flex-grow: 1;
+}
+.regex-debugger-rule .rule-name {
+    font-weight: bold;
+}
+.regex-debugger-rule .rule-regex {
+    font-size: 0.8em;
+    color: var(--text_color_dim);
+    font-family: var(--font_family_mono);
+}
+.regex-debugger-rule .rule-scope {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: var(--background_bg2_color);
+    margin-left: auto;
+    margin-right: 10px;
+}
+.regex-debugger-rule .menu_button {
+    margin-left: 5px;
+}
+#regex_debugger_steps_output {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border_color);
+    padding: 5px;
+    background-color: var(--background_bg2_color);
+    font-family: var(--font_family_mono);
+    font-size: 0.9em;
+}
+#regex_debugger_final_output {
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border_color);
+    padding: 5px;
+    background-color: var(--background_bg2_color);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.step-header {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+.step-output {
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 5px;
+    background-color: var(--background_color);
+    border-radius: 5px;
+}
+
+/* Classes to replace inline styles */
+.regex-debugger-no-rules {
+    padding: 10px;
+    text-align: center;
+    color: var(--text_color_dim);
+}
+.regex-debugger-list-header {
+    font-weight: bold;
+    padding: 8px 10px;
+    background-color: var(--background_color);
+}

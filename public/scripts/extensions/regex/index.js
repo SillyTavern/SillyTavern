@@ -7,7 +7,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
+import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4, escapeHtml } from '../../utils.js';
 import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
@@ -334,60 +334,60 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     }
 }
 
-const escapeHtml = (unsafe) => {
-    if (typeof unsafe !== 'string') return '';
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-};
-
 function getHighlightedHtml(text, matches) {
     if (typeof text !== 'string') return '';
+    // If no matches, still use the safe escaping method.
     if (!matches || matches.length === 0) return escapeHtml(text);
+
+    const container = document.createElement('div');
     let lastIndex = 0;
-    const parts = [];
+
     [...matches]
         .sort((a, b) => a.index - b.index)
         .forEach(match => {
             if (match.index === undefined || match.index < lastIndex) return;
-            parts.push(escapeHtml(text.substring(lastIndex, match.index)));
-            parts.push(
-                `<mark class="yellow_hl">${escapeHtml(match.text)}</mark>`
-            );
+
+            // Append the text before the match as a simple text node (which is inherently safe)
+            const textBefore = text.substring(lastIndex, match.index);
+            if (textBefore) {
+                container.appendChild(document.createTextNode(textBefore));
+            }
+
+            // Create the <mark> element and set its content safely using innerText
+            const markElement = document.createElement('mark');
+            markElement.className = 'yellow_hl';
+            markElement.innerText = match.text;
+            container.appendChild(markElement);
+
             lastIndex = match.index + match.length;
         });
-    parts.push(escapeHtml(text.substring(lastIndex)));
-    return parts.join('');
+
+    // Append any remaining text after the last match
+    const textAfter = text.substring(lastIndex);
+    if (textAfter) {
+        container.appendChild(document.createTextNode(textAfter));
+    }
+
+    return container.innerHTML;
 }
 
 function executeRegexScriptForDebugging(script, text) {
     let err;
-    let p = script.findRegex;
-    const lm = p.match(/^\/(.+)\/([gimdsuy]*)$/);
-    let f = script.regexFlags || '';
-    if (lm) {
-        p = lm[1];
-        f = lm[2] || f;
-    }
-
     let originalRegex;
+
     try {
-        // This is the regex exactly as the user defined it.
-        originalRegex = new RegExp(p, f);
+        originalRegex = regexFromString(script.findRegex);
+        if (!originalRegex) throw new Error('Invalid regex string');
     } catch (e) {
         err = `Compile error: ${e.message}`;
+        return { output: text, matches: [], error: err };
     }
-    if (err || !originalRegex) return { output: text, matches: [], error: err || 'Failed to compile regex' };
 
-
-    // FIX: To use matchAll for highlighting, we need a separate regex that is GUARANTEED to be global.
+    // To use matchAll for highlighting, we need a separate regex that is GUARANTEED to be global.
     let globalRegex;
     try {
-        const flagsForMatchAll = f.includes('g') ? f : f + 'g';
-        globalRegex = new RegExp(p, flagsForMatchAll);
+        const flagsForMatchAll = originalRegex.flags.includes('g') ? originalRegex.flags : originalRegex.flags + 'g';
+        globalRegex = new RegExp(originalRegex.source, flagsForMatchAll);
     } catch (e) {
         // This should not happen if originalRegex compiled, but as a safeguard:
         return { output: text, matches: [], error: `Compile error for global regex: ${e.message}` };
@@ -426,11 +426,11 @@ function populateDebuggerRuleList(container) {
         return;
     }
 
-    rulesContainer.empty(); // Clear the main container
+    rulesContainer.empty();
 
     const allScripts = getRegexScripts();
     if (!allScripts || allScripts.length === 0) {
-        rulesContainer.append('<div style="padding: 10px; text-align: center; color: var(--text_color_dim);">No regex rules found.</div>');
+        rulesContainer.append('<div class="regex-debugger-no-rules">No regex rules found.</div>');
         return;
     }
 
@@ -439,7 +439,7 @@ function populateDebuggerRuleList(container) {
     const scopedScripts = [];
 
     allScripts.forEach(script => {
-        const scriptCopy = { ...script };
+        const scriptCopy = structuredClone(script); // Use structuredClone for deep copy
         if (globalScriptIds.has(script.id)) {
             // @ts-ignore
             scriptCopy.isScoped = false;
@@ -451,7 +451,6 @@ function populateDebuggerRuleList(container) {
         }
     });
 
-    // Store all scripts for the "Run Test" logic
     container.data('allScripts', [...globalScripts, ...scopedScripts]);
 
     const renderRule = (script) => {
@@ -470,13 +469,24 @@ function populateDebuggerRuleList(container) {
         ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
 
         ruleElement.on('click', function(event) {
-            if ($(event.target).is('input, .menu_button, .menu_button i, .handle')) {
+            if ($(event.target).is('input, .menu_button, .menu_button i')) {
                 return;
             }
             const scriptId = $(this).data('id');
             const stepElement = $(`#step-result-${scriptId}`);
-            if (stepElement.length) {
-                stepElement.get(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const container = $('#regex_debugger_steps_output');
+
+            if (stepElement.length && container.length) {
+                // Replace scrollIntoView with scrollTop animation
+                const targetTop = stepElement.position().top;
+                const containerScrollTop = container.scrollTop();
+                const containerHeight = container.height();
+                
+                // Center the element if possible
+                let scrollTo = containerScrollTop + targetTop - (containerHeight / 2) + (stepElement.height() / 2);
+
+                container.animate({ scrollTop: scrollTo }, 300); // 300ms smooth scroll
+
                 stepElement.css('transition', 'background-color 0.5s').css('background-color', 'var(--highlight_color)');
                 setTimeout(() => stepElement.css('background-color', ''), 1000);
             }
@@ -486,14 +496,14 @@ function populateDebuggerRuleList(container) {
     };
 
     if (globalScripts.length > 0) {
-        rulesContainer.append('<div class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Global Rules</div>');
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">Global Rules</div>');
         const globalList = $('<ul id="regex_debugger_rules_global" class="sortable-list"></ul>');
         globalScripts.forEach(script => globalList.append(renderRule(script)));
         rulesContainer.append(globalList);
     }
 
     if (scopedScripts.length > 0) {
-        rulesContainer.append('<div class="list-header" style="font-weight: bold; padding: 8px 10px; background-color: var(--background_color);">Scoped Rules</div>');
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">Scoped Rules</div>');
         const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
         scopedScripts.forEach(script => scopedList.append(renderRule(script)));
         rulesContainer.append(scopedList);
