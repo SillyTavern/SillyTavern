@@ -513,9 +513,9 @@ async function onRegexDebuggerOpenClick() {
     populateDebuggerRuleList(debuggerHtml);
 
     // @ts-ignore
-    debuggerHtml.find('#regex_debugger_rules_global').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+    debuggerHtml.find('#regex_debugger_rules_global').sortable({ delay: getSortableDelay() }).disableSelection();
     // @ts-ignore
-    debuggerHtml.find('#regex_debugger_rules_scoped').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+    debuggerHtml.find('#regex_debugger_rules_scoped').sortable({ delay: getSortableDelay() }).disableSelection();
 
     debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
         const allScripts = debuggerHtml.data('allScripts');
@@ -604,9 +604,9 @@ async function onRegexDebuggerOpenClick() {
         const currentPopupContent = $('div:has(> #regex_debugger_rules)');
         populateDebuggerRuleList(currentPopupContent);
         // @ts-ignore
-        currentPopupContent.find('#regex_debugger_rules_global').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+        currentPopupContent.find('#regex_debugger_rules_global').sortable({ delay: getSortableDelay() }).disableSelection();
         // @ts-ignore
-        currentPopupContent.find('#regex_debugger_rules_scoped').sortable({ handle: '.handle', delay: getSortableDelay() }).disableSelection();
+        currentPopupContent.find('#regex_debugger_rules_scoped').sortable({ delay: getSortableDelay() }).disableSelection();
     });
 
     debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
