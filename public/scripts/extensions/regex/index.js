@@ -1,4 +1,4 @@
-import { addOneMessage, characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
+import { characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
@@ -481,7 +481,7 @@ function populateDebuggerRuleList(container) {
                 const targetTop = stepElement.position().top;
                 const containerScrollTop = container.scrollTop();
                 const containerHeight = container.height();
-                
+
                 // Center the element if possible
                 let scrollTo = containerScrollTop + targetTop - (containerHeight / 2) + (stepElement.height() / 2);
 
@@ -629,12 +629,12 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
         const content = $('#regex_debugger_steps_output').html();
-        const popupContent = $(`<div class="expanded-regex-output" style="height: 70vh; overflow-y: auto;"></div>`).html(content);
+        const popupContent = $('<div class="expanded-regex-output" style="height: 70vh; overflow-y: auto;"></div>').html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: true });
     });
     debuggerHtml.find('#regex_debugger_expand_final').on('click', function() {
         const content = $('#regex_debugger_final_output').html();
-        const popupContent = $(`<div style="height: 70vh; overflow-y: auto;"></div>`).html(content);
+        const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
     });
 
