@@ -1822,15 +1822,15 @@ const debouncedTagColoring = debounce((tagId, cssProperty, newColor) => {
 
 function onTagListHintClick() {
     $(this).toggleClass('selected');
-    
+
     const $tagSiblings = $(this).siblings('.tag:not(.actionable)');
-    
+
     if ($(this).hasClass('selected')) {
         $tagSiblings.show();
     } else {
         $tagSiblings.hide();
     }
-    
+
     $(this).siblings('.innerActionable').toggleClass('hidden');
     power_user.show_tag_filters = $(this).hasClass('selected');
     saveSettingsDebounced();
