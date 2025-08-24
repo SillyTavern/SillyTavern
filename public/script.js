@@ -5522,30 +5522,19 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.input_sequence));
         }
     }
-    if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
-        power_user.instruct.input_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
+
+    // Remove instruct sequences leaking to the output
+    if (isInstruct && power_user.instruct.sequences_as_stop_strings) {
+        const sequences = [
+            { value: power_user.instruct.input_sequence, apply: isImpersonate && isNotEmpty(power_user.instruct.input_sequence) },
+            { value: power_user.instruct.output_sequence, apply: !isImpersonate && isNotEmpty(power_user.instruct.output_sequence) },
+            { value: power_user.instruct.last_output_sequence, apply: !isImpersonate && isNotEmpty(power_user.instruct.last_output_sequence) },
+        ];
+        for (const seq of sequences.filter(s => s.apply)) {
+            seq.value.split('\n').filter(line => line.trim() !== '').forEach(line => { getMessage = getMessage.replaceAll(line, ''); });
+        }
     }
-    if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
-        power_user.instruct.output_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
-    }
-    if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
-        power_user.instruct.last_output_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
-    }
+
     // clean-up group message from excessive generations
     if (selected_group) {
         getMessage = cleanGroupMessage(getMessage);
