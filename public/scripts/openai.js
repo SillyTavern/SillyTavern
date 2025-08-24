@@ -5942,46 +5942,6 @@ function updateAzureCompleteUrl() {
 }
 
 
-/**
- * Updates the #azure_complete_url input field based on Azure OpenAI settings.
- */
-function updateAzureCompleteUrl() {
-    const baseUrl = String($('#azure_base_url').val()).trim();
-    const deploymentName = String($('#azure_deployment_name').val()).trim();
-    const apiVersion = String($('#azure_api_version').val()).trim();
-
-    let completeUrl = 'Dynamically generated URL'; // Default placeholder
-
-    if (baseUrl && deploymentName && apiVersion) {
-        // Sanitize trailing slash from base URL
-        const sanitizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        completeUrl = `${sanitizedBaseUrl}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
-    }
-
-    $('#azure_complete_url').val(completeUrl);
-}
-
-
-/**
- * Updates the #azure_complete_url input field based on Azure OpenAI settings.
- */
-function updateAzureCompleteUrl() {
-    const baseUrl = String($('#azure_base_url').val()).trim();
-    const deploymentName = String($('#azure_deployment_name').val()).trim();
-    const apiVersion = String($('#azure_api_version').val()).trim();
-
-    let completeUrl = 'Dynamically generated URL'; // Default placeholder
-
-    if (baseUrl && deploymentName && apiVersion) {
-        // Sanitize trailing slash from base URL
-        const sanitizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        completeUrl = `${sanitizedBaseUrl}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
-    }
-
-    $('#azure_complete_url').val(completeUrl);
-}
-
-
 function updateFeatureSupportFlags() {
     const featureFlags = {
         openai_function_calling_supported: ToolManager.isToolCallingSupported(),
