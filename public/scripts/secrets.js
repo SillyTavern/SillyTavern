@@ -48,6 +48,7 @@ export const SECRET_KEYS = {
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
     AZURE_OPENAI: 'api_key_azure_openai',
+    AZURE_OPENAI: 'api_key_azure_openai',
     FEATHERLESS: 'api_key_featherless',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
@@ -196,6 +197,10 @@ export function resolveSecretKey() {
                 case 'full':
                     return SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT;
             }
+        }
+        // ADD THIS BLOCK FOR AZURE OPENAI
+        if (chatCompletionSource === chat_completion_sources.AZURE_OPENAI) {
+            return SECRET_KEYS.AZURE_OPENAI;
         }
         // ADD THIS BLOCK FOR AZURE OPENAI
         if (chatCompletionSource === chat_completion_sources.AZURE_OPENAI) {
