@@ -367,7 +367,7 @@ function buildReplacementHtml(match, pattern) {
             container.appendChild(mark);
         } else if (backref === '$`') {
             container.appendChild(document.createTextNode(match.input.substring(0, match.index)));
-        } else if (backref === "$'") {
+        } else if (backref === '$\'') {
             container.appendChild(document.createTextNode(match.input.substring(match.index + match[0].length)));
         } else { // It's a numbered capture group, $n.
             const groupIndex = parseInt(reMatch[1], 10);
@@ -455,7 +455,7 @@ function executeRegexScriptForDebugging(script, text) {
                 if (backref === '$$') { replacementForPlainText += '$';
                 } else if (backref === '$&') { charsKeptFromMatch += (match[0] || '').length; replacementForPlainText += (match[0] || '');
                 } else if (backref === '$`') { const part = match.input.substring(0, match.index); charsKeptFromMatch += part.length; replacementForPlainText += part;
-                } else if (backref === "$'") { const part = match.input.substring(match.index + match[0].length); charsKeptFromMatch += part.length; replacementForPlainText += part;
+                } else if (backref === '$\'') { const part = match.input.substring(match.index + match[0].length); charsKeptFromMatch += part.length; replacementForPlainText += part;
                 } else {
                     const groupIndex = parseInt(reMatch[1], 10);
                     if (groupIndex > 0 && groupIndex < match.length && match[groupIndex] !== undefined) {
@@ -468,21 +468,21 @@ function executeRegexScriptForDebugging(script, text) {
             const finalLiteralPart = script.replaceString.substring(lastPatternIndex);
             charsAddedInMatch += finalLiteralPart.length;
             replacementForPlainText += finalLiteralPart;
-            
+
             totalCharsAdded += charsAddedInMatch;
             totalCharsRemoved += (originalMatchText.length - charsKeptFromMatch);
-            
+
             outputText += replacementForPlainText;
             // --- End of statistics logic ---
 
             // --- Build the new Diff View HTML ---
             // 1. Show the entire original match as "removed" (red strikethrough)
-            highlightedOutput += `<mark class="red_hl">${escapeHtml(originalMatchText)}</mark>`;
+            highlightedOutput += `<mark class='red_hl'>${escapeHtml(originalMatchText)}</mark>`;
             // 2. Add an arrow to signify transformation
             highlightedOutput += ' → ';
             // 3. Build the replacement string with green (added) and yellow (kept) parts
             highlightedOutput += buildReplacementHtml(match, script.replaceString);
-            
+
             lastIndex = match.index + originalMatchText.length;
         }
 
@@ -653,7 +653,7 @@ async function onRegexDebuggerOpenClick() {
                 totalCharsRemoved += result.charsRemoved;
 
                 const stepElement = $(stepTemplate.prop('content')).clone();
-                // FINAL FIX 1: Set the ID on the TOP-LEVEL element that is being appended.
+                // Set the ID on the TOP-LEVEL element that is being appended.
                 stepElement.find('>:first-child').attr('id', `step-result-${script.id}`);
                 const stepHeader = stepElement.find('.step-header');
                 stepHeader.find('strong').text(`After: ${script.scriptName}`);
@@ -668,7 +668,7 @@ async function onRegexDebuggerOpenClick() {
                 }
 
                 if (result.error) {
-                    stepHeader.append($(`<div class="warning_text text_rose-500">${result.error}</div>`));
+                    stepHeader.append($(`<div class='warning_text text_rose-500'>${result.error}</div>`));
                 }
 
                 stepsOutput.append(stepElement);
@@ -738,7 +738,7 @@ async function onRegexDebuggerOpenClick() {
                 $(this).addClass('active');
 
                 const targetId = $(this).data('target-id');
-                // FINAL FIX 2: The selector is now correct for the structure.
+                // The selector is now correct for the structure.
                 const targetElement = contentPanel.find(`#${targetId}`);
 
                 if (targetElement.length) {
@@ -760,7 +760,7 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_final_final').on('click', function() {
         const content = $('#regex_debugger_final_output').html();
-        const popupContent = $(`<div style="height: 70vh; overflow-y: auto;"></div>`).html(content);
+        const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
     });
 
@@ -1286,10 +1286,10 @@ jQuery(async () => {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code class="language-stscript">/regex-toggle MyScript</code></pre>
+                        <pre><code class='language-stscript'>/regex-toggle MyScript</code></pre>
                     </li>
                     <li>
-                        <pre><code class="language-stscript">/regex-toggle state=off Character-specific Script</code></pre>
+                        <pre><code class='language-stscript'>/regex-toggle state=off Character-specific Script</code></pre>
                     </li>
                 </ul>
             </div>
