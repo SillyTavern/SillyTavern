@@ -101,3 +101,83 @@
     text-align: center;
     font-size: 0.9em;
 }
+
+/* Styles for statistics and highlighting additions */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.step-metrics {
+    font-size: 0.8em;
+    color: var(--text_color_dim);
+    font-weight: normal;
+    white-space: nowrap; /* Prevent metrics from breaking line */
+    margin-left: 10px;
+}
+
+.regex-debugger-summary {
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border_color);
+    background-color: var(--background_bg2_color);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+/* New highlight color for added text */
+mark.green_hl {
+    background-color: #28a745; /* A standard green color */
+    color: white;
+}
+
+/* New highlight color for deleted text */
+mark.red_hl {
+    background-color: #dc3545; /* A standard red color */
+    color: white;
+    text-decoration: line-through;
+}
+
+/* Styles for the expanded view with navigation */
+.expanded-regex-container {
+    display: flex;
+    height: 75vh; /* Give the container a good height */
+    overflow: hidden;
+}
+
+.expanded-regex-nav {
+    flex: 0 0 200px; /* Fixed width for the nav bar */
+    border-right: 1px solid var(--border_color);
+    padding: 5px;
+    overflow-y: auto;
+    background-color: var(--background_bg2_color);
+}
+
+.expanded-regex-nav a {
+    display: block;
+    padding: 6px 8px;
+    text-decoration: none;
+    color: var(--text_color);
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.expanded-regex-nav a:hover {
+    background-color: var(--background_hover_color);
+}
+
+.expanded-regex-nav a.active {
+    background-color: var(--highlight_color);
+    color: var(--text_color_black);
+}
+
+.expanded-regex-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-left: 10px;
+}

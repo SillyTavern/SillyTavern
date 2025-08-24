@@ -334,41 +334,72 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     }
 }
 
-function getHighlightedHtml(text, matches) {
-    if (typeof text !== 'string') return '';
-    // If no matches, still use the safe escaping method.
-    if (!matches || matches.length === 0) return escapeHtml(text);
-
-    const container = document.createElement('div');
+/**
+ * Builds an HTML string for a replacement, highlighting literal parts in green
+ * and keeping back-referenced parts plain.
+ * @param {RegExpMatchArray} match The match object from `matchAll`.
+ * @param {string} pattern The replacement pattern string (e.g., "new text $1").
+ * @returns {string} The constructed HTML string.
+ */
+function buildReplacementHtml(match, pattern) {
+    const container = document.createDocumentFragment();
     let lastIndex = 0;
+    const backrefRegex = /\$\$|\$&|\$`|\$'|\$(\d{1,2})/g;
 
-    [...matches]
-        .sort((a, b) => a.index - b.index)
-        .forEach(match => {
-            if (match.index === undefined || match.index < lastIndex) return;
+    let reMatch;
+    while ((reMatch = backrefRegex.exec(pattern)) !== null) {
+        // Part of the pattern before the back-reference is a literal.
+        const literalPart = pattern.substring(lastIndex, reMatch.index);
+        if (literalPart) {
+            const mark = document.createElement('mark');
+            mark.className = 'green_hl';
+            mark.innerText = literalPart;
+            container.appendChild(mark);
+        }
 
-            // Append the text before the match as a simple text node (which is inherently safe)
-            const textBefore = text.substring(lastIndex, match.index);
-            if (textBefore) {
-                container.appendChild(document.createTextNode(textBefore));
+        const backref = reMatch[0];
+        if (backref === '$$') {
+            container.appendChild(document.createTextNode('$'));
+        } else if (backref === '$&') {
+            const mark = document.createElement('mark');
+            mark.className = 'yellow_hl';
+            mark.innerText = match[0];
+            container.appendChild(mark);
+        } else if (backref === '$`') {
+            container.appendChild(document.createTextNode(match.input.substring(0, match.index)));
+        } else if (backref === "$'") {
+            container.appendChild(document.createTextNode(match.input.substring(match.index + match[0].length)));
+        } else { // It's a numbered capture group, $n.
+            const groupIndex = parseInt(reMatch[1], 10);
+            if (groupIndex > 0 && groupIndex < match.length && match[groupIndex] !== undefined) {
+                const mark = document.createElement('mark');
+                mark.className = 'yellow_hl';
+                mark.innerText = match[groupIndex];
+                container.appendChild(mark);
+            } else {
+                // Not a valid group index, treat it as a literal.
+                const mark = document.createElement('mark');
+                mark.className = 'green_hl';
+                mark.innerText = backref;
+                container.appendChild(mark);
             }
-
-            // Create the <mark> element and set its content safely using innerText
-            const markElement = document.createElement('mark');
-            markElement.className = 'yellow_hl';
-            markElement.innerText = match.text;
-            container.appendChild(markElement);
-
-            lastIndex = match.index + match.length;
-        });
-
-    // Append any remaining text after the last match
-    const textAfter = text.substring(lastIndex);
-    if (textAfter) {
-        container.appendChild(document.createTextNode(textAfter));
+        }
+        lastIndex = backrefRegex.lastIndex;
     }
 
-    return container.innerHTML;
+    // The final part of the pattern after the last back-reference.
+    const finalLiteralPart = pattern.substring(lastIndex);
+    if (finalLiteralPart) {
+        const mark = document.createElement('mark');
+        mark.className = 'green_hl';
+        mark.innerText = finalLiteralPart;
+        container.appendChild(mark);
+    }
+
+    // To get the HTML content, we need a temporary parent element.
+    const tempDiv = document.createElement('div');
+    tempDiv.appendChild(container);
+    return tempDiv.innerHTML;
 }
 
 function executeRegexScriptForDebugging(script, text) {
@@ -380,42 +411,100 @@ function executeRegexScriptForDebugging(script, text) {
         if (!originalRegex) throw new Error('Invalid regex string');
     } catch (e) {
         err = `Compile error: ${e.message}`;
-        return { output: text, matches: [], error: err, matchCount: 0, matchedCharsCount: 0 };
+        return { output: text, highlightedOutput: text, error: err, charsCaptured: 0, charsAdded: 0, charsRemoved: 0 };
     }
 
-    // To use matchAll for highlighting, we need a separate regex that is GUARANTEED to be global.
-    let globalRegex;
-    try {
-        const flagsForMatchAll = originalRegex.flags.includes('g') ? originalRegex.flags : originalRegex.flags + 'g';
-        globalRegex = new RegExp(originalRegex.source, flagsForMatchAll);
-    } catch (e) {
-        return { output: text, matches: [], error: `Compile error for global regex: ${e.message}`, matchCount: 0, matchedCharsCount: 0 };
+    const globalRegex = new RegExp(originalRegex.source, originalRegex.flags.includes('g') ? originalRegex.flags : originalRegex.flags + 'g');
+    const matches = [...text.matchAll(globalRegex)];
+
+    if (matches.length === 0) {
+        return { output: text, highlightedOutput: escapeHtml(text), error: null, charsCaptured: 0, charsAdded: 0, charsRemoved: 0 };
     }
 
-    const collectedMatches = [];
-    let outputText = text;
-    let matchedCharsCount = 0;
+    let outputText = '';
+    let highlightedOutput = ''; // This will now be our "diff view"
+    let lastIndex = 0;
+    let totalCharsCaptured = 0;
+    let totalCharsAdded = 0;
+    let totalCharsRemoved = 0;
 
     try {
-        const allMatchesIterator = text.matchAll(globalRegex);
-        for (const match of allMatchesIterator) {
-            const matchText = match[0];
-            collectedMatches.push({
-                index: match.index,
-                length: matchText.length,
-                text: matchText,
-            });
-            matchedCharsCount += matchText.length;
+        for (const match of matches) {
+            const originalMatchText = match[0];
+            totalCharsCaptured += originalMatchText.length;
+
+            // Append text between matches (this part is unchanged)
+            const precedingText = text.substring(lastIndex, match.index);
+            outputText += precedingText;
+            highlightedOutput += escapeHtml(precedingText);
+
+            // --- Start of new diff and statistics logic ---
+            let charsAddedInMatch = 0;
+            let charsKeptFromMatch = 0;
+            const backrefRegex = /\$\$|\$&|\$`|\$'|\$(\d{1,2})/g;
+            let lastPatternIndex = 0;
+            let reMatch;
+            let replacementForPlainText = '';
+
+            // This loop calculates the stats accurately
+            while ((reMatch = backrefRegex.exec(script.replaceString)) !== null) {
+                const literalPart = script.replaceString.substring(lastPatternIndex, reMatch.index);
+                charsAddedInMatch += literalPart.length;
+                replacementForPlainText += literalPart;
+                const backref = reMatch[0];
+                if (backref === '$$') { replacementForPlainText += '$';
+                } else if (backref === '$&') { charsKeptFromMatch += (match[0] || '').length; replacementForPlainText += (match[0] || '');
+                } else if (backref === '$`') { const part = match.input.substring(0, match.index); charsKeptFromMatch += part.length; replacementForPlainText += part;
+                } else if (backref === "$'") { const part = match.input.substring(match.index + match[0].length); charsKeptFromMatch += part.length; replacementForPlainText += part;
+                } else {
+                    const groupIndex = parseInt(reMatch[1], 10);
+                    if (groupIndex > 0 && groupIndex < match.length && match[groupIndex] !== undefined) {
+                        charsKeptFromMatch += match[groupIndex].length;
+                        replacementForPlainText += match[groupIndex];
+                    }
+                }
+                lastPatternIndex = backrefRegex.lastIndex;
+            }
+            const finalLiteralPart = script.replaceString.substring(lastPatternIndex);
+            charsAddedInMatch += finalLiteralPart.length;
+            replacementForPlainText += finalLiteralPart;
+            
+            totalCharsAdded += charsAddedInMatch;
+            totalCharsRemoved += (originalMatchText.length - charsKeptFromMatch);
+            
+            outputText += replacementForPlainText;
+            // --- End of statistics logic ---
+
+            // --- Build the new Diff View HTML ---
+            // 1. Show the entire original match as "removed" (red strikethrough)
+            highlightedOutput += `<mark class="red_hl">${escapeHtml(originalMatchText)}</mark>`;
+            // 2. Add an arrow to signify transformation
+            highlightedOutput += ' → ';
+            // 3. Build the replacement string with green (added) and yellow (kept) parts
+            highlightedOutput += buildReplacementHtml(match, script.replaceString);
+            
+            lastIndex = match.index + originalMatchText.length;
         }
 
-        if (script.replaceString !== undefined) {
-            outputText = text.replace(originalRegex, script.replaceString);
-        }
+        // Append text after the last match
+        const trailingText = text.substring(lastIndex);
+        outputText += trailingText;
+        highlightedOutput += escapeHtml(trailingText);
+
     } catch (e) {
         err = (err ? err + '; ' : '') + `Replace error: ${e.message}`;
+        outputText = text; // Fallback
+        highlightedOutput = escapeHtml(text);
     }
 
-    return { output: outputText, matches: collectedMatches, error: err, matchCount: collectedMatches.length, matchedCharsCount };
+    return {
+        output: outputText,
+        highlightedOutput: highlightedOutput,
+        error: err,
+        charsCaptured: totalCharsCaptured,
+        charsAdded: totalCharsAdded,
+        charsRemoved: totalCharsRemoved,
+    };
 }
 
 function populateDebuggerRuleList(container) {
@@ -543,12 +632,13 @@ async function onRegexDebuggerOpenClick() {
         const displayMode = $('input[name="display_mode"]:checked').val();
         stepsOutput.empty();
         finalOutput.empty();
-        $('#regex_debugger_final_summary').remove(); // Clear previous summary
+        $('#regex_debugger_final_summary').remove();
 
         if (!allScripts) return;
         let textForNextStep = rawInput;
-        let totalMatches = 0;
-        let totalMatchedChars = 0;
+        let totalCharsCaptured = 0;
+        let totalCharsAdded = 0;
+        let totalCharsRemoved = 0;
 
         orderedRuleIds.forEach(scriptId => {
             const ruleElement = $(`#regex_debugger_rules [data-id="${scriptId}"]`);
@@ -558,20 +648,21 @@ async function onRegexDebuggerOpenClick() {
 
             if (script) {
                 const result = executeRegexScriptForDebugging(script, textForNextStep);
-                totalMatches += result.matchCount;
-                totalMatchedChars += result.matchedCharsCount;
+                totalCharsCaptured += result.charsCaptured;
+                totalCharsAdded += result.charsAdded;
+                totalCharsRemoved += result.charsRemoved;
 
                 const stepElement = $(stepTemplate.prop('content')).clone();
-                stepElement.attr('id', `step-result-${script.id}`);
+                // FINAL FIX 1: Set the ID on the TOP-LEVEL element that is being appended.
+                stepElement.find('>:first-child').attr('id', `step-result-${script.id}`);
                 const stepHeader = stepElement.find('.step-header');
                 stepHeader.find('strong').text(`After: ${script.scriptName}`);
 
-                // Add step metrics
-                const metricsHtml = `<span class="step-metrics">Matches: ${result.matchCount}, Chars: ${result.matchedCharsCount}</span>`;
+                const metricsHtml = `<span class="step-metrics">Captured: ${result.charsCaptured}, Added: +${result.charsAdded}, Removed: -${result.charsRemoved}</span>`;
                 stepHeader.append(metricsHtml);
 
                 if (displayMode === 'highlight') {
-                    stepElement.find('.step-output').html(getHighlightedHtml(textForNextStep, result.matches));
+                    stepElement.find('.step-output').html(result.highlightedOutput);
                 } else {
                     stepElement.find('.step-output').text(result.output);
                 }
@@ -585,14 +676,12 @@ async function onRegexDebuggerOpenClick() {
             }
         });
 
-        // Add final summary
         const summaryHtml = `
             <div id="regex_debugger_final_summary" class="regex-debugger-summary">
-                <strong>Total Matches:</strong> ${totalMatches} | <strong>Total Matched Chars:</strong> ${totalMatchedChars}
+                <strong>Total Captured:</strong> ${totalCharsCaptured} | <strong>Total Added:</strong> +${totalCharsAdded} | <strong>Total Removed:</strong> -${totalCharsRemoved}
             </div>
         `;
         finalOutput.before(summaryHtml);
-
 
         const renderMode = $('#regex_debugger_render_mode').val();
         if (renderMode === 'message') {
@@ -628,13 +717,50 @@ async function onRegexDebuggerOpenClick() {
     });
 
     debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
-        const content = $('#regex_debugger_steps_output').html();
-        const popupContent = $('<div class="expanded-regex-output" style="height: 70vh; overflow-y: auto;"></div>').html(content);
-        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: true });
+        const popupContainer = $('<div class="expanded-regex-container"></div>');
+        const navPanel = $('<div class="expanded-regex-nav"><h4>Steps</h4></div>');
+        const contentPanel = $('<div class="expanded-regex-content"></div>');
+
+        const content = $('#regex_debugger_steps_output').clone().html();
+        contentPanel.html(content);
+
+        $('#regex_debugger_rules .regex-debugger-rule').each(function() {
+            const ruleElement = $(this);
+            const scriptId = ruleElement.data('id');
+            const scriptName = ruleElement.find('.rule-name').text();
+
+            const link = $(`<a href="#">${escapeHtml(scriptName)}</a>`);
+            link.data('target-id', `step-result-${scriptId}`);
+
+            link.on('click', function(e) {
+                e.preventDefault();
+                navPanel.find('a').removeClass('active');
+                $(this).addClass('active');
+
+                const targetId = $(this).data('target-id');
+                // FINAL FIX 2: The selector is now correct for the structure.
+                const targetElement = contentPanel.find(`#${targetId}`);
+
+                if (targetElement.length) {
+                    const scrollTo = contentPanel.scrollTop() + targetElement.position().top;
+                    contentPanel.animate({ scrollTop: scrollTo }, 300);
+
+                    targetElement.css('transition', 'background-color 0.5s').css('background-color', 'var(--highlight_color)');
+                    setTimeout(() => targetElement.css('background-color', ''), 1000);
+                }
+            });
+
+            navPanel.append(link);
+        });
+
+        popupContainer.append(navPanel).append(contentPanel);
+        callGenericPopup(popupContainer, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: false });
     });
-    debuggerHtml.find('#regex_debugger_expand_final').on('click', function() {
+
+
+    debuggerHtml.find('#regex_debugger_final_final').on('click', function() {
         const content = $('#regex_debugger_final_output').html();
-        const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
+        const popupContent = $(`<div style="height: 70vh; overflow-y: auto;"></div>`).html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
     });
 
