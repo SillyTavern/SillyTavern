@@ -125,7 +125,8 @@
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",
-        "plugins:install": "node plugins install"
+        "plugins:install": "node plugins install",
+        "i18n:extract": "node public/scripts/extract-i18n-keys.js"
     },
     "bin": {
         "sillytavern": "./src/server-global.js"
