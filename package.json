@@ -72,7 +72,7 @@
         "png-chunk-text": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "proxy-agent": "^6.5.0",
-        "rate-limiter-flexible": "^7.2.0",
+        "rate-limiter-flexible": "^6.2.1",
         "response-time": "^2.3.4",
         "sanitize-filename": "^1.6.3",
         "seedrandom": "^3.0.5",
