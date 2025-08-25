@@ -77,7 +77,7 @@ router.post('/upload', async (request, response) => {
     }
 });
 
-router.post('/list/:folder?', (request, response) => {
+const listImagesHandler = (request, response) => {
     try {
         if (request.params.folder) {
             if (request.body.folder) {
@@ -109,7 +109,9 @@ router.post('/list/:folder?', (request, response) => {
         console.error(error);
         return response.status(500).send({ error: 'Unable to retrieve files' });
     }
-});
+};
+router.post('/list', listImagesHandler);
+router.post('/list/:folder', listImagesHandler);
 
 router.post('/folders', (request, response) => {
     try {

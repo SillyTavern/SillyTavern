@@ -920,7 +920,7 @@ function createRouteHandler(directoryFn) {
     return async (req, res) => {
         try {
             const directory = directoryFn(req);
-            const filePath = decodeURIComponent(req.params[0]);
+            const filePath = decodeURIComponent(req.params.filePath);
             const exists = fs.existsSync(path.join(directory, filePath));
             if (!exists) {
                 return res.sendStatus(404);
@@ -941,7 +941,7 @@ function createExtensionsRouteHandler(directoryFn) {
     return async (req, res) => {
         try {
             const directory = directoryFn(req);
-            const filePath = decodeURIComponent(req.params[0]);
+            const filePath = decodeURIComponent(req.params.filePath);
 
             const existsLocal = fs.existsSync(path.join(directory, filePath));
             if (existsLocal) {
@@ -1044,10 +1044,10 @@ export async function getAllEnabledUsers() {
  * Express router for serving files from the user's directories.
  */
 export const router = express.Router();
-router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
-router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
-router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
-router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
-router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
-router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
-router.use('/scripts/extensions/third-party/*', createExtensionsRouteHandler(req => req.user.directories.extensions));
+router.use('/backgrounds/:filePath*', createRouteHandler(req => req.user.directories.backgrounds));
+router.use('/characters/:filePath*', createRouteHandler(req => req.user.directories.characters));
+router.use('/User%20Avatars/:filePath*', createRouteHandler(req => req.user.directories.avatars));
+router.use('/assets/:filePath*', createRouteHandler(req => req.user.directories.assets));
+router.use('/user/images/:filePath*', createRouteHandler(req => req.user.directories.userImages));
+router.use('/user/files/:filePath*', createRouteHandler(req => req.user.directories.files));
+router.use('/scripts/extensions/third-party/:filePath*', createExtensionsRouteHandler(req => req.user.directories.extensions));

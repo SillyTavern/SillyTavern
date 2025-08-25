@@ -121,9 +121,9 @@ if (cliArgs.listen) {
 }
 
 if (cliArgs.enableCorsProxy) {
-    app.use('/proxy/:url(*)', corsProxyMiddleware);
+    app.use('/proxy/:url*', corsProxyMiddleware);
 } else {
-    app.use('/proxy/:url(*)', async (_, res) => {
+    app.use('/proxy/:url*', async (_, res) => {
         const message = 'CORS proxy is disabled. Enable it in config.yaml or use the --corsProxy flag.';
         console.log(message);
         res.status(404).send(message);
@@ -196,7 +196,7 @@ app.get('/', cacheBuster.middleware, (request, response) => {
 });
 
 // Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
-app.get('/callback/:source?', (request, response) => {
+const callbackHandler = (request, response) => {
     const source = request.params.source;
     const query = request.url.split('?')[1];
     const searchParams = new URLSearchParams();
@@ -204,7 +204,9 @@ app.get('/callback/:source?', (request, response) => {
     query && searchParams.set('query', query);
     const path = `/?${searchParams.toString()}`;
     return response.redirect(307, path);
-});
+};
+app.get('/callback', callbackHandler);
+app.get('/callback/:source', callbackHandler);
 
 // Host login page
 app.get('/login', loginPageMiddleware);
