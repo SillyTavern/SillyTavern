@@ -746,8 +746,7 @@ export function initDefaultSlashCommands() {
             ${t`Searches for a character and returns its avatar key.`}
         </div>
         <div>
-            ${t`This can be used to choose the correct character for something like <code>/sendas</code> or other commands in need of a character name
-            if you have multiple characters with the same name.`}
+            ${t`This can be used to choose the correct character for something like <code>/sendas</code> or other commands in need of a character name if you have multiple characters with the same name.`}
         </div>
         <div>
             <strong>${t`Example:`}</strong>
@@ -759,8 +758,7 @@ export function initDefaultSlashCommands() {
                 <li>
                     <pre><code>/search name="Chloe" tag="friend"</code></pre>
                     ${t`Returns the avatar key for the character "Chloe" that is tagged with "friend".`}
-                    ${t`This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else,
-                    so you can actually select the character you are looking for.`}
+                    ${t`This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else, so you can actually select the character you are looking for.`}
                 </li>
             </ul>
         </div>
@@ -1810,8 +1808,7 @@ export function initDefaultSlashCommands() {
                 ${t`Stops the generation and any streaming if it is currently running.`}
             </div>
             <div>
-                ${t`Note: This command cannot be executed from the chat input, as sending any message or script from there is blocked during generation.
-                But it can be executed via automations or QR scripts/buttons.`}
+                ${t`Note: This command cannot be executed from the chat input, as sending any message or script from there is blocked during generation. But it can be executed via automations or QR scripts/buttons.`}
             </div>
         `,
         aliases: ['generate-stop'],
@@ -1876,13 +1873,12 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
         <div>
-            ${t`Performs a fuzzy match of each item in the <code>list</code> against the <code>text to search</code>.
-            If any item matches, then its name is returned. If no item matches the text, no value is returned.`}
+            ${t`Performs a fuzzy match of each item in the <code>list</code> against the <code>text to search</code>. If any item matches, then its name is returned. If no item matches the text, no value is returned.`}
         </div>
         <div>
-            ${t`The optional <code>threshold</code> (default is 0.4) allows control over the match strictness.
-            A low value (min 0.0) means the match is very strict.
-            At 1.0 (max) the match is very loose and will match anything.`}
+            ${t`The optional <code>threshold</code> (default is 0.4) allows control over the match strictness.`}
+            ${t`A low value (min 0.0) means the match is very strict.`}
+            ${t`At 1.0 (max) the match is very loose and will match anything.`}
         </div>
         <div>
             ${t`The optional <code>mode</code> argument allows to control the behavior when multiple items match the text.`}
@@ -2585,12 +2581,10 @@ export function initDefaultSlashCommands() {
                 ${t`Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.`}
             </div>
             <div>
-                ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API,
-                or consider switching to it with <code>/api</code> first.`}
+                ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported,
-                check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -2663,12 +2657,12 @@ export function initDefaultSlashCommands() {
                 ${t`Extracts text from the provided string.`}
             </div>
             <div>
-                ${t`If <code>start</code> is omitted, it's treated as 0.<br />
-                If <code>start</code> < 0, the index is counted from the end of the string.<br />
-                If <code>start</code> >= the string's length, an empty string is returned.<br />
-                If <code>end</code> is omitted, or if <code>end</code> >= the string's length, extracts to the end of the string.<br />
-                If <code>end</code> < 0, the index is counted from the end of the string.<br />
-                If <code>end</code> <= <code>start</code> after normalizing negative values, an empty string is returned.`}
+                ${t`If <code>start</code> is omitted, it's treated as 0.<br />`}
+                ${t`If <code>start</code> < 0, the index is counted from the end of the string.<br />`}
+                ${t`If <code>start</code> >= the string's length, an empty string is returned.<br />`}
+                ${t`If <code>end</code> is omitted, or if <code>end</code> >= the string's length, extracts to the end of the string.<br />`}
+                ${t`If <code>end</code> < 0, the index is counted from the end of the string.<br />`}
+                ${t`If <code>end</code> <= <code>start</code> after normalizing negative values, an empty string is returned.`}
             </div>
             <div>
                 <strong>${t`Example:`}</strong>
@@ -2764,10 +2758,10 @@ export function initDefaultSlashCommands() {
                 ${t`Replaces text within the provided string based on the pattern.`}
             </div>
             <div>
-                ${t`If <code>mode</code> is <code>literal</code> (or omitted), <code>pattern</code> is a literal search string (case-sensitive).<br />
-                If <code>mode</code> is <code>regex</code>, <code>pattern</code> is parsed as an ECMAScript Regular Expression.<br />
-                The <code>replacer</code> replaces based on the <code>pattern</code> in the input text.<br />
-                If <code>replacer</code> is omitted, the replacement(s) will be an empty string.<br />`}
+                ${t`If <code>mode</code> is <code>literal</code> (or omitted), <code>pattern</code> is a literal search string (case-sensitive).<br />`}
+                ${t`If <code>mode</code> is <code>regex</code>, <code>pattern</code> is parsed as an ECMAScript Regular Expression.<br />`}
+                ${t`The <code>replacer</code> replaces based on the <code>pattern</code> in the input text.<br />`}
+                ${t`If <code>replacer</code> is omitted, the replacement(s) will be an empty string.<br />`}
             </div>
             <div>
                 <strong>${t`Example:`}</strong>
@@ -2851,9 +2845,7 @@ export function initDefaultSlashCommands() {
                 ${t`Retrieves regular expression matches in the given text`}
             </div>
             <div>
-                ${t`Returns an array of groups (with the first group being the full match). If the regex contains the global flag (i.e. <code>/g</code>),
-                multiple nested arrays are returned for each match. If the regex is global, returns <code>[]</code> if no matches are found,
-                otherwise it returns an empty string.`}
+                ${t`Returns an array of groups (with the first group being the full match). If the regex contains the global flag (i.e. <code>/g</code>), multiple nested arrays are returned for each match. If the regex is global, returns <code>[]</code> if no matches are found, otherwise it returns an empty string.`}
             </div>
             <div>
                 <strong>${t`Example:`}</strong>
@@ -3059,7 +3051,6 @@ function injectCallback(args, value) {
     if (args?.filter && !String(filter ?? '').trim()) {
         throw new Error(t`Failed to parse the filter argument. Make sure it is a valid non-empty closure.`);
     }
-
 
     const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
 
