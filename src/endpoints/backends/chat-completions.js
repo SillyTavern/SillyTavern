@@ -1253,6 +1253,7 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_COMETAPI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
         headers = {};
+        throw new Error('This provider is temporarily disabled.');
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
         apiUrl = API_MOONSHOT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
@@ -1673,6 +1674,7 @@ router.post('/generate', function (request, response) {
         bodyParams = {
             reasoning_effort: request.body.reasoning_effort,
         };
+        throw new Error('This provider is temporarily disabled.');
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
