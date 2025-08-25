@@ -1288,10 +1288,10 @@ jQuery(async () => {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code class='language-stscript'>/regex-toggle MyScript</code></pre>
+                        <pre><code class="language-stscript">/regex-toggle MyScript</code></pre>
                     </li>
                     <li>
-                        <pre><code class='language-stscript'>/regex-toggle state=off Character-specific Script</code></pre>
+                        <pre><code class="language-stscript">/regex-toggle state=off Character-specific Script</code></pre>
                     </li>
                 </ul>
             </div>
