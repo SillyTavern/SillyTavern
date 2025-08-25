@@ -42,13 +42,13 @@
                 >
                 <textarea
                     id="regex_debugger_raw_input"
-                    class="text_pole"
-                    rows="8"
+                    class="text_pole autoSetHeight"
+                    rows="4"
                 ></textarea>
             </div>
             <div
+                id="regex_debugger_run_test_header"
                 class="flex-container"
-                style="justify-content: space-between; align-items: center"
             >
                 <button
                     id="regex_debugger_run_test"
@@ -61,7 +61,7 @@
                         >Run Test</span
                     >
                 </button>
-                <div class="flex-container">
+                <div class="flex-container gap10px">
                     <div class="radio_group">
                         <label
                             ><input
@@ -88,7 +88,6 @@
                     </div>
                     <select
                         id="regex_debugger_render_mode"
-                        style="margin-left: 10px"
                     >
                         <option
                             value="text"

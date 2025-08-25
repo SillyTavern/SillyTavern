@@ -452,10 +452,14 @@ function executeRegexScriptForDebugging(script, text) {
                 charsAddedInMatch += literalPart.length;
                 replacementForPlainText += literalPart;
                 const backref = reMatch[0];
-                if (backref === '$$') { replacementForPlainText += '$';
-                } else if (backref === '$&') { charsKeptFromMatch += (match[0] || '').length; replacementForPlainText += (match[0] || '');
-                } else if (backref === '$`') { const part = match.input.substring(0, match.index); charsKeptFromMatch += part.length; replacementForPlainText += part;
-                } else if (backref === '$\'') { const part = match.input.substring(match.index + match[0].length); charsKeptFromMatch += part.length; replacementForPlainText += part;
+                if (backref === '$$') {
+                    replacementForPlainText += '$';
+                } else if (backref === '$&') {
+                    charsKeptFromMatch += (match[0] || '').length; replacementForPlainText += (match[0] || '');
+                } else if (backref === '$`') {
+                    const part = match.input.substring(0, match.index); charsKeptFromMatch += part.length; replacementForPlainText += part;
+                } else if (backref === '$\'') {
+                    const part = match.input.substring(match.index + match[0].length); charsKeptFromMatch += part.length; replacementForPlainText += part;
                 } else {
                     const groupIndex = parseInt(reMatch[1], 10);
                     if (groupIndex > 0 && groupIndex < match.length && match[groupIndex] !== undefined) {
@@ -557,7 +561,7 @@ function populateDebuggerRuleList(container) {
         // @ts-ignore
         ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
 
-        ruleElement.on('click', function(event) {
+        ruleElement.on('click', function (event) {
             if ($(event.target).is('input, .menu_button, .menu_button i')) {
                 return;
             }
@@ -616,7 +620,7 @@ async function onRegexDebuggerOpenClick() {
     // @ts-ignore
     debuggerHtml.find('#regex_debugger_rules_scoped').sortable({ delay: getSortableDelay() }).disableSelection();
 
-    debuggerHtml.find('#regex_debugger_run_test').on('click', function() {
+    debuggerHtml.find('#regex_debugger_run_test').on('click', function () {
         const allScripts = debuggerHtml.data('allScripts');
         const orderedRuleIds = [
             ...$('#regex_debugger_rules_global').find('li.regex-debugger-rule').map((i, el) => $(el).data('id')).get(),
@@ -694,7 +698,7 @@ async function onRegexDebuggerOpenClick() {
         }
     });
 
-    debuggerHtml.find('#regex_debugger_save_order').on('click', async function() {
+    debuggerHtml.find('#regex_debugger_save_order').on('click', async function () {
         const allKnownScripts = getRegexScripts();
         const newGlobalScripts = $('#regex_debugger_rules_global').children('li').map((_, el) => allKnownScripts.find(s => s.id === $(el).data('id'))).get().filter(Boolean);
         const newScopedScripts = $('#regex_debugger_rules_scoped').children('li').map((_, el) => allKnownScripts.find(s => s.id === $(el).data('id'))).get().filter(Boolean);
@@ -716,7 +720,7 @@ async function onRegexDebuggerOpenClick() {
         currentPopupContent.find('#regex_debugger_rules_scoped').sortable({ delay: getSortableDelay() }).disableSelection();
     });
 
-    debuggerHtml.find('#regex_debugger_expand_steps').on('click', function() {
+    debuggerHtml.find('#regex_debugger_expand_steps').on('click', function () {
         const popupContainer = $('<div class="expanded-regex-container"></div>');
         const navPanel = $('<div class="expanded-regex-nav"><h4>Steps</h4></div>');
         const contentPanel = $('<div class="expanded-regex-content"></div>');
@@ -724,7 +728,7 @@ async function onRegexDebuggerOpenClick() {
         const content = $('#regex_debugger_steps_output').clone().html();
         contentPanel.html(content);
 
-        $('#regex_debugger_rules .regex-debugger-rule').each(function() {
+        $('#regex_debugger_rules .regex-debugger-rule').each(function () {
             const ruleElement = $(this);
             const scriptId = ruleElement.data('id');
             const scriptName = ruleElement.find('.rule-name').text();
@@ -732,7 +736,7 @@ async function onRegexDebuggerOpenClick() {
             const link = $(`<a href="#">${escapeHtml(scriptName)}</a>`);
             link.data('target-id', `step-result-${scriptId}`);
 
-            link.on('click', function(e) {
+            link.on('click', function (e) {
                 e.preventDefault();
                 navPanel.find('a').removeClass('active');
                 $(this).addClass('active');
@@ -757,15 +761,13 @@ async function onRegexDebuggerOpenClick() {
         callGenericPopup(popupContainer, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: false });
     });
 
-
-    debuggerHtml.find('#regex_debugger_final_final').on('click', function() {
+    debuggerHtml.find('#regex_debugger_expand_final').on('click', function () {
         const content = $('#regex_debugger_final_output').html();
         const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
     });
 
-    const popupTitle = 'Advanced Regex Chain Debugger';
-    await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, popupTitle, { wide: true, allowVerticalScrolling: true });
+    await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
 }
 
 /**
