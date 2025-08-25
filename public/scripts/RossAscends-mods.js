@@ -481,7 +481,7 @@ export function dragElement($elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let height, width, top, left, right, bottom,
         maxX, maxY, winHeight, winWidth,
-        topbar, topBarFirstX, topBarLastY;
+        topbar;
 
     const elmntName = $elmnt.attr('id');
     const elmntNameEscaped = $.escapeSelector(elmntName);
