@@ -10,7 +10,7 @@ var langs;
 var localeData;
 
 /** @type {Set<string>|null} Array of translations keys if they should be tracked - if not tracked then null */
-var trackMissingDynamicTranslate = null;
+let trackMissingDynamicTranslate = null;
 
 export const getCurrentLocale = () => localeFile;
 
