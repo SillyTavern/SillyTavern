@@ -113,7 +113,7 @@ function closureToFilter(closure) {
             const result = await localClosure.execute();
             return isTrueBoolean(result.pipe);
         } catch (e) {
-            console.error(t`Error executing filter closure`, e);
+            console.error('Error executing filter closure', e);
             return false;
         }
     };
@@ -257,7 +257,7 @@ export function initDefaultSlashCommands() {
                     return key;
                 }
 
-                console.error(t`FIXME: The current API is not in the API map`);
+                console.error('FIXME: The current API is not in the API map');
                 return '';
             }
 
@@ -344,7 +344,7 @@ export function initDefaultSlashCommands() {
                 try {
                     await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
                 } catch {
-                    console.warn(t`Timeout waiting for generation unlock`);
+                    console.warn('Timeout waiting for generation unlock');
                     toastr.warning(t`Cannot run /impersonate command while the reply is being generated.`);
                     return '';
                 }
@@ -2554,8 +2554,8 @@ export function initDefaultSlashCommands() {
                 description: t`API to set/get the URL for - if not provided, current API is used`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
-                    new SlashCommandEnumValue('custom', t`custom OpenAI-compatible`, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
-                    new SlashCommandEnumValue('kobold', t`KoboldAI Classic`, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
+                    new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
+                    new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
             }),
@@ -2791,7 +2791,7 @@ export function initDefaultSlashCommands() {
             }
             return JSON.stringify(re.test(text.toString()));
         }),
-        returns: t`true | false`,
+        returns: 'true | false',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'pattern', t`pattern to find`, [ARGUMENT_TYPE.STRING], true, false,
@@ -2940,7 +2940,7 @@ export function initDefaultSlashCommands() {
                 return text;
             }
             catch (error) {
-                console.error(t`Error reading clipboard:`, error);
+                console.error('Error reading clipboard:', error);
                 toastr.warning(t`Failed to read clipboard text. Have you granted the permission?`);
                 return '';
             }
@@ -3019,8 +3019,8 @@ export function initDefaultSlashCommands() {
 }
 
 const NARRATOR_NAME_KEY = 'narrator_name';
-const NARRATOR_NAME_DEFAULT = t`System`;
-export const COMMENT_NAME_DEFAULT = t`Note`;
+const NARRATOR_NAME_DEFAULT = 'System';
+export const COMMENT_NAME_DEFAULT = 'Note';
 const SCRIPT_PROMPT_KEY = 'script_inject_';
 
 /**
@@ -3192,7 +3192,7 @@ export function processChatSlashCommands() {
             try {
                 return new SlashCommandParser().parse(inject.filter, true);
             } catch (error) {
-                console.warn(t`Failed to revive filter closure for script injection`, id, error);
+                console.warn('Failed to revive filter closure for script injection', id, error);
                 return null;
             }
         }
@@ -3228,14 +3228,14 @@ function trimEndCallback(_, value) {
 
 async function trimTokensCallback(arg, value) {
     if (!value) {
-        console.warn(t`WARN: No argument provided for /trimtokens command`);
+        console.warn('WARN: No argument provided for /trimtokens command');
         return '';
     }
 
     const limit = Number(resolveVariable(arg.limit));
 
     if (isNaN(limit)) {
-        console.warn(t`WARN: Invalid limit provided for /trimtokens command: ${limit}`);
+        console.warn(`WARN: Invalid limit provided for /trimtokens command: ${limit}`);
         return value;
     }
 
@@ -3258,7 +3258,7 @@ async function trimTokensCallback(arg, value) {
         const textTokens = getTextTokens(tokenizerId, value);
 
         if (!Array.isArray(textTokens) || !textTokens.length) {
-            console.warn(t`WARN: No tokens returned for /trimtokens command, falling back to estimation`);
+            console.warn('WARN: No tokens returned for /trimtokens command, falling back to estimation');
             const percentage = limit / tokenCount;
             const trimIndex = Math.floor(value.length * percentage);
             const trimmedText = direction === 'start' ? value.substring(trimIndex) : value.substring(0, value.length - trimIndex);
@@ -3269,7 +3269,7 @@ async function trimTokensCallback(arg, value) {
         const { text } = decodeTextTokens(tokenizerId, sliceTokens);
         return text;
     } catch (error) {
-        console.warn(t`WARN: Tokenization failed for /trimtokens command, returning original`, error);
+        console.warn('WARN: Tokenization failed for /trimtokens command, returning original', error);
         return value;
     }
 }
@@ -3292,7 +3292,7 @@ async function buttonsCallback(args, text) {
         const buttons = JSON.parse(resolveVariable(args?.labels));
 
         if (!Array.isArray(buttons) || !buttons.length) {
-            console.warn(t`WARN: Invalid labels provided for /buttons command`);
+            console.warn('WARN: Invalid labels provided for /buttons command');
             return '';
         }
 
@@ -3418,7 +3418,7 @@ async function getMessagesCallback(args, value) {
             return !isNarrator && mes.is_user;
         }
 
-        throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
+        throw new Error(t`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
     };
 
     const processMessage = async (mesId) => {
@@ -3516,7 +3516,7 @@ function abortCallback({ _abortController, quiet }, reason) {
 
 async function delayCallback(_, amount) {
     if (!amount) {
-        console.warn(t`WARN: No amount provided for /delay command`);
+        console.warn('WARN: No amount provided for /delay command');
         return '';
     }
 
@@ -3577,19 +3577,19 @@ async function inputCallback(args, prompt) {
  */
 function fuzzyCallback(args, searchInValue) {
     if (!searchInValue) {
-        console.warn(t`WARN: No argument provided for /fuzzy command`);
+        console.warn('WARN: No argument provided for /fuzzy command');
         return '';
     }
 
     if (!args.list) {
-        console.warn(t`WARN: No list argument provided for /fuzzy command`);
+        console.warn('WARN: No list argument provided for /fuzzy command');
         return '';
     }
 
     try {
         const list = JSON.parse(resolveVariable(args.list));
         if (!Array.isArray(list)) {
-            console.warn(t`WARN: Invalid list argument provided for /fuzzy command`);
+            console.warn('WARN: Invalid list argument provided for /fuzzy command');
             return '';
         }
 
@@ -3603,7 +3603,7 @@ function fuzzyCallback(args, searchInValue) {
         if ('threshold' in args) {
             params.threshold = parseFloat(args.threshold);
             if (isNaN(params.threshold)) {
-                console.warn(t`WARN: 'threshold' argument must be a float between 0.0 and 1.0 for /fuzzy command`);
+                console.warn('WARN: \'threshold\' argument must be a float between 0.0 and 1.0 for /fuzzy command');
                 return '';
             }
             if (params.threshold < 0) {
@@ -3651,7 +3651,7 @@ function fuzzyCallback(args, searchInValue) {
                 return getFirstMatch();
         }
     } catch {
-        console.warn(t`WARN: Invalid list argument provided for /fuzzy command`);
+        console.warn('WARN: Invalid list argument provided for /fuzzy command');
         return '';
     }
 }
@@ -3671,7 +3671,7 @@ function setEphemeralStopStrings(value) {
 
 async function generateRawCallback(args, value) {
     if (!value) {
-        console.warn(t`WARN: No argument provided for /genraw command`);
+        console.warn('WARN: No argument provided for /genraw command');
         return '';
     }
 
@@ -3704,7 +3704,7 @@ async function generateRawCallback(args, value) {
         const result = await generateRaw(params);
         return result;
     } catch (err) {
-        console.error(t`Error on /genraw generation`, err);
+        console.error('Error on /genraw generation', err);
         toastr.error(err.message, t`API Error`, { preventDuplicates: true });
     } finally {
         if (lock) {
@@ -3750,7 +3750,7 @@ async function generateCallback(args, value) {
         const result = await generateQuietPrompt(params);
         return result;
     } catch (err) {
-        console.error(t`Error on /gen generation`, err);
+        console.error('Error on /gen generation', err);
         toastr.error(err.message, t`API Error`, { preventDuplicates: true });
     } finally {
         if (lock) {
@@ -3770,7 +3770,7 @@ async function generateCallback(args, value) {
 async function echoCallback(args, value) {
     // Note: We don't need to sanitize input, as toastr is set up by default to escape HTML via toastr options
     if (value === '') {
-        console.warn(t`WARN: No argument provided for /echo command`);
+        console.warn('WARN: No argument provided for /echo command');
         return '';
     }
 
@@ -3861,7 +3861,7 @@ async function addSwipeCallback(args, value) {
     }
 
     if (!value) {
-        console.warn(t`WARN: No argument provided for /addswipe command`);
+        console.warn('WARN: No argument provided for /addswipe command');
         return '';
     }
 
@@ -3999,7 +3999,7 @@ async function askCharacter(args, text) {
         askResult = await Generate('normal');
     } catch (error) {
         restoreCharacter();
-        console.error(t`Error running /ask command`, error);
+        console.error('Error running /ask command', error);
     } finally {
         if (String(this_chid) === String(prevChId)) {
             await saveChatConditional();
@@ -4080,7 +4080,7 @@ async function disableGroupMemberCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4097,7 +4097,7 @@ async function enableGroupMemberCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4114,7 +4114,7 @@ async function moveGroupMemberUpCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4131,7 +4131,7 @@ async function moveGroupMemberDownCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4153,7 +4153,7 @@ async function peekCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4179,7 +4179,7 @@ async function removeGroupMemberCallback(_, arg) {
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
-        console.warn(t`WARN: No group member found for argument ${arg}`);
+        console.warn(`WARN: No group member found for argument ${arg}`);
         return '';
     }
 
@@ -4194,20 +4194,20 @@ async function addGroupMemberCallback(_, name) {
     }
 
     if (!name) {
-        console.warn(t`WARN: No argument provided for /memberadd command`);
+        console.warn('WARN: No argument provided for /memberadd command');
         return '';
     }
 
     const character = findChar({ name: name, preferCurrentChar: false });
     if (!character) {
-        console.warn(t`WARN: No character found for argument ${name}`);
+        console.warn(`WARN: No character found for argument ${name}`);
         return '';
     }
 
     const group = groups.find(x => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members)) {
-        console.warn(t`WARN: No group found for ID ${selected_group}`);
+        console.warn(`WARN: No group found for ID ${selected_group}`);
         return '';
     }
 
@@ -4232,7 +4232,7 @@ async function triggerGenerationCallback(args, value) {
         try {
             await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
         } catch {
-            console.warn(t`Timeout waiting for generation unlock`);
+            console.warn('Timeout waiting for generation unlock');
             toastr.warning(t`Cannot run /trigger command while the reply is being generated.`);
             outerResolve(Promise.resolve(''));
             return '';
@@ -4247,7 +4247,7 @@ async function triggerGenerationCallback(args, value) {
             chid = findGroupMemberId(value);
 
             if (chid === undefined) {
-                console.warn(t`WARN: No group member found for argument ${value}`);
+                console.warn(`WARN: No group member found for argument ${value}`);
             }
         }
 
@@ -4307,7 +4307,7 @@ async function sendUserMessageCallback(args, text) {
 
 async function deleteMessagesByNameCallback(_, name) {
     if (!name) {
-        console.warn(t`WARN: No name provided for /delname command`);
+        console.warn('WARN: No name provided for /delname command');
         return;
     }
 
@@ -4344,7 +4344,7 @@ async function deleteMessagesByNameCallback(_, name) {
 
 async function goToCharacterCallback(_, name) {
     if (!name) {
-        console.warn(t`WARN: No character name provided for /go command`);
+        console.warn('WARN: No character name provided for /go command');
         return;
     }
 
@@ -4363,7 +4363,7 @@ async function goToCharacterCallback(_, name) {
         setActiveGroup(group.id);
         return group.name;
     }
-    console.warn(t`No matches found for name "${name}"`);
+    console.warn(`No matches found for name "${name}"`);
     return '';
 }
 
@@ -4381,7 +4381,7 @@ async function continueChatCallback(args, prompt) {
         try {
             await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
         } catch {
-            console.warn(t`Timeout waiting for generation unlock`);
+            console.warn('Timeout waiting for generation unlock');
             toastr.warning(t`Cannot run /continue command while the reply is being generated.`);
             return reject();
         }
@@ -4395,7 +4395,7 @@ async function continueChatCallback(args, prompt) {
 
             resolve();
         } catch (error) {
-            console.error(t`Error running /continue command:`, error);
+            console.error('Error running /continue command:', error);
             reject(error);
         }
     });
@@ -4411,7 +4411,7 @@ export async function generateSystemMessage(args, prompt) {
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
     if (!prompt) {
-        console.warn(t`WARN: No prompt provided for /sysgen command`);
+        console.warn('WARN: No prompt provided for /sysgen command');
         toastr.warning(t`You must provide a prompt for the system message`);
         return '';
     }
@@ -4665,7 +4665,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     let character_id = getContext().characterId;
     if (who === 'sys') {
-        text = `${t`System`}: ` + text;
+        text = 'System: ' + text;
     } else if (who === 'user') {
         text = name1 + ': ' + text;
     } else if (who === 'char') {
@@ -5352,7 +5352,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
     }, options);
 
     isExecutingCommandsFromChatInput = true;
-    commandsFromChatInputAbortController?.abort(t`processCommands was called`);
+    commandsFromChatInputAbortController?.abort('processCommands was called');
     activateScriptButtons();
 
     /** @type {HTMLTextAreaElement} */
@@ -5407,10 +5407,10 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
                     <div>${t`Line`}: ${ex.line} ${t`Column`}: ${ex.column}</div>
                     <pre style="text-align:left;">${ex.hint}</pre>
                     `;
-                const clickHint = t`<p>Click to see details</p>`;
+                const clickHint = `<p>${t`Click to see details`}</p>`;
                 toastr.error(
                     `${toast}${clickHint}`,
-                    t`Slash Command Execution Error`,
+                    'Slash Command Execution Error',
                     { escapeHtml: false, timeOut: 10000, onclick: () => callGenericPopup(toast, POPUP_TYPE.TEXT, '', { allowHorizontalScrolling: true, allowVerticalScrolling: true }) },
                 );
             } else {
@@ -5464,10 +5464,10 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
                 <div>${t`Line`}: ${ex.line} ${t`Column`}: ${ex.column}</div>
                 <pre style="text-align:left;">${ex.hint}</pre>
                 `;
-            const clickHint = t`<p>Click to see details</p>`;
+            const clickHint = `<p>${t`Click to see details`}</p>`;
             toastr.error(
                 `${toast}${clickHint}`,
-                t`Slash Command Parser Error`,
+                'Slash Command Parser Error',
                 { escapeHtml: false, timeOut: 10000, onclick: () => callGenericPopup(toast, POPUP_TYPE.TEXT, '', { allowHorizontalScrolling: true, allowVerticalScrolling: true }) },
             );
             const result = new SlashCommandClosureResult();
@@ -5552,7 +5552,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     }
 
     if (!canUseNegativeLookbehind()) {
-        console.warn(t`Cannot use negative lookbehind in this browser`);
+        console.warn('Cannot use negative lookbehind in this browser');
         return;
     }
 
