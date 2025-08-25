@@ -67,6 +67,7 @@ const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
+const API_COMETAPI = 'https://api.cometapi.com/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1248,6 +1249,11 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_GROQ;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
+        apiUrl = API_COMETAPI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
+        headers = {};
+        throw new Error('This provider is temporarily disabled.');
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
         apiUrl = API_MOONSHOT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
@@ -1661,6 +1667,14 @@ router.post('/generate', function (request, response) {
         request.body.json_schema
             ? setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema)
             : addAssistantPrefix(request.body.messages, [], 'partial');
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
+        apiUrl = API_COMETAPI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
+        headers = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+        };
+        throw new Error('This provider is temporarily disabled.');
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1984,7 +1984,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1999,7 +1999,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -2077,7 +2077,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2091,7 +2091,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2804,6 +2804,8 @@
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
+                                <!-- Temporarily disabled. -->
+                                <!-- <option value="cometapi">CometAPI</option> -->
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="fireworks">Fireworks AI</option>
                                 <option value="groq">Groq</option>
@@ -3513,6 +3515,24 @@
                                 <select id="model_fireworks_select">
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
+                            </div>
+                        </div>
+                        <div id="cometapi_form" data-source="cometapi">
+                            <h4><a href="https://api.cometapi.com/" target="_blank" rel="noopener noreferrer" data-i18n="CometAPI API Key">CometAPI API Key</a></h4>
+                            <div class="flex-container">
+                                <input id="api_key_cometapi" name="api_key_cometapi" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_cometapi"></div>
+                            </div>
+                            <div data-for="api_key_cometapi" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="CometAPI Model">CometAPI Model</h4>
+                                <div class="flex-container">
+                                    <select id="model_cometapi_select" class="flex1">
+                                        <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">

@@ -1,3 +1,5 @@
+@import "debugger.css";
+
 .regex_settings .menu_button {
     width: fit-content;
     display: flex;

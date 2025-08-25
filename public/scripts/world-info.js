@@ -3705,7 +3705,7 @@ export function duplicateWorldInfoEntry(data, uid) {
     }
 
     // Exclude uid and gather the rest of the properties
-    const originalData = Object.assign({}, data.entries[uid]);
+    const originalData = structuredClone(data.entries[uid]);
     delete originalData.uid;
 
     // Create new entry and copy over data
