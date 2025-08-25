@@ -838,5 +838,21 @@
     {
         "filename": "presets/context/Moonshot AI.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/context/OpenAI Harmony.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/OpenAI Harmony.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/OpenAI Harmony (Thinking).json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/reasoning/OpenAI Harmony.json",
+        "type": "reasoning"
     }
 ]

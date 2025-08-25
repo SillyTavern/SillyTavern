@@ -65,6 +65,7 @@ export const SECRET_KEYS = {
     MINIMAX: 'api_key_minimax',
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
+    COMETAPI: 'api_key_cometapi',
 };
 
 const FRIENDLY_NAMES = {
@@ -118,6 +119,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MINIMAX]: 'MiniMax TTS',
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
+    [SECRET_KEYS.COMETAPI]: 'CometAPI',
 };
 
 const INPUT_MAP = {
@@ -154,6 +156,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]: '#vertexai_service_account_json',
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
     [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
+    [SECRET_KEYS.COMETAPI]: '#api_key_cometapi',
 };
 
 const getLabel = () => moment().format('L LT');
