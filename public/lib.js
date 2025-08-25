@@ -22,7 +22,6 @@ import morphdom from 'morphdom';
 import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
 import yaml from 'yaml';
-import 'axe-core';
 
 /**
  * Expose the libraries to the 'window' object.

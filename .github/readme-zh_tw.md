@@ -83,6 +83,7 @@ SillyTavern 的硬體需求相當低。任何能夠運行 NodeJS 18 或更高版
 * 預設資源來源於 @OtisAlejandro（包含角色 Seraphina 與知識書）與 @kallmeflocc（SillyTavern 官方 Discord 伺服器成員突破 10K 的慶祝背景）
 * Docker 安裝指南由 [@mrguymiah](https://github.com/mrguymiah) 和 [@Bronya-Rand](https://github.com/Bronya-Rand) 編寫
 * kokoro-js 函式庫由 [@hexgrad](https://github.com/hexgrad) 提供 (Apache-2.0 許可)
+* axe-core 函式庫由 [DEQUELABS](https://github.com/dequelabs/axe-core) 提供 (MPL 2.0)
 
 ## 主要貢獻者
 

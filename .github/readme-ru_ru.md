@@ -83,6 +83,7 @@ SillyTavern (или сокращенно ST) - это локально уста�
 * Стандартный контент от @OtisAlejandro (персонаж Seraphina и лорбук) и @kallmeflocc (фон в честь 10 тысяч пользователей Discord)
 * Руководство по Docker от [@mrguymiah](https://github.com/mrguymiah) и [@Bronya-Rand](https://github.com/Bronya-Rand)
 * Библиотека kokoro-js от [@hexgrad](https://github.com/hexgrad) (лицензия Apache-2.0)
+* Библиотека axe-core от [DEQUELABS](https://github.com/dequelabs/axe-core) (MPL 2.0)
 
 ## Ведущие контрибьюторы
 

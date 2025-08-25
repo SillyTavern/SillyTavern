@@ -83,6 +83,7 @@ SillyTavern 于 2023 年 2 月作为 TavernAI 1.2.8 的一个分支开始，如�
 * 默认内容由 @OtisAlejandro (Seraphina 角色和世界书) 和 @kallmeflocc (10K Discord 用户庆祝背景) 提供
 * Docker 指南由 [@mrguymiah](https://github.com/mrguymiah) 和 [@Bronya-Rand](https://github.com/Bronya-Rand) 提供
 * kokoro-js 库由 [@hexgrad](https://github.com/hexgrad) 提供 (Apache-2.0 许可证)
+* axe-core 库由 [DEQUELABS](https://github.com/dequelabs/axe-core) 提供 (MPL 2.0)
 
 ## 主要贡献者
 

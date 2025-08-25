@@ -83,6 +83,7 @@ SillyTavern（略してST）は、テキスト生成LLM、画像生成エンジ�
 * @OtisAlejandroによるデフォルトコンテンツ（Seraphinaキャラクターと伝承本）と@kallmefloccによる10K Discordユーザー記念背景
 * [@mrguymiah](https://github.com/mrguymiah)と[@Bronya-Rand](https://github.com/Bronya-Rand)によるDockerガイド
 * [@hexgrad](https://github.com/hexgrad)によるkokoro-jsライブラリ (Apache-2.0ライセンス)
+* [DEQUELABS](https://github.com/dequelabs/axe-core)によるaxe-coreライブラリ (MPL 2.0)
 
 ## トップコントリビューター
 

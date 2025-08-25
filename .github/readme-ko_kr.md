@@ -83,6 +83,7 @@ SillyTavern(짧게는 ST)은 텍스트 생성 LLM, 이미지 생성 엔진, TTS 
 * 기본 콘텐츠는 @OtisAlejandro (Seraphina 캐릭터 및 로어북)와 @kallmeflocc (10K 디스코드 사용자 축전 배경화면)가 제공함
 * [@mrguymiah](https://github.com/mrguymiah)와 [@Bronya-Rand](https://github.com/Bronya-Rand)의 Docker 가이드
 * [@hexgrad](https://github.com/hexgrad)의 kokoro-js 라이브러리 (Apache-2.0 라이선스)
+* [DEQUELABS](https://github.com/dequelabs/axe-core)의 axe-core 라이브러리 (MPL 2.0)
 
 ## 상위 기여자
 

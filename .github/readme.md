@@ -83,6 +83,7 @@ GNU Affero General Public License for more details.**
 * Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
 * kokoro-js library by [@hexgrad](https://github.com/hexgrad) (Apache-2.0 License)
+* axe-core library by [DEQUELABS](https://github.com/dequelabs/axe-core) (MPL 2.0)
 
 ## Top Contributors
 

@@ -82,7 +82,8 @@ Für detaillierte Installationsanweisungen besuche bitte unsere Dokumentation:
 * Symboldesign von Font Awesome <https://fontawesome.com> (Symbole: CC BY 4.0, Schriftarten: SIL OFL 1.1, Code: MIT-Lizenz)
 * Standardinhalt von @OtisAlejandro (Seraphina-Charakter und Lorebook) und @kallmeflocc (10.000 Discord-Benutzer-Feierhintergrund)
 * Docker-Anleitung von [@mrguymiah](https://github.com/mrguymiah) und [@Bronya-Rand](https://github.com/Bronya-Rand)
-* kokoro-js library by [@hexgrad](https://github.com/hexgrad) (Apache-2.0 License)
+* kokoro-js Bibliothek von [@hexgrad](https://github.com/hexgrad) (Apache-2.0 License)
+* axe-core Bibliothek von [DEQUELABS](https://github.com/dequelabs/axe-core) (MPL 2.0)
 
 ## Top Contributors
 

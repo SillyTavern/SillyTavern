@@ -162,7 +162,6 @@
         "@types/write-file-atomic": "^4.0.3",
         "@types/yargs": "^17.0.33",
         "@types/yauzl": "^2.10.3",
-        "axe-core": "^4.10.3",
         "eslint": "^8.57.1",
         "eslint-plugin-jsdoc": "^48.10.0"
     }
