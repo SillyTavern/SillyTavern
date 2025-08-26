@@ -17,7 +17,7 @@ const accessibilityMonitor = {
         }
     },
 
-    start() {
+    async start() {
         if (this.isMonitoring) {
             toastr.warning('Accessibility monitoring is already active.');
             return;
@@ -28,6 +28,10 @@ const accessibilityMonitor = {
         this.scanQueue.clear();
         this.isScanning = false;
         this.isMonitoring = true;
+
+        console.log('[Axe Monitor] Running initial scan on the document...');
+        this.scanQueue.add(document.body);
+        await this.runScanNow();
 
         this.observer = new MutationObserver((mutationsList) =>
             this.queueScan(mutationsList),
