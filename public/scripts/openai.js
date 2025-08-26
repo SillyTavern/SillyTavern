@@ -2466,6 +2466,10 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         }
         return data.choices?.[0]?.delta?.content || '';
     } else if (chat_completion_source === chat_completion_sources.OPENROUTER) {
+        const imageUrl = data?.choices?.[0]?.delta?.images?.find(x => x.type === 'image_url')?.image_url?.url;
+        if (imageUrl) {
+            state.image = imageUrl;
+        }
         if (show_thoughts) {
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
@@ -5495,7 +5499,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.CLAUDE:
             return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.modality === 'text+image->text');
+            return (Array.isArray(model_list) && ['text+image->text+image', 'text+image->text'].includes(model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.modality));
         case chat_completion_sources.CUSTOM:
             return true;
         case chat_completion_sources.MISTRALAI:

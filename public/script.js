@@ -5237,7 +5237,13 @@ function extractImageFromData(data, { mainApi = null, chatCompletionSource = nul
                         return `data:${inlineData.mimeType};base64,${inlineData.data}`;
                     }
                 } break;
-
+                case chat_completion_sources.OPENROUTER: {
+                    const imageUrl = data?.choices[0]?.message?.images?.find(x => x.type === 'image_url')?.image_url?.url;
+                    if (isDataURL(imageUrl)) {
+                        return imageUrl;
+                    }
+                    // TODO: Handle remote URLs
+                }
             }
         } break;
     }
