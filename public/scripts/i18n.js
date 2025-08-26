@@ -3,7 +3,6 @@ import { updateSecretDisplay } from './secrets.js';
 
 const storageKey = 'language';
 const overrideLanguage = localStorage.getItem(storageKey);
-// @ts-ignore
 const localeFile = String(overrideLanguage || navigator.language || navigator.userLanguage || 'en').toLowerCase();
 var langs;
 // Don't change to let/const! It will break module loading.
@@ -273,7 +272,6 @@ function addLanguagesToDropdown() {
 export async function initLocales() {
     langs = await fetch('/locales/lang.json').then(response => response.json());
     localeData = await getLocaleData(localeFile);
-    document.documentElement.lang = localeFile;
     applyLocale();
     addLanguagesToDropdown();
     updateSecretDisplay();
