@@ -1,0 +1,43 @@
+# -----------------------------------------------------------------
+# axe-linter.yml - Configuration for the Axe Linter in the SillyTavern project
+# -----------------------------------------------------------------
+
+# The 'rules' section allows you to enable or disable specific rules.
+# All WCAG 2.1 Level A and AA rules are enabled by default.
+# Rules can be disabled here if they are too "noisy" during development.
+rules:
+  # Example: Color contrast issues can be numerous during theme development.
+  # Uncomment the line below to temporarily disable it if needed.
+  # color-contrast: false
+
+
+# The 'exclude' section tells the linter which files and folders to ignore.
+# This is used to avoid reports on third-party code, tests, and configs.
+exclude:
+  # Exclude all third-party libraries.
+  - 'public/lib/**/*'
+
+  # Exclude the node_modules directory.
+  - 'node_modules/**/*'
+
+  # Exclude test directories.
+  - 'tests/**/*'
+
+  # Exclude project configuration and utility scripts from the root directory.
+  - '*.js'
+  - '*.json'
+  - '*.yml'
+  - '*.md'
+
+
+# 'global-components' maps custom components to standard HTML elements.
+# Since this project primarily uses standard HTML and jQuery, this section is likely not needed.
+# It is kept here for future reference.
+# Example:
+#   MyButton: button
+global-components: {}
+
+
+# 'global-libraries' enables built-in support for specific UI libraries like Material UI.
+# This project does not use any of the supported libraries, so this is left empty.
+global-libraries: []
