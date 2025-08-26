@@ -14,11 +14,15 @@ rules:
 # The 'exclude' section tells the linter which files and folders to ignore.
 # This is used to avoid reports on third-party code, tests, and configs.
 exclude:
-  # Exclude all third-party libraries.
+  # Exclude all third-party libraries and scripts.
   - 'public/lib/**/*'
+  - 'public/scripts/extensions/third-party/**/*'
 
   # Exclude the node_modules directory.
   - 'node_modules/**/*'
+
+  # Exclude the user data directory.
+  - 'data/**/*'
 
   # Exclude test directories.
   - 'tests/**/*'

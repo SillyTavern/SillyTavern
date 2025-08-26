@@ -1,4 +1,5 @@
 import { registerDebugFunction } from './power-user.js';
+import { debounce } from './utils.js';
 
 const accessibilityMonitor = {
     observer: null,
@@ -283,15 +284,6 @@ const accessibilityMonitor = {
         console.groupEnd();
     },
 };
-
-function debounce(func, delay) {
-    let timeout;
-    return function (...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-    };
-}
 
 export function initA11y() {
     registerDebugFunction(
