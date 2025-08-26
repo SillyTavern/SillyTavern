@@ -57,7 +57,7 @@ import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
-import { t } from '../../i18n.js';
+import { t, translate } from '../../i18n.js';
 import { oai_settings } from '../../openai.js';
 
 export { MODULE_NAME };
@@ -650,7 +650,7 @@ async function onDeleteStyleClick() {
         return;
     }
 
-    const confirmed = await callGenericPopup(`Are you sure you want to delete the style "${selectedStyle}"?`, POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel' });
+    const confirmed = await callGenericPopup(t`Are you sure you want to delete the style "${selectedStyle}"?`, POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel' });
 
     if (!confirmed) {
         return;
@@ -925,16 +925,16 @@ function onADetailerFaceChange() {
 }
 
 const resolutionOptions = {
-    sd_res_512x512: { width: 512, height: 512, name: '512x512 (1:1, icons, profile pictures)' },
-    sd_res_600x600: { width: 600, height: 600, name: '600x600 (1:1, icons, profile pictures)' },
-    sd_res_512x768: { width: 512, height: 768, name: '512x768 (2:3, vertical character card)' },
-    sd_res_768x512: { width: 768, height: 512, name: '768x512 (3:2, horizontal 35-mm movie film)' },
-    sd_res_960x540: { width: 960, height: 540, name: '960x540 (16:9, horizontal wallpaper)' },
-    sd_res_540x960: { width: 540, height: 960, name: '540x960 (9:16, vertical wallpaper)' },
-    sd_res_1920x1088: { width: 1920, height: 1088, name: '1920x1088 (16:9, 1080p, horizontal wallpaper)' },
-    sd_res_1088x1920: { width: 1088, height: 1920, name: '1088x1920 (9:16, 1080p, vertical wallpaper)' },
-    sd_res_1280x720: { width: 1280, height: 720, name: '1280x720 (16:9, 720p, horizontal wallpaper)' },
-    sd_res_720x1280: { width: 720, height: 1280, name: '720x1280 (9:16, 720p, vertical wallpaper)' },
+    sd_res_512x512: { width: 512, height: 512, name: translate('512x512 (1:1, icons, profile pictures)', 'sd_res_512x512') },
+    sd_res_600x600: { width: 600, height: 600, name: translate('600x600 (1:1, icons, profile pictures)', 'sd_res_600x600') },
+    sd_res_512x768: { width: 512, height: 768, name: translate('512x768 (2:3, vertical character card)', 'sd_res_512x768') },
+    sd_res_768x512: { width: 768, height: 512, name: translate('768x512 (3:2, horizontal 35-mm movie film)', 'sd_res_768x512') },
+    sd_res_960x540: { width: 960, height: 540, name: translate('960x540 (16:9, horizontal wallpaper)', 'sd_res_960x540') },
+    sd_res_540x960: { width: 540, height: 960, name: translate('540x960 (9:16, vertical wallpaper)', 'sd_res_540x960') },
+    sd_res_1920x1088: { width: 1920, height: 1088, name: translate('1920x1088 (16:9, 1080p, horizontal wallpaper)', 'sd_res_1920x1088') },
+    sd_res_1088x1920: { width: 1088, height: 1920, name: translate('1088x1920 (9:16, 1080p, vertical wallpaper)', 'sd_res_1088x1920') },
+    sd_res_1280x720: { width: 1280, height: 720, name: translate('1280x720 (16:9, 720p, horizontal wallpaper)', 'sd_res_1280x720') },
+    sd_res_720x1280: { width: 720, height: 1280, name: translate('720x1280 (9:16, 720p, vertical wallpaper)', 'sd_res_720x1280') },
     sd_res_1024x1024: { width: 1024, height: 1024, name: '1024x1024 (1:1, SDXL)' },
     sd_res_1152x896: { width: 1152, height: 896, name: '1152x896 (9:7, SDXL)' },
     sd_res_896x1152: { width: 896, height: 1152, name: '896x1152 (7:9, SDXL)' },
@@ -3847,7 +3847,7 @@ async function onComfyNewWorkflowClick() {
 }
 
 async function onComfyDeleteWorkflowClick() {
-    const confirm = await callGenericPopup('Delete the workflow? This action is irreversible.', POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel' });
+    const confirm = await callGenericPopup(t`Delete the workflow? This action is irreversible.`, POPUP_TYPE.CONFIRM, '', { okButton: t`Delete`, cancelButton: t`Cancel` });
     if (!confirm) {
         return;
     }
