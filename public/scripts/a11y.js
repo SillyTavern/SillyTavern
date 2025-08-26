@@ -4,6 +4,7 @@ const accessibilityMonitor = {
     observer: null,
     isMonitoring: false,
     violations: new Map(),
+    lastRunInfo: null,
 
     toggle() {
         if (this.isMonitoring) {
@@ -20,6 +21,7 @@ const accessibilityMonitor = {
         }
 
         this.violations.clear();
+        this.lastRunInfo = null;
         this.isMonitoring = true;
         this.observer = new MutationObserver(this.handleDomChange.bind(this));
 
@@ -47,8 +49,8 @@ const accessibilityMonitor = {
         this.report();
     },
 
-    handleDomChange: debounce(async function() {
-        if (!this.isMonitoring) return;
+    handleDomChange: debounce(async () => {
+        if (!accessibilityMonitor.isMonitoring) return;
 
         console.log('[Axe Monitor] DOM changed, running check...');
 
@@ -59,20 +61,24 @@ const accessibilityMonitor = {
         globalThis.axe.run({
             runOnly: ['best-practice', 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
         }).then(results => {
+            accessibilityMonitor.lastRunInfo = {
+                url: results.url,
+                timestamp: results.timestamp,
+                testEngine: results.testEngine,
+                testEnvironment: results.testEnvironment,
+            };
+
             if (results.violations.length > 0) {
                 console.log(`[Axe Monitor] Found ${results.violations.length} new potential issues.`);
                 results.violations.forEach(violation => {
                     violation.nodes.forEach(node => {
                         const selector = node.target.join(' > ');
                         const uniqueKey = `${violation.id}-${selector}`;
-                        if (!this.violations.has(uniqueKey)) {
-                            this.violations.set(uniqueKey, {
-                                ruleId: violation.id,
-                                description: violation.description,
-                                impact: violation.impact,
-                                helpUrl: violation.helpUrl,
+                        if (!accessibilityMonitor.violations.has(uniqueKey)) {
+                            accessibilityMonitor.violations.set(uniqueKey, {
+                                ...violation,
                                 selector: selector,
-                                html: node.html,
+                                nodeInfo: node,
                             });
                         }
                     });
@@ -91,20 +97,58 @@ const accessibilityMonitor = {
         const reportData = Array.from(this.violations.values());
         toastr.error(`Detected ${this.violations.size} unique accessibility issues. See console for details.`, 'Axe Report');
 
-        const impactOrder = { critical: 0, serious: 1, moderate: 2, minor: 3 };
-        reportData.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]);
+        const severityOrder = ['critical', 'serious', 'moderate', 'minor'];
+        reportData.sort((a, b) => severityOrder.indexOf(a.impact) - severityOrder.indexOf(b.impact));
 
-        console.groupCollapsed(`[Axe Report] 1. Detailed List of Violations (Sorted by Impact)`);
+        if (this.lastRunInfo) {
+            console.groupCollapsed('[Axe Report] Test Environment Information');
+            console.log('URL:', this.lastRunInfo.url);
+            console.log('Timestamp:', new Date(this.lastRunInfo.timestamp).toLocaleString());
+            console.log('Test Engine:', `${this.lastRunInfo.testEngine.name} v${this.lastRunInfo.testEngine.version}`);
+            console.log('Environment:', `${this.lastRunInfo.testEnvironment.userAgent}`);
+            console.groupEnd();
+        }
+
+        console.groupCollapsed('[Axe Report] 1. Detailed List of Violations');
         reportData.forEach((issue) => {
             const element = document.querySelector(issue.selector);
             const impactColor = issue.impact === 'critical' || issue.impact === 'serious' ? 'red' : 'orange';
-            console.groupCollapsed(`%c[${issue.impact.toUpperCase()}] %c${issue.ruleId}: ${issue.description}`, `color: ${impactColor}; font-weight: bold;`, 'color: inherit;');
-            console.log('Description:', issue.description);
+            console.groupCollapsed(`%c[${issue.impact.toUpperCase()}] %c${issue.id}: ${issue.description}`, `color: ${impactColor}; font-weight: bold;`, 'color: inherit;');
+
             console.log('Impact:', issue.impact);
-            console.log('Selector:', issue.selector);
+            if (issue.nodeInfo.failureSummary) {
+                console.log('%cfailureSummary:', 'font-weight: bold;', issue.nodeInfo.failureSummary);
+            }
+            console.log('Help:', issue.help);
             console.log('Element:', element);
-            console.log('HTML Snippet:', issue.html);
-            console.log('Help:', issue.helpUrl);
+            console.log('Selector:', issue.selector);
+            console.log('HTML Snippet:', issue.nodeInfo.html);
+
+            const logChecks = (checkType, checks) => {
+                if (checks && checks.length > 0) {
+                    console.groupCollapsed(checkType);
+                    checks.forEach(check => {
+                        console.log(`- ${check.message}`);
+                        if (check.data) {
+                            console.log('  └ Data:', check.data);
+                        }
+                        if (check.relatedNodes && check.relatedNodes.length > 0) {
+                            console.log('  └ Related Nodes:', check.relatedNodes.map(n => ({
+                                selector: n.target.join(' > '),
+                                html: n.html,
+                            })));
+                        }
+                    });
+                    console.groupEnd();
+                }
+            };
+
+            logChecks('any', issue.nodeInfo.any);
+            logChecks('all', issue.nodeInfo.all);
+            logChecks('none', issue.nodeInfo.none);
+
+            console.log('Help URL:', issue.helpUrl);
+            console.log('Tags:', issue.tags);
             console.groupEnd();
         });
         console.groupEnd();
@@ -113,10 +157,10 @@ const accessibilityMonitor = {
         const impactSummary = { critical: 0, serious: 0, moderate: 0, minor: 0 };
         const ruleSummary = {};
         reportData.forEach(issue => {
-            if (impactSummary.hasOwnProperty(issue.impact)) {
+            if (Object.prototype.hasOwnProperty.call(impactSummary, issue.impact)) {
                 impactSummary[issue.impact]++;
             }
-            ruleSummary[issue.ruleId] = (ruleSummary[issue.ruleId] || 0) + 1;
+            ruleSummary[issue.id] = (ruleSummary[issue.id] || 0) + 1;
         });
         console.log('Issues by Impact Level:');
         console.table(impactSummary);
@@ -124,8 +168,8 @@ const accessibilityMonitor = {
         console.table(ruleSummary);
         console.groupEnd();
 
-        console.groupCollapsed('[Axe Report] 3. Raw Data Array (for developers)');
-        console.log(reportData);
+        console.groupCollapsed('[Axe Report] 3. Raw Data Array');
+        console.log(...reportData);
         console.groupEnd();
     },
 };
