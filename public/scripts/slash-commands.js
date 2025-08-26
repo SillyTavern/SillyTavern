@@ -5459,7 +5459,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
             const clickHint = `<p>${t`Click to see details`}</p>`;
             toastr.error(
                 `${toast}${clickHint}`,
-                'Slash Command Parser Error',
+                'SlashCommandParserError',
                 { escapeHtml: false, timeOut: 10000, onclick: () => callGenericPopup(toast, POPUP_TYPE.TEXT, '', { allowHorizontalScrolling: true, allowVerticalScrolling: true }) },
             );
             const result = new SlashCommandClosureResult();
