@@ -181,6 +181,7 @@ export const CHAT_COMPLETION_SOURCES = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    AZURE_OPENAI: 'azure_openai',
 };
 
 /**
