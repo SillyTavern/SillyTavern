@@ -203,9 +203,7 @@ const accessibilityMonitor = {
                     ? 'red'
                     : 'orange';
             console.groupCollapsed(
-                `%c[${issue.impact.toUpperCase()}] %c${issue.id}: ${
-                    issue.description
-                }`,
+                `%c[${issue.impact.toUpperCase()}] %c${issue.id}: ${issue.description}`,
                 `color: ${impactColor}; font-weight: bold;`,
                 'color: inherit;',
             );
