@@ -371,6 +371,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-exp',
             'gemini-2.0-flash-exp-image-generation',
             'gemini-2.0-flash-preview-image-generation',
+            'gemini-2.5-flash-image-preview',
         ];
 
         // These models do not support setting the threshold to OFF at all.
@@ -381,7 +382,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-1.5-flash-8b-exp-0924',
         ];
 
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m);
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image-preview$/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
