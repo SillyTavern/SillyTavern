@@ -2348,21 +2348,21 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         const entryCount = Object.keys(data.entries).length;
         const moreThan100 = entryCount > 100;
 
-        let content = '<span>Apply your current sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
+        let content = '<span>' + t`Apply your current sorting to the "Order" field. The Order values will go down from the chosen number.` + '</span>';
         if (moreThan100) {
-            content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
+            content += '<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> ' + t`More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}` + '</div>';
         }
 
-        const result = await Popup.show.input('Apply Current Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
+        const result = await Popup.show.input(t`Apply Current Sorting`, content, '100', { okButton: t`Apply`, cancelButton: 'Cancel' });
         if (!result) return;
 
         const start = Number(result);
         if (isNaN(start) || start < 0) {
-            toastr.error('Invalid number: ' + result, 'Apply Current Sorting');
+            toastr.error(t`Invalid number: ${result}`, t`Apply Current Sorting`);
             return;
         }
         if (start < entryCount) {
-            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Current Sorting');
+            toastr.warning(t`A number lower than the entry count has been chosen. All entries below that will default to 0.`, t`Apply Current Sorting`);
         }
 
         // We need to sort the entries here, as the data source isn't sorted
@@ -3728,7 +3728,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
         return;
     }
 
-    const confirmation = silent || await Popup.show.confirm(`Delete the entry with UID: ${uid}?`, 'This action is irreversible!');
+    const confirmation = silent || await Popup.show.confirm(t`Delete the entry with UID: ${uid}?`, t`This action is irreversible!`);
     if (!confirmation) {
         return false;
     }
