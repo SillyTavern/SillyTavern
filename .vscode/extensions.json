@@ -5,7 +5,8 @@
     "recommendations": [
         "dbaeumer.vscode-eslint",
         "EditorConfig.EditorConfig",
-        "mrcrowl.easy-less"
+        "mrcrowl.easy-less",
+        "deque-systems.vscode-axe-linter"
     ],
     // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
     "unwantedRecommendations": []
