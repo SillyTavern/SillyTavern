@@ -588,10 +588,12 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
     $('#caption_ollama_pull').on('click', (e) => {
-        const presetModel = extension_settings.caption.multimodal_model !== 'ollama_current' ? extension_settings.caption.multimodal_model : '';
+        const selectedModel = extension_settings.caption.multimodal_model;
+        const staticModels = { 'ollama_current': textgenerationwebui_settings.ollama_model, 'ollama_custom': extension_settings.caption.ollama_custom_model };
+        const presetModel = staticModels[selectedModel] || selectedModel;
         e.preventDefault();
         $('#ollama_download_model').trigger('click');
-        $('#dialogue_popup_input').val(presetModel);
+        $('.popup .popup-input').val(presetModel);
     });
     $('#caption_multimodal_api').on('change', async () => {
         const api = String($('#caption_multimodal_api').val());
@@ -614,6 +616,10 @@ jQuery(async function () {
     });
     $('#caption_show_in_chat').prop('checked', !!(extension_settings.caption.show_in_chat)).on('input', () => {
         extension_settings.caption.show_in_chat = !!$('#caption_show_in_chat').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_ollama_custom_model').val(extension_settings.caption.ollama_custom_model || '').on('input', () => {
+        extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
         saveSettingsDebounced();
     });
 
