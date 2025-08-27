@@ -772,9 +772,10 @@ export function formatWorldInfo(value, { wiFormat = null } = {}) {
  *
  * @param {Prompt[]} prompts - Array containing injection prompts.
  * @param {Object[]} messages - Array containing all messages.
+ * @param {boolean} isContinue - Whether the generation is a continuation. If true, extension prompts of depth 0 are injected at position 1.
  * @returns {Promise<Object[]>} - Array containing all messages with injections.
  */
-async function populationInjectionPrompts(prompts, messages) {
+async function populationInjectionPrompts(prompts, messages, isContinue) {
     let totalInsertedMessages = 0;
 
     const roleTypes = {
@@ -831,7 +832,8 @@ async function populationInjectionPrompts(prompts, messages) {
         }
 
         if (roleMessages.length) {
-            const injectIdx = i + totalInsertedMessages;
+            const depth = isContinue && i === 0 ? 1 : i;
+            const injectIdx = Math.min(depth + totalInsertedMessages, messages.length);
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
         }
@@ -1221,8 +1223,11 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         chatCompletion.reserveBudget(toolTokens);
     }
 
+    // Unlike TC, continued message is not displaced unless prefill is used, so no need to adjust injections.
+    const isContinueWithPrefill = type === 'continue' && oai_settings.continue_prefill;
+
     // Add in-chat injections
-    messages = await populationInjectionPrompts(absolutePrompts, messages);
+    messages = await populationInjectionPrompts(absolutePrompts, messages, isContinueWithPrefill);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
