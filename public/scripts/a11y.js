@@ -29,10 +29,6 @@ const accessibilityMonitor = {
         this.isScanning = false;
         this.isMonitoring = true;
 
-        console.log('[Axe Monitor] Running initial scan on the document...');
-        this.scanQueue.add(document.body);
-        await this.runScanNow();
-
         this.observer = new MutationObserver((mutationsList) =>
             this.queueScan(mutationsList),
         );
@@ -46,9 +42,14 @@ const accessibilityMonitor = {
         this.observer.observe(document.body, observerConfig);
 
         toastr.success('Accessibility monitoring started!', 'Axe Monitor');
-        console.log(
-            '[Axe Monitor] Monitoring started. Interact with the UI to detect issues.',
-        );
+        console.log('[Axe Monitor] Monitoring for dynamic UI changes has started.');
+
+        setTimeout(async () => {
+            console.log('[Axe Monitor] Performing initial scan of existing content...');
+            this.scanQueue.add(document);
+            await this.runScanNow();
+            console.log('[Axe Monitor] Initial scan complete.');
+        }, 500);
     },
 
     stop() {
@@ -73,6 +74,11 @@ const accessibilityMonitor = {
 
         for (const mutation of mutationsList) {
             if (mutation.target.nodeType === Node.ELEMENT_NODE) {
+                let parent = mutation.target;
+                while (parent.parentNode && this.scanQueue.has(parent.parentNode)) {
+                    this.scanQueue.delete(parent.parentNode);
+                    parent = parent.parentNode;
+                }
                 this.scanQueue.add(mutation.target);
             }
         }
@@ -92,12 +98,12 @@ const accessibilityMonitor = {
 
         this.isScanning = true;
         try {
-            const elementsToScan = Array.from(this.scanQueue);
+            const elementsToScan = this.scanQueue.has(document) ? document : Array.from(this.scanQueue);
             this.scanQueue.clear();
 
             console.log(
-                `[Axe Monitor] DOM changed, running check on ${elementsToScan.length} changed root elements...`,
-                elementsToScan,
+                `[Axe Monitor] Running check on ${elementsToScan === document ? 'the entire document' : `${Array.isArray(elementsToScan) ? elementsToScan.length : 1} element(s)`}...`,
+                elementsToScan
             );
 
             if (!('axe' in globalThis)) {
@@ -105,6 +111,7 @@ const accessibilityMonitor = {
             }
 
             const results = await globalThis.axe.run(elementsToScan, {
+                preload: false,
                 runOnly: [
                     'best-practice',
                     'wcag2a',
@@ -113,6 +120,13 @@ const accessibilityMonitor = {
                     'wcag21aa',
                 ],
                 resultTypes: ['violations'],
+            });
+
+            console.log('[Axe Monitor] Scan complete. Results summary:', {
+                violations: results.violations.length,
+                passes: results.passes.length,
+                incomplete: results.incomplete.length,
+                inapplicable: results.inapplicable.length,
             });
 
             this.lastRunInfo = {
