@@ -103,7 +103,7 @@ const accessibilityMonitor = {
 
             console.log(
                 `[Axe Monitor] Running check on ${elementsToScan === document ? 'the entire document' : `${Array.isArray(elementsToScan) ? elementsToScan.length : 1} element(s)`}...`,
-                elementsToScan
+                elementsToScan,
             );
 
             if (!('axe' in globalThis)) {
