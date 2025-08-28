@@ -772,10 +772,9 @@ export function formatWorldInfo(value, { wiFormat = null } = {}) {
  *
  * @param {Prompt[]} prompts - Array containing injection prompts.
  * @param {Object[]} messages - Array containing all messages.
- * @param {boolean} isContinue - Whether the generation is a continuation. If true, extension prompts of depth 0 are injected at position 1.
  * @returns {Promise<Object[]>} - Array containing all messages with injections.
  */
-async function populationInjectionPrompts(prompts, messages, isContinue) {
+async function populationInjectionPrompts(prompts, messages) {
     let totalInsertedMessages = 0;
 
     const roleTypes = {
@@ -832,8 +831,7 @@ async function populationInjectionPrompts(prompts, messages, isContinue) {
         }
 
         if (roleMessages.length) {
-            const depth = isContinue && i === 0 ? 1 : i;
-            const injectIdx = Math.min(depth + totalInsertedMessages, messages.length);
+            const injectIdx = i + totalInsertedMessages;
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
         }
@@ -907,7 +905,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
-    const firstNonInjected = chatPool.find(x => !x.injected);
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
@@ -948,22 +945,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
-            if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
-                // in case we are using continue_prefill and the latest message is an assistant message, we want to prepend the users assistant prefill on the message
-                if (chatPrompt.role === 'assistant') {
-                    const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
-                    const assistantPrefill = supportsAssistantPrefill ? substituteParams(oai_settings.assistant_prefill) : '';
-                    const messageContent = [assistantPrefill, chatMessage.content].filter(x => x).join('\n\n');
-                    const continueMessage = await Message.createAsync(chatMessage.role, messageContent, chatMessage.identifier);
-                    const collection = new MessageCollection('continuePrefill', continueMessage);
-                    chatCompletion.add(collection, -1);
-                    continue;
-                }
-                const collection = new MessageCollection('continuePrefill', chatMessage);
-                chatCompletion.add(collection, -1);
-                continue;
-            }
-
             chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         } else {
             break;
@@ -1223,11 +1204,22 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         chatCompletion.reserveBudget(toolTokens);
     }
 
-    // Unlike TC, continued message is not displaced unless prefill is used, so no need to adjust injections.
-    const isContinueWithPrefill = type === 'continue' && oai_settings.continue_prefill;
+    // Displace the message to be continued from its original position before performing in-chat injections
+    // In case if it is an assistant message, we want to prepend the users assistant prefill on the message
+    if (type === 'continue' && oai_settings.continue_prefill && messages.length) {
+        const chatMessage = messages.shift();
+        const isAssistantRole = chatMessage.role === 'assistant';
+        const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
+        const assistantPrefill = isAssistantRole && supportsAssistantPrefill ? substituteParams(oai_settings.assistant_prefill) : '';
+        const messageContent = [assistantPrefill, chatMessage.content].filter(x => x).join('\n\n');
+        const continueMessage = await Message.createAsync(chatMessage.role, messageContent, 'continuePrefill');
+        chatMessage.name && await continueMessage.setName(chatMessage.name);
+        controlPrompts.add(continueMessage);
+        chatCompletion.reserveBudget(continueMessage);
+    }
 
     // Add in-chat injections
-    messages = await populationInjectionPrompts(absolutePrompts, messages, isContinueWithPrefill);
+    messages = await populationInjectionPrompts(absolutePrompts, messages);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
