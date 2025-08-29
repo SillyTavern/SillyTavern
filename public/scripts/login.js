@@ -3,6 +3,7 @@
  */
 let csrfToken = '';
 let discreetLogin = false;
+let oidcConfig = null;
 
 /**
  * Gets a CSRF token from the server.
@@ -12,6 +13,23 @@ async function getCsrfToken() {
     const response = await fetch('/csrf-token');
     const data = await response.json();
     return data.token;
+}
+
+/**
+ * Gets OIDC configuration from the server.
+ * @returns {Promise<object>} OIDC configuration
+ */
+async function getOidcConfig() {
+    try {
+        const response = await fetch('/auth/oidc/config');
+        if (response.ok) {
+            const config = await response.json();
+            return config;
+        }
+    } catch (error) {
+        console.debug('OIDC config not available:', error);
+    }
+    return { enabled: false };
 }
 
 /**
@@ -235,6 +253,30 @@ function configureNormalLogin(userList) {
 }
 
 /**
+ * Configures the login page for OIDC authentication.
+ */
+function configureOidcLogin() {
+    console.log('OIDC login is enabled');
+
+    // Hide all normal login UI elements
+    $('#handleEntryBlock').hide();
+    $('#normalLoginPrompt').hide();
+    $('#discreetLoginPrompt').hide();
+    $('#userList').hide();
+    $('#passwordEntryBlock').hide();
+    $('#passwordRecoveryBlock').hide();
+
+    // Show OIDC-specific UI
+    $('#oidcLoginPrompt').show();
+    $('#oidcLoginBlock').show();
+
+    // Set up OIDC login button
+    $('#oidcLoginButton').off('click').on('click', () => {
+        window.location.href = '/auth/oidc/login';
+    });
+}
+
+/**
  * Configures the login page for discreet login.
  */
 function configureDiscreetLogin() {
@@ -266,19 +308,30 @@ function configureDiscreetLogin() {
 
 (async function () {
     csrfToken = await getCsrfToken();
-    const userList = await getUserList();
+    oidcConfig = await getOidcConfig();
 
-    if (discreetLogin) {
-        configureDiscreetLogin();
+    // Check if OIDC is enabled and should be the only login method
+    if (oidcConfig.enabled && oidcConfig.disableBuiltinAuth) {
+        configureOidcLogin();
     } else {
-        configureNormalLogin(userList);
+        // Use traditional login flow
+        const userList = await getUserList();
+
+        if (discreetLogin) {
+            configureDiscreetLogin();
+        } else {
+            configureNormalLogin(userList);
+        }
     }
+
     document.getElementById('shadow_popup').style.opacity = '';
     $('#cancelRecovery').on('click', onCancelRecoveryClick);
     $(document).on('keydown', (evt) => {
         if (evt.key === 'Enter' && document.activeElement.tagName === 'INPUT') {
             if ($('#passwordRecoveryBlock').is(':visible')) {
                 $('#sendRecovery').trigger('click');
+            } else if ($('#oidcLoginBlock').is(':visible')) {
+                $('#oidcLoginButton').trigger('click');
             } else {
                 $('#loginButton').trigger('click');
             }

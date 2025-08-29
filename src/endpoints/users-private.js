@@ -21,8 +21,8 @@ router.post('/logout', async (request, response) => {
             return response.sendStatus(500);
         }
 
-        request.session.handle = null;
-        request.session.csrfToken = null;
+        request.session.handle = '';
+        request.session.csrfToken = undefined;
         request.session = null;
         return response.sendStatus(204);
     } catch (error) {
@@ -45,6 +45,7 @@ router.get('/me', async (request, response) => {
             admin: user.admin,
             password: !!user.password,
             created: user.created,
+            oidc: !!user.oidc,  // Add OIDC status for frontend
         };
 
         return response.json(viewModel);
@@ -109,12 +110,18 @@ router.post('/change-password', async (request, response) => {
             return response.status(404).json({ error: 'User not found' });
         }
 
+        // Prevent password changes for OIDC-managed users
+        if (user.oidc) {
+            console.error('Change password failed: OIDC users cannot change passwords');
+            return response.status(403).json({ error: 'Password changes are not allowed for SSO users. Please contact your administrator.' });
+        }
+
         if (!user.enabled) {
             console.error('Change password failed: User is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        if (!request.user.profile.admin && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        if (!request.user.profile.admin && user.password && user.salt && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
             console.error('Change password failed: Incorrect password');
             return response.status(403).json({ error: 'Incorrect password' });
         }
@@ -124,8 +131,8 @@ router.post('/change-password', async (request, response) => {
             user.password = getPasswordHash(request.body.newPassword, salt);
             user.salt = salt;
         } else {
-            user.password = '';
-            user.salt = '';
+            user.password = null;
+            user.salt = null;
         }
 
         await storage.setItem(toKey(request.body.handle), user);
@@ -161,7 +168,7 @@ router.post('/reset-settings', async (request, response) => {
     try {
         const password = request.body.password;
 
-        if (request.user.profile.password && request.user.profile.password !== getPasswordHash(password, request.user.profile.salt)) {
+        if (request.user.profile.password && request.user.profile.salt && request.user.profile.password !== getPasswordHash(password, request.user.profile.salt)) {
             console.warn('Reset settings failed: Incorrect password');
             return response.status(403).json({ error: 'Incorrect password' });
         }
@@ -228,7 +235,7 @@ router.post('/reset-step2', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        if (request.user.profile.password && request.user.profile.password !== getPasswordHash(request.body.password, request.user.profile.salt)) {
+        if (request.user.profile.password && request.user.profile.salt && request.user.profile.password !== getPasswordHash(request.body.password, request.user.profile.salt)) {
             console.warn('Recover step 2 failed: Incorrect password');
             return response.status(400).json({ error: 'Incorrect password' });
         }

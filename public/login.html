@@ -50,6 +50,9 @@
                         <h3 id="discreetLoginPrompt">
                             Enter Login Details
                         </h3>
+                        <h3 id="oidcLoginPrompt" style="display:none;">
+                            Single Sign-On
+                        </h3>
                         <div id="userListBlock" class="wide100p">
                             <div id="userList" class="flex-container justifySpaceEvenly"></div>
                             <div id="handleEntryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
@@ -73,6 +76,9 @@
                                     <div id="sendRecovery" class="menu_button">Send</div>
                                     <div id="cancelRecovery" class="menu_button">Cancel</div>
                                 </div>
+                            </div>
+                            <div id="oidcLoginBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
+                                <div id="oidcLoginButton" class="menu_button">Login with SSO</div>
                             </div>
                         </div>
                         <div class="neutral_warning" id="errorMessage">

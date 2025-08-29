@@ -14,6 +14,7 @@ import {
     getPasswordHash,
     getUserDirectories,
     ensurePublicDirectoriesExist,
+    isOidcEnabled,
 } from '../users.js';
 import { DEFAULT_USER } from '../constants.js';
 
@@ -36,6 +37,7 @@ router.post('/get', requireAdminMiddleware, async (_request, response) => {
                         enabled: user.enabled,
                         created: user.created,
                         password: !!user.password,
+                        oidc: !!user.oidc,  // Add OIDC status for frontend
                     }),
                 );
             }));
@@ -214,7 +216,7 @@ router.post('/delete', requireAdminMiddleware, async (request, response) => {
             return response.status(400).json({ error: 'Cannot delete yourself' });
         }
 
-        if (request.body.handle === DEFAULT_USER.handle) {
+        if (request.body.handle === DEFAULT_USER.handle && !isOidcEnabled()) {
             console.warn('Delete user failed: Cannot delete default user');
             return response.status(400).json({ error: 'Sorry, but the default user cannot be deleted. It is required as a fallback.' });
         }

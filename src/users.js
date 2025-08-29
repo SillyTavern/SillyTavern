@@ -26,6 +26,7 @@ const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
 const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
+const OIDC_ENABLED = getConfigValue('oidc.enabled', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
 /**
@@ -49,10 +50,13 @@ const STORAGE_KEYS = {
  * @property {string} handle - The user's short handle. Used for directories and other references
  * @property {string} name - The user's name. Displayed in the UI
  * @property {number} created - The timestamp when the user was created
- * @property {string} password - Scrypt hash of the user's password
- * @property {string} salt - Salt used for hashing the password
+ * @property {string|null} password - Scrypt hash of the user's password (null for OIDC users)
+ * @property {string|null} salt - Salt used for hashing the password (null for OIDC users)
  * @property {boolean} enabled - Whether the user is enabled
  * @property {boolean} admin - Whether the user is an admin (can manage other users)
+ * @property {boolean} [oidc] - Whether the user is managed by OIDC
+ * @property {string} [email] - The user's email address (from OIDC claims)
+ * @property {number} [lastOidcUpdate] - Timestamp of last OIDC claims update
  */
 
 /**
@@ -64,6 +68,7 @@ const STORAGE_KEYS = {
  * @property {boolean} password - Whether the user is password protected
  * @property {boolean} [enabled] - Whether the user is enabled
  * @property {number} [created] - The timestamp when the user was created
+ * @property {boolean} [oidc] - Whether the user is managed by OIDC SSO
  */
 
 /**
@@ -157,19 +162,27 @@ export async function verifySecuritySettings() {
     }
 
     const users = await getAllEnabledUsers();
-    const unprotectedUsers = users.filter(x => !x.password);
+    const unprotectedUsers = users.filter(x => !x.password && !x.oidc); // Exclude OIDC users
     const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
 
+    // Check if OIDC security policy is active
+    const oidcSecurityPolicyActive = isOidcEnabled() && getConfigValue('oidc.security.disableNonOidcUsers', false, 'boolean');
+
     if (unprotectedUsers.length > 0) {
-        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
+        console.warn(color.blue('A friendly reminder that the following users are not password protected (excluding SSO users):'));
         unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
         console.log();
         console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
         console.log();
 
-        if (unprotectedAdminUsers.length > 0) {
-            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
+        if (unprotectedAdminUsers.length > 0 && !oidcSecurityPolicyActive) {
+            logSecurityAlert('If you are not using basic authentication, whitelisting, or SSO, you should set a password for all admin users.');
         }
+    }
+
+    // Report OIDC security policy status
+    if (oidcSecurityPolicyActive) {
+        console.log(color.green('OIDC Security Policy: Non-SSO users are automatically disabled'));
     }
 
     if (basicAuthMode) {
@@ -515,8 +528,8 @@ export async function initUserStorage(dataRoot) {
 
     const keys = await getAllUserHandles();
 
-    // If there are no users, create the default user
-    if (keys.length === 0) {
+    // If there are no users, create the default user (unless OIDC is enabled)
+    if (keys.length === 0 && !isOidcEnabled()) {
         await storage.setItem(toKey(DEFAULT_USER.handle), DEFAULT_USER);
     }
 }
@@ -685,14 +698,6 @@ export async function getUserAvatar(handle) {
     }
 }
 
-/**
- * Checks if the user should be redirected to the login page.
- * @param {import('express').Request} request Request object
- * @returns {boolean} Whether the user should be redirected to the login page
- */
-export function shouldRedirectToLogin(request) {
-    return ENABLE_ACCOUNTS && !request.user;
-}
 
 /**
  * Tries auto-login if there is only one user and it's not password protected.
@@ -821,8 +826,17 @@ async function basicUserLogin(request) {
  * @param {import('express').NextFunction} next Next function
  */
 export async function setUserDataMiddleware(request, response, next) {
-    // If user accounts are disabled, use the default user
-    if (!ENABLE_ACCOUNTS) {
+    // Always check current configuration state dynamically
+    // This ensures OIDC configuration changes are immediately recognized
+    const currentlyUserAccountsEnabled = isUserAccountsEnabled();
+
+    // If user accounts are disabled, use the default user (unless OIDC is enabled)
+    if (!currentlyUserAccountsEnabled) {
+        // When OIDC is enabled, don't fall back to default user - require authentication
+        if (isOidcEnabled()) {
+            return next();
+        }
+
         const handle = DEFAULT_USER.handle;
         const directories = getUserDirectories(handle);
         request.user = {
@@ -840,7 +854,8 @@ export async function setUserDataMiddleware(request, response, next) {
     // If user accounts are enabled, get the user from the session
     let handle = request.session?.handle;
 
-    // If we have the only user and it's not password protected, use it
+    // If no handle found, this is an unauthenticated request
+    // Don't set request.user - let authentication middleware handle it
     if (!handle) {
         return next();
     }
@@ -1017,6 +1032,39 @@ export async function createBackupArchive(handle, response) {
 }
 
 /**
+ * Disables all existing non-OIDC users when OIDC security policy is enabled
+ * @returns {Promise<void>}
+ */
+export async function enforceOidcSecurityPolicy() {
+    if (!isOidcEnabled()) {
+        return;
+    }
+
+    const shouldDisableNonOidcUsers = getConfigValue('oidc.security.disableNonOidcUsers', false, 'boolean');
+
+    if (!shouldDisableNonOidcUsers) {
+        return;
+    }
+
+    const users = await getAllUsers();
+    const nonOidcUsers = users.filter(user => !user.oidc && user.enabled);
+
+    if (nonOidcUsers.length === 0) {
+        return;
+    }
+
+    console.log(color.yellow('OIDC Security Policy: Disabling non-SSO users...'));
+
+    for (const user of nonOidcUsers) {
+        user.enabled = false;
+        await storage.setItem(toKey(user.handle), user);
+        console.log(`Disabled non-SSO user: ${color.red(user.handle)} ${user.admin ? color.red('(admin)') : ''}`);
+    }
+
+    console.log(color.yellow(`Disabled ${nonOidcUsers.length} non-SSO user(s) as per OIDC security policy`));
+}
+
+/**
  * Gets all of the users.
  * @returns {Promise<User[]>}
  */
@@ -1051,3 +1099,290 @@ router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createExtensionsRouteHandler(req => req.user.directories.extensions));
+
+// -- OIDC-SPECIFIC USER MANAGEMENT FUNCTIONS --
+
+/**
+ * Checks if OIDC authentication is enabled
+ * @returns {boolean} True if OIDC is enabled
+ */
+export function isOidcEnabled() {
+    return OIDC_ENABLED &&
+           getConfigValue('oidc.provider.issuer') &&
+           getConfigValue('oidc.provider.clientId') &&
+           getConfigValue('oidc.provider.clientSecret');
+}
+
+/**
+ * Forces multi-user mode when OIDC is enabled
+ * This ensures user accounts are enabled when using SSO
+ */
+export function enforceMultiUserMode() {
+    if (isOidcEnabled()) {
+        // Override the global setting to force multi-user mode
+        globalThis.ENABLE_ACCOUNTS_OVERRIDE = true;
+        console.log('Multi-user mode enforced due to OIDC configuration');
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Checks if user accounts should be enabled (including OIDC override)
+ * @returns {boolean} True if user accounts are enabled
+ */
+export function isUserAccountsEnabled() {
+    // Check explicit config first
+    if (ENABLE_ACCOUNTS) {
+        return true;
+    }
+
+    // Check if OIDC override is set
+    if (globalThis.ENABLE_ACCOUNTS_OVERRIDE) {
+        return true;
+    }
+
+    // Dynamic check: if OIDC is configured, force user accounts
+    const oidcConfigured = OIDC_ENABLED &&
+        getConfigValue('oidc.provider.issuer') &&
+        getConfigValue('oidc.provider.clientId') &&
+        getConfigValue('oidc.provider.clientSecret');
+
+    if (oidcConfigured) {
+        // Auto-enforce multi-user mode for OIDC
+        globalThis.ENABLE_ACCOUNTS_OVERRIDE = true;
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Gets OIDC configuration for user management operations
+ * @returns {object} OIDC configuration object
+ */
+function getOidcConfig() {
+    return {
+        claims: {
+            userId: getConfigValue('oidc.claims.userId', 'sub'),
+            displayName: getConfigValue('oidc.claims.displayName', 'preferred_username'),
+            email: getConfigValue('oidc.claims.email', 'email'),
+            adminRole: getConfigValue('oidc.claims.adminRole', 'urn:zitadel:iam:org:project:roles'),
+        },
+        debug: getConfigValue('oidc.debug', false, 'boolean'),
+    };
+}
+
+/**
+ * Extracts admin status from OIDC claims (ZITADEL compatible)
+ * @param {object} claims OIDC user claims
+ * @returns {boolean} True if user has admin role
+ */
+function extractAdminStatusFromClaims(claims) {
+    const config = getOidcConfig();
+    const rolesClaim = claims[config.claims.adminRole];
+
+    if (config.debug) {
+        console.log('Checking admin status from claims:', {
+            rolesClaim: rolesClaim,
+            adminRoleKey: config.claims.adminRole,
+        });
+    }
+
+    // Handle different role claim formats
+    if (typeof rolesClaim === 'string') {
+        // Single role as string
+        return rolesClaim.toLowerCase().includes('admin') ||
+               rolesClaim.toLowerCase().includes('manager') ||
+               rolesClaim.toLowerCase().includes('owner');
+    } else if (Array.isArray(rolesClaim)) {
+        // Multiple roles as array
+        return rolesClaim.some(role =>
+            typeof role === 'string' && (
+                role.toLowerCase().includes('admin') ||
+                role.toLowerCase().includes('manager') ||
+                role.toLowerCase().includes('owner')
+            ),
+        );
+    } else if (typeof rolesClaim === 'object' && rolesClaim !== null) {
+        // Nested role object (ZITADEL format)
+        // Check if 'admin', 'manager', or 'owner' are keys in the roles object
+        const roleKeys = Object.keys(rolesClaim);
+        const hasAdminRole = roleKeys.some(role =>
+            role.toLowerCase().includes('admin') ||
+            role.toLowerCase().includes('manager') ||
+            role.toLowerCase().includes('owner'),
+        );
+
+        if (hasAdminRole) {
+            return true;
+        }
+
+        // Fallback: also check role values for string-based roles
+        const roleValues = Object.values(rolesClaim);
+        return roleValues.some(role =>
+            typeof role === 'string' && (
+                role.toLowerCase().includes('admin') ||
+                role.toLowerCase().includes('manager') ||
+                role.toLowerCase().includes('owner')
+            ),
+        );
+    }
+
+    return false;
+}
+
+/**
+ * Creates a new user from OIDC claims
+ * @param {object} claims OIDC user claims
+ * @returns {Promise<User>} The created user object
+ */
+export async function createOidcUser(claims) {
+    const config = getOidcConfig();
+    const userId = claims[config.claims.userId];
+
+    if (!userId) {
+        throw new Error(`User ID claim '${config.claims.userId}' not found in OIDC claims`);
+    }
+
+    const user = {
+        handle: userId,
+        name: claims[config.claims.displayName] ||
+              claims.name ||
+              claims.given_name ||
+              claims[config.claims.email] ||
+              userId,
+        email: claims[config.claims.email] || '',
+        created: Date.now(),
+        enabled: true,
+        admin: extractAdminStatusFromClaims(claims),
+        oidc: true, // Mark as OIDC-managed user
+        password: null, // No password for OIDC users
+        salt: null,
+        lastOidcUpdate: Date.now(),
+    };
+
+    if (config.debug) {
+        console.log('Creating OIDC user:', {
+            userId: userId,
+            name: user.name,
+            email: user.email,
+            admin: user.admin,
+        });
+    }
+
+    await storage.setItem(toKey(userId), user);
+
+    // Ensure user directories exist
+    const directories = getUserDirectories(userId);
+    for (const dir of Object.values(directories)) {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    }
+
+    console.log(`OIDC user created: ${user.name} (${userId})`);
+    return user;
+}
+
+/**
+ * Updates an existing user with fresh OIDC claims
+ * @param {string} userId The user's unique identifier
+ * @param {object} claims OIDC user claims
+ * @returns {Promise<User|null>} The updated user object or null if not found
+ */
+export async function updateUserFromOidcClaims(userId, claims) {
+    const user = await storage.getItem(toKey(userId));
+
+    if (!user) {
+        console.error(`User not found for update: ${userId}`);
+        return null;
+    }
+
+    if (!user.oidc) {
+        console.error(`Attempted to update non-OIDC user with OIDC claims: ${userId}`);
+        return null;
+    }
+
+    const config = getOidcConfig();
+    const oldName = user.name;
+    const oldAdmin = user.admin;
+
+    // Update user information from fresh claims
+    user.name = claims[config.claims.displayName] ||
+               claims.name ||
+               claims.given_name ||
+               user.name;
+    user.email = claims[config.claims.email] || user.email;
+    user.admin = extractAdminStatusFromClaims(claims);
+    user.lastOidcUpdate = Date.now();
+
+    await storage.setItem(toKey(userId), user);
+
+    if (config.debug || oldName !== user.name || oldAdmin !== user.admin) {
+        console.log(`OIDC user updated: ${user.name} (${userId})`, {
+            nameChanged: oldName !== user.name,
+            adminChanged: oldAdmin !== user.admin,
+        });
+    }
+
+    return user;
+}
+
+/**
+ * Gets or creates a user from OIDC claims
+ * @param {object} claims OIDC user claims
+ * @returns {Promise<User | null>} The user object
+ */
+export async function getOrCreateOidcUser(claims) {
+    const config = getOidcConfig();
+    const userId = claims[config.claims.userId];
+
+    if (!userId) {
+        throw new Error(`User ID claim '${config.claims.userId}' not found in OIDC claims`);
+    }
+
+    // Check if user already exists
+    const existingUser = await storage.getItem(toKey(userId));
+
+    if (existingUser) {
+        // Update existing user with fresh claims
+        return await updateUserFromOidcClaims(userId, claims);
+    } else {
+        // Create new user
+        return await createOidcUser(claims);
+    }
+}
+
+/**
+ * Checks if built-in user management should be disabled
+ * @returns {boolean} True if built-in user management should be disabled
+ */
+export function isBuiltinUserManagementDisabled() {
+    return isOidcEnabled() && getConfigValue('oidc.ui.disableBuiltinAuth', true, 'boolean');
+}
+
+/**
+ * Enhanced shouldRedirectToLogin that considers OIDC
+ * @param {import('express').Request} request Request object
+ * @returns {boolean} Whether the user should be redirected to the login page
+ */
+export function shouldRedirectToLogin(request) {
+    // If user accounts are not enabled, no redirect needed
+    if (!isUserAccountsEnabled()) {
+        return false;
+    }
+
+    // If user is already authenticated, no redirect needed
+    if (request.user) {
+        return false;
+    }
+
+    // If OIDC is enabled but user has OIDC tokens, no redirect needed
+    if (isOidcEnabled() && request.session && request.session.oidc_tokens) {
+        return false;
+    }
+
+    // User needs authentication - redirect to login
+    return true;
+}

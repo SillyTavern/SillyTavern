@@ -7,12 +7,11 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
-import { getAllUserHandles, getUserDirectories } from '../users.js';
+import { getAllUserHandles, getUserDirectories, isUserAccountsEnabled } from '../users.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
-const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
 
 // 10 minutes
 const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
@@ -281,7 +280,7 @@ router.post('/get', (request, response) => {
         reasoning,
         enable_extensions: ENABLE_EXTENSIONS,
         enable_extensions_auto_update: ENABLE_EXTENSIONS_AUTO_UPDATE,
-        enable_accounts: ENABLE_ACCOUNTS,
+        enable_accounts: isUserAccountsEnabled(), // Dynamic check for OIDC override
     });
 });
 

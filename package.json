@@ -69,6 +69,7 @@
         "node-fetch": "^3.3.2",
         "node-persist": "^4.0.4",
         "open": "^10.2.0",
+        "openid-client": "^6.7.1",
         "png-chunk-text": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "proxy-agent": "^6.5.0",

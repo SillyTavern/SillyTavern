@@ -685,7 +685,7 @@ async function openUserProfile() {
         await getCurrentUser();
         template.find('.userName').text(currentUser.name);
     }));
-    template.find('.userChangePasswordButton').on('click', () => changePassword(currentUser.handle, async () => {
+    template.find('.userChangePasswordButton').toggle(!currentUser.oidc).on('click', () => changePassword(currentUser.handle, async () => {
         await getCurrentUser();
         template.find('.hasPassword').toggle(currentUser.password);
         template.find('.noPassword').toggle(!currentUser.password);
@@ -794,7 +794,7 @@ async function openAdminPanel() {
             userBlock.find('.userDisableButton').toggle(user.enabled).on('click', () => disableUser(user.handle, renderUsers));
             userBlock.find('.userPromoteButton').toggle(!user.admin).on('click', () => promoteUser(user.handle, renderUsers));
             userBlock.find('.userDemoteButton').toggle(user.admin).on('click', () => demoteUser(user.handle, renderUsers));
-            userBlock.find('.userChangePasswordButton').on('click', () => changePassword(user.handle, renderUsers));
+            userBlock.find('.userChangePasswordButton').toggle(!user.oidc).on('click', () => changePassword(user.handle, renderUsers));
             userBlock.find('.userDelete').on('click', () => deleteUser(user.handle, renderUsers));
             userBlock.find('.userChangeNameButton').on('click', async () => changeName(user.handle, user.name, renderUsers));
             userBlock.find('.userBackupButton').on('click', function () {

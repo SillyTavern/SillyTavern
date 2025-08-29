@@ -36,7 +36,14 @@ import {
     getSessionCookieAge,
     verifySecuritySettings,
     loginPageMiddleware,
+    enforceMultiUserMode,
+    isOidcEnabled,
+    enforceOidcSecurityPolicy,
 } from './users.js';
+
+// OIDC imports
+import { initOidcClient, oidcAuthMiddleware } from './middleware/oidc-auth.js';
+import oidcRouter from './endpoints/oidc.js';
 
 import getWebpackServeMiddleware from './middleware/webpack-serve.js';
 import basicAuthMiddleware from './middleware/basicAuth.js';
@@ -140,6 +147,24 @@ app.use(cookieSession({
 
 app.use(setUserDataMiddleware);
 
+// Host index page - BEFORE CSRF middleware to handle authentication properly
+app.get('/', cacheBuster.middleware, (request, response) => {
+    if (shouldRedirectToLogin(request)) {
+        const query = request.url.split('?')[1];
+
+        // If OIDC is enabled, redirect to OIDC login instead of regular login
+        if (isOidcEnabled()) {
+            const redirectUrl = query ? `/auth/oidc/login?${query}` : '/auth/oidc/login';
+            return response.redirect(redirectUrl);
+        } else {
+            const redirectUrl = query ? `/login?${query}` : '/login';
+            return response.redirect(redirectUrl);
+        }
+    }
+
+    return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
+});
+
 // CSRF Protection //
 if (!cliArgs.disableCsrf) {
     const csrfSyncProtection = csrfSync({
@@ -184,16 +209,6 @@ if (!cliArgs.disableCsrf) {
 }
 
 // Static files
-// Host index page
-app.get('/', cacheBuster.middleware, (request, response) => {
-    if (shouldRedirectToLogin(request)) {
-        const query = request.url.split('?')[1];
-        const redirectUrl = query ? `/login?${query}` : '/login';
-        return response.redirect(redirectUrl);
-    }
-
-    return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
-});
 
 // Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
 app.get('/callback/:source?', (request, response) => {
@@ -206,6 +221,9 @@ app.get('/callback/:source?', (request, response) => {
     return response.redirect(307, path);
 });
 
+// OIDC authentication routes (must be before login page and authentication middleware)
+app.use('/auth/oidc', oidcRouter);
+
 // Host login page
 app.get('/login', loginPageMiddleware);
 
@@ -217,8 +235,27 @@ app.use(express.static(path.join(serverDirectory, 'public'), {}));
 // Public API
 app.use('/api/users', usersPublicRouter);
 
+// Public endpoints that don't require authentication
+app.get('/version', async function (_, response) {
+    const data = await getVersion();
+    response.send(data);
+});
+
+// OIDC authentication middleware (must be after session setup but before requireLoginMiddleware)
+// Use a dynamic wrapper to handle initialization timing
+app.use((request, response, next) => {
+    // Check if OIDC is currently enabled (dynamic check)
+    if (isOidcEnabled()) {
+        return oidcAuthMiddleware(request, response, next);
+    } else {
+        return next();
+    }
+});
+
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
+
+
 app.post('/api/ping', (request, response) => {
     if (request.query.extend && request.session) {
         request.session.touch = Date.now();
@@ -231,11 +268,6 @@ app.post('/api/ping', (request, response) => {
 const uploadsPath = path.join(cliArgs.dataRoot, UPLOADS_DIRECTORY);
 app.use(multer({ dest: uploadsPath, limits: { fieldSize: 500 * 1024 * 1024 } }).single('avatar'));
 app.use(multerMonkeyPatch);
-
-app.get('/version', async function (_, response) {
-    const data = await getVersion();
-    response.send(data);
-});
 
 redirectDeprecatedEndpoints(app);
 setupPrivateEndpoints(app);
@@ -404,12 +436,38 @@ function setDnsResolutionOrder() {
     }
 }
 
+/**
+ * Initializes OIDC client if enabled
+ * @returns {Promise<void>}
+ */
+async function initializeOidc() {
+    if (isOidcEnabled()) {
+        console.log('OIDC is enabled, initializing client...');
+
+        // Force multi-user mode when OIDC is enabled
+        enforceMultiUserMode();
+
+        try {
+            const client = await initOidcClient();
+            if (client) {
+                console.log(color.green('OIDC client initialized successfully'));
+            } else {
+                console.error(color.red('Failed to initialize OIDC client'));
+            }
+        } catch (error) {
+            console.error(color.red('OIDC initialization error:'), error.message);
+        }
+    }
+}
+
 // User storage module needs to be initialized before starting the server
 initUserStorage(globalThis.DATA_ROOT)
     .then(setDnsResolutionOrder)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
+    .then(initializeOidc)
+    .then(enforceOidcSecurityPolicy)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .then(apply404Middleware)

@@ -89,6 +89,51 @@ autheliaAuth: false
 # for the individual accounts
 perUserBasicAuth: false
 
+# -- SSO OIDC CONFIGURATION --
+# OpenID Connect Single Sign-On configuration
+oidc:
+  # Enable OIDC authentication (disables built-in auth when enabled)
+  enabled: false
+  # Enable debug logging for OIDC operations
+  debug: false
+  # OIDC Provider configuration (ZITADEL for example because I am using it)
+  provider:
+    # OIDC issuer URL (e.g., https://your-instance.zitadel.cloud)
+    issuer: ""
+    # Client ID from your OIDC provider
+    clientId: ""
+    # Client secret from your OIDC provider
+    clientSecret: ""
+    # Redirect URI (must match provider configuration)
+    redirectUri: ""
+    # OAuth2 scopes to request
+    scope: "openid profile email"
+    # OAuth2 response type
+    responseType: "code"
+    # OAuth2 response mode
+    responseMode: "query"
+  # Claims mapping configuration
+  claims:
+    # Claim containing unique user identifier (typically 'sub')
+    userId: "sub"
+    # Claim containing display name
+    displayName: "preferred_username"
+    # Claim containing email address
+    email: "email"
+    # Claim containing admin role information (ZITADEL format)
+    adminRole: "urn:zitadel:iam:org:project:roles"
+  # UI configuration
+  ui:
+    # Disable built-in user management when OIDC is enabled
+    disableBuiltinAuth: true
+    # Text for the SSO login button
+    loginButtonText: "Sign in with SSO"
+  # Security configuration
+  security:
+    # Automatically disable all existing non-OIDC users when OIDC is enabled
+    # This prevents non-SSO users from accessing the system in SSO-only mode
+    disableNonOidcUsers: true
+
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed
