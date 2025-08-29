@@ -1210,10 +1210,11 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         const chatMessage = messages.shift();
         const isAssistantRole = chatMessage.role === 'assistant';
         const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
+        const namesInCompletion = oai_settings.names_behavior === character_names_behavior.COMPLETION;
         const assistantPrefill = isAssistantRole && supportsAssistantPrefill ? substituteParams(oai_settings.assistant_prefill) : '';
         const messageContent = [assistantPrefill, chatMessage.content].filter(x => x).join('\n\n');
         const continueMessage = await Message.createAsync(chatMessage.role, messageContent, 'continuePrefill');
-        chatMessage.name && await continueMessage.setName(chatMessage.name);
+        chatMessage.name && namesInCompletion && await continueMessage.setName(promptManager.sanitizeName(chatMessage.name));
         controlPrompts.add(continueMessage);
         chatCompletion.reserveBudget(continueMessage);
     }
