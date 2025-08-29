@@ -1189,46 +1189,37 @@ function extractAdminStatusFromClaims(claims) {
         });
     }
 
+    // Define exact admin roles to prevent privilege escalation
+    const validAdminRoles = [
+        'admin',
+        'administrator',
+    ];
+
     // Handle different role claim formats
     if (typeof rolesClaim === 'string') {
-        // Single role as string
-        return rolesClaim.toLowerCase().includes('admin') ||
-               rolesClaim.toLowerCase().includes('manager') ||
-               rolesClaim.toLowerCase().includes('owner');
+        // Single role as string - exact match or exact role name
+        const normalizedRole = rolesClaim.toLowerCase().trim();
+        return validAdminRoles.includes(normalizedRole);
     } else if (Array.isArray(rolesClaim)) {
-        // Multiple roles as array
-        return rolesClaim.some(role =>
-            typeof role === 'string' && (
-                role.toLowerCase().includes('admin') ||
-                role.toLowerCase().includes('manager') ||
-                role.toLowerCase().includes('owner')
-            ),
-        );
+        // Multiple roles as array - check for exact matches
+        return rolesClaim.some(role => {
+            if (typeof role === 'string') {
+                const normalizedRole = role.toLowerCase().trim();
+                return validAdminRoles.includes(normalizedRole);
+            }
+            return false;
+        });
     } else if (typeof rolesClaim === 'object' && rolesClaim !== null) {
         // Nested role object (ZITADEL format)
-        // Check if 'admin', 'manager', or 'owner' are keys in the roles object
+        // Check if any valid admin role exists as a key in the roles object
         const roleKeys = Object.keys(rolesClaim);
-        const hasAdminRole = roleKeys.some(role =>
-            role.toLowerCase().includes('admin') ||
-            role.toLowerCase().includes('manager') ||
-            role.toLowerCase().includes('owner'),
-        );
-
-        if (hasAdminRole) {
-            return true;
-        }
-
-        // Fallback: also check role values for string-based roles
-        const roleValues = Object.values(rolesClaim);
-        return roleValues.some(role =>
-            typeof role === 'string' && (
-                role.toLowerCase().includes('admin') ||
-                role.toLowerCase().includes('manager') ||
-                role.toLowerCase().includes('owner')
-            ),
-        );
+        return roleKeys.some(role => {
+            const normalizedRole = role.toLowerCase().trim();
+            return validAdminRoles.includes(normalizedRole);
+        });
     }
 
+    // No valid admin role found
     return false;
 }
 

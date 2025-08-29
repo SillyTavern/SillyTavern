@@ -244,9 +244,8 @@ export function oidcAuthMiddleware(request, response, next) {
         return next();
     }
 
-    // Skip authentication for API routes, static assets, and auth routes
+    // Skip authentication for static assets, auth routes, and specific public API endpoints
     const skipPaths = [
-        '/api/',
         '/auth/',
         '/public/',
         '/scripts/',
@@ -260,6 +259,8 @@ export function oidcAuthMiddleware(request, response, next) {
         '/thumbnails/',
         '/csrf-token',
         '/login',
+        '/version',           // Public version endpoint
+        '/api/users',         // Public user management endpoints (login, register, etc.)
     ];
 
     const shouldSkip = skipPaths.some(path => request.path.startsWith(path));
@@ -268,9 +269,32 @@ export function oidcAuthMiddleware(request, response, next) {
     }
 
     // Only protect main application routes like root path
-    // Check for OIDC tokens in session
+    // Check for OIDC tokens in session and validate they're not expired
     if (request.session && request.session.oidc_tokens) {
-        // User has OIDC tokens, they're authenticated
+        const tokens = request.session.oidc_tokens;
+
+        // Check if tokens are expired
+        if (tokens.expires_at && Date.now() >= tokens.expires_at * 1000) {
+            // Tokens are expired, clear session and redirect to login
+            if (getOidcConfig().debug) {
+                console.log('OIDC tokens expired, clearing session');
+            }
+
+            request.session.oidc_tokens = null;
+            request.session.handle = '';
+
+            // For GET requests, redirect to login
+            if (request.method === 'GET') {
+                const query = request.url.split('?')[1];
+                const redirectUrl = query ? `/auth/oidc/login?${query}` : '/auth/oidc/login';
+                return response.redirect(redirectUrl);
+            }
+
+            // For API calls, return 401
+            return response.status(401).json({ error: 'Token expired, please re-authenticate' });
+        }
+
+        // Tokens are valid, user is authenticated
         return next();
     }
 
@@ -281,7 +305,7 @@ export function oidcAuthMiddleware(request, response, next) {
         return response.redirect(redirectUrl);
     }
 
-    // For non-GET requests (like POST API calls), continue without authentication
-    // The requireLoginMiddleware will handle these appropriately
+    // For non-GET requests (like POST API calls), let requireLoginMiddleware handle them
+    // This ensures proper 403 status code is returned for unauthenticated API requests
     return next();
 }
