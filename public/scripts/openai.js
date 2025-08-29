@@ -4963,7 +4963,12 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         } else {
-            $('#openai_max_context').attr('max', max_128k);
+            const model = model_list.find(m => m.id == oai_settings.electronhub_model);
+            if (model?.tokens) {
+                $('#openai_max_context').attr('max', model.tokens);
+            } else {
+                $('#openai_max_context').attr('max', max_8k);
+            }
         }
 
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
