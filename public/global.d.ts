@@ -63,7 +63,7 @@ declare global {
      * @param lang Target language
      * @param provider Translation provider
      */
-    function translate(text: string, lang: string, provider: string = null): Promise<string>;
+    function translate(text: string, lang: string, provider?: string | null): Promise<string>;
 
     interface ConvertVideoArgs {
         buffer: Uint8Array;
