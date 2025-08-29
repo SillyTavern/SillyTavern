@@ -5,20 +5,20 @@ import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyAp
 
 declare global {
     // Custom types
-    declare type InstructSettings = typeof power_user.instruct;
-    declare type ContextSettings = typeof power_user.context;
-    declare type ReasoningSettings = typeof power_user.reasoning;
+    export type InstructSettings = typeof power_user.instruct;
+    export type ContextSettings = typeof power_user.context;
+    export type ReasoningSettings = typeof power_user.reasoning;
 
     // Global namespace modules
     interface Window {
         ai: any;
     }
 
-    declare var pdfjsLib;
-    declare var ePub;
-    declare var quickReplyApi: QuickReplyApi;
+    export var pdfjsLib;
+    export var ePub;
+    export var quickReplyApi: QuickReplyApi;
 
-    declare var SillyTavern: {
+    export var SillyTavern: {
         getContext(): typeof getContext;
         llm: any;
         libs: typeof libs;
