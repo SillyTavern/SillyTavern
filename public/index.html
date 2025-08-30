@@ -177,7 +177,7 @@
                                         </strong>
 
                                         <div class="flex-container gap3px">
-                                            <label for="bind_preset_to_connection" class="margin0 menu_button menu_button_icon" title="Bind presets to API connections" data-i18n="[title]Bind presets to API connections" role="button" tabindex="0">
+                                            <label for="bind_preset_to_connection" class="margin0 menu_button menu_button_icon" title="Bind presets to API connections" data-i18n="[title]Bind presets to API connections" tabindex="0">
                                                 <input id="bind_preset_to_connection" type="checkbox" class="displayNone" />
                                                 <i class="fa-fw fa-solid fa-link toggleOn"></i>
                                                 <i class="fa-fw fa-solid fa-link-slash toggleOff"></i>
@@ -1645,7 +1645,7 @@
                                             </div>
                                             <label id="send_banned_tokens_label" for="send_banned_tokens_textgenerationwebui" class="checkbox_label">
                                                 <input id="send_banned_tokens_textgenerationwebui" type="checkbox" style="display:none;" />
-                                                <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0"></i></small>
+                                                <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0" aria-label="Toggle Banned Tokens"></i></small>
                                             </label>
                                         </div>
                                         <div id="banned_tokens_controls_ooba">
@@ -3802,7 +3802,7 @@
                                 <div class="flex-container">
                                     <label for="context_derived" class="checkbox_label flex1" title="Derive from Model Metadata, if possible." data-i18n="[title]context_derived">
                                         <input id="context_derived" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-bolt menu_button margin0" role="button" tabindex="0"></i></small>
+                                        <small><i class="fa-solid fa-bolt menu_button margin0" role="button" tabindex="0" aria-label="Derive from Model Metadata"></i></small>
                                     </label>
                                 </div>
                             </h4>
@@ -3928,15 +3928,15 @@
                             <div class="flex-container">
                                 <label for="instruct_derived" class="checkbox_label flex1" title="Derive from Model Metadata, if possible." data-i18n="[title]instruct_derived">
                                     <input id="instruct_derived" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-bolt menu_button margin0" role="button" tabindex="0"></i></small>
+                                    <small><i class="fa-solid fa-bolt menu_button margin0" role="button" tabindex="0" aria-label="Derive from Model Metadata"></i></small>
                                 </label>
                                 <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10;If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
                                     <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-link menu_button margin0" role="button" tabindex="0"></i></small>
+                                    <small><i class="fa-solid fa-link menu_button margin0" role="button" tabindex="0" aria-label="Bind to Context"></i></small>
                                 </label>
                                 <label id="instruct_enabled_label" for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
                                     <input id="instruct_enabled" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0"></i></small>
+                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0" aria-label="Enable Instruct Mode"></i></small>
                                 </label>
                             </div>
                         </h4>
@@ -4121,7 +4121,7 @@
                             <div class="flex-container">
                                 <label id="sysprompt_enabled_label" for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
                                     <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0"></i></small>
+                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0" role="button" tabindex="0" aria-label="Enable System Prompt"></i></small>
                                 </label>
                             </div>
                         </h4>
@@ -5633,7 +5633,7 @@
                                         </label>
                                         <div class="flex-container" id="avatar_controls">
                                             <div class="form_create_bottom_buttons_block buttons_block">
-                                                <div id="rm_button_back" class="menu_button fa-solid fa-left-long " role="button" tabindex="0"></div>
+                                                <div id="rm_button_back" class="menu_button fa-solid fa-left-long " role="button" tabindex="0" aria-label="Back"></div>
                                                 <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character" role="button" tabindex="0"></div> -->
                                                 <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites" role="button" tabindex="0"></div>
                                                 <input type="hidden" id="fav_checkbox" name="fav" />
@@ -5645,7 +5645,7 @@
                                                 <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override" role="button" tabindex="0"></div> -->
                                                 <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook" role="button" tabindex="0"></div> -->
                                                 <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character" role="button" tabindex="0"></div>
-                                                <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character" role="button" tabindex="0">
+                                                <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character" tabindex="0">
                                                     <input type="submit" id="create_button" name="create_button">
                                                 </label>
                                                 <div id="delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Character" data-i18n="[title]Delete Character" role="button" tabindex="0"></div>
@@ -5850,7 +5850,7 @@
                                             </div>
                                         </div>
                                         <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
-                                            <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long" role="button" tabindex="0"></div>
+                                            <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long" role="button" tabindex="0" aria-label="Back"></div>
                                             <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario" role="button" tabindex="0"></div>
                                             <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites" role="button" tabindex="0"></div>
                                             <input id="rm_group_fav" type="hidden" />
@@ -5883,7 +5883,7 @@
                         </div>
                         <div class="inline-drawer wide100p flexFlowColumn">
                             <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                                <span data-i18n="Current Members">Current Members </span><i id="groupCurrentMemberPopoutButton" class="fa-solid fa-window-restore menu_button" role="button" tabindex="0"></i>
+                                <span data-i18n="Current Members">Current Members </span><i id="groupCurrentMemberPopoutButton" class="fa-solid fa-window-restore menu_button" role="button" tabindex="0" aria-label="Pop out current members"></i>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
                             <div class="inline-drawer-content">
@@ -6778,7 +6778,7 @@
                 <span class="drag-handle">☰</span>
                 <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Text or token ids" placeholder="Text or [token ids]" />
                 <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" aria-label="Logit Bias Value" data-i18n="[aria-label]Logit Bias Value" />
-                <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove" role="button" tabindex="0"></i>
+                <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove" role="button" tabindex="0" aria-label="Remove"></i>
             </div>
         </div>
         <div id="logit_bias_template" class="template_element">
@@ -6786,7 +6786,7 @@
                 <span class="drag-handle">☰</span>
                 <input class="logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
                 <input class="logit_bias_value text_pole" type="number" min="-100" value="0" max="100" step="0.01" aria-label="Logit Bias Value" data-i18n="[aria-label]Logit Bias Value" />
-                <i class="menu_button fa-solid fa-xmark logit_bias_remove" role="button" tabindex="0"></i>
+                <i class="menu_button fa-solid fa-xmark logit_bias_remove" role="button" tabindex="0" aria-label="Remove"></i>
             </div>
         </div>
         <div id="completion_prompt_manager_popup" class="drawer-content" style="display:none;">
