@@ -15,9 +15,9 @@
         <hr />
 
         <!-- Model parameter textboxes -->
-        Repo ID
+        <label for="hf_repo_id" data-i18n="Repo ID">Repo ID</label>
         <div class="flex-container">
-            <input name="hf_repo_id" class="text_pole" type="text" placeholder="Ex. turboderp/Llama-3-8B-exl2" />
+            <input id="hf_repo_id" name="hf_repo_id" class="text_pole" type="text" placeholder="Ex. turboderp/Llama-3-8B-exl2" />
         </div>
         <div class="range-block-title justifyCenter">
             <span data-i18n="Downloader Options">Downloader Options</span>
@@ -28,34 +28,34 @@
                 <label for="revision">
                     <small data-i18n="Revision">Revision</small>
                 </label>
-                <input name="revision" class="text_pole" type="text" placeholder="Ex. 6.0bpw" />
+                <input id="revision" name="revision" class="text_pole" type="text" placeholder="Ex. 6.0bpw" />
             </div>
             <div class="flex1">
                 <label for="folder_name">
                     <small data-i18n="Folder Name">Output Folder Name</small>
                 </label>
-                <input name="folder_name" class="text_pole" type="text" />
+                <input id="folder_name" name="folder_name" class="text_pole" type="text" />
             </div>
             <div class="flex1">
                 <label for="hf_token">
                     <small data-i18n="HF Token">HF Token</small>
                 </label>
-                <input name="hf_token" class="text_pole" type="text" placeholder="For gated models" />
+                <input id="hf_token" name="hf_token" class="text_pole" type="text" placeholder="For gated models" />
             </div>
         </div>
         <div class="range-block-title justifyCenter">
-            <span data-i18n="Include Patterns">Include Patterns</span>
+            <label for="tabby_download_include" data-i18n="Include Patterns">Include Patterns</label>
             <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Glob patterns of files to include in the download." title="Glob patterns of files to include in the download.&#13;Separate each pattern by a newline."></div>
         </div>
         <div class="flex-container">
-            <textarea class="text_pole textarea_compact" name="tabby_download_include" placeholder="Ex. *.txt"></textarea>
+            <textarea id="tabby_download_include" class="text_pole textarea_compact" name="tabby_download_include" placeholder="Ex. *.txt"></textarea>
         </div>
         <div class="range-block-title justifyCenter">
-            <span data-i18n="Exclude Patterns">Exclude Patterns</span>
+            <label for="tabby_download_exclude" data-i18n="Exclude Patterns">Exclude Patterns</label>
             <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Glob patterns of files to exclude in the download." title="Glob patterns of files to exclude in the download.&#13;Separate each pattern by a newline."></div>
         </div>
         <div class="flex-container">
-            <textarea class="text_pole textarea_compact" name="tabby_download_exclude" placeholder="Ex. *.txt"></textarea>
+            <textarea id="tabby_download_exclude" class="text_pole textarea_compact" name="tabby_download_exclude" placeholder="Ex. *.txt"></textarea>
         </div>
     </div>
 </div>

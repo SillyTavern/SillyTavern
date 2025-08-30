@@ -2,10 +2,10 @@
     <div class="welcomeHeaderTitle">
         <img src="img/logo.png" alt="SillyTavern Logo" class="welcomeHeaderLogo">
         <span class="welcomeHeaderVersionDisplay">{{version}}</span>
-        <div class="mes_button showRecentChats" title="Show recent chats" data-i18n="[title]Show recent chats">
+        <div class="mes_button showRecentChats" title="Show recent chats" data-i18n="[title]Show recent chats" role="button" tabindex="0">
             <i class="fa-solid fa-circle-chevron-down fa-fw fa-lg"></i>
         </div>
-        <div class="mes_button hideRecentChats" title="Hide recent chats" data-i18n="[title]Hide recent chats">
+        <div class="mes_button hideRecentChats" title="Hide recent chats" data-i18n="[title]Hide recent chats" role="button" tabindex="0">
             <i class="fa-solid fa-circle-xmark fa-fw fa-lg"></i>
         </div>
     </div>
@@ -27,7 +27,7 @@
                 <span data-i18n="Discord">Discord</span>
             </a>
             <span class="welcomeShortcutsSeparator">&vert;</span>
-            <button class="openTemporaryChat menu_button menu_button_icon" role="button" tabindex="0">
+            <button class="openTemporaryChat menu_button menu_button_icon">
                 <i class="fa-solid fa-comment-dots"></i>
                 <span data-i18n="Temporary Chat">Temporary Chat</span>
             </button>
@@ -56,10 +56,10 @@
                         </div>
                         <small class="chatDate" title="{{date_long}}">{{date_short}}</small>
                         <div class="chatActions">
-                            <button class="menu_button menu_button_icon renameChat" title="Rename chat" data-i18n="[title]Rename chat" role="button" tabindex="0">
+                            <button class="menu_button menu_button_icon renameChat" title="Rename chat" data-i18n="[title]Rename chat">
                                 <i class="fa-solid fa-pen-to-square fa-fw"></i>
                             </button>
-                            <button class="menu_button menu_button_icon deleteChat" title="Delete chat" data-i18n="[title]Delete chat" role="button" tabindex="0">
+                            <button class="menu_button menu_button_icon deleteChat" title="Delete chat" data-i18n="[title]Delete chat">
                                 <i class="fa-solid fa-trash fa-fw"></i>
                             </button>
                         </div>
@@ -81,7 +81,7 @@
             {{/with}}
         {{/each}}
         {{#if more}}
-            <button class="menu_button menu_button_icon showMoreChats" role="button" tabindex="0">
+            <button class="menu_button menu_button_icon showMoreChats" title="Show more chats" data-i18n="[title]Show more chats">
                 <small class="fa-solid fa-chevron-down fa-fw fa-1x"></small>
             </button>
         {{/if}}

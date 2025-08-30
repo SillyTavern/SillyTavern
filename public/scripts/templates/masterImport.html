@@ -4,8 +4,8 @@
 <div class="flex-container flexFlowColumn justifyLeft">
     {{#each sections}}
         {{#with this}}
-            <label class="checkbox_label">
-                <input type="checkbox" value="{{key}}" checked>
+            <label class="checkbox_label" for="import-{{key}}">
+                <input type="checkbox" id="import-{{key}}" value="{{key}}" checked>
                 <span data-i18n="{{name}}">{{name}}</span>
                 {{#if preset}}
                     <span>&ndash;</span>
