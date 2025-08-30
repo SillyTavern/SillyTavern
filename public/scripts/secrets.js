@@ -197,14 +197,6 @@ export function resolveSecretKey() {
                     return SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT;
             }
         }
-        // ADD THIS BLOCK FOR AZURE OPENAI
-        if (chatCompletionSource === chat_completion_sources.AZURE_OPENAI) {
-            return SECRET_KEYS.AZURE_OPENAI;
-        }
-        // ADD THIS BLOCK FOR AZURE OPENAI
-        if (chatCompletionSource === chat_completion_sources.AZURE_OPENAI) {
-            return SECRET_KEYS.AZURE_OPENAI;
-        }
 
         const [key] = Object.entries(chat_completion_sources).find(([, value]) => value === chatCompletionSource) ?? [null];
         if (key && SECRET_KEYS[key]) {

@@ -336,8 +336,6 @@ export const settingsToUpdate = {
     azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
     azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
     azure_openai_model: ['#azure_openai_model', 'azure_openai_model', false, true],
-
-
     extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
@@ -3811,8 +3809,6 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
-
-
     const validateProxySources = [
         chat_completion_sources.CLAUDE,
         chat_completion_sources.OPENAI,
@@ -3836,10 +3832,6 @@ async function getStatusOpen() {
         data.azure_base_url = oai_settings.azure_base_url;
         data.azure_deployment_name = oai_settings.azure_deployment_name;
         data.azure_api_version = oai_settings.azure_api_version;
-        data.testPayload = {
-            messages: [{ role: 'user', content: 'test' }],
-            max_tokens: 1,
-        };
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;

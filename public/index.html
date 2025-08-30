@@ -2802,7 +2802,7 @@
                             <optgroup>
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
-                                <option value="azure_openai">Azure OpenAI</option>
+                                <option value="azure_openai">Azure</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="cometapi">CometAPI</option>
@@ -3720,7 +3720,7 @@
                                 <option value="kimi-thinking-preview">kimi-thinking-preview</option>
                             </select>
                         </div>
-                        <form id="azure_openai_settings" data-source="azure_openai">
+                        <div id="azure_openai_settings" data-source="azure_openai">
                             <!-- Azure Base URL -->
                             <h4><span data-i18n="Azure Base Url">Azure Base Url</span></h4>
                             <div class="flex-container">
@@ -3733,10 +3733,7 @@
                             <!-- Azure Deployment Name -->
                             <h4><span data-i18n="Deployment Name">Deployment Name</span></h4>
                             <div class="flex-container">
-                                <input id="azure_deployment_name" data-setting="azure_deployment_name" class="text_pole wide100p" type="text" placeholder="your-deployment-name">
-                            </div>
-                            <div>
-                                <small data-i18n="The name of your model deployment in Azure.">The name of your model deployment in Azure.</small>
+                                <input id="azure_deployment_name" data-setting="azure_deployment_name" class="text_pole wide100p" type="text" placeholder="your-deployment-name" title="The name of your model deployment in Azure." data-i18n="[title]The name of your model deployment in Azure.">
                             </div>
 
                             <!-- Azure API Version Dropdown -->
@@ -3747,17 +3744,14 @@
                                     <option value="2024-10-21">2024-10-21</option>
                                 </select>
                             </div>
-                             <div>
-                                <small data-i18n="Select a supported API version.">Select a supported API version.</small>
-                            </div>
 
                             <!-- Azure API Key -->
                             <h4><span data-i18n="Azure API Key">Azure API Key</span></h4>
                             <div class="flex-container">
-                                <input id="api_key_azure_openai" data-setting="api_key_azure_openai" class="text_pole flex1" type="password" autocomplete="off" placeholder="Enter your Azure API Key">
+                                <input id="api_key_azure_openai" data-setting="api_key_azure_openai" class="text_pole flex1" type="password" autocomplete="off">
                                 <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_azure_openai"></div>
                             </div>
-                            <div class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                            <div class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'." data-for="api_key_azure_openai">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
 
@@ -3770,15 +3764,17 @@
                                 <small data-i18n="This URL is generated dynamically from the fields above.">This URL is generated dynamically from the fields above.</small>
                             </div>
 
-                            <!-- Model Name (Read-only) -->
+                            <!-- Model Name (Select) -->
                             <h4><span data-i18n="Model Name">Model Name</span></h4>
                             <div class="flex-container">
-                                <input id="azure_openai_model" data-setting="azure_openai_model" class="text_pole wide100p" type="text" readonly placeholder="Click 'Connect' to fetch model name">
+                                <select id="azure_openai_model" data-setting="azure_openai_model" class="text_pole wide100p">
+                                    <option value="" disabled selected data-i18n="Click 'Connect' to fetch model name">Click 'Connect' to fetch model name</option>
+                                </select>
                             </div>
                             <div>
                                 <small data-i18n="The underlying model of your deployment. This is detected automatically when you connect.">The underlying model of your deployment. This is detected automatically when you connect.</small>
                             </div>
-                        </form>                        <div id="prompt_post_processing_form">
+                        </div>                        <div id="prompt_post_processing_form">
                             <h4>
                                 <span data-i18n="Prompt Post-Processing">
                                     Prompt Post-Processing
