@@ -66,8 +66,8 @@
                 <small><span data-i18n="Can be set manually or with an _space">Can be set manually or with an </span><tt>/emote</tt><span data-i18n="space_ slash command."> slash command.</span></small>
                 <div class="flex-container">
                     <select id="expression_custom" class="flex1 margin0"></select>
-                    <i id="expression_custom_add" class="menu_button fa-solid fa-plus margin0" title="Add"></i>
-                    <i id="expression_custom_remove" class="menu_button fa-solid fa-xmark margin0" title="Remove"></i>
+                    <i id="expression_custom_add" class="menu_button fa-solid fa-plus margin0" title="Add" role="button" tabindex="0"></i>
+                    <i id="expression_custom_remove" class="menu_button fa-solid fa-xmark margin0" title="Remove" role="button" tabindex="0"></i>
                 </div>
             </div>
             <div id="no_chat_expressions" data-i18n="Open a chat to see the character expressions.">
@@ -81,14 +81,14 @@
                 <small><span data-i18n="Use a forward slash to specify a subfolder. Example: _space">Use a forward slash to specify a subfolder. Example: </span><tt>Bob/formal</tt></small>
                 <div class="flex-container flexnowrap">
                     <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
-                    <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
+                    <input id="expression_override_button" class="menu_button" type="submit" value="Submit" / role="button" tabindex="0">
                 </div>
                 <div class="expression_buttons flex-container spaceEvenly">
-                    <div id="expression_upload_pack_button" class="menu_button">
+                    <div id="expression_upload_pack_button" class="menu_button" role="button" tabindex="0">
                         <i class="fa-solid fa-file-zipper"></i>
                         <span data-i18n="Upload sprite pack (ZIP)">Upload sprite pack (ZIP)</span>
                     </div>
-                    <div id="expression_override_cleanup_button" class="menu_button">
+                    <div id="expression_override_cleanup_button" class="menu_button" role="button" tabindex="0">
                         <i class="fa-solid fa-trash-can"></i>
                         <span data-i18n="Remove all image overrides">Remove all image overrides</span>
                     </div>

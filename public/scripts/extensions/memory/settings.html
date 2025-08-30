@@ -3,7 +3,7 @@
         <div class="inline-drawer-toggle inline-drawer-header">
             <div class="flex-container alignitemscenter margin0">
                 <b data-i18n="ext_sum_title">Summarize</b>
-                <i id="summaryExtensionPopoutButton" class="fa-solid fa-window-restore menu_button margin0"></i>
+                <i id="summaryExtensionPopoutButton" class="fa-solid fa-window-restore menu_button margin0" role="button" tabindex="0"></i>
             </div>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
@@ -20,14 +20,14 @@
                     <span data-i18n="ext_sum_current_summary">Current summary:</span>
                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="memory_contents" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     <span class="flex1">&nbsp;</span>
-                    <div id="memory_restore" class="menu_button margin0" data-i18n="[title]ext_sum_restore_tip" title="Restore a previous summary; use repeatedly to clear summarization state for this chat.">
+                    <div id="memory_restore" class="menu_button margin0" data-i18n="[title]ext_sum_restore_tip" title="Restore a previous summary; use repeatedly to clear summarization state for this chat." role="button" tabindex="0">
                         <small data-i18n="ext_sum_restore_previous">Restore Previous</small>
                     </div>
                 </div>
 
                 <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]ext_sum_memory_placeholder" placeholder="Summary will be generated here..."></textarea>
                 <div class="memory_contents_controls">
-                    <div id="memory_force_summarize" data-summary-source="main,webllm" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip">
+                    <div id="memory_force_summarize" data-summary-source="main,webllm" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip" role="button" tabindex="0">
                         <i class="fa-solid fa-database"></i>
                         <span data-i18n="ext_sum_force_text">Summarize now</span>
                     </div>
@@ -38,7 +38,7 @@
                     </label>
                 </div>
                 <div class="memory_contents_controls">
-                    <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" data-i18n="[title]ext_sum_settings_tip" title="Edit summarization prompt, insertion position, etc.">
+                    <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" data-i18n="[title]ext_sum_settings_tip" title="Edit summarization prompt, insertion position, etc." role="button" tabindex="0">
                         <i class="fa-solid fa-cog"></i>
                         <span data-i18n="ext_sum_settings">Summary Settings</span>
                     </div>

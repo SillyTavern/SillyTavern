@@ -5,7 +5,7 @@
 			<label class="qr--fit">
 				<span class="qr--labelText" data-i18n="Label">Icon</span>
 				<small class="qr--labelHint">&nbsp;</small>
-				<div class="menu_button fa-fw" id="qr--modal-icon" title="Click to change icon"></div>
+				<div class="menu_button fa-fw" id="qr--modal-icon" title="Click to change icon" role="button" tabindex="0"></div>
 			</label>
 			<div class="label">
 				<span class="qr--labelText" data-i18n="Label">Label</span>
@@ -16,7 +16,7 @@
 						Show
 					</label>
 					<input type="text" class="text_pole" id="qr--modal-label">
-					<div class="menu_button fa-fw fa-solid fa-chevron-down" id="qr--modal-switcher" title="Switch to another QR"></div>
+					<div class="menu_button fa-fw fa-solid fa-chevron-down" id="qr--modal-switcher" title="Switch to another QR" role="button" tabindex="0"></div>
 				</div>
 			</div>
 			<label>
@@ -73,12 +73,12 @@
 						<span data-i18n="Chaining:">Chaining:</span>
 						<input type="checkbox" class="qr--isChained">
 					</label>
-					<div class="qr--delete menu_button menu_button_icon fa-solid fa-trash-can" title="Remove entry"></div>
+					<div class="qr--delete menu_button menu_button_icon fa-solid fa-trash-can" title="Remove entry" role="button" tabindex="0"></div>
 				</div>
 			</template>
 		</div>
 		<div class="qr--ctxEditorActions">
-			<span id="qr--ctxAdd" class="menu_button menu_button_icon fa-solid fa-plus" title="Add quick reply set to context menu"></span>
+			<span id="qr--ctxAdd" class="menu_button menu_button_icon fa-solid fa-plus" title="Add quick reply set to context menu" role="button" tabindex="0"></span>
 		</div>
 
 
@@ -129,17 +129,17 @@
 
 		<h3 data-i18n="Testing">Testing</h3>
 		<div id="qr--modal-executeButtons">
-			<div id="qr--modal-execute" class="qr--modal-executeButton menu_button" title="Execute the quick reply now">
+			<div id="qr--modal-execute" class="qr--modal-executeButton menu_button" title="Execute the quick reply now" role="button" tabindex="0">
 				<i class="fa-solid fa-play"></i>
 				<span data-i18n="Execute">Execute</span>
 			</div>
-			<div id="qr--modal-pause" class="qr--modal-executeButton menu_button" title="Pause / continue execution">
+			<div id="qr--modal-pause" class="qr--modal-executeButton menu_button" title="Pause / continue execution" role="button" tabindex="0">
 				<span class="qr--modal-executeComboIcon">
 					<i class="fa-solid fa-play"></i>
 					<i class="fa-solid fa-pause"></i>
 				</span>
 			</div>
-			<div id="qr--modal-stop" class="qr--modal-executeButton menu_button" title="Abort execution">
+			<div id="qr--modal-stop" class="qr--modal-executeButton menu_button" title="Abort execution" role="button" tabindex="0">
 				<i class="fa-solid fa-stop"></i>
 			</div>
 		</div>
@@ -148,12 +148,12 @@
 		<div id="qr--modal-executeResult"></div>
 
 		<div id="qr--modal-debugButtons">
-			<div title="Resume" id="qr--modal-resume" class="qr--modal-debugButton menu_button"></div>
-			<div title="Step Over" id="qr--modal-step" class="qr--modal-debugButton menu_button"></div>
-			<div title="Step Into" id="qr--modal-stepInto" class="qr--modal-debugButton menu_button"></div>
-			<div title="Step Out" id="qr--modal-stepOut" class="qr--modal-debugButton menu_button"></div>
-			<div title="Minimize" id="qr--modal-minimize" class="qr--modal-debugButton menu_button fa-solid fa-minimize"></div>
-			<div title="Maximize" id="qr--modal-maximize" class="qr--modal-debugButton menu_button fa-solid fa-maximize"></div>
+			<div title="Resume" id="qr--modal-resume" class="qr--modal-debugButton menu_button" role="button" tabindex="0"></div>
+			<div title="Step Over" id="qr--modal-step" class="qr--modal-debugButton menu_button" role="button" tabindex="0"></div>
+			<div title="Step Into" id="qr--modal-stepInto" class="qr--modal-debugButton menu_button" role="button" tabindex="0"></div>
+			<div title="Step Out" id="qr--modal-stepOut" class="qr--modal-debugButton menu_button" role="button" tabindex="0"></div>
+			<div title="Minimize" id="qr--modal-minimize" class="qr--modal-debugButton menu_button fa-solid fa-minimize" role="button" tabindex="0"></div>
+			<div title="Maximize" id="qr--modal-maximize" class="qr--modal-debugButton menu_button fa-solid fa-maximize" role="button" tabindex="0"></div>
 		</div>
 		<textarea rows="1" id="qr--modal-send_textarea" placeholder="Chat input for use with {{input}}" title="Chat input for use with {{input}}"></textarea>
 		<div id="qr--modal-debugState"></div>
