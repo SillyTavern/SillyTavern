@@ -1389,6 +1389,20 @@ export function extractDataFromPng(data, identifier = 'chara') {
     }
 }
 
+export function showToast(type, message, title, options) {
+    const role = (type === 'info' || type === 'success' || type === 'warning') ? 'status' : 'alert';
+    toastr[type](message, title, options);
+
+    const liveRegionId = role === 'status' ? 'polite-live-region' : 'assertive-live-region';
+    const liveRegion = document.getElementById(liveRegionId);
+
+    if (liveRegion) {
+        // Construct the full message including the title for the screen reader
+        const fullMessage = title ? `${t(title)}: ${t(message)}` : t(message);
+        liveRegion.textContent = fullMessage;
+    }
+}
+
 /**
  * Sends a request to the server to sanitize a given filename
  *
@@ -1413,7 +1427,7 @@ export async function getSanitizedFilename(fileName) {
         const responseData = await result.json();
         return responseData.fileName;
     } catch (error) {
-        toastr.error(String(error), 'Could not sanitize fileName');
+        showToast(String(error), 'Could not sanitize fileName', {}, 'error');
         console.error('Could not sanitize fileName', error);
         throw error;
     }
