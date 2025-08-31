@@ -221,7 +221,7 @@ async function sendClaudeRequest(request, response) {
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
-        if (isOpus41){
+        if (isOpus41) {
             if (requestBody.top_p < 1) {
                 delete requestBody.temperature;
             } else {
@@ -1642,7 +1642,17 @@ router.post('/generate', function (request, response) {
         if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
             request.body.model = `${request.body.model}:online`;
         }
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
+        const isClaude3or4 = /claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
+        if (enableSystemPromptCache && isClaude3or4) {
+            bodyParams['cache_control'] = {
+                'enabled': true,
+                'ttl': cacheTTL,
+            };
+        }
+    }
+    else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = API_POLLINATIONS;
         apiKey = 'NONE';
         headers = {
