@@ -2260,16 +2260,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     // https://api-docs.deepseek.com/api/create-chat-completion
     if (isDeepSeek) {
         generate_data.top_p = generate_data.top_p || Number.EPSILON;
-
-        if (generate_data.model.endsWith('-reasoner')) {
-            delete generate_data.top_p;
-            delete generate_data.temperature;
-            delete generate_data.frequency_penalty;
-            delete generate_data.presence_penalty;
-            delete generate_data.top_logprobs;
-            delete generate_data.logprobs;
-            delete generate_data.logit_bias;
-        }
     }
 
     if (isXAI) {
