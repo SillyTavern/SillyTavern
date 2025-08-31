@@ -21,6 +21,7 @@
                     <small data-i18n="ext_regex_import_script">Import</small>
                 </div>
                 <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
+                <input type="file" id="import_regex_preset_file" hidden accept="*.json" />
                 <label for="regex_bulk_edit" class="menu_button menu_button_icon">
                     <input id="regex_bulk_edit" type="checkbox" class="displayNone" />
                     <i class="fa-solid fa-edit"></i>
@@ -51,6 +52,45 @@
                     <i class="fa-solid fa-trash"></i>
                     <small data-i18n="Delete">Delete</small>
                 </div>
+            </div>
+            <hr />
+            <div id="regex_presets_block" class="padding5">
+                <div class="flex-container alignItemsBaseline">
+                    <strong class="flex1" data-i18n="ext_regex_presets">Regex Presets</strong>
+                    <div class="flex-container">
+                        <select id="regex_preset_select" class="text_pole flex1">
+                            <option value="" data-i18n="ext_regex_no_preset_selected">No preset selected</option>
+                        </select>
+                        <label class="checkbox" for="regex_preset_exclusive" title="Make this preset exclusive (disable all others when applied)">
+                            <input type="checkbox" id="regex_preset_exclusive" />
+                            <span>Exclusive</span>
+                        </label>
+                        <div id="regex_preset_create" class="menu_button menu_button_icon" title="Create preset from current enabled scripts">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                        <div id="regex_preset_delete" class="menu_button menu_button_icon" title="Delete selected preset">
+                            <i class="fa-solid fa-trash"></i>
+                        </div>
+                        <div id="regex_preset_save" class="menu_button menu_button_icon" title="Save current state to preset">
+                            <i class="fa-solid fa-save"></i>
+                        </div>
+                        <div class="regex_preset_export_group">
+                            <div id="regex_preset_export" class="menu_button menu_button_icon" title="Export preset (references only)">
+                                <i class="fa-solid fa-file-export"></i>
+                            </div>
+                            <div id="regex_preset_export_content" class="menu_button menu_button_icon" title="Export preset with full script content">
+                                <i class="fa-solid fa-file-export"></i>
+                                <i class="fa-solid fa-plus" style="font-size: 0.6em; position: absolute; top: 2px; right: 2px;"></i>
+                            </div>
+                            <div id="regex_preset_import" class="menu_button menu_button_icon" title="Import preset from file">
+                                <i class="fa-solid fa-file-import"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <small data-i18n="ext_regex_presets_desc">
+                    Save and switch between groups of enabled regex scripts.
+                </small>
             </div>
             <hr />
             <div id="global_scripts_block" class="padding5">

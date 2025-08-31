@@ -24,6 +24,15 @@
     text-align: center;
 }
 
+.regex_preset_export_group {
+    display: flex;
+    gap: 2px;
+}
+.regex_preset_export_group .menu_button {
+    position: relative;
+    flex: 0 0 auto;
+}
+
 #scoped_scripts_block {
     opacity: 1;
     transition: opacity var(--animation-duration-2x) ease-in-out;

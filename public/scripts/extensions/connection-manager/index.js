@@ -43,6 +43,7 @@ const CC_COMMANDS = [
     'reasoning-template',
     'prompt-post-processing',
     'secret-id',
+    'regex-preset',
 ];
 
 const TC_COMMANDS = [
@@ -60,6 +61,7 @@ const TC_COMMANDS = [
     'start-reply-with',
     'reasoning-template',
     'secret-id',
+    'regex-preset',
 ];
 
 const FANCY_NAMES = {
@@ -79,6 +81,7 @@ const FANCY_NAMES = {
     'reasoning-template': 'Reasoning Template',
     'prompt-post-processing': 'Prompt Post-Processing',
     'secret-id': 'Secret',
+    'regex-preset': 'Regex Preset',
 };
 
 /**

@@ -215,6 +215,64 @@ async function loadRegexScripts() {
 
     const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isAllowed);
+
+    // Load presets UI
+    loadRegexPresetsUI();
+}
+
+/**
+ * Loads and populates the regex presets UI
+ */
+function loadRegexPresetsUI() {
+    const presets = getRegexPresets();
+    const select = $('#regex_preset_select');
+    const currentPreset = extension_settings.selected_regex_preset;
+
+    // Clear existing options except the first one
+    select.find('option:not(:first)').remove();
+
+    // Add preset options
+    presets.forEach(preset => {
+        const option = $('<option></option>')
+            .attr('value', preset.name)
+            .text(preset.name);
+
+        // Create tooltip with global/scoped distinction
+        let tooltip = '';
+        const globalScripts = preset.globalScripts ?? [];
+        const scopedScripts = preset.scopedScripts ?? [];
+
+        if (globalScripts.length > 0) {
+            tooltip += `Global: ${globalScripts.join(', ')}`;
+        }
+        if (scopedScripts.length > 0) {
+            if (tooltip) tooltip += '\n';
+            tooltip += `Scoped: ${scopedScripts.join(', ')}`;
+        }
+        if (!tooltip) {
+            tooltip = 'No scripts in preset';
+        }
+
+        // Add exclusive info to tooltip
+        if (preset.exclusive) {
+            tooltip += '\n[EXCLUSIVE - disables others when applied]';
+        }
+
+        option.attr('title', tooltip);
+        select.append(option);
+    });
+
+    // Set current selection
+    if (currentPreset) {
+        select.val(currentPreset);
+        
+        // Update exclusive checkbox based on current preset
+        const preset = presets.find(p => equalsIgnoreCaseAndAccents(p.name, currentPreset));
+        $('#regex_preset_exclusive').prop('checked', preset?.exclusive || false);
+    } else {
+        select.val('');
+        $('#regex_preset_exclusive').prop('checked', false);
+    }
 }
 
 /**
@@ -848,9 +906,287 @@ function migrateSettings() {
         performSave = true;
     }
 
+    if (!extension_settings.regex_presets) {
+        extension_settings.regex_presets = [];
+        performSave = true;
+    }
+
+    if (!extension_settings.selected_regex_preset) {
+        extension_settings.selected_regex_preset = null;
+        performSave = true;
+    }
+
     if (performSave) {
         saveSettingsDebounced();
     }
+}
+
+/**
+ * Gets the list of regex presets
+ * @returns {Array} List of regex presets
+ */
+export function getRegexPresets() {
+    return extension_settings.regex_presets ?? [];
+}
+
+/**
+ * Creates a regex preset from currently enabled scripts
+ * @param {string} name Preset name
+ * @param {boolean} includeContent Whether to include full script content
+ * @param {boolean} exclusive Whether this preset should be exclusive (disable others when applied)
+ * @returns {Promise<string>} The created preset name
+ */
+async function createRegexPreset(name, includeContent = false, exclusive = false) {
+    if (!name || typeof name !== 'string') {
+        throw new Error('Preset name is required and must be a string');
+    }
+
+    const globalScriptObjects = (extension_settings.regex ?? [])
+        .filter(script => !script.disabled);
+
+    const scopedScriptObjects = (characters[this_chid]?.data?.extensions?.regex_scripts ?? [])
+        .filter(script => !script.disabled);
+
+    const preset = {
+        id: uuidv4(),
+        name: name,
+        created: new Date().toISOString(),
+        includesContent: includeContent,
+        exclusive: exclusive,
+    };
+
+    if (includeContent) {
+        // Include full script content
+        preset.globalScriptsContent = globalScriptObjects.map(script => ({
+            ...script,
+            // Ensure we have all required fields
+            id: script.id || uuidv4(),
+            scriptName: script.scriptName,
+            findRegex: script.findRegex || '',
+            replaceString: script.replaceString || '',
+            trimStrings: script.trimStrings || [],
+            placement: script.placement || [],
+            disabled: false, // Always save as enabled in preset
+            markdownOnly: script.markdownOnly || false,
+            promptOnly: script.promptOnly || false,
+            runOnEdit: script.runOnEdit || false,
+            substituteRegex: script.substituteRegex || 0,
+            minDepth: script.minDepth || null,
+            maxDepth: script.maxDepth || null,
+        }));
+
+        preset.scopedScriptsContent = scopedScriptObjects.map(script => ({
+            ...script,
+            id: script.id || uuidv4(),
+            scriptName: script.scriptName,
+            findRegex: script.findRegex || '',
+            replaceString: script.replaceString || '',
+            trimStrings: script.trimStrings || [],
+            placement: script.placement || [],
+            disabled: false,
+            markdownOnly: script.markdownOnly || false,
+            promptOnly: script.promptOnly || false,
+            runOnEdit: script.runOnEdit || false,
+            substituteRegex: script.substituteRegex || 0,
+            minDepth: script.minDepth || null,
+            maxDepth: script.maxDepth || null,
+        }));
+
+        // For compatibility, also include names
+        preset.globalScripts = globalScriptObjects.map(s => s.scriptName);
+        preset.scopedScripts = scopedScriptObjects.map(s => s.scriptName);
+    } else {
+        // Only include script names (reference mode)
+        preset.globalScripts = globalScriptObjects.map(script => script.scriptName);
+        preset.scopedScripts = scopedScriptObjects.map(script => script.scriptName);
+    }
+
+    const presets = getRegexPresets();
+    const existingIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, name));
+
+    if (existingIndex !== -1) {
+        presets[existingIndex] = preset;
+    } else {
+        presets.push(preset);
+    }
+
+    extension_settings.regex_presets = presets;
+    saveSettingsDebounced();
+
+    return name;
+}
+
+/**
+ * Saves current script states to a preset (overwrites if exists)
+ * @param {string} name Preset name
+ * @param {boolean} includeContent Whether to include full script content
+ * @param {boolean} exclusive Whether this preset should be exclusive (disable others when applied)
+ * @returns {Promise<string>} The saved preset name
+ */
+async function saveCurrentStateToPreset(name, includeContent = false, exclusive = false) {
+    if (!name || typeof name !== 'string') {
+        throw new Error('Preset name is required and must be a string');
+    }
+
+    // Get current enabled scripts from both global and scoped
+    const globalScripts = (extension_settings.regex ?? [])
+        .filter(script => !script.disabled)
+        .map(script => script.scriptName);
+
+    const scopedScripts = (characters[this_chid]?.data?.extensions?.regex_scripts ?? [])
+        .filter(script => !script.disabled)
+        .map(script => script.scriptName);
+
+    const preset = {
+        id: uuidv4(),
+        name: name,
+        globalScripts: globalScripts,
+        scopedScripts: scopedScripts,
+        exclusive: exclusive,
+        created: new Date().toISOString(),
+    };
+
+    const presets = getRegexPresets();
+    const existingIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, name));
+
+    if (existingIndex !== -1) {
+        // Preserve the original ID and creation date if updating
+        preset.id = presets[existingIndex].id;
+        preset.created = presets[existingIndex].created;
+        preset.updated = new Date().toISOString();
+        presets[existingIndex] = preset;
+    } else {
+        presets.push(preset);
+    }
+
+    extension_settings.regex_presets = presets;
+    extension_settings.selected_regex_preset = name;
+    saveSettingsDebounced();
+
+    return name;
+}
+
+/**
+ * Applies a regex preset by enabling/disabling scripts
+ * @param {string} presetName Name of the preset to apply
+ * @param {boolean} othersOff Whether to disable all other scripts
+ * @returns {Promise<string>} The applied preset name
+ */
+async function applyRegexPreset(presetName, othersOff = false) {
+    if (!presetName || typeof presetName !== 'string') {
+        throw new Error('Preset name is required and must be a string');
+    }
+
+    const presets = getRegexPresets();
+    const preset = presets.find(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (!preset) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    // If preset is exclusive, automatically enable othersOff (equivalent to others=off)
+    if (preset.exclusive) {
+        othersOff = true;
+    }
+
+    let changesCount = 0;
+
+    const globalScriptsToEnable = preset.globalScripts ?? [];
+    const scopedScriptsToEnable = preset.scopedScripts ?? [];
+
+    // Handle global scripts
+    const globalScripts = extension_settings.regex ?? [];
+    for (const script of globalScripts) {
+        const shouldBeEnabled = globalScriptsToEnable.some(name =>
+            equalsIgnoreCaseAndAccents(name, script.scriptName));
+
+        const currentlyEnabled = !script.disabled;
+
+        if (othersOff) {
+            // In othersOff mode, enable only scripts in preset, disable all others
+            const shouldEnable = shouldBeEnabled;
+            if (currentlyEnabled !== shouldEnable) {
+                script.disabled = !shouldEnable;
+                changesCount++;
+            }
+        } else {
+            // In normal mode, only enable scripts in preset, don't disable others
+            if (shouldBeEnabled && !currentlyEnabled) {
+                script.disabled = false;
+                changesCount++;
+            }
+        }
+    }
+
+    // Handle scoped scripts
+    const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts ?? [];
+    if (scopedScripts.length > 0) {
+        for (const script of scopedScripts) {
+            const shouldBeEnabled = scopedScriptsToEnable.some(name =>
+                equalsIgnoreCaseAndAccents(name, script.scriptName));
+
+            const currentlyEnabled = !script.disabled;
+
+            if (othersOff) {
+                // In othersOff mode, enable only scripts in preset, disable all others
+                const shouldEnable = shouldBeEnabled;
+                if (currentlyEnabled !== shouldEnable) {
+                    script.disabled = !shouldEnable;
+                    changesCount++;
+                }
+            } else {
+                // In normal mode, only enable scripts in preset, don't disable others
+                if (shouldBeEnabled && !currentlyEnabled) {
+                    script.disabled = false;
+                    changesCount++;
+                }
+            }
+        }
+    }
+
+    // Save changes
+    if (changesCount > 0) {
+        if (scopedScripts.length > 0) {
+            await writeExtensionField(this_chid, 'regex_scripts', scopedScripts);
+        }
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+        await reloadCurrentChat();
+    }
+
+    extension_settings.selected_regex_preset = presetName;
+    saveSettingsDebounced();
+
+    return presetName;
+}
+
+/**
+ * Deletes a regex preset
+ * @param {string} presetName Name of the preset to delete
+ * @returns {Promise<boolean>} Success status
+ */
+async function deleteRegexPreset(presetName) {
+    if (!presetName || typeof presetName !== 'string') {
+        throw new Error('Preset name is required and must be a string');
+    }
+
+    const presets = getRegexPresets();
+    const index = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (index === -1) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    presets.splice(index, 1);
+    extension_settings.regex_presets = presets;
+
+    if (extension_settings.selected_regex_preset === presetName) {
+        extension_settings.selected_regex_preset = null;
+    }
+
+    saveSettingsDebounced();
+    return true;
 }
 
 /**
@@ -932,6 +1268,465 @@ async function toggleRegexCallback(args, scriptName) {
 }
 
 /**
+ * /regex-preset slash command callback
+ *
+ * Supports flexible parameter parsing to accommodate various usage patterns:
+ * - Standard named parameters: action=edit preset scripts=a,b
+ * - Mixed syntax: action=edit MyPreset scripts=a,b (common user input)
+ * - Array format: scripts=["a","b"] or ["a","b"] others=off
+ * - Legacy comma format: a,b,c others=off
+ *
+ * @param {{action: string, others: string, quiet: string, scripts: string, exclusive: string}} args Named arguments
+ * @param {string} presetNameOrScripts Preset name or comma-separated script names
+ * @returns {Promise<string>} Result message
+ */
+async function regexPresetCallback(args, presetNameOrScripts) {
+    const quiet = isTrueBoolean(args?.quiet);
+    const action = args?.action || 'apply';
+    const othersOff = args?.others === 'off';
+    const exclusive = isTrueBoolean(args?.exclusive);
+
+    // Handle scripts parameter - support both string and JSON array formats
+    let scriptsList = args?.scripts;
+
+    // For better user experience, support parsing scripts from unnamed argument
+    // This is a temporary solution until we can improve the command structure
+    if (!scriptsList && presetNameOrScripts && presetNameOrScripts.includes('scripts=')) {
+        const scriptsMatch = presetNameOrScripts.match(/scripts=([^&\s]+)/);
+        if (scriptsMatch) {
+            scriptsList = decodeURIComponent(scriptsMatch[1]);
+            presetNameOrScripts = presetNameOrScripts.replace(/\s*scripts=[^&\s]+/, '').trim();
+        }
+    }
+
+    // Support parsing others=off from unnamed argument
+    let actualPresetName = presetNameOrScripts;
+    let parsedOthersOff = othersOff;
+    if (presetNameOrScripts && presetNameOrScripts.includes('others=off')) {
+        const parts = presetNameOrScripts.split(/\s+/);
+        actualPresetName = parts[0];
+        parsedOthersOff = true;
+    }
+
+    // Process scripts parameter format
+    if (typeof scriptsList === 'string' && scriptsList.trim().startsWith('[')) {
+        try {
+            const parsed = JSON.parse(scriptsList);
+            if (Array.isArray(parsed)) {
+                scriptsList = parsed.join(',');
+            }
+        } catch (e) {
+            // If JSON parsing fails, treat as comma-separated string
+        }
+    }
+
+    try {
+        switch (action.toLowerCase()) {
+            case 'create':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for create action');
+                }
+                const includeContent = args?.content === 'true' || args?.content === true;
+                await createRegexPreset(actualPresetName, includeContent, exclusive);
+                const contentMsg = includeContent ? ' (with content)' : '';
+                const exclusiveMsg = exclusive ? ' (exclusive)' : '';
+                !quiet && toastr.success(t`Regex preset "${actualPresetName}" created${contentMsg}${exclusiveMsg}.`);
+                return actualPresetName;
+
+            case 'save':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for save action');
+                }
+                const saveIncludeContent = args?.content === 'true' || args?.content === true;
+                await saveCurrentStateToPreset(actualPresetName, saveIncludeContent, exclusive);
+                loadRegexPresetsUI();
+                const saveContentMsg = saveIncludeContent ? ' (with content)' : '';
+                const saveExclusiveMsg = exclusive ? ' (exclusive)' : '';
+                !quiet && toastr.success(t`Current state saved to preset "${actualPresetName}"${saveContentMsg}${saveExclusiveMsg}.`);
+                return actualPresetName;
+
+            case 'delete':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for delete action');
+                }
+                await deleteRegexPreset(actualPresetName);
+                !quiet && toastr.success(t`Regex preset "${actualPresetName}" deleted.`);
+                return actualPresetName;
+
+            case 'list':
+                const availablePresets = getRegexPresets();
+                const presetNames = availablePresets.map(p => p.name).join(', ');
+                const currentPreset = extension_settings.selected_regex_preset;
+                const result = presetNames || 'No presets found';
+                !quiet && toastr.info(`Available presets: ${result}${currentPreset ? `\nCurrent: ${currentPreset}` : ''}`);
+                return result;
+
+            case 'show':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for show action');
+                }
+                return await showPresetContents(actualPresetName, quiet);
+
+            case 'edit':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for edit action');
+                }
+                if (!scriptsList) {
+                    throw new Error('scripts parameter is required for edit action (comma-separated script names)');
+                }
+                return await editPresetScripts(actualPresetName, scriptsList, quiet);
+
+            case 'add':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for add action');
+                }
+                if (!scriptsList) {
+                    throw new Error('scripts parameter is required for add action (comma-separated script names)');
+                }
+                return await addScriptsToPreset(actualPresetName, scriptsList, quiet);
+
+            case 'remove':
+                if (!actualPresetName) {
+                    throw new Error('Preset name is required for remove action');
+                }
+                if (!scriptsList) {
+                    throw new Error('scripts parameter is required for remove action (comma-separated script names)');
+                }
+                return await removeScriptsFromPreset(actualPresetName, scriptsList, quiet);
+
+            case 'apply':
+            default:
+                if (!actualPresetName) {
+                    // Return current preset if no name provided
+                    const current = extension_settings.selected_regex_preset || 'None';
+                    !quiet && toastr.info(t`Current regex preset: ${current}`);
+                    return current;
+                }
+
+                // Check if actualPresetName is a JSON array format
+                if (actualPresetName.trim().startsWith('[')) {
+                    try {
+                        const scriptArray = JSON.parse(actualPresetName);
+                        if (Array.isArray(scriptArray)) {
+                            await applyScriptNames(scriptArray, othersOff);
+                            !quiet && toastr.success(t`Applied regex scripts: ${scriptArray.join(', ')}${othersOff ? ' (others disabled)' : ''}`);
+                            return scriptArray.join(', ');
+                        }
+                    } catch (e) {
+                        // Fall through to other checks
+                    }
+                }
+
+                // First check if it's an existing preset name
+                const allPresets = getRegexPresets();
+                const existingPreset = allPresets.find(p => equalsIgnoreCaseAndAccents(p.name, actualPresetName));
+
+                if (existingPreset) {
+                    // Apply named preset
+                    const result = await applyRegexPreset(actualPresetName, othersOff);
+                    // Update UI to reflect changes
+                    loadRegexPresetsUI();
+                    !quiet && toastr.success(t`Applied regex preset: ${result}${othersOff ? ' (others disabled)' : ''}`);
+                    return result;
+                } else if (actualPresetName.includes(',')) {
+                    // Check if it's a comma-separated list of script names (direct activation)
+                    const scriptNames = actualPresetName.split(',').map(s => s.trim()).filter(s => s);
+                    await applyScriptNames(scriptNames, othersOff);
+                    !quiet && toastr.success(t`Applied regex scripts: ${scriptNames.join(', ')}`);
+                    return scriptNames.join(', ');
+                } else {
+                    // Try as single script name (direct activation)
+                    const allScripts = getRegexScripts();
+                    const scriptExists = allScripts.some(script =>
+                        equalsIgnoreCaseAndAccents(script.scriptName, actualPresetName));
+
+                    if (scriptExists) {
+                        await applyScriptNames([actualPresetName], othersOff);
+                        !quiet && toastr.success(t`Applied regex script: ${actualPresetName}${othersOff ? ' (others disabled)' : ''}`);
+                        return actualPresetName;
+                    } else {
+                        throw new Error(`Neither preset nor script named "${actualPresetName}" found`);
+                    }
+                }
+        }
+    } catch (error) {
+        const errorMsg = error.message || 'Unknown error occurred';
+        !quiet && toastr.error(errorMsg);
+        throw new Error(errorMsg);
+    }
+}
+
+/**
+ * Applies script names directly (for /regex-preset with comma-separated names)
+ * @param {string[]} scriptNames Array of script names to enable
+ * @param {boolean} othersOff Whether to disable all other scripts
+ * @returns {Promise<void>}
+ */
+async function applyScriptNames(scriptNames, othersOff = false) {
+    const scripts = getRegexScripts();
+    let changesCount = 0;
+
+    for (const script of scripts) {
+        const shouldBeEnabled = scriptNames.some(name =>
+            equalsIgnoreCaseAndAccents(name, script.scriptName));
+
+        const currentlyEnabled = !script.disabled;
+
+        if (othersOff) {
+            const shouldEnable = shouldBeEnabled;
+            if (currentlyEnabled !== shouldEnable) {
+                script.disabled = !shouldEnable;
+                changesCount++;
+            }
+        } else {
+            if (shouldBeEnabled && !currentlyEnabled) {
+                script.disabled = false;
+                changesCount++;
+            }
+        }
+    }
+
+    if (changesCount > 0) {
+        // Save changes for both global and scoped scripts
+        const globalScriptIds = new Set((extension_settings.regex ?? []).map(s => s.id));
+        const scopedScriptIds = new Set((characters[this_chid]?.data?.extensions?.regex_scripts ?? []).map(s => s.id));
+
+        // Update global scripts
+        for (const script of scripts) {
+            if (globalScriptIds.has(script.id)) {
+                const index = extension_settings.regex.findIndex(s => s.id === script.id);
+                if (index !== -1) {
+                    extension_settings.regex[index] = script;
+                }
+            }
+        }
+
+        // Update scoped scripts
+        if (characters[this_chid]?.data?.extensions?.regex_scripts) {
+            for (const script of scripts) {
+                if (scopedScriptIds.has(script.id)) {
+                    const scopedArray = characters[this_chid].data.extensions.regex_scripts;
+                    const index = scopedArray.findIndex(s => s.id === script.id);
+                    if (index !== -1) {
+                        scopedArray[index] = script;
+                    }
+                }
+            }
+            await writeExtensionField(this_chid, 'regex_scripts', characters[this_chid].data.extensions.regex_scripts);
+        }
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+        await reloadCurrentChat();
+    }
+}
+
+/**
+ * Shows the contents of a preset
+ * @param {string} presetName Name of the preset to show
+ * @param {boolean} quiet Suppress toast messages
+ * @returns {Promise<string>} Preset contents
+ */
+async function showPresetContents(presetName, quiet = false) {
+    const presets = getRegexPresets();
+    const preset = presets.find(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (!preset) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    let result = `Preset "${preset.name}":`;
+
+    const globalScripts = preset.globalScripts ?? [];
+    const scopedScripts = preset.scopedScripts ?? [];
+
+    if (globalScripts.length > 0) {
+        result += `\nGlobal: ${globalScripts.join(', ')}`;
+    }
+
+    if (scopedScripts.length > 0) {
+        result += `\nScoped: ${scopedScripts.join(', ')}`;
+    }
+
+    if (globalScripts.length === 0 && scopedScripts.length === 0) {
+        result += '\nNo scripts in preset';
+    }
+
+    !quiet && toastr.info(result);
+    return result;
+}
+
+/**
+ * Edits a preset to contain only specified scripts
+ * @param {string} presetName Name of the preset to edit
+ * @param {string} scriptsList Comma-separated list of script names
+ * @param {boolean} quiet Suppress toast messages
+ * @returns {Promise<string>} Result message
+ */
+async function editPresetScripts(presetName, scriptsList, quiet = false) {
+    const presets = getRegexPresets();
+    const presetIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (presetIndex === -1) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    const scriptNames = scriptsList.split(',').map(s => s.trim()).filter(s => s);
+    const allScripts = getRegexScripts();
+
+    // Validate script names exist
+    const invalidScripts = scriptNames.filter(name =>
+        !allScripts.some(script => equalsIgnoreCaseAndAccents(script.scriptName, name)));
+
+    if (invalidScripts.length > 0) {
+        throw new Error(`Script(s) not found: ${invalidScripts.join(', ')}`);
+    }
+
+    // Update preset with new scripts
+    const preset = presets[presetIndex];
+    const globalScripts = [];
+    const scopedScripts = [];
+
+    // Separate global and scoped scripts
+    for (const scriptName of scriptNames) {
+        const script = allScripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+        if (script) {
+            const isGlobal = (extension_settings.regex || []).some(s => s.id === script.id);
+            if (isGlobal) {
+                globalScripts.push(scriptName);
+            } else {
+                scopedScripts.push(scriptName);
+            }
+        }
+    }
+
+    preset.globalScripts = globalScripts;
+    preset.scopedScripts = scopedScripts;
+    extension_settings.regex_presets = presets;
+    saveSettingsDebounced();
+    loadRegexPresetsUI();
+
+    const result = `Updated preset "${presetName}" to contain: ${scriptNames.join(', ')}`;
+    !quiet && toastr.success(result);
+    return result;
+}
+
+/**
+ * Adds scripts to an existing preset
+ * @param {string} presetName Name of the preset to modify
+ * @param {string} scriptsList Comma-separated list of script names to add
+ * @param {boolean} quiet Suppress toast messages
+ * @returns {Promise<string>} Result message
+ */
+async function addScriptsToPreset(presetName, scriptsList, quiet = false) {
+    const presets = getRegexPresets();
+    const presetIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (presetIndex === -1) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    const scriptNames = scriptsList.split(',').map(s => s.trim()).filter(s => s);
+    const allScripts = getRegexScripts();
+
+    // Validate script names exist
+    const invalidScripts = scriptNames.filter(name =>
+        !allScripts.some(script => equalsIgnoreCaseAndAccents(script.scriptName, name)));
+
+    if (invalidScripts.length > 0) {
+        throw new Error(`Script(s) not found: ${invalidScripts.join(', ')}`);
+    }
+
+    // Add new scripts (avoid duplicates)
+    const preset = presets[presetIndex];
+    const addedScripts = [];
+
+    // Initialize arrays if they don't exist
+    preset.globalScripts = preset.globalScripts || [];
+    preset.scopedScripts = preset.scopedScripts || [];
+
+    scriptNames.forEach(name => {
+        const script = allScripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, name));
+        if (script) {
+            const isGlobal = (extension_settings.regex || []).some(s => s.id === script.id);
+            const targetArray = isGlobal ? preset.globalScripts : preset.scopedScripts;
+            
+            if (!targetArray.some(existing => equalsIgnoreCaseAndAccents(existing, name))) {
+                targetArray.push(name);
+                addedScripts.push(name);
+            }
+        }
+    });
+
+    extension_settings.regex_presets = presets;
+    saveSettingsDebounced();
+    loadRegexPresetsUI();
+
+    const result = addedScripts.length > 0
+        ? `Added ${addedScripts.join(', ')} to preset "${presetName}"`
+        : `No new scripts added to preset "${presetName}" (already contained)`;
+
+    !quiet && toastr.success(result);
+    return result;
+}
+
+/**
+ * Removes scripts from an existing preset
+ * @param {string} presetName Name of the preset to modify
+ * @param {string} scriptsList Comma-separated list of script names to remove
+ * @param {boolean} quiet Suppress toast messages
+ * @returns {Promise<string>} Result message
+ */
+async function removeScriptsFromPreset(presetName, scriptsList, quiet = false) {
+    const presets = getRegexPresets();
+    const presetIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+    if (presetIndex === -1) {
+        throw new Error(`Regex preset "${presetName}" not found`);
+    }
+
+    const scriptNames = scriptsList.split(',').map(s => s.trim()).filter(s => s);
+    const preset = presets[presetIndex];
+    const removedScripts = [];
+
+    // Remove scripts from both global and scoped arrays
+    preset.globalScripts = preset.globalScripts || [];
+    preset.scopedScripts = preset.scopedScripts || [];
+    
+    // Remove from global scripts
+    const newGlobalScripts = preset.globalScripts.filter(existing => {
+        const shouldRemove = scriptNames.some(name => equalsIgnoreCaseAndAccents(existing, name));
+        if (shouldRemove) {
+            removedScripts.push(existing);
+        }
+        return !shouldRemove;
+    });
+    
+    // Remove from scoped scripts
+    const newScopedScripts = preset.scopedScripts.filter(existing => {
+        const shouldRemove = scriptNames.some(name => equalsIgnoreCaseAndAccents(existing, name));
+        if (shouldRemove && !removedScripts.includes(existing)) {
+            removedScripts.push(existing);
+        }
+        return !shouldRemove;
+    });
+    
+    preset.globalScripts = newGlobalScripts;
+    preset.scopedScripts = newScopedScripts;
+
+    extension_settings.regex_presets = presets;
+    saveSettingsDebounced();
+    loadRegexPresetsUI();
+
+    const result = removedScripts.length > 0
+        ? `Removed ${removedScripts.join(', ')} from preset "${presetName}"`
+        : `No scripts removed from preset "${presetName}" (not found in preset)`;
+
+    !quiet && toastr.success(result);
+    return result;
+}
+
+/**
  * Performs the import of the regex object.
  * @param {Object} regexScript Input object
  * @param {boolean} isScoped Is the script scoped to a character?
@@ -963,6 +1758,143 @@ async function onRegexImportObjectChange(regexScript, isScoped) {
 }
 
 /**
+ * Imports a regex preset from parsed JSON data.
+ * @param {Object} data Parsed JSON data
+ * @returns {Promise<boolean>} True if preset was imported, false otherwise
+ */
+async function importRegexPreset(data) {
+    if (!data.name || (!data.globalScripts && !data.scopedScripts)) {
+        return false;
+    }
+
+    const existingPresets = getRegexPresets();
+    const existingIndex = existingPresets.findIndex(p =>
+        equalsIgnoreCaseAndAccents(p.name, data.name));
+
+    const newPreset = {
+        id: uuidv4(),
+        name: data.name,
+        created: new Date().toISOString(),
+    };
+
+    newPreset.includesContent = data.includesContent || false;
+    newPreset.exclusive = data.exclusive || false;
+
+    let scriptsCreated = 0;
+
+    // Handle content-based presets
+    if (data.globalScriptsContent || data.scopedScriptsContent) {
+        // Import actual script content and create missing scripts
+        const globalScriptsContent = data.globalScriptsContent || [];
+        const scopedScriptsContent = data.scopedScriptsContent || [];
+
+        // Create missing global scripts
+        for (const scriptContent of globalScriptsContent) {
+            const existingGlobal = (extension_settings.regex || [])
+                .find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptContent.scriptName));
+
+            if (!existingGlobal) {
+                // Create new global script
+                const newScript = {
+                    ...scriptContent,
+                    id: uuidv4(), // Generate new ID
+                    disabled: true, // Create as disabled initially
+                };
+                extension_settings.regex = extension_settings.regex || [];
+                extension_settings.regex.push(newScript);
+                scriptsCreated++;
+            }
+        }
+
+        // Create missing scoped scripts
+        if (characters[this_chid]?.data?.extensions) {
+            for (const scriptContent of scopedScriptsContent) {
+                const existingScoped = (characters[this_chid].data.extensions.regex_scripts || [])
+                    .find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptContent.scriptName));
+
+                if (!existingScoped) {
+                    // Create new scoped script
+                    const newScript = {
+                        ...scriptContent,
+                        id: uuidv4(),
+                        disabled: true,
+                    };
+                    characters[this_chid].data.extensions.regex_scripts =
+                        characters[this_chid].data.extensions.regex_scripts || [];
+                    characters[this_chid].data.extensions.regex_scripts.push(newScript);
+                    scriptsCreated++;
+                }
+            }
+
+            if (scopedScriptsContent.length > 0) {
+                await writeExtensionField(this_chid, 'regex_scripts',
+                    characters[this_chid].data.extensions.regex_scripts);
+            }
+        }
+
+        // Store content in preset
+        newPreset.globalScriptsContent = globalScriptsContent;
+        newPreset.scopedScriptsContent = scopedScriptsContent;
+        newPreset.globalScripts = globalScriptsContent.map(s => s.scriptName);
+        newPreset.scopedScripts = scopedScriptsContent.map(s => s.scriptName);
+    }
+    // Handle reference-based presets
+    else if (data.globalScripts || data.scopedScripts) {
+        newPreset.globalScripts = data.globalScripts || [];
+        newPreset.scopedScripts = data.scopedScripts || [];
+    }
+
+    if (existingIndex !== -1) {
+        // Preserve original creation date when updating
+        newPreset.created = existingPresets[existingIndex].created;
+        newPreset.updated = new Date().toISOString();
+        existingPresets[existingIndex] = newPreset;
+    } else {
+        existingPresets.push(newPreset);
+    }
+
+    extension_settings.regex_presets = existingPresets;
+    saveSettingsDebounced();
+
+    if (scriptsCreated > 0) {
+        await loadRegexScripts();
+    }
+
+    loadRegexPresetsUI();
+
+    let message = `Imported regex preset "${data.name}"`;
+    if (scriptsCreated > 0) {
+        message += ` and created ${scriptsCreated} new script(s)`;
+    }
+    toastr.success(t`${message}.`);
+    
+    return true;
+}
+
+/**
+ * Performs the import of a single regex preset file.
+ * @param {File} file Input file
+ */
+async function onRegexImportPresetFileChange(file) {
+    if (!file) {
+        toastr.error('No file provided.');
+        return;
+    }
+
+    try {
+        const data = JSON.parse(await getFileText(file));
+
+        if (!await importRegexPreset(data)) {
+            toastr.error('Invalid preset file format. Expected a single regex preset.');
+        }
+    } catch (error) {
+        console.log(error);
+        toastr.error('Invalid JSON file.');
+        return;
+    }
+}
+
+/**
  * Performs the import of the regex file.
  * @param {File} file Input file
  * @param {boolean} isScoped Is the script scoped to a character?
@@ -974,13 +1906,20 @@ async function onRegexImportFileChange(file, isScoped) {
     }
 
     try {
-        const regexScripts = JSON.parse(await getFileText(file));
-        if (Array.isArray(regexScripts)) {
-            for (const regexScript of regexScripts) {
+        const data = JSON.parse(await getFileText(file));
+
+        // Check if this is a single preset file
+        if (await importRegexPreset(data)) {
+            return;
+        }
+
+        // Handle regular script imports
+        if (Array.isArray(data)) {
+            for (const regexScript of data) {
                 await onRegexImportObjectChange(regexScript, isScoped);
             }
         } else {
-            await onRegexImportObjectChange(regexScripts, isScoped);
+            await onRegexImportObjectChange(data, isScoped);
         }
     } catch (error) {
         console.log(error);
@@ -1077,6 +2016,226 @@ jQuery(async () => {
     });
     $('#import_regex').on('click', function () {
         $('#import_regex_file').trigger('click');
+    });
+
+    // Preset import button handler
+    $('#regex_preset_import').on('click', function () {
+        $('#import_regex_preset_file').trigger('click');
+    });
+
+    $('#import_regex_preset_file').on('change', async function () {
+        const inputElement = this instanceof HTMLInputElement && this;
+        if (!inputElement.files || inputElement.files.length === 0) return;
+
+        for (const file of inputElement.files) {
+            await onRegexImportPresetFileChange(file);
+        }
+        inputElement.value = '';
+    });
+
+    // Regex preset UI event handlers
+    $('#regex_preset_select').on('change', async function () {
+        const presetName = $(this).val();
+        if (presetName) {
+            try {
+                await applyRegexPreset(presetName);
+                // Refresh UI to show updated script states
+                await loadRegexScripts();
+                loadRegexPresetsUI();
+                toastr.success(t`Applied regex preset: ${presetName}`);
+            } catch (error) {
+                toastr.error(error.message);
+                // Reset select to previous value
+                $(this).val(extension_settings.selected_regex_preset || '');
+            }
+        } else {
+            extension_settings.selected_regex_preset = null;
+            $('#regex_preset_exclusive').prop('checked', false);
+            saveSettingsDebounced();
+            loadRegexPresetsUI();
+        }
+    });
+
+    // Handle exclusive checkbox changes
+    $('#regex_preset_exclusive').on('change', async function () {
+        const presetName = $('#regex_preset_select').val();
+        if (!presetName) return;
+
+        const isExclusive = $(this).prop('checked');
+        const presets = getRegexPresets();
+        const presetIndex = presets.findIndex(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+
+        if (presetIndex !== -1) {
+            presets[presetIndex].exclusive = isExclusive;
+            extension_settings.regex_presets = presets;
+            saveSettingsDebounced();
+            loadRegexPresetsUI();
+            
+            const msg = isExclusive ? 'enabled' : 'disabled';
+            toastr.success(t`Exclusive mode ${msg} for preset "${presetName}"`);
+        }
+    });
+
+    $('#regex_preset_create').on('click', async function () {
+        const name = await callGenericPopup('Enter preset name:', POPUP_TYPE.INPUT);
+        if (!name) return;
+
+        const isExclusive = $('#regex_preset_exclusive').prop('checked');
+        
+        try {
+            await createRegexPreset(name, false, isExclusive);
+            loadRegexPresetsUI();
+            $('#regex_preset_select').val(name);
+            const exclusiveText = isExclusive ? ' (exclusive)' : '';
+            toastr.success(t`Created regex preset: ${name}${exclusiveText}`);
+        } catch (error) {
+            toastr.error(error.message);
+        }
+    });
+
+    $('#regex_preset_delete').on('click', async function () {
+        const presetName = $('#regex_preset_select').val();
+        if (!presetName) {
+            toastr.warning('No preset selected to delete');
+            return;
+        }
+
+        const confirm = await callGenericPopup(`Delete regex preset "${presetName}"?`, POPUP_TYPE.CONFIRM);
+        if (!confirm) return;
+
+        try {
+            await deleteRegexPreset(presetName);
+            loadRegexPresetsUI();
+            toastr.success(t`Deleted regex preset: ${presetName}`);
+        } catch (error) {
+            toastr.error(error.message);
+        }
+    });
+
+    $('#regex_preset_save').on('click', async function () {
+        const currentPreset = $('#regex_preset_select').val();
+        let name = currentPreset;
+
+        if (!name) {
+            name = await callGenericPopup('Enter preset name to save current state:', POPUP_TYPE.INPUT);
+        } else {
+            const confirm = await callGenericPopup(`Save current state to preset "${name}"? This will overwrite the existing preset.`, POPUP_TYPE.CONFIRM);
+            if (!confirm) {
+                name = await callGenericPopup('Enter new preset name:', POPUP_TYPE.INPUT);
+            }
+        }
+
+        if (!name) return;
+
+        const isExclusive = $('#regex_preset_exclusive').prop('checked');
+
+        try {
+            await saveCurrentStateToPreset(name, false, isExclusive);
+            loadRegexPresetsUI();
+            $('#regex_preset_select').val(name);
+            const exclusiveText = isExclusive ? ' (exclusive)' : '';
+            toastr.success(t`Current state saved to preset: ${name}${exclusiveText}`);
+        } catch (error) {
+            toastr.error(error.message);
+        }
+    });
+
+    // Export preset (references only)
+    $('#regex_preset_export').on('click', async function () {
+        const presetName = $('#regex_preset_select').val();
+        if (!presetName) {
+            toastr.warning('No preset selected to export');
+            return;
+        }
+
+        const presets = getRegexPresets();
+        const preset = presets.find(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+        
+        if (!preset) {
+            toastr.error('Preset not found');
+            return;
+        }
+
+        const exportData = {
+            name: preset.name,
+            globalScripts: preset.globalScripts || [],
+            scopedScripts: preset.scopedScripts || [],
+            exclusive: preset.exclusive || false,
+            created: preset.created,
+            updated: preset.updated,
+            exported: new Date().toISOString(),
+            version: '1.0',
+            type: 'references',
+        };
+
+        const fileName = `regex-preset-${sanitizeFileName(preset.name)}-ref.json`;
+        const fileData = JSON.stringify(exportData, null, 4);
+        download(fileData, fileName, 'application/json');
+        toastr.success(`Exported regex preset "${preset.name}" (references only)`);
+    });
+
+    // Export preset with full content
+    $('#regex_preset_export_content').on('click', async function () {
+        const presetName = $('#regex_preset_select').val();
+        if (!presetName) {
+            toastr.warning('No preset selected to export');
+            return;
+        }
+
+        const presets = getRegexPresets();
+        const preset = presets.find(p => equalsIgnoreCaseAndAccents(p.name, presetName));
+        
+        if (!preset) {
+            toastr.error('Preset not found');
+            return;
+        }
+
+        // Create content-based preset
+        const contentPreset = {
+            name: preset.name,
+            created: preset.created,
+            updated: preset.updated,
+            includesContent: true,
+            exclusive: preset.exclusive || false,
+            exported: new Date().toISOString(),
+            version: '1.0',
+            type: 'content',
+        };
+
+        // Get full content for global scripts
+        const globalScripts = preset.globalScripts || [];
+        contentPreset.globalScriptsContent = globalScripts
+            .map(scriptName => {
+                const script = (extension_settings.regex || [])
+                    .find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+                return script ? {
+                    ...script,
+                    disabled: false, // Export as enabled in preset
+                } : null;
+            })
+            .filter(script => script !== null);
+
+        // Get full content for scoped scripts
+        const scopedScripts = preset.scopedScripts || [];
+        contentPreset.scopedScriptsContent = scopedScripts
+            .map(scriptName => {
+                const script = (characters[this_chid]?.data?.extensions?.regex_scripts || [])
+                    .find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+                return script ? {
+                    ...script,
+                    disabled: false,
+                } : null;
+            })
+            .filter(script => script !== null);
+
+        // Keep references for compatibility
+        contentPreset.globalScripts = globalScripts;
+        contentPreset.scopedScripts = scopedScripts;
+
+        const fileName = `regex-preset-${sanitizeFileName(preset.name)}-full.json`;
+        const fileData = JSON.stringify(contentPreset, null, 4);
+        download(fileData, fileName, 'application/json');
+        toastr.success(`Exported regex preset "${preset.name}" with full content`);
     });
 
     function getSelectedScripts() {
@@ -1230,6 +2389,29 @@ jQuery(async () => {
             return new SlashCommandEnumValue(script.scriptName, `${enumIcons.getStateIcon(!script.disabled)} [${isGlobal ? 'global' : 'scoped'}] ${script.findRegex}`,
                 isGlobal ? enumTypes.enum : enumTypes.name, isGlobal ? 'G' : 'S');
         }),
+        regexPresets: () => getRegexPresets().map(preset => {
+            let description = '';
+            const globalScripts = preset.globalScripts ?? [];
+            const scopedScripts = preset.scopedScripts ?? [];
+
+            if (globalScripts.length > 0) {
+                description += `G:${globalScripts.join(',')}`;
+            }
+            if (scopedScripts.length > 0) {
+                if (description) description += ' ';
+                description += `S:${scopedScripts.join(',')}`;
+            }
+            if (!description) {
+                description = 'Empty preset';
+            }
+
+            // Add exclusive indicator
+            if (preset.exclusive) {
+                description += ' [EXCL]';
+            }
+
+            return new SlashCommandEnumValue(preset.name, description, enumTypes.enum, 'P');
+        }),
     };
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -1292,6 +2474,134 @@ jQuery(async () => {
                     </li>
                     <li>
                         <pre><code class="language-stscript">/regex-toggle state=off Character-specific Script</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regex-preset',
+        callback: regexPresetCallback,
+        returns: 'Preset name or result message',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'action',
+                description: 'Action to perform: apply (default), create, save, delete, list, show, edit, add, remove',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'apply',
+                enumList: [
+                    new SlashCommandEnumValue('apply', 'Apply a preset or script names', enumTypes.enum),
+                    new SlashCommandEnumValue('create', 'Create a new preset from current enabled scripts', enumTypes.enum),
+                    new SlashCommandEnumValue('save', 'Save current UI state to preset (overwrites)', enumTypes.enum),
+                    new SlashCommandEnumValue('delete', 'Delete an existing preset', enumTypes.enum),
+                    new SlashCommandEnumValue('list', 'List all available presets', enumTypes.enum),
+                    new SlashCommandEnumValue('show', 'Show contents of a preset', enumTypes.enum),
+                    new SlashCommandEnumValue('edit', 'Replace preset contents with specified scripts', enumTypes.enum),
+                    new SlashCommandEnumValue('add', 'Add scripts to existing preset', enumTypes.enum),
+                    new SlashCommandEnumValue('remove', 'Remove scripts from existing preset', enumTypes.enum),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'scripts',
+                description: 'Comma-separated list of script names (for edit/add/remove actions)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: localEnumProviders.regexScripts,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'exclusive',
+                description: 'Make preset exclusive (auto-disable others when applied)',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'content',
+                description: 'Include full script content when creating/saving presets',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: [
+                    new SlashCommandEnumValue('true', 'Include full script content in preset', enumTypes.enum),
+                    new SlashCommandEnumValue('false', 'Only include script names (references)', enumTypes.enum),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'others',
+                description: 'When applying preset, set to "off" to disable all other scripts',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('off', 'Disable all other scripts when applying preset', enumTypes.enum),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress toast messages',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Preset name or comma-separated script names',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: localEnumProviders.regexPresets,
+            }),
+        ],
+        helpString: `
+            <div>
+                Manages regex presets - groups of enabled/disabled regex scripts.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset MyPreset</code></pre>
+                        <small>Apply a saved preset</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset ["script1", "script2"] others=off</code></pre>
+                        <small>Enable specific scripts using array format and disable all others</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset script1,script2,script3 others=off</code></pre>
+                        <small>Enable specific scripts using comma format and disable all others</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=create MyPreset</code></pre>
+                        <small>Create a preset from currently enabled scripts (references only)</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=create MyPreset content=true</code></pre>
+                        <small>Create a preset with full script content</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=save MyPreset content=true</code></pre>
+                        <small>Save current UI state with full content (overwrites existing)</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=show MyPreset</code></pre>
+                        <small>Show which scripts are in a preset</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=edit MyPreset scripts=["script1", "script2"]</code></pre>
+                        <small>Replace preset contents with specified scripts (array format)</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=edit MyPreset scripts=script1,script2</code></pre>
+                        <small>Replace preset contents with specified scripts (comma format)</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=add MyPreset scripts=newScript</code></pre>
+                        <small>Add scripts to existing preset</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=remove MyPreset scripts=oldScript</code></pre>
+                        <small>Remove scripts from existing preset</small>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-preset action=list</code></pre>
+                        <small>List all available presets</small>
                     </li>
                 </ul>
             </div>
