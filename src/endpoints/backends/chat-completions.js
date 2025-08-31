@@ -1865,9 +1865,9 @@ router.post('/generate', function (request, response) {
     }
 });
 
-const pollinations = express.Router();
+const multimodalModels = express.Router();
 
-pollinations.post('/models/multimodal', async (_req, res) => {
+multimodalModels.post('/pollinations', async (_req, res) => {
     try {
         const response = await fetch('https://text.pollinations.ai/models');
 
@@ -1890,11 +1890,7 @@ pollinations.post('/models/multimodal', async (_req, res) => {
     }
 });
 
-router.use('/pollinations', pollinations);
-
-const aimlapi = express.Router();
-
-aimlapi.post('/models/multimodal', async (_req, res) => {
+multimodalModels.post('/aimlapi', async (_req, res) => {
     try {
         const response = await fetch('https://api.aimlapi.com/v1/models');
 
@@ -1917,4 +1913,27 @@ aimlapi.post('/models/multimodal', async (_req, res) => {
     }
 });
 
-router.use('/aimlapi', aimlapi);
+multimodalModels.post('/nanogpt', async (_req, res) => {
+    try {
+        const response = await fetch('https://nano-gpt.com/api/v1/models?detailed=true');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data?.data)) {
+            return res.json([]);
+        }
+
+        const multimodalModels = data.data.filter(m => m?.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.use('/multimodal-models', multimodalModels);
