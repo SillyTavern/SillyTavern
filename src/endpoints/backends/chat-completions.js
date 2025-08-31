@@ -917,10 +917,7 @@ async function sendDeepSeekRequest(request, response) {
             request.body.messages.push(message);
         }
 
-        const postProcessType = String(request.body.model).endsWith('-reasoner')
-            ? PROMPT_PROCESSING_TYPE.STRICT_TOOLS
-            : PROMPT_PROCESSING_TYPE.SEMI_TOOLS;
-        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request)), bodyParams.tools, 'prefix');
+        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
 
         const requestBody = {
             'messages': processedMessages,
