@@ -2,6 +2,7 @@ import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
 import fetch from 'node-fetch';
+import urlJoin from 'url-join';
 
 import {
     AIMLAPI_HEADERS,
@@ -1197,9 +1198,10 @@ export const router = express.Router();
 router.post('/status', async function (request, statusResponse) {
     if (!request.body) return statusResponse.sendStatus(400);
 
-    let apiUrl;
-    let apiKey;
-    let headers;
+    let apiUrl = '';
+    let apiKey = '';
+    let headers = {};
+    let queryParams = {};
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
@@ -1227,12 +1229,13 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_NANOGPT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         headers = {};
+        queryParams = { detailed: true };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.DEEPSEEK) {
-        apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', ''));
+        apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', '')).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
-        apiUrl = new URL(request.body.reverse_proxy || API_XAI);
+        apiUrl = new URL(request.body.reverse_proxy || API_XAI).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AIMLAPI) {
@@ -1307,7 +1310,11 @@ router.post('/status', async function (request, statusResponse) {
     }
 
     try {
-        const response = await fetch(apiUrl + '/models', {
+        const modelsUrl = new URL(urlJoin(apiUrl, '/models'));
+        Object.keys(queryParams).forEach(key => {
+            modelsUrl.searchParams.append(key, queryParams[key]);
+        });
+        const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + apiKey,
