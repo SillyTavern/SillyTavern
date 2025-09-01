@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -980,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1970,7 +1970,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,nanogpt">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,electronhub,nanogpt">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -2813,6 +2813,7 @@
                                 <option value="vertexai">Google Vertex AI</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="moonshot">Moonshot AI</option>
+                                <option value="electronhub">Electron Hub</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
@@ -3467,6 +3468,20 @@
                                 <option value="llama3-70b-8192">llama3-70b-8192</option>
                                 <option value="llama3-8b-8192">llama3-8b-8192</option>
                                 <option value="mistral-saba-24b">mistral-saba-24b</option>
+                            </select>
+                        </div>
+                            <div id="electronhub_form" data-source="electronhub"></div>
+                            <h4 data-i18n="ElectronHub API Key">Electron Hub API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_electronhub" name="api_key_electronhub" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_electronhub"></div>
+                            </div>
+                            <div data-for="api_key_electronhub" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="ElectronHub Model">Electron Hub Model</h4>
+                            <select id="model_electronhub_select">
+                                <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                             </select>
                         </div>
                         <div id="nanogpt_form" data-source="nanogpt">

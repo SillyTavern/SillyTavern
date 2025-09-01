@@ -61,6 +61,7 @@ const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
+const API_ELECTRONHUB = 'https://api.electronhub.ai/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
@@ -1225,6 +1226,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_COHERE_V1;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
+        apiUrl = API_ELECTRONHUB;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
         apiUrl = API_NANOGPT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
@@ -1630,6 +1635,27 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS);
         headers = {};
         bodyParams = {};
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
+        apiUrl = API_ELECTRONHUB;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+        headers = {};
+        bodyParams = {};
+        
+        if (request.body.enable_web_search) {
+            bodyParams['web_search'] = true;
+        }
+
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',

@@ -1411,6 +1411,8 @@
     "Do not proceed if you do not agree to this!": "Ne continuez pas si vous n'êtes pas d'accord avec cela !",
     "Claude API Key": "Clé API Claude",
     "Allow fallback models": "Autoriser les modèles de secours",
+    "Electron Hub API Key": "Clé API Electron Hub",
+    "Electron Hub Model": "Modèle Electron Hub",
     "NanoGPT API Key": "Clé API NanoGPT",
     "NanoGPT Model": "Modèle NanoGPT",
     "DeepSeek API Key": "Clé API DeepSeek",

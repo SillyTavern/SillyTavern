@@ -317,6 +317,8 @@
     "flag": "bandiera",
     "API key (optional)": "Chiave API (opzionale)",
     "Server url": "URL del server",
+    "Electron Hub API Key": "Chiave API di Electron Hub",
+    "Electron Hub Model": "Modello di Electron Hub",
     "Example: http://127.0.0.1:5000": "Esempio: http://127.0.0.1:5000",
     "Custom model (optional)": "Modello personalizzato (opzionale)",
     "vllm-project/vllm": "vllm-project/vllm (modalità wrapper API OpenAI)",

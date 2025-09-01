@@ -82,6 +82,7 @@ const sources = {
     pollinations: 'pollinations',
     stability: 'stability',
     huggingface: 'huggingface',
+    electronhub: 'electronhub',
     nanogpt: 'nanogpt',
     bfl: 'bfl',
     falai: 'falai',
@@ -1289,6 +1290,7 @@ async function onModelChange() {
         sources.pollinations,
         sources.stability,
         sources.huggingface,
+        sources.electronhub,
         sources.nanogpt,
         sources.bfl,
         sources.falai,
@@ -1506,6 +1508,9 @@ async function loadSamplers() {
         case sources.huggingface:
             samplers = ['N/A'];
             break;
+        case sources.electronhub:
+            samplers = ['N/A'];
+            break;
         case sources.nanogpt:
             samplers = ['N/A'];
             break;
@@ -1702,6 +1707,9 @@ async function loadModels() {
         case sources.huggingface:
             models = [{ value: '', text: '<Enter Model ID above>' }];
             break;
+        case sources.electronhub:
+            models = await loadElectronHubModels();
+            break;
         case sources.nanogpt:
             models = await loadNanoGPTModels();
             break;
@@ -1795,6 +1803,24 @@ async function loadTogetherAIModels() {
     }
 
     const result = await fetch('/api/sd/together/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        return await result.json();
+    }
+
+    return [];
+}
+
+async function loadElectronHubModels() {
+    if (!secret_state[SECRET_KEYS.ELECTRONHUB]) {
+        console.debug('Electron Hub API key is not set.');
+        return [];
+    }
+
+    const result = await fetch('/api/sd/electronhub/models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -2131,6 +2157,9 @@ async function loadSchedulers() {
         case sources.huggingface:
             schedulers = ['N/A'];
             break;
+        case sources.electronhub:
+            schedulers = ['N/A'];
+            break;
         case sources.nanogpt:
             schedulers = ['N/A'];
             break;
@@ -2226,6 +2255,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.huggingface:
+            vaes = ['N/A'];
+            break;
+        case sources.electronhub:
             vaes = ['N/A'];
             break;
         case sources.nanogpt:
@@ -2810,6 +2842,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.huggingface:
                 result = await generateHuggingFaceImage(prefixedPrompt, signal);
+                break;
+            case sources.electronhub:
+                result = await generateElectronHubImage(prefixedPrompt, signal);
                 break;
             case sources.nanogpt:
                 result = await generateNanoGPTImage(prefixedPrompt, negativePrompt, signal);
@@ -3565,6 +3600,32 @@ async function generateHuggingFaceImage(prompt, signal) {
 }
 
 /**
+ * Generates an image using the Electron Hub API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateElectronHubImage(prompt, signal) {
+    const result = await fetch('/api/sd/electronhub/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            model: extension_settings.sd.model,
+            prompt: prompt,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the NanoGPT API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
@@ -4014,6 +4075,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
             return secret_state[SECRET_KEYS.HUGGINGFACE];
+        case sources.electronhub:
+            return secret_state[SECRET_KEYS.ELECTRONHUB];
         case sources.nanogpt:
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:

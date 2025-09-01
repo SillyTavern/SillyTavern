@@ -179,6 +179,7 @@ export const chat_completion_sources = {
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
+    ELECTRONHUB: 'electronhub',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',
@@ -271,6 +272,7 @@ export const settingsToUpdate = {
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
+    electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
@@ -369,6 +371,7 @@ const default_settings = {
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
+    electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4o-mini-2024-07-18',
@@ -458,6 +461,7 @@ const oai_settings = {
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.1-70b-versatile',
+    electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4-turbo',
@@ -1614,6 +1618,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.perplexity_model;
         case chat_completion_sources.GROQ:
             return oai_settings.groq_model;
+        case chat_completion_sources.ELECTRONHUB:
+            return oai_settings.electronhub_model;
         case chat_completion_sources.NANOGPT:
             return oai_settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
@@ -1772,6 +1778,26 @@ function saveModelList(data) {
 
             $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
         }
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        $('#model_electronhub_select').empty();
+        model_list.forEach((model) => {
+            if (model?.endpoints?.includes('/v1/chat/completions')) {
+                $('#model_electronhub_select').append(
+                    $('<option>', {
+                        value: model.id,
+                        text: model.name,
+                    }));
+            }
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.electronhub_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.electronhub_model)) {
+            oai_settings.electronhub_model = model_list[0].id;
+        }
+
+        $('#model_electronhub_select').val(oai_settings.electronhub_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -2290,6 +2316,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.CUSTOM,
         chat_completion_sources.COHERE,
         chat_completion_sources.GROQ,
+        chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.NANOGPT,
         chat_completion_sources.XAI,
         chat_completion_sources.POLLINATIONS,
@@ -3424,6 +3451,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cohere_model = settings.cohere_model ?? default_settings.cohere_model;
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.groq_model = settings.groq_model ?? default_settings.groq_model;
+    oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
     oai_settings.nanogpt_model = settings.nanogpt_model ?? default_settings.nanogpt_model;
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
@@ -3519,6 +3547,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_perplexity_select option[value="${oai_settings.perplexity_model}"`).prop('selected', true);
     $('#model_groq_select').val(oai_settings.groq_model);
     $(`#model_groq_select option[value="${oai_settings.groq_model}"`).prop('selected', true);
+    $('#model_electronhub_select').val(oai_settings.electronhub_model);
+    $(`#model_electronhub_select option[value="${oai_settings.electronhub_model}"`).prop('selected', true);
     $('#model_nanogpt_select').val(oai_settings.nanogpt_model);
     $(`#model_nanogpt_select option[value="${oai_settings.nanogpt_model}"`).prop('selected', true);
     $('#model_deepseek_select').val(oai_settings.deepseek_model);
@@ -4681,6 +4711,15 @@ async function onModelChange() {
         oai_settings.groq_model = value;
     }
 
+    if ($(this).is('#model_electronhub_select')) {
+        if (!value) {
+            console.debug('Null ElectronHub model selected. Ignoring.');
+            return;
+        }
+        console.log('ElectronHub model changed to', value);
+        oai_settings.electronhub_model = value;
+    }
+
     if ($(this).is('#model_nanogpt_select')) {
         if (!value) {
             console.debug('Null NanoGPT model selected. Ignoring.');
@@ -4915,6 +4954,18 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         $('#openai_max_context').attr('max', unlocked_max);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else {
+            $('#openai_max_context').attr('max', max_128k);
+        }
+
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
@@ -5214,6 +5265,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        const api_key_electronhub = String($('#api_key_electronhub').val()).trim();
+
+        if (api_key_electronhub.length) {
+            await writeSecret(SECRET_KEYS.ELECTRONHUB, api_key_electronhub);
+        }
+
+        if (!secret_state[SECRET_KEYS.ELECTRONHUB]) {
+            console.log('No secret key saved for Electron Hub');
+            return;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         const api_key_nanogpt = String($('#api_key_nanogpt').val()).trim();
 
@@ -5347,6 +5411,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         $('#model_groq_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        $('#model_electronhub_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         $('#model_nanogpt_select').trigger('change');
@@ -6324,6 +6391,7 @@ export function initOpenAI() {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
+    $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
