@@ -3657,10 +3657,8 @@ async function generateHuggingFaceImage(prompt, signal) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateElectronHubImage(prompt, signal) {
-
     const size = await getClosestSize(extension_settings.sd.width, extension_settings.sd.height);
 
-    console.warn(`Generating image with size ${extension_settings.sd.width}x${extension_settings.sd.height}`);
     const result = await fetch('/api/sd/electronhub/generate', {
         method: 'POST',
         headers: getRequestHeaders(),

@@ -1000,8 +1000,6 @@ electronhub.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.debug('Electron Hub request:', request.body);
-
         let bodyParams = {
             model: request.body.model,
             prompt: request.body.prompt,
