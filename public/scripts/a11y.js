@@ -62,13 +62,17 @@ const a11yRules = {
  * @param {Element} element Element to process.
  */
 function applyA11yRules(element) {
-    for (const [selector, rule] of Object.entries(a11yRules)) {
-        // Apply if the element directly matches the selector
-        if (element.matches(selector)) {
-            rule(element);
+    try {
+        for (const [selector, rule] of Object.entries(a11yRules)) {
+            // Apply if the element directly matches the selector
+            if (element.matches(selector)) {
+                rule(element);
+            }
+            // Apply the rule to descendants
+            element.querySelectorAll(selector).forEach(rule);
         }
-        // Apply the rule to descendants
-        element.querySelectorAll(selector).forEach(rule);
+    } catch (error) {
+        console.error('Error applying accessibility rules to element:', element, error);
     }
 }
 
