@@ -2199,12 +2199,13 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     if (isElectronHub) {
-        delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
-        delete generate_data.frequency_penalty;
-        delete generate_data.presence_penalty;
         delete generate_data.n;
+
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['frequency_penalty'] = Number(oai_settings.freq_pen_openai);
+        generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
     }
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
@@ -2332,7 +2333,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.XAI,
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.AIMLAPI,
-        chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
     ];
@@ -3469,7 +3469,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
     oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
     oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
-    oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
@@ -4615,6 +4614,26 @@ function getFireworksMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the ElectronHub model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getElectronHubMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.tokens) {
+            return modelInfo.tokens;
+        }
+    }
+    return max_8k;
+}
+
+/**
  * Get the maximum context size for the NanoGPT model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -4802,15 +4821,6 @@ async function onModelChange() {
         oai_settings.cometapi_model = value;
     }
 
-    if ($(this).is('#model_electronhub_select')) {
-        if (!value) {
-            console.debug('Null ElectronHub model selected. Ignoring.');
-            return;
-        }
-        console.log('ElectronHub model changed to', value);
-        oai_settings.electronhub_model = value;
-    }
-
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -4983,19 +4993,11 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else {
-            const model = model_list.find(m => m.id == oai_settings.electronhub_model);
-            if (model?.tokens) {
-                $('#openai_max_context').attr('max', model.tokens);
-            } else {
-                $('#openai_max_context').attr('max', max_8k);
-            }
-        }
-
+        const maxContext = getElectronHubMaxContext(oai_settings.electronhub_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
@@ -6425,7 +6427,6 @@ export function initOpenAI() {
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
-    $('#model_electronhub_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);

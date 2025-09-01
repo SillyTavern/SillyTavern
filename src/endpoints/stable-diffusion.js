@@ -971,7 +971,7 @@ electronhub.post('/models', async (request, response) => {
         const modelsResponse = await fetch('https://api.electronhub.ai/v1/models', {
             method: 'GET',
             headers: {
-                'x-api-key': key,
+                'Authorization': `Bearer ${key}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -1000,21 +1000,32 @@ electronhub.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
+        console.debug('Electron Hub request:', request.body);
+
+        let bodyParams = {
+            model: request.body.model,
+            prompt: request.body.prompt,
+            response_format: 'b64_json',
+        };
+
+        if (request.body.size) {
+            bodyParams.size = request.body.size;
+        }
+
         const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
             method: 'POST',
             headers: {
-                'x-api-key': key,
+                'Authorization': `Bearer ${key}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                model: request.body.model,
-                prompt: request.body.prompt,
-                response_format: 'b64_json',
-            }),
+                body: JSON.stringify({
+                    ...bodyParams,
+                }),
         });
 
         if (!result.ok) {
-            console.warn('Electron Hub returned an error.');
+            const errorText = await result.text();
+            console.warn('Electron Hub returned an error.', result.status, result.statusText, errorText);
             return response.sendStatus(500);
         }
 
@@ -1033,6 +1044,33 @@ electronhub.post('/generate', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+electronhub.post('/sizes', async (request, response) => {
+   const result = await fetch(`https://api.electronhub.ai/v1/models/${request.body.model}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+   });
+
+   if (!result.ok) {
+    console.warn('Electron Hub returned an error.');
+    return response.sendStatus(500);
+   }
+
+   /** @type {any} */
+   const data = await result.json();
+
+   const sizes = data.sizes;
+
+   if (!sizes) {
+     console.warn('Electron Hub returned invalid data.');
+     return response.sendStatus(500);
+   }
+
+   return response.send({ sizes });
+});
+
 
 const nanogpt = express.Router();
 

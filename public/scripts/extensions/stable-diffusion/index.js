@@ -3049,6 +3049,57 @@ function getClosestAspectRatio(width, height, source) {
 }
 
 /**
+ * Get closest size for Electron Hub
+ * @param {number} width - The width of the image
+ * @param {number} height - The height of the image
+ * @returns {Promise<string>} - The closest size
+ */
+
+async function getClosestSize(width, height) {
+    const response = await fetch('/api/sd/electronhub/sizes', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            model: extension_settings.sd.model,
+        }),
+    })
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text);
+    }
+    const result = await response.json();
+    const sizesData = result.sizes;
+
+    const closestSize = sizesData.reduce((closest, size) => {
+        if (!size || typeof size !== 'string') {
+            return closest;
+        }
+        const sizeParts = size.split('x');
+        if (sizeParts.length !== 2) {
+            return closest;
+        }
+        
+        const sizeWidth = Number(sizeParts[0]);
+        const sizeHeight = Number(sizeParts[1]);
+        const targetWidth = Number(width);
+        const targetHeight = Number(height);
+
+        if (isNaN(sizeWidth) || isNaN(sizeHeight) || isNaN(targetWidth) || isNaN(targetHeight)) {
+            return closest;
+        }
+        
+        const sizeArea = sizeWidth * sizeHeight;
+        const targetArea = targetWidth * targetHeight;
+        const diff = Math.abs(sizeArea - targetArea);
+        
+        return diff < closest.diff ? { size, diff } : closest;
+    }, { size: null, diff: Infinity });
+    
+    const size = closestSize.size;    
+    return size;
+}
+
+/**
  * Generates an image using Stability AI.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
@@ -3606,6 +3657,10 @@ async function generateHuggingFaceImage(prompt, signal) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateElectronHubImage(prompt, signal) {
+
+    const size = await getClosestSize(extension_settings.sd.width, extension_settings.sd.height);
+
+    console.warn(`Generating image with size ${extension_settings.sd.width}x${extension_settings.sd.height}`);
     const result = await fetch('/api/sd/electronhub/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -3613,6 +3668,7 @@ async function generateElectronHubImage(prompt, signal) {
         body: JSON.stringify({
             model: extension_settings.sd.model,
             prompt: prompt,
+            size: size,
         }),
     });
 
