@@ -4,6 +4,7 @@ import { serverDirectory } from '../server-directory.js';
 import { isHostAllowed, hostValidationMiddleware } from 'host-validation-middleware';
 
 const knownHosts = new Set();
+const maxKnownHosts = 1000;
 
 const hostWhitelistEnabled = !!getConfigValue('hostWhitelist.enabled', false);
 const hostWhitelist = Object.freeze(getConfigValue('hostWhitelist.hosts', []));
@@ -32,7 +33,9 @@ export default function hostWhitelistMiddleware(req, res, next) {
         if (!hostWhitelistEnabled) {
             console.warn(`To protect against host spoofing, consider setting ${color.yellow('hostWhitelist.enabled')} to true`);
         }
-        knownHosts.add(hostValue);
+        if (knownHosts.size < maxKnownHosts) {
+            knownHosts.add(hostValue);
+        }
     }
 
     if (!hostWhitelistEnabled) {
