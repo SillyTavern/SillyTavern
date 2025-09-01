@@ -6,7 +6,7 @@ import { isHostAllowed, hostValidationMiddleware } from 'host-validation-middlew
 const knownHosts = new Set();
 
 const hostWhitelistEnabled = !!getConfigValue('hostWhitelist.enabled', false);
-const hostWhitelist = getConfigValue('hostWhitelist.hosts', []);
+const hostWhitelist = Object.freeze(getConfigValue('hostWhitelist.hosts', []));
 const hostWhitelistScan = !!getConfigValue('hostWhitelist.scan', false, 'boolean');
 
 const hostNotAllowedHtml = safeReadFileSync(path.join(serverDirectory, 'public/error/host-not-allowed.html'))?.toString() ?? '';
