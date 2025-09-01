@@ -77,6 +77,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
         }
 
+        if (request.body.api === 'nanogpt') {
+            key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
+        }
+
         if (request.body.api === 'electronhub') {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
@@ -163,6 +167,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'moonshot') {
             apiUrl = 'https://api.moonshot.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'nanogpt') {
+            apiUrl = 'https://nano-gpt.com/api/v1/chat/completions';
         }
 
         if (request.body.api === 'electronhub') {
