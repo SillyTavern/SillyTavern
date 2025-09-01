@@ -28,7 +28,7 @@ export default function hostWhitelistMiddleware(req, res, next) {
     const hostValue = req.headers.host;
     if (hostWhitelistScan && !isHostAllowed(hostValue, hostWhitelist) && !knownHosts.has(hostValue)) {
         console.warn(color.red('Request from untrusted host:'), hostValue);
-        console.warn(`If you trust this host, you can add it to ${color.yellow('hostWhitelist.whitelist')} in config.yaml`);
+        console.warn(`If you trust this host, you can add it to ${color.yellow('hostWhitelist.hosts')} in config.yaml`);
         if (!hostWhitelistEnabled) {
             console.warn(`To protect against host spoofing, consider setting ${color.yellow('hostWhitelist.enabled')} to true`);
         }
