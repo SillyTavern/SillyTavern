@@ -74,10 +74,7 @@ function applyA11yRules(element) {
 
 function setAccessibilityObserver() {
     // Apply for existing elements
-    for (const [selector, rule] of Object.entries(a11yRules)) {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(rule);
-    }
+    applyA11yRules(document.body);
 
     // Setup observer for dynamic content
     const observer = new MutationObserver((mutationsList) => {
