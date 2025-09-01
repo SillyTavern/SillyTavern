@@ -573,14 +573,21 @@ async function delBackground(bg) {
 }
 
 async function onBackgroundUploadSelected() {
-    const form = $('#form_bg_download').get(0);
+    const form = $('#form_bg_upload').get(0);
 
     if (!(form instanceof HTMLFormElement)) {
-        console.error('form_bg_download is not a form');
+        console.error('form_bg_upload is not a form');
         return;
     }
 
     const formData = new FormData(form);
+
+    const file = formData.get('avatar');
+    if (!file || file.size === 0) {
+        form.reset();
+        return;
+    }
+
     await convertFileIfVideo(formData);
     await uploadBackground(formData);
     form.reset();

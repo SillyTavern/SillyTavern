@@ -1999,7 +1999,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -5284,13 +5284,11 @@
             <div id="site_logo" class="drawer-toggle drawer-header" title="Change Background Image" data-i18n="[title]Change Background Image">
                 <div class="drawer-icon fa-solid fa-panorama fa-fw closedIcon"></div>
             </div>
-            <div id="Backgrounds" class="drawer-content closedDrawer">
-                <div class="flex-container">
+            <div id="Backgrounds" class="drawer-content closedDrawer bg-drawer-layout">
+                <div id="bg-header-fixed">
                     <div class="flex-container alignItemsBaseline wide100p">
-                        <h3 class="margin0 flex2" data-i18n="Background Image">
-                            Background Image
-                        </h3>
-                        <input id="bg-filter" data-i18n="[placeholder]Filter" placeholder="Filter" class="text_pole flex1" type="search" />
+                        <h3 id="bg-header-title" class="margin0" data-i18n="Backgrounds">Backgrounds</h3>
+                        <input id="bg-filter" class="text_pole flex1" type="search" data-i18n="[placeholder]Search" placeholder="Search" />
                         <select id="background_fitting" class="text_pole" data-i18n="[title]Background Fitting" title="Background Fitting">
                             <option value="classic" data-i18n="Classic">Classic</option>
                             <option value="cover" data-i18n="Cover">Cover</option>
@@ -5302,17 +5300,17 @@
                             <i class="fa-solid fa-wand-magic"></i>
                             <span data-i18n="Auto-select">Auto-select</span>
                         </div>
+                        <label for="add_bg_button" id="add_background_button_top" class="menu_button menu_button_icon interactable" title="Add a new background">
+                            <i class="fa-solid fa-plus"></i>
+                            <span data-i18n="Add Background">Add Background</span>
+                        </label>
                     </div>
+                </div>
+                <div id="bg-scrollable-content">
                     <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter">
                         System Backgrounds
                     </h3>
                     <div id="bg_menu_content" class="bg_list">
-                        <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <label class="input-file">
-                                <input type="file" id="add_bg_button" name="avatar" accept="image/*, video/*">
-                                <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
-                            </label>
-                        </form>
                     </div>
                     <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
                         Chat Backgrounds
@@ -5323,6 +5321,9 @@
                     <div id="bg_custom_content" class="bg_list">
                     </div>
                 </div>
+                <form id="form_bg_upload" style="display: none;">
+                   <input type="file" id="add_bg_button" name="avatar" accept="image/jpeg,image/png,image/gif,image/bmp,image/svg+xml,video/*">
+                </form>
             </div>
         </div>
         <div id="extensions-settings-button" class="drawer">

@@ -13,6 +13,7 @@
 @import url(css/welcome.css);
 @import url(css/data-maid.css);
 @import url(css/secrets.css);
+@import url(css/backgrounds.css);
 
 :root {
     interpolate-size: allow-keywords;

@@ -439,6 +439,7 @@ jQuery(async function () {
                         'cohere': SECRET_KEYS.COHERE,
                         'aimlapi': SECRET_KEYS.AIMLAPI,
                         'moonshot': SECRET_KEYS.MOONSHOT,
+                        'nanogpt': SECRET_KEYS.NANOGPT,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -543,8 +544,9 @@ jQuery(async function () {
         }
 
         await processEndpoint('openrouter', '/api/openrouter/models/multimodal');
-        await processEndpoint('aimlapi', '/api/backends/chat-completions/aimlapi/models/multimodal');
-        await processEndpoint('pollinations', '/api/backends/chat-completions/pollinations/models/multimodal');
+        await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
+        await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
+        await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
     }
 
     await addSettings();

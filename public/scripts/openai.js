@@ -905,7 +905,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
-    const firstNonInjected = chatPool.find(x => !x.injected);
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
@@ -946,22 +945,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
-            if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
-                // in case we are using continue_prefill and the latest message is an assistant message, we want to prepend the users assistant prefill on the message
-                if (chatPrompt.role === 'assistant') {
-                    const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
-                    const assistantPrefill = supportsAssistantPrefill ? substituteParams(oai_settings.assistant_prefill) : '';
-                    const messageContent = [assistantPrefill, chatMessage.content].filter(x => x).join('\n\n');
-                    const continueMessage = await Message.createAsync(chatMessage.role, messageContent, chatMessage.identifier);
-                    const collection = new MessageCollection('continuePrefill', continueMessage);
-                    chatCompletion.add(collection, -1);
-                    continue;
-                }
-                const collection = new MessageCollection('continuePrefill', chatMessage);
-                chatCompletion.add(collection, -1);
-                continue;
-            }
-
             chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         } else {
             break;
@@ -1219,6 +1202,21 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         const toolMessage = [{ role: 'user', content: JSON.stringify(toolData) }];
         const toolTokens = await tokenHandler.countAsync(toolMessage);
         chatCompletion.reserveBudget(toolTokens);
+    }
+
+    // Displace the message to be continued from its original position before performing in-chat injections
+    // In case if it is an assistant message, we want to prepend the users assistant prefill on the message
+    if (type === 'continue' && oai_settings.continue_prefill && messages.length) {
+        const chatMessage = messages.shift();
+        const isAssistantRole = chatMessage.role === 'assistant';
+        const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
+        const namesInCompletion = oai_settings.names_behavior === character_names_behavior.COMPLETION;
+        const assistantPrefill = isAssistantRole && supportsAssistantPrefill ? substituteParams(oai_settings.assistant_prefill) : '';
+        const messageContent = [assistantPrefill, chatMessage.content].filter(x => x).join('\n\n');
+        const continueMessage = await Message.createAsync(chatMessage.role, messageContent, 'continuePrefill');
+        chatMessage.name && namesInCompletion && await continueMessage.setName(promptManager.sanitizeName(chatMessage.name));
+        controlPrompts.add(continueMessage);
+        chatCompletion.reserveBudget(continueMessage);
     }
 
     // Add in-chat injections
@@ -2262,16 +2260,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     // https://api-docs.deepseek.com/api/create-chat-completion
     if (isDeepSeek) {
         generate_data.top_p = generate_data.top_p || Number.EPSILON;
-
-        if (generate_data.model.endsWith('-reasoner')) {
-            delete generate_data.top_p;
-            delete generate_data.temperature;
-            delete generate_data.frequency_penalty;
-            delete generate_data.presence_penalty;
-            delete generate_data.top_logprobs;
-            delete generate_data.logprobs;
-            delete generate_data.logit_bias;
-        }
     }
 
     if (isXAI) {
@@ -4582,6 +4570,27 @@ function getFireworksMaxContext(model, isUnlocked) {
     return max_32k;
 }
 
+/**
+ * Get the maximum context size for the NanoGPT model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getNanoGptMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
+    }
+
+    return max_128k;
+}
+
 async function onModelChange() {
     biasCache = undefined;
     let value = String($(this).val() || '');
@@ -4912,14 +4921,11 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.NANOGPT) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else {
-            $('#openai_max_context').attr('max', max_128k);
-        }
-
+        const maxContext = getNanoGptMaxContext(oai_settings.nanogpt_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
@@ -5516,6 +5522,8 @@ export function isImageInliningSupported() {
             return true;
         case chat_completion_sources.MOONSHOT:
             return visionSupportedModels.some(model => oai_settings.moonshot_model.includes(model));
+        case chat_completion_sources.NANOGPT:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         default:
             return false;
     }
