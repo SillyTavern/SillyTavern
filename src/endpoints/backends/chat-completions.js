@@ -575,7 +575,6 @@ async function sendMakerSuiteRequest(request, response) {
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
             console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
-
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
                 let message = `${apiName} Candidate text empty`;
