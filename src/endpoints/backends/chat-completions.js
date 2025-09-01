@@ -1,4 +1,5 @@
 import process from 'node:process';
+import util from 'node:util';
 import express from 'express';
 import fetch from 'node-fetch';
 import urlJoin from 'url-join';
@@ -323,6 +324,7 @@ async function sendMakerSuiteRequest(request, response) {
             const auth = await getVertexAIAuth(request);
             authHeader = auth.authHeader;
             authType = auth.authType;
+            console.debug(`Using Vertex AI authentication type: ${authType}`);
         } catch (error) {
             console.warn(`${apiName} authentication failed: ${error.message}`);
             return response.status(400).send({ error: true, message: error.message });
@@ -469,6 +471,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = getGeminiBody();
+    console.debug(`${apiName} request:`, body);
 
     try {
         const controller = new AbortController();
@@ -570,6 +573,8 @@ async function sendMakerSuiteRequest(request, response) {
             const responseContent = candidates[0].content ?? candidates[0].output;
             const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
+            console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
+
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
