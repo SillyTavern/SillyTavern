@@ -983,7 +983,7 @@ electronhub.post('/models', async (request, response) => {
 
         /** @type {any} */
         const data = await modelsResponse.json();
-        const models = data.models.filter(x => x.endpoints.includes('/v1/images/generations')).map(x => ({ value: x.id, text: x.name }));
+        const models = data.data.filter(x => x.endpoints.includes('/v1/images/generations')).map(x => ({ value: x.id, text: x.name }));
         return response.send(models);
     } catch (error) {
         console.error(error);

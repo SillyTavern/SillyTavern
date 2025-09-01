@@ -248,8 +248,8 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Moonshot AI API key is not set.');
     }
 
-    if (multimodalApi === 'nanogpt' && !secret_state[SECRET_KEYS.NANOGPT]) {
-        throw new Error('NanoGPT API key is not set.');
+    if (multimodalApi === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB]) {
+        throw new Error('ElectronHub API key is not set.');
     }
 }
 

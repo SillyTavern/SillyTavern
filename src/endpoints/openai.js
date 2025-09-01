@@ -77,8 +77,8 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
         }
 
-        if (request.body.api === 'nanogpt') {
-            key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
+        if (request.body.api === 'electronhub') {
+            key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
@@ -165,8 +165,8 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://api.moonshot.ai/v1/chat/completions';
         }
 
-        if (request.body.api === 'nanogpt') {
-            apiUrl = 'https://nano-gpt.com/api/v1/chat/completions';
+        if (request.body.api === 'electronhub') {
+            apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {

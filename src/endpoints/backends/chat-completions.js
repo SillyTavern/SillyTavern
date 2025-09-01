@@ -1194,6 +1194,109 @@ async function sendAimlapiRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Electron Hub.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendElectronHubRequest(request, response) {
+    const apiUrl = API_ELECTRONHUB;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+    
+    if (!apiKey) {
+        console.warn('Electron Hub key is missing.');
+        return response.status(400).send({ error: true });
+    }
+    
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    
+    
+    try {
+        let bodyParams = {};
+
+        if (request.body.enable_web_search) {
+            bodyParams['web_search'] = true;
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.reasoning_effort) {
+            const reasoningEffortModels = ["o3-mini", "o1", "o3", "o4-mini", "codex-mini-latest", "o3-pro", "gpt-5-mini", "gpt-5-nano", "gpt-5"];
+            if (reasoningEffortModels.includes(request.body.model)) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'top_k': request.body.top_k,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('Electron Hub request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('Electron Hub returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('Electron Hub response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    }
+    catch (error) {
+        console.error('Error communicating with Electron Hub: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
 export const router = express.Router();
 
 router.post('/status', async function (request, statusResponse) {
@@ -1495,6 +1598,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return sendElectronHubRequest(request, response);
     }
 
     let apiUrl;
@@ -1635,27 +1739,6 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS);
         headers = {};
         bodyParams = {};
-        if (request.body.json_schema) {
-            bodyParams['response_format'] = {
-                type: 'json_schema',
-                json_schema: {
-                    name: request.body.json_schema.name,
-                    description: request.body.json_schema.description,
-                    schema: request.body.json_schema.value,
-                    strict: request.body.json_schema.strict ?? true,
-                },
-            };
-        }
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
-        apiUrl = API_ELECTRONHUB;
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
-        headers = {};
-        bodyParams = {};
-        
-        if (request.body.enable_web_search) {
-            bodyParams['web_search'] = true;
-        }
-
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
@@ -1937,7 +2020,7 @@ multimodalModels.post('/aimlapi', async (_req, res) => {
         console.error(error);
         return res.sendStatus(500);
     }
-});
+})
 
 multimodalModels.post('/nanogpt', async (_req, res) => {
     try {
@@ -1955,6 +2038,24 @@ multimodalModels.post('/nanogpt', async (_req, res) => {
         }
 
         const multimodalModels = data.data.filter(m => m?.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/electronhub', async (_req, res) => {
+    try {
+        const response = await fetch('https://api.electronhub.ai/v1/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+        
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.metadata?.vision).map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);

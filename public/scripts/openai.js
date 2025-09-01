@@ -2070,6 +2070,7 @@ function getReasoningEffort() {
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.COMETAPI,
+        chat_completion_sources.ELECTRONHUB,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
@@ -2126,6 +2127,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isGroq = oai_settings.chat_completion_source == chat_completion_sources.GROQ;
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
     const isAimlapi = oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI;
+    const isElectronHub = oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB;
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
@@ -2194,6 +2196,15 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     // Add logprobs request (currently OpenAI only, max 5 on their side)
     if (useLogprobs && (isOAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
         generate_data['logprobs'] = 5;
+    }
+
+    if (isElectronHub) {
+        delete generate_data.logit_bias;
+        delete generate_data.stop;
+        delete generate_data.logprobs;
+        delete generate_data.frequency_penalty;
+        delete generate_data.presence_penalty;
+        delete generate_data.n;
     }
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
@@ -2321,6 +2332,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.XAI,
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.AIMLAPI,
+        chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
     ];
@@ -2489,7 +2501,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3457,6 +3469,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
     oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
     oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
+    oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
@@ -3835,6 +3848,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         xai_model: settings.xai_model,
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
+        electronhub_model: settings.electronhub_model,
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
@@ -4788,6 +4802,15 @@ async function onModelChange() {
         oai_settings.cometapi_model = value;
     }
 
+    if ($(this).is('#model_electronhub_select')) {
+        if (!value) {
+            console.debug('Null ElectronHub model selected. Ignoring.');
+            return;
+        }
+        console.log('ElectronHub model changed to', value);
+        oai_settings.electronhub_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -5588,6 +5611,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
+        case chat_completion_sources.ELECTRONHUB:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
         case chat_completion_sources.COMETAPI:
@@ -6400,6 +6425,7 @@ export function initOpenAI() {
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
+    $('#model_electronhub_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);
