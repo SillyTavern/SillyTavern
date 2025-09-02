@@ -1228,10 +1228,7 @@ async function sendElectronHubRequest(request, response) {
         }
 
         if (request.body.reasoning_effort) {
-            const reasoningEffortModels = ["o3-mini", "o1", "o3", "o4-mini", "codex-mini-latest", "o3-pro", "gpt-5-mini", "gpt-5-nano", "gpt-5"];
-            if (reasoningEffortModels.includes(request.body.model)) {
-                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
-            }
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
         if (request.body.json_schema) {

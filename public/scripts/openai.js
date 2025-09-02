@@ -2077,6 +2077,14 @@ function getReasoningEffort() {
         return oai_settings.reasoning_effort;
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
+        const supportedReasoningEffort = isReasoningEffortSupported();
+        if (!supportedReasoningEffort) {
+            return undefined;
+        }
+        return oai_settings.reasoning_effort;
+    }
+
     switch (oai_settings.reasoning_effort) {
         case reasoning_effort_types.auto:
             return undefined;
@@ -5653,6 +5661,27 @@ export function isVideoInliningSupported() {
             return videoSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.VERTEXAI:
             return videoSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
+        default:
+            return false;
+    }
+}
+
+/**
+ * Check if the model supports reasoning_effort
+ * @returns {boolean} True if the model supports reasoning_effort
+ */
+export function isReasoningEffortSupported() {
+    if (main_api !== 'openai') {
+        return false;
+    }
+
+    if (oai_settings.reasoning_effort === reasoning_effort_types.auto) {
+        return false;
+    }
+
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.ELECTRONHUB:
+            return (Array.isArray(model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.supported_reasoning_efforts) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.supported_reasoning_efforts.includes(oai_settings.reasoning_effort));
         default:
             return false;
     }
