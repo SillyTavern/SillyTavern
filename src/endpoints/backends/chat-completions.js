@@ -1792,7 +1792,7 @@ router.post('/generate', function (request, response) {
         signal: controller.signal,
     };
 
-    console.debug(requestBody);
+    console.debug('Chat Completion request:', requestBody);
 
     makeRequest(config, response, request);
 
@@ -1801,10 +1801,8 @@ router.post('/generate', function (request, response) {
      * @param {import('node-fetch').RequestInit} config Fetch config
      * @param {express.Response} response Express response
      * @param {express.Request} request Express request
-     * @param {Number} retries Number of retries left
-     * @param {Number} timeout Request timeout in ms
      */
-    async function makeRequest(config, response, request, retries = 5, timeout = 5000) {
+    async function makeRequest(config, response, request) {
         try {
             controller.signal.throwIfAborted();
             const fetchResponse = await fetch(endpointUrl, config);
@@ -1819,14 +1817,7 @@ router.post('/generate', function (request, response) {
                 /** @type {any} */
                 let json = await fetchResponse.json();
                 response.send(json);
-                console.debug(json);
-                console.debug(json?.choices?.[0]?.message);
-            } else if (fetchResponse.status === 429 && retries > 0) {
-                console.warn(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
-                setTimeout(() => {
-                    timeout *= 2;
-                    makeRequest(config, response, request, retries - 1, timeout);
-                }, timeout);
+                console.debug('Chat Completion response:', json);
             } else {
                 await handleErrorResponse(fetchResponse);
             }
@@ -1858,7 +1849,7 @@ router.post('/generate', function (request, response) {
         if (!response.headersSent) {
             response.send({ error: { message }, quota_error: quota_error });
         } else if (!response.writableEnded) {
-            response.write(errorResponse);
+            response.write(responseText);
         } else {
             response.end();
         }
