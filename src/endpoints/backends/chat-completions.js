@@ -2031,6 +2031,7 @@ multimodalModels.post('/nanogpt', async (_req, res) => {
         return res.sendStatus(500);
     }
 });
+
 multimodalModels.post('/electronhub', async (_req, res) => {
     try {
         const response = await fetch('https://api.electronhub.ai/v1/models');
@@ -2041,7 +2042,7 @@ multimodalModels.post('/electronhub', async (_req, res) => {
 
         /** @type {any} */
         const data = await response.json();
-        const multimodalModels = data.models.filter(m => m.metadata?.vision).map(m => m.id);
+        const multimodalModels = data.data.filter(m => m.metadata?.vision).map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
