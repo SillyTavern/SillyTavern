@@ -3062,7 +3062,7 @@ async function getClosestSize(width, height) {
         body: JSON.stringify({
             model: extension_settings.sd.model,
         }),
-    })
+    });
     if (!response.ok) {
         const text = await response.text();
         throw new Error(text);
@@ -3078,7 +3078,7 @@ async function getClosestSize(width, height) {
         if (sizeParts.length !== 2) {
             return closest;
         }
-        
+
         const sizeWidth = Number(sizeParts[0]);
         const sizeHeight = Number(sizeParts[1]);
         const targetWidth = Number(width);
@@ -3087,15 +3087,15 @@ async function getClosestSize(width, height) {
         if (isNaN(sizeWidth) || isNaN(sizeHeight) || isNaN(targetWidth) || isNaN(targetHeight)) {
             return closest;
         }
-        
+
         const sizeArea = sizeWidth * sizeHeight;
         const targetArea = targetWidth * targetHeight;
         const diff = Math.abs(sizeArea - targetArea);
-        
+
         return diff < closest.diff ? { size, diff } : closest;
     }, { size: null, diff: Infinity });
-    
-    const size = closestSize.size;    
+
+    const size = closestSize.size;
     return size;
 }
 

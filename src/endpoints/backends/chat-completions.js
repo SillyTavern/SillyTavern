@@ -1202,19 +1202,18 @@ async function sendAimlapiRequest(request, response) {
 async function sendElectronHubRequest(request, response) {
     const apiUrl = API_ELECTRONHUB;
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
-    
+
     if (!apiKey) {
         console.warn('Electron Hub key is missing.');
         return response.status(400).send({ error: true });
     }
-    
+
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
-    
-    
+
     try {
         let bodyParams = {};
 
@@ -2017,29 +2016,6 @@ multimodalModels.post('/aimlapi', async (_req, res) => {
         console.error(error);
         return res.sendStatus(500);
     }
-})
-
-multimodalModels.post('/nanogpt', async (_req, res) => {
-    try {
-        const response = await fetch('https://nano-gpt.com/api/v1/models?detailed=true');
-
-        if (!response.ok) {
-            return res.json([]);
-        }
-
-        /** @type {any} */
-        const data = await response.json();
-
-        if (!Array.isArray(data?.data)) {
-            return res.json([]);
-        }
-
-        const multimodalModels = data.data.filter(m => m?.capabilities?.vision).map(m => m.id);
-        return res.json(multimodalModels);
-    } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
-    }
 });
 
 multimodalModels.post('/nanogpt', async (_req, res) => {
@@ -2071,7 +2047,7 @@ multimodalModels.post('/electronhub', async (_req, res) => {
         if (!response.ok) {
             return res.json([]);
         }
-        
+
         /** @type {any} */
         const data = await response.json();
         const multimodalModels = data.models.filter(m => m.metadata?.vision).map(m => m.id);
