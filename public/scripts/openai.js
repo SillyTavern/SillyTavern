@@ -2077,26 +2077,36 @@ function getReasoningEffort() {
         return oai_settings.reasoning_effort;
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
-        const supportedReasoningEffort = isReasoningEffortSupported();
-        if (!supportedReasoningEffort) {
-            return undefined;
+    function resolveReasoningEffort() {
+        switch (oai_settings.reasoning_effort) {
+            case reasoning_effort_types.auto:
+                return undefined;
+            case reasoning_effort_types.min:
+                return chat_completion_sources.OPENAI === oai_settings.chat_completion_source && /^gpt-5/.test(oai_settings.openai_model)
+                    ? reasoning_effort_types.min
+                    : reasoning_effort_types.low;
+            case reasoning_effort_types.max:
+                return reasoning_effort_types.high;
+            default:
+                return oai_settings.reasoning_effort;
         }
-        return oai_settings.reasoning_effort;
     }
 
-    switch (oai_settings.reasoning_effort) {
-        case reasoning_effort_types.auto:
+    const reasoningEffort = resolveReasoningEffort();
+
+    // Check if the resolved effort supported by the model
+    if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
+        if (Array.isArray(model_list) && reasoningEffort) {
+            const currentModel = model_list.find(m => m.id === oai_settings.electronhub_model);
+            const supportedEfforts = currentModel?.metadata?.supported_reasoning_efforts;
+            if (Array.isArray(supportedEfforts) && supportedEfforts.includes(reasoningEffort)) {
+                return reasoningEffort;
+            }
             return undefined;
-        case reasoning_effort_types.min:
-            return chat_completion_sources.OPENAI === oai_settings.chat_completion_source && /^gpt-5/.test(oai_settings.openai_model)
-                ? reasoning_effort_types.min
-                : reasoning_effort_types.low;
-        case reasoning_effort_types.max:
-            return reasoning_effort_types.high;
-        default:
-            return oai_settings.reasoning_effort;
+        }
     }
+
+    return reasoningEffort;
 }
 
 /**
@@ -5663,27 +5673,6 @@ export function isVideoInliningSupported() {
             return videoSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.VERTEXAI:
             return videoSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
-        default:
-            return false;
-    }
-}
-
-/**
- * Check if the model supports reasoning_effort
- * @returns {boolean} True if the model supports reasoning_effort
- */
-export function isReasoningEffortSupported() {
-    if (main_api !== 'openai') {
-        return false;
-    }
-
-    if (oai_settings.reasoning_effort === reasoning_effort_types.auto) {
-        return false;
-    }
-
-    switch (oai_settings.chat_completion_source) {
-        case chat_completion_sources.ELECTRONHUB:
-            return (Array.isArray(model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.supported_reasoning_efforts) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.supported_reasoning_efforts.includes(oai_settings.reasoning_effort));
         default:
             return false;
     }

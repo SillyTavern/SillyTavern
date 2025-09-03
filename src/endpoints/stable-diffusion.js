@@ -1069,7 +1069,6 @@ electronhub.post('/sizes', async (request, response) => {
     return response.send({ sizes });
 });
 
-
 const nanogpt = express.Router();
 
 nanogpt.post('/models', async (request, response) => {
