@@ -1546,6 +1546,11 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
             !quiet && toastr.error(data.message, 'Chat Completion API');
             throw new Error(data);
         }
+
+        if (data.detail) {
+            !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
+            throw new Error(data);
+        }
     }
     catch {
         // No JSON. Do nothing.
