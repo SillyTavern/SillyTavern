@@ -2216,16 +2216,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         generate_data['logprobs'] = 5;
     }
 
-    if (isElectronHub) {
-        delete generate_data.stop;
-        delete generate_data.logprobs;
-        delete generate_data.n;
-
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['frequency_penalty'] = Number(oai_settings.freq_pen_openai);
-        generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
-    }
-
     // Remove logit bias/logprobs/stop-strings if not supported by the model
     const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
     if (isOAI && isVision(oai_settings.openai_model) || isOpenRouter && isVision(oai_settings.openrouter_model)) {
@@ -2337,6 +2327,11 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     if (isPollinations) {
         delete generate_data.max_tokens;
+    }
+
+    // https://docs.electronhub.ai/api-reference/chat/completions
+    if (isElectronHub) {
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
     }
 
     const seedSupportedSources = [
