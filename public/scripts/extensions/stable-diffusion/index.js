@@ -3054,7 +3054,6 @@ function getClosestAspectRatio(width, height, source) {
  * @param {number} height - The height of the image
  * @returns {Promise<string>} - The closest size
  */
-
 async function getClosestSize(width, height) {
     const response = await fetch('/api/sd/electronhub/sizes', {
         method: 'POST',
