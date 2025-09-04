@@ -1201,100 +1201,164 @@ async function sendAimlapiRequest(request, response) {
  * @param {express.Response} response Express response object
  */
 async function sendAzureOpenAIRequest(request, response) {
-
+    // 1. GATHER & VALIDATE SETTINGS
+    const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
 
-    // --- Construct Request Body for Azure OpenAI ---
-    // Azure OpenAI expects an OpenAI-compatible body, but without the 'model' field
-    // as the deployment name in the URL serves that purpose.
-    const requestBody = {
-        messages: request.body.messages,
-        temperature: request.body.temperature,
-        max_tokens: request.body.max_tokens,
-        stream: request.body.stream,
-        presence_penalty: request.body.presence_penalty,
-        frequency_penalty: request.body.frequency_penalty,
-        top_p: request.body.top_p,
-        stop: request.body.stop,
-        logit_bias: request.body.logit_bias,
-        seed: request.body.seed,
-        tools: request.body.tools,
-        tool_choice: request.body.tool_choice,
-    };
-
-    const AzureOpenAIData = {
-        azure_base_url: request.body.azure_base_url,
-        azure_deployment_name: request.body.azure_deployment_name,
-        azure_api_version: request.body.azure_api_version,
-    };
-
-    // --- Basic validation ---
-    if (!apiKey) {
-        console.error('Azure OpenAI API key is missing.');
-        return response.status(401).send({ error: { message: 'Azure OpenAI API key is missing.' } });
-    }
-    if (!AzureOpenAIData.azure_base_url || !AzureOpenAIData.azure_deployment_name || !AzureOpenAIData.azure_api_version) {
-        console.error('Azure OpenAI configuration (Base URL, Deployment Name, API Version) is incomplete.');
-        return response.status(400).send({ error: { message: 'Azure OpenAI configuration is incomplete.' } });
+    if (!azure_base_url || !azure_deployment_name || !azure_api_version || !apiKey) {
+        return response.status(400).send({
+            error: {
+                message: 'Azure OpenAI configuration is incomplete. Please provide Base URL, Deployment Name, API Version, and API Key in the connection settings.',
+            },
+        });
     }
 
-    // --- Construct Azure API URL ---
-    // Ensure no double slashes if base_url already ends with one
-    const sanitizedBaseUrl = AzureOpenAIData.azure_base_url.endsWith('/') ? AzureOpenAIData.azure_base_url.slice(0, -1) : AzureOpenAIData.azure_base_url;
-    const azureApiUrl = `${sanitizedBaseUrl}/openai/deployments/${AzureOpenAIData.azure_deployment_name}/chat/completions?api-version=${AzureOpenAIData.azure_api_version}`;
+    // 2. PREPARE THE REQUEST
+    const url = new URL(`/openai/deployments/${azure_deployment_name}/chat/completions`, azure_base_url);
+    url.searchParams.set('api-version', azure_api_version);
+    const endpointUrl = url.toString();
 
-    // --- Define Azure-specific Headers ---
-    const azureHeaders = {
-        'api-key': apiKey, // Azure uses 'api-key' header
-        'Content-Type': 'application/json',
-    };
+    // Create the base payload with all standard parameters
+    const validKeys = ['messages', 'temperature', 'frequency_penalty', 'presence_penalty', 'top_p', 'max_tokens', 'stream', 'logit_bias', 'stop', 'n', 'logprobs', 'seed', 'tools', 'tool_choice'];
+    const apiRequestBody = /** @type {any} */ ({});
+    for (const key of validKeys) {
+        if (request.body[key] !== undefined) {
+            apiRequestBody[key] = request.body[key];
+        }
+    }
 
-    console.log(color.blue('--- Preparing Azure OpenAI Request ---'));
-
-    try {
-        const controller = new AbortController();
-        request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
-            controller.abort();
-        });
-        // Use the signal from the incoming request to allow frontend cancellation
-        const apiResponse = await fetch(azureApiUrl, {
-            method: 'POST',
-            headers: azureHeaders,
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-        });
-
-        console.log(color.blue('--- Received Azure OpenAI Response ---'));
+    // *** START: ADDED LOGIC FOR JSON MODE ***
+    // Handle Structured Output (JSON Mode) by translating the custom `json_schema` object.
+    if (request.body.json_schema) {
+        console.info('Enabling JSON Mode via structured output schema.');
+        setJsonObjectFormat(apiRequestBody, apiRequestBody.messages, request.body.json_schema);
+    }
+    // *** END: ADDED LOGIC FOR JSON MODE ***
 
 
-        if (!apiResponse.ok) {
-            const errorText = await apiResponse.text();
-            console.error(`Azure OpenAI API returned error status: ${apiResponse.status} ${apiResponse.statusText}. Response: ${errorText}`);
-            // Attempt to parse the error as JSON, fallback to plain text if it fails
-            try {
-                return response.status(apiResponse.status).send(JSON.parse(errorText));
-            } catch (e) {
-                return response.status(apiResponse.status).send({ error: { message: errorText || 'Unknown error from Azure OpenAI API' } });
+    // --- LOGIC FOR NATIVE THINKING AND REASONING EFFORT ---
+    const modelName = request.body.model || '';
+    const includeReasoning = Boolean(request.body.include_reasoning);
+
+    // Define the list of models that support these advanced features
+    const reasoningEffortModels = [
+        'o1', 'o3-mini', 'o3-mini-2025-01-31', 'o4-mini', 'o4-mini-2025-04-16',
+        'o3', 'o3-2025-04-16', 'gpt-5', 'gpt-5-2025-08-07', 'gpt-5-mini',
+        'gpt-5-mini-2025-08-07', 'gpt-5-nano', 'gpt-5-nano-2025-08-07',
+    ];
+
+    const isAdvancedModel = reasoningEffortModels.includes(modelName);
+
+    if (isAdvancedModel) {
+        if (includeReasoning) {
+            // gpt-5 models do not support stream_options.include_thoughts
+            if (!modelName.startsWith('gpt-5')) {
+                console.info(`Enabling native 'thoughts' API feature for model: ${modelName}`);
+                apiRequestBody.stream_options = { include_thoughts: true };
             }
         }
 
-        // --- Handle Streaming vs. Non-Streaming Responses ---
-        if (request.body.stream) {
-            forwardFetchResponse(apiResponse, response); // Assuming this helper exists
-        } else {
-            const data = await apiResponse.json();
-            response.send(data);
+        if (request.body.reasoning_effort) {
+            console.info(`Setting 'reasoning_effort' for model: ${modelName}`);
+            const reasoningEffortMap = {
+                min: 'minimal',
+            };
+            apiRequestBody.reasoning_effort = reasoningEffortMap[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
+    }
 
-    } catch (error) {
-        console.error('Error communicating with Azure OpenAI API:', util.inspect(error, { depth: null, colors: true }));
+    // When thoughts are enabled, some sampling parameters are not supported.
+    if (apiRequestBody.stream_options?.include_thoughts) {
+        delete apiRequestBody.temperature;
+        delete apiRequestBody.top_p;
+        delete apiRequestBody.logit_bias;
+        delete apiRequestBody.logprobs;
+        delete apiRequestBody.top_logprobs;
+        delete apiRequestBody.stop;
+        delete apiRequestBody.max_tokens;
+    }
+
+    // Adjust logprobs for Azure OpenAI, which follows the OpenAI Chat Completions API spec.
+    if (typeof apiRequestBody.logprobs === 'number' && apiRequestBody.logprobs > 0) {
+        apiRequestBody.top_logprobs = apiRequestBody.logprobs;
+        apiRequestBody.logprobs = true;
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', () => controller.abort());
+
+    const config = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey,
+        },
+        body: JSON.stringify(apiRequestBody),
+        signal: controller.signal,
+    };
+
+    async function handleErrorResponse(errorResponse) {
+        const responseText = await errorResponse.text();
+        const errorData = tryParse(responseText);
+
+        const message = errorResponse.statusText || 'Unknown error occurred';
+        console.error('Azure OpenAI API request error: ', message, responseText);
+
         if (!response.headersSent) {
-            response.status(500).send({ error: { message: 'Failed to communicate with Azure OpenAI API.' } });
+            response.status(errorResponse.status).send(errorData || { error: { message } });
+        } else if (!response.writableEnded) {
+            response.write(responseText);
         } else {
             response.end();
         }
     }
+
+    async function executeRequest(url, fetchConfig, retries = 3, timeout = 5000) {
+        try {
+            fetchConfig.signal.throwIfAborted();
+            const fetchResponse = await fetch(url, fetchConfig);
+
+            if (request.body.stream) {
+                console.info('Azure OpenAI: Streaming request in progress.');
+                return forwardFetchResponse(fetchResponse, response);
+            }
+
+            if (fetchResponse.ok) {
+                /** @type {any} */
+                const json = await fetchResponse.json();
+                // Log reasoning token usage if the model provides it
+                if (json.usage?.thoughts_tokens) {
+                    console.info(color.blue(`Reasoning tokens used: ${json.usage.thoughts_tokens}`));
+                }
+                console.debug('Azure OpenAI Response:', json?.choices?.[0]?.message);
+                return response.send(json);
+            }
+
+            if (fetchResponse.status === 429 && retries > 0) {
+                console.warn(`Azure OpenAI API rate limit hit. Retrying in ${timeout / 1000}s... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, timeout));
+                return executeRequest(url, fetchConfig, retries - 1, timeout * 2);
+            }
+
+            await handleErrorResponse(fetchResponse);
+
+        } catch (error) {
+            console.error('Azure OpenAI API request failed:', error);
+            if (response.headersSent) return;
+
+            const message = error.name === 'AbortError'
+                ? 'Request was aborted by the client.'
+                : (error.message || 'An unknown network error occurred.');
+
+            response.status(500).send({ error: { message, ...error } });
+        }
+    }
+
+    console.info(`Sending request to Azure OpenAI: ${endpointUrl}`);
+    console.debug('Azure OpenAI Request Body:', apiRequestBody);
+
+    await executeRequest(endpointUrl, config);
 }
 
 export const router = express.Router();
@@ -1447,10 +1511,10 @@ router.post('/status', async function (request, statusResponse) {
             // Use a tiny, deterministic probe payload. This ensures JSON (non-streaming), minimal cost & latency.
             const modelPayload = {
                 messages: [
-                    { role: 'user', content: 'Say word Hi' },
+                    { role: 'user', content: 'Hi' },
                 ],
-                max_tokens: 1,
                 stream: false,
+                max_completion_tokens: 2, // Explicitly minimal token request for a status probe.
             };
 
             const modelRequest = await fetch(chatUrl, {

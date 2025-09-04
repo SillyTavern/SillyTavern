@@ -2093,6 +2093,7 @@ function getReasoningEffort() {
     // These sources expect the effort as string.
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
@@ -2110,7 +2111,7 @@ function getReasoningEffort() {
         case reasoning_effort_types.auto:
             return undefined;
         case reasoning_effort_types.min:
-            return chat_completion_sources.OPENAI === oai_settings.chat_completion_source && /^gpt-5/.test(oai_settings.openai_model)
+            return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(oai_settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
                 ? reasoning_effort_types.min
                 : reasoning_effort_types.low;
         case reasoning_effort_types.max:
@@ -2164,11 +2165,11 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !(isOAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model));
+    const stream = oai_settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2231,18 +2232,18 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
         generate_data['logprobs'] = 5;
     }
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
     const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
-    if (isOAI && isVision(oai_settings.openai_model) || isOpenRouter && isVision(oai_settings.openrouter_model)) {
+    if ((isOAI && isVision(oai_settings.openai_model)) || (isAzureOpenAI && isVision(oai_settings.azure_openai_model)) || (isOpenRouter && isVision(oai_settings.openrouter_model))) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
-    if (isOAI && oai_settings.openai_model.includes('gpt-4.5') || isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5')) {
+    if ((isOAI && oai_settings.openai_model.includes('gpt-4.5')) || (isAzureOpenAI && oai_settings.azure_openai_model.includes('gpt-4.5')) || (isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5'))) {
         delete generate_data.logprobs;
     }
 
@@ -2360,6 +2361,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const seedSupportedSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.MISTRALAI,
         chat_completion_sources.CUSTOM,
@@ -2376,7 +2378,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         generate_data['seed'] = oai_settings.seed;
     }
 
-    if (isOAI && /^(o1|o3|o4)/.test(oai_settings.openai_model)) {
+    if ((isOAI && /^(o1|o3|o4)/.test(oai_settings.openai_model)) || (isAzureOpenAI && /^(o1|o3|o4)/.test(oai_settings.azure_openai_model))) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
@@ -2399,7 +2401,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         }
     }
 
-    if (isOAI && /^gpt-5/.test(oai_settings.openai_model)) {
+    if ((isOAI && /^gpt-5/.test(oai_settings.openai_model)) || (isAzureOpenAI && /^gpt-5/.test(oai_settings.azure_openai_model))) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
@@ -2569,6 +2571,7 @@ function parseChatCompletionLogprobs(data) {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AZURE_OPENAI:
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
@@ -2577,7 +2580,7 @@ function parseChatCompletionLogprobs(data) {
             }
             // OpenAI Text Completion API is treated as a chat completion source
             // by SillyTavern, hence its presence in this function.
-            return textCompletionModels.includes(oai_settings.openai_model)
+            return textCompletionModels.includes(getChatCompletionModel())
                 ? parseOpenAITextLogprobs(data.choices[0]?.logprobs)
                 : parseOpenAIChatLogprobs(data.choices[0]?.logprobs);
         default:
@@ -4907,27 +4910,18 @@ async function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
-        $('#openai_max_context').attr('max', getMaxContextOpenAI(value));
-
-        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
-
-
-        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI || oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         $('#openai_max_context').attr('max', getMaxContextOpenAI(value));
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
-        $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
+        if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+            $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
+        }
 
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
-
     if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
         const maxContext = getMistralMaxContext(oai_settings.mistralai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5606,10 +5600,15 @@ export function isImageInliningSupported() {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AZURE_OPENAI: {
+            const modelToCheck = oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI
+                ? oai_settings.azure_openai_model
+                : oai_settings.openai_model;
             return visionSupportedModels.some(model =>
-                oai_settings.openai_model.includes(model)
-                && ['gpt-4-turbo-preview', 'o1-mini', 'o3-mini'].some(x => !oai_settings.openai_model.includes(x)),
+                modelToCheck.includes(model)
+                && ['gpt-4-turbo-preview', 'o1-mini', 'o3-mini'].some(x => !modelToCheck.includes(x)),
             );
+        }
         case chat_completion_sources.MAKERSUITE:
             return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.VERTEXAI:
