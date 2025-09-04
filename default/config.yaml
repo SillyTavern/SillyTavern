@@ -40,9 +40,15 @@ browserLaunch:
 port: 8000
 # -- SSL options --
 ssl:
+  # Enable SSL/TLS encryption
   enabled: false
+  # Path to certificate (relative to server root)
   certPath: "./certs/cert.pem"
+  # Path to private key (relative to server root)
   keyPath: "./certs/privkey.pem"
+  # Private key passphrase (leave empty if not needed)
+  # For better security, use a CLI argument or an environment variable (SILLYTAVERN_SSL_KEYPASSPHRASE)
+  keyPassphrase: ""
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
