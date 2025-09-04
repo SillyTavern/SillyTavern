@@ -89,6 +89,7 @@ autheliaAuth: false
 # for the individual accounts
 perUserBasicAuth: false
 # Host whitelist configuration. Recommended if you're using a listen mode
+# Not used when SSL is enabled as host verification is handled by the SSL layer
 hostWhitelist:
   # Enable or disable host whitelisting
   enabled: false
