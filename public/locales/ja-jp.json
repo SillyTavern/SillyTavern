@@ -317,6 +317,8 @@
     "flag": "フラグ",
     "API key (optional)": "APIキー（オプション）",
     "Server url": "サーバーURL",
+    "Electron Hub API Key": "Electron Hub API キー",
+    "Electron Hub Model": "Electron Hub モデル",
     "Example: http://127.0.0.1:5000": "例: http://127.0.0.1:5000",
     "Custom model (optional)": "カスタムモデル（オプション）",
     "vllm-project/vllm": "vllm-project/vllm (OpenAI API ラッパーモード)",

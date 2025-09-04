@@ -317,6 +317,8 @@
     "flag": "Flagge",
     "API key (optional)": "API-Schlüssel (optional)",
     "Server url": "Server-URL",
+    "Electron Hub API Key": "Electron Hub API-Schlüssel",
+    "Electron Hub Model": "Electron Hub-Modell",
     "Example: http://127.0.0.1:5000": "Beispiel: http://127.0.0.1:5000",
     "Custom model (optional)": "Benutzerdefiniertes Modell (optional)",
     "vllm-project/vllm": "vllm-project/vllm (OpenAI API-Wrappermodus)",
