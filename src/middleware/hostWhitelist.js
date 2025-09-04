@@ -27,7 +27,7 @@ const validationMiddleware = hostValidationMiddleware({
  */
 export default function hostWhitelistMiddleware(req, res, next) {
     const hostValue = req.headers.host;
-    if (hostWhitelistScan && !isHostAllowed(hostValue, hostWhitelist) && !knownHosts.has(hostValue)) {
+    if (hostWhitelistScan && !isHostAllowed(hostValue, hostWhitelist) && !knownHosts.has(hostValue) && knownHosts.size < maxKnownHosts) {
         const isFirstWarning = knownHosts.size === 0;
         console.warn(color.red('Request from untrusted host:'), hostValue);
         console.warn(`If you trust this host, you can add it to ${color.yellow('hostWhitelist.hosts')} in config.yaml`);
@@ -37,9 +37,7 @@ export default function hostWhitelistMiddleware(req, res, next) {
         if (isFirstWarning) {
             console.warn(`To disable this warning, set ${color.yellow('hostWhitelist.scan')} to false`);
         }
-        if (knownHosts.size < maxKnownHosts) {
-            knownHosts.add(hostValue);
-        }
+        knownHosts.add(hostValue);
     }
 
     if (!hostWhitelistEnabled) {
