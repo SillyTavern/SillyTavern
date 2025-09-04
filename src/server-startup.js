@@ -237,7 +237,7 @@ export class ServerStartup {
             const sslOptions = {
                 cert: fs.readFileSync(this.cliArgs.certPath),
                 key: fs.readFileSync(this.cliArgs.keyPath),
-                passphrase: this.cliArgs.keyPassphrase || undefined,
+                passphrase: String(this.cliArgs.keyPassphrase ?? ''),
             };
             const server = https.createServer(sslOptions, this.app);
             server.on('error', reject);
