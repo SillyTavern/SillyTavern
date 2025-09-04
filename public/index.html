@@ -6257,14 +6257,20 @@
             </div>
         </div>
         <div id="background_template" class="template_element">
-            <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
+            <div class="bg_example flex-container" bgfile="" title="">
+                <div class="bg_example_img"></div>
                 <div title="Copy to system backgrounds" data-i18n="[title]Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
-                <div title="Rename background" data-i18n="[title]Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
-                <div title="Lock" data-i18n="[title]Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
-                <div title="Unlock" data-i18n="[title]Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
-                <div title="Delete background" data-i18n="[title]Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
-                <div class="BGSampleTitle">
+                <div class="jg-menu">
+                    <!-- temporarily moved lock icon here (will be moved to header) -->
+                    <div data-action="lock" class="jg-button jg-lock fa-solid fa-lock fa-fw pointer" data-i18n="[title]Lock" title="Lock"></div>
+                    <div data-action="unlock" class="jg-button jg-unlock fa-solid fa-lock-open fa-fw pointer" data-i18n="[title]Unlock" title="Unlock"></div>
+                    <div data-action="edit" class="jg-button jg-edit fa-solid fa-pen-to-square fa-fw pointer" data-i18n="[title]Rename Background" title="Rename Background"></div>
+                    <div data-action="delete" class="jg-button jg-delete fa-solid fa-trash-can fa-fw pointer" data-i18n="[title]Delete Background" title="Delete Background"></div>
                 </div>
+                <div class="mobile-only-menu-toggle">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </div>
+                <div class="BGSampleTitle"></div>
             </div>
         </div>
         <!-- templates for JS to reuse when needed -->
