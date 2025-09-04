@@ -117,9 +117,7 @@ if (cliArgs.whitelistMode) {
     app.use(whitelistMiddleware);
 }
 
-if (!cliArgs.ssl) {
-    app.use(hostWhitelistMiddleware);
-}
+app.use(hostWhitelistMiddleware);
 
 if (cliArgs.listen) {
     app.use(accessLoggerMiddleware());
