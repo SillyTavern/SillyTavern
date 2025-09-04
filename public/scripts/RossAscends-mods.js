@@ -480,8 +480,7 @@ export function dragElement($elmnt) {
 
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let height, width, top, left, right, bottom,
-        maxX, maxY, winHeight, winWidth,
-        topbar;
+        maxX, maxY, winHeight, winWidth;
 
     const elmntName = $elmnt.attr('id');
     const elmntNameEscaped = $.escapeSelector(elmntName);
@@ -539,11 +538,6 @@ export function dragElement($elmnt) {
         maxY = height + top;
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
-
-        topbar = document.getElementById('top-bar');
-        const topbarstyle = getComputedStyle(topbar);
-        topBarFirstX = parseInt(topbarstyle.marginInline);
-        topBarLastY = parseInt(topbarstyle.height);
 
         // Prepare state object if missing
         if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
