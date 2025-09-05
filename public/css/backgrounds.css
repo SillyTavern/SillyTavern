@@ -116,8 +116,10 @@ body.reduced-motion #bg_custom {
 
     position: relative;
     overflow: hidden;
-    border-radius: 10px;
-    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    border: 0px solid transparent;
+    outline: 2px solid var(--SmartThemeBorderColor);
+    outline-offset: -1px;
 }
 
 .bg_example_img {
