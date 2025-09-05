@@ -633,6 +633,13 @@ export class ToolManager {
             }
         }
 
+        if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.electronhub_model);
+            if (currentModel && currentModel.metadata?.function_call) {
+                return currentModel.metadata.function_call;
+            }
+        }
+
         const supportedSources = [
             chat_completion_sources.OPENAI,
             chat_completion_sources.CUSTOM,
@@ -651,6 +658,7 @@ export class ToolManager {
             chat_completion_sources.MOONSHOT,
             chat_completion_sources.FIREWORKS,
             chat_completion_sources.COMETAPI,
+            chat_completion_sources.ELECTRONHUB,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

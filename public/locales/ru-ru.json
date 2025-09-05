@@ -1994,6 +1994,8 @@
     "Click on the setting name to omit it from the profile.": "Нажмите на название настройки, чтобы исключить её из профиля",
     "Included settings:": "Сохранённые параметры:",
     "Server URL": "Адрес сервера",
+    "Electron Hub API Key": "Ключ от API Electron Hub",
+    "Electron Hub Model": "Модель Electron Hub",
     "NanoGPT API Key": "Ключ от API NanoGPT",
     "NanoGPT Model": "Модель NanoGPT",
     "Use extension settings": "Использовать настройки из расширения",

@@ -317,6 +317,8 @@
     "flag": "وضع علامة",
     "API key (optional)": "مفتاح API (اختياري)",
     "Server url": "رابط الخادم",
+    "Electron Hub API Key": "مفتاح API لـ Electron Hub",
+    "Electron Hub Model": "نموذج Electron Hub",
     "Example: http://127.0.0.1:5000": "مثال: http://127.0.0.1:5000",
     "Custom model (optional)": "نموذج مخصص (اختياري)",
     "vllm-project/vllm": "vllm-project/vllm (وضع غلاف OpenAI API)",
