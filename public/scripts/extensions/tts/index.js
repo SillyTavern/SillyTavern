@@ -33,7 +33,7 @@ import { KokoroTtsProvider } from './kokoro.js';
 import { TtsWebuiProvider } from './tts-webui.js';
 import { PollinationsTtsProvider } from './pollinations.js';
 import { MiniMaxTtsProvider } from './minimax.js';
-
+import { Tone } from '../../../lib.js';
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
 
@@ -330,14 +330,21 @@ async function playAudioData(audioJob) {
     audioElement.addEventListener('ended', completeCurrentAudioJob);
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
+        // This shifts pitch according to semitones. Formula: 12 * log2(frequency multiplier).
+        // we account the playback_rate too, since it also affects the pitch inversely.
+        // So if you speed up playback, the pitch goes up.
+        // So if playback_pitch is 2 and playback_rate is 2, 12 * log2(2/2) = 0, meaning we don't change the pitch
+        // because the playback_rate accounts for it
+        let player = Tone.getContext().createMediaElementSource(audioElement);
+        const semitone_delta = 12 * Math.log2(extension_settings.tts.playback_pitch * (1 / extension_settings.tts.playback_rate));
+        const pitch_shift = new Tone.PitchShift({ pitch: semitone_delta, windowSize : 0.1 }).toDestination();
         audioElement.playbackRate = extension_settings.tts.playback_rate;
-        audioElement.play();
+        Tone.connect(player, pitch_shift);
     });
 }
 
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id);
-
     if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
     }
@@ -753,7 +760,10 @@ function loadSettings() {
     $('#playback_rate').val(extension_settings.tts.playback_rate);
     $('#playback_rate_counter').val(Number(extension_settings.tts.playback_rate).toFixed(2));
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
-
+    $('#playback_pitch').val(extension_settings.tts.playback_pitch);
+    $('#playback_pitch_counter').val(Number(extension_settings.tts.playback_pitch).toFixed(2));
+    $('#playback_pitch_block');
+    $('#tts_voice_map').val(extension_settings.tts.voiceMap || '');
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -763,6 +773,7 @@ const defaultSettings = {
     currentProvider: 'ElevenLabs',
     auto_generation: true,
     narrate_user: false,
+    playback_pitch: 1,
     playback_rate: 1,
     multi_voice_enabled: false,
 };
@@ -1380,6 +1391,13 @@ jQuery(async function () {
             const formattedValue = Number(value).toFixed(2);
             extension_settings.tts.playback_rate = value;
             $('#playback_rate_counter').val(formattedValue);
+            saveSettingsDebounced();
+        });
+        $('#playback_pitch').on('input', function () {
+            const value = $(this).val();
+            const formattedValue = Number(value).toFixed(2);
+            extension_settings.tts.playback_pitch = value;
+            $('#playback_pitch_counter').val(formattedValue);
             saveSettingsDebounced();
         });
 

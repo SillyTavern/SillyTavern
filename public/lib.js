@@ -22,7 +22,7 @@ import morphdom from 'morphdom';
 import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
 import yaml from 'yaml';
-
+import * as Tone from 'tone';
 /**
  * Expose the libraries to the 'window' object.
  * Needed for compatibility with old extensions.
@@ -100,6 +100,7 @@ export default {
     slideToggle,
     chalk,
     yaml,
+    Tone,
 };
 
 export {
@@ -124,4 +125,5 @@ export {
     slideToggle,
     chalk,
     yaml,
+    Tone,
 };
