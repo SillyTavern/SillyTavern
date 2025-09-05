@@ -762,7 +762,7 @@ function loadSettings() {
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
     $('#playback_pitch').val(extension_settings.tts.playback_pitch);
     $('#playback_pitch_counter').val(Number(extension_settings.tts.playback_pitch).toFixed(2));
-    $('#playback_pitch_block');
+    $('#playback_pitch_block').toggle(extension_settings.tts.currentProvider !== 'System');
     $('#tts_voice_map').val(extension_settings.tts.voiceMap || '');
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
