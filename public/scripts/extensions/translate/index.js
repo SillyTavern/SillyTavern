@@ -182,9 +182,11 @@ function isGeneratingSwipe(messageId) {
     return $(`#chat .mes[mesid="${messageId}"] .mes_text`).text() === '...';
 }
 
-async function translateImpersonate(text) {
+async function translateImpersonate() {
+    const sendTextArea = $('#send_textarea');
+    const text = sendTextArea.val().toString();
     const translatedText = await translate(text, extension_settings.translate.target_language);
-    $('#send_textarea').val(translatedText);
+    sendTextArea.val(translatedText);
 }
 
 /**
