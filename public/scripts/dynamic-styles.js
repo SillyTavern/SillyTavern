@@ -93,7 +93,7 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             } else if (rule instanceof CSSSupportsRule) {
                 // Recursively process nested @supports rules
                 processRules(rule.cssRules, [...wrappers, { type: 'supports', conditionText: rule.conditionText }]);
-            } else if (typeof globalThis !== 'undefined' && 'CSSContainerRule' in globalThis && rule instanceof globalThis.CSSContainerRule) {
+            } else if (rule instanceof window.CSSContainerRule) {
                 // Recursively process nested @container rules (if supported by the browser)
                 // Note: conditionText contains the query like "(min-width: 300px)" or "style(color)"
                 // Using 'container' as the type ensures uniqueness separate from @media/@supports
