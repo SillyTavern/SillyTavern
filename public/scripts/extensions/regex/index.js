@@ -48,6 +48,94 @@ class RegexPresetManager {
     /** @type {HTMLElement} */
     presetDeleteButton = null;
 
+    /** @type {string|null} */
+    currentPresetId = null;
+
+    /** @type {Object|null} */
+    lastKnownState = null;
+
+    /**
+     * Captures the current state of enabled regex scripts for change detection.
+     * @returns {Object} The current state object
+     */
+    captureCurrentState() {
+        const globalScripts = this.regexListToPresetItems(extension_settings.regex) || [];
+        const scopedScripts = this.regexListToPresetItems(characters[this_chid]?.data?.extensions?.regex_scripts) || [];
+        
+        return {
+            global: globalScripts.map(item => item.id).sort(),
+            scoped: scopedScripts.map(item => item.id).sort()
+        };
+    }
+
+    /**
+     * Compares two state objects to detect changes.
+     * @param {Object} state1 First state object
+     * @param {Object} state2 Second state object
+     * @returns {boolean} True if states are different
+     */
+    hasStateChanged(state1, state2) {
+        if (!state1 || !state2) return false;
+        
+        const global1 = state1.global || [];
+        const global2 = state2.global || [];
+        const scoped1 = state1.scoped || [];
+        const scoped2 = state2.scoped || [];
+        
+        if (global1.length !== global2.length || scoped1.length !== scoped2.length) {
+            return true;
+        }
+        
+        return !global1.every(id => global2.includes(id)) || 
+               !scoped1.every(id => scoped2.includes(id));
+    }
+
+    /**
+     * Updates the stored state after a preset is applied or saved.
+     * @param {string} presetId - The current preset ID
+     */
+    updateStoredState(presetId) {
+        this.currentPresetId = presetId;
+        this.lastKnownState = this.captureCurrentState();
+    }
+
+    /**
+     * Checks if there are unsaved changes and shows a confirmation dialog.
+     * @returns {Promise<boolean>} True if user wants to proceed without saving
+     */
+    async checkUnsavedChanges() {
+        if (!this.currentPresetId || !this.lastKnownState) {
+            return true; // No current preset or state to compare
+        }
+
+        const currentState = this.captureCurrentState();
+        if (!this.hasStateChanged(this.lastKnownState, currentState)) {
+            return true; // No changes detected
+        }
+
+        const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
+        const presetName = currentPreset ? currentPreset.name : 'Unknown Preset';
+        
+        const choice = await Popup.show.confirm(
+            t`You have unsaved changes to the "${presetName}" preset. Do you want to save them before switching?`,
+            '',
+            {
+                okButton: t`Save Changes`,
+                cancelButton: t`Discard Changes`
+            }
+        );
+
+        if (choice) {
+            // User chose to save changes
+            await this.savePreset(this.currentPresetId, true);
+            this.renderPresetList();
+            return true;
+        }
+
+        // User chose to discard changes
+        return true;
+    }
+
     /**
      * Sets up event listeners for the preset management UI.
      * @returns {void}
@@ -59,11 +147,25 @@ class RegexPresetManager {
             return;
         }
 
-        this.presetSelect.addEventListener('change', async () => {
+        this.presetSelect.addEventListener('change', async (event) => {
             const selectedPresetId = this.presetSelect.value;
+            
+            // Check for unsaved changes before switching
+            const canProceed = await this.checkUnsavedChanges();
+            if (!canProceed) {
+                // Revert the selection
+                event.preventDefault();
+                const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
+                if (currentPreset) {
+                    this.presetSelect.value = currentPreset.id;
+                }
+                return;
+            }
+
             await this.applyPreset(selectedPresetId);
             extension_settings.regex_presets.forEach(p => { p.isSelected = p.id === selectedPresetId; });
             saveSettingsDebounced();
+            this.updateStoredState(selectedPresetId);
         });
 
         this.presetCreateButton = document.getElementById('regex_preset_create');
@@ -76,6 +178,7 @@ class RegexPresetManager {
             const newId = uuidv4();
             await this.savePreset(newId, false);
             this.renderPresetList();
+            this.updateStoredState(newId);
         });
 
         this.presetUpdateButton = document.getElementById('regex_preset_update');
@@ -88,6 +191,7 @@ class RegexPresetManager {
             const selectedPresetId = this.presetSelect.value;
             await this.savePreset(selectedPresetId, true);
             this.renderPresetList();
+            this.updateStoredState(selectedPresetId);
         });
 
         this.presetApplyButton = document.getElementById('regex_preset_apply');
@@ -99,6 +203,7 @@ class RegexPresetManager {
         this.presetApplyButton.addEventListener('click', async () => {
             const selectedPresetId = this.presetSelect.value;
             await this.applyPreset(selectedPresetId);
+            this.updateStoredState(selectedPresetId);
         });
 
         this.presetDeleteButton = document.getElementById('regex_preset_delete');
@@ -116,10 +221,20 @@ class RegexPresetManager {
             if (newSelectedPresetId) {
                 await this.applyPreset(newSelectedPresetId);
                 this.presetSelect.value = newSelectedPresetId;
+                this.updateStoredState(newSelectedPresetId);
+            } else {
+                this.currentPresetId = null;
+                this.lastKnownState = null;
             }
         });
 
         this.renderPresetList();
+        
+        // Initialize the stored state with the currently selected preset
+        const selectedPreset = extension_settings.regex_presets?.find(p => p.isSelected);
+        if (selectedPreset) {
+            this.updateStoredState(selectedPreset.id);
+        }
     }
 
     /**
@@ -376,7 +491,7 @@ async function deleteRegexScript({ id, isScoped }) {
     const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
 
     const existingScriptIndex = array.findIndex((script) => script.id === id);
-    if (!existingScriptIndex || existingScriptIndex !== -1) {
+    if (existingScriptIndex !== -1) {
         array.splice(existingScriptIndex, 1);
 
         if (isScoped) {
@@ -387,6 +502,8 @@ async function deleteRegexScript({ id, isScoped }) {
         await loadRegexScripts();
     }
 }
+
+
 
 async function loadRegexScripts() {
     $('#saved_regex_scripts').empty();
@@ -487,6 +604,7 @@ async function loadRegexScripts() {
     const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isAllowed);
 }
+
 
 /**
  * Opens the regex editor.
@@ -1034,7 +1152,7 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_expand_final').on('click', function () {
         const content = $('#regex_debugger_final_output').html();
-        const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
+        const popupContent = $('<div class="regex-popup-content"></div>').html(content);
         callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
     });
 
@@ -1081,7 +1199,8 @@ function migrateSettings() {
     let performSave = false;
 
     // Current: If MD Display is present in placement, remove it and add new placements/MD option
-    extension_settings.regex.forEach((script) => {
+    if (extension_settings.regex) {
+        extension_settings.regex.forEach((script) => {
         if (!script.id) {
             script.id = uuidv4();
             performSave = true;
@@ -1112,7 +1231,8 @@ function migrateSettings() {
 
             performSave = true;
         }
-    });
+        });
+    }
 
     if (!extension_settings.character_allowed_regex) {
         extension_settings.character_allowed_regex = [];
@@ -1201,6 +1321,7 @@ async function toggleRegexCallback(args, scriptName) {
 
     return script.scriptName || '';
 }
+
 
 /**
  * Performs the import of the regex object.
@@ -1353,6 +1474,7 @@ jQuery(async () => {
     $('#import_regex').on('click', function () {
         $('#import_regex_file').trigger('click');
     });
+
 
     function getSelectedScripts() {
         const scripts = getRegexScripts();

@@ -7,38 +7,55 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="flex-container">
-                <div id="open_regex_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_global_script_desc" title="New global regex script">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <small data-i18n="ext_regex_new_global_script">+ Global</small>
+            <div id="regex_presets_block" class="padding5">
+                <div class="flex-container alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="ext_regex_presets">Regex Presets</strong>
                 </div>
-                <div id="open_scoped_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_scoped_script_desc" title="New scoped regex script">
-                    <i class="fa-solid fa-address-card"></i>
-                    <small data-i18n="ext_regex_new_scoped_script">+ Scoped</small>
+                <div class="flex-container">
+                    <select id="regex_presets" class="text_pole flex1"></select>
+                    <div id="regex_preset_create" class="menu_button fa-solid fa-file-circle-plus" data-i18n="[title]ext_regex_preset_create" title="Create a new regex preset"></div>
+                    <div id="regex_preset_update" class="menu_button fa-solid fa-save" data-i18n="[title]ext_regex_preset_update" title="Update existing regex preset"></div>
+                    <div id="regex_preset_apply" class="menu_button fa-solid fa-recycle" data-i18n="[title]ext_regex_preset_apply" title="Re-apply current preset"></div>
+                    <div id="regex_preset_delete" class="menu_button fa-solid fa-trash" data-i18n="[title]ext_regex_preset_delete" title="Delete current preset"></div>
                 </div>
-                <div id="import_regex" class="menu_button menu_button_icon">
-                    <i class="fa-solid fa-file-import"></i>
-                    <small data-i18n="ext_regex_import_script">Import</small>
-                </div>
-                <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
-                <label for="regex_bulk_edit" class="menu_button menu_button_icon">
-                    <input id="regex_bulk_edit" type="checkbox" class="displayNone" />
-                    <i class="fa-solid fa-edit"></i>
-                    <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
-                </label>
-                <div id="open_regex_debugger" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_debugger_desc" title="Advanced Regex Debugger">
-                    <i class="fa-solid fa-bug-slash"></i>
-                    <small data-i18n="ext_regex_debugger">Debugger</small>
-                </div>
+                <small data-i18n="ext_regex_presets_desc">
+                    Save and switch between groups of enabled regex scripts.
+                </small>
             </div>
-            <div class="flex-container">
-                <select id="regex_presets" class="text_pole flex1"></select>
-                <div id="regex_preset_create" class="menu_button fa-solid fa-file-circle-plus" data-i18n="[title]ext_regex_preset_create" title="Create a new regex preset"></div>
-                <div id="regex_preset_update" class="menu_button fa-solid fa-save" data-i18n="[title]ext_regex_preset_update" title="Update existing regex preset"></div>
-                <div id="regex_preset_apply" class="menu_button fa-solid fa-recycle" data-i18n="[title]ext_regex_preset_apply" title="Re-apply current preset"></div>
-                <div id="regex_preset_delete" class="menu_button fa-solid fa-trash" data-i18n="[title]ext_regex_preset_delete" title="Delete current preset"></div>
-            </div>
-            <div class="regex_bulk_operations flex-container justifyCenter">
+            <hr />
+            <div id="global_scripts_block" class="padding5">
+                <div>
+                    <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
+                </div>
+                <small data-i18n="ext_regex_global_scripts_desc">
+                    Available for all characters. Saved to local settings.
+                </small>
+                <div class="flex-container padding5">
+                    <div id="open_regex_editor" class="menu_button menu_button_icon" title="New global regex script">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <small data-i18n="ext_regex_new_global_script">+ Global</small>
+                    </div>
+                    <div id="open_scoped_editor" class="menu_button menu_button_icon" title="New scoped regex script">
+                        <i class="fa-solid fa-address-card"></i>
+                        <small data-i18n="ext_regex_new_scoped_script">+ Scoped</small>
+                    </div>
+                    <div id="import_regex" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-file-import"></i>
+                        <small data-i18n="ext_regex_import_script">Import</small>
+                    </div>
+                    <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
+                    <label for="regex_bulk_edit" class="menu_button menu_button_icon">
+                        <input id="regex_bulk_edit" type="checkbox" class="displayNone" />
+                        <i class="fa-solid fa-edit"></i>
+                        <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
+                    </label>
+                    <div id="open_regex_debugger" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_debugger_desc" title="Advanced Regex Debugger">
+                        <i class="fa-solid fa-bug-slash"></i>
+                        <small data-i18n="ext_regex_debugger">Debugger</small>
+                    </div>
+                </div>
+
+                <div class="regex_bulk_operations flex-container justifyCenter padding5">
                 <div id="bulk_select_all_toggle" class="menu_button menu_button_icon" title="Toggle Select All">
                     <i class="fa-solid fa-check-double"></i>
                 </div>

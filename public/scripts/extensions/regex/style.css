@@ -150,3 +150,16 @@ input.enable_scoped {
 .regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_checkbox {
     display: inline-grid;
 }
+
+/* Export+ button overlay icon */
+#regex_preset_export_content .fa-plus {
+    font-size: 0.6em;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+
+.regex-popup-content {
+    height: 70vh;
+    overflow-y: auto;
+}
