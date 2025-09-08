@@ -189,6 +189,10 @@ body.reduced-motion #bg_custom {
     display: flex;
 }
 
+.bg_example:not([custom="true"]) .jg-copy {
+    display: none;
+}
+
 /* Thumbnail Title */
 .bg_example .BGSampleTitle {
     position: absolute;
