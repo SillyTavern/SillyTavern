@@ -75,15 +75,11 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
                         // We currently do nothing here. Rules containing both hover and focus are very specific and should never be automatically touched
                     }
                     else if (isHover) {
-                        const baseSelector = selector.replace(':hover', PLACEHOLDER).trim();
+                        const baseSelector = selector.replace(/:hover/g, PLACEHOLDER).trim();
                         hoverRules.push({ baseSelector, rule, wrappers: [...wrappers] });
                     } else if (isFocus) {
                         // We need to make sure that we remember all existing :focus, :focus-within and :focus-visible rules
-                        const baseSelector = selector
-                            .replace(':focus-within', PLACEHOLDER)
-                            .replace(':focus-visible', PLACEHOLDER)
-                            .replace(':focus', PLACEHOLDER)
-                            .trim();
+                        const baseSelector = selector.replace(/:focus(-within|-visible)?/g, PLACEHOLDER).trim();
                         focusRules.add(`${baseSelector}|${wrapperSignature(wrappers)}`);
                     }
                 });
