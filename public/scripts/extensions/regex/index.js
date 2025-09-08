@@ -563,8 +563,6 @@ async function deleteRegexScript({ id, isScoped }) {
     }
 }
 
-
-
 async function loadRegexScripts() {
     $('#saved_regex_scripts').empty();
     $('#saved_scoped_scripts').empty();
@@ -664,7 +662,6 @@ async function loadRegexScripts() {
     const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isAllowed);
 }
-
 
 /**
  * Opens the regex editor.
@@ -1259,40 +1256,38 @@ function migrateSettings() {
     let performSave = false;
 
     // Current: If MD Display is present in placement, remove it and add new placements/MD option
-    if (extension_settings.regex) {
-        extension_settings.regex.forEach((script) => {
-            if (!script.id) {
-                script.id = uuidv4();
-                performSave = true;
-            }
+    extension_settings.regex.forEach((script) => {
+        if (!script.id) {
+            script.id = uuidv4();
+            performSave = true;
+        }
 
-            if (!Array.isArray(script.placement)) {
-                script.placement = [];
-                performSave = true;
-            }
+        if (!Array.isArray(script.placement)) {
+            script.placement = [];
+            performSave = true;
+        }
 
-            if (script.placement.includes(regex_placement.MD_DISPLAY)) {
-                script.placement = script.placement.length === 1 ?
-                    Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
-                    script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
+        if (script.placement.includes(regex_placement.MD_DISPLAY)) {
+            script.placement = script.placement.length === 1 ?
+                Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
+                script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
 
-                script.markdownOnly = true;
-                script.promptOnly = true;
+            script.markdownOnly = true;
+            script.promptOnly = true;
 
-                performSave = true;
-            }
+            performSave = true;
+        }
 
-            // Old system and sendas placement migration
-            // 4 - sendAs
-            if (script.placement.includes(4)) {
-                script.placement = script.placement.length === 1 ?
-                    [regex_placement.SLASH_COMMAND] :
-                    script.placement = script.placement.filter((e) => e !== 4);
+        // Old system and sendas placement migration
+        // 4 - sendAs
+        if (script.placement.includes(4)) {
+            script.placement = script.placement.length === 1 ?
+                [regex_placement.SLASH_COMMAND] :
+                script.placement = script.placement.filter((e) => e !== 4);
 
-                performSave = true;
-            }
-        });
-    }
+            performSave = true;
+        }
+    });
 
     if (!extension_settings.character_allowed_regex) {
         extension_settings.character_allowed_regex = [];
@@ -1485,8 +1480,12 @@ async function checkEmbeddedRegexScripts() {
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
-    if (extension_settings.regex) {
-        migrateSettings();
+    if (!Array.isArray(extension_settings.regex)) {
+        extension_settings.regex = [];
+    }
+
+    if (!Array.isArray(extension_settings.regex_presets)) {
+        extension_settings.regex_presets = [];
     }
 
     // Manually disable the extension since static imports auto-import the JS file
@@ -1494,9 +1493,7 @@ jQuery(async () => {
         return;
     }
 
-    if (!Array.isArray(extension_settings.regex_presets)) {
-        extension_settings.regex_presets = [];
-    }
+    migrateSettings();
 
     const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
     $('#regex_container').append(settingsHtml);
