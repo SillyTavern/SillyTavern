@@ -233,9 +233,11 @@ export class ServerStartup {
     #createHttpsServer(url, ipVersion) {
         this.#verifySslOptions();
         return new Promise((resolve, reject) => {
+            /** @type {import('https').ServerOptions} */
             const sslOptions = {
                 cert: fs.readFileSync(this.cliArgs.certPath),
                 key: fs.readFileSync(this.cliArgs.keyPath),
+                passphrase: String(this.cliArgs.keyPassphrase ?? ''),
             };
             const server = https.createServer(sslOptions, this.app);
             server.on('error', reject);

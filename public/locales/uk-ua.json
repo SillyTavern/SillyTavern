@@ -317,6 +317,8 @@
     "flag": "прапорцем",
     "API key (optional)": "Ключ API (необов'язково)",
     "Server url": "URL-адреса сервера",
+    "Electron Hub API Key": "Ключ API для Electron Hub",
+    "Electron Hub Model": "Модель Electron Hub",
     "Example: http://127.0.0.1:5000": "Приклад: http://127.0.0.1:5000",
     "Custom model (optional)": "Власна модель (необов'язково)",
     "vllm-project/vllm": "vllm-project/vllm (режим оболонки OpenAI API)",
