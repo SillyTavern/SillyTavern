@@ -739,13 +739,7 @@ function joinQuotedBlocks(text, opts = {}) {
 
     if (!text || typeof text !== 'string') return text;
 
-    const openToClose = Object.create(null);
-    const closeToOpen = Object.create(null);
-    for (const [o, c] of pairs) {
-        openToClose[o] = c;
-        closeToOpen[c] = closeToOpen[c] || new Set();
-        closeToOpen[c].add(o);
-    }
+    const openToClose = Object.fromEntries(pairs);
 
     const segments = [];
     const stack = []; // [{ opener, expectedClose, start }]
