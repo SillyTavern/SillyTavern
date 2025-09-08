@@ -1,7 +1,7 @@
 import { characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
-import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -17,6 +17,452 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
 /**
  * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
  */
+
+/**
+ * @typedef {object} RegexPresetItem
+ * @property {string} id - UUID of the regex script
+ */
+
+/**
+ * @typedef {object} RegexPreset
+ * @property {string} id - UUID of the preset
+ * @property {string} name - Name of the preset
+ * @property {boolean} isSelected - Whether the preset is currently selected
+ * @property {RegexPresetItem[]} global - The list of global preset items
+ * @property {RegexPresetItem[]} scoped - The list of scoped preset items
+ */
+
+/**
+ * @typedef {object} RegexPresetState
+ * @property {string[]} global - List of enabled global regex script IDs
+ * @property {string[]} scoped - List of enabled scoped regex script IDs
+ */
+
+class RegexPresetManager {
+    /** @type {HTMLSelectElement} */
+    presetSelect = null;
+
+    /** @type {HTMLElement} */
+    presetCreateButton = null;
+
+    /** @type {HTMLElement} */
+    presetUpdateButton = null;
+
+    /** @type {HTMLElement} */
+    presetApplyButton = null;
+
+    /** @type {HTMLElement} */
+    presetDeleteButton = null;
+
+    /** @type {string|null} */
+    currentPresetId = null;
+
+    /** @type {RegexPresetState|null} */
+    lastKnownState = null;
+
+    /**
+     * Captures the current state of enabled regex scripts for change detection.
+     * @returns {RegexPresetState} The current state object
+     */
+    captureCurrentState() {
+        const globalScripts = this.regexListToPresetItems(extension_settings.regex) || [];
+        const scopedScripts = this.regexListToPresetItems(characters[this_chid]?.data?.extensions?.regex_scripts) || [];
+
+        return {
+            global: globalScripts.map(item => item.id).sort(),
+            scoped: scopedScripts.map(item => item.id).sort(),
+        };
+    }
+
+    /**
+     * Compares two state objects to detect changes.
+     * @param {RegexPresetState} state1 First state object
+     * @param {RegexPresetState} state2 Second state object
+     * @returns {boolean} True if states are different
+     */
+    hasStateChanged(state1, state2) {
+        if (!state1 || !state2) return false;
+
+        const global1 = state1.global || [];
+        const global2 = state2.global || [];
+        const scoped1 = state1.scoped || [];
+        const scoped2 = state2.scoped || [];
+
+        if (global1.length !== global2.length || scoped1.length !== scoped2.length) {
+            return true;
+        }
+
+        return !global1.every(id => global2.includes(id)) ||
+            !scoped1.every(id => scoped2.includes(id));
+    }
+
+    /**
+     * Updates the stored state after a preset is applied or saved.
+     * @param {string} presetId - The current preset ID
+     */
+    updateStoredState(presetId) {
+        this.currentPresetId = presetId;
+        this.lastKnownState = this.captureCurrentState();
+    }
+
+    /**
+     * Checks if there are unsaved changes and shows a confirmation dialog.
+     * @returns {Promise<boolean>} True if user wants to proceed without saving
+     */
+    async checkUnsavedChanges() {
+        if (!this.currentPresetId || !this.lastKnownState) {
+            return true; // No current preset or state to compare
+        }
+
+        const currentState = this.captureCurrentState();
+        if (!this.hasStateChanged(this.lastKnownState, currentState)) {
+            return true; // No changes detected
+        }
+
+        const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
+        const presetName = currentPreset ? currentPreset.name : t`Unknown Preset`;
+
+        const choice = await Popup.show.confirm(
+            t`You have unsaved changes to the "${presetName}" preset.`,
+            t`Do you want to save them before switching?`,
+            {
+                okButton: t`Save Changes`,
+                cancelButton: t`Discard Changes`,
+            },
+        );
+
+        if (choice) {
+            // User chose to save changes
+            await this.savePreset(this.currentPresetId, true);
+            this.renderPresetList();
+            return true;
+        }
+
+        // User chose to discard changes
+        return true;
+    }
+
+    /**
+     * Sets up event listeners for the preset management UI.
+     * @returns {void}
+     */
+    setupEventListeners() {
+        this.presetSelect = /** @type {HTMLSelectElement} */ (document.getElementById('regex_presets'));
+        if (!this.presetSelect) {
+            console.error('RegexPresetManager: Could not find preset select element in the DOM.');
+            return;
+        }
+
+        this.presetSelect.addEventListener('change', async (event) => {
+            const selectedPresetId = this.presetSelect.value;
+            const fromSlashCommand = event instanceof CustomEvent && event?.detail?.fromSlashCommand === true;
+
+            // Check for unsaved changes before switching
+            if (!fromSlashCommand) {
+                const canProceed = await this.checkUnsavedChanges();
+                if (!canProceed) {
+                    // Revert the selection
+                    event.preventDefault();
+                    const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
+                    if (currentPreset) {
+                        this.presetSelect.value = currentPreset.id;
+                    }
+                    return;
+                }
+            }
+
+            await this.applyPreset(selectedPresetId);
+            extension_settings.regex_presets.forEach(p => { p.isSelected = p.id === selectedPresetId; });
+            saveSettingsDebounced();
+            this.updateStoredState(selectedPresetId);
+        });
+
+        this.presetCreateButton = document.getElementById('regex_preset_create');
+        if (!this.presetCreateButton) {
+            console.error('RegexPresetManager: Could not find preset create button in the DOM.');
+            return;
+        }
+
+        this.presetCreateButton.addEventListener('click', async () => {
+            const newId = uuidv4();
+            await this.savePreset(newId, false);
+            this.renderPresetList();
+            this.updateStoredState(newId);
+        });
+
+        this.presetUpdateButton = document.getElementById('regex_preset_update');
+        if (!this.presetUpdateButton) {
+            console.error('RegexPresetManager: Could not find preset update button in the DOM.');
+            return;
+        }
+
+        this.presetUpdateButton.addEventListener('click', async () => {
+            const selectedPresetId = this.presetSelect.value;
+            await this.savePreset(selectedPresetId, true);
+            this.renderPresetList();
+            this.updateStoredState(selectedPresetId);
+        });
+
+        this.presetApplyButton = document.getElementById('regex_preset_apply');
+        if (!this.presetApplyButton) {
+            console.error('RegexPresetManager: Could not find preset apply button in the DOM.');
+            return;
+        }
+
+        this.presetApplyButton.addEventListener('click', async () => {
+            const selectedPresetId = this.presetSelect.value;
+            await this.applyPreset(selectedPresetId);
+            this.updateStoredState(selectedPresetId);
+        });
+
+        this.presetDeleteButton = document.getElementById('regex_preset_delete');
+        if (!this.presetDeleteButton) {
+            console.error('RegexPresetManager: Could not find preset delete button in the DOM.');
+            return;
+        }
+
+        this.presetDeleteButton.addEventListener('click', async () => {
+            const selectedPresetId = this.presetSelect.value;
+            await this.deletePreset(selectedPresetId);
+            this.renderPresetList();
+
+            const newSelectedPresetId = extension_settings.regex_presets.find(p => p.isSelected)?.id;
+            if (newSelectedPresetId) {
+                await this.applyPreset(newSelectedPresetId);
+                this.presetSelect.value = newSelectedPresetId;
+                this.updateStoredState(newSelectedPresetId);
+            } else {
+                this.currentPresetId = null;
+                this.lastKnownState = null;
+            }
+        });
+
+        this.renderPresetList();
+
+        // Initialize the stored state with the currently selected preset
+        const selectedPreset = extension_settings.regex_presets?.find(p => p.isSelected);
+        if (selectedPreset) {
+            this.updateStoredState(selectedPreset.id);
+        }
+    }
+
+    /**
+     * Registers slash commands related to regex presets.
+     * @returns {void}
+     */
+    registerSlashCommands() {
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'regex-preset',
+            helpString: t`Selects a regex preset by name or ID. Gets the current regex preset ID if no argument is provided.`,
+            callback: (args, name) => {
+                if (!this.presetSelect) {
+                    return '';
+                }
+
+                name = String(name ?? '').trim();
+
+                if (name) {
+                    const quiet = isTrueBoolean(args?.quiet?.toString());
+                    const foundId = extension_settings.regex_presets.find(p => equalsIgnoreCaseAndAccents(p.id, name) || equalsIgnoreCaseAndAccents(p.name, name))?.id;
+
+                    if (foundId) {
+                        this.presetSelect.value = foundId;
+                        this.presetSelect.dispatchEvent(new CustomEvent('change', { detail: { fromSlashCommand: true } }));
+                        return foundId;
+                    }
+
+                    !quiet && toastr.warning(`Regex preset "${name}" not found`);
+                    return '';
+                }
+
+                return this.presetSelect.value;
+            },
+            returns: 'current preset ID',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message on preset change',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                    enumList: commonEnumProviders.boolean('trueFalse')(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'regex preset name or ID',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: () => extension_settings.regex_presets.map(x => new SlashCommandEnumValue(x.id, x.name, enumTypes.enum, enumIcons.preset)),
+                }),
+            ],
+        }));
+    }
+
+    /**
+     * Renders the list of regex presets in the UI.
+     * @returns {void}
+     */
+    renderPresetList() {
+        if (!this.presetSelect) {
+            return;
+        }
+
+        this.presetSelect.innerHTML = '';
+
+        if (!Array.isArray(extension_settings.regex_presets) || extension_settings.regex_presets.length === 0) {
+            const fallbackOption = new Option(t`[No presets saved]`, '', true, true);
+            this.presetSelect.appendChild(fallbackOption);
+            this.presetSelect.disabled = true;
+            return;
+        }
+
+        extension_settings.regex_presets.forEach(preset => {
+            const option = new Option(preset.name, preset.id, preset.isSelected, preset.isSelected);
+            this.presetSelect.appendChild(option);
+        });
+
+        this.presetSelect.disabled = false;
+    }
+
+    /**
+     * Applies a preset list to a target list of scripts.
+     * @param {Object} params The parameters object
+     * @param {RegexPresetItem[]} params.presetList The list of preset items
+     * @param {RegexScript[]} params.targetList The list of target scripts to modify
+     * @param {(targetList: RegexScript[]) => Promise<any>} params.saveFunction Function to save the modified list
+     */
+    async applyPresetList({ presetList, targetList, saveFunction }) {
+        if (!Array.isArray(targetList) || !Array.isArray(presetList)) {
+            return;
+        }
+
+        // Only enable scripts that are in the preset
+        targetList.forEach((script => {
+            script.disabled = !presetList.some(p => p.id === script.id);
+        }));
+
+        // First sort by the order in the preset, then the original order
+        targetList.sort((a, b) => {
+            const aIndex = presetList.findIndex(p => p.id === a.id);
+            const bIndex = presetList.findIndex(p => p.id === b.id);
+            return aIndex - bIndex || targetList.indexOf(a) - targetList.indexOf(b);
+        });
+
+        await saveFunction(targetList);
+    }
+
+    /**
+     * Applies a regex preset to the current context.
+     * @param {string} presetId - The ID of the preset to apply
+     * @returns {Promise<void>}
+     */
+    async applyPreset(presetId) {
+        const preset = extension_settings.regex_presets.find(p => p.id === presetId);
+        if (!preset) {
+            toastr.error(t`Could not find the selected preset.`);
+            return;
+        }
+
+        // Apply to both global and scoped lists
+        await this.applyPresetList({
+            presetList: preset.global,
+            targetList: extension_settings.regex,
+            saveFunction: () => saveSettingsDebounced(),
+        });
+        await this.applyPresetList({
+            presetList: preset.scoped,
+            targetList: characters[this_chid]?.data?.extensions?.regex_scripts,
+            saveFunction: (scripts) => writeExtensionField(this_chid, 'regex_scripts', scripts),
+        });
+
+        // Render the changes to the UI
+        await loadRegexScripts();
+        // Apply the changes to the current chat
+        await reloadCurrentChat();
+    }
+
+    /**
+     * Converts a list of regex scripts to preset items.
+     * @param {RegexScript[]} list The list of regex scripts
+     * @returns {RegexPresetItem[] | null} The list of preset items, or null if the input is invalid
+     */
+    regexListToPresetItems(list) {
+        if (!Array.isArray(list)) {
+            return null;
+        }
+
+        return list.filter(x => !x.disabled).map(s => ({ id: s.id }));
+    }
+
+    /**
+     * Saves a regex preset.
+     * @param {string} presetId - The ID of the preset
+     * @param {boolean} isUpdate - Whether this is an update operation
+     * @returns {Promise<void>}
+     */
+    async savePreset(presetId, isUpdate) {
+        const existingPreset = isUpdate ? extension_settings.regex_presets.find(p => p.id === presetId) : null;
+
+        if (isUpdate && !existingPreset) {
+            toastr.error(t`Could not find the preset to update.`);
+            return;
+        }
+
+        const name = isUpdate ? existingPreset.name : await Popup.show.input(t`Enter a name for the new regex preset:`, '');
+        const id = isUpdate ? existingPreset.id : presetId;
+
+        if (!name || !name.trim().length) {
+            return;
+        }
+
+        const preset = {
+            id: id,
+            name: name,
+            isSelected: false,
+            global: this.regexListToPresetItems(extension_settings.regex),
+            scoped: this.regexListToPresetItems(characters[this_chid]?.data?.extensions?.regex_scripts),
+        };
+
+        if (isUpdate) {
+            Object.assign(existingPreset, preset);
+        } else {
+            extension_settings.regex_presets.push(preset);
+        }
+
+        extension_settings.regex_presets.forEach(p => { p.isSelected = p.id === id; });
+        saveSettingsDebounced();
+
+        toastr.success(isUpdate ? t`Regex preset updated` : t`Regex preset saved`);
+    }
+
+    /**
+     * Deletes a regex preset.
+     * @param {string} presetId - The ID of the preset to delete
+     * @returns {Promise<void>}
+     */
+    async deletePreset(presetId) {
+        const presetIndex = extension_settings.regex_presets.findIndex(p => p.id === presetId);
+        if (presetIndex === -1) {
+            toastr.error(t`Could not find the preset to delete.`);
+            return;
+        }
+
+        const presetName = extension_settings.regex_presets[presetIndex].name;
+        const confirm = await Popup.show.confirm(t`Are you sure you want to delete this regex preset?`, presetName);
+        if (!confirm) {
+            return;
+        }
+
+        extension_settings.regex_presets.splice(presetIndex, 1);
+
+        // Select the first preset if any exist
+        extension_settings.regex_presets.forEach((p, i) => { p.isSelected = i === 0; });
+        saveSettingsDebounced();
+
+        toastr.success(t`Regex preset deleted`);
+    }
+}
+
+const presetManager = new RegexPresetManager();
 
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
@@ -105,7 +551,7 @@ async function deleteRegexScript({ id, isScoped }) {
     const array = (isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts : extension_settings.regex) ?? [];
 
     const existingScriptIndex = array.findIndex((script) => script.id === id);
-    if (!existingScriptIndex || existingScriptIndex !== -1) {
+    if (existingScriptIndex !== -1) {
         array.splice(existingScriptIndex, 1);
 
         if (isScoped) {
@@ -763,8 +1209,8 @@ async function onRegexDebuggerOpenClick() {
 
     debuggerHtml.find('#regex_debugger_expand_final').on('click', function () {
         const content = $('#regex_debugger_final_output').html();
-        const popupContent = $('<div style="height: 70vh; overflow-y: auto;"></div>').html(content);
-        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
+        const popupContent = $('<div class="regex-popup-content"></div>').html(content);
+        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, large: true, allowVerticalScrolling: true });
     });
 
     await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
@@ -1033,14 +1479,20 @@ async function checkEmbeddedRegexScripts() {
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
-    if (extension_settings.regex) {
-        migrateSettings();
+    if (!Array.isArray(extension_settings.regex)) {
+        extension_settings.regex = [];
+    }
+
+    if (!Array.isArray(extension_settings.regex_presets)) {
+        extension_settings.regex_presets = [];
     }
 
     // Manually disable the extension since static imports auto-import the JS file
     if (extension_settings.disabledExtensions.includes('regex')) {
         return;
     }
+
+    migrateSettings();
 
     const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
     $('#regex_container').append(settingsHtml);
@@ -1300,4 +1752,7 @@ jQuery(async () => {
 
     eventSource.on(event_types.CHAT_CHANGED, checkEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
+
+    presetManager.setupEventListeners();
+    presetManager.registerSlashCommands();
 });
