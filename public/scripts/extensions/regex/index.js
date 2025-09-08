@@ -32,6 +32,12 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
  * @property {RegexPresetItem[]} scoped - The list of scoped preset items
  */
 
+/**
+ * @typedef {object} RegexPresetState
+ * @property {string[]} global - List of enabled global regex script IDs
+ * @property {string[]} scoped - List of enabled scoped regex script IDs
+ */
+
 class RegexPresetManager {
     /** @type {HTMLSelectElement} */
     presetSelect = null;
@@ -51,43 +57,43 @@ class RegexPresetManager {
     /** @type {string|null} */
     currentPresetId = null;
 
-    /** @type {Object|null} */
+    /** @type {RegexPresetState|null} */
     lastKnownState = null;
 
     /**
      * Captures the current state of enabled regex scripts for change detection.
-     * @returns {Object} The current state object
+     * @returns {RegexPresetState} The current state object
      */
     captureCurrentState() {
         const globalScripts = this.regexListToPresetItems(extension_settings.regex) || [];
         const scopedScripts = this.regexListToPresetItems(characters[this_chid]?.data?.extensions?.regex_scripts) || [];
-        
+
         return {
             global: globalScripts.map(item => item.id).sort(),
-            scoped: scopedScripts.map(item => item.id).sort()
+            scoped: scopedScripts.map(item => item.id).sort(),
         };
     }
 
     /**
      * Compares two state objects to detect changes.
-     * @param {Object} state1 First state object
-     * @param {Object} state2 Second state object
+     * @param {RegexPresetState} state1 First state object
+     * @param {RegexPresetState} state2 Second state object
      * @returns {boolean} True if states are different
      */
     hasStateChanged(state1, state2) {
         if (!state1 || !state2) return false;
-        
+
         const global1 = state1.global || [];
         const global2 = state2.global || [];
         const scoped1 = state1.scoped || [];
         const scoped2 = state2.scoped || [];
-        
+
         if (global1.length !== global2.length || scoped1.length !== scoped2.length) {
             return true;
         }
-        
-        return !global1.every(id => global2.includes(id)) || 
-               !scoped1.every(id => scoped2.includes(id));
+
+        return !global1.every(id => global2.includes(id)) ||
+            !scoped1.every(id => scoped2.includes(id));
     }
 
     /**
@@ -115,14 +121,14 @@ class RegexPresetManager {
 
         const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
         const presetName = currentPreset ? currentPreset.name : 'Unknown Preset';
-        
+
         const choice = await Popup.show.confirm(
             t`You have unsaved changes to the "${presetName}" preset. Do you want to save them before switching?`,
             '',
             {
                 okButton: t`Save Changes`,
-                cancelButton: t`Discard Changes`
-            }
+                cancelButton: t`Discard Changes`,
+            },
         );
 
         if (choice) {
@@ -149,7 +155,7 @@ class RegexPresetManager {
 
         this.presetSelect.addEventListener('change', async (event) => {
             const selectedPresetId = this.presetSelect.value;
-            
+
             // Check for unsaved changes before switching
             const canProceed = await this.checkUnsavedChanges();
             if (!canProceed) {
@@ -195,7 +201,7 @@ class RegexPresetManager {
         });
 
         this.presetApplyButton = document.getElementById('regex_preset_apply');
-        if (!this.presetApplyButton){
+        if (!this.presetApplyButton) {
             console.error('RegexPresetManager: Could not find preset apply button in the DOM.');
             return;
         }
@@ -229,7 +235,7 @@ class RegexPresetManager {
         });
 
         this.renderPresetList();
-        
+
         // Initialize the stored state with the currently selected preset
         const selectedPreset = extension_settings.regex_presets?.find(p => p.isSelected);
         if (selectedPreset) {
@@ -1201,36 +1207,36 @@ function migrateSettings() {
     // Current: If MD Display is present in placement, remove it and add new placements/MD option
     if (extension_settings.regex) {
         extension_settings.regex.forEach((script) => {
-        if (!script.id) {
-            script.id = uuidv4();
-            performSave = true;
-        }
+            if (!script.id) {
+                script.id = uuidv4();
+                performSave = true;
+            }
 
-        if (!Array.isArray(script.placement)) {
-            script.placement = [];
-            performSave = true;
-        }
+            if (!Array.isArray(script.placement)) {
+                script.placement = [];
+                performSave = true;
+            }
 
-        if (script.placement.includes(regex_placement.MD_DISPLAY)) {
-            script.placement = script.placement.length === 1 ?
-                Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
-                script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
+            if (script.placement.includes(regex_placement.MD_DISPLAY)) {
+                script.placement = script.placement.length === 1 ?
+                    Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
+                    script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
 
-            script.markdownOnly = true;
-            script.promptOnly = true;
+                script.markdownOnly = true;
+                script.promptOnly = true;
 
-            performSave = true;
-        }
+                performSave = true;
+            }
 
-        // Old system and sendas placement migration
-        // 4 - sendAs
-        if (script.placement.includes(4)) {
-            script.placement = script.placement.length === 1 ?
-                [regex_placement.SLASH_COMMAND] :
-                script.placement = script.placement.filter((e) => e !== 4);
+            // Old system and sendas placement migration
+            // 4 - sendAs
+            if (script.placement.includes(4)) {
+                script.placement = script.placement.length === 1 ?
+                    [regex_placement.SLASH_COMMAND] :
+                    script.placement = script.placement.filter((e) => e !== 4);
 
-            performSave = true;
-        }
+                performSave = true;
+            }
         });
     }
 
