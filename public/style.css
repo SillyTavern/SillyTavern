@@ -4848,6 +4848,8 @@ body.big-avatars .missing-avatar {
     text-align: center;
 }
 
+.aiConfigurationInnerExpandable,
+.apiConnectionsInnerExpandable,
 .userSettingsInnerExpandable {
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
