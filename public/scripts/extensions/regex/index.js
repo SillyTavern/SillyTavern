@@ -120,11 +120,11 @@ class RegexPresetManager {
         }
 
         const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
-        const presetName = currentPreset ? currentPreset.name : 'Unknown Preset';
+        const presetName = currentPreset ? currentPreset.name : t`Unknown Preset`;
 
         const choice = await Popup.show.confirm(
-            t`You have unsaved changes to the "${presetName}" preset. Do you want to save them before switching?`,
-            '',
+            t`You have unsaved changes to the "${presetName}" preset.`,
+            t`Do you want to save them before switching?`,
             {
                 okButton: t`Save Changes`,
                 cancelButton: t`Discard Changes`,
@@ -155,17 +155,20 @@ class RegexPresetManager {
 
         this.presetSelect.addEventListener('change', async (event) => {
             const selectedPresetId = this.presetSelect.value;
+            const fromSlashCommand = event instanceof CustomEvent && event?.detail?.fromSlashCommand === true;
 
             // Check for unsaved changes before switching
-            const canProceed = await this.checkUnsavedChanges();
-            if (!canProceed) {
-                // Revert the selection
-                event.preventDefault();
-                const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
-                if (currentPreset) {
-                    this.presetSelect.value = currentPreset.id;
+            if (!fromSlashCommand) {
+                const canProceed = await this.checkUnsavedChanges();
+                if (!canProceed) {
+                    // Revert the selection
+                    event.preventDefault();
+                    const currentPreset = extension_settings.regex_presets.find(p => p.id === this.currentPresetId);
+                    if (currentPreset) {
+                        this.presetSelect.value = currentPreset.id;
+                    }
+                    return;
                 }
-                return;
             }
 
             await this.applyPreset(selectedPresetId);
@@ -241,6 +244,57 @@ class RegexPresetManager {
         if (selectedPreset) {
             this.updateStoredState(selectedPreset.id);
         }
+    }
+
+    /**
+     * Registers slash commands related to regex presets.
+     * @returns {void}
+     */
+    registerSlashCommands() {
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'regex-preset',
+            helpString: t`Selects a regex preset by name or ID. Gets the current regex preset ID if no argument is provided.`,
+            callback: (args, name) => {
+                if (!this.presetSelect) {
+                    return '';
+                }
+
+                name = String(name ?? '').trim();
+
+                if (name) {
+                    const quiet = isTrueBoolean(args?.quiet?.toString());
+                    const foundId = extension_settings.regex_presets.find(p => equalsIgnoreCaseAndAccents(p.id, name) || equalsIgnoreCaseAndAccents(p.name, name))?.id;
+
+                    if (foundId) {
+                        this.presetSelect.value = foundId;
+                        this.presetSelect.dispatchEvent(new CustomEvent('change', { detail: { fromSlashCommand: true } }));
+                        return foundId;
+                    }
+
+                    !quiet && toastr.warning(`Regex preset "${name}" not found`);
+                    return '';
+                }
+
+                return this.presetSelect.value;
+            },
+            returns: 'current preset ID',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message on preset change',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                    enumList: commonEnumProviders.boolean('trueFalse')(),
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'regex preset name or ID',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: () => extension_settings.regex_presets.map(x => new SlashCommandEnumValue(x.id, x.name, enumTypes.enum, enumIcons.preset)),
+                }),
+            ],
+        }));
     }
 
     /**
@@ -1705,4 +1759,5 @@ jQuery(async () => {
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
 
     presetManager.setupEventListeners();
+    presetManager.registerSlashCommands();
 });
