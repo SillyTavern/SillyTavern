@@ -361,7 +361,7 @@ function makeFancyProfile(profile) {
         }
 
         if (key === 'regex-preset') {
-            const label = extension_settings.regex_presets.find(p => p.id === profile[key])?.name;
+            const label = extension_settings.regex_presets?.find(p => p.id === profile[key])?.name;
             if (label) {
                 acc[value] = label;
                 return acc;
