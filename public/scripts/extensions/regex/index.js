@@ -20,7 +20,7 @@ const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '
 
 /**
  * @typedef {object} RegexPresetItem
- * @property {string} id - UUID of the preset
+ * @property {string} id - UUID of the regex script
  */
 
 /**
@@ -1377,7 +1377,6 @@ async function toggleRegexCallback(args, scriptName) {
     return script.scriptName || '';
 }
 
-
 /**
  * Performs the import of the regex object.
  * @param {Object} regexScript Input object
@@ -1531,7 +1530,6 @@ jQuery(async () => {
     $('#import_regex').on('click', function () {
         $('#import_regex_file').trigger('click');
     });
-
 
     function getSelectedScripts() {
         const scripts = getRegexScripts();
