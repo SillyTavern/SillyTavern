@@ -1213,7 +1213,7 @@ async function onRegexDebuggerOpenClick() {
     debuggerHtml.find('#regex_debugger_expand_final').on('click', function () {
         const content = $('#regex_debugger_final_output').html();
         const popupContent = $('<div class="regex-popup-content"></div>').html(content);
-        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, allowVerticalScrolling: true });
+        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, large: true, allowVerticalScrolling: true });
     });
 
     await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });

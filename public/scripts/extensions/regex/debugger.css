@@ -104,6 +104,7 @@
     background-color: var(--black30a);
     white-space: pre-wrap;
     word-break: break-word;
+    text-align: left;
 }
 
 .step-header {
@@ -117,6 +118,7 @@
     padding: 5px;
     background-color: var(--black30a);
     border-radius: 5px;
+    text-align: left;
 }
 
 /* Classes to replace inline styles */
@@ -252,4 +254,10 @@ mark.red_hl {
 #regex_debugger_render_mode {
     padding-right: 20px;
     margin-top: 5px;
+}
+
+.regex-popup-content {
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: left;
 }
