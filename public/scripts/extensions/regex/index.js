@@ -408,7 +408,7 @@ class RegexPresetManager {
         }
 
         const name = isUpdate ? existingPreset.name : await Popup.show.input(t`Enter a name for the new regex preset:`, '');
-        const id = isUpdate ? existingPreset.id : uuidv4();
+        const id = isUpdate ? existingPreset.id : presetId;
 
         if (!name || !name.trim().length) {
             return;
