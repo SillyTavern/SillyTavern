@@ -1646,6 +1646,8 @@
     "macro for manual injection)": "宏用于手动注入）",
     "Color": "颜色",
     "Only apply color as accent": "仅应用颜色作为强调",
+    "ext_regex_new_global_script_desc": "新增「全局」正规表达式",
+    "ext_regex_new_scoped_script_desc": "新增「局部」正规表达式",
     "ext_regex_debugger_active_rules": "激活的规则",
     "ext_regex_debugger_save_order": "保存此顺序",
     "ext_regex_debugger_testing_area": "测试区域",
