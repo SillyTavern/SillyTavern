@@ -381,7 +381,6 @@ async function makeMovable(url) {
     const controlsContainer = document.createElement('div');
     controlsContainer.classList.add('flex-container', 'alignItemsCenter');
 
-
     const sortSelect = document.createElement('select');
     sortSelect.classList.add('gallery-sort-select');
 
@@ -421,8 +420,8 @@ async function makeMovable(url) {
     });
 
     // Handle file selection
-    fileInput.addEventListener('change', async (event) => {
-        const files = event.target.files;
+    fileInput.addEventListener('change', async () => {
+        const files = fileInput.files;
         if (files.length > 0) {
             for (const file of files) {
                 await uploadFile(file, url);
