@@ -2,6 +2,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 4px;
 }
 
 .gallery-folder-input {
@@ -26,13 +27,13 @@
     text-overflow: ellipsis;
     width: 100%;
     opacity: 0.8;
-    background: none;
+    background-color: var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     background-image: url(/img/down-arrow.svg);
     background-repeat: no-repeat;
     background-position: right 6px center;
     background-size: 8px 5px;
     padding-right: 20px;
-    font-size: calc(var(--mainFontSize)* 0.9);
     margin-bottom: 0;
 }
 
