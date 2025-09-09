@@ -146,11 +146,13 @@ body.reduced-motion #bg_custom {
     right: 2px;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 8px;
-    gap: 2px;
-    padding: 3px;
+    gap: 3px;
+    padding: 3px 5px;
     z-index: 3;
     backdrop-filter: blur(4px);
     border: 1px solid var(--SmartThemeBorderColor);
+    justify-items: center;
+    align-items: center;
 
     opacity: 0;
     visibility: hidden;
@@ -168,11 +170,13 @@ body.reduced-motion #bg_custom {
 
 .bg_example .jg-button {
     display: flex;
+    width: 30px;
+    height: 30px;
     align-items: center;
     justify-content: center;
     color: white;
     padding: 5px;
-    font-size: 1.2em;
+    font-size: 1.1em;
     border-radius: 6px;
     transition: background-color var(--animation-duration) ease;
 }

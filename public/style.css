@@ -3239,7 +3239,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .bg_list {
     display: flex;
     flex-wrap: wrap;
-    width: calc(var(--sheldWidth) - 10px);
+    width: calc(var(--sheldWidth) - 15px);
     max-width: 100vw;
     max-width: 100dvw;
     justify-content: space-evenly;
