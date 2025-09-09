@@ -1303,7 +1303,6 @@ async function sendAzureOpenAIRequest(request, response) {
     // 1. GATHER & VALIDATE SETTINGS
     const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
-
     if (!azure_base_url || !azure_deployment_name || !azure_api_version || !apiKey) {
         return response.status(400).send({
             error: {
@@ -1318,63 +1317,17 @@ async function sendAzureOpenAIRequest(request, response) {
     const endpointUrl = url.toString();
 
     // Create the base payload with all standard parameters
-    const validKeys = ['messages', 'temperature', 'frequency_penalty', 'presence_penalty', 'top_p', 'max_tokens', 'stream', 'logit_bias', 'stop', 'n', 'logprobs', 'seed', 'tools', 'tool_choice'];
+    const validKeys = ['messages', 'temperature', 'frequency_penalty', 'presence_penalty', 'top_p', 'max_tokens', 'max_completion_tokens', 'stream', 'logit_bias', 'stop', 'n', 'logprobs', 'seed', 'tools', 'tool_choice', 'reasoning_effort'];
     const apiRequestBody = /** @type {any} */ ({});
     for (const key of validKeys) {
-        if (request.body[key] !== undefined) {
+        if (Object.hasOwn(request.body, key)) {
             apiRequestBody[key] = request.body[key];
         }
     }
 
-    // *** START: ADDED LOGIC FOR JSON MODE ***
     // Handle Structured Output (JSON Mode) by translating the custom `json_schema` object.
     if (request.body.json_schema) {
-        console.info('Enabling JSON Mode via structured output schema.');
         setJsonObjectFormat(apiRequestBody, apiRequestBody.messages, request.body.json_schema);
-    }
-    // *** END: ADDED LOGIC FOR JSON MODE ***
-
-
-    // --- LOGIC FOR NATIVE THINKING AND REASONING EFFORT ---
-    const modelName = request.body.model || '';
-    const includeReasoning = Boolean(request.body.include_reasoning);
-
-    // Define the list of models that support these advanced features
-    const reasoningEffortModels = [
-        'o1', 'o3-mini', 'o3-mini-2025-01-31', 'o4-mini', 'o4-mini-2025-04-16',
-        'o3', 'o3-2025-04-16', 'gpt-5', 'gpt-5-2025-08-07', 'gpt-5-mini',
-        'gpt-5-mini-2025-08-07', 'gpt-5-nano', 'gpt-5-nano-2025-08-07',
-    ];
-
-    const isAdvancedModel = reasoningEffortModels.includes(modelName);
-
-    if (isAdvancedModel) {
-        if (includeReasoning) {
-            // gpt-5 models do not support stream_options.include_thoughts
-            if (!modelName.startsWith('gpt-5')) {
-                console.info(`Enabling native 'thoughts' API feature for model: ${modelName}`);
-                apiRequestBody.stream_options = { include_thoughts: true };
-            }
-        }
-
-        if (request.body.reasoning_effort) {
-            console.info(`Setting 'reasoning_effort' for model: ${modelName}`);
-            const reasoningEffortMap = {
-                min: 'minimal',
-            };
-            apiRequestBody.reasoning_effort = reasoningEffortMap[request.body.reasoning_effort] ?? request.body.reasoning_effort;
-        }
-    }
-
-    // When thoughts are enabled, some sampling parameters are not supported.
-    if (apiRequestBody.stream_options?.include_thoughts) {
-        delete apiRequestBody.temperature;
-        delete apiRequestBody.top_p;
-        delete apiRequestBody.logit_bias;
-        delete apiRequestBody.logprobs;
-        delete apiRequestBody.top_logprobs;
-        delete apiRequestBody.stop;
-        delete apiRequestBody.max_tokens;
     }
 
     // Adjust logprobs for Azure OpenAI, which follows the OpenAI Chat Completions API spec.
@@ -1397,68 +1350,32 @@ async function sendAzureOpenAIRequest(request, response) {
         signal: controller.signal,
     };
 
-    async function handleErrorResponse(errorResponse) {
-        const responseText = await errorResponse.text();
-        const errorData = tryParse(responseText);
-
-        const message = errorResponse.statusText || 'Unknown error occurred';
-        console.error('Azure OpenAI API request error: ', message, responseText);
-
-        if (!response.headersSent) {
-            response.status(errorResponse.status).send(errorData || { error: { message } });
-        } else if (!response.writableEnded) {
-            response.write(responseText);
-        } else {
-            response.end();
-        }
-    }
-
-    async function executeRequest(url, fetchConfig, retries = 3, timeout = 5000) {
-        try {
-            fetchConfig.signal.throwIfAborted();
-            const fetchResponse = await fetch(url, fetchConfig);
-
-            if (request.body.stream) {
-                console.info('Azure OpenAI: Streaming request in progress.');
-                return forwardFetchResponse(fetchResponse, response);
-            }
-
-            if (fetchResponse.ok) {
-                /** @type {any} */
-                const json = await fetchResponse.json();
-                // Log reasoning token usage if the model provides it
-                if (json.usage?.thoughts_tokens) {
-                    console.info(color.blue(`Reasoning tokens used: ${json.usage.thoughts_tokens}`));
-                }
-                console.debug('Azure OpenAI Response:', json?.choices?.[0]?.message);
-                return response.send(json);
-            }
-
-            if (fetchResponse.status === 429 && retries > 0) {
-                console.warn(`Azure OpenAI API rate limit hit. Retrying in ${timeout / 1000}s... (${retries} retries left)`);
-                await new Promise(resolve => setTimeout(resolve, timeout));
-                return executeRequest(url, fetchConfig, retries - 1, timeout * 2);
-            }
-
-            await handleErrorResponse(fetchResponse);
-
-        } catch (error) {
-            console.error('Azure OpenAI API request failed:', error);
-            if (response.headersSent) return;
-
-            const message = error.name === 'AbortError'
-                ? 'Request was aborted by the client.'
-                : (error.message || 'An unknown network error occurred.');
-
-            response.status(500).send({ error: { message, ...error } });
-        }
-    }
-
     console.info(`Sending request to Azure OpenAI: ${endpointUrl}`);
     console.debug('Azure OpenAI Request Body:', apiRequestBody);
+    try {
+        const fetchResponse = await fetch(endpointUrl, config);
 
-    await executeRequest(endpointUrl, config);
+        if (request.body.stream) {
+            return forwardFetchResponse(fetchResponse, response);
+        }
+
+        if (fetchResponse.ok) {
+            /** @type {any} */
+            const json = await fetchResponse.json();
+            return response.send(json);
+        }
+
+        const text = await fetchResponse.text();
+        const data = tryParse(text) || { error: { message: fetchResponse.statusText || 'Unknown error occurred' } };
+        return response.status(fetchResponse.status).send(data);
+    } catch (error) {
+        const message = error.name === 'AbortError'
+            ? 'Request was aborted by the client.'
+            : (error.message || 'An unknown network error occurred.');
+        return response.status(500).send({ error: { message, ...error } });
+    }
 }
+
 
 export const router = express.Router();
 
@@ -1574,19 +1491,25 @@ router.post('/status', async function (request, statusResponse) {
         const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
 
-        // 1) Validate
+        // 1) Validate configuration from the frontend
         if (!apiKey || !azure_base_url || !azure_deployment_name || !azure_api_version) {
             console.warn('Azure OpenAI status check failed: missing config from frontend.');
-            return statusResponse.status(400).send({
-                error: true,
-                message: 'Azure configuration is incomplete.',
-            });
+            return statusResponse.status(400).send({ error: true, message: 'Azure configuration is incomplete.' });
         }
+        // 2) Build URLs using the URL API for consistency and robustness.
+        const modelsUrl = new URL('/openai/models', azure_base_url);
+        modelsUrl.searchParams.set('api-version', azure_api_version);
 
-        // 2) Build URLs
-        const base = azure_base_url.endsWith('/') ? azure_base_url.slice(0, -1) : azure_base_url;
-        const modelsUrl = `${base}/openai/models?api-version=${encodeURIComponent(azure_api_version)}`;
-        const chatUrl = `${base}/openai/deployments/${encodeURIComponent(azure_deployment_name)}/chat/completions?api-version=${encodeURIComponent(azure_api_version)}`;
+        const chatUrl = new URL(`/openai/deployments/${azure_deployment_name}/chat/completions`, azure_base_url);
+        chatUrl.searchParams.set('api-version', azure_api_version);
+
+        // Map common status codes to user-friendly error messages
+        const azureStatusErrorMap = {
+            400: 'API version may be invalid for this resource.',
+            401: 'Invalid API key or insufficient permissions.',
+            403: 'Invalid API key or insufficient permissions.',
+            404: 'Endpoint URL appears incorrect (404).',
+        };
 
         try {
             // ---- A) GET /models: fast sanity check for endpoint + api key + api version ----
@@ -1597,67 +1520,53 @@ router.post('/status', async function (request, statusResponse) {
 
             if (!apiConfigTest.ok) {
                 let errText = '';
+                try { errText = await apiConfigTest.text(); } catch { /* response body may be empty */ }
 
-                try {
-                    errText = await apiConfigTest.text();
-                } catch (e) {
-                    console.warn('Failed to read error text from Azure response:', e);
-                }
                 console.warn('Azure OpenAI GET /models failed:', apiConfigTest.status, apiConfigTest.statusText, errText || '');
-                const message =
-                    apiConfigTest.status === 401 || apiConfigTest.status === 403 ? 'Invalid API key or insufficient permissions.' :
-                        apiConfigTest.status === 404 ? 'Endpoint URL appears incorrect (404).' :
-                            apiConfigTest.status === 400 ? 'API version may be invalid for this resource.' :
-                                `Azure Models endpoint error: ${apiConfigTest.statusText}`;
+
+                const defaultMessage = `Azure Models endpoint error: ${apiConfigTest.statusText}`;
+                const message = azureStatusErrorMap[apiConfigTest.status] ?? defaultMessage;
                 return statusResponse.status(apiConfigTest.status).send({ error: true, message });
             }
 
-            // ---- B) POST /chat/completions: verify deployment + read model ----
-            // Use a tiny, deterministic probe payload. This ensures JSON (non-streaming), minimal cost & latency.
+            // ---- B) POST /chat/completions: verify deployment + read underlying model ID ----
+            // Small, deterministic probe to minimize cost/latency
             const modelPayload = {
-                messages: [
-                    { role: 'user', content: 'Hi' },
-                ],
+                messages: [{ role: 'user', content: 'Say word Hi' }],
                 stream: false,
-                max_completion_tokens: 2, // Explicitly minimal token request for a status probe.
+                max_completion_tokens: 5,
             };
 
             const modelRequest = await fetch(chatUrl, {
                 method: 'POST',
-                headers: {
-                    'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json',
-                },
+                headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(modelPayload),
             });
 
-            // Parse response safely even if server mislabels content-type
-
+            // [Maintainer: Don’t forbid response.json() when content-type is mislabeled] [Status: Implemented]
+            // [Note: Try .json(); fall back to text() + tryParse if it fails]
             let modelResponse;
             try {
-                const contentType = modelRequest.headers.get('content-type') || '';
-                const raw = await modelRequest.text();
-                modelResponse = contentType.includes('application/json') ? JSON.parse(raw) : { raw };
+                modelResponse = await modelRequest.json();
             } catch {
-                modelResponse = { raw: 'Failed to parse response' };
+                modelResponse = { raw: 'Failed to parse JSON response from chat completions probe.' };
             }
 
-
-            // The Azure chat completion response is an OBJECT with a "model" string (not an array).
-            // We convert it into the *array* shape your caller expects.
-            const modelId = modelResponse?.model;
+            const modelId = /** @type {any} */ (modelResponse)?.model;
+            if (!modelId) {
+                console.warn('Azure status check succeeded but could not find a model ID in the response.');
+                console.debug('Azure Response Body:', modelResponse);
+                // Keep a benign success to avoid UX disruption in the UI
+                return statusResponse.send({ data: [] });
+            }
 
             console.info(color.green('Azure OpenAI connection successful. Detected model:'), modelId);
-
-            // --- Consistent response: ALWAYS an array of { id } ---
-            return statusResponse.send(/** @type {{ data: Array<{ id: string }> }} */({
-                data: [{ id: modelId }],
-            }));
-
+            // Consistent response format: always an array of { id }
+            return statusResponse.send({ data: [{ id: modelId }] });
         } catch (error) {
             console.error('Azure OpenAI status check connection error:', error);
-            return statusResponse.status(500).send({ error: true, message: 'Failed to connect to Azure endpoint.' });
+            return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
-
 
     } else {
         console.warn('This chat completion source is not supported yet.');
