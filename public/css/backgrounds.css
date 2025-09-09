@@ -59,8 +59,8 @@ body.reduced-motion #bg_custom {
     z-index: -2;
 }
 
-.bg_example.locked {
-    outline: 2px solid var(--golden);
+.bg_example.flex-container.locked:not(:focus-visible) {
+    outline-color: var(--golden);
 }
 
 /* This is the main flex container for the entire drawer */
