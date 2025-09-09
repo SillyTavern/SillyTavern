@@ -59,8 +59,8 @@ body.reduced-motion #bg_custom {
     z-index: -2;
 }
 
-.bg_example.locked {
-    outline: 2px solid var(--golden);
+.bg_example.flex-container.locked:not(:focus-visible) {
+    outline-color: var(--golden);
 }
 
 /* This is the main flex container for the entire drawer */
@@ -122,6 +122,10 @@ body.reduced-motion #bg_custom {
     outline-offset: -1px;
 }
 
+.bg_example.flex-container:focus-visible {
+    outline-offset: inherit;
+}
+
 .bg_example_img {
     position: absolute;
     top: -2px;
@@ -155,7 +159,8 @@ body.reduced-motion #bg_custom {
     transition: opacity var(--animation-duration) ease-out, visibility var(--animation-duration) ease-out, transform var(--animation-duration) ease-out;
 }
 
-.bg_example:hover .jg-menu {
+.bg_example:hover .jg-menu,
+.bg_example:focus-within .jg-menu {
     opacity: 1;
     visibility: visible;
     transform: scale(1);
@@ -188,6 +193,11 @@ body.reduced-motion #bg_custom {
     display: flex;
 }
 
+.bg_example:not([custom="true"]) .jg-copy,
+.bg_example[custom="true"] .jg-edit {
+    display: none;
+}
+
 /* Thumbnail Title */
 .bg_example .BGSampleTitle {
     position: absolute;
@@ -209,6 +219,7 @@ body.reduced-motion #bg_custom {
     border-radius: 0 0 8px 8px;
 }
 
-.bg_example:hover .BGSampleTitle {
+.bg_example:hover .BGSampleTitle,
+.bg_example:focus-within .BGSampleTitle {
     opacity: 1;
 }

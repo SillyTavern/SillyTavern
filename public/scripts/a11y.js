@@ -13,6 +13,9 @@ const buttonSelectors = [
     '.swipe_right',
     '.character_select',
     '.tags .tag',
+    '.jg-menu .jg-button',
+    '.bg_example .mobile-only-menu-toggle',
+    '.paginationjs-pages li a',
 ].join(', ');
 
 const listSelectors = [
@@ -26,10 +29,11 @@ const listSelectors = [
     '.recentChatList',
     '.dataMaidCategoryContent',
     '#userList',
+    '.bg_list',
 ].join(', ');
 
 const listItemSelectors = [
-    '.options-content .interactable',
+    '.options-content .list-group-item',
     '.list-group .list-group-item',
     '#rm_print_characters_block .entity_block',
     '#rm_group_members .group_member',
@@ -39,6 +43,11 @@ const listItemSelectors = [
     '.recentChatList .recentChat',
     '.dataMaidCategoryContent .dataMaidItem',
     '#userList .userSelect',
+    '.bg_list .bg_example',
+].join(', ');
+
+const toolbarSelectors = [
+    '.jg-menu',
 ].join(', ');
 
 /** @type {Record<string, (element: Element) => void>} */
@@ -51,6 +60,9 @@ const a11yRules = {
     },
     [listItemSelectors]: (element) => {
         element.setAttribute('role', 'listitem');
+    },
+    [toolbarSelectors]: (element) => {
+        element.setAttribute('role', 'toolbar');
     },
     '#toast-container .toast-message': (element) => {
         element.setAttribute('role', 'alert');
