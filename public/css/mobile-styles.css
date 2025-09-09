@@ -30,7 +30,8 @@
         bottom: 0px;
     }
 
-    .bg_example:hover .jg-menu {
+    .bg_example:hover .jg-menu,
+    .bg_example:focus-within .jg-menu {
         display: none;
     }
 

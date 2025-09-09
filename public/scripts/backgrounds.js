@@ -705,7 +705,6 @@ export function initBackgrounds() {
 
     $(document)
         .off('click', '.bg_example').on('click', '.bg_example', onSelectBackgroundClick)
-        .off('click', '.bg_example_copy').on('click', '.bg_example_copy', onCopyToSystemBackgroundClick)
         .off('click', '.bg_example .mobile-only-menu-toggle').on('click', '.bg_example .mobile-only-menu-toggle', function (e) {
             e.stopPropagation();
             const $context = $(this).closest('.bg_example');
@@ -732,6 +731,9 @@ export function initBackgrounds() {
                     break;
                 case 'delete':
                     onDeleteBackgroundClick.call(this, e.originalEvent);
+                    break;
+                case 'copy':
+                    onCopyToSystemBackgroundClick.call(this, e.originalEvent);
                     break;
             }
         });
