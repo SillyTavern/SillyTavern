@@ -122,6 +122,10 @@ body.reduced-motion #bg_custom {
     outline-offset: -1px;
 }
 
+.bg_example.flex-container:focus-visible {
+    outline-offset: inherit;
+}
+
 .bg_example_img {
     position: absolute;
     top: -2px;
