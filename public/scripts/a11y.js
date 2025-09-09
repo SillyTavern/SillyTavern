@@ -15,6 +15,7 @@ const buttonSelectors = [
     '.tags .tag',
     '.jg-menu .jg-button',
     '.bg_example .mobile-only-menu-toggle',
+    '.paginationjs-pages li a',
 ].join(', ');
 
 const listSelectors = [
@@ -32,7 +33,7 @@ const listSelectors = [
 ].join(', ');
 
 const listItemSelectors = [
-    '.options-content .interactable',
+    '.options-content .list-group-item',
     '.list-group .list-group-item',
     '#rm_print_characters_block .entity_block',
     '#rm_group_members .group_member',
