@@ -53,7 +53,7 @@ const a11yRules = {
         element.setAttribute('role', 'listitem');
     },
     '#toast-container .toast': (element) => {
-        element.setAttribute('role', 'alert');
+        element.setAttribute('role', 'status');
     },
 };
 
