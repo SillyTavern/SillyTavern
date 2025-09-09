@@ -4851,10 +4851,11 @@ body.big-avatars .missing-avatar {
 .aiConfigurationInnerExpandable,
 .apiConnectionsInnerExpandable,
 .userSettingsInnerExpandable {
+    background-color: color-mix(in srgb, var(--SmartThemeBodyColor) 5%, transparent);
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
     border-radius: 5px;
-    padding: 2px 5px !important;
+    padding: 4px 8px !important;
     margin: 5px 0;
 }
 
