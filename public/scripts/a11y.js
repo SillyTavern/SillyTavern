@@ -52,7 +52,7 @@ const a11yRules = {
     [listItemSelectors]: (element) => {
         element.setAttribute('role', 'listitem');
     },
-    '#toast-container .toast-message': (element) => {
+    '#toast-container .toast': (element) => {
         element.setAttribute('role', 'alert');
     },
 };
