@@ -14,6 +14,7 @@ const buttonSelectors = [
     '.character_select',
     '.tags .tag',
     '.jg-menu .jg-button',
+    '.bg_example .mobile-only-menu-toggle',
 ].join(', ');
 
 const listSelectors = [
