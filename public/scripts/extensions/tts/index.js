@@ -637,11 +637,8 @@ async function processTtsQueue() {
     }
 
     if (extension_settings.tts.narrate_quoted_only) {
-        const special_quotes = /[“”«»「」『』＂＂]/g; // Extend this regex to include other special quotes
-        text = text.replace(special_quotes, '"');
-        const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
         const partJoiner = (ttsProvider?.separator || ' ... ');
-        text = matches ? matches.join(partJoiner) : text;
+        text = joinQuotedBlocks(text, { separator: partJoiner, includeQuotes: true });
     }
 
     // Remove embedded images
@@ -700,6 +697,82 @@ async function processTtsQueue() {
         console.error(error);
         currentTtsJob = null;
     }
+}
+
+/**
+ * Extract and join quoted blocks with proper matching pairs and nesting.
+ * - Captures outermost quotes and everything inside (including different inner quote styles).
+ * - Requires matching opener/closer style (e.g., “ ... ”, 「 ... 」, « ... », etc.).
+ * - Ignores incomplete/unclosed quotes (doesn't include them in the result).
+ * - Symmetric quotes like "..." and ＂...＂ are supported (not nesting the same symmetric style).
+ *
+ * @param {string} text - The text to process
+ * @param {object} [opts={}] - Optional options object
+ * @param {string} [opts.separator=' ... '] - String to join multiple quoted blocks
+ * @param {boolean} [opts.includeQuotes=true] - Keep the quote chars around the captured text
+ * @param {boolean} [opts.returnEmptyOnNoQuotes=false] - Return an empty string if no quotes are found
+ * @param {Array<[string,string]>} [opts.pairs] - Custom quote pairs; defaults cover EN/DE/FR/JP
+ * @returns {string} The joined quoted blocks, or the original text if no quotes found
+ */
+function joinQuotedBlocks(text, opts = {}) {
+    const {
+        separator = ' ... ',
+        includeQuotes = true,
+        returnEmptyOnNoQuotes = false,
+        pairs = [
+            // typographic doubles
+            ['„', '“'],          // DE low-high
+            ['“', '”'],          // EN
+            ['«', '»'],          // FR open « close »
+            ['»', '«'],          // Some locales open »
+            // typographic singles
+            ['‘', '’'],
+            ['‚', '‘'],
+            // Japanese corner quotes
+            ['「', '」'],
+            ['『', '』'],
+            // symmetric doubles
+            ['"', '"'],
+            ['＂', '＂'],
+        ],
+    } = opts;
+
+    if (!text || typeof text !== 'string') return text;
+
+    const openToClose = Object.fromEntries(pairs);
+
+    const segments = [];
+    const stack = []; // [{ opener, expectedClose, start }]
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const top = stack[stack.length - 1];
+
+        // Prefer closing the current open pair if the char matches its expected closer
+        if (top && ch === top.expectedClose) {
+            const finished = stack.pop();
+            if (stack.length === 0) {
+                // Only collect outermost quotes (contains all nested content)
+                segments.push(text.slice(finished.start, i + 1));
+            }
+            continue;
+        }
+
+        // Otherwise, see if this is a new opener
+        if (openToClose[ch]) {
+            stack.push({ opener: ch, expectedClose: openToClose[ch], start: i });
+            continue;
+        }
+
+        // If it's a stray closer that doesn't match current top, ignore
+    }
+
+    if (!segments.length) return returnEmptyOnNoQuotes ? '' : text;
+
+    const cleaned = includeQuotes
+        ? segments
+        : segments.map(s => s.slice(1, -1)); // all defined pairs are single-char quotes
+
+    return cleaned.join(separator);
 }
 
 async function playFullConversation() {

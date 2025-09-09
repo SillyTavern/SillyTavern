@@ -33,7 +33,8 @@ const observer = new MutationObserver(mutations => {
  * @param {boolean} [options.fromExtension=false] - Indicates if the styles are from an extension
  */
 function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
-    /** @type {{baseSelector: string, rule: CSSStyleRule}[]} */
+    /** @typedef {{ type: 'media'|'supports'|'container', conditionText: string }} WrapperCond */
+    /** @type {{baseSelector: string, rule: CSSStyleRule, wrappers: WrapperCond[]}[]} */
     const hoverRules = [];
     /** @type {Set<string>} */
     const focusRules = new Set();
@@ -41,14 +42,28 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
     const PLACEHOLDER = ':__PLACEHOLDER__';
 
     /**
+     * Builds a stable signature string for a chain of wrapper conditions so we can distinguish
+     * identical selectors under different contexts (e.g., different @media queries)
+     * @param {WrapperCond[]} wrappers
+     * @returns {string}
+     */
+    function wrapperSignature(wrappers) {
+        return wrappers.map(w => `${w.type}:${w.conditionText}`).join(';');
+    }
+
+    /**
      * Processes the CSS rules and separates selectors for hover and focus
      * @param {CSSRuleList} rules - The CSS rules to process
+     * @param {WrapperCond[]} wrappers - Current chain of wrapper conditions (@media/@supports/etc.)
      */
-    function processRules(rules) {
+    function processRules(rules, wrappers = []) {
         Array.from(rules).forEach(rule => {
             if (rule instanceof CSSImportRule) {
                 // Make sure that @import rules are processed recursively
-                processImportedStylesheet(rule.styleSheet);
+                // If the @import has media conditions, treat them as wrappers as well
+                /** @type {WrapperCond[]} */
+                const extra = (rule.media && rule.media.mediaText) ? [{ type: 'media', conditionText: rule.media.mediaText }] : [];
+                processImportedStylesheet(rule.styleSheet, [...wrappers, ...extra]);
             } else if (rule instanceof CSSStyleRule) {
                 // Separate multiple selectors on a rule
                 const selectors = rule.selectorText.split(',').map(s => s.trim());
@@ -60,17 +75,25 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
                         // We currently do nothing here. Rules containing both hover and focus are very specific and should never be automatically touched
                     }
                     else if (isHover) {
-                        const baseSelector = selector.replace(':hover', PLACEHOLDER).trim();
-                        hoverRules.push({ baseSelector, rule });
+                        const baseSelector = selector.replace(/:hover/g, PLACEHOLDER).trim();
+                        hoverRules.push({ baseSelector, rule, wrappers: [...wrappers] });
                     } else if (isFocus) {
                         // We need to make sure that we remember all existing :focus, :focus-within and :focus-visible rules
-                        const baseSelector = selector.replace(':focus-within', PLACEHOLDER).replace(':focus-visible', PLACEHOLDER).replace(':focus', PLACEHOLDER).trim();
-                        focusRules.add(baseSelector);
+                        const baseSelector = selector.replace(/:focus(-within|-visible)?/g, PLACEHOLDER).trim();
+                        focusRules.add(`${baseSelector}|${wrapperSignature(wrappers)}`);
                     }
                 });
-            } else if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) {
-                // Recursively process nested rules
-                processRules(rule.cssRules);
+            } else if (rule instanceof CSSMediaRule) {
+                // Recursively process nested @media rules
+                processRules(rule.cssRules, [...wrappers, { type: 'media', conditionText: rule.conditionText }]);
+            } else if (rule instanceof CSSSupportsRule) {
+                // Recursively process nested @supports rules
+                processRules(rule.cssRules, [...wrappers, { type: 'supports', conditionText: rule.conditionText }]);
+            } else if (rule instanceof window.CSSContainerRule) {
+                // Recursively process nested @container rules (if supported by the browser)
+                // Note: conditionText contains the query like "(min-width: 300px)" or "style(color)"
+                // Using 'container' as the type ensures uniqueness separate from @media/@supports
+                processRules(rule.cssRules, [...wrappers, { type: 'container', conditionText: rule.conditionText }]);
             }
         });
     }
@@ -78,21 +101,22 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
     /**
      * Processes the CSS rules of an imported stylesheet recursively
      * @param {CSSStyleSheet} sheet - The imported stylesheet to process
+     * @param {WrapperCond[]} wrappers - Wrapper conditions inherited from (at)import media
      */
-    function processImportedStylesheet(sheet) {
+    function processImportedStylesheet(sheet, wrappers = []) {
         if (sheet && sheet.cssRules) {
-            processRules(sheet.cssRules);
+            processRules(sheet.cssRules, wrappers);
         }
     }
 
-    processRules(styleSheet.cssRules);
+    processRules(styleSheet.cssRules, []);
 
     /** @type {CSSStyleSheet} */
     let targetStyleSheet = null;
 
     // Now finally create the dynamic focus rules
-    hoverRules.forEach(({ baseSelector, rule }) => {
-        if (!focusRules.has(baseSelector)) {
+    hoverRules.forEach(({ baseSelector, rule, wrappers }) => {
+        if (!focusRules.has(`${baseSelector}|${wrapperSignature(wrappers)}`)) {
             // Only initialize the dynamic stylesheet if needed
             targetStyleSheet ??= getDynamicStyleSheet({ fromExtension });
 
@@ -103,7 +127,19 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             // If something like :focus-within or a more specific selector like `.blah:has(:focus-visible)` for elements inside,
             // it should be manually defined in CSS.
             const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-visible');
-            const focusRule = `${focusSelector} { ${rule.style.cssText} }`;
+            let focusRule = `${focusSelector} { ${rule.style.cssText} }`;
+
+            // Wrap the generated rule into the same @media/@supports/@container chain (if any)
+            if (wrappers.length > 0) {
+                // Build nested blocks from outermost to innermost
+                // Example: @media (x) { @supports (y) { <rule> } }
+                focusRule = wrappers.reduceRight((inner, w) => {
+                    if (w.type === 'media') return `@media ${w.conditionText} { ${inner} }`;
+                    if (w.type === 'supports') return `@supports ${w.conditionText} { ${inner} }`;
+                    if (w.type === 'container') return `@container ${w.conditionText} { ${inner} }`;
+                    return inner;
+                }, focusRule);
+            }
 
             try {
                 targetStyleSheet.insertRule(focusRule, targetStyleSheet.cssRules.length);
