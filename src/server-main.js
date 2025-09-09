@@ -46,6 +46,7 @@ import multerMonkeyPatch from './middleware/multerMonkeyPatch.js';
 import initRequestProxy from './request-proxy.js';
 import cacheBuster from './middleware/cacheBuster.js';
 import corsProxyMiddleware from './middleware/corsProxy.js';
+import hostWhitelistMiddleware from './middleware/hostWhitelist.js';
 import {
     getVersion,
     color,
@@ -115,6 +116,8 @@ if (cliArgs.whitelistMode) {
     const whitelistMiddleware = await getWhitelistMiddleware();
     app.use(whitelistMiddleware);
 }
+
+app.use(hostWhitelistMiddleware);
 
 if (cliArgs.listen) {
     app.use(accessLoggerMiddleware());

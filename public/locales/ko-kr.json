@@ -319,6 +319,8 @@
     "flag": "깃발",
     "API key (optional)": "API 키 (선택 사항)",
     "Server url": "서버 URL",
+    "Electron Hub API Key": "Electron Hub API 키",
+    "Electron Hub Model": "Electron Hub 모델",
     "Example: http://127.0.0.1:5000": "예시: http://127.0.0.1:5000",
     "Custom model (optional)": "사용자 정의 모델 (선택 사항)",
     "vllm-project/vllm": "vllm-project/vllm(OpenAI API 래퍼 모드)",

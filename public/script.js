@@ -266,6 +266,7 @@ import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
+import { initAccessibility } from './scripts/a11y.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -687,6 +688,7 @@ async function firstLoadInit() {
     initCustomSelectedSamplers();
     initDataMaid();
     initItemizedPrompts();
+    initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
@@ -5367,6 +5369,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.CUSTOM:
                 case chat_completion_sources.COHERE:
                 case chat_completion_sources.XAI:
+                case chat_completion_sources.ELECTRONHUB:
                 default:
                     result = tryParse(text);
                     break;
