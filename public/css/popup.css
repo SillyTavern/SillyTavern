@@ -92,6 +92,11 @@ dialog {
     animation: fade-in var(--popup-animation-speed) ease-in-out;
 }
 
+/* Fix toast container snapping into the backdrop while the animation is running */
+.popup[opening] #toast-container {
+    visibility: hidden;
+}
+
 /* Open state of the dialog */
 .popup[open] {
     color: var(--SmartThemeBodyColor);
@@ -131,10 +136,12 @@ body.no-blur .popup[open]::backdrop {
 .popup #toast-container.toast-top-left {
     top: calc(var(--toast-edge) + var(--topBarBlockSize));
 }
+
 .popup #toast-container.toast-top-center {
     /* toastr in core does not have a top offset on center, so we don't do that either in popups */
     top: var(--topBarBlockSize);
 }
+
 .popup #toast-container.toast-top-right {
     top: calc(var(--toast-edge) + var(--topBarBlockSize));
 }
