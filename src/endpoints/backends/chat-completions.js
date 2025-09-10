@@ -1550,8 +1550,6 @@ router.post('/status', async function (request, statusResponse) {
                 body: JSON.stringify(modelPayload),
             });
 
-            // [Maintainer: Don’t forbid response.json() when content-type is mislabeled] [Status: Implemented]
-            // [Note: Try .json(); fall back to text() + tryParse if it fails]
             let modelResponse;
             try {
                 modelResponse = await modelRequest.json();
