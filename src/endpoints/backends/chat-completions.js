@@ -6,8 +6,11 @@ import urlJoin from 'url-join';
 
 import {
     AIMLAPI_HEADERS,
+    AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    OPENAI_REASONING_EFFORT_MAP,
+    OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
 } from '../../constants.js';
 import {
@@ -1317,9 +1320,8 @@ async function sendAzureOpenAIRequest(request, response) {
     const endpointUrl = url.toString();
 
     // Create the base payload with all standard parameters
-    const validKeys = ['messages', 'temperature', 'frequency_penalty', 'presence_penalty', 'top_p', 'max_tokens', 'max_completion_tokens', 'stream', 'logit_bias', 'stop', 'n', 'logprobs', 'seed', 'tools', 'tool_choice', 'reasoning_effort'];
     const apiRequestBody = /** @type {any} */ ({});
-    for (const key of validKeys) {
+    for (const key of AZURE_OPENAI_KEYS) {
         if (Object.hasOwn(request.body, key)) {
             apiRequestBody[key] = request.body[key];
         }
@@ -1335,6 +1337,11 @@ async function sendAzureOpenAIRequest(request, response) {
         apiRequestBody.top_logprobs = apiRequestBody.logprobs;
         apiRequestBody.logprobs = true;
     }
+
+    // Do not send reasoning effort to models which do not support it
+    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
+        ? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
+        : undefined;
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -1362,6 +1369,7 @@ async function sendAzureOpenAIRequest(request, response) {
         if (fetchResponse.ok) {
             /** @type {any} */
             const json = await fetchResponse.json();
+            console.debug('Azure OpenAI response:', json);
             return response.send(json);
         }
 
@@ -1966,26 +1974,8 @@ router.post('/generate', function (request, response) {
 
     // A few of OpenAIs reasoning models support reasoning effort
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-        const reasoningEffortModels = [
-            'o1',
-            'o3-mini',
-            'o3-mini-2025-01-31',
-            'o4-mini',
-            'o4-mini-2025-04-16',
-            'o3',
-            'o3-2025-04-16',
-            'gpt-5',
-            'gpt-5-2025-08-07',
-            'gpt-5-mini',
-            'gpt-5-mini-2025-08-07',
-            'gpt-5-nano',
-            'gpt-5-nano-2025-08-07',
-        ];
-        const reasoningEffortMap = {
-            min: 'minimal',
-        };
-        if (reasoningEffortModels.includes(request.body.model)) {
-            bodyParams['reasoning_effort'] = reasoningEffortMap[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
+            bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 
