@@ -659,6 +659,7 @@ export class ToolManager {
             chat_completion_sources.FIREWORKS,
             chat_completion_sources.COMETAPI,
             chat_completion_sources.ELECTRONHUB,
+            chat_completion_sources.AZURE_OPENAI,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
