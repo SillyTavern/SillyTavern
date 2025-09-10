@@ -1367,7 +1367,7 @@ async function sendAzureOpenAIRequest(request, response) {
 
         const text = await fetchResponse.text();
         const data = tryParse(text) || { error: { message: fetchResponse.statusText || 'Unknown error occurred' } };
-        return response.status(fetchResponse.status).send(data);
+        return response.status(500).send(data);
     } catch (error) {
         const message = error.name === 'AbortError'
             ? 'Request was aborted by the client.'
@@ -1375,7 +1375,6 @@ async function sendAzureOpenAIRequest(request, response) {
         return response.status(500).send({ error: { message, ...error } });
     }
 }
-
 
 export const router = express.Router();
 
@@ -1567,7 +1566,6 @@ router.post('/status', async function (request, statusResponse) {
             console.error('Azure OpenAI status check connection error:', error);
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
-
     } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
