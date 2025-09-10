@@ -64,8 +64,8 @@ const a11yRules = {
     [toolbarSelectors]: (element) => {
         element.setAttribute('role', 'toolbar');
     },
-    '#toast-container .toast-message': (element) => {
-        element.setAttribute('role', 'alert');
+    '#toast-container .toast': (element) => {
+        element.setAttribute('role', 'status');
     },
 };
 
