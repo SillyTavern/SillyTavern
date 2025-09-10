@@ -652,7 +652,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot">
+                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai">
                                     <div class="range-block-title" data-i18n="Multiple swipes per generation">
                                         Multiple swipes per generation
                                     </div>
@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -704,7 +704,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -717,7 +717,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -980,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1984,7 +1984,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1999,7 +1999,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -2015,7 +2015,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2077,7 +2077,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2091,7 +2091,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2105,7 +2105,7 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,perplexity,electronhub" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,perplexity,electronhub,azure_openai" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
@@ -2144,7 +2144,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,azure_openai">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2802,6 +2802,7 @@
                             <optgroup>
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
+                                <option value="azure_openai">Azure OpenAI</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <!-- Temporarily disabled. -->
@@ -3734,6 +3735,49 @@
                                 <option value="moonshot-v1-128k-vision-preview">moonshot-v1-128k-vision-preview</option>
                                 <option value="kimi-thinking-preview">kimi-thinking-preview</option>
                             </select>
+                        </div>
+                        <div id="azure_openai_settings" data-source="azure_openai">
+                            <!-- Azure Base URL -->
+                            <h4><span data-i18n="Azure Base URL">Azure Base URL</span></h4>
+                            <div class="flex-container">
+                                <input id="azure_base_url" data-setting="azure_base_url" class="text_pole wide100p" type="text" placeholder="https://your-resource.openai.azure.com/">
+                            </div>
+
+                            <!-- Azure Deployment Name -->
+                            <h4><span data-i18n="Deployment Name">Deployment Name</span></h4>
+                            <div class="flex-container">
+                                <input id="azure_deployment_name" data-setting="azure_deployment_name" class="text_pole wide100p" type="text" placeholder="your-deployment-name" title="The name of your model deployment in Azure." data-i18n="[title]The name of your model deployment in Azure.">
+                            </div>
+
+                            <!-- Azure API Version Dropdown -->
+                            <h4><span data-i18n="API Version">API Version</span></h4>
+                            <div class="flex-container">
+                                <select id="azure_api_version" data-setting="azure_api_version" class="text_pole wide100p">
+                                    <option value="2025-04-01-preview">2025-04-01-preview</option>
+                                    <option value="2024-10-21">2024-10-21</option>
+                                </select>
+                            </div>
+
+                            <!-- Azure API Key -->
+                            <h4><span data-i18n="Azure API Key">Azure API Key</span></h4>
+                            <div class="flex-container">
+                                <input id="api_key_azure_openai" data-setting="api_key_azure_openai" class="text_pole flex1" type="password" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_azure_openai"></div>
+                            </div>
+                            <div class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'." data-for="api_key_azure_openai">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+
+                            <!-- Model Name (Select) -->
+                            <h4><span data-i18n="Model Name">Model Name</span></h4>
+                            <div class="flex-container">
+                                <select id="azure_openai_model" data-setting="azure_openai_model" class="text_pole wide100p">
+                                    <option value="" disabled selected data-i18n="Click 'Connect' to fetch model name">Click 'Connect' to fetch model name</option>
+                                </select>
+                            </div>
+                            <div>
+                                <small data-i18n="The underlying model of your deployment. This is detected automatically when you connect.">The underlying model of your deployment. This is detected automatically when you connect.</small>
+                            </div>
                         </div>
                         <div id="prompt_post_processing_form">
                             <h4>

@@ -188,6 +188,7 @@ export const chat_completion_sources = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    AZURE_OPENAI: 'azure_openai',
 };
 
 const character_names_behavior = {
@@ -241,6 +242,8 @@ const sensitiveFields = [
     'custom_include_headers',
     'vertexai_region',
     'vertexai_express_project_id',
+    'azure_base_url',
+    'azure_deployment_name',
 ];
 
 /**
@@ -331,6 +334,10 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    azure_base_url: ['#azure_base_url', 'azure_base_url', false, true],
+    azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
+    azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
+    azure_openai_model: ['#azure_openai_model', 'azure_openai_model', false, true],
     extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
@@ -380,6 +387,10 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    azure_base_url: '',
+    azure_deployment_name: '',
+    azure_api_version: '2024-02-15-preview',
+    azure_openai_model: '',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -470,6 +481,10 @@ const oai_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    azure_base_url: '',
+    azure_deployment_name: '',
+    azure_api_version: '2024-02-15-preview',
+    azure_openai_model: '',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1641,6 +1656,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
             return oai_settings.fireworks_model;
+        case chat_completion_sources.AZURE_OPENAI:
+            return oai_settings.azure_openai_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1957,6 +1974,16 @@ function saveModelList(data) {
 
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        const modelId = model_list?.[0]?.id || '';
+        oai_settings.azure_openai_model = modelId;
+
+        $('#azure_openai_model')
+            .empty()
+            .append(new Option(modelId || 'None', modelId || '', true, true))
+            .trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -2068,6 +2095,7 @@ function getReasoningEffort() {
     // These sources expect the effort as string.
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
@@ -2087,7 +2115,7 @@ function getReasoningEffort() {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                return chat_completion_sources.OPENAI === oai_settings.chat_completion_source && /^gpt-5/.test(oai_settings.openai_model)
+                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(oai_settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
@@ -2154,15 +2182,16 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
+    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !(isOAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model));
+    const stream = oai_settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2200,6 +2229,16 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
     };
 
+    if (isAzureOpenAI) {
+        generate_data.azure_base_url = oai_settings.azure_base_url;
+        generate_data.azure_deployment_name = oai_settings.azure_deployment_name;
+        generate_data.azure_api_version = oai_settings.azure_api_version;
+        // Reasoning effort is not supported on some Azure models (e.g. GPT-3.x, GPT-4.x)
+        if (/^gpt-[34]/.test(oai_settings.azure_openai_model)) {
+            delete generate_data.reasoning_effort;
+        }
+    }
+
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
@@ -2217,18 +2256,18 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
         generate_data['logprobs'] = 5;
     }
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
     const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
-    if (isOAI && isVision(oai_settings.openai_model) || isOpenRouter && isVision(oai_settings.openrouter_model)) {
+    if ((isOAI && isVision(oai_settings.openai_model)) || (isAzureOpenAI && isVision(oai_settings.azure_openai_model)) || (isOpenRouter && isVision(oai_settings.openrouter_model))) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
-    if (isOAI && oai_settings.openai_model.includes('gpt-4.5') || isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5')) {
+    if ((isOAI && oai_settings.openai_model.includes('gpt-4.5')) || (isAzureOpenAI && oai_settings.azure_openai_model.includes('gpt-4.5')) || (isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5'))) {
         delete generate_data.logprobs;
     }
 
@@ -2341,6 +2380,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const seedSupportedSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.MISTRALAI,
         chat_completion_sources.CUSTOM,
@@ -2358,7 +2398,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         generate_data['seed'] = oai_settings.seed;
     }
 
-    if (isOAI && /^(o1|o3|o4)/.test(oai_settings.openai_model)) {
+    if ((isOAI && /^(o1|o3|o4)/.test(oai_settings.openai_model)) || (isAzureOpenAI && /^(o1|o3|o4)/.test(oai_settings.azure_openai_model))) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
@@ -2381,7 +2421,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         }
     }
 
-    if (isOAI && /^gpt-5/.test(oai_settings.openai_model)) {
+    if ((isOAI && /^gpt-5/.test(oai_settings.openai_model)) || (isAzureOpenAI && /^gpt-5/.test(oai_settings.azure_openai_model))) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
@@ -2551,6 +2591,7 @@ function parseChatCompletionLogprobs(data) {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AZURE_OPENAI:
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
@@ -2559,7 +2600,7 @@ function parseChatCompletionLogprobs(data) {
             }
             // OpenAI Text Completion API is treated as a chat completion source
             // by SillyTavern, hence its presence in this function.
-            return textCompletionModels.includes(oai_settings.openai_model)
+            return textCompletionModels.includes(getChatCompletionModel())
                 ? parseOpenAITextLogprobs(data.choices[0]?.logprobs)
                 : parseOpenAIChatLogprobs(data.choices[0]?.logprobs);
         default:
@@ -3497,6 +3538,10 @@ function loadOpenAISettings(data, settings) {
     oai_settings.custom_include_headers = settings.custom_include_headers ?? default_settings.custom_include_headers;
     oai_settings.custom_prompt_post_processing = settings.custom_prompt_post_processing ?? default_settings.custom_prompt_post_processing;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
+    oai_settings.azure_base_url = settings.azure_base_url ?? default_settings.azure_base_url;
+    oai_settings.azure_deployment_name = settings.azure_deployment_name ?? default_settings.azure_deployment_name;
+    oai_settings.azure_api_version = settings.azure_api_version ?? default_settings.azure_api_version;
+    oai_settings.azure_openai_model = settings.azure_openai_model ?? default_settings.azure_openai_model;
     oai_settings.vertexai_model = settings.vertexai_model ?? default_settings.vertexai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
@@ -3593,6 +3638,11 @@ function loadOpenAISettings(data, settings) {
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
+    $('#azure_base_url').val(oai_settings.azure_base_url);
+    $('#azure_deployment_name').val(oai_settings.azure_deployment_name);
+    $('#azure_api_version').val(oai_settings.azure_api_version);
+    $('#azure_openai_model').val(oai_settings.azure_openai_model);
+
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
@@ -3771,6 +3821,12 @@ async function getStatusOpen() {
         return resultCheckStatus();
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI && !isValidUrl(oai_settings.azure_base_url)) {
+        console.debug('Invalid endpoint URL of Azure OpenAI API:', oai_settings.azure_base_url);
+        setOnlineStatus(t`Invalid Azure endpoint URL. Requests may fail.`);
+        return resultCheckStatus();
+    }
+
     let data = {
         reverse_proxy: oai_settings.reverse_proxy,
         proxy_password: oai_settings.proxy_password,
@@ -3794,6 +3850,12 @@ async function getStatusOpen() {
         $('.model_custom_select').empty();
         data.custom_url = oai_settings.custom_url;
         data.custom_include_headers = oai_settings.custom_include_headers;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
+        data.azure_base_url = oai_settings.azure_base_url;
+        data.azure_deployment_name = oai_settings.azure_deployment_name;
+        data.azure_api_version = oai_settings.azure_api_version;
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
@@ -3877,6 +3939,10 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         vertexai_model: settings.vertexai_model,
+        azure_base_url: settings.azure_base_url,
+        azure_deployment_name: settings.azure_deployment_name,
+        azure_api_version: settings.azure_api_version,
+        azure_openai_model: settings.azure_openai_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -4839,6 +4905,14 @@ async function onModelChange() {
         oai_settings.cometapi_model = value;
     }
 
+    if ($(this).is('#azure_openai_model')) {
+        if (!value) {
+            console.debug('Null Azure OpenAI model selected. Ignoring.');
+            return;
+        }
+        oai_settings.azure_openai_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -4913,7 +4987,7 @@ async function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+    if ([chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
         $('#openai_max_context').attr('max', getMaxContextOpenAI(value));
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -5419,6 +5493,20 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        const api_key_azure_openai = String($('#api_key_azure_openai').val()).trim();
+
+        if (api_key_azure_openai.length) {
+            await writeSecret(SECRET_KEYS.AZURE_OPENAI, api_key_azure_openai);
+        }
+
+        if (!api_key_azure_openai && !secret_state[SECRET_KEYS.AZURE_OPENAI]) {
+            console.log('No secret key saved for Azure OpenAI');
+            return;
+        }
+    }
+
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -5491,6 +5579,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        $('#azure_openai_model').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5611,10 +5702,15 @@ export function isImageInliningSupported() {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AZURE_OPENAI: {
+            const modelToCheck = oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI
+                ? oai_settings.azure_openai_model
+                : oai_settings.openai_model;
             return visionSupportedModels.some(model =>
-                oai_settings.openai_model.includes(model)
-                && ['gpt-4-turbo-preview', 'o1-mini', 'o3-mini'].some(x => !oai_settings.openai_model.includes(x)),
+                modelToCheck.includes(model)
+                && ['gpt-4-turbo-preview', 'o1-mini', 'o3-mini'].some(x => !modelToCheck.includes(x)),
             );
+        }
         case chat_completion_sources.MAKERSUITE:
             return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.VERTEXAI:
@@ -6295,6 +6391,21 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#azure_base_url').on('input', function () {
+        oai_settings.azure_base_url = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#azure_deployment_name').on('input', function () {
+        oai_settings.azure_deployment_name = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#azure_api_version').on('input change', function () {
+        oai_settings.azure_api_version = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#character_names_none').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.NONE;
         setNamesBehaviorControls();
@@ -6453,6 +6564,7 @@ export function initOpenAI() {
     $('#model_cometapi_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
+    $('#azure_openai_model').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

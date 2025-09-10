@@ -47,6 +47,7 @@ export const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    AZURE_OPENAI: 'api_key_azure_openai',
     FEATHERLESS: 'api_key_featherless',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
@@ -122,6 +123,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
     [SECRET_KEYS.COMETAPI]: 'CometAPI',
+    [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
 };
 
 const INPUT_MAP = {
@@ -160,6 +162,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
     [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
     [SECRET_KEYS.COMETAPI]: '#api_key_cometapi',
+    [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
 };
 
 const getLabel = () => moment().format('L LT');

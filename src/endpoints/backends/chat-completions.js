@@ -6,8 +6,11 @@ import urlJoin from 'url-join';
 
 import {
     AIMLAPI_HEADERS,
+    AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    OPENAI_REASONING_EFFORT_MAP,
+    OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
 } from '../../constants.js';
 import {
@@ -1294,6 +1297,100 @@ async function sendElectronHubRequest(request, response) {
     }
 }
 
+/**
+ * Sends a chat completion request to Azure OpenAI.
+ * @param {express.Request} request Express request object (contains request.body with all generate_data)
+ * @param {express.Response} response Express response object
+ */
+async function sendAzureOpenAIRequest(request, response) {
+    // 1. GATHER & VALIDATE SETTINGS
+    const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
+    if (!azure_base_url || !azure_deployment_name || !azure_api_version || !apiKey) {
+        return response.status(400).send({
+            error: {
+                message: 'Azure OpenAI configuration is incomplete. Please provide Base URL, Deployment Name, API Version, and API Key in the connection settings.',
+            },
+        });
+    }
+
+    // 2. PREPARE THE REQUEST
+    const url = new URL(`/openai/deployments/${azure_deployment_name}/chat/completions`, azure_base_url);
+    url.searchParams.set('api-version', azure_api_version);
+    const endpointUrl = url.toString();
+
+    // Create the base payload with all standard parameters
+    const apiRequestBody = /** @type {any} */ ({});
+    for (const key of AZURE_OPENAI_KEYS) {
+        if (Object.hasOwn(request.body, key)) {
+            apiRequestBody[key] = request.body[key];
+        }
+    }
+
+    // Handle Structured Output (JSON Mode) by translating the custom `json_schema` object.
+    if (request.body.json_schema) {
+        apiRequestBody['response_format'] = {
+            type: 'json_schema',
+            json_schema: {
+                name: request.body.json_schema.name,
+                strict: request.body.json_schema.strict ?? true,
+                schema: request.body.json_schema.value,
+            },
+        };
+    }
+
+    // Adjust logprobs for Azure OpenAI, which follows the OpenAI Chat Completions API spec.
+    if (typeof apiRequestBody.logprobs === 'number' && apiRequestBody.logprobs > 0) {
+        apiRequestBody.top_logprobs = apiRequestBody.logprobs;
+        apiRequestBody.logprobs = true;
+    }
+
+    // Do not send reasoning effort to models which do not support it
+    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
+        ? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
+        : undefined;
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', () => controller.abort());
+
+    const config = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey,
+        },
+        body: JSON.stringify(apiRequestBody),
+        signal: controller.signal,
+    };
+
+    console.info(`Sending request to Azure OpenAI: ${endpointUrl}`);
+    console.debug('Azure OpenAI Request Body:', apiRequestBody);
+    try {
+        const fetchResponse = await fetch(endpointUrl, config);
+
+        if (request.body.stream) {
+            return forwardFetchResponse(fetchResponse, response);
+        }
+
+        if (fetchResponse.ok) {
+            /** @type {any} */
+            const json = await fetchResponse.json();
+            console.debug('Azure OpenAI response:', json);
+            return response.send(json);
+        }
+
+        const text = await fetchResponse.text();
+        const data = tryParse(text) || { error: { message: fetchResponse.statusText || 'Unknown error occurred' } };
+        return response.status(500).send(data);
+    } catch (error) {
+        const message = error.name === 'AbortError'
+            ? 'Request was aborted by the client.'
+            : (error.message || 'An unknown network error occurred.');
+        return response.status(500).send({ error: { message, ...error } });
+    }
+}
+
 export const router = express.Router();
 
 router.post('/status', async function (request, statusResponse) {
@@ -1403,6 +1500,84 @@ router.post('/status', async function (request, statusResponse) {
         } catch (error) {
             console.error('Error fetching Google AI Studio models:', error);
             return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AZURE_OPENAI) {
+        const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
+        const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
+
+        // 1) Validate configuration from the frontend
+        if (!apiKey || !azure_base_url || !azure_deployment_name || !azure_api_version) {
+            console.warn('Azure OpenAI status check failed: missing config from frontend.');
+            return statusResponse.status(400).send({ error: true, message: 'Azure configuration is incomplete.' });
+        }
+        // 2) Build URLs using the URL API for consistency and robustness.
+        const modelsUrl = new URL('/openai/models', azure_base_url);
+        modelsUrl.searchParams.set('api-version', azure_api_version);
+
+        const chatUrl = new URL(`/openai/deployments/${azure_deployment_name}/chat/completions`, azure_base_url);
+        chatUrl.searchParams.set('api-version', azure_api_version);
+
+        // Map common status codes to user-friendly error messages
+        const azureStatusErrorMap = {
+            400: 'API version may be invalid for this resource.',
+            401: 'Invalid API key or insufficient permissions.',
+            403: 'Invalid API key or insufficient permissions.',
+            404: 'Endpoint URL appears incorrect (404).',
+        };
+
+        try {
+            // ---- A) GET /models: fast sanity check for endpoint + api key + api version ----
+            const apiConfigTest = await fetch(modelsUrl, {
+                method: 'GET',
+                headers: { 'api-key': apiKey, 'Accept': 'application/json' },
+            });
+
+            if (!apiConfigTest.ok) {
+                let errText = '';
+                try { errText = await apiConfigTest.text(); } catch { /* response body may be empty */ }
+
+                console.warn('Azure OpenAI GET /models failed:', apiConfigTest.status, apiConfigTest.statusText, errText || '');
+
+                const defaultMessage = `Azure Models endpoint error: ${apiConfigTest.statusText}`;
+                const message = azureStatusErrorMap[apiConfigTest.status] ?? defaultMessage;
+                return statusResponse.status(apiConfigTest.status).send({ error: true, message });
+            }
+
+            // ---- B) POST /chat/completions: verify deployment + read underlying model ID ----
+            // Small, deterministic probe to minimize cost/latency
+            const modelPayload = {
+                messages: [{ role: 'user', content: 'Say word Hi' }],
+                stream: false,
+                max_completion_tokens: 5,
+            };
+
+            const modelRequest = await fetch(chatUrl, {
+                method: 'POST',
+                headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(modelPayload),
+            });
+
+            let modelResponse;
+            try {
+                modelResponse = await modelRequest.json();
+            } catch {
+                modelResponse = { raw: 'Failed to parse JSON response from chat completions probe.' };
+            }
+
+            const modelId = /** @type {any} */ (modelResponse)?.model;
+            if (!modelId) {
+                console.warn('Azure status check succeeded but could not find a model ID in the response.');
+                console.debug('Azure Response Body:', modelResponse);
+                // Keep a benign success to avoid UX disruption in the UI
+                return statusResponse.send({ data: [] });
+            }
+
+            console.info(color.green('Azure OpenAI connection successful. Detected model:'), modelId);
+            // Consistent response format: always an array of { id }
+            return statusResponse.send({ data: [{ id: modelId }] });
+        } catch (error) {
+            console.error('Azure OpenAI status check connection error:', error);
+            return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
     } else {
         console.warn('This chat completion source is not supported yet.');
@@ -1596,6 +1771,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return sendElectronHubRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return sendAzureOpenAIRequest(request, response);
     }
 
     let apiUrl;
@@ -1803,26 +1979,8 @@ router.post('/generate', function (request, response) {
 
     // A few of OpenAIs reasoning models support reasoning effort
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-        const reasoningEffortModels = [
-            'o1',
-            'o3-mini',
-            'o3-mini-2025-01-31',
-            'o4-mini',
-            'o4-mini-2025-04-16',
-            'o3',
-            'o3-2025-04-16',
-            'gpt-5',
-            'gpt-5-2025-08-07',
-            'gpt-5-mini',
-            'gpt-5-mini-2025-08-07',
-            'gpt-5-nano',
-            'gpt-5-nano-2025-08-07',
-        ];
-        const reasoningEffortMap = {
-            min: 'minimal',
-        };
-        if (reasoningEffortModels.includes(request.body.model)) {
-            bodyParams['reasoning_effort'] = reasoningEffortMap[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
+            bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 

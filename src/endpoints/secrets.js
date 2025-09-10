@@ -60,6 +60,7 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    AZURE_OPENAI: 'api_key_azure_openai',
 };
 
 /**
