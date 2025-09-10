@@ -1329,7 +1329,14 @@ async function sendAzureOpenAIRequest(request, response) {
 
     // Handle Structured Output (JSON Mode) by translating the custom `json_schema` object.
     if (request.body.json_schema) {
-        setJsonObjectFormat(apiRequestBody, apiRequestBody.messages, request.body.json_schema);
+        apiRequestBody['response_format'] = {
+            type: 'json_schema',
+            json_schema: {
+                name: request.body.json_schema.name,
+                strict: request.body.json_schema.strict ?? true,
+                schema: request.body.json_schema.value,
+            },
+        };
     }
 
     // Adjust logprobs for Azure OpenAI, which follows the OpenAI Chat Completions API spec.
