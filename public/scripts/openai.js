@@ -1974,43 +1974,16 @@ function saveModelList(data) {
 
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
     }
-    // --- Azure OpenAI: populate #azure_openai_model from the single returned item ---
+
     if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
-        const $el = $('#azure_openai_model');
-        if ($el.length === 0) {
-            console.warn('#azure_openai_model element not found in DOM.');
-            return; // graceful no-op if the element doesn't exist
-        }
+        const modelId = model_list?.[0]?.id || '';
+        oai_settings.azure_openai_model = modelId;
 
-        // pick the single model (if any)
-        const first = model_list?.[0];
-        const modelId = first?.id || '';
-
-        // Keep settings in sync (mirrors how other sources store their current model)
-        const selectedModel = model_list.find(m => m.id === oai_settings.azure_openai_model);
-        if (!selectedModel && model_list.length > 0) {
-            oai_settings.azure_openai_model = modelId;
-        }
-
-        // Populate the target element. Support both <input> and <select>.
-        if ($el.is('select')) {
-            // Rebuild options for a select element
-            $el.empty();
-            if (modelId) {
-                // selected & defaultSelected = true to immediately reflect choice
-                $el.append(new Option(modelId, modelId, true, true));
-            } else {
-                // If no model, provide an empty option
-                $el.append(new Option('None', '', true, true));
-            }
-            $el.trigger('change');
-        } else {
-            // Assume input-like element (e.g., <input>, <textarea>, contenteditable)
-            $el.val(oai_settings.azure_openai_model || modelId).trigger('input').trigger('change');
-        }
+        $('#azure_openai_model')
+            .empty()
+            .append(new Option(modelId || 'None', modelId || '', true, true))
+            .trigger('change');
     }
-
-
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -2256,12 +2229,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
     };
 
-    // Add Azure-specific settings to generate_data if Azure OpenAI is selected
-    if (isAzureOpenAI) { // Use the new isAzureOpenAI constant
+    if (isAzureOpenAI) {
         generate_data.azure_base_url = oai_settings.azure_base_url;
         generate_data.azure_deployment_name = oai_settings.azure_deployment_name;
         generate_data.azure_api_version = oai_settings.azure_api_version;
-        // The 'model' field will be present but is handled (deleted) by the backend for Azure.
+        // Reasoning effort is not supported on some Azure models (e.g. GPT-3.x, GPT-4.x)
+        if (/^gpt-[34]/.test(oai_settings.azure_openai_model)) {
+            delete generate_data.reasoning_effort;
+        }
     }
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -3778,8 +3753,6 @@ function loadOpenAISettings(data, settings) {
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
     $('#custom_prompt_post_processing').val(oai_settings.custom_prompt_post_processing);
     $(`#custom_prompt_post_processing option[value="${oai_settings.custom_prompt_post_processing}"]`).prop('selected', true);
-
-    updateAzureCompleteUrl();
 }
 
 function setNamesBehaviorControls() {
@@ -4933,7 +4906,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#azure_openai_model')) {
-        console.log('Azure OpenAI model changed to', value);
+        if (!value) {
+            console.debug('Null Azure OpenAI model selected. Ignoring.');
+            return;
+        }
         oai_settings.azure_openai_model = value;
     }
 
@@ -5011,18 +4987,17 @@ async function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI || oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+    if ([chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
         $('#openai_max_context').attr('max', getMaxContextOpenAI(value));
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
-        if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-            $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
-        }
+        $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
 
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
         const maxContext = getMistralMaxContext(oai_settings.mistralai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5521,9 +5496,13 @@ async function onConnectButtonClick(e) {
     if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         const api_key_azure_openai = String($('#api_key_azure_openai').val()).trim();
 
-        // If a new key has been entered in the text box, save it before connecting.
         if (api_key_azure_openai.length) {
             await writeSecret(SECRET_KEYS.AZURE_OPENAI, api_key_azure_openai);
+        }
+
+        if (!api_key_azure_openai && !secret_state[SECRET_KEYS.AZURE_OPENAI]) {
+            console.log('No secret key saved for Azure OpenAI');
+            return;
         }
     }
 
@@ -5601,10 +5580,10 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').trigger('change');
     }
-
     else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         $('#azure_openai_model').trigger('change');
     }
+
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
         $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
@@ -6052,26 +6031,6 @@ function updateVertexAIServiceAccountStatus(isValid = false, message = '') {
     }
 }
 
-/**
- * Updates the #azure_complete_url input field based on Azure OpenAI settings.
- */
-function updateAzureCompleteUrl() {
-    const baseUrl = String($('#azure_base_url').val()).trim();
-    const deploymentName = String($('#azure_deployment_name').val()).trim();
-    const apiVersion = String($('#azure_api_version').val()).trim();
-
-    let completeUrl = 'Dynamically generated URL'; // Default placeholder
-
-    if (baseUrl && deploymentName && apiVersion) {
-        // Sanitize trailing slash from base URL
-        const sanitizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        completeUrl = `${sanitizedBaseUrl}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
-    }
-
-    $('#azure_complete_url').val(completeUrl);
-}
-
-
 function updateFeatureSupportFlags() {
     const featureFlags = {
         openai_function_calling_supported: ToolManager.isToolCallingSupported(),
@@ -6426,29 +6385,24 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    // Add input listeners for Azure OpenAI settings to update oai_settings and save
+    $('#names_behavior').on('input', function () {
+        oai_settings.names_behavior = Number($(this).val());
+        setNamesBehaviorControls();
+        saveSettingsDebounced();
+    });
+
     $('#azure_base_url').on('input', function () {
         oai_settings.azure_base_url = String($(this).val());
-        updateAzureCompleteUrl(); // Keep this to update the URL preview
         saveSettingsDebounced();
     });
 
     $('#azure_deployment_name').on('input', function () {
         oai_settings.azure_deployment_name = String($(this).val());
-        updateAzureCompleteUrl(); // Keep this to update the URL preview
         saveSettingsDebounced();
     });
 
     $('#azure_api_version').on('input change', function () {
         oai_settings.azure_api_version = String($(this).val());
-        updateAzureCompleteUrl(); // Keep this to update the URL preview
-        saveSettingsDebounced();
-    });
-
-
-    $('#names_behavior').on('input', function () {
-        oai_settings.names_behavior = Number($(this).val());
-        setNamesBehaviorControls();
         saveSettingsDebounced();
     });
 
