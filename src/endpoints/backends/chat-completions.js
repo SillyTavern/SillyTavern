@@ -1601,7 +1601,6 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SUBMODEL: return sendSubModelapiRequest(request, response);
-            break;
     }
 
     let apiUrl;
