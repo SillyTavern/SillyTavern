@@ -223,7 +223,7 @@ async function sendClaudeRequest(request, response) {
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
-        if (isOpus41){
+        if (isOpus41) {
             if (requestBody.top_p < 1) {
                 delete requestBody.temperature;
             } else {
@@ -1204,7 +1204,7 @@ async function sendAimlapiRequest(request, response) {
 async function sendSubModelapiRequest(request, response) {
     const apiUrl = API_SUBMODEL;
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.SUBMODEL);
-     console.warn('SubModel API  Request');
+    console.warn('SubModel API  Request');
     if (!apiKey) {
         console.warn('SubModel API key is missing.');
         return response.status(400).send({ error: true });
@@ -1216,7 +1216,7 @@ async function sendSubModelapiRequest(request, response) {
         controller.abort();
     });
 
-      try {
+    try {
         let bodyParams = {};
 
         if (request.body.logprobs > 0) {
@@ -1412,8 +1412,7 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_SUBMODEL;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.SUBMODEL);
         headers = {};
-    }
-    else {
+    } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
     }
@@ -1575,7 +1574,7 @@ router.post('/bias', async function (request, response) {
 
 
 router.post('/generate', function (request, response) {
-    
+
     if (!request.body) return response.status(400).send({ error: true });
 
     const postProcessingType = request.body.custom_prompt_post_processing;

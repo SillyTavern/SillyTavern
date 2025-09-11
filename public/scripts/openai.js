@@ -380,7 +380,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
-    submodel_model:"NousResearch/Hermes-4-405B-FP8",
+    submodel_model: "NousResearch/Hermes-4-405B-FP8",
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -470,7 +470,7 @@ const oai_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
-    submodel_model:"NousResearch/Hermes-4-405B-FP8",
+    submodel_model: "NousResearch/Hermes-4-405B-FP8",
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1638,7 +1638,7 @@ export function getChatCompletionModel(source = null) {
         case chat_completion_sources.FIREWORKS:
             return oai_settings.fireworks_model;
         case chat_completion_sources.SUBMODEL:
-            return oai_settings.submodel_model;    
+            return oai_settings.submodel_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1935,7 +1935,7 @@ function saveModelList(data) {
 
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
     }
-     if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
+    if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
         $('#model_submodel_select').empty();
         model_list.forEach((model) => {
             if (!model?.supports_chat) {
@@ -4791,7 +4791,7 @@ async function onModelChange() {
         console.log('CometAPI model changed to', value);
         oai_settings.cometapi_model = value;
     }
-     if ($(this).is('#model_submodel_select')) {
+    if ($(this).is('#model_submodel_select')) {
         if (!value) {
             console.debug('Null SubModel model selected. Ignoring.');
             return;
@@ -5087,7 +5087,7 @@ async function onModelChange() {
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
-      if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
+    if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
         const maxContext = getSubModelMaxContext(oai_settings.submodel_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -5354,14 +5354,14 @@ async function onConnectButtonClick(e) {
             return;
         }
     }
-     if (oai_settings.chat_completion_source == chat_completion_sources.SUBMODEL) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.SUBMODEL) {
 
         const api_key_submodel = String($('#api_key_submodel').val()).trim();
         if (api_key_submodel.length) {
             await writeSecret(SECRET_KEYS.SUBMODEL, api_key_submodel);
         }
 
-         if (!secret_state[SECRET_KEYS.SUBMODEL]) {
+        if (!secret_state[SECRET_KEYS.SUBMODEL]) {
             console.log('No secret key saved for submodel');
             return;
         }
@@ -5379,7 +5379,7 @@ async function onConnectButtonClick(e) {
             return;
         }
     }
-    
+
 
     startStatusLoading();
     saveSettingsDebounced();
