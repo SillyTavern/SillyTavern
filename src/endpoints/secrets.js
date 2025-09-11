@@ -59,6 +59,7 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    SUBMODEL: 'api_key_submodel',
 };
 
 /**

@@ -187,6 +187,7 @@ export const chat_completion_sources = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    SUBMODEL: 'submodel',
 };
 
 const character_names_behavior = {
@@ -330,6 +331,8 @@ export const settingsToUpdate = {
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
     extensions: ['#NULL_SELECTOR', 'extensions', false, false],
+    submodel_model: ['#model_submodel_select', 'submodel_model', false, true],
+
 };
 
 const default_settings = {
@@ -377,6 +380,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    submodel_model:"NousResearch/Hermes-4-405B-FP8",
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -466,6 +470,7 @@ const oai_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    submodel_model:"NousResearch/Hermes-4-405B-FP8",
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1632,6 +1637,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
             return oai_settings.fireworks_model;
+        case chat_completion_sources.SUBMODEL:
+            return oai_settings.submodel_model;    
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1927,6 +1934,26 @@ function saveModelList(data) {
         }
 
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
+    }
+     if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
+        $('#model_submodel_select').empty();
+        model_list.forEach((model) => {
+            if (!model?.supports_chat) {
+                return;
+            }
+            $('#model_submodel_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.submodel_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.submodel_model)) {
+            oai_settings.submodel_model = model_list[0].id;
+        }
+
+        $('#model_submodel_select').val(oai_settings.submodel_model).trigger('change');
     }
 }
 
@@ -2308,6 +2335,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
+        chat_completion_sources.SUBMODEL,
     ];
     if (seedSupportedSources.includes(oai_settings.chat_completion_source) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
@@ -3440,6 +3468,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
+    oai_settings.submodel_model = settings.submodel_model ?? default_settings.submodel_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3705,6 +3734,7 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
+        chat_completion_sources.SUBMODEL,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -3815,6 +3845,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         aimlapi_model: settings.aimlapi_model,
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
+        submodel_model: settings.submodel_model,
         cometapi_model: settings.cometapi_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
@@ -4578,6 +4609,31 @@ function getFireworksMaxContext(model, isUnlocked) {
     return max_32k;
 }
 
+/**
+ * Gets the maximum context length for a SubModel model.
+ * @param {string} model - The model ID
+ * @param {boolean} isUnlocked - Whether the context is unlocked
+ * @returns {number} - The maximum context length
+ */
+function getSubModelMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    // First check if model info is available from model_list
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const modelInfo = model_list.find((record) => record.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
+        if (modelInfo?.context_window) {
+            return modelInfo.context_window;
+        }
+    }
+
+    return max_32k;
+}
+
 async function onModelChange() {
     biasCache = undefined;
     let value = String($(this).val() || '');
@@ -4734,6 +4790,14 @@ async function onModelChange() {
         }
         console.log('CometAPI model changed to', value);
         oai_settings.cometapi_model = value;
+    }
+     if ($(this).is('#model_submodel_select')) {
+        if (!value) {
+            console.debug('Null SubModel model selected. Ignoring.');
+            return;
+        }
+        console.log('SubModel model changed to', value);
+        oai_settings.submodel_model = value;
     }
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
@@ -5023,6 +5087,15 @@ async function onModelChange() {
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
+      if (oai_settings.chat_completion_source === chat_completion_sources.SUBMODEL) {
+        const maxContext = getSubModelMaxContext(oai_settings.submodel_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
 
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
@@ -5281,6 +5354,18 @@ async function onConnectButtonClick(e) {
             return;
         }
     }
+     if (oai_settings.chat_completion_source == chat_completion_sources.SUBMODEL) {
+
+        const api_key_submodel = String($('#api_key_submodel').val()).trim();
+        if (api_key_submodel.length) {
+            await writeSecret(SECRET_KEYS.SUBMODEL, api_key_submodel);
+        }
+
+         if (!secret_state[SECRET_KEYS.SUBMODEL]) {
+            console.log('No secret key saved for submodel');
+            return;
+        }
+    }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         const api_key_cometapi = String($('#api_key_cometapi').val()).trim();
@@ -5294,6 +5379,7 @@ async function onConnectButtonClick(e) {
             return;
         }
     }
+    
 
     startStatusLoading();
     saveSettingsDebounced();

@@ -68,6 +68,8 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_SUBMODEL = 'https://llm.submodel.ai/v1';
+
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1194,6 +1196,114 @@ async function sendAimlapiRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to SUBMODEL API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendSubModelapiRequest(request, response) {
+    const apiUrl = API_SUBMODEL;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.SUBMODEL);
+     console.warn('SubModel API  Request');
+    if (!apiKey) {
+        console.warn('SubModel API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+      try {
+        let bodyParams = {};
+
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+
+            bodyParams.tools.forEach(tool => {
+                const required = tool?.function?.parameters?.required;
+                if (Array.isArray(required) && required.length === 0) {
+                    delete tool.function.parameters.required;
+                }
+            });
+        }
+
+        // Hack to support JSON schema
+        if (request.body.json_schema) {
+            bodyParams.response_format = {
+                type: 'json_object',
+            };
+            const message = {
+                role: 'user',
+                content: `JSON schema for the response:\n${JSON.stringify(request.body.json_schema.value, null, 4)}`,
+            };
+            request.body.messages.push(message);
+        }
+
+        const postProcessType = String(request.body.model).endsWith('-reasoner')
+            ? PROMPT_PROCESSING_TYPE.STRICT_TOOLS
+            : PROMPT_PROCESSING_TYPE.SEMI_TOOLS;
+        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request)), bodyParams.tools, 'prefix');
+
+        const requestBody = {
+            'messages': processedMessages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'stop': request.body.stop,
+            'seed': request.body.seed,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('SubModel request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn(`SubModel API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('SubModel response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with SubModel API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
 export const router = express.Router();
 
 router.post('/status', async function (request, statusResponse) {
@@ -1298,7 +1408,12 @@ router.post('/status', async function (request, statusResponse) {
             console.error('Error fetching Google AI Studio models:', error);
             return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
         }
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SUBMODEL) {
+        apiUrl = API_SUBMODEL;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SUBMODEL);
+        headers = {};
+    }
+    else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
     }
@@ -1460,6 +1575,7 @@ router.post('/bias', async function (request, response) {
 
 
 router.post('/generate', function (request, response) {
+    
     if (!request.body) return response.status(400).send({ error: true });
 
     const postProcessingType = request.body.custom_prompt_post_processing;
@@ -1485,6 +1601,8 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.SUBMODEL: return sendSubModelapiRequest(request, response);
+            break;
     }
 
     let apiUrl;
@@ -1636,6 +1754,37 @@ router.post('/generate', function (request, response) {
                 },
             };
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
+        apiUrl = API_COMETAPI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
+        headers = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+        };
+        throw new Error('This provider is temporarily disabled.');
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SUBMODEL) {
+        apiUrl = API_SUBMODEL;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SUBMODEL);
+        headers = {};
+        bodyParams = {};
+    } else {
+        console.warn('This chat completion source is not supported yet.');
+        return response.status(400).send({ error: true });
+    }
+
+    // A few of OpenAIs reasoning models support reasoning effort
+    if (request.body.reasoning_effort && request.body.model.startsWith('gpt-4')) {
+        bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+    }
+
+    // A few of Anthropic's models support web search
+    if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
+        request.body.model = `${request.body.model}:online`;
+    }
+
+    // A few of Anthropic's models support web search
+    if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
+        request.body.model = `${request.body.model}:online`;
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
         apiUrl = API_NANOGPT;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);

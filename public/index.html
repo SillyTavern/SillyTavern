@@ -2818,9 +2818,10 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="xai">xAI (Grok)</option>
+                                <option value="submodel">SubModel</option>
                             </optgroup>
                         </select>
-                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
+                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai,submodel">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2884,7 +2885,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai,submodel">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -3501,6 +3502,36 @@
                                 </select>
                             </div>
                         </div>
+                         <div id="submodel_form" data-source="submodel">
+                            <h4>
+                                <a data-i18n="submodel API Key" href="https://submodel.ai/" target="_blank" rel="noopener noreferrer">
+                                    SubModel API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_submodel" name="api_key_submodel" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_submodel"></div>
+                            </div>
+                            <div data-for="api_key_submodel" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="SubModel Model">SubModel Model</h4>
+                                <select id="model_submodel_select">
+                                    <option value="NousResearch/Hermes-4-405B-FP8">NousResearch/Hermes-4-405B-FP8</option>
+                                    <option value="deepseek-coder">deepseek-coder</option>
+                                    <option value="Qwen/Qwen3-235B-A22B-Thinking-2507">Qwen/Qwen3-235B-A22B-Thinking-2507</option>
+                                    <option value="Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8">Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8</option>
+                                    <option value="Qwen/Qwen3-235B-A22B-Instruct-2507">Qwen/Qwen3-235B-A22B-Instruct-2507</option>
+                                    <option value="zai-org/GLM-4.5-FP8">zai-org/GLM-4.5-FP8</option>
+                                    <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+                                    <option value="deepseek-ai/DeepSeek-R1-0528">deepseek-ai/DeepSeek-R1-0528</option>
+                                    <option value="deepseek-ai/DeepSeek-R1">deepseek-ai/DeepSeek-R1</option>
+                                    <option value="deepseek-ai/DeepSeek-V3-0324">deepseek-ai/DeepSeek-V3-0324</option>
+                                    <option value="deepseek-ai/DeepSeek-V3.1">deepseek-ai/DeepSeek-V3.1</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="fireworks_form" data-source="fireworks">
                             <h4 data-i18n="Fireworks AI API Key">Fireworks AI API Key</h4>
                             <div class="flex-container">
@@ -3753,6 +3784,7 @@
                             <div class="online_status_indicator"></div>
                             <div class="online_status_text" data-i18n="No connection...">No connection...</div>
                         </div>
+
                     </div>
                 </div>
                 <div class="flex-container alignitemscenter spaceBetween wide100p">

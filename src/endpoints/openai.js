@@ -160,6 +160,9 @@ router.post('/caption-image', async (request, response) => {
         if (request.body.api === 'moonshot') {
             apiUrl = 'https://api.moonshot.ai/v1/chat/completions';
         }
+        if (request.body.api === 'submodel') {
+            apiUrl = 'https://llm.submodel.ai/v1/chat/completions';
+        }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
             apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;

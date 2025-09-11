@@ -66,6 +66,7 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    SUBMODEL: 'api_key_submodel',
 };
 
 const FRIENDLY_NAMES = {
@@ -120,6 +121,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
     [SECRET_KEYS.COMETAPI]: 'CometAPI',
+    [SECRET_KEYS.SUBMODEL]: 'SubModel',
 };
 
 const INPUT_MAP = {
@@ -157,6 +159,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
     [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
     [SECRET_KEYS.COMETAPI]: '#api_key_cometapi',
+    [SECRET_KEYS.SUBMODEL]: '#api_key_submodel',
 };
 
 const getLabel = () => moment().format('L LT');
@@ -195,6 +198,7 @@ export function resolveSecretKey() {
             }
         }
 
+        // 检查 chat_completion_sources 中的值
         const [key] = Object.entries(chat_completion_sources).find(([, value]) => value === chatCompletionSource) ?? [null];
         if (key && SECRET_KEYS[key]) {
             return SECRET_KEYS[key];
