@@ -13,5 +13,7 @@
     { "lang": "ru-ru",  "display": "Русский (Russian)" },
     { "lang": "es-es",  "display": "Español (Spanish)" },
     { "lang": "uk-ua",  "display": "Yкраїнська (Ukrainian)" },
-    { "lang": "vi-vn",  "display": "Tiếng Việt (Vietnamese)" }
+    { "lang": "vi-vn",  "display": "Tiếng Việt (Vietnamese)" },
+    { "lang": "th-th",  "display": "ไทย (Thai)" }
+   
 ]
