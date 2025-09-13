@@ -319,6 +319,7 @@ await new Promise((resolve) => {
 
 // Configure toast library:
 toastr.options = {
+    positionClass: 'toast-top-center',
     closeButton: false,
     progressBar: false,
     showDuration: 250,
