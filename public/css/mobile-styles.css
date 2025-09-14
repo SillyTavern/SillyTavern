@@ -48,6 +48,10 @@
         z-index: 4;
     }
 
+	.bg_example.mobile-menu-open .mobile-only-menu-toggle {
+		display: none;
+	}
+
     .bg_example .mobile-only-menu-toggle {
         display: flex;
         align-items: center;
