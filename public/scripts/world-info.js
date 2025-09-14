@@ -5188,6 +5188,7 @@ export function convertCharacterBook(characterBook) {
             useProbability: entry.extensions?.useProbability ?? true,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
+            outletName: entry.extensions?.outlet_name ?? '',
             group: entry.extensions?.group ?? '',
             groupOverride: entry.extensions?.group_override ?? false,
             groupWeight: entry.extensions?.group_weight ?? DEFAULT_WEIGHT,
