@@ -33,8 +33,6 @@ const THUMBNAIL_CONFIG = {
     height: 90,
 };
 
-let systemBackgrounds = [];
-
 /**
  * Global IntersectionObserver instance for lazy loading backgrounds
  * @type {IntersectionObserver|null}
@@ -516,8 +514,7 @@ export async function getBackgrounds() {
     if (response.ok) {
         const { images, config } = await response.json();
         Object.assign(THUMBNAIL_CONFIG, config);
-        systemBackgrounds = images;
-        renderSystemBackgrounds();
+        renderSystemBackgrounds(images);
     }
 }
 
