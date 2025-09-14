@@ -3777,7 +3777,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 setExtensionPrompt(inject_ids.CUSTOM_WI_DEPTH_ROLE(e.depth, e.role), joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
             });
         }
-        if (typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
+        if (outletEntries && typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
             Object.keys(outletEntries).forEach((key) => {
                 const joinedEntries = outletEntries[key].join('\n');
                 setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, extension_prompt_types.NONE, 0);

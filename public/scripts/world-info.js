@@ -4799,8 +4799,11 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                     console.warn(`[WI] Entry ${entry.uid} has position 'outlet' but no outlet name. Skipping.`);
                     break;
                 }
-                if (!WIOutletEntries[entry.outletName]) WIOutletEntries[entry.outletName] = [];
-                WIOutletEntries[entry.outletName].push(content);
+                if (Array.isArray(WIOutletEntries[entry.outletName])) {
+                    WIOutletEntries[entry.outletName].push(content);
+                } else {
+                    WIOutletEntries[entry.outletName] = [content];
+                }
                 break;
             }
             default:
