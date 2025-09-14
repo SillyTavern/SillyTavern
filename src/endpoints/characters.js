@@ -688,6 +688,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 useProbability: entry.useProbability ?? false,
                 depth: entry.depth ?? 4,
                 selectiveLogic: entry.selectiveLogic ?? 0,
+                outletName: entry.outletName ?? '',
                 group: entry.group ?? '',
                 group_override: entry.groupOverride ?? false,
                 group_weight: entry.groupWeight ?? null,
