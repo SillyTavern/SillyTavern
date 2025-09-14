@@ -90,6 +90,24 @@ body.reduced-motion #bg_custom {
     gap: 5px;
 }
 
+/* Control buttons in header */
+.heading-container-with-controls {
+    position: relative;
+}
+
+.heading-container-with-controls .heading-text {
+    margin: 10px 0;
+}
+
+.heading-container-with-controls .heading-controls {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 5px;
+}
+
 #bg-scrollable-content {
     flex-grow: 1;
     overflow-y: auto;
