@@ -4,6 +4,7 @@ import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { createThumbnail, flashHighlight, getBase64Async, stringFormat, debounce } from './utils.js';
+import { debounce_timeout } from './constants.js';
 import { t } from './i18n.js';
 import { Popup } from './popup.js';
 
@@ -781,7 +782,7 @@ export function initBackgrounds() {
 
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
-    $('#bg-filter').on('input', debounce(onBackgroundFilterInput, 250));
+    $('#bg-filter').on('input', debounce(onBackgroundFilterInput, debounce_timeout.short));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),
