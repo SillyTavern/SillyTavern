@@ -733,11 +733,8 @@ function onBackgroundFilterInput() {
     $('#bg_menu_content > .bg_example, #bg_custom_content > .bg_example').each(function () {
         const $bg = $(this);
         const title = $bg.attr('title') || '';
-        if (title.toLowerCase().includes(filterValue)) {
-            $bg.show();
-        } else {
-            $bg.hide();
-        }
+        const hasMatch = title.toLowerCase().includes(filterValue);
+        $bg.toggle(hasMatch);
     });
 }
 
