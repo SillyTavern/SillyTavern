@@ -3173,7 +3173,7 @@ export async function getWorldEntry(name, data, entry) {
             depthInput.css('visibility', 'hidden');
             data.entries[uid].role = null;
         }
-        if (value != world_info_position.outlet) {
+        if (value !== world_info_position.outlet) {
             data.entries[uid].outletName = null;
         }
         updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });

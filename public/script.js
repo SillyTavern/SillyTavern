@@ -3780,7 +3780,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
             Object.keys(outletEntries).forEach((key) => {
                 const joinedEntries = outletEntries[key].join('\n');
-                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, 0, 0);
+                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, extension_prompt_types.NONE, 0);
             });
         }
     } else {
@@ -4758,15 +4758,11 @@ async function doChatInject(messages, isContinue) {
 }
 
 function flushWIInjections() {
-    //prevent custom depth WI entries (which have unique random key names) from duplicating
+    const depthPrefix = inject_ids.CUSTOM_WI_DEPTH;
+    const outletPrefix = inject_ids.CUSTOM_WI_OUTLET('');
+
     for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith(inject_ids.CUSTOM_WI_DEPTH)) {
-            delete extension_prompts[key];
-        }
-    }
-    //flush WI outlet entries
-    for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith(inject_ids.CUSTOM_WI_OUTLET(''))) {
+        if (key.startsWith(depthPrefix) || key.startsWith(outletPrefix)) {
             delete extension_prompts[key];
         }
     }
