@@ -118,7 +118,7 @@ body.reduced-motion #bg_custom {
 #bg_menu_content, #bg_custom_content {
     display: grid;
     gap: 5px;
-    grid-template-columns: repeat(var(--bg-thumb-columns, 5), 1fr);
+    grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
 }
 
 #bg-filter {
