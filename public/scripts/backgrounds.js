@@ -19,6 +19,8 @@ const PLACEHOLDER_IMAGE = `url('data:image/png;base64,${PNG_PIXEL}')`;
 const THUMBNAIL_COLUMNS_MIN = 2;
 const THUMBNAIL_COLUMNS_MAX = 8;
 const THUMBNAIL_COLUMNS_DEFAULT = 5;
+const THUMBNAIL_COLUMNS_DEFAULT_DESKTOP = 5;
+const THUMBNAIL_COLUMNS_DEFAULT_MOBILE = 3;
 
 /**
  * Storage for frontend-generated background thumbnails.
@@ -48,7 +50,6 @@ export let background_settings = {
     url: generateUrlParameter('__transparent.png', false),
     fitting: 'classic',
     animation: false,
-    thumbnailColumns: THUMBNAIL_COLUMNS_DEFAULT,
 };
 
 /**
