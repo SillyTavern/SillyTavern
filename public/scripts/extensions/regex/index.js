@@ -1108,7 +1108,7 @@ async function onRegexDebuggerOpenClick() {
                 const stepHeader = stepElement.find('.step-header');
                 stepHeader.find('strong').text(t`After:` + ` ${script.scriptName}`);
 
-                const metricsHtml = `<span class="step-metrics">` + t`Captured:` + ` ${result.charsCaptured}, ` + t`Added:` + ` +${result.charsAdded}, ` + t`Removed:` + ` -${result.charsRemoved}</span>`;
+                const metricsHtml = '<span class="step-metrics">' + t`Captured:` + ` ${result.charsCaptured}, ` + t`Added:` + ` +${result.charsAdded}, ` + t`Removed:` + ` -${result.charsRemoved}</span>`;
                 stepHeader.append(metricsHtml);
 
                 if (displayMode === 'highlight') {
