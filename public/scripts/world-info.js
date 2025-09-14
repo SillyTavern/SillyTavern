@@ -3832,6 +3832,7 @@ export const newWorldInfoEntryDefinition = {
     probability: { default: 100, type: 'number' },
     useProbability: { default: true, type: 'boolean' },
     depth: { default: DEFAULT_DEPTH, type: 'number' },
+    outletName: { default: '', type: 'string' },
     group: { default: '', type: 'string' },
     groupOverride: { default: false, type: 'boolean' },
     groupWeight: { default: DEFAULT_WEIGHT, type: 'number' },
