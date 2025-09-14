@@ -469,7 +469,7 @@ async function autoBackgroundCommand() {
  * @param {string[]} [backgrounds] - Optional filtered list of backgrounds.
  */
 function renderSystemBackgrounds(backgrounds) {
-    const sourceList = backgrounds ?? systemBackgrounds;
+    const sourceList = backgrounds || [];
     const container = $('#bg_menu_content');
     container.empty();
 
