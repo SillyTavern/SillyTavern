@@ -3173,9 +3173,6 @@ export async function getWorldEntry(name, data, entry) {
             depthInput.css('visibility', 'hidden');
             data.entries[uid].role = null;
         }
-        if (value !== world_info_position.outlet) {
-            data.entries[uid].outletName = null;
-        }
         updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });
         setWIOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         setWIOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
@@ -3710,7 +3707,7 @@ function getAutomationIdCallback(data) {
 function getOutletNameCallback(data) {
     return buildAutocompleteCallback({
         data,
-        collectValues: entry => entry.outletName ? [entry.outletName] : [],
+        collectValues: entry => entry.position === world_info_position.outlet && entry.outletName ? [entry.outletName] : [],
     });
 }
 
