@@ -167,6 +167,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {any[]} WIDepthEntries The depth entries.
  * @property {any[]} ANBeforeEntries The entries before Author's Note.
  * @property {any[]} ANAfterEntries The entries after Author's Note.
+ * @property {{[key: string]: string[]}} outletEntries - Array of entries to be added to an outlet
  * @property {Set<any>} allActivatedEntries All entries.
  */
 
@@ -818,6 +819,7 @@ export const world_info_position = {
     atDepth: 4,
     EMTop: 5,
     EMBottom: 6,
+    outlet: 7,
 };
 
 export const wi_anchor_position = {
@@ -867,7 +869,7 @@ export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanD
         worldInfoDepth: activatedWorldInfo.WIDepthEntries ?? [],
         anBefore: activatedWorldInfo.ANBeforeEntries ?? [],
         anAfter: activatedWorldInfo.ANAfterEntries ?? [],
-        outletEntries: { 'test': ['Test message outlet 1', 'This is a second message. Outlet messages test, macros check.'] },
+        outletEntries: activatedWorldInfo.outletEntries ?? {},
     };
 }
 
@@ -3171,6 +3173,9 @@ export async function getWorldEntry(name, data, entry) {
             depthInput.css('visibility', 'hidden');
             data.entries[uid].role = null;
         }
+        if (value != world_info_position.outlet) {
+            data.entries[uid].outletName = null;
+        }
         updatePosOrdDisplayHelper({ template: headerTemplate, data, uid });
         setWIOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         setWIOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
@@ -4338,7 +4343,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
     timedEffects.checkTimedEffects();
 
     if (sortedEntries.length === 0) {
-        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], ANBeforeEntries: [], ANAfterEntries: [], allActivatedEntries: new Set() };
+        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], ANBeforeEntries: [], ANAfterEntries: [], outletEntries: {}, allActivatedEntries: new Set() };
     }
 
     /** @type {number[]} Represents the delay levels for entries that are delayed until recursion */
@@ -4739,6 +4744,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
     const ANTopEntries = [];
     const ANBottomEntries = [];
     const WIDepthEntries = [];
+    /** @type {{[key: string]: string[]}} */
+    const WIOutletEntries = {};
 
     // Appends from insertion order 999 to 1. Use unshift for this purpose
     // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
@@ -4787,6 +4794,11 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                 }
                 break;
             }
+            case world_info_position.outlet: {
+                if (!WIOutletEntries[entry.outletName]) WIOutletEntries[entry.outletName] = [];
+                WIOutletEntries[entry.outletName].push(content);
+                break;
+            }
             default:
                 break;
         }
@@ -4808,7 +4820,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
     console.log(`[WI] ${isDryRun ? 'Hypothetically adding' : 'Adding'} ${allActivatedEntries.size} entries to prompt`, Array.from(allActivatedEntries.values()));
     console.debug(`[WI] --- DONE${isDryRun ? ' (DRY RUN)' : ''} ---`);
 
-    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, ANBeforeEntries: ANTopEntries, ANAfterEntries: ANBottomEntries, allActivatedEntries: new Set(allActivatedEntries.values()) };
+    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, ANBeforeEntries: ANTopEntries, ANAfterEntries: ANBottomEntries, outletEntries: WIOutletEntries, allActivatedEntries: new Set(allActivatedEntries.values()) };
 }
 
 /**

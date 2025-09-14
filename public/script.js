@@ -3777,17 +3777,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 setExtensionPrompt(inject_ids.CUSTOM_WI_DEPTH_ROLE(e.depth, e.role), joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
             });
         }
+        if (typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
+            Object.keys(outletEntries).forEach((key) => {
+                const joinedEntries = outletEntries[key].join('\n');
+                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, 0, 0);
+            });
+        }
     } else {
         console.log('skipping WIAN');
-    }
-
-    // Add all outlet WI entries to prompt
-    if (Object.keys(outletEntries).length > 0) {
-        // One outlet entry per key, add them as extension prompt
-        Object.keys(outletEntries).forEach((key) => {
-            const joinedEntries = outletEntries[key].join('\n');
-            setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, 0, 0);
-        });
     }
 
     // Collect before / after story string injections
