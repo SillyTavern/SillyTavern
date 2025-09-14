@@ -156,6 +156,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {Array} worldInfoDepth - Array of depth entries
  * @property {Array} anBefore - Array of entries before Author's Note
  * @property {Array} anAfter - Array of entries after Author's Note
+ * @property {{[key: string]: string[]}} outletEntries - Array of entries to be added to an outlet
  */
 
 /**
@@ -866,6 +867,7 @@ export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanD
         worldInfoDepth: activatedWorldInfo.WIDepthEntries ?? [],
         anBefore: activatedWorldInfo.ANBeforeEntries ?? [],
         anAfter: activatedWorldInfo.ANAfterEntries ?? [],
+        outletEntries: { 'test': ['Test message outlet 1', 'This is a second message. Outlet messages test, macros check.'] },
     };
 }
 

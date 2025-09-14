@@ -51,6 +51,7 @@ export const inject_ids = {
     DEPTH_PROMPT_INDEX: (index) => `DEPTH_PROMPT_${index}`,
     CUSTOM_WI_DEPTH: 'customDepthWI',
     CUSTOM_WI_DEPTH_ROLE: (depth, role) => `customDepthWI_${depth}_${role}`,
+    CUSTOM_WI_OUTLET: (key) => `customWIOutlet_${key}`,
 };
 
 export const COMETAPI_IGNORE_PATTERNS = [

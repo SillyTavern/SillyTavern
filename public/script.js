@@ -3738,7 +3738,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         creatorNotes: creatorNotes,
         trigger: GENERATION_TYPE_TRIGGERS.includes(type) ? type : 'normal',
     };
-    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
+    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth, outletEntries } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
     setExtensionPrompt(inject_ids.QUIET_PROMPT, '', extension_prompt_types.IN_PROMPT, 0, true);
 
     // Add message example WI
@@ -3770,7 +3770,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
         // Add all depth WI entries to prompt
-        flushWIDepthInjections();
+        flushWIInjections();
         if (Array.isArray(worldInfoDepth)) {
             worldInfoDepth.forEach((e) => {
                 const joinedEntries = e.entries.join('\n');
@@ -3779,6 +3779,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     } else {
         console.log('skipping WIAN');
+    }
+
+    // Add all outlet WI entries to prompt
+    if (Object.keys(outletEntries).length > 0) {
+        // One outlet entry per key, add them as extension prompt
+        Object.keys(outletEntries).forEach((key) => {
+            const joinedEntries = outletEntries[key].join('\n');
+            setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, 0, 0);
+        });
     }
 
     // Collect before / after story string injections
@@ -4751,10 +4760,16 @@ async function doChatInject(messages, isContinue) {
     return injectedIndices;
 }
 
-function flushWIDepthInjections() {
+function flushWIInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
     for (const key of Object.keys(extension_prompts)) {
         if (key.startsWith(inject_ids.CUSTOM_WI_DEPTH)) {
+            delete extension_prompts[key];
+        }
+    }
+    //flush WI outlet entries
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith(inject_ids.CUSTOM_WI_OUTLET(''))) {
             delete extension_prompts[key];
         }
     }
@@ -4775,7 +4790,7 @@ function unblockGeneration(type) {
     showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
-    flushWIDepthInjections();
+    flushWIInjections();
 }
 
 export function getNextMessageId(type) {
