@@ -4795,6 +4795,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                 break;
             }
             case world_info_position.outlet: {
+                if (!entry.outletName) {
+                    console.warn(`[WI] Entry ${entry.uid} has position 'outlet' but no outlet name. Skipping.`);
+                    break;
+                }
                 if (!WIOutletEntries[entry.outletName]) WIOutletEntries[entry.outletName] = [];
                 WIOutletEntries[entry.outletName].push(content);
                 break;

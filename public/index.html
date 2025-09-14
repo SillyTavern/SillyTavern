@@ -6439,11 +6439,14 @@
                         </div>
                     </div>
                     <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
-                        <div class="world_entry_form_control flex1">
-                            <small class="textAlignCenter" data-i18n="Outlet Name">Outlet Name</small>
+                        <div class="world_entry_form_control flex1" title="Set the outlet name for this WI entry.&#13;&#13;WI entries with position 'outlet' will not be added to the promp automatically. Instead, they will be collected and can be used as a macro in the prompt.&#13;Add {{outlet:YourName}} to the prompt in any place you want to add all WI entries this specific outlet." data-i18n="[title]wi_outlet_name">
+                            <small class="textAlignCenter">
+                                <span data-i18n="Outlet Name">Outlet Name</span>
+                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                            </small>
                             <input class="text_pole margin0" name="outletName" type="text" placeholder="Outlet Name" data-i18n="[placeholder]Outlet Name">
-                            </div>
-                            <div class="world_entry_form_control flex1">
+                        </div>
+                        <div class="world_entry_form_control flex1">
                             <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
                             <input class="text_pole margin0" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="1000">
                         </div>
