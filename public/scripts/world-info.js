@@ -3427,6 +3427,19 @@ export async function getWorldEntry(name, data, entry) {
         contentInput.val(entry.content).trigger('input', { skipCount: true, noSave: true });
         editTemplate.find('.editor_maximize').attr('data-for', contentInputId);
 
+        // Outlet name
+        const outletNameInput = editTemplate.find('input[name="outletName"]');
+        outletNameInput.data('uid', entry.uid);
+        outletNameInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].outletName = value;
+            setWIOriginalDataValue(data, uid, 'extensions.outlet_name', data.entries[uid].outletName);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        outletNameInput.val(entry.outletName ?? '').trigger('input', { noSave: true });
+        setTimeout(() => createEntryInputAutocomplete(outletNameInput, getOutletNameCallback(data), { allowMultiple: true }), 1);
+
         // Scan depth
         const scanDepthInput = editTemplate.find('input[name="scanDepth"]');
         scanDepthInput.data('uid', entry.uid);
@@ -3599,63 +3612,105 @@ export async function getWorldEntry(name, data, entry) {
     return headerTemplate;
 }
 
+
+/**
+ * Builds a jQuery UI autocomplete callback: (control, request, response) => void
+ * @param {object} [opt={}] - Optional arguments
+ * @param {{entries: Record<string, any>}} [opt.data]   - Your WI data
+ * @param {(entry:any)=>string|string[]|null|undefined} [opt.collectValues] - Extract values from one entry
+ * @param {() => Iterable<string>} [opt.includeExtras] - Optional global extras to include
+ * @param {(ctx:{result:string[], control:JQuery, input:any, haystack:string[]})=>string[]} [opt.postFilter] - Optional final filter step (for special rules like your "group" de-dupe logic)
+ */
+function buildAutocompleteCallback({ data, collectValues, includeExtras = () => [], postFilter } = {}) {
+    return function (control, input, output) {
+        const uid = $(control).data('uid');
+
+        // Collect unique values from all *other* entries
+        const values = new Set();
+        for (const entry of Object.values(data.entries ?? {})) {
+            if (entry?.uid == uid) continue;
+            const raw = collectValues(entry);
+            if (raw == null) continue;
+            const arr = Array.isArray(raw) ? raw : [raw];
+            for (const v of arr) {
+                const s = String(v).trim();
+                if (s) values.add(s);
+            }
+        }
+
+        // Add optional global extras
+        for (const v of includeExtras()) {
+            const s = String(v).trim();
+            if (s) values.add(s);
+        }
+
+        // Sort stable & locale-aware
+        const haystack = Array.from(values).sort((a, b) => a.localeCompare(b));
+
+        // Case-insensitive contains
+        const needle = String(input.term ?? '').toLowerCase();
+        let result = haystack.filter(x => x.toLowerCase().includes(needle));
+
+        // Optional final-pass semantics
+        if (postFilter) {
+            result = postFilter({ result, control: $(control), input, haystack });
+        }
+
+        output(result);
+    };
+}
+
+/**
+ * Splits a string into an array of strings, separated by commas and trimmed
+ * @param {string} s - The string to split
+ * @returns {string[]} An array of strings, separated by commas and trimmed
+ */
+const splitCsv = s => String(s ?? '').split(/,\s*/).filter(Boolean);
+
 /**
  * Get the inclusion groups for the autocomplete.
  * @param {any} data WI data
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function (control, input, output) {
-        const uid = $(control).data('uid');
-        const thisGroups = String($(control).val()).split(/,\s*/).filter(x => x).map(x => x.toLowerCase());
-        const groups = new Set();
-        for (const entry of Object.values(data.entries)) {
-            // Skip the groups of this entry, because auto-complete should only suggest the ones that are already available on other entries
-            if (entry.uid == uid) continue;
-            if (entry.group) {
-                entry.group.split(/,\s*/).filter(x => x).forEach(x => groups.add(x));
-            }
-        }
+    return buildAutocompleteCallback({
+        data,
+        collectValues: entry => entry.group ? splitCsv(entry.group) : [],
+        postFilter: ({ result, control, input, haystack }) => {
+            const thisGroups = splitCsv(String($(control).val()));
+            const needle = String(input.term ?? '').toLowerCase();
+            const hasExactMatch = haystack.some(x => x.toLowerCase() === needle);
 
-        const haystack = Array.from(groups);
-        haystack.sort((a, b) => a.localeCompare(b));
-        const needle = input.term.toLowerCase();
-        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-        const result = haystack.filter(x => x.toLowerCase().includes(needle) && (!thisGroups.includes(x) || hasExactMatch && thisGroups.filter(g => g == x).length == 1));
-
-        output(result);
-    };
+            // include suggestion if it contains the needle AND
+            // (not already present OR (exact match typed && appears only once))
+            return result.filter(x =>
+                !thisGroups.includes(x) ||
+                (hasExactMatch && thisGroups.filter(g => g === x).length === 1),
+            );
+        },
+    });
 }
 
 function getAutomationIdCallback(data) {
-    return function (control, input, output) {
-        const uid = $(control).data('uid');
-        const ids = new Set();
-        for (const entry of Object.values(data.entries)) {
-            // Skip automation id of this entry, because auto-complete should only suggest the ones that are already available on other entries
-            if (entry.uid == uid) continue;
-            if (entry.automationId) {
-                ids.add(String(entry.automationId));
-            }
-        }
+    return buildAutocompleteCallback({
+        data,
+        collectValues: entry => entry.automationId != null ? [String(entry.automationId)] : [],
+        includeExtras: () =>
+            ('quickReplyApi' in globalThis && globalThis.quickReplyApi?.listAutomationIds)
+                ? globalThis.quickReplyApi.listAutomationIds()
+                : [],
+    });
+}
 
-        if ('quickReplyApi' in globalThis) {
-            for (const automationId of globalThis.quickReplyApi.listAutomationIds()) {
-                ids.add(String(automationId));
-            }
-        }
-
-        const haystack = Array.from(ids);
-        haystack.sort((a, b) => a.localeCompare(b));
-        const needle = input.term.toLowerCase();
-        const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        output(result);
-    };
+function getOutletNameCallback(data) {
+    return buildAutocompleteCallback({
+        data,
+        collectValues: entry => entry.outletName ? [entry.outletName] : [],
+    });
 }
 
 /**
- * Create an autocomplete for the inclusion group.
+ * Create an autocomplete for an input element.
  * @param {JQuery<HTMLElement>} input - Input element to attach the autocomplete to
  * @param {(control: JQuery<HTMLElement>, input: any, output: any) => any} callback - Source data callbacks
  * @param {object} [options={}] - Optional arguments
