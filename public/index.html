@@ -1463,12 +1463,10 @@
                                             </div>
                                         </div>
                                         <div class="range-block marginTop5" title="Tokens across which sequence matching is not continued. Specified as a comma-separated list of quoted strings." data-i18n="[title]DRY_Sequence_Breakers_desc">
-                                            <div class="range-block-title textAlignCenter">
+                                            <div class="range-block-title textAlignCenter flex-container justifyCenter alignitemscenter">
                                                 <small data-i18n="Sequence Breakers">Sequence Breakers</small>
                                             </div>
-                                            <div class="wide100p">
-                                                <textarea id="dry_sequence_breakers_textgenerationwebui" class="text_pole textarea_compact" name="sequence_breakers" rows="3" data-i18n="[placeholder]JSON-serialized array of strings." placeholder="JSON-serialized array of strings."></textarea>
-                                            </div>
+                                            <textarea id="dry_sequence_breakers_textgenerationwebui" class="text_pole textarea_compact" name="sequence_breakers" rows="3" data-i18n="[placeholder]JSON-serialized array of strings." placeholder="JSON-serialized array of strings."></textarea>
                                         </div>
                                     </div>
                                     <div data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" id="dynatemp_block_ooba" class="wide100p">
@@ -1502,7 +1500,7 @@
                                     <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
-                                            <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
+                                            <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0.&#13;Tau = Variability parameter for Mirostat outputs.&#13;Eta = Learning rate of Mirostat."></div>
                                         </h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
@@ -1511,18 +1509,12 @@
                                                 <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <label>
-                                                    <small data-i18n="Mirostat Tau">Tau</small>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Variability parameter for Mirostat outputs" title="Variability parameter for Mirostat outputs."></div>
-                                                </label>
+                                                <small data-i18n="Mirostat Tau">Tau</small>
                                                 <input class="neo-range-slider" type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <label>
-                                                    <small data-i18n="Mirostat Eta">Eta</small>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Learning rate of Mirostat" title="Learning rate of Mirostat."></div>
-                                                </label>
+                                                <small data-i18n="Mirostat Eta">Eta</small>
                                                 <input class="neo-range-slider" type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
                                             </div>
@@ -1669,7 +1661,7 @@
                                             <div class="logit_bias_list"></div>
                                         </div>
                                     </div>
-                                    <div id="cfg_block_ooba" data-tg-type="ooba, tabby" class="wide100p">
+                                    <div id="cfg_block_ooba" data-tg-type="ooba, tabby" class="flex-container flexFlowColumn wide100p">
                                         <hr class="width100p">
                                         <h4 class="textAlignCenter">
                                             <span data-i18n="CFG">CFG</span>
@@ -1681,15 +1673,11 @@
                                             <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
                                         </div>
                                         <div class="range-block">
-                                            <div class="range-block-title justifyLeft">
-                                                <span data-i18n="Negative Prompt">Negative Prompt</span>
-                                                <small>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Used if CFG Scale is unset globally, per chat or character" title="Used if CFG Scale is unset globally, per chat or character"></div>
-                                                </small>
+                                            <div class="alignitemscenter justifyCenter flex-container flexShrink">
+                                                <small data-i18n="Negative Prompt">Negative Prompt</small>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Used if CFG Scale is unset globally, per chat or character" title="Used if CFG Scale is unset globally, per chat or character"></div>
                                             </div>
-                                            <div class="wide100p">
-                                                <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="3" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
-                                            </div>
+                                            <textarea id="negative_prompt_textgenerationwebui" class="wide100p text_pole textarea_compact" name="negative_prompt" rows="3" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
                                         </div>
                                     </div>
                                     <div id="grammar_block_ooba" data-tg-type="ooba,aphrodite" class="wide100p">
