@@ -16,6 +16,10 @@ const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkY
 const PNG_PIXEL_BLOB = new Blob([Uint8Array.from(atob(PNG_PIXEL), c => c.charCodeAt(0))], { type: 'image/png' });
 const PLACEHOLDER_IMAGE = `url('data:image/png;base64,${PNG_PIXEL}')`;
 
+const THUMBNAIL_COLUMNS_MIN = 2;
+const THUMBNAIL_COLUMNS_MAX = 8;
+const THUMBNAIL_COLUMNS_DEFAULT = 5;
+
 /**
  * Storage for frontend-generated background thumbnails.
  * This is used to store thumbnails for backgrounds that cannot be generated on the server.
@@ -44,6 +48,7 @@ export let background_settings = {
     url: generateUrlParameter('__transparent.png', false),
     fitting: 'classic',
     animation: false,
+    thumbnailColumns: THUMBNAIL_COLUMNS_DEFAULT,
 };
 
 /**
@@ -78,6 +83,21 @@ function createThumbnailElement(imageData) {
     return thumbnail.get(0);
 }
 
+/**
+ * Applies the thumbnail column count to the CSS and updates button states.
+ * @param {number} count - The number of columns to display.
+ */
+function applyThumbnailColumns(count) {
+    const newCount = Math.max(THUMBNAIL_COLUMNS_MIN, Math.min(count, THUMBNAIL_COLUMNS_MAX));
+    background_settings.thumbnailColumns = newCount;
+    document.documentElement.style.setProperty('--bg-thumb-columns', newCount);
+
+    $('#bg_thumb_zoom_in').prop('disabled', newCount <= THUMBNAIL_COLUMNS_MIN);
+    $('#bg_thumb_zoom_out').prop('disabled', newCount >= THUMBNAIL_COLUMNS_MAX);
+
+    saveSettingsDebounced();
+}
+
 export function loadBackgroundSettings(settings) {
     let backgroundSettings = settings.background;
     if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.url) {
@@ -89,6 +109,16 @@ export function loadBackgroundSettings(settings) {
     if (!Object.hasOwn(backgroundSettings, 'animation')) {
         backgroundSettings.animation = false;
     }
+
+    // If a value is already saved, use it. Otherwise, determine default based on screen size.
+    let columns = backgroundSettings.thumbnailColumns;
+    if (!columns) {
+        const isMobile = window.matchMedia('(max-width: 1000px)').matches;
+        columns = isMobile ? THUMBNAIL_COLUMNS_DEFAULT_MOBILE : THUMBNAIL_COLUMNS_DEFAULT_DESKTOP;
+    }
+    background_settings.thumbnailColumns = columns;
+    applyThumbnailColumns(background_settings.thumbnailColumns);
+
     setBackground(backgroundSettings.name, backgroundSettings.url);
     setFittingClass(backgroundSettings.fitting);
     $('#background_fitting').val(backgroundSettings.fitting);
@@ -774,6 +804,12 @@ export function initBackgrounds() {
             }
         });
 
+    $('#bg_thumb_zoom_in').on('click', () => {
+        applyThumbnailColumns(background_settings.thumbnailColumns - 1);
+    });
+    $('#bg_thumb_zoom_out').on('click', () => {
+        applyThumbnailColumns(background_settings.thumbnailColumns + 1);
+    });
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', debounce(onBackgroundFilterInput, debounce_timeout.short));
