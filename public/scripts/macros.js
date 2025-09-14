@@ -530,7 +530,7 @@ export function evaluateMacros(content, env, postProcessFn) {
         { regex: /{{datetimeformat +([^}]*)}}/gi, replace: (_, format) => moment().format(format) },
         { regex: /{{idle_duration}}/gi, replace: () => getTimeSinceLastMessage() },
         { regex: /{{time_UTC([-+]\d+)}}/gi, replace: (_, offset) => moment().utc().utcOffset(parseInt(offset, 10)).format('LT') },
-        { regex: /{{outlet:(.+?)}}/gi, replace: (_, key) => getOutletPrompt(key.trim()) || '' },
+        { regex: /{{outlet::(.+?)}}/gi, replace: (_, key) => getOutletPrompt(key.trim()) || '' },
         getTimeDiffMacro(),
         getBannedWordsMacro(),
         getRandomReplaceMacro(),
