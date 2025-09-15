@@ -114,14 +114,7 @@ class ElectronHubTtsProvider {
             console.info('Using default Electron Hub TTS settings');
         }
 
-        this.settings = this.defaultSettings;
-        for (const key in settings) {
-            if (key in this.settings) {
-                this.settings[key] = settings[key];
-            } else {
-                throw `Invalid setting passed to TTS Provider: ${key}`;
-            }
-        }
+        this.settings = { ...this.defaultSettings, ...settings };
 
         await this.loadModels();
         this.populateModelSelect();
@@ -210,7 +203,7 @@ class ElectronHubTtsProvider {
                 });
             });
 
-            this.models = ttsModels.length ? ttsModels : allModels;
+            this.models = ttsModels;
 
             if (this.models.length > 0 && !this.models.find(m => m.id === this.settings.model)) {
                 this.settings.model = this.models[0].id;

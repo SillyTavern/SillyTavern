@@ -337,11 +337,11 @@ router.post('/electronhub/generate-voice', async (request, response) => {
 
         const requestBody = {
             input: request.body.input,
-            response_format: request.body.response_format || 'mp3',
             voice: request.body.voice,
             speed: request.body.speed ?? 1,
             temperature: request.body.temperature ?? undefined,
             model: request.body.model || 'tts-1',
+            response_format: 'mp3',
         };
 
         // Optional provider-specific params
@@ -352,6 +352,14 @@ router.post('/electronhub/generate-voice', async (request, response) => {
         if (Number.isFinite(request.body.speech_rate)) requestBody.speech_rate = Number(request.body.speech_rate);
         if (Number.isFinite(request.body.pitch_adjustment)) requestBody.pitch_adjustment = Number(request.body.pitch_adjustment);
         if (request.body.emotional_style) requestBody.emotional_style = request.body.emotional_style;
+
+        // Handle dynamic parameters sent from the frontend
+        const knownParams = new Set(Object.keys(requestBody));
+        for (const key in request.body) {
+            if (!knownParams.has(key) && request.body[key] !== undefined) {
+                requestBody[key] = request.body[key];
+            }
+        }
 
         // Clean undefineds
         Object.keys(requestBody).forEach(k => requestBody[k] === undefined && delete requestBody[k]);
@@ -408,7 +416,7 @@ router.post('/electronhub/models', async (request, response) => {
 
         const data = await result.json();
         // Some providers return {data:[...]} vs raw array; normalize
-        const models = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        const models = Array.isArray(data) ? data : (data && Array.isArray(data['data']) ? data['data'] : []);
         return response.json(models);
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);
