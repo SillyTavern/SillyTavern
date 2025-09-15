@@ -2088,7 +2088,7 @@ function openRouterGroupByVendor(array) {
     }, new Map());
 }
 
-function appendElectronHubOptions(model_list, groupModels = false, sort = false) {
+function appendElectronHubOptions(model_list, groupModels = false) {
     const appendOption = (model, parent = null) => {
         (parent || $('#model_electronhub_select')).append(
             $('<option>', {
