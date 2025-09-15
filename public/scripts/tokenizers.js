@@ -648,6 +648,54 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB && oai_settings.electronhub_model) {
+        if (oai_settings.electronhub_model.includes('gpt-4o')) {
+            return gpt4oTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('gpt-4')) {
+            return gpt4Tokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('gpt-3.5-turbo')) {
+            return turboTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('claude')) {
+            return claudeTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('jamba')) {
+            return jambaTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('deepseek') || oai_settings.electronhub_model.includes('sonar-reasoning')) {
+            return deepseekTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('qwen')) {
+            return qwen2Tokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('gemma')) {
+            return gemmaTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('mistral')) {
+            return mistralTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('yi')) {
+            return yiTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('llama')) {
+            return llamaTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('llama3')) {
+            return llama3Tokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('command-a')) {
+            return commandATokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('command-r')) {
+            return commandRTokenizer;
+        }
+        else if (oai_settings.electronhub_model.includes('nemo')) {
+            return nemoTokenizer;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         if (oai_settings.cohere_model.includes('command-a')) {
             return commandATokenizer;
