@@ -1727,9 +1727,9 @@ function getElectronHubModelTemplate(option) {
     const outputPrice = model.pricing?.output;
     const price = inputPrice && outputPrice ? `$${inputPrice}/$${outputPrice} in/out Mtoken` : 'Unknown';
 
-    const visionIcon = model.metadata?.vision ? '<i class="fa-solid fa-eye" alt="This model supports vision"></i>' : '';
-    const reasoningIcon = model.metadata?.reasoning ? '<i class="fa-solid fa-brain" alt="This model supports reasoning"></i>' : '';
-    const premiumIcon = model?.premium_model ? '<i class="fa-solid fa-crown" alt="This model is premium"></i>' : '';
+    const visionIcon = model.metadata?.vision ? '<i class="fa-solid fa-eye" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.metadata?.reasoning ? '<i class="fa-solid fa-brain" title="This model supports reasoning"></i>' : '';
+    const premiumIcon = model?.premium_model ? '<i class="fa-solid fa-crown" title="This model requires a subscription"></i>' : '';
 
     const capabilities = (visionIcon || reasoningIcon || premiumIcon) ? ` | ${visionIcon} ${reasoningIcon} ${premiumIcon}` : '';
 
@@ -1861,11 +1861,8 @@ function saveModelList(data) {
 
         $('#model_electronhub_select').empty();
 
-        if (true === oai_settings.electronhub_group_models) {
-            appendElectronHubOptions(electronHubGroupByVendor(model_list), oai_settings.electronhub_group_models);
-        } else {
-            appendElectronHubOptions(model_list);
-        }
+        const groupedList = oai_settings.electronhub_group_models ? electronHubGroupByVendor(model_list) : model_list;
+        appendElectronHubOptions(groupedList, oai_settings.electronhub_group_models);
 
         const selectedModel = model_list.find(model => model.id === oai_settings.electronhub_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.electronhub_model)) {
