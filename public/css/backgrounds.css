@@ -67,10 +67,8 @@ body.reduced-motion #bg_custom {
 #Backgrounds.drawer-content.openDrawer.bg-drawer-layout {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100dvh - var(--topBarBlockSize));
-    max-height: calc(100dvh - var(--topBarBlockSize));
+    height: auto;
+    height: calc-size(auto, size);
     overflow: hidden;
     width: var(--sheldWidth);
     max-width: var(--sheldWidth);
@@ -94,7 +92,7 @@ body.reduced-motion #bg_custom {
     flex-grow: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 5px 5px;
+    padding: 0 5px 15px;
 }
 
 #bg-filter {
