@@ -325,6 +325,97 @@ router.post('/generate-voice', async (request, response) => {
     }
 });
 
+// ElectronHub TTS proxy
+router.post('/electronhub/generate-voice', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+
+        if (!key) {
+            console.warn('No ElectronHub key found');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            input: request.body.input,
+            response_format: request.body.response_format || 'mp3',
+            voice: request.body.voice,
+            speed: request.body.speed ?? 1,
+            temperature: request.body.temperature ?? undefined,
+            model: request.body.model || 'tts-1',
+        };
+
+        // Optional provider-specific params
+        if (request.body.instructions) requestBody.instructions = request.body.instructions;
+        if (request.body.speaker_transcript) requestBody.speaker_transcript = request.body.speaker_transcript;
+        if (Number.isFinite(request.body.cfg_scale)) requestBody.cfg_scale = Number(request.body.cfg_scale);
+        if (Number.isFinite(request.body.cfg_filter_top_k)) requestBody.cfg_filter_top_k = Number(request.body.cfg_filter_top_k);
+        if (Number.isFinite(request.body.speech_rate)) requestBody.speech_rate = Number(request.body.speech_rate);
+        if (Number.isFinite(request.body.pitch_adjustment)) requestBody.pitch_adjustment = Number(request.body.pitch_adjustment);
+        if (request.body.emotional_style) requestBody.emotional_style = request.body.emotional_style;
+
+        // Clean undefineds
+        Object.keys(requestBody).forEach(k => requestBody[k] === undefined && delete requestBody[k]);
+
+        console.debug('ElectronHub TTS request', requestBody);
+
+        const result = await fetch('https://api.electronhub.ai/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('ElectronHub TTS request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || 'audio/mpeg';
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', contentType);
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('ElectronHub TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+// ElectronHub model list
+router.post('/electronhub/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+
+        if (!key) {
+            console.warn('No ElectronHub key found');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch('https://api.electronhub.ai/v1/models', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('ElectronHub models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        // Some providers return {data:[...]} vs raw array; normalize
+        const models = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        return response.json(models);
+    } catch (error) {
+        console.error('ElectronHub models fetch failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
 router.post('/generate-image', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
