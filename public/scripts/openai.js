@@ -2131,7 +2131,7 @@ function electronHubSortBy(data, property = 'alphabetically') {
 
 function electronHubGroupByVendor(array) {
     return array.reduce((acc, curr) => {
-        const vendor = curr.name.split(':')[0];
+        const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
 
         if (!acc.has(vendor)) {
             acc.set(vendor, []);
