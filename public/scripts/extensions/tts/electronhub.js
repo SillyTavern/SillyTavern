@@ -314,7 +314,7 @@ class ElectronHubTtsProvider {
                 const min = spec.minimum ?? undefined;
                 const max = spec.maximum ?? undefined;
                 const step = type === 'integer' ? 1 : (spec.step ?? 0.01);
-                const block = $(`<div><label for="${id}">${nice}${(min!=null||max!=null)?` (${min??''}..${max??''})`:''}:</label><input id="${id}" type="number" class="text_pole" ${min!=null?`min="${min}"`:''} ${max!=null?`max="${max}"`:''} step="${step}"></div>`);
+                const block = $(`<div><label for="${id}">${nice}${(min != null || max != null) ? ` (${min ?? ''}..${max ?? ''})` : ''}:</label><input id="${id}" type="number" class="text_pole" ${min != null ? `min="${min}"` : ''} ${max != null ? `max="${max}"` : ''} step="${step}"></div>`);
                 container.append(block);
                 const el = block.find('input');
                 const val = this.settings[key] ?? spec.default ?? '';

@@ -2115,7 +2115,7 @@ function appendElectronHubOptions(model_list, groupModels = false) {
             appendOption(model);
         });
     }
-    
+
 }
 
 function electronHubSortBy(data, property = 'alphabetically') {
