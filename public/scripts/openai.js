@@ -1727,9 +1727,15 @@ function getElectronHubModelTemplate(option) {
     const outputPrice = model.pricing?.output;
     const price = inputPrice && outputPrice ? `$${inputPrice}/$${outputPrice} in/out Mtoken` : 'Unknown';
 
+    const visionIcon = model.metadata?.vision ? '<i class="fa-solid fa-eye" alt="This model supports vision"></i>' : '';
+    const reasoningIcon = model.metadata?.reasoning ? '<i class="fa-solid fa-brain" alt="This model supports reasoning"></i>' : '';
+    const premiumIcon = model?.premium_model ? '<i class="fa-solid fa-crown" alt="This model is premium"></i>' : '';
+
+    const capabilities = (visionIcon || reasoningIcon || premiumIcon) ? ` | ${visionIcon} ${reasoningIcon} ${premiumIcon}` : '';
+
     return $((`
         <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
-            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.tokens} ctx | <small>${price}</small></div>
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.tokens} ctx | <small>${price}</small>${capabilities}</div>
         </div>
     `));
 }
