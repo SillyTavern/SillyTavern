@@ -664,7 +664,7 @@ export function getTokenizerModel() {
         else if (oai_settings.electronhub_model.includes('jamba')) {
             return jambaTokenizer;
         }
-        else if (oai_settings.electronhub_model.includes('deepseek') || oai_settings.electronhub_model.includes('sonar-reasoning')) {
+        else if (oai_settings.electronhub_model.includes('deepseek') || oai_settings.electronhub_model.includes('sonar-reasoning') || oai_settings.electronhub_model.includes('r1')) {
             return deepseekTokenizer;
         }
         else if (oai_settings.electronhub_model.includes('qwen')) {
