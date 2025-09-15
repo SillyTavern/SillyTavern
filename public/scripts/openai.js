@@ -2099,7 +2099,7 @@ function appendElectronHubOptions(model_list, groupModels = false, sort = false)
 
     if (groupModels) {
         model_list.forEach((models, vendor) => {
-            const optgroup = $(`<optgroup label="${vendor}">`);
+            const optgroup = $('<optgroup>').attr('label', vendor);
 
             models.forEach((model) => {
                 appendOption(model, optgroup);
