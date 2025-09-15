@@ -969,7 +969,7 @@ function populateDebuggerRuleList(container) {
 
     const allScripts = getRegexScripts();
     if (!allScripts || allScripts.length === 0) {
-        rulesContainer.append('<div class="regex-debugger-no-rules">No regex rules found.</div>');
+        rulesContainer.append('<div class="regex-debugger-no-rules">' + t`No regex rules found.` + '</div>');
         return;
     }
 
@@ -1002,7 +1002,7 @@ function populateDebuggerRuleList(container) {
         ruleElement.find('.rule-name').text(script.scriptName);
         ruleElement.find('.rule-regex').text(script.findRegex);
         // @ts-ignore
-        ruleElement.find('.rule-scope').text(script.isScoped ? 'Scoped' : 'Global');
+        ruleElement.find('.rule-scope').text(script.isScoped ? t`Scoped` : t`Global`);
         ruleElement.find('.rule-enabled').prop('checked', !script.disabled);
         // @ts-ignore
         ruleElement.find('.edit_rule').on('click', () => onRegexEditorOpenClick(script.id, script.isScoped));
@@ -1035,14 +1035,14 @@ function populateDebuggerRuleList(container) {
     };
 
     if (globalScripts.length > 0) {
-        rulesContainer.append('<div class="list-header regex-debugger-list-header">Global Rules</div>');
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Global Rules` + '</div>');
         const globalList = $('<ul id="regex_debugger_rules_global" class="sortable-list"></ul>');
         globalScripts.forEach(script => globalList.append(renderRule(script)));
         rulesContainer.append(globalList);
     }
 
     if (scopedScripts.length > 0) {
-        rulesContainer.append('<div class="list-header regex-debugger-list-header">Scoped Rules</div>');
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Scoped Rules` + '</div>');
         const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
         scopedScripts.forEach(script => scopedList.append(renderRule(script)));
         rulesContainer.append(scopedList);
@@ -1106,9 +1106,9 @@ async function onRegexDebuggerOpenClick() {
                 // Set the ID on the TOP-LEVEL element that is being appended.
                 stepElement.find('>:first-child').attr('id', `step-result-${script.id}`);
                 const stepHeader = stepElement.find('.step-header');
-                stepHeader.find('strong').text(`After: ${script.scriptName}`);
+                stepHeader.find('strong').text(t`After:` + ` ${script.scriptName}`);
 
-                const metricsHtml = `<span class="step-metrics">Captured: ${result.charsCaptured}, Added: +${result.charsAdded}, Removed: -${result.charsRemoved}</span>`;
+                const metricsHtml = '<span class="step-metrics">' + t`Captured:` + ` ${result.charsCaptured}, ` + t`Added:` + ` +${result.charsAdded}, ` + t`Removed:` + ` -${result.charsRemoved}</span>`;
                 stepHeader.append(metricsHtml);
 
                 if (displayMode === 'highlight') {
@@ -1128,7 +1128,7 @@ async function onRegexDebuggerOpenClick() {
 
         const summaryHtml = `
             <div id="regex_debugger_final_summary" class="regex-debugger-summary">
-                <strong>Total Captured:</strong> ${totalCharsCaptured} | <strong>Total Added:</strong> +${totalCharsAdded} | <strong>Total Removed:</strong> -${totalCharsRemoved}
+                <strong>` + t`Total Captured:` + `</strong> ${totalCharsCaptured} | <strong>` + t`Total Added:` + `</strong> +${totalCharsAdded} | <strong>` + t`Total Removed:` + `</strong> -${totalCharsRemoved}
             </div>
         `;
         finalOutput.before(summaryHtml);
