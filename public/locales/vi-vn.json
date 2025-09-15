@@ -317,6 +317,8 @@
     "flag": "cờ",
     "API key (optional)": "Key API (tùy chọn)",
     "Server url": "URL máy chủ",
+    "Electron Hub API Key": "Key API Electron Hub",
+    "Electron Hub Model": "Model Electron Hub",
     "Example: http://127.0.0.1:5000": "Ví dụ: http://127.0.0.1:5000",
     "Custom model (optional)": "Model tùy chỉnh (tùy chọn)",
     "vllm-project/vllm": "vllm-project/vllm (Chế độ trình bao bọc API OpenAI)",

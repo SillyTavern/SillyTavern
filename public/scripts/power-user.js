@@ -1068,7 +1068,8 @@ function applyToastrPosition() {
 
     toastr.options.positionClass = power_user.toastr_position;
     fixToastrForDialogs();
-    $('#toastr_position').val(power_user.toastr_position).prop('selected', true);
+    $('#toastr_position').val(power_user.toastr_position);
+    $(`#toastr_position option[value="${power_user.toastr_position}"]`).prop('selected', true);
 }
 
 function applyChatWidth(type) {

@@ -265,9 +265,10 @@ async function onCopyToSystemBackgroundClick(e) {
  * It caches the thumbnail in local storage and returns a blob URL for the thumbnail.
  * If the thumbnail cannot be fetched, it returns a transparent PNG pixel as a fallback.
  * @param {string} bg Background URL
+ * @param {boolean} isCustom Is the background custom?
  * @returns {Promise<string>} Blob URL of the thumbnail
  */
-async function getThumbnailFromStorage(bg) {
+async function getThumbnailFromStorage(bg, isCustom) {
     const cachedBlobUrl = THUMBNAIL_BLOBS.get(bg);
     if (cachedBlobUrl) {
         return cachedBlobUrl;
@@ -281,7 +282,8 @@ async function getThumbnailFromStorage(bg) {
     }
 
     try {
-        const response = await fetch(getBackgroundPath(bg), { cache: 'force-cache' });
+        const url = isCustom ? bg : getBackgroundPath(bg);
+        const response = await fetch(url, { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error('Fetch failed with status: ' + response.status);
         }
@@ -519,7 +521,7 @@ async function resolveImageUrl(bg, isCustom) {
     const fileExtension = bg.split('.').pop().toLowerCase();
     const isAnimated = ['mp4', 'webp'].includes(fileExtension);
     const thumbnailUrl = isAnimated && !background_settings.animation
-        ? await getThumbnailFromStorage(bg)
+        ? await getThumbnailFromStorage(bg, isCustom)
         : isCustom
             ? bg
             : getThumbnailUrl('bg', bg);
@@ -573,14 +575,21 @@ async function delBackground(bg) {
 }
 
 async function onBackgroundUploadSelected() {
-    const form = $('#form_bg_download').get(0);
+    const form = $('#form_bg_upload').get(0);
 
     if (!(form instanceof HTMLFormElement)) {
-        console.error('form_bg_download is not a form');
+        console.error('form_bg_upload is not a form');
         return;
     }
 
     const formData = new FormData(form);
+
+    const file = formData.get('avatar');
+    if (!(file instanceof File) || file.size === 0) {
+        form.reset();
+        return;
+    }
+
     await convertFileIfVideo(formData);
     await uploadBackground(formData);
     form.reset();
@@ -614,7 +623,7 @@ async function convertFileIfVideo(formData) {
         const sourceBuffer = await file.arrayBuffer();
         const convertedBuffer = await globalThis.convertVideoToAnimatedWebp({ buffer: new Uint8Array(sourceBuffer), name: file.name });
         const convertedFileName = file.name.replace(/\.[^/.]+$/, '.webp');
-        const convertedFile = new File([convertedBuffer], convertedFileName, { type: 'image/webp' });
+        const convertedFile = new File([new Uint8Array(convertedBuffer)], convertedFileName, { type: 'image/webp' });
         formData.set('avatar', convertedFile);
         toastMessage.remove();
     } catch (error) {
@@ -693,12 +702,42 @@ function onBackgroundFilterInput() {
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
-    $(document).on('click', '.bg_example', onSelectBackgroundClick);
-    $(document).on('click', '.bg_example_lock', onLockBackgroundClick);
-    $(document).on('click', '.bg_example_unlock', onUnlockBackgroundClick);
-    $(document).on('click', '.bg_example_edit', onRenameBackgroundClick);
-    $(document).on('click', '.bg_example_cross', onDeleteBackgroundClick);
-    $(document).on('click', '.bg_example_copy', onCopyToSystemBackgroundClick);
+
+    $(document)
+        .off('click', '.bg_example').on('click', '.bg_example', onSelectBackgroundClick)
+        .off('click', '.bg_example .mobile-only-menu-toggle').on('click', '.bg_example .mobile-only-menu-toggle', function (e) {
+            e.stopPropagation();
+            const $context = $(this).closest('.bg_example');
+            const wasOpen = $context.hasClass('mobile-menu-open');
+            // Close all other open menus before opening a new one.
+            $('.bg_example.mobile-menu-open').removeClass('mobile-menu-open');
+            if (!wasOpen) {
+                $context.addClass('mobile-menu-open');
+            }
+        })
+        .off('click', '.jg-button').on('click', '.jg-button', function (e) {
+            e.stopPropagation();
+            const action = $(this).data('action');
+
+            switch (action) {
+                case 'lock':
+                    onLockBackgroundClick.call(this, e.originalEvent);
+                    break;
+                case 'unlock':
+                    onUnlockBackgroundClick.call(this, e.originalEvent);
+                    break;
+                case 'edit':
+                    onRenameBackgroundClick.call(this, e.originalEvent);
+                    break;
+                case 'delete':
+                    onDeleteBackgroundClick.call(this, e.originalEvent);
+                    break;
+                case 'copy':
+                    onCopyToSystemBackgroundClick.call(this, e.originalEvent);
+                    break;
+            }
+        });
+
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);

@@ -1791,6 +1791,8 @@
     "Derive context size from backend": "從後端推導上下文大小",
     "Using a proxy that you're not running yourself is a risk to your data privacy.": "使用非自行管理的代理服務可能導致您的資料隱私外洩。",
     "Claude API Key": "Claude API 金鑰",
+    "Electron Hub API Key": "Electron Hub API 金鑰",
+    "Electron Hub Model": "Electron Hub 模型",
     "NanoGPT API Key": "NanoGPT API 金鑰",
     "NanoGPT Model": "NanoGPT 模型",
     "context_derived": "若可能，根據模型後設資料推導。",

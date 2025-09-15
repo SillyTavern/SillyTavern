@@ -402,6 +402,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.ELECTRONHUB] && oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
                     || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
                     || (secret_state[SECRET_KEYS.XAI] && oai_settings.chat_completion_source == chat_completion_sources.XAI)
@@ -411,6 +412,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
+                    || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }
@@ -480,8 +482,7 @@ export function dragElement($elmnt) {
 
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let height, width, top, left, right, bottom,
-        maxX, maxY, winHeight, winWidth,
-        topbar;
+        maxX, maxY, winHeight, winWidth;
 
     const elmntName = $elmnt.attr('id');
     const elmntNameEscaped = $.escapeSelector(elmntName);
@@ -539,11 +540,6 @@ export function dragElement($elmnt) {
         maxY = height + top;
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
-
-        topbar = document.getElementById('top-bar');
-        const topbarstyle = getComputedStyle(topbar);
-        topBarFirstX = parseInt(topbarstyle.marginInline);
-        topBarLastY = parseInt(topbarstyle.height);
 
         // Prepare state object if missing
         if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
@@ -1066,6 +1062,19 @@ export function initRossMods() {
                     $('#option_regenerate').trigger('click');
                     $('#options').hide();
                 }
+
+                // If there is input text, we do not trigger a regenerate - we just send it
+                if ($('#send_textarea').val() !== '') {
+                    if (shouldSendOnEnter()) {
+                        console.debug('Sending with Ctrl+Enter');
+                        event.preventDefault();
+                        sendTextareaMessage();
+                    } else {
+                        console.debug('Text area is not empty, but send on enter is disabled');
+                    }
+                    return;
+                }
+
                 if (skipConfirm) {
                     doRegenerate();
                 } else {

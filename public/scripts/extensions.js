@@ -188,6 +188,8 @@ export const extension_settings = {
     dice: {},
     /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],
+    /** @type {import('./extensions/regex/index.js').RegexPreset[]} */
+    regex_presets: [],
     character_allowed_regex: [],
     tts: {},
     sd: {

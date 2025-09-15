@@ -1348,6 +1348,29 @@ function registerReasoningAppEvents() {
     for (const event of [event_types.GENERATION_STOPPED, event_types.GENERATION_ENDED, event_types.CHAT_CHANGED]) {
         eventSource.on(event, () => PromptReasoning.clearLatest());
     }
+
+    eventSource.makeFirst(event_types.IMPERSONATE_READY, async () => {
+        if (!power_user.reasoning.auto_parse) {
+            return;
+        }
+
+        const sendTextArea = /** @type {HTMLTextAreaElement} */ (document.getElementById('send_textarea'));
+
+        if (!sendTextArea) {
+            console.warn('[Reasoning] Send textarea not found');
+            return;
+        }
+
+        console.debug('[Reasoning] Auto-parsing reasoning block for impersonation');
+
+        if (!sendTextArea.value) {
+            console.debug('[Reasoning] Reasoning is empty, skipping');
+            return;
+        }
+
+        sendTextArea.value = removeReasoningFromString(sendTextArea.value);
+        sendTextArea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
 }
 
 /**

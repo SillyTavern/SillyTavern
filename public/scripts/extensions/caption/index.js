@@ -439,6 +439,8 @@ jQuery(async function () {
                         'cohere': SECRET_KEYS.COHERE,
                         'aimlapi': SECRET_KEYS.AIMLAPI,
                         'moonshot': SECRET_KEYS.MOONSHOT,
+                        'nanogpt': SECRET_KEYS.NANOGPT,
+                        'electronhub': SECRET_KEYS.ELECTRONHUB,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -543,8 +545,10 @@ jQuery(async function () {
         }
 
         await processEndpoint('openrouter', '/api/openrouter/models/multimodal');
-        await processEndpoint('aimlapi', '/api/backends/chat-completions/aimlapi/models/multimodal');
-        await processEndpoint('pollinations', '/api/backends/chat-completions/pollinations/models/multimodal');
+        await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
+        await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
+        await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
+        await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
     }
 
     await addSettings();
@@ -588,10 +592,12 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
     $('#caption_ollama_pull').on('click', (e) => {
-        const presetModel = extension_settings.caption.multimodal_model !== 'ollama_current' ? extension_settings.caption.multimodal_model : '';
+        const selectedModel = extension_settings.caption.multimodal_model;
+        const staticModels = { 'ollama_current': textgenerationwebui_settings.ollama_model, 'ollama_custom': extension_settings.caption.ollama_custom_model };
+        const presetModel = staticModels[selectedModel] || selectedModel;
         e.preventDefault();
         $('#ollama_download_model').trigger('click');
-        $('#dialogue_popup_input').val(presetModel);
+        $('.popup .popup-input').val(presetModel);
     });
     $('#caption_multimodal_api').on('change', async () => {
         const api = String($('#caption_multimodal_api').val());
@@ -614,6 +620,10 @@ jQuery(async function () {
     });
     $('#caption_show_in_chat').prop('checked', !!(extension_settings.caption.show_in_chat)).on('input', () => {
         extension_settings.caption.show_in_chat = !!$('#caption_show_in_chat').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_ollama_custom_model').val(extension_settings.caption.ollama_custom_model || '').on('input', () => {
+        extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
         saveSettingsDebounced();
     });
 

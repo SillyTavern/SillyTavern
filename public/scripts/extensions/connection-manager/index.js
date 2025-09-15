@@ -43,6 +43,7 @@ const CC_COMMANDS = [
     'reasoning-template',
     'prompt-post-processing',
     'secret-id',
+    'regex-preset',
 ];
 
 const TC_COMMANDS = [
@@ -60,6 +61,7 @@ const TC_COMMANDS = [
     'start-reply-with',
     'reasoning-template',
     'secret-id',
+    'regex-preset',
 ];
 
 const FANCY_NAMES = {
@@ -79,6 +81,7 @@ const FANCY_NAMES = {
     'reasoning-template': 'Reasoning Template',
     'prompt-post-processing': 'Prompt Post-Processing',
     'secret-id': 'Secret',
+    'regex-preset': 'Regex Preset',
 };
 
 /**
@@ -351,6 +354,14 @@ function makeFancyProfile(profile) {
         // UUID is not very useful in the UI, so we replace it with a label (if available)
         if (key === 'secret-id') {
             const label = getSecretLabelById(profile[key]);
+            if (label) {
+                acc[value] = label;
+                return acc;
+            }
+        }
+
+        if (key === 'regex-preset') {
+            const label = extension_settings.regex_presets?.find(p => p.id === profile[key])?.name;
             if (label) {
                 acc[value] = label;
                 return acc;

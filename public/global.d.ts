@@ -5,20 +5,20 @@ import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyAp
 
 declare global {
     // Custom types
-    declare type InstructSettings = typeof power_user.instruct;
-    declare type ContextSettings = typeof power_user.context;
-    declare type ReasoningSettings = typeof power_user.reasoning;
+    type InstructSettings = typeof power_user.instruct;
+    type ContextSettings = typeof power_user.context;
+    type ReasoningSettings = typeof power_user.reasoning;
 
     // Global namespace modules
     interface Window {
         ai: any;
     }
 
-    declare var pdfjsLib;
-    declare var ePub;
-    declare var quickReplyApi: QuickReplyApi;
+    var pdfjsLib;
+    var ePub;
+    var quickReplyApi: QuickReplyApi;
 
-    declare var SillyTavern: {
+    var SillyTavern: {
         getContext(): typeof getContext;
         llm: any;
         libs: typeof libs;
@@ -63,7 +63,7 @@ declare global {
      * @param lang Target language
      * @param provider Translation provider
      */
-    async function translate(text: string, lang: string, provider: string = null): Promise<string>;
+    function translate(text: string, lang: string, provider?: string | null): Promise<string>;
 
     interface ConvertVideoArgs {
         buffer: Uint8Array;
@@ -76,9 +76,9 @@ declare global {
      */
     function convertVideoToAnimatedWebp(args: ConvertVideoArgs): Promise<Uint8Array>;
 
-    interface ColorPickerEvent extends JQuery.ChangeEvent<HTMLElement> {
+    type ColorPickerEvent = Omit<JQuery.ChangeEvent<HTMLElement>, "detail"> & {
         detail: {
             rgba: string;
-        };
-    }
+        }
+    };
 }

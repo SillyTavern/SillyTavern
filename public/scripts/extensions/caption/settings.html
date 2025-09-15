@@ -21,6 +21,7 @@
                         <option value="anthropic">Anthropic</option>
                         <option value="cohere">Cohere</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
+                        <option value="electronhub">Electron Hub</option>
                         <option value="google">Google AI Studio</option>
                         <option value="vertexai">Google Vertex AI</option>
                         <option value="groq">Groq</option>
@@ -28,6 +29,7 @@
                         <option value="llamacpp">llama.cpp</option>
                         <option value="mistral">MistralAI</option>
                         <option value="moonshot">Moonshot AI</option>
+                        <option value="nanogpt">NanoGPT</option>
                         <option value="ollama">Ollama</option>
                         <option value="openai">OpenAI</option>
                         <option value="openrouter">OpenRouter</option>
@@ -40,7 +42,7 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
-                        <!-- AI/ML API, OpenRouter, Pollinations are added externally by JavaScript -->
+                        <!-- AI/ML API, OpenRouter, Pollinations, NanoGPT are added externally by JavaScript -->
                         <option data-type="cohere" value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
                         <option data-type="cohere" value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                         <option data-type="cohere" value="command-a-vision-07-2025">command-a-vision-07-2025</option>
@@ -110,6 +112,7 @@
                         <option data-type="google" value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
                         <option data-type="google" value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
                         <option data-type="google" value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
+                        <option data-type="google" value="gemini-2.5-flash-image-preview">gemini-2.5-flash-image-preview</option>
                         <option data-type="google" value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05 → 2.5-pro-exp-03-25</option>
                         <option data-type="google" value="gemini-2.0-pro-exp">gemini-2.0-pro-exp → 2.5-pro-exp-03-25</option>
                         <option data-type="google" value="gemini-exp-1206">gemini-exp-1206 → 2.5-pro-exp-03-25</option>
@@ -146,17 +149,26 @@
                         <option data-type="vertexai" value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
                         <option data-type="vertexai" value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
                         <option data-type="vertexai" value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite-preview-06-17</option>
+                        <option data-type="vertexai" value="gemini-2.5-flash-image-preview">gemini-2.5-flash-image-preview</option>
                         <option data-type="vertexai" value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
                         <option data-type="vertexai" value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
-                        <option data-type="groq" value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
-                        <option data-type="groq" value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
-                        <option data-type="groq" value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
+                        <option data-type="groq" value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                        <option data-type="groq" value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
                         <option data-type="ollama" value="ollama_current" data-i18n="currently_selected">[Currently selected]</option>
+                        <option data-type="ollama" value="ollama_custom" data-i18n="[Custom model]">[Custom model]</option>
                         <option data-type="ollama" value="bakllava">bakllava</option>
                         <option data-type="ollama" value="llava">llava</option>
                         <option data-type="ollama" value="llava-llama3">llava-llama3</option>
                         <option data-type="ollama" value="llava-phi3">llava-phi3</option>
                         <option data-type="ollama" value="moondream">moondream</option>
+                        <option data-type="ollama" value="gemma3">gemma3</option>
+                        <option data-type="ollama" value="minicpm-v">minicpm-v</option>
+                        <option data-type="ollama" value="qwen2.5vl">qwen2.5vl</option>
+                        <option data-type="ollama" value="granite3.2-vision">granite3.2-vision</option>
+                        <option data-type="ollama" value="mistral-small3.1">mistral-small3.1</option>
+                        <option data-type="ollama" value="mistral-small3.2">mistral-small3.2</option>
+                        <option data-type="ollama" value="llama3.2-vision">llama3.2-vision</option>
+                        <option data-type="ollama" value="llama4">llama4</option>
                         <option data-type="llamacpp" value="llamacpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="ooba" value="ooba_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
@@ -168,16 +180,25 @@
                     </select>
                 </div>
                 <div data-type="ollama">
-                    The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
+                    <div>
+                        The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
+                    </div>
+                    <div class="marginTop5">
+                        <label for="caption_ollama_custom_model">
+                            <span data-i18n="Custom Model Tag">Custom Model Tag</span>
+                            <small data-i18n="(for [Custom model] option)">(for [Custom model] option)</small>
+                        </label>
+                        <input id="caption_ollama_custom_model" class="text_pole" type="text" placeholder="e.g. gemma3:latest" />
+                    </div>
                 </div>
                 <label data-type="openai,anthropic,google,vertexai,mistral,xai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>
-                <div class="flexBasis100p m-b-1">
+                <div class="flexBasis100p marginBot10">
                     <small><b data-i18n="Hint:">Hint:</b> <span data-i18n="Set your API keys and endpoints in the 'API Connections' tab first.">Set your API keys and endpoints in the 'API Connections' tab first.</span></small>
                 </div>
-                <div data-type="koboldcpp,ollama,vllm,llamacpp,ooba" class="flex-container flexFlowColumn">
+                <div data-type="koboldcpp,ollama,vllm,llamacpp,ooba" class="flex-container flexFlowColumn wide100p">
                     <label for="caption_altEndpoint_enabled" class="checkbox_label">
                         <input id="caption_altEndpoint_enabled" type="checkbox">
                         <span data-i18n="Use secondary URL">Use secondary URL</span>
