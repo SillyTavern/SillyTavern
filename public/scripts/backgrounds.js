@@ -18,6 +18,8 @@ const PLACEHOLDER_IMAGE = `url('data:image/png;base64,${PNG_PIXEL}')`;
 
 const THUMBNAIL_COLUMNS_MIN = 2;
 const THUMBNAIL_COLUMNS_MAX = 8;
+const THUMBNAIL_COLUMNS_DEFAULT_DESKTOP = 5;
+const THUMBNAIL_COLUMNS_DEFAULT_MOBILE = 3;
 
 /**
  * Storage for frontend-generated background thumbnails.
@@ -108,8 +110,12 @@ export function loadBackgroundSettings(settings) {
         backgroundSettings.animation = false;
     }
 
-    // If a value is already saved, use it. Otherwise, default to 3 columns.
-    const columns = backgroundSettings.thumbnailColumns || 3;
+    // If a value is already saved, use it. Otherwise, determine default based on screen size.
+    let columns = backgroundSettings.thumbnailColumns;
+    if (!columns) {
+        const isNarrowScreen = window.matchMedia('(max-width: 480px)').matches;
+        columns = isNarrowScreen ? THUMBNAIL_COLUMNS_DEFAULT_MOBILE : THUMBNAIL_COLUMNS_DEFAULT_DESKTOP;
+    }
     background_settings.thumbnailColumns = columns;
     applyThumbnailColumns(background_settings.thumbnailColumns);
 

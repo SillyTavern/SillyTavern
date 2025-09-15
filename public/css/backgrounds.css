@@ -117,7 +117,7 @@ body.reduced-motion #bg_custom {
     display: grid;
     gap: 5px;
     width: 100%;
-    grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
+    grid-template-columns: repeat(var(--bg-thumb-columns, 5), 1fr);
 }
 
 #bg-filter {
