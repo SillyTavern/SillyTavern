@@ -1255,6 +1255,7 @@ async function sendElectronHubRequest(request, response) {
             'frequency_penalty': request.body.frequency_penalty,
             'top_p': request.body.top_p,
             'top_k': request.body.top_k,
+            'logit_bias': request.body.logit_bias,
             'seed': request.body.seed,
             ...bodyParams,
         };
