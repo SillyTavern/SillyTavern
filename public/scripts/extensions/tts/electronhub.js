@@ -288,7 +288,7 @@ class ElectronHubTtsProvider {
         for (const [key, spec] of entries) {
             const nice = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             const type = String(spec?.type || 'string');
-            const id = `electronhub_dyn_${key}`;
+            const id = `electronhub_dyn_${key.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
             if (Array.isArray(spec?.enum) && spec.enum.length) {
                 const select = $(`<div><label for="${id}">${nice}</label><select id="${id}" class="text_pole"></select></div>`);
