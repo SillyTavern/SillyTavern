@@ -679,11 +679,11 @@ export function getTokenizerModel() {
         else if (oai_settings.electronhub_model.includes('yi')) {
             return yiTokenizer;
         }
+        else if (oai_settings.electronhub_model.includes('llama3') || oai_settings.electronhub_model.includes('llama-3') || oai_settings.electronhub_model.startsWith('l3')) {
+            return llama3Tokenizer;
+        }
         else if (oai_settings.electronhub_model.includes('llama')) {
             return llamaTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('llama3')) {
-            return llama3Tokenizer;
         }
         else if (oai_settings.electronhub_model.includes('command-a')) {
             return commandATokenizer;
