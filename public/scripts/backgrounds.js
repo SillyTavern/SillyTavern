@@ -90,7 +90,7 @@ function createThumbnailElement(imageData) {
 function applyThumbnailColumns(count) {
     const newCount = Math.max(THUMBNAIL_COLUMNS_MIN, Math.min(count, THUMBNAIL_COLUMNS_MAX));
     background_settings.thumbnailColumns = newCount;
-    document.documentElement.style.setProperty('--bg-thumb-columns', newCount);
+    document.documentElement.style.setProperty('--bg-thumb-columns', newCount.toString());
 
     $('#bg_thumb_zoom_in').prop('disabled', newCount <= THUMBNAIL_COLUMNS_MIN);
     $('#bg_thumb_zoom_out').prop('disabled', newCount >= THUMBNAIL_COLUMNS_MAX);
@@ -765,6 +765,8 @@ function onBackgroundFilterInput() {
     });
 }
 
+const debouncedOnBackgroundFilterInput = debounce(onBackgroundFilterInput, debounce_timeout.standard);
+
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
@@ -812,7 +814,7 @@ export function initBackgrounds() {
     });
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
-    $('#bg-filter').on('input', debounce(onBackgroundFilterInput, debounce_timeout.short));
+    $('#bg-filter').on('input', () => debouncedOnBackgroundFilterInput());
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),
