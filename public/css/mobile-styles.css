@@ -30,6 +30,14 @@
         display: none;
     }
 
+    #bg_menu_content, #bg_custom_content {
+        grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
+    }
+
+    .bg_list {
+        width: unset;
+    }
+
     .bg_button {
         font-size: 15px;
     }
@@ -49,6 +57,11 @@
         z-index: 4;
     }
 
+    .bg_example.mobile-menu-open .mobile-only-menu-toggle {
+        opacity: 0;
+        pointer-events: none;
+    }
+
     .bg_example .mobile-only-menu-toggle {
         display: flex;
         align-items: center;
@@ -64,6 +77,11 @@
         z-index: 3;
         cursor: pointer;
         backdrop-filter: blur(2px);
+    }
+
+    .bg_example .jg-button {
+        width: 30px;
+        height: 30px;
     }
 
     #bg-header-controls {
@@ -437,10 +455,6 @@
 
     .horde_multiple_hint {
         display: none;
-    }
-
-    .bg_list {
-        width: unset;
     }
 }
 

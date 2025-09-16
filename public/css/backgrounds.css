@@ -88,6 +88,24 @@ body.reduced-motion #bg_custom {
     gap: 5px;
 }
 
+/* Control buttons in header */
+.heading-container-with-controls {
+    position: relative;
+}
+
+.heading-container-with-controls .heading-text {
+    margin: 10px 0;
+}
+
+.heading-container-with-controls .heading-controls {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 5px;
+}
+
 #bg-scrollable-content {
     flex-grow: 1;
     overflow-y: auto;
@@ -95,46 +113,43 @@ body.reduced-motion #bg_custom {
     padding: 0 5px 15px;
 }
 
+#bg_menu_content,
+#bg_custom_content {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    grid-template-columns: repeat(var(--bg-thumb-columns, 5), 1fr);
+}
+
 #bg-filter {
     font-size: calc(var(--mainFontSize) * 0.95);
 }
 
-/* Thumbnail Menu & Buttons */
+/* Thumbnails */
+.bg_example:hover .BGSampleTitle {
+    opacity: 1;
+}
+
 .bg_example .mobile-only-menu-toggle {
     display: none;
 }
 
-.bg_example.flex-container {
-    width: 30%;
-    max-width: 200px;
-    margin: 5px;
-    aspect-ratio: 16/9;
+.bg_example {
     cursor: pointer;
     box-shadow: 0 0 7px var(--black50a);
-
     position: relative;
     overflow: hidden;
     border-radius: 8px;
     border: 0px solid transparent;
     outline: 2px solid var(--SmartThemeBorderColor);
     outline-offset: -1px;
+
+    height: auto;
+    aspect-ratio: 16 / 9;
 }
 
-.bg_example.flex-container:focus-visible {
+.bg_example:focus-visible {
     outline-offset: inherit;
-}
-
-.bg_example_img {
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-
-    background-image: inherit;
-
-    background-size: cover;
-    background-position: center;
 }
 
 .bg_example .jg-menu {
@@ -143,9 +158,8 @@ body.reduced-motion #bg_custom {
     top: 2px;
     right: 2px;
     background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    gap: 3px;
-    padding: 3px 5px;
+    border-radius: 5px;
+    padding: 3px 3px;
     z-index: 3;
     backdrop-filter: blur(4px);
     border: 1px solid var(--SmartThemeBorderColor);
@@ -168,14 +182,14 @@ body.reduced-motion #bg_custom {
 
 .bg_example .jg-button {
     display: flex;
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
     align-items: center;
     justify-content: center;
     color: white;
     padding: 5px;
     font-size: 1.1em;
-    border-radius: 6px;
+    border-radius: 5px;
     transition: background-color var(--animation-duration) ease;
 }
 
@@ -193,6 +207,18 @@ body.reduced-motion #bg_custom {
 
 .bg_example.locked .jg-unlock {
     display: flex;
+}
+
+.thumbnail-clipper {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    overflow: hidden;
+    border-radius: inherit;
+    background-size: cover;
+    background-position: center;
 }
 
 .bg_example:not([custom="true"]) .jg-copy,

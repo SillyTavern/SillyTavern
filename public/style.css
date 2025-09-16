@@ -2940,6 +2940,7 @@ select option:not(:checked) {
     text-align: center;
 }
 
+.menu_button[disabled],
 .menu_button.disabled {
     filter: brightness(75%) grayscale(1);
     opacity: 0.5;
@@ -3675,8 +3676,8 @@ grammarly-extension {
     min-width: calc(1.25em + 12px);
 }
 
-.menu_button:not(.disabled):hover,
-.menu_button:not(.disabled).active {
+.menu_button:not(.disabled):not([disabled]):hover,
+.menu_button:not(.disabled):not([disabled]).active {
     background-color: var(--white30a);
 }
 
