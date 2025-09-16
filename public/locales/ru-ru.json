@@ -718,7 +718,7 @@
     "Google Model": "Модель Google",
     "Cohere API Key": "Ключ от API Cohere",
     "Cohere Model": "Модель Cohere",
-    "Model Order": "Сортировка моделей OpenRouter",
+    "OpenRouter Model Sorting": "Сортировка моделей OpenRouter",
     "Alphabetically": "По алфавиту",
     "Price": "По цене (наиболее низкая)",
     "Context Size": "По размеру контекста",

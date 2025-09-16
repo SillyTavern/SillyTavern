@@ -676,6 +676,9 @@
                                 <div data-source="openrouter">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="openrouter_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
+                                <div data-source="electronhub">
+                                    <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="electronhub_max_prompt_cost" data-i18n="Unknown">Unknown</span>
+                                </div>
                                 <hr>
                                 <div class="range-block">
                                     <label for="stream_toggle" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
@@ -2123,7 +2126,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,azure_openai">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,electronhub,azure_openai">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -3061,7 +3064,7 @@
                             <div class="marginTopBot5">
                                 <div class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b data-i18n="Model Order">OpenRouter Model Sorting</b>
+                                        <b data-i18n="OpenRouter Model Sorting">OpenRouter Model Sorting</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content m-b-1">
@@ -3452,6 +3455,9 @@
                         </div>
                         <div id="electronhub_form" data-source="electronhub">
                             <h4 data-i18n="Electron Hub API Key">Electron Hub API Key</h4>
+                            <div>
+                                <a href="https://playground.electronhub.ai/console" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                            </div>
                             <div class="flex-container">
                                 <input id="api_key_electronhub" name="api_key_electronhub" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_electronhub"></div>
@@ -3459,10 +3465,43 @@
                             <div data-for="api_key_electronhub" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
-                            <h4 data-i18n="Electron Hub Model">Electron Hub Model</h4>
-                            <select id="model_electronhub_select">
-                                <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
-                            </select>
+                            <div>
+                                <h4 data-i18n="Electron Hub Model">Electron Hub Model</h4>
+                                <select id="model_electronhub_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                            <div class="marginTopBot5">
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="Electron Hub Model Sorting">Electron Hub Model Sorting</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content m-b-1">
+                                        <div class="marginTopBot5">
+                                            <label for="electronhub_sort_models" class="checkbox_label">
+                                                <select id="electronhub_sort_models">
+                                                    <option data-i18n="Alphabetically" value="alphabetically">Alphabetically</option>
+                                                    <option data-i18n="Input Price" value="pricing.input">Input Price (cheapest)</option>
+                                                    <option data-i18n="Output Price" value="pricing.output">Output Price (cheapest)</option>
+                                                    <option data-i18n="Context Size" value="context_length">Context Size</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                        <div class="marginTopBot5">
+                                            <label for="electronhub_group_models" class="checkbox_label">
+                                                <input id="electronhub_group_models" type="checkbox" />
+                                                <span data-i18n="Group by vendors">Group by vendors</span>
+                                            </label>
+                                            <div class="toggle-description justifyLeft wide100p">
+                                                <span data-i18n="Group by vendors Description">
+                                                    Put OpenAI models in one group, Anthropic models in other group, etc. Can be combined with sorting.
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="nanogpt_form" data-source="nanogpt">
                             <h4 data-i18n="NanoGPT API Key">NanoGPT API Key</h4>
