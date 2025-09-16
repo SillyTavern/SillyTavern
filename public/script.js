@@ -3575,18 +3575,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         creatorNotes,
     } = getCharacterCardFields();
 
-    if (main_api !== 'openai') {
-        if (power_user.sysprompt.enabled) {
-            system = power_user.prefer_character_prompt && system
-                ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
-                : baseChatReplace(power_user.sysprompt.content, name1, name2);
-            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
-        } else {
-            // Nullify if it's not enabled
-            system = '';
-        }
-    }
-
     // Depth prompt (character-specific A/N)
     removeDepthPrompts();
     const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
@@ -3717,13 +3705,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
-    //////////////////////////////////
-    // Extension added strings
-    // Set non-WI AN
-    setFloatingPrompt();
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
-
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
     setExtensionPrompt(inject_ids.QUIET_PROMPT, quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
@@ -3778,13 +3759,31 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             });
         }
         if (outletEntries && typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
-            Object.keys(outletEntries).forEach((key) => {
-                const joinedEntries = outletEntries[key].join('\n');
-                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), joinedEntries, extension_prompt_types.NONE, 0);
+            Object.entries(outletEntries).forEach(([key, value]) => {
+                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), value.join('\n'), extension_prompt_types.NONE, 0);
             });
         }
     } else {
         console.log('skipping WIAN');
+    }
+
+    // Set non-WI AN
+    setFloatingPrompt();
+
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
+
+    // Prepare the system prompt for Text Completion APIs
+    if (main_api !== 'openai') {
+        if (power_user.sysprompt.enabled) {
+            system = power_user.prefer_character_prompt && system
+                ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
+                : baseChatReplace(power_user.sysprompt.content, name1, name2);
+            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
+        } else {
+            // Nullify if it's not enabled
+            system = '';
+        }
     }
 
     // Collect before / after story string injections
