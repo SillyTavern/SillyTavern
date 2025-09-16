@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import express from 'express';
 import fetch from 'node-fetch';
+import https from 'https';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import FormData from 'form-data';
@@ -27,16 +28,45 @@ function getComfyWorkflows(directories) {
 
 export const router = express.Router();
 
+// Helper function to normalize URL and create fetch options
+function normalizeUrlAndCreateFetchOptions(inputUrl, auth = null) {
+    let normalizedUrl = inputUrl;
+    
+    // Add protocol if missing
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        // Default to https for external domains, http for localhost
+        if (normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1')) {
+            normalizedUrl = 'http://' + normalizedUrl;
+        } else {
+            normalizedUrl = 'https://' + normalizedUrl;
+        }
+    }
+    
+    const url = new URL(normalizedUrl);
+    
+    const fetchOptions = {
+        headers: {},
+        // Ignore SSL certificate errors for HTTPS requests
+        agent: url.protocol === 'https:' ? new https.Agent({
+            rejectUnauthorized: false
+        }) : undefined
+    };
+    
+    if (auth) {
+        fetchOptions.headers['Authorization'] = getBasicAuthHeader(auth);
+    }
+    
+    return { url, fetchOptions };
+}
+
 router.post('/ping', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/options';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -53,14 +83,12 @@ router.post('/ping', async (request, response) => {
 router.post('/upscalers', async (request, response) => {
     try {
         async function getUpscalerModels() {
-            const url = new URL(request.body.url);
+            const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
             url.pathname = '/sdapi/v1/upscalers';
 
             const result = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Authorization': getBasicAuthHeader(request.body.auth),
-                },
+                ...fetchOptions,
             });
 
             if (!result.ok) {
@@ -73,14 +101,12 @@ router.post('/upscalers', async (request, response) => {
         }
 
         async function getLatentUpscalers() {
-            const url = new URL(request.body.url);
+            const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
             url.pathname = '/sdapi/v1/latent-upscale-modes';
 
             const result = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Authorization': getBasicAuthHeader(request.body.auth),
-                },
+                ...fetchOptions,
             });
 
             if (!result.ok) {
@@ -106,16 +132,15 @@ router.post('/upscalers', async (request, response) => {
 
 router.post('/vaes', async (request, response) => {
     try {
-        const autoUrl = new URL(request.body.url);
+        const { url: baseUrl, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
+        const autoUrl = new URL(baseUrl);
         autoUrl.pathname = '/sdapi/v1/sd-vae';
-        const forgeUrl = new URL(request.body.url);
+        const forgeUrl = new URL(baseUrl);
         forgeUrl.pathname = '/sdapi/v1/sd-modules';
 
         const requestInit = {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         };
         const results = await Promise.allSettled([
             fetch(autoUrl, requestInit).then(r => r.ok ? r.json() : Promise.reject(r.statusText)),
@@ -138,14 +163,12 @@ router.post('/vaes', async (request, response) => {
 
 router.post('/samplers', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/samplers';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -165,14 +188,12 @@ router.post('/samplers', async (request, response) => {
 
 router.post('/schedulers', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/schedulers';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -191,14 +212,12 @@ router.post('/schedulers', async (request, response) => {
 
 router.post('/models', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/sd-models';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -217,14 +236,12 @@ router.post('/models', async (request, response) => {
 
 router.post('/get-model', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/options';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
         /** @type {any} */
         const data = await result.json();
@@ -238,19 +255,17 @@ router.post('/get-model', async (request, response) => {
 router.post('/set-model', async (request, response) => {
     try {
         async function getProgress() {
-            const url = new URL(request.body.url);
+            const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
             url.pathname = '/sdapi/v1/progress';
 
             const result = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Authorization': getBasicAuthHeader(request.body.auth),
-                },
+                ...fetchOptions,
             });
             return await result.json();
         }
 
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/options';
 
         const options = {
@@ -262,8 +277,9 @@ router.post('/set-model', async (request, response) => {
             body: JSON.stringify(options),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': getBasicAuthHeader(request.body.auth),
+                ...fetchOptions.headers,
             },
+            agent: fetchOptions.agent,
         });
 
         if (!result.ok) {
@@ -297,9 +313,9 @@ router.post('/set-model', async (request, response) => {
 router.post('/generate', async (request, response) => {
     try {
         try {
-            const optionsUrl = new URL(request.body.url);
+            const { url: optionsUrl, fetchOptions: optionsFetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
             optionsUrl.pathname = '/sdapi/v1/options';
-            const optionsResult = await fetch(optionsUrl, { headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+            const optionsResult = await fetch(optionsUrl, optionsFetchOptions);
             if (optionsResult.ok) {
                 const optionsData = /** @type {any} */ (await optionsResult.json());
                 const isForge = 'forge_preset' in optionsData;
@@ -316,23 +332,24 @@ router.post('/generate', async (request, response) => {
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             if (!response.writableEnded) {
-                const interruptUrl = new URL(request.body.url);
+                const { url: interruptUrl, fetchOptions: interruptFetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
                 interruptUrl.pathname = '/sdapi/v1/interrupt';
-                fetch(interruptUrl, { method: 'POST', headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+                fetch(interruptUrl, { method: 'POST', ...interruptFetchOptions });
             }
             controller.abort();
         });
 
         console.debug('SD WebUI request:', request.body);
-        const txt2imgUrl = new URL(request.body.url);
+        const { url: txt2imgUrl, fetchOptions: txt2imgFetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         txt2imgUrl.pathname = '/sdapi/v1/txt2img';
         const result = await fetch(txt2imgUrl, {
             method: 'POST',
             body: JSON.stringify(request.body),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': getBasicAuthHeader(request.body.auth),
+                ...txt2imgFetchOptions.headers,
             },
+            agent: txt2imgFetchOptions.agent,
             signal: controller.signal,
         });
 
@@ -351,14 +368,12 @@ router.post('/generate', async (request, response) => {
 
 router.post('/sd-next/upscalers', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/upscalers';
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': getBasicAuthHeader(request.body.auth),
-            },
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -386,9 +401,9 @@ const comfy = express.Router();
 
 comfy.post('/ping', async (request, response) => {
     try {
-        const url = new URL(urlJoin(request.body.url, '/system_stats'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/system_stats'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, fetchOptions);
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -402,9 +417,9 @@ comfy.post('/ping', async (request, response) => {
 
 comfy.post('/samplers', async (request, response) => {
     try {
-        const url = new URL(urlJoin(request.body.url, '/object_info'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/object_info'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, fetchOptions);
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -420,9 +435,9 @@ comfy.post('/samplers', async (request, response) => {
 
 comfy.post('/models', async (request, response) => {
     try {
-        const url = new URL(urlJoin(request.body.url, '/object_info'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/object_info'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, fetchOptions);
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -440,7 +455,7 @@ comfy.post('/models', async (request, response) => {
         models.forEach(it => it.text = it.text.replace(/\.[^.]*$/, '').replace(/_/g, ' '));
 
         return response.send(models);
-    } catch (error) {
+    } catch (error)     {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -448,9 +463,9 @@ comfy.post('/models', async (request, response) => {
 
 comfy.post('/schedulers', async (request, response) => {
     try {
-        const url = new URL(urlJoin(request.body.url, '/object_info'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/object_info'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, fetchOptions);
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -466,9 +481,9 @@ comfy.post('/schedulers', async (request, response) => {
 
 comfy.post('/vaes', async (request, response) => {
     try {
-        const url = new URL(urlJoin(request.body.url, '/object_info'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/object_info'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, fetchOptions);
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -534,14 +549,14 @@ comfy.post('/delete-workflow', async (request, response) => {
 comfy.post('/generate', async (request, response) => {
     try {
         let item;
-        const url = new URL(urlJoin(request.body.url, '/prompt'));
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/prompt'));
 
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             if (!response.writableEnded && !item) {
-                const interruptUrl = new URL(urlJoin(request.body.url, '/interrupt'));
-                fetch(interruptUrl, { method: 'POST', headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+                const { url: interruptUrl, fetchOptions: interruptFetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/interrupt'), request.body.auth);
+                fetch(interruptUrl, { method: 'POST', ...interruptFetchOptions });
             }
             controller.abort();
         });
@@ -549,6 +564,7 @@ comfy.post('/generate', async (request, response) => {
         const promptResult = await fetch(url, {
             method: 'POST',
             body: request.body.prompt,
+            ...fetchOptions,
         });
         if (!promptResult.ok) {
             const text = await promptResult.text();
@@ -558,9 +574,9 @@ comfy.post('/generate', async (request, response) => {
         /** @type {any} */
         const data = await promptResult.json();
         const id = data.prompt_id;
-        const historyUrl = new URL(urlJoin(request.body.url, '/history'));
+        const { url: historyUrl, fetchOptions: historyFetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/history'));
         while (true) {
-            const result = await fetch(historyUrl);
+            const result = await fetch(historyUrl, historyFetchOptions);
             if (!result.ok) {
                 throw new Error('ComfyUI returned an error.');
             }
@@ -581,21 +597,15 @@ comfy.post('/generate', async (request, response) => {
                 .join('\n') || '';
             throw new Error(`ComfyUI generation did not succeed.\n\n${errorMessages}`.trim());
         }
-        const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
-        console.debug('ComfyUI outputs:', outputs);
-        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
-        if (!imgInfo) {
-            throw new Error('ComfyUI did not return any recognizable outputs.');
-        }
-        const imgUrl = new URL(urlJoin(request.body.url, '/view'));
+        const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+        const { url: imgUrl, fetchOptions: imgFetchOptions } = normalizeUrlAndCreateFetchOptions(urlJoin(request.body.url, '/view'));
         imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
-        const imgResponse = await fetch(imgUrl);
+        const imgResponse = await fetch(imgUrl, imgFetchOptions);
         if (!imgResponse.ok) {
             throw new Error('ComfyUI returned an error.');
         }
-        const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
-        return response.send({ format: format, data: Buffer.from(imgBuffer).toString('base64') });
+        return response.send(Buffer.from(imgBuffer).toString('base64'));
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);
@@ -702,11 +712,12 @@ const drawthings = express.Router();
 
 drawthings.post('/ping', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url);
         url.pathname = '/';
 
         const result = await fetch(url, {
             method: 'HEAD',
+            ...fetchOptions,
         });
 
         if (!result.ok) {
@@ -722,11 +733,12 @@ drawthings.post('/ping', async (request, response) => {
 
 drawthings.post('/get-model', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url);
         url.pathname = '/';
 
         const result = await fetch(url, {
             method: 'GET',
+            ...fetchOptions,
         });
 
         /** @type {any} */
@@ -741,11 +753,12 @@ drawthings.post('/get-model', async (request, response) => {
 
 drawthings.post('/get-upscaler', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url);
         url.pathname = '/';
 
         const result = await fetch(url, {
             method: 'GET',
+            ...fetchOptions,
         });
 
         /** @type {any} */
@@ -762,11 +775,10 @@ drawthings.post('/generate', async (request, response) => {
     try {
         console.debug('SD DrawThings API request:', request.body);
 
-        const url = new URL(request.body.url);
+        const { url, fetchOptions } = normalizeUrlAndCreateFetchOptions(request.body.url, request.body.auth);
         url.pathname = '/sdapi/v1/txt2img';
 
         const body = { ...request.body };
-        const auth = getBasicAuthHeader(request.body.auth);
         delete body.url;
         delete body.auth;
 
@@ -775,8 +787,9 @@ drawthings.post('/generate', async (request, response) => {
             body: JSON.stringify(body),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': auth,
+                ...fetchOptions.headers,
             },
+            agent: fetchOptions.agent,
         });
 
         if (!result.ok) {
@@ -955,118 +968,6 @@ huggingface.post('/generate', async (request, response) => {
         console.error(error);
         return response.sendStatus(500);
     }
-});
-
-const electronhub = express.Router();
-
-electronhub.post('/models', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
-
-        if (!key) {
-            console.warn('Electron Hub key not found.');
-            return response.sendStatus(400);
-        }
-
-        const modelsResponse = await fetch('https://api.electronhub.ai/v1/models', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!modelsResponse.ok) {
-            console.warn('Electron Hub returned an error.');
-            return response.sendStatus(500);
-        }
-
-        /** @type {any} */
-        const data = await modelsResponse.json();
-        const models = data.data.filter(x => x.endpoints.includes('/v1/images/generations')).map(x => ({ value: x.id, text: x.name }));
-        return response.send(models);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-electronhub.post('/generate', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
-
-        if (!key) {
-            console.warn('Electron Hub key not found.');
-            return response.sendStatus(400);
-        }
-
-        let bodyParams = {
-            model: request.body.model,
-            prompt: request.body.prompt,
-            response_format: 'b64_json',
-        };
-
-        if (request.body.size) {
-            bodyParams.size = request.body.size;
-        }
-
-        const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                ...bodyParams,
-            }),
-        });
-
-        if (!result.ok) {
-            const errorText = await result.text();
-            console.warn('Electron Hub returned an error.', result.status, result.statusText, errorText);
-            return response.sendStatus(500);
-        }
-
-        /** @type {any} */
-        const data = await result.json();
-        const image = data?.data?.[0]?.b64_json;
-
-        if (!image) {
-            console.warn('Electron Hub returned invalid data.');
-            return response.sendStatus(500);
-        }
-
-        return response.send({ image });
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-electronhub.post('/sizes', async (request, response) => {
-    const result = await fetch(`https://api.electronhub.ai/v1/models/${request.body.model}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (!result.ok) {
-        console.warn('Electron Hub returned an error.');
-        return response.sendStatus(500);
-    }
-
-    /** @type {any} */
-    const data = await result.json();
-
-    const sizes = data.sizes;
-
-    if (!sizes) {
-        console.warn('Electron Hub returned invalid data.');
-        return response.sendStatus(500);
-    }
-
-    return response.send({ sizes });
 });
 
 const nanogpt = express.Router();
@@ -1272,44 +1173,28 @@ const falai = express.Router();
 falai.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
-        let page = 1;
-        /** @type {any} */
-        let modelsResponse;
-        let models = [];
+        const result = await fetch(modelsUrl);
 
-        do {
-            modelsUrl.searchParams.set('page', page.toString());
-            const result = await fetch(modelsUrl);
+        if (!result.ok) {
+            console.warn('FAL.AI returned an error.', result.status, result.statusText);
+            throw new Error('FAL.AI request failed.');
+        }
 
-            if (!result.ok) {
-                console.warn('FAL.AI returned an error.', result.status, result.statusText);
-                throw new Error('FAL.AI request failed.');
-            }
+        const data = await result.json();
 
-            modelsResponse = await result.json();
-            if (!('items' in modelsResponse) || !Array.isArray(modelsResponse.items)) {
-                console.warn('FAL.AI returned invalid data.');
-                throw new Error('FAL.AI request failed.');
-            }
+        if (!Array.isArray(data)) {
+            console.warn('FAL.AI returned invalid data.');
+            throw new Error('FAL.AI request failed.');
+        }
 
-            models = models.concat(
-                modelsResponse.items.filter(
-                    x => (
-                        !x.title.toLowerCase().includes('inpainting') &&
-                        !x.title.toLowerCase().includes('control') &&
-                        !x.title.toLowerCase().includes('upscale') &&
-                        !x.title.toLowerCase().includes('lora')
-                    ),
-                ),
-            );
-
-            page = modelsResponse.page + 1;
-        } while (modelsResponse != null && page < modelsResponse.pages);
-
-        const modelOptions = models
+        const models = data
+            .filter(x => !x.title.toLowerCase().includes('inpainting') &&
+                !x.title.toLowerCase().includes('control') &&
+                !x.title.toLowerCase().includes('upscale') &&
+                !x.title.toLowerCase().includes('lora'))
             .sort((a, b) => a.title.localeCompare(b.title))
             .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
-        return response.send(modelOptions);
+        return response.send(models);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -1551,7 +1436,6 @@ router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/huggingface', huggingface);
-router.use('/electronhub', electronhub);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
