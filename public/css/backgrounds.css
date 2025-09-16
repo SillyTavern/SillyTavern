@@ -113,7 +113,8 @@ body.reduced-motion #bg_custom {
     padding: 0 5px 15px;
 }
 
-#bg_menu_content, #bg_custom_content {
+#bg_menu_content,
+#bg_custom_content {
     display: grid;
     gap: 5px;
     width: 100%;
