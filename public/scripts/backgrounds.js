@@ -783,6 +783,11 @@ export function initBackgrounds() {
                 $context.addClass('mobile-menu-open');
             }
         })
+        .off('blur', '.bg_example.mobile-menu-open').on('blur', '.bg_example.mobile-menu-open', function () {
+            if (!$(this).is(':focus-within')) {
+                $(this).removeClass('mobile-menu-open');
+            }
+        })
         .off('click', '.jg-button').on('click', '.jg-button', function (e) {
             e.stopPropagation();
             const action = $(this).data('action');
