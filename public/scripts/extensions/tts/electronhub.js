@@ -278,7 +278,7 @@ class ElectronHubTtsProvider {
         const model = this.models.find(m => m.id === this.settings.model);
         const params = model?.parameters || {};
         const modelHasVoices = Array.isArray(model?.voices) && model.voices.length > 0;
-        const exclude = new Set(['input','response_format','model','speed','temperature','top_p','instructions','speaker_transcript','cfg_scale','cfg_filter_top_k','speech_rate','pitch_adjustment','emotional_style']);
+        const exclude = new Set(['input', 'response_format', 'model', 'speed', 'temperature', 'top_p', 'instructions', 'speaker_transcript', 'cfg_scale', 'cfg_filter_top_k', 'speech_rate', 'pitch_adjustment', 'emotional_style']);
         if (modelHasVoices) exclude.add('voice');
 
         const entries = Object.entries(params).filter(([k]) => !exclude.has(k));
@@ -431,7 +431,7 @@ class ElectronHubTtsProvider {
         const modelObj = this.models.find(m => m.id === this.settings.model);
         const params = modelObj?.parameters || {};
         const modelHasVoices = Array.isArray(modelObj?.voices) && modelObj.voices.length > 0;
-        const exclude = new Set(['input','response_format','model','speed','temperature','top_p','instructions','speaker_transcript','cfg_scale','cfg_filter_top_k','speech_rate','pitch_adjustment','emotional_style']);
+        const exclude = new Set(['input', 'response_format', 'model', 'speed', 'temperature', 'top_p', 'instructions', 'speaker_transcript', 'cfg_scale', 'cfg_filter_top_k', 'speech_rate', 'pitch_adjustment', 'emotional_style']);
         if (modelHasVoices) exclude.add('voice');
         for (const key of Object.keys(params)) {
             if (exclude.has(key)) continue;
