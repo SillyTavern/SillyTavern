@@ -1705,7 +1705,7 @@ async function loadModels() {
             models = await loadStabilityModels();
             break;
         case sources.huggingface:
-            models = [{ value: '', text: '<Enter Model ID above>' }];
+            models = [{ value: '', text: t`<Enter Model ID above>` }];
             break;
         case sources.electronhub:
             models = await loadElectronHubModels();

@@ -108,6 +108,7 @@ class DiskCache {
             dir: this.cachePath,
             ttl: false,
             forgiveParseErrors: true,
+            expiredInterval: 0,
             // @ts-ignore
             maxFileDescriptors: 100,
         });

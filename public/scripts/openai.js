@@ -276,6 +276,8 @@ export const settingsToUpdate = {
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
+    electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
+    electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
@@ -379,6 +381,8 @@ const default_settings = {
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
     electronhub_model: 'gpt-4o-mini',
+    electronhub_sort_models: 'alphabetically',
+    electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4o-mini-2024-07-18',
@@ -473,6 +477,8 @@ const oai_settings = {
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.1-70b-versatile',
     electronhub_model: 'gpt-4o-mini',
+    electronhub_sort_models: 'alphabetically',
+    electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
     aimlapi_model: 'gpt-4-turbo',
@@ -1710,6 +1716,59 @@ function calculateOpenRouterCost() {
     $('#openrouter_max_prompt_cost').text(cost);
 }
 
+function getElectronHubModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.pricing?.input;
+    const outputPrice = model.pricing?.output;
+    const price = inputPrice && outputPrice ? `$${inputPrice}/$${outputPrice} in/out Mtoken` : 'Unknown';
+
+    const visionIcon = model.metadata?.vision ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.metadata?.reasoning ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.metadata?.function_call ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports function tools"></i>' : '';
+    const premiumIcon = model?.premium_model ? '<i class="fa-solid fa-crown fa-sm" title="This model requires a subscription"></i>' : '';
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', premiumIcon);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.tokens} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
+}
+
+function calculateElectronHubCost() {
+    if (oai_settings.chat_completion_source !== chat_completion_sources.ELECTRONHUB) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = model_list.find(x => x.id === oai_settings.electronhub_model);
+
+    if (model?.pricing) {
+        const outputCost = Number(model.pricing.output / 1000000);
+        const inputCost = Number(model.pricing.input / 1000000);
+        const outputTokens = oai_settings.openai_max_tokens;
+        const inputTokens = (oai_settings.openai_max_context - outputTokens);
+        const totalCost = (outputCost * outputTokens) + (inputCost * inputTokens);
+        if (!isNaN(totalCost)) {
+            cost = '$' + totalCost.toFixed(4);
+        }
+    }
+
+    $('#electronhub_max_prompt_cost').text(cost);
+}
+
 function saveModelList(data) {
     model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
@@ -1803,16 +1862,14 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        model_list = model_list.filter(model => model?.endpoints?.includes('/v1/chat/completions'));
+
+        model_list = electronHubSortBy(model_list, oai_settings.electronhub_sort_models);
+
         $('#model_electronhub_select').empty();
-        model_list.forEach((model) => {
-            if (model?.endpoints?.includes('/v1/chat/completions')) {
-                $('#model_electronhub_select').append(
-                    $('<option>', {
-                        value: model.id,
-                        text: model.name,
-                    }));
-            }
-        });
+
+        const groupedList = oai_settings.electronhub_group_models ? electronHubGroupByVendor(model_list) : model_list;
+        appendElectronHubOptions(groupedList, oai_settings.electronhub_group_models);
 
         const selectedModel = model_list.find(model => model.id === oai_settings.electronhub_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.electronhub_model)) {
@@ -2041,6 +2098,61 @@ function openRouterGroupByVendor(array) {
     }, new Map());
 }
 
+function appendElectronHubOptions(model_list, groupModels = false) {
+    const appendOption = (model, parent = null) => {
+        (parent || $('#model_electronhub_select')).append(
+            $('<option>', {
+                value: model.id,
+                text: model.name,
+            }));
+    };
+
+    if (groupModels) {
+        model_list.forEach((models, vendor) => {
+            const optgroup = $('<optgroup>').attr('label', vendor);
+
+            models.forEach((model) => {
+                appendOption(model, optgroup);
+            });
+
+            $('#model_electronhub_select').append(optgroup);
+        });
+    } else {
+        model_list.forEach((model) => {
+            appendOption(model);
+        });
+    }
+
+}
+
+function electronHubSortBy(data, property = 'alphabetically') {
+    return data.sort((a, b) => {
+        if (property === 'context_length') {
+            return b.tokens - a.tokens;
+        } else if (property === 'pricing.input') {
+            return parseFloat(a.pricing.input) - parseFloat(b.pricing.input);
+        } else if (property === 'pricing.output') {
+            return parseFloat(a.pricing.output) - parseFloat(b.pricing.output);
+        } else {
+            return a?.name && b?.name && a.name.localeCompare(b.name);
+        }
+    });
+}
+
+function electronHubGroupByVendor(array) {
+    return array.reduce((acc, curr) => {
+        const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
+
+        if (!acc.has(vendor)) {
+            acc.set(vendor, []);
+        }
+
+        acc.get(vendor).push(curr);
+
+        return acc;
+    }, new Map());
+}
+
 function aimlapiGroupByVendor(array) {
     return array.reduce((acc, curr) => {
         const vendor = curr.info.developer;
@@ -2191,7 +2303,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -3523,6 +3635,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.groq_model = settings.groq_model ?? default_settings.groq_model;
     oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
+    oai_settings.electronhub_sort_models = settings.electronhub_sort_models ?? default_settings.electronhub_sort_models;
+    oai_settings.electronhub_group_models = settings.electronhub_group_models ?? default_settings.electronhub_group_models;
     oai_settings.nanogpt_model = settings.nanogpt_model ?? default_settings.nanogpt_model;
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
@@ -3666,6 +3780,8 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks);
     $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
     $('#openrouter_middleout').val(oai_settings.openrouter_middleout);
+    $('#electronhub_sort_models').val(oai_settings.electronhub_sort_models);
+    $('#electronhub_group_models').prop('checked', oai_settings.electronhub_group_models);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     $('#continue_prefill').prop('checked', oai_settings.continue_prefill);
     $('#openai_function_calling').prop('checked', oai_settings.function_calling);
@@ -3928,6 +4044,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
         electronhub_model: settings.electronhub_model,
+        electronhub_sort_models: settings.electronhub_sort_models,
+        electronhub_group_models: settings.electronhub_group_models,
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
@@ -5093,6 +5211,8 @@ async function onModelChange() {
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+
+        calculateElectronHubCost();
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.NANOGPT) {
@@ -5217,6 +5337,10 @@ async function onModelChange() {
 }
 
 async function onOpenrouterModelSortChange() {
+    await getStatusOpen();
+}
+
+async function onElectronHubModelSortChange() {
     await getStatusOpen();
 }
 
@@ -6117,12 +6241,14 @@ export function initOpenAI() {
         oai_settings.openai_max_context = Number($(this).val());
         $('#openai_max_context_counter').val(`${$(this).val()}`);
         calculateOpenRouterCost();
+        calculateElectronHubCost();
         saveSettingsDebounced();
     });
 
     $('#openai_max_tokens').on('input', function () {
         oai_settings.openai_max_tokens = Number($(this).val());
         calculateOpenRouterCost();
+        calculateElectronHubCost();
         saveSettingsDebounced();
     });
 
@@ -6326,6 +6452,16 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#electronhub_sort_models').on('input', function () {
+        oai_settings.electronhub_sort_models = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#electronhub_group_models').on('input', function () {
+        oai_settings.electronhub_group_models = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#squash_system_messages').on('input', function () {
         oai_settings.squash_system_messages = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -6503,6 +6639,14 @@ export function initOpenAI() {
             width: '100%',
             templateResult: getAimlapiModelTemplate,
         });
+        $('#model_electronhub_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getElectronHubModelTemplate,
+            matcher: textValueMatcher,
+        });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
             placeholder: t`All types (default)`,
             width: '100%',
@@ -6549,6 +6693,8 @@ export function initOpenAI() {
     $('#model_openrouter_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
+    $('#electronhub_group_models').on('change', onElectronHubModelSortChange);
+    $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
