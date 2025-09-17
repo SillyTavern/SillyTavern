@@ -1674,7 +1674,7 @@
     "Message Template": "訊息範本",
     "Model ID": "模型 ID",
     "mui_reset": "重設",
-    "Multimodal (OpenAI / Anthropic / llama / Google)": "多模態（OpenAI／Anthropic／llama／Google）",
+    "Multimodal": "多模態",
     "must be set in Tabby's config.yml to switch models.": "須在 Tabby's config.yml 中設定以切換模型。",
     "Names as Stop Strings": "將名稱用作停止字串",
     "Never": "從不",

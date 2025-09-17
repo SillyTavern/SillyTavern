@@ -1566,7 +1566,7 @@
     "These files are available for all characters in the current chat.": "Ces fichiers sont disponibles pour tous les personnages du chat actuel.",
     "Image Captioning": "Légende des images",
     "Local": "Local",
-    "Multimodal (OpenAI / Anthropic / llama / Google)": "Multimodal (OpenAI / Anthropic / llama / Google)",
+    "Multimodal": "Multimodal",
     "Extras": "Extras",
     "Horde": "Horde",
     "API": "API",
