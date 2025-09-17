@@ -19,6 +19,10 @@
         font-size: 3em;
     }
 
+    #CharListButtonAndHotSwaps {
+        align-items: center;
+    }
+
 
     #send_form.compact #leftSendForm,
     #send_form.compact #rightSendForm {
