@@ -766,9 +766,9 @@ export function initRossMods() {
         }
     });
 
-    // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
     if (!isMobile()) { //only read/set pin states on non-mobile devices
+        // read the state of right Nav Lock and apply to rightnav classlist
+        $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
         if (accountStorage.getItem('NavLockOn') == 'true') {
         //console.log('setting pin class via local var');
             $(RightNavPanel).addClass('pinnedOpen');
