@@ -10,6 +10,15 @@
         flex-basis: 100%;
     }
 
+    #rm_button_panel_pin_div,
+    #lm_button_panel_pin_div{
+        display: none;
+    }
+
+    #rm_button_characters {
+        font-size: 3em;
+    }
+
 
     #send_form.compact #leftSendForm,
     #send_form.compact #rightSendForm {

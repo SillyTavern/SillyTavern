@@ -812,6 +812,10 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
         await unshallowCharacter(this_chid);
         select_selected_character(this_chid, { switchMenu });
     }
+
+    if (isMobile()) {
+        $('#rightNavDrawerIcon').trigger('click');
+    }
 }
 
 function getBackBlock() {
