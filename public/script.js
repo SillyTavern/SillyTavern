@@ -812,15 +812,6 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
         await unshallowCharacter(this_chid);
         select_selected_character(this_chid, { switchMenu });
     }
-
-    //close open char panel if it was already open
-    //avoids opening the char panel via Welcome Screen recent chats
-    //or other means of calling this function (such as QRs with /go).
-    //there should be no cases on mobile where char panel is open and
-    //you're able to get here other than an avatar click.
-    if (isMobile() && $('#rightNavDrawerIcon').hasClass('openIcon')) {
-        $('#rightNavDrawerIcon').trigger('click');
-    }
 }
 
 function getBackBlock() {
