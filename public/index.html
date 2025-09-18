@@ -6476,6 +6476,13 @@
                         </div>
                     </div>
                     <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
+                        <div class="world_entry_form_control flex1" title="Set the outlet name for this WI entry.&#10;&#10;WI entries with position 'outlet' will not be added to the prompt automatically. Instead, they will be collected and can be used as a macro in the prompt.&#10;Add {{outlet::YourName}} to the prompt in any place you want to add all WI entries this specific outlet." data-i18n="[title]wi_outlet_name">
+                            <small class="textAlignCenter">
+                                <span data-i18n="Outlet Name">Outlet Name</span>
+                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                            </small>
+                            <input class="text_pole margin0" name="outletName" type="text" placeholder="Outlet Name" data-i18n="[placeholder]Outlet Name">
+                        </div>
                         <div class="world_entry_form_control flex1">
                             <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
                             <input class="text_pole margin0" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="1000">
@@ -6812,6 +6819,9 @@
                                                 </option>
                                                 <option value="4" data-role="2" data-i18n="at Depth AI">
                                                     @D 🤖
+                                                </option>
+                                                <option value="7" data-role="" data-i18n="Outlet">
+                                                    ➡️ Outlet
                                                 </option>
                                             </select>
                                         </div>

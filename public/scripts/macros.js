@@ -1,10 +1,11 @@
 import { Handlebars, moment, seedrandom, droll } from '../lib.js';
-import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams, eventSource, event_types } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams, eventSource, event_types, extension_prompts } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { getInstructMacros } from './instruct-mode.js';
 import { getVariableMacros } from './variables.js';
 import { isMobile } from './RossAscends-mods.js';
+import { inject_ids } from './constants.js';
 
 /**
  * @typedef Macro
@@ -459,6 +460,17 @@ function getTimeDiffMacro() {
 }
 
 /**
+ * Returns the outlet prompt for a given outlet key.
+ * @param {string} key - The outlet key
+ * @returns {string} The outlet prompt
+ */
+function getOutletPrompt(key) {
+    const value = extension_prompts[inject_ids.CUSTOM_WI_OUTLET(key)]?.value;
+    // Macros should already be parsed, but we'll do it again just in case
+    return substituteParams(value);
+}
+
+/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {EnvObject} env - Map of macro names to the values they'll be substituted with. If the param
@@ -518,6 +530,7 @@ export function evaluateMacros(content, env, postProcessFn) {
         { regex: /{{datetimeformat +([^}]*)}}/gi, replace: (_, format) => moment().format(format) },
         { regex: /{{idle_duration}}/gi, replace: () => getTimeSinceLastMessage() },
         { regex: /{{time_UTC([-+]\d+)}}/gi, replace: (_, offset) => moment().utc().utcOffset(parseInt(offset, 10)).format('LT') },
+        { regex: /{{outlet::(.+?)}}/gi, replace: (_, key) => getOutletPrompt(key.trim()) || '' },
         getTimeDiffMacro(),
         getBannedWordsMacro(),
         getRandomReplaceMacro(),
