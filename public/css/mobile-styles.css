@@ -11,18 +11,17 @@
     }
 
     #rm_button_panel_pin_div,
-    #lm_button_panel_pin_div{
+    #lm_button_panel_pin_div {
         display: none;
     }
 
     #rm_button_characters {
-        font-size: 3em;
+        font-size: var(--topBarIconSize);
     }
 
     #CharListButtonAndHotSwaps {
         align-items: center;
     }
-
 
     #send_form.compact #leftSendForm,
     #send_form.compact #rightSendForm {
@@ -34,7 +33,8 @@
         display: none;
     }
 
-    #bg_menu_content, #bg_custom_content {
+    #bg_menu_content,
+    #bg_custom_content {
         grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
     }
 

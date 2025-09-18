@@ -770,7 +770,7 @@ export function initRossMods() {
         // read the state of right Nav Lock and apply to rightnav classlist
         $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
         if (accountStorage.getItem('NavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
+            //console.log('setting pin class via local var');
             $(RightNavPanel).addClass('pinnedOpen');
             $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
         }
@@ -782,7 +782,7 @@ export function initRossMods() {
         // read the state of left Nav Lock and apply to leftnav classlist
         $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
         if (accountStorage.getItem('LNavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
+            //console.log('setting pin class via local var');
             $(LeftNavPanel).addClass('pinnedOpen');
             $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
         }
@@ -795,7 +795,7 @@ export function initRossMods() {
         // read the state of left Nav Lock and apply to leftnav classlist
         $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
         if (accountStorage.getItem('WINavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
+            //console.log('setting pin class via local var');
             $(WorldInfo).addClass('pinnedOpen');
             $(WIDrawerIcon).addClass('drawerPinnedOpen');
         }
