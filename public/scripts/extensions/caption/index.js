@@ -549,6 +549,7 @@ jQuery(async function () {
         await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
+        await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
     }
 
     await addSettings();

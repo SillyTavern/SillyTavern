@@ -2210,4 +2210,32 @@ multimodalModels.post('/electronhub', async (_req, res) => {
     }
 });
 
+multimodalModels.post('/mistral', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.MISTRALAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.mistral.ai/v1/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.data.filter(m => m.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.use('/multimodal-models', multimodalModels);
