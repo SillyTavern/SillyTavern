@@ -1834,31 +1834,18 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
-        /** @type {HTMLSelectElement} */
-        const mistralModelSelect = document.querySelector('#model_mistralai_select');
-        if (mistralModelSelect) {
-            const options = Array.from(mistralModelSelect.options);
-            options.forEach((option) => {
-                const existingModel = model_list.find(model => model.id === option.value);
-                if (!existingModel) {
-                    option.remove();
-                }
-            });
+        $('#model_mistralai_select').empty();
 
-            const otherOptionsGroup = mistralModelSelect.querySelector('#mistralai_other_models');
-            for (const model of model_list.filter(model => model?.capabilities?.completion_chat)) {
-                if (!options.some(option => option.value === model.id) && otherOptionsGroup) {
-                    otherOptionsGroup.append(new Option(model.id, model.id));
-                }
-            }
-
-            const selectedModel = model_list.find(model => model.id === oai_settings.mistralai_model);
-            if (!selectedModel) {
-                oai_settings.mistralai_model = model_list.find(model => model?.capabilities?.completion_chat)?.id;
-            }
-
-            $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
+        for (const model of model_list.filter(model => model?.capabilities?.completion_chat)) {
+            $('#model_mistralai_select').append(new Option(model.id, model.id));
         }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.mistralai_model);
+        if (!selectedModel) {
+            oai_settings.mistralai_model = model_list.find(model => model?.capabilities?.completion_chat)?.id;
+        }
+
+        $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
@@ -1934,7 +1921,7 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
-        // Clear only the "Other" optgroup for dynamic models
+    // Clear only the "Other" optgroup for dynamic models
         $('#google_other_models').empty();
 
         // Get static model options that are already in the HTML
@@ -1945,7 +1932,7 @@ function saveModelList(data) {
 
         // Add dynamic models to the "Other" group
         model_list.forEach((model) => {
-            // Only add if not already in static list
+        // Only add if not already in static list
             if (!staticModels.includes(model.id)) {
                 $('#google_other_models').append(
                     $('<option>', {
@@ -4650,75 +4637,8 @@ function getMistralMaxContext(model, isUnlocked) {
         }
     }
 
-    const contextMap = {
-        'codestral-2405': 32768,
-        'codestral-2411-rc5': 262144,
-        'codestral-2412': 262144,
-        'codestral-2501': 262144,
-        'codestral-2508': 256000,
-        'codestral-latest': 256000,
-        'codestral-mamba-2407': 262144,
-        'codestral-mamba-latest': 262144,
-        'open-codestral-mamba': 262144,
-        'ministral-3b-2410': 131072,
-        'ministral-3b-latest': 131072,
-        'ministral-8b-2410': 131072,
-        'ministral-8b-latest': 131072,
-        'mistral-large-2407': 131072,
-        'mistral-large-2411': 131072,
-        'mistral-large-latest': 131072,
-        'mistral-large-pixtral-2411': 131072,
-        'mistral-tiny-2407': 131072,
-        'mistral-tiny-latest': 131072,
-        'open-mistral-nemo': 131072,
-        'open-mistral-nemo-2407': 131072,
-        'pixtral-12b': 131072,
-        'pixtral-12b-2409': 131072,
-        'pixtral-12b-latest': 131072,
-        'pixtral-large-2411': 131072,
-        'pixtral-large-latest': 131072,
-        'open-mixtral-8x22b': 65536,
-        'open-mixtral-8x22b-2404': 65536,
-        'mistral-embed': 32768,
-        'mistral-large-2402': 32768,
-        'mistral-medium': 131072,
-        'mistral-medium-2312': 32768,
-        'mistral-medium-2505': 131072,
-        'mistral-medium-2508': 262144,
-        'mistral-medium-latest': 262144,
-        'mistral-moderation-2411': 32768,
-        'mistral-moderation-latest': 32768,
-        'mistral-ocr-2503': 32768,
-        'mistral-ocr-latest': 32768,
-        'mistral-saba-2502': 32768,
-        'mistral-saba-latest': 32768,
-        'mistral-small': 32768,
-        'mistral-small-2312': 32768,
-        'mistral-small-2402': 32768,
-        'mistral-small-2409': 32768,
-        'mistral-small-2501': 32768,
-        'mistral-small-2503': 32768,
-        'mistral-small-2506': 131072,
-        'mistral-small-latest': 131072,
-        'mistral-tiny': 32768,
-        'mistral-tiny-2312': 32768,
-        'open-mistral-7b': 32768,
-        'open-mixtral-8x7b': 32768,
-        'devstral-small-2505': 131072,
-        'devstral-small-2507': 131072,
-        'devstral-small-latest': 131072,
-        'devstral-medium-latest': 131072,
-        'devstral-medium-2507': 131072,
-        'magistral-medium-latest': 40960,
-        'magistral-medium-2506': 40960,
-        'magistral-small-latest': 40960,
-        'magistral-small-2506': 40000,
-        'magistral-small-2507': 40960,
-        'magistral-medium-2507': 40960,
-    };
-
     // Return context size if model found, otherwise default to 32k
-    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || 32768;
+    return max_32k;
 }
 
 /**
