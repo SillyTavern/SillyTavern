@@ -1281,6 +1281,10 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
+    if (extension_settings.sd.source === sources.electronhub) {
+        ensureElectronHubQualitySelect();
+    }
+
     const cloudSources = [
         sources.horde,
         sources.novel,
@@ -1663,6 +1667,8 @@ async function loadComfySamplers() {
     }
 }
 
+let electronHubImageModelsCache = [];
+
 async function loadModels() {
     $('#sd_model').empty();
     let models = [];
@@ -1728,7 +1734,10 @@ async function loadModels() {
     }
 
     if (extension_settings.sd.source === sources.electronhub) {
-        destroyElectronHubSelect2IfAny();
+        const $sel = $('#sd_model');
+        if (typeof $.fn.select2 === 'function' && $sel.data('select2')) {
+            $sel.select2('destroy');
+        }
         const groups = electronHubGroupImageModelsByVendor(models);
         for (const [vendor, vendorModels] of groups.entries()) {
             const optgroup = document.createElement('optgroup');
@@ -1737,7 +1746,7 @@ async function loadModels() {
                 const option = document.createElement('option');
                 const fullText = getElectronHubImageModelText(model);
                 const nameOnly = String(model?.name || model?.id || '');
-                option.innerText = fullText;
+                option.innerText = nameOnly;
                 option.dataset.fullText = fullText;
                 option.dataset.name = nameOnly;
                 option.value = model.id;
@@ -1747,13 +1756,26 @@ async function loadModels() {
             $('#sd_model').append(optgroup);
         }
         if (typeof $.fn.select2 === 'function') {
-            initElectronHubModelSelect2();
-        } else {
-            attachElectronHubModelSelectHandlers();
-            updateElectronHubSelectedOptionText();
+            $('#sd_model').select2({
+                placeholder: t`Select a model`,
+                searchInputPlaceholder: t`Search models...`,
+                searchInputCssClass: 'text_pole',
+                width: '100%',
+                templateResult: function (data) {
+                    if (!data || !data.id) return data?.text;
+                    const el = /** @type {any} */ (data).element;
+                    const full = el?.dataset?.fullText;
+                    return full || data.text;
+                },
+            });
         }
+        electronHubImageModelsCache = Array.isArray(models) ? models : [];
+        ensureElectronHubQualitySelect();
     } else {
-        destroyElectronHubSelect2IfAny();
+        const $sel = $('#sd_model');
+        if (typeof $.fn.select2 === 'function' && $sel.data('select2')) {
+            $sel.select2('destroy');
+        }
         for (const model of models) {
             const option = document.createElement('option');
             option.innerText = model.text;
@@ -1763,6 +1785,8 @@ async function loadModels() {
         }
 
         $('#sd_model').off('.electronhub');
+        $('#sd_electronhub_quality_row').remove();
+        extension_settings.sd.electronhub_quality = undefined;
     }
 
     if (!extension_settings.sd.model && models.length > 0) {
@@ -1772,6 +1796,65 @@ async function loadModels() {
             extension_settings.sd.model = models[0].value;
         }
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
+    }
+}
+
+function ensureElectronHubQualitySelect() {
+    try {
+        const modelId = String(extension_settings.sd.model || '');
+        if (!modelId) return;
+
+        const model = Array.isArray(electronHubImageModelsCache) ? electronHubImageModelsCache.find(m => String(m?.id) === modelId) : undefined;
+        const qualities = Array.isArray(model?.qualities) ? model.qualities : undefined;
+
+        let $qualityRow = $('#sd_electronhub_quality_row');
+        if (!qualities || qualities.length === 0) {
+            if ($qualityRow.length) $qualityRow.remove();
+            extension_settings.sd.electronhub_quality = undefined;
+            saveSettingsDebounced();
+            return;
+        }
+
+        if ($qualityRow.length === 0) {
+            $qualityRow = $(
+                '<div class="flex-container" id="sd_electronhub_quality_row">'
+                + '  <div class="flex1">'
+                + '    <label for="sd_electronhub_quality" data-i18n="Image Quality">Image Quality</label>'
+                + '    <select id="sd_electronhub_quality"></select>'
+                + '  </div>'
+                + '</div>'
+            );
+
+            const $modelRow = $('#sd_model').closest('.flex1').closest('.flex-container');
+            if ($modelRow.length) {
+                $qualityRow.insertAfter($modelRow);
+            } else {
+                $('[data-sd-source="electronhub"]').last().append($qualityRow);
+            }
+
+            $('#sd_electronhub_quality').on('change', function () {
+                extension_settings.sd.electronhub_quality = String($(this).val());
+                saveSettingsDebounced();
+            });
+        }
+
+        const $select = $('#sd_electronhub_quality');
+        $select.empty();
+        for (const q of qualities) {
+            const opt = document.createElement('option');
+            opt.value = String(q);
+            opt.innerText = String(q);
+            opt.selected = String(q) === String(extension_settings.sd.electronhub_quality || '');
+            $select.append(opt);
+        }
+        if (!$select.val()) {
+            const first = String(qualities[0]);
+            extension_settings.sd.electronhub_quality = first;
+            $select.val(first);
+            saveSettingsDebounced();
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -1862,7 +1945,11 @@ async function loadElectronHubModels() {
     if (result.ok) {
         /** @type {any[]} */
         const data = await result.json();
-        return Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/images/generations')) : [];
+        return Array.isArray(data)
+            ? data
+                .filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/images/generations'))
+                .map(m => ({ ...m, qualities: Array.isArray(m?.qualities) ? m.qualities : undefined }))
+            : [];
     }
 
     return [];
@@ -1890,72 +1977,6 @@ function getElectronHubImageModelText(model) {
         }
     }
     return `${name} | ${price}${premium}`;
-}
-
-function updateElectronHubSelectedOptionText() {
-    const select = /** @type {HTMLSelectElement | undefined} */ ($('#sd_model').get(0));
-    if (!select) return;
-
-    for (const option of Array.from(select.options)) {
-        const full = option?.dataset?.fullText;
-        if (full) option.textContent = full;
-    }
-
-    const selected = $(select).find(':selected').get(0);
-    if (selected && selected.dataset && selected.dataset.name) {
-        selected.textContent = selected.dataset.name;
-    }
-}
-
-function attachElectronHubModelSelectHandlers() {
-    const $sel = $('#sd_model');
-
-    $sel.off('.electronhub');
-
-    $sel.on('focus.electronhub mousedown.electronhub', function () {
-        const select = /** @type {HTMLSelectElement} */ (this);
-        for (const option of Array.from(select.options)) {
-            const full = option?.dataset?.fullText;
-            if (full) option.textContent = full;
-        }
-    });
-
-    $sel.on('change.electronhub blur.electronhub focusout.electronhub', function () {
-        updateElectronHubSelectedOptionText();
-    });
-}
-
-function electronHubTemplateResult(data) {
-    if (!data || !data.id) return data?.text;
-    const el = /** @type {HTMLOptionElement | undefined} */ (data.element);
-    const full = el?.dataset?.fullText;
-    return full || data.text;
-}
-
-function electronHubTemplateSelection(data) {
-    if (!data || !data.id) return data?.text;
-    const el = /** @type {HTMLOptionElement | undefined} */ (data.element);
-    const name = el?.dataset?.name;
-    return name || data.text;
-}
-
-function initElectronHubModelSelect2() {
-    const $sel = $('#sd_model');
-    $sel.select2({
-        placeholder: t`Select a model`,
-        searchInputPlaceholder: t`Search models...`,
-        searchInputCssClass: 'text_pole',
-        width: '100%',
-        templateResult: electronHubTemplateResult,
-        templateSelection: electronHubTemplateSelection,
-    });
-}
-
-function destroyElectronHubSelect2IfAny() {
-    const $sel = $('#sd_model');
-    if ($sel.data('select2')) {
-        $sel.select2('destroy');
-    }
 }
 
 async function loadNanoGPTModels() {
@@ -3792,6 +3813,7 @@ async function generateElectronHubImage(prompt, signal) {
             model: extension_settings.sd.model,
             prompt: prompt,
             size: size,
+            quality: String(extension_settings.sd.electronhub_quality || '').trim() || undefined,
         }),
     });
 

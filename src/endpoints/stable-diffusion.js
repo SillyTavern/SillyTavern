@@ -1010,6 +1010,10 @@ electronhub.post('/generate', async (request, response) => {
             bodyParams.size = request.body.size;
         }
 
+        if (request.body.quality) {
+            bodyParams.quality = request.body.quality;
+        }
+
         const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
             method: 'POST',
             headers: {
