@@ -2475,10 +2475,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
         }
-        if (generate_data.model.includes('grok-vision')) {
-            delete generate_data.tools;
-            delete generate_data.tool_choice;
-        }
     }
 
     if (isPollinations) {
@@ -5264,11 +5260,14 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', unlocked_max);
         } else if (oai_settings.xai_model.includes('grok-2-vision')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (oai_settings.xai_model.includes('grok-vision')) {
-            $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4-fast')) {
+            $('#openai_max_context').attr('max', max_2mil);
         } else if (oai_settings.xai_model.includes('grok-4')) {
             $('#openai_max_context').attr('max', max_256k);
+        } else if (oai_settings.xai_model.includes('grok-code')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
+            // grok 2 and grok 3
             $('#openai_max_context').attr('max', max_128k);
         }
 
@@ -5817,7 +5816,6 @@ export function isImageInliningSupported() {
         // xAI (Grok)
         'grok-4',
         'grok-2-vision',
-        'grok-vision',
         // Moonshot
         'moonshot-v1-8k-vision-preview',
         'moonshot-v1-32k-vision-preview',
