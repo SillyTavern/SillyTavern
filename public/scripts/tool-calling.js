@@ -526,12 +526,13 @@ export class ToolManager {
             for (let choiceIndex = 0; choiceIndex < parsed.candidates.length; choiceIndex++) {
                 const candidate = parsed.candidates[choiceIndex];
                 if (Array.isArray(candidate?.content?.parts)) {
-                    for (let toolCallIndex = 0; toolCallIndex < candidate.content.parts.length; toolCallIndex++) {
-                        const part = candidate.content.parts[toolCallIndex];
+                    for (let partIndex = 0; partIndex < candidate.content.parts.length; partIndex++) {
+                        const part = candidate.content.parts[partIndex];
                         if (part.functionCall) {
                             if (!Array.isArray(toolCalls[choiceIndex])) {
                                 toolCalls[choiceIndex] = [];
                             }
+                            const toolCallIndex = toolCalls[choiceIndex].length;
                             if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
                             }
@@ -612,6 +613,34 @@ export class ToolManager {
             }
         }
 
+        if (oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.openrouter_model);
+            if (Array.isArray(currentModel?.supported_parameters)) {
+                return currentModel.supported_parameters.includes('tools');
+            }
+        }
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.mistralai_model);
+            if (currentModel && currentModel.capabilities) {
+                return currentModel.capabilities.function_calling;
+            }
+        }
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.AIMLAPI && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.aimlapi_model);
+            if (Array.isArray(currentModel?.features)) {
+                return currentModel.features.includes('openai/chat-completion.function');
+            }
+        }
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.electronhub_model);
+            if (currentModel && currentModel.metadata?.function_call) {
+                return currentModel.metadata.function_call;
+            }
+        }
+
         const supportedSources = [
             chat_completion_sources.OPENAI,
             chat_completion_sources.CUSTOM,
@@ -629,6 +658,9 @@ export class ToolManager {
             chat_completion_sources.POLLINATIONS,
             chat_completion_sources.MOONSHOT,
             chat_completion_sources.FIREWORKS,
+            chat_completion_sources.COMETAPI,
+            chat_completion_sources.ELECTRONHUB,
+            chat_completion_sources.AZURE_OPENAI,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

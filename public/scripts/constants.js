@@ -51,4 +51,18 @@ export const inject_ids = {
     DEPTH_PROMPT_INDEX: (index) => `DEPTH_PROMPT_${index}`,
     CUSTOM_WI_DEPTH: 'customDepthWI',
     CUSTOM_WI_DEPTH_ROLE: (depth, role) => `customDepthWI_${depth}_${role}`,
+    CUSTOM_WI_OUTLET: (key) => `customWIOutlet_${key}`,
 };
+
+export const COMETAPI_IGNORE_PATTERNS = [
+    // Image generation models
+    'dall-e', 'dalle', 'midjourney', 'mj_', 'stable-diffusion', 'sd-',
+    'flux-', 'playground-v', 'ideogram', 'recraft-', 'black-forest-labs',
+    '/recraft-v3', 'recraftv3', 'stability-ai/', 'sdxl',
+    // Audio generation models
+    'suno_', 'tts', 'whisper',
+    // Video generation models
+    'runway', 'luma_', 'luma-', 'veo', 'kling_', 'minimax_video', 'hunyuan-t1',
+    // Utility models
+    'embedding', 'search-gpts', 'files_retrieve', 'moderation',
+];

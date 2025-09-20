@@ -24,6 +24,10 @@ export let openRouterModels = [];
  * @type {string[]}
  */
 const OPENROUTER_PROVIDERS = [
+    // An alphabetically separate set of very-dead providers is kept at the top of the list in the docs.
+    // These do not appear outside the docs: Anyscale, Cent-ML, HuggingFace ... SF Compute, Together 2, 01.AI
+    // As a visual check, AI21 is the topmost provider in the sidebar of https://openrouter.ai/models, thus we want to copy from this point and below.
+    // Providers endpoint: https://openrouter.ai/api/v1/providers
     'AI21',
     'AionLabs',
     'Alibaba',
@@ -55,6 +59,7 @@ const OPENROUTER_PROVIDERS = [
     'InferenceNet',
     'Infermatic',
     'Inflection',
+    'InoCloud',
     'Kluster',
     'Lambda',
     'Liquid',
@@ -69,19 +74,23 @@ const OPENROUTER_PROVIDERS = [
     'NextBit',
     'Nineteen',
     'Novita',
+    'Nvidia',
     'OpenAI',
     'OpenInference',
     'Parasail',
     'Perplexity',
     'Phala',
     'SambaNova',
+    'SiliconFlow',
     'Stealth',
     'Switchpoint',
     'Targon',
     'Together',
     'Ubicloud',
     'Venice',
+    'WandB',
     'xAI',
+    'Z.AI',
 ];
 
 export async function loadOllamaModels(data) {

@@ -46,6 +46,7 @@ export class QuickReply {
     /**@type {boolean}*/ executeOnChatChange = false;
     /**@type {boolean}*/ executeOnGroupMemberDraft = false;
     /**@type {boolean}*/ executeOnNewChat = false;
+    /**@type {boolean}*/ executeBeforeGeneration = false;
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
@@ -434,6 +435,7 @@ export class QuickReply {
                 this.updateLabel(label.value);
             });
             let switcherList;
+            // @ts-ignore
             dom.querySelector('#qr--modal-switcher').addEventListener('click', (evt)=>{
                 if (switcherList) {
                     switcherList.remove();
@@ -618,7 +620,9 @@ export class QuickReply {
                 accountStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
+            // @ts-ignore
             if (navigator.keyboard) {
+                // @ts-ignore
                 navigator.keyboard.getLayoutMap().then(it=>dom.querySelector('#qr--modal-commentKey').textContent = it.get('Backslash'));
             } else {
                 dom.querySelector('#qr--modal-commentKey').closest('small').remove();
@@ -781,6 +785,7 @@ export class QuickReply {
             message.addEventListener('wheel', (evt)=>{
                 updateScrollDebounced(evt);
             });
+            // @ts-ignore
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
@@ -1061,6 +1066,13 @@ export class QuickReply {
                 this.updateContext();
             });
             /**@type {HTMLInputElement}*/
+            const executeBeforeGeneration = dom.querySelector('#qr--executeBeforeGeneration');
+            executeBeforeGeneration.checked = this.executeBeforeGeneration;
+            executeBeforeGeneration.addEventListener('click', ()=>{
+                this.executeBeforeGeneration = executeBeforeGeneration.checked;
+                this.updateContext();
+            });
+            /**@type {HTMLInputElement}*/
             const executeOnNewChat = dom.querySelector('#qr--executeOnNewChat');
             executeOnNewChat.checked = this.executeOnNewChat;
             executeOnNewChat.addEventListener('click', ()=>{
@@ -1117,6 +1129,7 @@ export class QuickReply {
             /**@type {HTMLTextAreaElement} */
             const inputOg = document.querySelector('#send_textarea');
             const inputMirror = dom.querySelector('#qr--modal-send_textarea');
+            // @ts-ignore
             inputMirror.value = inputOg.value;
             const inputOgMo = new MutationObserver(muts=>{
                 if (muts.find(it=>[...it.removedNodes].includes(inputMirror) || [...it.removedNodes].find(n=>n.contains(inputMirror)))) {
@@ -1125,10 +1138,12 @@ export class QuickReply {
             });
             inputOgMo.observe(document.body, { childList:true });
             const inputOgListener = ()=>{
+                // @ts-ignore
                 inputMirror.value = inputOg.value;
             };
             inputOg.addEventListener('input', inputOgListener);
             inputMirror.addEventListener('input', ()=>{
+                // @ts-ignore
                 inputOg.value = inputMirror.value;
             });
 
@@ -1172,15 +1187,19 @@ export class QuickReply {
                 isResizing = true;
                 evt.preventDefault();
                 resizeStart = evt.x;
+                // @ts-ignore
                 wStart = dom.querySelector('#qr--qrOptions').offsetWidth;
                 const dragListener = debounce((evt)=>{
                     const w = wStart + resizeStart - evt.x;
+                    // @ts-ignore
                     dom.querySelector('#qr--qrOptions').style.setProperty('--width', `${w}px`);
                 }, 5);
                 window.addEventListener('pointerup', ()=>{
+                    // @ts-ignore
                     window.removeEventListener('pointermove', dragListener);
                     isResizing = false;
                 }, { once:true });
+                // @ts-ignore
                 window.addEventListener('pointermove', dragListener);
             });
 
@@ -1282,6 +1301,7 @@ export class QuickReply {
         syntax.addEventListener('wheel', (evt)=>{
             updateScrollDebounced(evt);
         });
+        // @ts-ignore
         syntax.addEventListener('scroll', (evt)=>{
             updateScrollDebounced();
         });
@@ -1414,8 +1434,11 @@ export class QuickReply {
                                 let i = 0;
                                 let unnamed = this.debugController.unnamedArguments ?? [];
                                 if (!Array.isArray(unnamed)) unnamed = [unnamed];
+                                // @ts-ignore
                                 while (unnamed.length < executor.unnamedArgumentList?.length ?? 0) unnamed.push(undefined);
+                                // @ts-ignore
                                 unnamed = unnamed.map((it,idx)=>[executor.unnamedArgumentList?.[idx], it]);
+                                // @ts-ignore
                                 for (const arg of unnamed) {
                                     i++;
                                     const item = document.createElement('div'); {
@@ -1904,6 +1927,7 @@ export class QuickReply {
             executeOnChatChange: this.executeOnChatChange,
             executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
             executeOnNewChat: this.executeOnNewChat,
+            executeBeforeGeneration: this.executeBeforeGeneration,
             automationId: this.automationId,
         };
     }

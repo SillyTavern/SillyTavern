@@ -22,12 +22,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     throwIfInvalidModel(useReverseProxy);
 
-    const noPrefix = ['ollama'].includes(extension_settings.caption.multimodal_api);
-
-    if (noPrefix && base64Img.startsWith('data:image/')) {
-        base64Img = base64Img.split(',')[1];
-    }
-
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
     // Ooba requires all images to be JPEGs. Koboldcpp just asked nicely.
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
@@ -46,6 +40,9 @@ export async function getMultimodalCaption(base64Img, prompt) {
         base64Img = await createThumbnail(base64Img, maxSide, maxSide);
     } else if (!safeMimeTypes.includes(mimeType)) {
         base64Img = await createThumbnail(base64Img, null, null);
+    }
+    if (isOllama && base64Img.startsWith('data:image/')) {
+        base64Img = base64Img.split(',')[1];
     }
 
     const proxyUrl = useReverseProxy ? oai_settings.reverse_proxy : '';
@@ -70,6 +67,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
     if (isOllama) {
         if (extension_settings.caption.multimodal_model === 'ollama_current') {
             requestBody.model = textgenerationwebui_settings.ollama_model;
+        }
+
+        if (extension_settings.caption.multimodal_model === 'ollama_custom') {
+            requestBody.model = extension_settings.caption.ollama_custom_model;
         }
 
         requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
@@ -211,6 +212,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Ollama model is not set.');
     }
 
+    if (multimodalApi === 'ollama' && multimodalModel === 'ollama_custom' && !extension_settings.caption.ollama_custom_model) {
+        throw new Error('Ollama custom model tag is not set.');
+    }
+
     if (multimodalApi === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP] && !altEndpointEnabled) {
         throw new Error('LlamaCPP server URL is not set.');
     }
@@ -241,6 +246,14 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (multimodalApi === 'moonshot' && !secret_state[SECRET_KEYS.MOONSHOT]) {
         throw new Error('Moonshot AI API key is not set.');
+    }
+
+    if (multimodalApi === 'nanogpt' && !secret_state[SECRET_KEYS.NANOGPT]) {
+        throw new Error('NanoGPT API key is not set.');
+    }
+
+    if (multimodalApi === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB]) {
+        throw new Error('Electron Hub API key is not set.');
     }
 }
 

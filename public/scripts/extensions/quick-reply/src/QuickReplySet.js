@@ -28,6 +28,7 @@ export class QuickReplySet {
     }
 
     /**@type {string}*/ name;
+    /**@type {'global'|'chat'|'character'}*/ scope = 'global';
     /**@type {boolean}*/ disableSend = false;
     /**@type {boolean}*/ placeBeforeInput = false;
     /**@type {boolean}*/ injectInput = false;
@@ -255,6 +256,7 @@ export class QuickReplySet {
      * @param {QuickReply} qr
      */
     hookQuickReply(qr) {
+        // @ts-ignore
         qr.onDebug = ()=>this.debug(qr);
         qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
         qr.onDelete = ()=>this.removeQuickReply(qr);
@@ -301,12 +303,14 @@ export class QuickReplySet {
                     }
                     sel.addEventListener('keyup', (evt)=>{
                         if (evt.key == 'Shift') {
+                            // @ts-ignore
                             (dlg.dom ?? dlg.dlg).classList.remove('qr--isCopy');
                             return;
                         }
                     });
                     sel.addEventListener('keydown', (evt)=>{
                         if (evt.key == 'Shift') {
+                            // @ts-ignore
                             (dlg.dom ?? dlg.dlg).classList.add('qr--isCopy');
                             return;
                         }
@@ -335,6 +339,7 @@ export class QuickReplySet {
                     isCopy = true;
                     dlg.completeAffirmative();
                 });
+                // @ts-ignore
                 (dlg.ok ?? dlg.okButton).insertAdjacentElement('afterend', copyBtn);
             }
             const prom = dlg.show();

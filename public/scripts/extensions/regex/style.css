@@ -1,3 +1,5 @@
+@import "debugger.css";
+
 .regex_settings .menu_button {
     width: fit-content;
     display: flex;
@@ -39,19 +41,19 @@
     opacity: 0.5;
 }
 
-.enable_scoped:checked ~ .regex-toggle-on {
+.enable_scoped:checked~.regex-toggle-on {
     display: block;
 }
 
-.enable_scoped:checked ~ .regex-toggle-off {
+.enable_scoped:checked~.regex-toggle-off {
     display: none;
 }
 
-.enable_scoped:not(:checked) ~ .regex-toggle-on {
+.enable_scoped:not(:checked)~.regex-toggle-on {
     display: none;
 }
 
-.enable_scoped:not(:checked) ~ .regex-toggle-off {
+.enable_scoped:not(:checked)~.regex-toggle-off {
     display: block;
 }
 
@@ -90,19 +92,19 @@ input.enable_scoped {
     cursor: pointer;
 }
 
-.disable_regex:checked ~ .regex-toggle-off {
+.disable_regex:checked~.regex-toggle-off {
     display: block;
 }
 
-.disable_regex:checked ~ .regex-toggle-on {
+.disable_regex:checked~.regex-toggle-on {
     display: none;
 }
 
-.disable_regex:not(:checked) ~ .regex-toggle-off {
+.disable_regex:not(:checked)~.regex-toggle-off {
     display: none;
 }
 
-.disable_regex:not(:checked) ~ .regex-toggle-on {
+.disable_regex:not(:checked)~.regex-toggle-on {
     display: block;
 }
 

@@ -266,6 +266,7 @@ import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
+import { initAccessibility } from './scripts/a11y.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -318,6 +319,7 @@ await new Promise((resolve) => {
 
 // Configure toast library:
 toastr.options = {
+    positionClass: 'toast-top-center',
     closeButton: false,
     progressBar: false,
     showDuration: 250,
@@ -364,7 +366,6 @@ let settingsReady = false;
 let currentVersion = '0.0.0';
 export let displayVersion = 'SillyTavern';
 
-let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('./scripts/char-data.js').v1CharData[]} */
 export let characters = [];
@@ -688,6 +689,7 @@ async function firstLoadInit() {
     initCustomSelectedSamplers();
     initDataMaid();
     initItemizedPrompts();
+    initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
@@ -1964,7 +1966,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     let avatarImg = getThumbnailUrl('persona', user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
-    generatedPromptCache = '';
 
     //for non-user mesages
     if (!mes['is_user']) {
@@ -2962,7 +2963,6 @@ class StreamingProcessor {
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
-        generatedPromptCache = '';
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
@@ -2977,7 +2977,6 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.markUIGenStopped();
-        generatedPromptCache = '';
         unblockGeneration();
 
         const noEmitTypes = ['swipe', 'impersonate', 'continue'];
@@ -3576,18 +3575,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         creatorNotes,
     } = getCharacterCardFields();
 
-    if (main_api !== 'openai') {
-        if (power_user.sysprompt.enabled) {
-            system = power_user.prefer_character_prompt && system
-                ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
-                : baseChatReplace(power_user.sysprompt.content, name1, name2);
-            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
-        } else {
-            // Nullify if it's not enabled
-            system = '';
-        }
-    }
-
     // Depth prompt (character-specific A/N)
     removeDepthPrompts();
     const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
@@ -3718,13 +3705,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
-    //////////////////////////////////
-    // Extension added strings
-    // Set non-WI AN
-    setFloatingPrompt();
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
-
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
     setExtensionPrompt(inject_ids.QUIET_PROMPT, quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
@@ -3739,7 +3719,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         creatorNotes: creatorNotes,
         trigger: GENERATION_TYPE_TRIGGERS.includes(type) ? type : 'normal',
     };
-    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
+    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth, outletEntries } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
     setExtensionPrompt(inject_ids.QUIET_PROMPT, '', extension_prompt_types.IN_PROMPT, 0, true);
 
     // Add message example WI
@@ -3771,15 +3751,39 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
         // Add all depth WI entries to prompt
-        flushWIDepthInjections();
+        flushWIInjections();
         if (Array.isArray(worldInfoDepth)) {
             worldInfoDepth.forEach((e) => {
                 const joinedEntries = e.entries.join('\n');
                 setExtensionPrompt(inject_ids.CUSTOM_WI_DEPTH_ROLE(e.depth, e.role), joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
             });
         }
+        if (outletEntries && typeof outletEntries === 'object' && Object.keys(outletEntries).length > 0) {
+            Object.entries(outletEntries).forEach(([key, value]) => {
+                setExtensionPrompt(inject_ids.CUSTOM_WI_OUTLET(key), value.join('\n'), extension_prompt_types.NONE, 0);
+            });
+        }
     } else {
         console.log('skipping WIAN');
+    }
+
+    // Set non-WI AN
+    setFloatingPrompt();
+
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
+
+    // Prepare the system prompt for Text Completion APIs
+    if (main_api !== 'openai') {
+        if (power_user.sysprompt.enabled) {
+            system = power_user.prefer_character_prompt && system
+                ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
+                : baseChatReplace(power_user.sysprompt.content, name1, name2);
+            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
+        } else {
+            // Nullify if it's not enabled
+            system = '';
+        }
     }
 
     // Collect before / after story string injections
@@ -4065,7 +4069,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         is_send_press = true;
     }
 
-    generatedPromptCache += cyclePrompt;
+    let generatedPromptCache = cyclePrompt || '';
     if (generatedPromptCache.length == 0 || type === 'continue') {
         console.debug('generating prompt');
         chatString = '';
@@ -4170,26 +4174,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return lastMesString;
     }
 
-    // Clean up the already generated prompt for seamless addition
-    function cleanupPromptCache(promptCache) {
-        // Remove the first occurrance of character's name
-        if (promptCache.trimStart().startsWith(`${name2}:`)) {
-            promptCache = promptCache.replace(`${name2}:`, '').trimStart();
-        }
-
-        // Remove the first occurrance of prompt bias
-        if (promptCache.trimStart().startsWith(promptBias)) {
-            promptCache = promptCache.replace(promptBias, '');
-        }
-
-        // Add a space if prompt cache doesn't start with one
-        if (!/^\s/.test(promptCache) && !isInstruct) {
-            promptCache = ' ' + promptCache;
-        }
-
-        return promptCache;
-    }
-
     async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
@@ -4276,11 +4260,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                         ? promptBias.trimStart()
                         : ` ${promptBias.trimStart()}`;
             }
-        }
-
-        // Prune from prompt cache if it exists
-        if (generatedPromptCache.length !== 0) {
-            generatedPromptCache = cleanupPromptCache(generatedPromptCache);
         }
 
         // Flattens the multiple prompt objects to a string.
@@ -4423,7 +4402,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data);
 
     if (dryRun) {
-        generatedPromptCache = '';
         return Promise.resolve();
     }
 
@@ -4527,7 +4505,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                             ToolManager.showToolCallError(invocationResult.errors);
                         }
                         unblockGeneration(type);
-                        generatedPromptCache = '';
                         streamingProcessor = null;
                         return;
                     }
@@ -4573,7 +4550,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // if an error was returned in data (textgenwebui), show it and throw it
         if (data.error) {
             unblockGeneration(type);
-            generatedPromptCache = '';
 
             if (data?.response) {
                 toastr.error(data.response, t`API Error`, { preventDuplicates: true });
@@ -4583,7 +4559,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (jsonSchema) {
             unblockGeneration(type);
-            generatedPromptCache = '';
             return extractJsonFromData(data);
         }
 
@@ -4626,7 +4601,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
-            generatedPromptCache = '';
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
         }
         else if (type == 'quiet') {
@@ -4658,7 +4632,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                         ToolManager.showToolCallError(invocationResult.errors);
                     }
                     unblockGeneration(type);
-                    generatedPromptCache = '';
                     return;
                 }
 
@@ -4701,8 +4674,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (typeof exception?.error?.message === 'string') {
             toastr.error(exception.error.message, t`Text generation error`, { timeOut: 10000, extendedTimeOut: 20000 });
         }
-
-        generatedPromptCache = '';
 
         unblockGeneration(type);
         console.log(exception);
@@ -4785,10 +4756,12 @@ async function doChatInject(messages, isContinue) {
     return injectedIndices;
 }
 
-function flushWIDepthInjections() {
-    //prevent custom depth WI entries (which have unique random key names) from duplicating
+function flushWIInjections() {
+    const depthPrefix = inject_ids.CUSTOM_WI_DEPTH;
+    const outletPrefix = inject_ids.CUSTOM_WI_OUTLET('');
+
     for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith(inject_ids.CUSTOM_WI_DEPTH)) {
+        if (key.startsWith(depthPrefix) || key.startsWith(outletPrefix)) {
             delete extension_prompts[key];
         }
     }
@@ -4809,7 +4782,7 @@ function unblockGeneration(type) {
     showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
-    flushWIDepthInjections();
+    flushWIInjections();
 }
 
 export function getNextMessageId(type) {
@@ -5274,7 +5247,13 @@ function extractImageFromData(data, { mainApi = null, chatCompletionSource = nul
                         return `data:${inlineData.mimeType};base64,${inlineData.data}`;
                     }
                 } break;
-
+                case chat_completion_sources.OPENROUTER: {
+                    const imageUrl = data?.choices[0]?.message?.images?.find(x => x.type === 'image_url')?.image_url?.url;
+                    if (isDataURL(imageUrl)) {
+                        return imageUrl;
+                    }
+                    // TODO: Handle remote URLs
+                }
             }
         } break;
     }
@@ -5398,6 +5377,8 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.CUSTOM:
                 case chat_completion_sources.COHERE:
                 case chat_completion_sources.XAI:
+                case chat_completion_sources.ELECTRONHUB:
+                case chat_completion_sources.AZURE_OPENAI:
                 default:
                     result = tryParse(text);
                     break;
@@ -5559,30 +5540,19 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.input_sequence));
         }
     }
-    if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
-        power_user.instruct.input_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
+
+    // Remove instruct sequences leaking to the output
+    if (isInstruct && power_user.instruct.sequences_as_stop_strings) {
+        const sequences = [
+            { value: power_user.instruct.input_sequence, apply: isImpersonate && isNotEmpty(power_user.instruct.input_sequence) },
+            { value: power_user.instruct.output_sequence, apply: !isImpersonate && isNotEmpty(power_user.instruct.output_sequence) },
+            { value: power_user.instruct.last_output_sequence, apply: !isImpersonate && isNotEmpty(power_user.instruct.last_output_sequence) },
+        ];
+        for (const seq of sequences.filter(s => s.apply)) {
+            seq.value.split('\n').filter(line => line.trim() !== '').forEach(line => { getMessage = getMessage.replaceAll(line, ''); });
+        }
     }
-    if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
-        power_user.instruct.output_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
-    }
-    if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
-        //getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
-        power_user.instruct.last_output_sequence.split('\n')
-            .filter(line => line.trim() !== '')
-            .forEach(line => {
-                getMessage = getMessage.replaceAll(line, '');
-            });
-    }
+
     // clean-up group message from excessive generations
     if (selected_group) {
         getMessage = cleanGroupMessage(getMessage);
@@ -6789,7 +6759,7 @@ export function changeMainAPI() {
         $('#ai_module_block_novel').css('display', 'none');
     }
 
-    $('#prompt_cost_block').toggle(selectedVal === 'textgenerationwebui');
+    $('#prompt_cost_block').toggle(selectedVal === 'textgenerationwebui' && textgen_settings.type === textgen_types.OPENROUTER);
 
     // Hide common settings for OpenAI
     console.debug('value?', selectedVal);
@@ -8266,11 +8236,14 @@ function openAlternateGreetings() {
  */
 function addAlternateGreeting(template, greeting, index, getArray, popup) {
     const greetingBlock = $('#alternate_greeting_form_template .alternate_greeting').clone();
-    greetingBlock.find('.alternate_greeting_text').on('input', async function () {
-        const value = $(this).val();
-        const array = getArray();
-        array[index] = value;
-    }).val(greeting);
+    greetingBlock.find('.alternate_greeting_text')
+        .attr('id', `alternate_greeting_${index}`)
+        .on('input', async function () {
+            const value = $(this).val();
+            const array = getArray();
+            array[index] = value;
+        }).val(greeting);
+    greetingBlock.find('.editor_maximize').attr('data-for', `alternate_greeting_${index}`);
     greetingBlock.find('.greeting_index').text(index + 1);
     greetingBlock.find('.delete_alternate_greeting').on('click', async function (event) {
         event.preventDefault();
@@ -9231,6 +9204,7 @@ async function removeCharacterFromUI() {
     await getCharacters();
     await printMessages();
     saveSettingsDebounced();
+    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 /**
@@ -10852,7 +10826,7 @@ jQuery(async function () {
                 }
             } break;
             case 'replace_update': {
-                const confirm = await Popup.show.confirm('Replace Character', '<p>Choose a new character card to replace this character with.</p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.<br />Proceed?');
+                const confirm = await Popup.show.confirm(t`Replace Character`, '<p>' + t`Choose a new character card to replace this character with.` + '</p>' + t`All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.` + '<br />' + t`Proceed?`);
                 if (confirm) {
                     async function uploadReplacementCard(e) {
                         const file = e.target.files[0];

@@ -870,14 +870,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
         } else if (type === 'quiet') {
-            activatedMembers = activateSwipe(group.members);
+            activatedMembers = activateSwipe(group.members, { allowSystem: true }).slice(0, 1);
 
             if (activatedMembers.length === 0) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
         else if (type === 'swipe' || type === 'continue') {
-            activatedMembers = activateSwipe(group.members);
+            activatedMembers = activateSwipe(group.members, { allowSystem: false });
 
             if (activatedMembers.length === 0) {
                 toastr.warning(t`Deleted group member swiped. To get a reply, add them back to the group.`);
@@ -984,15 +984,21 @@ function activateImpersonate(members) {
 /**
  * Activates a group member based on the last message.
  * @param {string[]} members Array of group member avatar ids
+ * @param {Object} [options] Options object
+ * @param {boolean} [options.allowSystem] Whether to allow system messages
  * @returns {number[]} Array of character ids
  */
-function activateSwipe(members) {
+function activateSwipe(members, { allowSystem = false } = {}) {
     let activatedNames = [];
     const lastMessage = chat[chat.length - 1];
 
-    if (lastMessage.is_user || lastMessage.is_system || lastMessage.extra?.type === system_message_types.NARRATOR) {
+    if (!lastMessage) {
+        return [];
+    }
+
+    if (lastMessage.is_user || (!allowSystem && lastMessage.is_system) || lastMessage.extra?.type === system_message_types.NARRATOR) {
         for (const message of chat.slice().reverse()) {
-            if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR) {
+            if (message.is_user || (!allowSystem && message.is_system) || message.extra?.type === system_message_types.NARRATOR) {
                 continue;
             }
 

@@ -26,6 +26,10 @@
                     <i class="fa-solid fa-edit"></i>
                     <small data-i18n="ext_regex_bulk_edit">Bulk Edit</small>
                 </label>
+                <div id="open_regex_debugger" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_debugger_desc" title="Advanced Regex Debugger">
+                    <i class="fa-solid fa-bug-slash"></i>
+                    <small data-i18n="ext_regex_debugger">Debugger</small>
+                </div>
             </div>
             <div class="regex_bulk_operations flex-container justifyCenter">
                 <div id="bulk_select_all_toggle" class="menu_button menu_button_icon" title="Toggle Select All">
@@ -46,6 +50,22 @@
                 <div id="bulk_delete_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-trash"></i>
                     <small data-i18n="Delete">Delete</small>
+                </div>
+            </div>
+            <hr />
+            <div id="regex_presets_block">
+                <div class="flex-container alignItemsBaseline">
+                    <strong class="flex1" data-i18n="ext_regex_presets">Regex Presets</strong>
+                </div>
+                <small data-i18n="ext_regex_presets_desc">
+                    Save and switch between groups of enabled regex scripts.
+                </small>
+                <div class="flex-container marginTop5">
+                    <select id="regex_presets" class="text_pole flex1"></select>
+                    <div id="regex_preset_create" class="menu_button fa-solid fa-file-circle-plus" data-i18n="[title]ext_regex_preset_create" title="Create a new regex preset"></div>
+                    <div id="regex_preset_update" class="menu_button fa-solid fa-save" data-i18n="[title]ext_regex_preset_update" title="Update existing regex preset"></div>
+                    <div id="regex_preset_apply" class="menu_button fa-solid fa-recycle" data-i18n="[title]ext_regex_preset_apply" title="Re-apply current preset"></div>
+                    <div id="regex_preset_delete" class="menu_button fa-solid fa-trash" data-i18n="[title]ext_regex_preset_delete" title="Delete current preset"></div>
                 </div>
             </div>
             <hr />

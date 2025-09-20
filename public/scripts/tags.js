@@ -1822,12 +1822,18 @@ const debouncedTagColoring = debounce((tagId, cssProperty, newColor) => {
 
 function onTagListHintClick() {
     $(this).toggleClass('selected');
-    $(this).siblings('.tag:not(.actionable)').toggle(100);
-    $(this).siblings('.innerActionable').toggleClass('hidden');
 
+    const $tagSiblings = $(this).siblings('.tag:not(.actionable)');
+
+    if ($(this).hasClass('selected')) {
+        $tagSiblings.show();
+    } else {
+        $tagSiblings.hide();
+    }
+
+    $(this).siblings('.innerActionable').toggleClass('hidden');
     power_user.show_tag_filters = $(this).hasClass('selected');
     saveSettingsDebounced();
-
     console.debug('show_tag_filters', power_user.show_tag_filters);
 }
 

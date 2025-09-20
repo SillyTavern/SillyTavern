@@ -1,0 +1,6 @@
+{
+    "prefix": "<|start|>assistant<|channel|>analysis<|message|>",
+    "suffix": "<|start|>assistant<|channel|>final<|message|>",
+    "separator": "",
+    "name": "OpenAI Harmony"
+}

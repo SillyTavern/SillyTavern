@@ -564,14 +564,17 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.ELECTRONHUB] && oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
                     || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
                     || (secret_state[SECRET_KEYS.XAI] && oai_settings.chat_completion_source == chat_completion_sources.XAI)
                     || (secret_state[SECRET_KEYS.AIMLAPI] && oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI)
                     || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
+                    || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
+                    || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }
@@ -641,8 +644,7 @@ export function dragElement($elmnt) {
 
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let height, width, top, left, right, bottom,
-        maxX, maxY, winHeight, winWidth,
-        topbar, topBarFirstX, topBarLastY;
+        maxX, maxY, winHeight, winWidth;
 
     const elmntName = $elmnt.attr('id');
     const elmntNameEscaped = $.escapeSelector(elmntName);
@@ -701,11 +703,6 @@ export function dragElement($elmnt) {
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
 
-        topbar = document.getElementById('top-bar');
-        const topbarstyle = getComputedStyle(topbar);
-        topBarFirstX = parseInt(topbarstyle.marginInline);
-        topBarLastY = parseInt(topbarstyle.height);
-
         // Prepare state object if missing
         if (!power_user.movingUIState[elmntName]) power_user.movingUIState[elmntName] = {};
 
@@ -732,9 +729,9 @@ export function dragElement($elmnt) {
                 if (top + $elmnt.height() >= winHeight) $elmnt.css('height', winHeight - top - 1 + 'px');
                 if (left + $elmnt.width() >= winWidth) $elmnt.css('width', winWidth - left - 1 + 'px');
             }
-            if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
-                $elmnt.css('width', width - 1 + 'px');
-            }
+            //if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
+            //    $elmnt.css('width', width - 1 + 'px');
+            // }
             $elmnt.css({ left, top });
             $elmnt.off('mouseup').on('mouseup', () => {
                 if (
@@ -931,44 +928,47 @@ export function initRossMods() {
         }
     });
 
-    // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
-    if (accountStorage.getItem('NavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(RPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
-    if (accountStorage.getItem('LNavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(LPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+    if (!isMobile()) { //only read/set pin states on non-mobile devices
+        // read the state of right Nav Lock and apply to rightnav classlist
+        $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
+        if (accountStorage.getItem('NavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(RPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
+        if (accountStorage.getItem('LNavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(LPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
+        if (accountStorage.getItem('WINavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        if ($(WIPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
     }
 
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
-    if (accountStorage.getItem('WINavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
-
-    if ($(WIPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
 
     //save state of Right nav being open or closed
     $('#rightNavDrawerIcon').on('click', function () {
@@ -1227,6 +1227,19 @@ export function initRossMods() {
                     $('#option_regenerate').trigger('click');
                     $('#options').hide();
                 }
+
+                // If there is input text, we do not trigger a regenerate - we just send it
+                if ($('#send_textarea').val() !== '') {
+                    if (shouldSendOnEnter()) {
+                        console.debug('Sending with Ctrl+Enter');
+                        event.preventDefault();
+                        sendTextareaMessage();
+                    } else {
+                        console.debug('Text area is not empty, but send on enter is disabled');
+                    }
+                    return;
+                }
+
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
