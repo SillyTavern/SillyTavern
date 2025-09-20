@@ -2049,7 +2049,7 @@ function onPronounFieldInput() {
  * Handles pronoun preset button clicks and fills the pronoun fields with preset values.
  */
 function onPronounPresetClick(event) {
-    const preset = $(event.target).data('preset');
+    const preset = $(event.currentTarget).data('preset');
     let pronouns = {};
     
     switch (preset) {
