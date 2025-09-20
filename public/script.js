@@ -2283,6 +2283,23 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.groupNotMuted = getGroupValue(false);
     environment.model = getGeneratingModel();
 
+    // Add pronoun macros from current persona
+    if (power_user.persona_descriptions && power_user.persona_descriptions[user_avatar]) {
+        const personaData = power_user.persona_descriptions[user_avatar];
+        environment['pronoun.subjective'] = personaData.pronounSubjective || '';
+        environment['pronoun.objective'] = personaData.pronounObjective || '';
+        environment['pronoun.pos_det'] = personaData.pronounPosDet || '';
+        environment['pronoun.pos_pro'] = personaData.pronounPosPro || '';
+        environment['pronoun.reflexive'] = personaData.pronounReflexive || '';
+    } else {
+        // Default empty values if no persona data
+        environment['pronoun.subjective'] = '';
+        environment['pronoun.objective'] = '';
+        environment['pronoun.pos_det'] = '';
+        environment['pronoun.pos_pro'] = '';
+        environment['pronoun.reflexive'] = '';
+    }
+
     if (additionalMacro && typeof additionalMacro === 'object') {
         Object.assign(environment, additionalMacro);
     }
@@ -6806,6 +6823,11 @@ async function doOnboarding(avatarId) {
         power_user.persona_descriptions[avatarId] = {
             description: '',
             position: persona_description_positions.IN_PROMPT,
+            pronounSubjective: '',
+            pronounObjective: '',
+            pronounPosDet: '',
+            pronounPosPro: '',
+            pronounReflexive: '',
         };
     }
 }

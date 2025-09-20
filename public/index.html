@@ -5571,6 +5571,52 @@
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
                                 <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" value="" autocomplete="off" rows="8"></textarea>
 
+                                <h4 data-i18n="Pronoun Settings">Pronoun Settings</h4>
+                                <div class="persona_pronoun_settings_container">
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="persona_pronoun_subjective" data-i18n="Subjective ({{pronoun.subjective}}):">Subjective ({{pronoun.subjective}}):</label>
+                                            <input id="persona_pronoun_subjective" class="text_pole" type="text" placeholder="e.g. she, he, they, it">
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="persona_pronoun_objective" data-i18n="Objective ({{pronoun.objective}}):">Objective ({{pronoun.objective}}):</label>
+                                            <input id="persona_pronoun_objective" class="text_pole" type="text" placeholder="e.g. her, him, them, it">
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="persona_pronoun_pos_det" data-i18n="Possessive Determiner ({{pronoun.pos_det}}):">Possessive Determiner ({{pronoun.pos_det}}):</label>
+                                            <input id="persona_pronoun_pos_det" class="text_pole" type="text" placeholder="e.g. her, his, their, its">
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="persona_pronoun_pos_pro" data-i18n="Possessive Pronoun ({{pronoun.pos_pro}}):">Possessive Pronoun ({{pronoun.pos_pro}}):</label>
+                                            <input id="persona_pronoun_pos_pro" class="text_pole" type="text" placeholder="e.g. hers, his, theirs, its">
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="persona_pronoun_reflexive" data-i18n="Reflexive ({{pronoun.reflexive}}):">Reflexive ({{pronoun.reflexive}}):</label>
+                                            <input id="persona_pronoun_reflexive" class="text_pole" type="text" placeholder="e.g. herself, himself, themselves, itself">
+                                        </div>
+                                        <div class="flex1"></div>
+                                    </div>
+                                </div>
+
+                                <div class="pronoun_preset_buttons flex-container">
+                                    <div id="pronoun_preset_she" class="menu_button menu_button_icon" data-preset="she" title="Set pronouns to She/Her" data-i18n="[title]Set pronouns to She/Her">
+                                        <div data-i18n="She/Her">She/Her</div>
+                                    </div>
+                                    <div id="pronoun_preset_he" class="menu_button menu_button_icon" data-preset="he" title="Set pronouns to He/Him" data-i18n="[title]Set pronouns to He/Him">
+                                        <div data-i18n="He/Him">He/Him</div>
+                                    </div>
+                                    <div id="pronoun_preset_they" class="menu_button menu_button_icon" data-preset="they" title="Set pronouns to They/Them" data-i18n="[title]Set pronouns to They/Them">
+                                        <div data-i18n="They/Them">They/Them</div>
+                                    </div>
+                                    <div id="pronoun_preset_it" class="menu_button menu_button_icon" data-preset="it" title="Set pronouns to It/Its" data-i18n="[title]Set pronouns to It/Its">
+                                        <div data-i18n="It/Its">It/Its</div>
+                                    </div>
+                                </div>
+
                                 <div class="flex-container justifySpaceBetween">
                                     <h4 data-i18n="Position">Position</h4>
                                     <div class="extension_token_counter widthFitContent">

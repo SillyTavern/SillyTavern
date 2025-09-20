@@ -465,6 +465,11 @@ export function initPersona(avatarId, personaName, personaDescription, personaTi
         role: DEFAULT_ROLE,
         lorebook: '',
         title: personaTitle || '',
+        pronounSubjective: '',
+        pronounObjective: '',
+        pronounPosDet: '',
+        pronounPosPro: '',
+        pronounReflexive: '',
     };
 
     saveSettingsDebounced();
@@ -522,6 +527,11 @@ export async function convertCharacterToPersona(characterId = null) {
         role: DEFAULT_ROLE,
         lorebook: '',
         title: '',
+        pronounSubjective: '',
+        pronounObjective: '',
+        pronounPosDet: '',
+        pronounPosPro: '',
+        pronounReflexive: '',
     };
 
     // If the user is currently using this persona, update the description
@@ -572,6 +582,23 @@ export function setPersonaDescription() {
         .find(`option[value="${power_user.persona_description_role}"]`)
         .prop('selected', String(true));
     $('#persona_lore_button').toggleClass('world_set', !!power_user.persona_description_lorebook);
+    
+    // Load pronoun values from current persona
+    const personaData = power_user.persona_descriptions?.[user_avatar];
+    if (personaData) {
+        $('#persona_pronoun_subjective').val(personaData.pronounSubjective || '');
+        $('#persona_pronoun_objective').val(personaData.pronounObjective || '');
+        $('#persona_pronoun_pos_det').val(personaData.pronounPosDet || '');
+        $('#persona_pronoun_pos_pro').val(personaData.pronounPosPro || '');
+        $('#persona_pronoun_reflexive').val(personaData.pronounReflexive || '');
+    } else {
+        $('#persona_pronoun_subjective').val('');
+        $('#persona_pronoun_objective').val('');
+        $('#persona_pronoun_pos_det').val('');
+        $('#persona_pronoun_pos_pro').val('');
+        $('#persona_pronoun_reflexive').val('');
+    }
+    
     countPersonaDescriptionTokens();
 
     updatePersonaUIStates();
@@ -855,6 +882,11 @@ async function selectCurrentPersona({ toastPersonaNameChange = true } = {}) {
                 lorebook: '',
                 connections: [],
                 title: '',
+                pronounSubjective: '',
+                pronounObjective: '',
+                pronounPosDet: '',
+                pronounPosPro: '',
+                pronounReflexive: '',
             };
         }
 
@@ -1002,6 +1034,11 @@ async function lockPersona(type = 'chat') {
             lorebook: '',
             connections: [],
             title: '',
+            pronounSubjective: '',
+            pronounObjective: '',
+            pronounPosDet: '',
+            pronounPosPro: '',
+            pronounReflexive: '',
         };
     }
 
@@ -1124,6 +1161,11 @@ function onPersonaDescriptionInput() {
                 role: Number($('#persona_depth_role').find(':selected').val()),
                 lorebook: '',
                 title: '',
+                pronounSubjective: '',
+                pronounObjective: '',
+                pronounPosDet: '',
+                pronounPosPro: '',
+                pronounReflexive: '',
             };
             power_user.persona_descriptions[user_avatar] = object;
         }
@@ -1231,6 +1273,11 @@ function getOrCreatePersonaDescriptor() {
             lorebook: power_user.persona_description_lorebook,
             connections: [],
             title: '',
+            pronounSubjective: '',
+            pronounObjective: '',
+            pronounPosDet: '',
+            pronounPosPro: '',
+            pronounReflexive: '',
         };
         power_user.persona_descriptions[user_avatar] = object;
     }
@@ -1776,6 +1823,11 @@ async function duplicatePersona(avatarId) {
         role: descriptor?.role ?? DEFAULT_ROLE,
         lorebook: descriptor?.lorebook ?? '',
         title: descriptor?.title ?? '',
+        pronounSubjective: descriptor?.pronounSubjective ?? '',
+        pronounObjective: descriptor?.pronounObjective ?? '',
+        pronounPosDet: descriptor?.pronounPosDet ?? '',
+        pronounPosPro: descriptor?.pronounPosPro ?? '',
+        pronounReflexive: descriptor?.pronounReflexive ?? '',
     };
 
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
@@ -1972,6 +2024,86 @@ function registerPersonaSlashCommands() {
 }
 
 /**
+ * Handles input changes for pronoun fields and saves them to the current persona.
+ */
+function onPronounFieldInput() {
+    if (!user_avatar || !power_user.persona_descriptions) {
+        return;
+    }
+    
+    const personaData = power_user.persona_descriptions[user_avatar];
+    if (!personaData) {
+        return;
+    }
+    
+    personaData.pronounSubjective = $('#persona_pronoun_subjective').val();
+    personaData.pronounObjective = $('#persona_pronoun_objective').val();
+    personaData.pronounPosDet = $('#persona_pronoun_pos_det').val();
+    personaData.pronounPosPro = $('#persona_pronoun_pos_pro').val();
+    personaData.pronounReflexive = $('#persona_pronoun_reflexive').val();
+    
+    saveSettingsDebounced();
+}
+
+/**
+ * Handles pronoun preset button clicks and fills the pronoun fields with preset values.
+ */
+function onPronounPresetClick(event) {
+    const preset = $(event.target).data('preset');
+    let pronouns = {};
+    
+    switch (preset) {
+        case 'she':
+            pronouns = {
+                subjective: 'she',
+                objective: 'her',
+                posDet: 'her',
+                posPro: 'hers',
+                reflexive: 'herself'
+            };
+            break;
+        case 'he':
+            pronouns = {
+                subjective: 'he',
+                objective: 'him',
+                posDet: 'his',
+                posPro: 'his',
+                reflexive: 'himself'
+            };
+            break;
+        case 'they':
+            pronouns = {
+                subjective: 'they',
+                objective: 'them',
+                posDet: 'their',
+                posPro: 'theirs',
+                reflexive: 'themselves'
+            };
+            break;
+        case 'it':
+            pronouns = {
+                subjective: 'it',
+                objective: 'it',
+                posDet: 'its',
+                posPro: 'its',
+                reflexive: 'itself'
+            };
+            break;
+        default:
+            return;
+    }
+    
+    $('#persona_pronoun_subjective').val(pronouns.subjective);
+    $('#persona_pronoun_objective').val(pronouns.objective);
+    $('#persona_pronoun_pos_det').val(pronouns.posDet);
+    $('#persona_pronoun_pos_pro').val(pronouns.posPro);
+    $('#persona_pronoun_reflexive').val(pronouns.reflexive);
+    
+    // Trigger the input event to save the values
+    onPronounFieldInput();
+}
+
+/**
  * Initializes the persona management and all its functionality.
  * This is called during the initialization of the page.
  */
@@ -1988,6 +2120,17 @@ export async function initPersonas() {
     $('#persona_depth_value').on('input', onPersonaDescriptionDepthValueInput);
     $('#persona_depth_role').on('input', onPersonaDescriptionDepthRoleInput);
     $('#persona_lore_button').on('click', onPersonaLoreButtonClick);
+    
+    // Pronoun field event handlers
+    $('#persona_pronoun_subjective').on('input', onPronounFieldInput);
+    $('#persona_pronoun_objective').on('input', onPronounFieldInput);
+    $('#persona_pronoun_pos_det').on('input', onPronounFieldInput);
+    $('#persona_pronoun_pos_pro').on('input', onPronounFieldInput);
+    $('#persona_pronoun_reflexive').on('input', onPronounFieldInput);
+    
+    // Pronoun preset button event handlers
+    $('[data-preset]').on('click', onPronounPresetClick);
+    
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
