@@ -1137,7 +1137,7 @@ async function loadElectronHubModels() {
         /** @type {Array<any>} */
         const data = await response.json();
         // filter by embeddings endpoint
-        const embModels = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.some(ep => typeof ep === 'string' && (ep === '/v1/embeddings' || ep.endsWith('/embeddings') || ep === 'embeddings'))) : [];
+        const embModels = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
         electronHubModels = embModels;
         populateElectronHubModelSelect();
     } catch (err) {
