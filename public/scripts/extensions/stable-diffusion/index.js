@@ -1727,16 +1727,50 @@ async function loadModels() {
             break;
     }
 
-    for (const model of models) {
-        const option = document.createElement('option');
-        option.innerText = model.text;
-        option.value = model.value;
-        option.selected = model.value === extension_settings.sd.model;
-        $('#sd_model').append(option);
+    if (extension_settings.sd.source === sources.electronhub) {
+        destroyElectronHubSelect2IfAny();
+        const groups = electronHubGroupImageModelsByVendor(models);
+        for (const [vendor, vendorModels] of groups.entries()) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = vendor;
+            for (const model of vendorModels) {
+                const option = document.createElement('option');
+                const fullText = getElectronHubImageModelText(model);
+                const nameOnly = String(model?.name || model?.id || '');
+                option.innerText = fullText;
+                option.dataset.fullText = fullText;
+                option.dataset.name = nameOnly;
+                option.value = model.id;
+                option.selected = model.id === extension_settings.sd.model;
+                optgroup.append(option);
+            }
+            $('#sd_model').append(optgroup);
+        }
+        if (typeof $.fn.select2 === 'function') {
+            initElectronHubModelSelect2();
+        } else {
+            attachElectronHubModelSelectHandlers();
+            updateElectronHubSelectedOptionText();
+        }
+    } else {
+        destroyElectronHubSelect2IfAny();
+        for (const model of models) {
+            const option = document.createElement('option');
+            option.innerText = model.text;
+            option.value = model.value;
+            option.selected = model.value === extension_settings.sd.model;
+            $('#sd_model').append(option);
+        }
+
+        $('#sd_model').off('.electronhub');
     }
 
     if (!extension_settings.sd.model && models.length > 0) {
-        extension_settings.sd.model = models[0].value;
+        if (extension_settings.sd.source === sources.electronhub) {
+            extension_settings.sd.model = models[0].id;
+        } else {
+            extension_settings.sd.model = models[0].value;
+        }
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
 }
@@ -1820,16 +1854,108 @@ async function loadElectronHubModels() {
         return [];
     }
 
-    const result = await fetch('/api/sd/electronhub/models', {
+    const result = await fetch('/api/openai/electronhub/models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
 
     if (result.ok) {
-        return await result.json();
+        /** @type {any[]} */
+        const data = await result.json();
+        return Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/images/generations')) : [];
     }
 
     return [];
+}
+
+function electronHubGroupImageModelsByVendor(array) {
+    /** @type {Map<string, any[]>} */
+    const groups = new Map();
+    for (const m of array) {
+        const vendor = String(m?.name || m?.id || 'Other').split(':')[0].trim() || 'Other';
+        if (!groups.has(vendor)) groups.set(vendor, []);
+        groups.get(vendor).push(m);
+    }
+    return groups;
+}
+
+function getElectronHubImageModelText(model) {
+    const name = String(model?.name || model?.id || '');
+    const premium = model?.premium_model ? ' | Premium' : '';
+    let price = 'Unknown';
+    if (model?.pricing?.type === 'per_image') {
+        const coeff = Number(model.pricing.coefficient);
+        if (!isNaN(coeff)) {
+            price = `$${coeff}/image`;
+        }
+    }
+    return `${name} | ${price}${premium}`;
+}
+
+function updateElectronHubSelectedOptionText() {
+    const select = /** @type {HTMLSelectElement | undefined} */ ($('#sd_model').get(0));
+    if (!select) return;
+
+    for (const option of Array.from(select.options)) {
+        const full = option?.dataset?.fullText;
+        if (full) option.textContent = full;
+    }
+
+    const selected = $(select).find(':selected').get(0);
+    if (selected && selected.dataset && selected.dataset.name) {
+        selected.textContent = selected.dataset.name;
+    }
+}
+
+function attachElectronHubModelSelectHandlers() {
+    const $sel = $('#sd_model');
+
+    $sel.off('.electronhub');
+
+    $sel.on('focus.electronhub mousedown.electronhub', function () {
+        const select = /** @type {HTMLSelectElement} */ (this);
+        for (const option of Array.from(select.options)) {
+            const full = option?.dataset?.fullText;
+            if (full) option.textContent = full;
+        }
+    });
+
+    $sel.on('change.electronhub blur.electronhub focusout.electronhub', function () {
+        updateElectronHubSelectedOptionText();
+    });
+}
+
+function electronHubTemplateResult(data) {
+    if (!data || !data.id) return data?.text;
+    const el = /** @type {HTMLOptionElement | undefined} */ (data.element);
+    const full = el?.dataset?.fullText;
+    return full || data.text;
+}
+
+function electronHubTemplateSelection(data) {
+    if (!data || !data.id) return data?.text;
+    const el = /** @type {HTMLOptionElement | undefined} */ (data.element);
+    const name = el?.dataset?.name;
+    return name || data.text;
+}
+
+function initElectronHubModelSelect2() {
+    const $sel = $('#sd_model');
+    $sel.select2({
+        placeholder: t`Select a model`,
+        searchInputPlaceholder: t`Search models...`,
+        searchInputCssClass: 'text_pole',
+        width: '100%',
+        templateResult: electronHubTemplateResult,
+        templateSelection: electronHubTemplateSelection,
+    });
+}
+
+function destroyElectronHubSelect2IfAny() {
+    const $sel = $('#sd_model');
+    if ($sel.data('select2')) {
+        $sel.select2('destroy');
+    }
 }
 
 async function loadNanoGPTModels() {
