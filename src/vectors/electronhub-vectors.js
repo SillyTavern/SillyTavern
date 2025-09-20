@@ -12,7 +12,7 @@ export async function getElectronHubBatchVector(texts, directories, model) {
     const key = readSecret(directories, SECRET_KEYS.ELECTRONHUB);
 
     if (!key) {
-        console.warn('ElectronHub: No API key found');
+        console.warn('Electron Hub: No API key found');
         throw new Error('No API key found');
     }
 
@@ -30,16 +30,16 @@ export async function getElectronHubBatchVector(texts, directories, model) {
 
     if (!response.ok) {
         const text = await response.text();
-        console.warn('ElectronHub: API request failed', response.statusText, text);
-        throw new Error('API request failed');
+        console.warn('Electron Hub: API request failed', response.statusText, text);
+        throw new Error(`API request failed: ${response.statusText} ${text}`);
     }
 
     /** @type {any} */
     const data = await response.json();
-
     if (!Array.isArray(data?.data)) {
-        console.warn('ElectronHub: API response was not an array');
-        throw new Error('API response was not an array');
+        const message = 'Electron Hub: API response is not in the expected format.';
+        console.warn(message, data);
+        throw new Error(message);
     }
 
     // Ensure order by index
