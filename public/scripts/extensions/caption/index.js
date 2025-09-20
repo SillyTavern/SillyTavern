@@ -627,6 +627,11 @@ jQuery(async function () {
         extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
         saveSettingsDebounced();
     });
+    $('#caption_refresh_models').on('click', async () => {
+        extension_settings.caption.multimodal_model = '';
+        await switchMultimodalBlocks();
+        saveSettingsDebounced();
+    });
 
     const onMessageEvent = async (index) => {
         if (!extension_settings.caption.auto_mode) {

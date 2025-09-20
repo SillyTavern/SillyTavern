@@ -40,7 +40,12 @@
                     </select>
                 </div>
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
-                    <label for="caption_multimodal_model" data-i18n="Model">Model</label>
+                    <label for="caption_multimodal_model" class="flex-container justifySpaceBetween">
+                        <span data-i18n="Model">Model</span>
+                        <div id="caption_refresh_models" class="right_menu_button margin0 padding0" title="Refresh model list" data-i18n="[title]Refresh model list">
+                            <i class="fa-solid fa-sync"></i>
+                        </div>
+                    </label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
                         <!-- AI/ML API, OpenRouter, Pollinations, NanoGPT, Mistral are added externally by JavaScript -->
                         <option data-type="cohere" value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
