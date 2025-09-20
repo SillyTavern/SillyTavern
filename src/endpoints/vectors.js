@@ -17,7 +17,6 @@ import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
 import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
-import { getElectronHubVector, getElectronHubBatchVector } from '../vectors/electronhub-vectors.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -56,7 +55,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'openai':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'electronhub':
-            return getElectronHubVector(text, directories, sourceSettings.model);
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
             return getTransformersVector(text);
         case 'extras':
@@ -107,7 +106,7 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'electronhub':
-                results.push(...await getElectronHubBatchVector(batch, directories, sourceSettings.model));
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
                 results.push(...await getTransformersBatchVector(batch));
