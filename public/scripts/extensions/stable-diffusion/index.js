@@ -1822,7 +1822,7 @@ function ensureElectronHubQualitySelect() {
                 + '    <label for="sd_electronhub_quality" data-i18n="Image Quality">Image Quality</label>'
                 + '    <select id="sd_electronhub_quality"></select>'
                 + '  </div>'
-                + '</div>'
+                + '</div>',
             );
 
             const $modelRow = $('#sd_model').closest('.flex1').closest('.flex-container');
