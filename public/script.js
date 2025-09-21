@@ -2284,21 +2284,12 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.model = getGeneratingModel();
 
     // Add pronoun macros from current persona
-    if (power_user.persona_descriptions && power_user.persona_descriptions[user_avatar]) {
-        const personaData = power_user.persona_descriptions[user_avatar];
-        environment['pronoun.subjective'] = personaData.pronoun?.subjective || '';
-        environment['pronoun.objective'] = personaData.pronoun?.objective || '';
-        environment['pronoun.pos_det'] = personaData.pronoun?.posDet || '';
-        environment['pronoun.pos_pro'] = personaData.pronoun?.posPro || '';
-        environment['pronoun.reflexive'] = personaData.pronoun?.reflexive || '';
-    } else {
-        // Default empty values if no persona data
-        environment['pronoun.subjective'] = '';
-        environment['pronoun.objective'] = '';
-        environment['pronoun.pos_det'] = '';
-        environment['pronoun.pos_pro'] = '';
-        environment['pronoun.reflexive'] = '';
-    }
+    const personaData = power_user.persona_descriptions?.[user_avatar] ?? {};
+    environment['pronoun.subjective'] = personaData.pronoun?.subjective || '';
+    environment['pronoun.objective'] = personaData.pronoun?.objective || '';
+    environment['pronoun.pos_det'] = personaData.pronoun?.posDet || '';
+    environment['pronoun.pos_pro'] = personaData.pronoun?.posPro || '';
+    environment['pronoun.reflexive'] = personaData.pronoun?.reflexive || '';
 
     if (additionalMacro && typeof additionalMacro === 'object') {
         Object.assign(environment, additionalMacro);

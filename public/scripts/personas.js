@@ -588,20 +588,12 @@ export function setPersonaDescription() {
     $('#persona_lore_button').toggleClass('world_set', !!power_user.persona_description_lorebook);
 
     // Load pronoun values from current persona
-    const personaData = power_user.persona_descriptions?.[user_avatar];
-    if (personaData) {
-        $('#persona_pronoun_subjective').val(personaData.pronoun?.subjective || '');
-        $('#persona_pronoun_objective').val(personaData.pronoun?.objective || '');
-        $('#persona_pronoun_pos_det').val(personaData.pronoun?.posDet || '');
-        $('#persona_pronoun_pos_pro').val(personaData.pronoun?.posPro || '');
-        $('#persona_pronoun_reflexive').val(personaData.pronoun?.reflexive || '');
-    } else {
-        $('#persona_pronoun_subjective').val('');
-        $('#persona_pronoun_objective').val('');
-        $('#persona_pronoun_pos_det').val('');
-        $('#persona_pronoun_pos_pro').val('');
-        $('#persona_pronoun_reflexive').val('');
-    }
+    const personaData = power_user.persona_descriptions?.[user_avatar] ?? {};
+    $('#persona_pronoun_subjective').val(personaData.pronoun?.subjective || '');
+    $('#persona_pronoun_objective').val(personaData.pronoun?.objective || '');
+    $('#persona_pronoun_pos_det').val(personaData.pronoun?.posDet || '');
+    $('#persona_pronoun_pos_pro').val(personaData.pronoun?.posPro || '');
+    $('#persona_pronoun_reflexive').val(personaData.pronoun?.reflexive || '');
 
     countPersonaDescriptionTokens();
 
