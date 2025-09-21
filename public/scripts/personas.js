@@ -582,7 +582,7 @@ export function setPersonaDescription() {
         .find(`option[value="${power_user.persona_description_role}"]`)
         .prop('selected', String(true));
     $('#persona_lore_button').toggleClass('world_set', !!power_user.persona_description_lorebook);
-    
+
     // Load pronoun values from current persona
     const personaData = power_user.persona_descriptions?.[user_avatar];
     if (personaData) {
@@ -598,7 +598,7 @@ export function setPersonaDescription() {
         $('#persona_pronoun_pos_pro').val('');
         $('#persona_pronoun_reflexive').val('');
     }
-    
+
     countPersonaDescriptionTokens();
 
     updatePersonaUIStates();
@@ -2030,18 +2030,18 @@ function onPronounFieldInput() {
     if (!user_avatar || !power_user.persona_descriptions) {
         return;
     }
-    
+
     const personaData = power_user.persona_descriptions[user_avatar];
     if (!personaData) {
         return;
     }
-    
+
     personaData.pronounSubjective = $('#persona_pronoun_subjective').val();
     personaData.pronounObjective = $('#persona_pronoun_objective').val();
     personaData.pronounPosDet = $('#persona_pronoun_pos_det').val();
     personaData.pronounPosPro = $('#persona_pronoun_pos_pro').val();
     personaData.pronounReflexive = $('#persona_pronoun_reflexive').val();
-    
+
     saveSettingsDebounced();
 }
 
@@ -2051,7 +2051,7 @@ function onPronounFieldInput() {
 function onPronounPresetClick(event) {
     const preset = $(event.currentTarget).data('preset');
     let pronouns = {};
-    
+
     switch (preset) {
         case 'she':
             pronouns = {
@@ -2059,7 +2059,7 @@ function onPronounPresetClick(event) {
                 objective: 'her',
                 posDet: 'her',
                 posPro: 'hers',
-                reflexive: 'herself'
+                reflexive: 'herself',
             };
             break;
         case 'he':
@@ -2068,7 +2068,7 @@ function onPronounPresetClick(event) {
                 objective: 'him',
                 posDet: 'his',
                 posPro: 'his',
-                reflexive: 'himself'
+                reflexive: 'himself',
             };
             break;
         case 'they':
@@ -2077,7 +2077,7 @@ function onPronounPresetClick(event) {
                 objective: 'them',
                 posDet: 'their',
                 posPro: 'theirs',
-                reflexive: 'themselves'
+                reflexive: 'themselves',
             };
             break;
         case 'it':
@@ -2086,19 +2086,19 @@ function onPronounPresetClick(event) {
                 objective: 'it',
                 posDet: 'its',
                 posPro: 'its',
-                reflexive: 'itself'
+                reflexive: 'itself',
             };
             break;
         default:
             return;
     }
-    
+
     $('#persona_pronoun_subjective').val(pronouns.subjective);
     $('#persona_pronoun_objective').val(pronouns.objective);
     $('#persona_pronoun_pos_det').val(pronouns.posDet);
     $('#persona_pronoun_pos_pro').val(pronouns.posPro);
     $('#persona_pronoun_reflexive').val(pronouns.reflexive);
-    
+
     // Trigger the input event to save the values
     onPronounFieldInput();
 }
@@ -2120,17 +2120,16 @@ export async function initPersonas() {
     $('#persona_depth_value').on('input', onPersonaDescriptionDepthValueInput);
     $('#persona_depth_role').on('input', onPersonaDescriptionDepthRoleInput);
     $('#persona_lore_button').on('click', onPersonaLoreButtonClick);
-    
+
     // Pronoun field event handlers
     $('#persona_pronoun_subjective').on('input', onPronounFieldInput);
     $('#persona_pronoun_objective').on('input', onPronounFieldInput);
     $('#persona_pronoun_pos_det').on('input', onPronounFieldInput);
     $('#persona_pronoun_pos_pro').on('input', onPronounFieldInput);
     $('#persona_pronoun_reflexive').on('input', onPronounFieldInput);
-    
+
     // Pronoun preset button event handlers
     $('[data-preset]').on('click', onPronounPresetClick);
-    
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
