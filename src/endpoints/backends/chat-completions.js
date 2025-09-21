@@ -2238,4 +2238,37 @@ multimodalModels.post('/mistral', async (req, res) => {
     }
 });
 
+multimodalModels.post('/xai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        // xAI's /models endpoint doesn't return modality info, so we must use /language-models instead
+        const response = await fetch('https://api.x.ai/v1/language-models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.input_modalities?.includes('image')).map(m => m.id);
+        if (!multimodalModels.includes('grok-4-0709')) {
+            // The endpoint says it doesn't support images, but it does
+            multimodalModels.push('grok-4-0709');
+        }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.use('/multimodal-models', multimodalModels);
