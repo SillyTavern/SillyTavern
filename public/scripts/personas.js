@@ -465,11 +465,13 @@ export function initPersona(avatarId, personaName, personaDescription, personaTi
         role: DEFAULT_ROLE,
         lorebook: '',
         title: personaTitle || '',
-        pronounSubjective: '',
-        pronounObjective: '',
-        pronounPosDet: '',
-        pronounPosPro: '',
-        pronounReflexive: '',
+        pronoun: {
+            subjective: '',
+            objective: '',
+            posDet: '',
+            posPro: '',
+            reflexive: '',
+        },
     };
 
     saveSettingsDebounced();
@@ -527,11 +529,13 @@ export async function convertCharacterToPersona(characterId = null) {
         role: DEFAULT_ROLE,
         lorebook: '',
         title: '',
-        pronounSubjective: '',
-        pronounObjective: '',
-        pronounPosDet: '',
-        pronounPosPro: '',
-        pronounReflexive: '',
+        pronoun: {
+            subjective: '',
+            objective: '',
+            posDet: '',
+            posPro: '',
+            reflexive: '',
+        },
     };
 
     // If the user is currently using this persona, update the description
@@ -586,11 +590,11 @@ export function setPersonaDescription() {
     // Load pronoun values from current persona
     const personaData = power_user.persona_descriptions?.[user_avatar];
     if (personaData) {
-        $('#persona_pronoun_subjective').val(personaData.pronounSubjective || '');
-        $('#persona_pronoun_objective').val(personaData.pronounObjective || '');
-        $('#persona_pronoun_pos_det').val(personaData.pronounPosDet || '');
-        $('#persona_pronoun_pos_pro').val(personaData.pronounPosPro || '');
-        $('#persona_pronoun_reflexive').val(personaData.pronounReflexive || '');
+        $('#persona_pronoun_subjective').val(personaData.pronoun?.subjective || '');
+        $('#persona_pronoun_objective').val(personaData.pronoun?.objective || '');
+        $('#persona_pronoun_pos_det').val(personaData.pronoun?.posDet || '');
+        $('#persona_pronoun_pos_pro').val(personaData.pronoun?.posPro || '');
+        $('#persona_pronoun_reflexive').val(personaData.pronoun?.reflexive || '');
     } else {
         $('#persona_pronoun_subjective').val('');
         $('#persona_pronoun_objective').val('');
@@ -882,11 +886,13 @@ async function selectCurrentPersona({ toastPersonaNameChange = true } = {}) {
                 lorebook: '',
                 connections: [],
                 title: '',
-                pronounSubjective: '',
-                pronounObjective: '',
-                pronounPosDet: '',
-                pronounPosPro: '',
-                pronounReflexive: '',
+                pronoun: {
+                    subjective: '',
+                    objective: '',
+                    posDet: '',
+                    posPro: '',
+                    reflexive: '',
+                },
             };
         }
 
@@ -1034,11 +1040,13 @@ async function lockPersona(type = 'chat') {
             lorebook: '',
             connections: [],
             title: '',
-            pronounSubjective: '',
-            pronounObjective: '',
-            pronounPosDet: '',
-            pronounPosPro: '',
-            pronounReflexive: '',
+            pronoun: {
+                subjective: '',
+                objective: '',
+                posDet: '',
+                posPro: '',
+                reflexive: '',
+            },
         };
     }
 
@@ -1161,11 +1169,13 @@ function onPersonaDescriptionInput() {
                 role: Number($('#persona_depth_role').find(':selected').val()),
                 lorebook: '',
                 title: '',
-                pronounSubjective: '',
-                pronounObjective: '',
-                pronounPosDet: '',
-                pronounPosPro: '',
-                pronounReflexive: '',
+                pronoun: {
+                    subjective: '',
+                    objective: '',
+                    posDet: '',
+                    posPro: '',
+                    reflexive: '',
+                },
             };
             power_user.persona_descriptions[user_avatar] = object;
         }
@@ -1273,11 +1283,13 @@ function getOrCreatePersonaDescriptor() {
             lorebook: power_user.persona_description_lorebook,
             connections: [],
             title: '',
-            pronounSubjective: '',
-            pronounObjective: '',
-            pronounPosDet: '',
-            pronounPosPro: '',
-            pronounReflexive: '',
+            pronoun: {
+                subjective: '',
+                objective: '',
+                posDet: '',
+                posPro: '',
+                reflexive: '',
+            },
         };
         power_user.persona_descriptions[user_avatar] = object;
     }
@@ -1823,11 +1835,13 @@ async function duplicatePersona(avatarId) {
         role: descriptor?.role ?? DEFAULT_ROLE,
         lorebook: descriptor?.lorebook ?? '',
         title: descriptor?.title ?? '',
-        pronounSubjective: descriptor?.pronounSubjective ?? '',
-        pronounObjective: descriptor?.pronounObjective ?? '',
-        pronounPosDet: descriptor?.pronounPosDet ?? '',
-        pronounPosPro: descriptor?.pronounPosPro ?? '',
-        pronounReflexive: descriptor?.pronounReflexive ?? '',
+        pronoun: {
+            subjective: descriptor?.pronoun?.subjective ?? '',
+            objective: descriptor?.pronoun?.objective ?? '',
+            posDet: descriptor?.pronoun?.posDet ?? '',
+            posPro: descriptor?.pronoun?.posPro ?? '',
+            reflexive: descriptor?.pronoun?.reflexive ?? '',
+        },
     };
 
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
@@ -2036,11 +2050,14 @@ function onPronounFieldInput() {
         return;
     }
 
-    personaData.pronounSubjective = $('#persona_pronoun_subjective').val();
-    personaData.pronounObjective = $('#persona_pronoun_objective').val();
-    personaData.pronounPosDet = $('#persona_pronoun_pos_det').val();
-    personaData.pronounPosPro = $('#persona_pronoun_pos_pro').val();
-    personaData.pronounReflexive = $('#persona_pronoun_reflexive').val();
+    if (!personaData.pronoun) {
+        personaData.pronoun = {};
+    }
+    personaData.pronoun.subjective = $('#persona_pronoun_subjective').val();
+    personaData.pronoun.objective = $('#persona_pronoun_objective').val();
+    personaData.pronoun.posDet = $('#persona_pronoun_pos_det').val();
+    personaData.pronoun.posPro = $('#persona_pronoun_pos_pro').val();
+    personaData.pronoun.reflexive = $('#persona_pronoun_reflexive').val();
 
     saveSettingsDebounced();
 }
