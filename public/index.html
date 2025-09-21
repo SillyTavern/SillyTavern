@@ -3624,18 +3624,12 @@
                             <div data-for="api_key_xai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
-                            <h4 data-i18n="xAI Model">xAI Model</h4>
-                            <select id="model_xai_select">
-                                <option value="grok-4-0709">grok-4-0709</option>
-                                <option value="grok-3-beta">grok-3-beta</option>
-                                <option value="grok-3-fast-beta">grok-3-fast-beta</option>
-                                <option value="grok-3-mini-beta">grok-3-mini-beta</option>
-                                <option value="grok-3-mini-fast-beta">grok-3-mini-fast-beta</option>
-                                <option value="grok-2-vision-1212">grok-2-vision-1212</option>
-                                <option value="grok-2-1212">grok-2-1212</option>
-                                <option value="grok-vision-beta">grok-vision-beta</option>
-                                <option value="grok-beta">grok-beta</option>
-                            </select>
+                            <div>
+                                <h4 data-i18n="xAI Model">xAI Model</h4>
+                                <select id="model_xai_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
                         </div>
                         <div id="aimlapi_form" data-source="aimlapi">
                             <h4>

@@ -2028,6 +2028,24 @@ function saveModelList(data) {
             .append(new Option(modelId || 'None', modelId || '', true, true))
             .trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
+        $('#model_xai_select').empty();
+        model_list.forEach((model) => {
+            $('#model_xai_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.xai_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.xai_model)) {
+            oai_settings.xai_model = model_list[0].id;
+        }
+
+        $('#model_xai_select').val(oai_settings.xai_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -2452,19 +2470,24 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     if (isXAI) {
-        if (generate_data.model.includes('grok-4')) {
+        const model = generate_data.model;
+        if (model.includes('grok-3-mini')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
             delete generate_data.stop;
+        } else {
+            // As of 2025/09/21, only grok-3-mini accepts reasoning_effort
             delete generate_data.reasoning_effort;
         }
-        if (generate_data.model.includes('grok-3-mini')) {
+
+        if (model.includes('grok-4') || model.includes('grok-code')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
-        }
-        if (generate_data.model.includes('grok-vision')) {
-            delete generate_data.tools;
-            delete generate_data.tool_choice;
+
+            // grok-4-fast-non-reasoning accepts stop
+            if (!model.includes('grok-4-fast-non-reasoning')) {
+                delete generate_data.stop;
+            }
         }
     }
 
@@ -4916,6 +4939,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_xai_select')) {
+        if (!value) {
+            console.debug('Null XAI model selected. Ignoring.');
+            return;
+        }
         console.log('XAI model changed to', value);
         oai_settings.xai_model = value;
     }
@@ -5184,11 +5211,14 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', unlocked_max);
         } else if (oai_settings.xai_model.includes('grok-2-vision')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (oai_settings.xai_model.includes('grok-vision')) {
-            $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4-fast')) {
+            $('#openai_max_context').attr('max', max_2mil);
         } else if (oai_settings.xai_model.includes('grok-4')) {
             $('#openai_max_context').attr('max', max_256k);
+        } else if (oai_settings.xai_model.includes('grok-code')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
+            // grok 2 and grok 3
             $('#openai_max_context').attr('max', max_128k);
         }
 
@@ -5737,7 +5767,6 @@ export function isImageInliningSupported() {
         // xAI (Grok)
         'grok-4',
         'grok-2-vision',
-        'grok-vision',
         // Moonshot
         'moonshot-v1-8k-vision-preview',
         'moonshot-v1-32k-vision-preview',
@@ -5770,6 +5799,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.COHERE:
             return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         case chat_completion_sources.XAI:
+            // TODO: xAI's /models endpoint doesn't return modality info
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));

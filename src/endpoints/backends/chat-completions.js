@@ -1012,7 +1012,7 @@ async function sendXaiRequest(request, response) {
             bodyParams['stop'] = request.body.stop;
         }
 
-        if (request.body.reasoning_effort && ['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+        if (request.body.reasoning_effort) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
@@ -2231,6 +2231,39 @@ multimodalModels.post('/mistral', async (req, res) => {
         /** @type {any} */
         const data = await response.json();
         const multimodalModels = data.data.filter(m => m.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/xai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        // xAI's /models endpoint doesn't return modality info, so we must use /language-models instead
+        const response = await fetch('https://api.x.ai/v1/language-models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.input_modalities?.includes('image')).map(m => m.id);
+        if (!multimodalModels.includes('grok-4-0709')) {
+            // The endpoint says it doesn't support images, but it does
+            multimodalModels.push('grok-4-0709');
+        }
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
