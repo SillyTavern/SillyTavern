@@ -2059,47 +2059,17 @@ function onPronounFieldInput() {
  */
 function onPronounPresetClick(event) {
     const preset = $(event.currentTarget).data('preset');
-    let pronouns = {};
-
-    switch (preset) {
-        case 'she':
-            pronouns = {
-                subjective: 'she',
-                objective: 'her',
-                posDet: 'her',
-                posPro: 'hers',
-                reflexive: 'herself',
-            };
-            break;
-        case 'he':
-            pronouns = {
-                subjective: 'he',
-                objective: 'him',
-                posDet: 'his',
-                posPro: 'his',
-                reflexive: 'himself',
-            };
-            break;
-        case 'they':
-            pronouns = {
-                subjective: 'they',
-                objective: 'them',
-                posDet: 'their',
-                posPro: 'theirs',
-                reflexive: 'themselves',
-            };
-            break;
-        case 'it':
-            pronouns = {
-                subjective: 'it',
-                objective: 'it',
-                posDet: 'its',
-                posPro: 'its',
-                reflexive: 'itself',
-            };
-            break;
-        default:
-            return;
+    
+    const presets = {
+        she: { subjective: 'she', objective: 'her', posDet: 'her', posPro: 'hers', reflexive: 'herself' },
+        he: { subjective: 'he', objective: 'him', posDet: 'his', posPro: 'his', reflexive: 'himself' },
+        they: { subjective: 'they', objective: 'them', posDet: 'their', posPro: 'theirs', reflexive: 'themselves' },
+        it: { subjective: 'it', objective: 'it', posDet: 'its', posPro: 'its', reflexive: 'itself' },
+    };
+    
+    const pronouns = presets[preset];
+    if (!pronouns) {
+        return;
     }
 
     $('#persona_pronoun_subjective').val(pronouns.subjective);
