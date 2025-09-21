@@ -2059,14 +2059,14 @@ function onPronounFieldInput() {
  */
 function onPronounPresetClick(event) {
     const preset = $(event.currentTarget).data('preset');
-    
+
     const presets = {
         she: { subjective: 'she', objective: 'her', posDet: 'her', posPro: 'hers', reflexive: 'herself' },
         he: { subjective: 'he', objective: 'him', posDet: 'his', posPro: 'his', reflexive: 'himself' },
         they: { subjective: 'they', objective: 'them', posDet: 'their', posPro: 'theirs', reflexive: 'themselves' },
         it: { subjective: 'it', objective: 'it', posDet: 'its', posPro: 'its', reflexive: 'itself' },
     };
-    
+
     const pronouns = presets[preset];
     if (!pronouns) {
         return;
