@@ -7598,7 +7598,7 @@ function select_rm_create({ switchMenu = true } = {}) {
     $('#description_textarea').val(create_save.description);
     $('#character_world').val(create_save.world);
     $('#creator_notes_textarea').val(create_save.creator_notes);
-    $('#creator_notes_spoiler').html(formatCreatorNotes(create_save.creator_notes, ''));
+    $('#creator_notes_spoiler').html(formatCreatorNotes(create_save.creator_notes, characters[this_chid]?.avatar ?? ''));
     $('#post_history_instructions_textarea').val(create_save.post_history_instructions);
     $('#system_prompt_textarea').val(create_save.system_prompt);
     $('#tags_textarea').val(create_save.tags);
@@ -9792,6 +9792,11 @@ jQuery(async function () {
                 saveCharacterDebounced();
             }
         });
+    });
+
+    $('#creator_notes_textarea').on('input', function () {
+        const notes = String($('#creator_notes_textarea').val());
+        $('#creator_notes_spoiler').html(formatCreatorNotes(notes, characters[this_chid]?.avatar ?? ''));
     });
 
     $('#favorite_button').on('click', function () {
