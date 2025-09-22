@@ -4057,7 +4057,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     if (isContinue) {
         // Coping mechanism for OAI spacing
-        if (main_api === 'openai' && !cyclePrompt.endsWith(' ')) {
+        if (main_api === 'openai' && !cyclePrompt.endsWith(' ') && !oai_settings.continue_prefill) {
             cyclePrompt += oai_settings.continue_postfix;
             continue_mag += oai_settings.continue_postfix;
         }
