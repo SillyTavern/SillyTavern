@@ -3705,6 +3705,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
+    // Set non-WI AN
+    setFloatingPrompt();
+
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
     setExtensionPrompt(inject_ids.QUIET_PROMPT, quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
@@ -3766,9 +3769,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     } else {
         console.log('skipping WIAN');
     }
-
-    // Set non-WI AN
-    setFloatingPrompt();
 
     // Add persona description to prompt
     addPersonaDescriptionExtensionPrompt();
