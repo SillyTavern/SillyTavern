@@ -139,9 +139,9 @@
         return el;
       },
 
-      getPageLinkTag: function(index) {
+      getPageLinkTag: function(text) {
         var pageLink = attributes.pageLink;
-        return pageLink ? `<a href="${pageLink}">${index}</a>` : `<a>${index}</a>`;
+        return pageLink ? `<a href="${pageLink}">${text}</a>` : `<a>${text}</a>`;
       },
 
       // Generate HTML for page numbers
@@ -233,6 +233,8 @@
 
         var prevText = attributes.prevText;
         var nextText = attributes.nextText;
+        var firstText = attributes.firstText;
+        var lastText = attributes.lastText;
         var goButtonText = attributes.goButtonText;
 
         var classPrefix = attributes.classPrefix;
@@ -240,6 +242,8 @@
         var ulClassName = attributes.ulClassName || '';
         var prevClassName = attributes.prevClassName || '';
         var nextClassName = attributes.nextClassName || '';
+        var firstClassName = attributes.firstClassName || '';
+        var lastClassName = attributes.lastClassName || '';
 
         var html = '';
         var sizeSelect = `<select class="J-paginationjs-size-select">`;
@@ -295,9 +299,11 @@
           if (showPrevious) {
             if (currentPage <= 1) {
               if (!autoHidePrevious) {
+                html += `<li class="${classPrefix}-first ${disableClassName} ${firstClassName}"><a>${firstText}</a></li>`;
                 html += `<li class="${classPrefix}-prev ${disableClassName} ${prevClassName}"><a>${prevText}</a></li>`;
               }
             } else {
+              html += `<li class="${classPrefix}-first J-paginationjs-first ${firstClassName}" data-num="1" title="First page">${getPageLinkTag(firstText)}</li>`;
               html += `<li class="${classPrefix}-prev J-paginationjs-previous ${prevClassName}" data-num="${currentPage - 1}" title="Previous page">${getPageLinkTag(prevText)}</li>`;
             }
           }
@@ -312,9 +318,11 @@
             if (currentPage >= totalPage) {
               if (!autoHideNext) {
                 html += `<li class="${classPrefix}-next ${disableClassName} ${nextClassName}"><a>${nextText}</a></li>`;
+                html += `<li class="${classPrefix}-last ${disableClassName} ${lastClassName}"><a>${lastText}</a></li>`;
               }
             } else {
               html += `<li class="${classPrefix}-next J-paginationjs-next ${nextClassName}" data-num="${currentPage + 1}" title="Next page">${getPageLinkTag(nextText)}</li>`;
+              html += `<li class="${classPrefix}-last J-paginationjs-last ${lastClassName}" data-num="${totalPage}" title="Last page">${getPageLinkTag(lastText)}</li>`;
             }
           }
           html += `</ul></div>`;
@@ -540,6 +548,14 @@
 
       next: function(callback) {
         this.go(this.model.pageNumber + 1, callback);
+      },
+
+      first: function(callback) {
+        this.go(1, callback);
+      },
+
+      last: function(callback) {
+        this.go(this.model.totalPage, callback);
       },
 
       disable: function() {
@@ -774,6 +790,38 @@
           if (!attributes.pageLink) return false;
         });
 
+        // First button click listener
+        el.on('click', '.J-paginationjs-first', function(event) {
+          var current = $(event.currentTarget);
+          var pageNumber = current.attr('data-num').trim();
+
+          if (!pageNumber || current.hasClass(attributes.disableClassName)) return;
+
+          if (self.callHook('beforeFirstOnClick', event, pageNumber) === false) return false;
+
+          self.go(pageNumber);
+
+          self.callHook('afterFirstOnClick', event, pageNumber);
+
+          if (!attributes.pageLink) return false;
+        });
+
+        // Last button click listener
+        el.on('click', '.J-paginationjs-last', function(event) {
+          var current = $(event.currentTarget);
+          var pageNumber = current.attr('data-num').trim();
+
+          if (!pageNumber || current.hasClass(attributes.disableClassName)) return;
+
+          if (self.callHook('beforeLastOnClick', event, pageNumber) === false) return false;
+
+          self.go(pageNumber);
+
+          self.callHook('afterLastOnClick', event, pageNumber);
+
+          if (!attributes.pageLink) return false;
+        });
+
         // Go button click listener
         el.on('click', '.J-paginationjs-go-button', function(event) {
           var pageNumber = $('.J-paginationjs-go-pagenumber', el).val();
@@ -831,6 +879,16 @@
         // Next page
         container.on(eventPrefix + 'next', function(event, done) {
           self.next(done);
+        });
+
+        // First page
+        container.on(eventPrefix + 'first', function(event, done) {
+          self.first(done);
+        });
+
+        // Last page
+        container.on(eventPrefix + 'last', function(event, done) {
+          self.last(done);
         });
 
         // Disable
@@ -892,6 +950,8 @@
         switch (options) {
           case 'previous':
           case 'next':
+          case 'first':
+          case 'last':
           case 'go':
           case 'disable':
           case 'enable':
@@ -990,6 +1050,12 @@
 
     // 'Next' text
     nextText: '&rsaquo;',
+
+    // 'First' text
+    firstText: '&laquo;',
+
+    // 'Last' text
+    lastText: '&raquo;',
 
     // Ellipsis text
     ellipsisText: '...',
@@ -1149,7 +1215,7 @@
 
   // uninstall plugin
   function uninstallPlugin(target) {
-    var events = ['go', 'previous', 'next', 'disable', 'enable', 'refresh', 'show', 'hide', 'destroy'];
+    var events = ['go', 'previous', 'next', 'first', 'last', 'disable', 'enable', 'refresh', 'show', 'hide', 'destroy'];
 
     // off all events
     $.each(events, function(index, value) {

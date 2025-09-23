@@ -935,6 +935,8 @@ export async function printCharacters(fullRefresh = false) {
         showSizeChanger: true,
         prevText: '<',
         nextText: '>',
+        firstText: '⇤',
+        lastText: '⇥',
         formatNavigator: PAGINATION_TEMPLATE,
         formatSizeChanger: renderPaginationDropdown(pageSize, sizeChangerOptions),
         showNavigator: true,
