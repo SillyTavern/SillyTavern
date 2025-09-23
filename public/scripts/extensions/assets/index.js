@@ -82,8 +82,6 @@ function getAuthorFromUrl(url) {
             result.name = pathSegments[0];
             result.url = `${parsedUrl.protocol}//${parsedUrl.hostname}/${result.name}`;
         }
-
-        return result;
     }
     catch (error) {
         console.debug(DEBUG_PREFIX, 'Error parsing URL:', error);
@@ -221,7 +219,7 @@ async function downloadAssetsList(url) {
 
                         const assetBlock = $('<i></i>')
                             .append(element)
-                            .append(`<div class="flex-container flexFlowColumn flexNoGap wide100p">
+                            .append(`<div class="flex-container flexFlowColumn flexNoGap wide100p overflowHidden">
                                         <span class="asset-name flex-container alignitemscenter">
                                             <b>${displayName}</b>
                                             <a class="asset_preview" href="${url}" target="_blank" title="${title}">
@@ -230,7 +228,7 @@ async function downloadAssetsList(url) {
                                             (toolTag ? '<span class="tag" title="' + t`Adds a function tool` + '"><i class="fa-solid fa-sm fa-wrench"></i> ' +
                                             t`Tool` + '</span>' : '') +
                                             '<span class="expander"></span>' +
-                                            (author.name ? `<a href="${author.url}" target="_blank" class="asset-author-info"><i class="fa-solid fa-at fa-xs"></i>${author.name}</a>` : '') +
+                                            (author.name ? `<a href="${author.url}" target="_blank" class="asset-author-info"><i class="fa-solid fa-at fa-xs"></i><span>${author.name}</span></a>` : '') +
                                         `</span>
                                         <small class="asset-description">
                                             ${description}
