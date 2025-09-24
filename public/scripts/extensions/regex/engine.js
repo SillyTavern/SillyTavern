@@ -113,17 +113,41 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
                     console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is greater than maxDepth ${script.maxDepth}`);
                     return;
                 }
+            } else {
+                // Debug: Log when depth is not a number
+                console.debug(`getRegexedString: Script ${script.scriptName} - depth is not a number: ${depth} (typeof: ${typeof depth})`);
+
+                // When depth is null/undefined, treat it as depth 0 for filtering purposes
+                // This prevents scripts with minDepth > 0 from running on null depth
+                if (depth === null || depth === undefined) {
+                    const effectiveDepth = 0;
+                    if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= -1 && effectiveDepth < script.minDepth) {
+                        console.debug(`getRegexedString: Skipping script ${script.scriptName} because null depth (treated as ${effectiveDepth}) is less than minDepth ${script.minDepth}`);
+                        return;
+                    }
+                }
             }
 
             if (script.placement.includes(placement)) {
+                // Debug logging for the specific script
+                if (script.scriptName === 'Statbox Deletion (Visible)') {
+                    console.log(`DEBUG: ${script.scriptName} - Processing with depth: ${depth}, minDepth: ${script.minDepth}, placement: ${placement}, isMarkdown: ${isMarkdown}`);
+                }
+
                 const processedString = runRegexScript(script, finalString, { characterOverride });
 
                 // If permanent edit is enabled and this is display-time processing (isMarkdown=true)
                 // and the text changed, save it back to the chat file
                 if (script.permanentEdit && isMarkdown && processedString !== finalString && typeof depth === 'number') {
+                    if (script.scriptName === 'Statbox Deletion (Visible)') {
+                        console.log(`DEBUG: ${script.scriptName} - Permanent edit triggered for depth ${depth}`);
+                    }
                     updateChatMessagePermanently(placement, characterOverride, depth, processedString, finalString).catch(error => {
                         console.warn('Failed to permanently update chat message:', error);
                     });
+                } else if (script.permanentEdit && script.scriptName === 'Statbox Deletion (Visible)') {
+                    // Debug: Show why permanent edit was NOT triggered
+                    console.log(`DEBUG: ${script.scriptName} - Permanent edit NOT triggered. permanentEdit: ${script.permanentEdit}, isMarkdown: ${isMarkdown}, textChanged: ${processedString !== finalString}, depthIsNumber: ${typeof depth === 'number'}`);
                 }
 
                 finalString = processedString;
@@ -145,8 +169,8 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
  */
 async function updateChatMessagePermanently(placement, characterOverride, depth, newText, originalText) {
     try {
-        // Import chat array from main script
-        const { chat, saveChatConditional } = await import('../../../script.js');
+        // Import chat array and substituteParams from main script
+        const { chat, saveChatConditional, substituteParams } = await import('../../../script.js');
 
         // Calculate message index from depth
         const messageIndex = chat.length - depth - 1;
@@ -161,11 +185,28 @@ async function updateChatMessagePermanently(placement, characterOverride, depth,
                 (placement === regex_placement.SLASH_COMMAND && message.extra?.type === 'narrator')
             );
 
-            if (isCorrectType && message.mes === originalText) {
-                message.mes = newText;
+            if (isCorrectType) {
+                // Try direct match first (for depth 0 and already processed messages)
+                let shouldUpdate = message.mes === originalText;
 
-                // Debounced save to avoid excessive saves
-                saveChatConditional();
+                // If direct match fails, try matching against processed stored text
+                // This handles cases where stored message has templates ({{char}}) but originalText has processed text
+                if (!shouldUpdate) {
+                    try {
+                        const processedStoredText = substituteParams(message.mes, undefined, characterOverride);
+                        shouldUpdate = processedStoredText === originalText;
+                    } catch (e) {
+                        // If substituteParams fails, fall back to direct comparison
+                        console.debug('Failed to process stored message text for comparison:', e);
+                    }
+                }
+
+                if (shouldUpdate) {
+                    message.mes = newText;
+
+                    // Debounced save to avoid excessive saves
+                    saveChatConditional();
+                }
             }
         }
     } catch (error) {
