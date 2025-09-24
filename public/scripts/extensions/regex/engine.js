@@ -94,8 +94,8 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             (script.markdownOnly && isMarkdown) ||
             // Script applies to Generate and input is Generate
             (script.promptOnly && isPrompt) ||
-            // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
-            (!script.markdownOnly && !script.promptOnly && !isMarkdown && !isPrompt)
+            // Script applies to all cases when neither "only"s are true
+            (!script.markdownOnly && !script.promptOnly)
         ) {
             if (isEdit && !script.runOnEdit) {
                 console.debug(`getRegexedString: Skipping script ${script.scriptName} because it does not run on edit`);
@@ -116,12 +116,62 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             }
 
             if (script.placement.includes(placement)) {
-                finalString = runRegexScript(script, finalString, { characterOverride });
+                const processedString = runRegexScript(script, finalString, { characterOverride });
+
+                // If permanent edit is enabled and this is display-time processing (isMarkdown=true)
+                // and the text changed, save it back to the chat file
+                if (script.permanentEdit && isMarkdown && processedString !== finalString && typeof depth === 'number') {
+                    updateChatMessagePermanently(placement, characterOverride, depth, processedString, finalString).catch(error => {
+                        console.warn('Failed to permanently update chat message:', error);
+                    });
+                }
+
+                finalString = processedString;
             }
         }
     });
 
     return finalString;
+}
+
+/**
+ * Updates a chat message permanently when permanent edit is enabled
+ * @param {number} placement The regex placement type
+ * @param {string} characterOverride Character name override
+ * @param {number} depth Message depth
+ * @param {string} newText The processed text
+ * @param {string} originalText The original text
+ * @returns {Promise<void>}
+ */
+async function updateChatMessagePermanently(placement, characterOverride, depth, newText, originalText) {
+    try {
+        // Import chat array from main script
+        const { chat, saveChatConditional } = await import('../../../script.js');
+
+        // Calculate message index from depth
+        const messageIndex = chat.length - depth - 1;
+
+        if (messageIndex >= 0 && messageIndex < chat.length) {
+            const message = chat[messageIndex];
+
+            // Verify this is the right message type for the placement
+            const isCorrectType = (
+                (placement === regex_placement.USER_INPUT && message.is_user) ||
+                (placement === regex_placement.AI_OUTPUT && !message.is_user && !message.is_system) ||
+                (placement === regex_placement.SLASH_COMMAND && message.extra?.type === 'narrator')
+            );
+
+            if (isCorrectType && message.mes === originalText) {
+                message.mes = newText;
+
+                // Debounced save to avoid excessive saves
+                saveChatConditional();
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to permanently update chat message:', error);
+        throw error; // Re-throw so caller can handle if needed
+    }
 }
 
 /**
