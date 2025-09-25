@@ -5741,7 +5741,8 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .paginationjs-pages ul li a {
-    padding: 0.05em 0.5em;
+    padding: 0.25em;
+    font-family: 'Font Awesome 6 Free';
     text-decoration: none;
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
