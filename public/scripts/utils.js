@@ -25,6 +25,8 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= tot
 export const localizePagination = function(container) {
     container.find('[title="Next page"]').attr('title', t`Next page`);
     container.find('[title="Previous page"]').attr('title', t`Previous page`);
+    container.find('[title="First page"]').attr('title', t`First page`);
+    container.find('[title="Last page"]').attr('title', t`Last page`);
 };
 
 /**
