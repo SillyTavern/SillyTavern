@@ -4910,7 +4910,6 @@
                                     <small data-i18n="Smooth Streaming">
                                         Smooth Streaming
                                     </small>
-                                    <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
                                 </div>
                                 <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
                                     <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
@@ -4920,6 +4919,11 @@
                                         <span data-i18n="Fast">Fast</span>
                                     </div>
                                 </div>
+                            </label>
+                            <label class="checkbox_label" for="stream_fade_in" title="Fade in streamed text when it appears, instead of it just popping in." data-i18n="[title]Fade in streamed text when it appears, instead of it just popping in">
+                                <input id="stream_fade_in" type="checkbox" />
+                                <small data-i18n="Stream Fade-In">Stream Fade-In</small>
+                                <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
                             </label>
 
                             <label for="play_message_sound" class="checkbox_label" title="Play a sound when a message generation finishes." data-i18n="[title]Play a sound when a message generation finishes">
