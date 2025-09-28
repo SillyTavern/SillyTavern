@@ -15,15 +15,14 @@ export function isSegmenterSupported() {
  * @param {'word'|'grapheme'|'sentence'} [granularity='word'] Text split granularity
  */
 export function segmentTextInElement(htmlElement, htmlContent, granularity = 'word') {
+    htmlElement.innerHTML = htmlContent;
+
     if (!isSegmenterSupported()) {
         return;
     }
 
     // TODO: Support more locales, make granularity configurable.
     const segmenter = new Intl.Segmenter('en-US', { granularity });
-
-    htmlElement.innerHTML = htmlContent;
-
     const textNodes = [];
     const walker = document.createTreeWalker(htmlElement, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
