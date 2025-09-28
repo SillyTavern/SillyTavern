@@ -766,44 +766,47 @@ export function initRossMods() {
         }
     });
 
-    // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
-    if (accountStorage.getItem('NavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(RPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
-    if (accountStorage.getItem('LNavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(LPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+    if (!isMobile()) { //only read/set pin states on non-mobile devices
+        // read the state of right Nav Lock and apply to rightnav classlist
+        $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
+        if (accountStorage.getItem('NavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(RPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
+        if (accountStorage.getItem('LNavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(LPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
+        if (accountStorage.getItem('WINavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        if ($(WIPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
     }
 
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
-    if (accountStorage.getItem('WINavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
-
-    if ($(WIPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
 
     //save state of Right nav being open or closed
     $('#rightNavDrawerIcon').on('click', function () {

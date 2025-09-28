@@ -526,12 +526,13 @@ export class ToolManager {
             for (let choiceIndex = 0; choiceIndex < parsed.candidates.length; choiceIndex++) {
                 const candidate = parsed.candidates[choiceIndex];
                 if (Array.isArray(candidate?.content?.parts)) {
-                    for (let toolCallIndex = 0; toolCallIndex < candidate.content.parts.length; toolCallIndex++) {
-                        const part = candidate.content.parts[toolCallIndex];
+                    for (let partIndex = 0; partIndex < candidate.content.parts.length; partIndex++) {
+                        const part = candidate.content.parts[partIndex];
                         if (part.functionCall) {
                             if (!Array.isArray(toolCalls[choiceIndex])) {
                                 toolCalls[choiceIndex] = [];
                             }
+                            const toolCallIndex = toolCalls[choiceIndex].length;
                             if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
                             }

@@ -549,6 +549,8 @@ jQuery(async function () {
         await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
+        await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
+        await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
     }
 
     await addSettings();
@@ -624,6 +626,11 @@ jQuery(async function () {
     });
     $('#caption_ollama_custom_model').val(extension_settings.caption.ollama_custom_model || '').on('input', () => {
         extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
+        saveSettingsDebounced();
+    });
+    $('#caption_refresh_models').on('click', async () => {
+        extension_settings.caption.multimodal_model = '';
+        await switchMultimodalBlocks();
         saveSettingsDebounced();
     });
 

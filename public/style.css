@@ -2947,6 +2947,7 @@ select option:not(:checked) {
     text-align: center;
 }
 
+.menu_button[disabled],
 .menu_button.disabled {
     filter: brightness(75%) grayscale(1);
     opacity: 0.5;
@@ -3682,8 +3683,8 @@ grammarly-extension {
     min-width: calc(1.25em + 12px);
 }
 
-.menu_button:not(.disabled):hover,
-.menu_button:not(.disabled).active {
+.menu_button:not(.disabled):not([disabled]):hover,
+.menu_button:not(.disabled):not([disabled]).active {
     background-color: var(--white30a);
 }
 
@@ -5747,7 +5748,8 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .paginationjs-pages ul li a {
-    padding: 0.05em 0.5em;
+    padding: 0.25em;
+    font-family: 'Font Awesome 6 Free';
     text-decoration: none;
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);

@@ -301,6 +301,10 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     display: none;
 }
 
+.world_entry:not(:has(select[name="position"] option[value="7"]:checked)) .world_entry_form_control:has(input[name="outletName"]) {
+    display: none;
+}
+
 .world_entry label[for="__invisible"] {
     visibility: hidden;
     pointer-events: none;
