@@ -34,6 +34,11 @@ export function segmentTextInElement(htmlElement, htmlContent, granularity = 'wo
             continue;
         }
 
+        // Skip text nodes that are empty or only whitespace
+        if (/^\s*$/.test(textNode.data)) {
+            continue;
+        }
+
         textNodes.push(textNode);
     }
 
