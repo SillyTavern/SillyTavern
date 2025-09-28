@@ -599,6 +599,7 @@ input[type='checkbox']:focus-visible {
     max-height: var(--doc-height);
 }
 
+.mes_reasoning_details[data-state="thinking"] .mes_reasoning .text_segment,
 .mes_text .text_segment {
     animation-name: fade-in;
     animation-timing-function: ease-in-out;
