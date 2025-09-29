@@ -9067,7 +9067,11 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
             updateSwipeCounter(mesId);
 
-            const swiped_messages_div = chatElement.children().filter('.mes').slice(mesId);
+            //Select messages after mesId.
+            const swiped_messages_div  = chatElement.children().filter((index, div) => {
+                const $div = $(div);
+                return Number($div.attr('mesid')) >= mesId;
+            })
             const swiped_elements_div = swiped_messages_div.children('.mes_block, .mesAvatarWrapper');
 
 
