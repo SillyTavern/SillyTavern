@@ -662,11 +662,6 @@ small {
     margin: 0;
 }
 
-.mes.smallSysMes .swipe_right,
-.mes.smallSysMes .swipe_left {
-    display: none !important;
-}
-
 .mes.smallSysMes .mes_text {
     padding: 0 !important;
     text-align: center;
@@ -1211,7 +1206,7 @@ body .panelControlBar {
 /* SWIPE RELATED STYLES*/
 
 .mes {
-    --swipeCounterHeight: 15px;
+    --swipeCounterHeight: 5px;
     --swipeCounterMargin: 5px;
 }
 
@@ -1267,7 +1262,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
 
 .swipe_left {
     right: auto;
-    left: 20px;
+    left: auto;
 }
 
 .swipe_right {
