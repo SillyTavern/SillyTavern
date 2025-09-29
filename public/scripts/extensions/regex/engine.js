@@ -1,4 +1,4 @@
-import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { characters, substituteParams, substituteParamsExtended, this_chid, chat, saveChatConditional } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
 export {
@@ -78,7 +78,6 @@ function getScopedRegex() {
 function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
-        console.warn('getRegexedString: rawString is not a string. Returning empty string.');
         return '';
     }
 
@@ -94,34 +93,79 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             (script.markdownOnly && isMarkdown) ||
             // Script applies to Generate and input is Generate
             (script.promptOnly && isPrompt) ||
-            // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
-            (!script.markdownOnly && !script.promptOnly && !isMarkdown && !isPrompt)
+            // Script applies to all cases when neither "only"s are true
+            (!script.markdownOnly && !script.promptOnly)
         ) {
             if (isEdit && !script.runOnEdit) {
-                console.debug(`getRegexedString: Skipping script ${script.scriptName} because it does not run on edit`);
                 return;
             }
 
             // Check if the depth is within the min/max depth
             if (typeof depth === 'number') {
                 if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= -1 && depth < script.minDepth) {
-                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is less than minDepth ${script.minDepth}`);
                     return;
                 }
 
                 if (!isNaN(script.maxDepth) && script.maxDepth !== null && script.maxDepth >= 0 && depth > script.maxDepth) {
-                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is greater than maxDepth ${script.maxDepth}`);
                     return;
+                }
+            } else {
+                // When depth is null/undefined, treat it as depth 0 for filtering purposes
+                // This prevents scripts with minDepth > 0 from running on null depth
+                if (depth === null || depth === undefined) {
+                    const effectiveDepth = 0;
+                    if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= -1 && effectiveDepth < script.minDepth) {
+                        return;
+                    }
                 }
             }
 
             if (script.placement.includes(placement)) {
-                finalString = runRegexScript(script, finalString, { characterOverride });
+                const processedString = runRegexScript(script, finalString, { characterOverride });
+
+                // Permanent edit for display-time processing
+                if (script.permanentEdit && isMarkdown && processedString !== finalString && typeof depth === 'number') {
+                    updateChatMessagePermanently(placement, characterOverride, depth, processedString, finalString);
+                }
+
+                finalString = processedString;
             }
         }
     });
 
     return finalString;
+}
+
+/**
+ * Updates a chat message permanently when permanent edit is enabled
+ * @param {number} placement The regex placement type
+ * @param {string} characterOverride Character name override
+ * @param {number} depth Message depth
+ * @param {string} newText The processed text
+ * @param {string} originalText The original text
+ * @returns {void}
+ */
+function updateChatMessagePermanently(placement, characterOverride, depth, newText, originalText) {
+    try {
+        const messageIndex = chat.length - depth - 1;
+        if (messageIndex >= 0 && messageIndex < chat.length) {
+            const message = chat[messageIndex];
+
+            // Check message type matches placement
+            const isCorrectType = (
+                (placement === regex_placement.USER_INPUT && message.is_user) ||
+                (placement === regex_placement.AI_OUTPUT && !message.is_user && !message.is_system) ||
+                (placement === regex_placement.SLASH_COMMAND && message.extra?.type === 'narrator')
+            );
+
+            if (isCorrectType && message.mes === originalText) {
+                message.mes = newText;
+                saveChatConditional();
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to update chat message:', error);
+    }
 }
 
 /**
@@ -154,7 +198,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     const regexString = getRegexString();
     const findRegex = regexFromString(regexString);
 
-    // The user skill issued. Return with nothing.
+    // The user made an error. Return with nothing.
     if (!findRegex) {
         return newString;
     }
