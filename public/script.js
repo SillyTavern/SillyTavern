@@ -8905,7 +8905,7 @@ function formatSwipeCounter(current, total) {
  */
 export async function swipe(_event, swipe_right, { source, repeated, message = chat[chat.length - 1] } = {}) {
 
-    const mesId = Number($(this).parent().parent().attr('mesid') ?? $(this).parent().attr('mesid') ?? chat.indexOf(message) ?? chat[chat.length - 1]);
+    const mesId = Number($(this).closest('.mes').attr('mesid') ?? chat.indexOf(message) ?? chat.length - 1);
 
     let this_mes_div = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
 
