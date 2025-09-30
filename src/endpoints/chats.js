@@ -540,12 +540,14 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
         fs.unlinkSync(pathToOriginalFile);
 
-        if (!fs.existsSync(pathToOriginalTreeFile) || fs.existsSync(pathToRenamedTreeFile)) {
-            console.warn('Either Source or Destination files are not available');
-            // return response.status(400).send({ error: true });
-        } else {
-            fs.copyFileSync(pathToOriginalTreeFile, pathToRenamedTreeFile);
-            fs.unlinkSync(pathToOriginalTreeFile);
+        if (fs.existsSync(pathToOriginalTreeFile)) {
+            if (!fs.existsSync(pathToRenamedTreeFile)) {
+                console.warn(`The Destination tree file path is not available. ${pathToRenamedTreeFile}`);
+                // return response.status(400).send({ error: true });
+            } else {
+                fs.copyFileSync(pathToOriginalTreeFile, pathToRenamedTreeFile);
+                fs.unlinkSync(pathToOriginalTreeFile);
+            }
         }
 
         console.info('Successfully renamed chat file.');
