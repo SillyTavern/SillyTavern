@@ -8767,12 +8767,12 @@ export function saveChatToTree(chatTree, chat) {
         }
 
         // eslint-disable-next-line no-unused-vars
-        const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...structuredClone(chatMessage) };
+        const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...chatMessage };
 
         //There must be at least as many messages as branch_id
         console.assert(branch_id <= (chatMessage['swipes']?.length ?? 0), 'There must be at least as many messages as branch_id');
 
-        // //For each swipe, update a branch. This may run zero times.
+        //For each swipe, update a branch. This may run zero times.
         chatMessage['swipes']?.forEach((swipe, i) => {
 
             // There must be at least a message for every swipe_info.
@@ -8794,7 +8794,7 @@ export function saveChatToTree(chatTree, chat) {
     if (typeof(branch['branch_id']) == 'number') {
         console.log('Pruning deleted branch.', branch);
         delete branch['branch_id'];
-        delete branch['branches'];
+        delete branch['branch'];
     }
 }
 

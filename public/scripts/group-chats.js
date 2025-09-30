@@ -650,7 +650,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                         const saveChatResponse = await fetch('/api/chats/group/save', {
                             method: 'POST',
                             headers: getRequestHeaders(),
-                            body: JSON.stringify({ id: chatId, chat: [...messages], chatTree:chatTree }),
+                            body: JSON.stringify({ id: chatId, chat: [...messages], chatTree:treeData }),
                         });
 
                         if (!saveChatResponse.ok) {
