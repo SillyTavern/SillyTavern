@@ -1345,7 +1345,7 @@ export async function replaceCurrentChat() {
 }
 
 export async function showMoreMessages(messagesToLoad = null) {
-    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    const firstDisplayedMesId = chatElement.children('.mes').first().attr('mesid');
     let messageId = Number(firstDisplayedMesId);
     let count = messagesToLoad || power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
@@ -1356,7 +1356,7 @@ export async function showMoreMessages(messagesToLoad = null) {
     }
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
-    const prevHeight = $('#chat').prop('scrollHeight');
+    const prevHeight = chatElement.prop('scrollHeight');
     const isButtonInView = isElementInViewport($('#show_more_messages')[0]);
 
     while (messageId > 0 && count > 0) {
@@ -1371,8 +1371,8 @@ export async function showMoreMessages(messagesToLoad = null) {
     }
 
     if (isButtonInView) {
-        const newHeight = $('#chat').prop('scrollHeight');
-        $('#chat').scrollTop(newHeight - prevHeight);
+        const newHeight = chatElement.prop('scrollHeight');
+        chatElement.scrollTop(newHeight - prevHeight);
     }
 
     applyStylePins();
@@ -1385,7 +1385,7 @@ export async function printMessages() {
 
     if (chat.length > count) {
         startIndex = chat.length - count;
-        $('#chat').append('<div id="show_more_messages">Show more messages</div>');
+        chatElement.append('<div id="show_more_messages">Show more messages</div>');
     }
 
     for (let i = startIndex; i < chat.length; i++) {
@@ -1408,8 +1408,8 @@ export async function printMessages() {
         }
     }
 
-    $('#chat .mes').removeClass('last_mes');
-    $('#chat .mes').last().addClass('last_mes');
+    chatElement.find('.mes').removeClass('last_mes');
+    chatElement.find('.mes').last().addClass('last_mes');
     hideSwipeButtons();
     showSwipeButtons();
     scrollChatToBottom();
@@ -1442,7 +1442,7 @@ export async function clearChat() {
     if (is_delete_mode) {
         $('#dialogue_del_mes_cancel').trigger('click');
     }
-    $('#chat').children().remove();
+    chatElement.children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove');
         $('.zoomed_avatar[forChar]').remove();
@@ -1454,7 +1454,7 @@ export async function clearChat() {
 
 export async function deleteLastMessage() {
     chat.length = chat.length - 1;
-    $('#chat').children('.mes').last().remove();
+    chatElement.children('.mes').last().remove();
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
@@ -1797,7 +1797,7 @@ function getMessageFromTemplate({
  * @param {boolean} [options.rerenderMessage=true] Whether to re-render the message content (inside <c>.mes_text</c>)
  */
 export function updateMessageBlock(messageId, message, { rerenderMessage = true } = {}) {
-    const messageElement = $(`#chat [mesid="${messageId}"]`);
+    const messageElement = chatElement.find(`[mesid="${messageId}"]`);
     if (rerenderMessage) {
         const text = message?.extra?.display_text ?? message.mes;
         messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user, messageId, {}, false));
@@ -1819,7 +1819,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     // Add image to message
     if (mes.extra?.image) {
         const container = messageElement.find('.mes_img_container');
-        const chatHeight = $('#chat').prop('scrollHeight');
+        const chatHeight = chatElement.prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
@@ -1827,10 +1827,10 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             if (!adjustScroll) {
                 return;
             }
-            const scrollPosition = $('#chat').scrollTop();
-            const newChatHeight = $('#chat').prop('scrollHeight');
+            const scrollPosition = chatElement.scrollTop();
+            const newChatHeight = chatElement.prop('scrollHeight');
             const diff = newChatHeight - chatHeight;
-            $('#chat').scrollTop(scrollPosition + diff);
+            chatElement.scrollTop(scrollPosition + diff);
         };
         image.off('load').on('load', function () {
             image.removeAttr('alt');
@@ -1877,16 +1877,16 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         const container = $('#message_video_template .mes_video_container').clone();
         messageElement.find('.mes_video_container').remove();
         messageElement.find('.mes_block').append(container);
-        const chatHeight = $('#chat').prop('scrollHeight');
+        const chatHeight = chatElement.prop('scrollHeight');
         const video = container.find('.mes_video');
         video.off('loadedmetadata').on('loadedmetadata', function () {
             if (!adjustScroll) {
                 return;
             }
-            const scrollPosition = $('#chat').scrollTop();
-            const newChatHeight = $('#chat').prop('scrollHeight');
+            const scrollPosition = chatElement.scrollTop();
+            const newChatHeight = chatElement.prop('scrollHeight');
             const diff = newChatHeight - chatHeight;
-            $('#chat').scrollTop(scrollPosition + diff);
+            chatElement.scrollTop(scrollPosition + diff);
         });
 
         video.attr('src', mes.extra?.video);
@@ -2041,7 +2041,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     // Callers push the new message to chat before calling addOneMessage
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-    const newMessage = $(`#chat [mesid="${newMessageId}"]`);
+    const newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
 
     if (isSmallSys === true) {
@@ -2103,8 +2103,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     if (showSwipes) {
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
+        chatElement.find('.mes').last().addClass('last_mes');
+        chatElement.find('.mes').eq(-2).removeClass('last_mes');
         hideSwipeButtons();
         showSwipeButtons();
     }
@@ -2930,7 +2930,7 @@ class StreamingProcessor {
     async onFinishStreaming(messageId, text) {
         this.markUIGenStopped();
         await this.onProgressStreaming(messageId, text, true);
-        addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
+        addCopyToCodeBlocks(chatElement.find(`.mes[mesid="${messageId}"]`));
 
         await this.reasoningHandler.finish(messageId);
 
@@ -3358,7 +3358,7 @@ class TempResponseLength {
  */
 function removeLastMessage() {
     return new Promise((resolve) => {
-        const lastMes = $('#chat').children('.mes').last();
+        const lastMes = chatElement.children('.mes').last();
         if (lastMes.length === 0) {
             return resolve();
         }
@@ -5122,18 +5122,18 @@ export async function duplicateCharacter() {
 }
 
 function setInContextMessages(msgInContextCount, type) {
-    $('#chat .mes').removeClass('lastInContext');
+    chatElement.find('.mes').removeClass('lastInContext');
 
     if (type === 'swipe' || type === 'regenerate' || type === 'continue') {
         msgInContextCount++;
     }
 
-    const lastMessageBlock = $('#chat .mes:not([is_system="true"])').eq(-msgInContextCount);
+    const lastMessageBlock = chatElement.find('.mes:not([is_system="true"])').eq(-msgInContextCount);
     lastMessageBlock.addClass('lastInContext');
 
     if (lastMessageBlock.length === 0) {
         const firstMessageId = getFirstDisplayedMessageId();
-        $(`#chat .mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+        chatElement.find(`.mes[mesid="${firstMessageId}"`).addClass('lastInContext');
     }
 
     // Update last id to chat. No metadata save on purpose, gets hopefully saved via another call
@@ -7848,7 +7848,7 @@ export function showSwipeButtons() {
         };
     }
 
-    const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
+    const currentMessage = chatElement.children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     const swipeCounterText = formatSwipeCounter((swipeId + 1), chat[chat.length - 1].swipes.length);
     const swipeRight = currentMessage.find('.swipe_right');
@@ -7876,9 +7876,11 @@ export function showSwipeButtons() {
 }
 
 export function hideSwipeButtons() {
-    chatElement.find('.swipe_right').hide();
-    chatElement.find('.last_mes .swipes-counter').hide();
-    chatElement.find('.swipe_left').hide();
+    const messageElement = chatElement.find(`[mesid="${ chat.length - 1 }"]`);
+
+    messageElement.find('.swipe_right').hide();
+    messageElement.find('.swipes-counter').hide();
+    messageElement.find('.swipe_left').hide();
 }
 
 /**
@@ -7994,13 +7996,13 @@ async function importCharacterChat(formData, eventTarget) {
 function updateViewMessageIds(startFromZero = false) {
     const minId = startFromZero ? 0 : getFirstDisplayedMessageId();
 
-    $('#chat').find('.mes').each(function (index, element) {
+    chatElement.find('.mes').each(function (index, element) {
         $(element).attr('mesid', minId + index);
         $(element).find('.mesIDDisplay').text(`#${minId + index}`);
     });
 
-    $('#chat .mes').removeClass('last_mes');
-    $('#chat .mes').last().addClass('last_mes');
+    chatElement.find('.mes').removeClass('last_mes');
+    chatElement.find('.mes').last().addClass('last_mes');
 
     updateEditArrowClasses();
 }
@@ -8012,14 +8014,14 @@ export function getFirstDisplayedMessageId() {
 }
 
 function updateEditArrowClasses() {
-    $('#chat .mes .mes_edit_up').removeClass('disabled');
-    $('#chat .mes .mes_edit_down').removeClass('disabled');
+    chatElement.find('.mes .mes_edit_up').removeClass('disabled');
+    chatElement.find('.mes .mes_edit_down').removeClass('disabled');
 
     if (this_edit_mes_id !== undefined) {
-        const down = $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
-        const up = $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
-        const lastId = Number($('#chat .mes').last().attr('mesid'));
-        const firstId = Number($('#chat .mes').first().attr('mesid'));
+        const down = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
+        const up = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
+        const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
+        const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
 
         if (lastId == Number(this_edit_mes_id)) {
             down.addClass('disabled');
@@ -8038,7 +8040,7 @@ function updateEditArrowClasses() {
 export function closeMessageEditor(what = 'all') {
     if (what === 'message' || what === 'all') {
         if (this_edit_mes_id) {
-            $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_cancel`).trigger('click');
+            chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_cancel`).trigger('click');
         }
     }
     if (what === 'reasoning' || what === 'all') {
@@ -8713,10 +8715,10 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
             easing: animation_easing,
             queue: false,
             complete: async function () {
-                const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop('scrollHeight') - $('#chat').outerHeight()) - 10);
+                const is_animation_scroll = (chatElement.scrollTop() >= (chatElement.prop('scrollHeight') - chatElement.outerHeight()) - 10);
                 //console.log(parseInt(chat[chat.length-1]['swipe_id']));
                 //console.log(chat[chat.length-1]['swipes'].length);
-                const swipeMessage = $('#chat').find('[mesid="' + (chat.length - 1) + '"]');
+                const swipeMessage = chatElement.find('[mesid="' + (chat.length - 1) + '"]');
                 if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                     //shows "..." while generating
                     swipeMessage.find('.mes_text').html('...');
@@ -8749,12 +8751,12 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
                     queue: false,
                     progress: function () {
                         // Scroll the chat down as the message expands
-                        if (is_animation_scroll) $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                        if (is_animation_scroll) chatElement.scrollTop(chatElement[0].scrollHeight);
                     },
                     complete: function () {
                         this_mes_div.css('height', 'auto');
                         // Scroll the chat down to the bottom once the animation is complete
-                        if (is_animation_scroll) $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                        if (is_animation_scroll) chatElement.scrollTop(chatElement[0].scrollHeight);
                     },
                 });
                 this_mes_div.children('.mes_block').transition({
@@ -10066,15 +10068,15 @@ jQuery(async function () {
         });
 
         if (this_del_mes >= 0) {
-            $(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
-            $(`.mes[mesid="${this_del_mes}"]`).remove();
+            chatElement.find(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
+            chatElement.find(`.mes[mesid="${this_del_mes}"]`).remove();
             chat.length = this_del_mes;
             chat_metadata['tainted'] = true;
             await saveChatConditional();
             chatElement.scrollTop(chatElement[0].scrollHeight);
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-            $('#chat .mes').removeClass('last_mes');
-            $('#chat .mes').last().addClass('last_mes');
+            chatElement.find('.mes').removeClass('last_mes');
+            chatElement.find('.mes').last().addClass('last_mes');
         } else {
             console.log('this_del_mes is not >= 0, not deleting');
         }
@@ -10179,9 +10181,9 @@ jQuery(async function () {
                 return;
             }*/
 
-            let chatScrollPosition = $('#chat').scrollTop();
+            let chatScrollPosition = chatElement.scrollTop();
             if (this_edit_mes_id !== undefined) {
-                let mes_edited = $(`#chat [mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
+                let mes_edited = chatElement.find(`[mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
                 if (Number(edit_mes_id) == chat.length - 1) { //if the generating swipe (...)
                     let run_edit = true;
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
@@ -10240,7 +10242,7 @@ jQuery(async function () {
                 String(edit_textarea.val()).length,
             );
             if (Number(this_edit_mes_id) === chat.length - 1) {
-                $('#chat').scrollTop(chatScrollPosition);
+                chatElement.scrollTop(chatScrollPosition);
             }
 
             updateEditArrowClasses();
@@ -10358,7 +10360,7 @@ jQuery(async function () {
 
         hideSwipeButtons();
         const targetId = Number(this_edit_mes_id) - 1;
-        const target = $(`#chat .mes[mesid="${targetId}"]`);
+        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
         const root = $(this).closest('.mes');
 
         if (root.length === 0 || target.length === 0) {
@@ -10387,7 +10389,7 @@ jQuery(async function () {
 
         hideSwipeButtons();
         const targetId = Number(this_edit_mes_id) + 1;
-        const target = $(`#chat .mes[mesid="${targetId}"]`);
+        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
         const root = $(this).closest('.mes');
 
         if (root.length === 0 || target.length === 0) {
@@ -10820,7 +10822,7 @@ jQuery(async function () {
                 return;
             }
             if (isEditVisible && power_user.auto_save_msg_edits === true) {
-                $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).trigger('click');
+                chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).trigger('click');
                 closeMessageEditor('reasoning');
                 $('#send_textarea').trigger('focus');
                 return;
