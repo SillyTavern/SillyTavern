@@ -41,6 +41,7 @@
                 <option value="bfl">BFL (Black Forest Labs)</option>
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
+                <option value="electronhub">Electron Hub</option>
                 <option value="extras">Extras API (deprecated)</option>
                 <option value="falai">FAL.AI</option>
                 <option value="google">Google AI</option>
@@ -92,6 +93,9 @@
                 <i>Hint: Save an API key in the Hugging Face (Text Completion) API settings to use it here.</i>
                 <label for="sd_huggingface_model_id" data-i18n="Model ID">Model ID</label>
                 <input id="sd_huggingface_model_id" type="text" class="text_pole"  data-i18n="[placeholder]e.g. black-forest-labs/FLUX.1-dev" placeholder="e.g. black-forest-labs/FLUX.1-dev" value="" />
+            </div>
+            <div data-sd-source="electronhub">
+                <i>Hint: Save an API key in the Electron Hub (Chat Completion) API settings to use it here.</i>
             </div>
             <div data-sd-source="nanogpt">
                 <i>Hint: Save an API key in the NanoGPT (Chat Completion) API settings to use it here.</i>
@@ -260,7 +264,7 @@
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
                 </div>
-                <label class="checkbox_label marginBot5" for="sd_bfl_upsampling" title="Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation.">
+                <label class="checkbox_label marginBot5" for="sd_bfl_upsampling" data-i18n="[title]Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation." title="Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation.">
                     <input id="sd_bfl_upsampling" type="checkbox" />
                     <span data-i18n="Prompt Upsampling">
                         Prompt Upsampling

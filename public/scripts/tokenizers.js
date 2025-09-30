@@ -586,6 +586,10 @@ export function getTokenizerModel() {
     const nemoTokenizer = 'nemo';
     const deepseekTokenizer = 'deepseek';
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+        return oai_settings.azure_openai_model || turboTokenizer;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         return deepseekTokenizer;
     }

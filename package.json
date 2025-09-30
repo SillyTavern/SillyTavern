@@ -54,6 +54,7 @@
         "handlebars": "^4.7.8",
         "helmet": "^8.1.0",
         "highlight.js": "^11.11.1",
+        "host-validation-middleware": "^0.1.1",
         "html-entities": "^2.6.0",
         "iconv-lite": "^0.6.3",
         "ip-matching": "^2.1.2",
@@ -112,7 +113,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.13.3",
+    "version": "1.13.4",
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",

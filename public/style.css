@@ -13,6 +13,7 @@
 @import url(css/welcome.css);
 @import url(css/data-maid.css);
 @import url(css/secrets.css);
+@import url(css/backgrounds.css);
 
 :root {
     interpolate-size: allow-keywords;
@@ -721,69 +722,9 @@ hr {
     opacity: 0.2;
 }
 
-#bg1,
-#bg_custom {
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-size: cover;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    transition: background-image var(--animation-duration-3x) ease-in-out;
-}
-
-/* Background fitting options */
-#background_fitting {
-    max-width: 6em;
-}
-
-/* Fill/Cover - scales to fill width while maintaining aspect ratio */
-#bg1.cover,
-#bg_custom.cover {
-    background-size: cover;
-    background-position: center;
-}
-
-/* Fit/Contain - shows entire image maintaining aspect ratio */
-#bg1.contain,
-#bg_custom.contain {
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-/* Stretch - stretches to fill entire space */
-#bg1.stretch,
-#bg_custom.stretch {
-    background-size: 100% 100%;
-}
-
-/* Center - centers without scaling */
-#bg1.center,
-#bg_custom.center {
-    background-size: auto;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-body.reduced-motion #bg1,
-body.reduced-motion #bg_custom {
-    transition: none;
-}
-
 #version_display {
     padding: 5px;
     opacity: 0.8;
-}
-
-#bg1 {
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
-    z-index: -3;
-}
-
-#bg_custom {
-    background-image: none;
-    z-index: -2;
 }
 
 /*TOPPER margin*/
@@ -3298,121 +3239,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .bg_list {
     display: flex;
     flex-wrap: wrap;
-    width: calc(var(--sheldWidth) - 10px);
+    width: calc(var(--sheldWidth) - 15px);
     max-width: 100vw;
     max-width: 100dvw;
     justify-content: space-evenly;
-}
-
-.bg_example {
-    width: 30%;
-    max-width: 200px;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    border-radius: 10px;
-    border: 1px solid var(--SmartThemeBorderColor);
-    box-shadow: 0 0 7px var(--black50a);
-    margin: 5px;
-    cursor: pointer;
-    aspect-ratio: 16/9;
-    justify-content: flex-end;
-    position: relative;
-}
-
-.bg_example.locked {
-    outline: 2px solid var(--golden);
-}
-
-.bg_example:hover.locked .bg_example_lock,
-.bg_example:focus-within.locked .bg_example_lock {
-    display: none;
-}
-
-.bg_example:hover:not(.locked) .bg_example_unlock,
-.bg_example:focus-within:not(.locked) .bg_example_unlock {
-    display: none;
-}
-
-.bg_example:hover[custom="true"] .bg_example_edit,
-.bg_example:focus-within[custom="true"] .bg_example_edit {
-    display: none;
-}
-
-.bg_example:hover[custom="false"] .bg_example_copy,
-.bg_example:focus-within[custom="false"] .bg_example_copy {
-    display: none;
-}
-
-.BGSampleTitle {
-    display: flex;
-    width: 100%;
-    height: min-content;
-    text-align: center;
-    justify-content: center;
-    align-self: flex-end;
-    bottom: 0;
-    position: relative;
-    word-break: break-word;
-    background-color: var(--SmartThemeBlurTintColor);
-    font-size: calc(var(--fontScale) * 0.9em);
-    max-height: 50%;
-    overflow-y: clip;
-    border-radius: 0 0 7px 7px;
-}
-
-.bg_example[custom="true"] .BGSampleTitle {
-    display: none;
-}
-
-.bg_button {
-    padding: 4px;
-    position: absolute;
-    top: 5px;
-    cursor: pointer;
-    opacity: 0.8;
-    border-radius: 3px;
-    font-size: 20px;
-    color: var(--black70a);
-    text-shadow: none;
-    margin: 0;
-    filter: drop-shadow(0px 0px 3px white);
-    transition: opacity var(--animation-duration-2x) ease-in-out;
-    display: none;
-}
-
-.bg_example:hover .bg_button,
-.bg_example:focus-within .bg_button {
-    display: block;
-}
-
-.bg_button:hover {
-    opacity: 1;
-}
-
-.bg_example_cross {
-    right: 6px;
-}
-
-.bg_example_edit {
-    left: 6px;
-}
-
-.bg_example_copy {
-    left: 6px;
-}
-
-.bg_example_lock,
-.bg_example_unlock {
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.add_bg_but {
-    cursor: pointer;
-    opacity: 0.1;
-    height: 100%;
-    width: 100%;
 }
 
 .input-file {

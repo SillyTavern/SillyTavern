@@ -45,6 +45,7 @@ export const SECRET_KEYS = {
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
     TAVILY: 'api_key_tavily',
+    ELECTRONHUB: 'api_key_electronhub',
     NANOGPT: 'api_key_nanogpt',
     BFL: 'api_key_bfl',
     FALAI: 'api_key_falai',
@@ -59,6 +60,7 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    AZURE_OPENAI: 'api_key_azure_openai',
 };
 
 /**

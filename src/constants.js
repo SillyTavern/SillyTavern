@@ -173,6 +173,7 @@ export const CHAT_COMPLETION_SOURCES = {
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
+    ELECTRONHUB: 'electronhub',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',
@@ -181,6 +182,7 @@ export const CHAT_COMPLETION_SOURCES = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    AZURE_OPENAI: 'azure_openai',
 };
 
 /**
@@ -406,6 +408,45 @@ export const VLLM_KEYS = [
     'guided_decoding_backend',
     'guided_whitespace_pattern',
 ];
+
+export const AZURE_OPENAI_KEYS = [
+    'messages',
+    'temperature',
+    'frequency_penalty',
+    'presence_penalty',
+    'top_p',
+    'max_tokens',
+    'max_completion_tokens',
+    'stream',
+    'logit_bias',
+    'stop',
+    'n',
+    'logprobs',
+    'seed',
+    'tools',
+    'tool_choice',
+    'reasoning_effort',
+];
+
+export const OPENAI_REASONING_EFFORT_MODELS = [
+    'o1',
+    'o3-mini',
+    'o3-mini-2025-01-31',
+    'o4-mini',
+    'o4-mini-2025-04-16',
+    'o3',
+    'o3-2025-04-16',
+    'gpt-5',
+    'gpt-5-2025-08-07',
+    'gpt-5-mini',
+    'gpt-5-mini-2025-08-07',
+    'gpt-5-nano',
+    'gpt-5-nano-2025-08-07',
+];
+
+export const OPENAI_REASONING_EFFORT_MAP = {
+    min: 'minimal',
+};
 
 export const LOG_LEVELS = {
     DEBUG: 0,

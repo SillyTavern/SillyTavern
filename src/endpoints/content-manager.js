@@ -544,10 +544,13 @@ async function downloadJannyCharacter(uuid) {
             const fileType = imageResult.headers.get('content-type');
 
             return { buffer, fileName, fileType };
+        } else {
+            console.error('Janny failed to download', downloadResult);
         }
+    } else {
+        console.error('Janny returned error', result.statusText, await result.text());
     }
 
-    console.error('Janny returned error', result.statusText, await result.text());
     throw new Error('Failed to download character');
 }
 

@@ -47,7 +47,7 @@ router.post('/models/multimodal', async (_req, res) => {
         /** @type {any} */
         const data = await response.json();
         const models = data?.data || [];
-        const multimodalModels = models.filter(m => m?.architecture?.modality === 'text+image->text').map(m => m.id);
+        const multimodalModels = models.filter(m =>  ['text+image->text+image', 'text+image->text'].includes(m?.architecture?.modality)).map(m => m.id);
 
         return res.json(multimodalModels);
     } catch (error) {

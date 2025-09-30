@@ -47,10 +47,12 @@ export const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    AZURE_OPENAI: 'api_key_azure_openai',
     FEATHERLESS: 'api_key_featherless',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
+    ELECTRONHUB: 'api_key_electronhub',
     NANOGPT: 'api_key_nanogpt',
     TAVILY: 'api_key_tavily',
     BFL: 'api_key_bfl',
@@ -95,6 +97,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.GROQ]: 'Groq',
     [SECRET_KEYS.FEATHERLESS]: 'Featherless',
     [SECRET_KEYS.HUGGINGFACE]: 'HuggingFace',
+    [SECRET_KEYS.ELECTRONHUB]: 'Electron Hub',
     [SECRET_KEYS.NANOGPT]: 'NanoGPT',
     [SECRET_KEYS.GENERIC]: 'Generic (OpenAI-compatible)',
     [SECRET_KEYS.DEEPSEEK]: 'DeepSeek',
@@ -120,6 +123,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
     [SECRET_KEYS.COMETAPI]: 'CometAPI',
+    [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
 };
 
 const INPUT_MAP = {
@@ -148,6 +152,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.GROQ]: '#api_key_groq',
     [SECRET_KEYS.FEATHERLESS]: '#api_key_featherless',
     [SECRET_KEYS.HUGGINGFACE]: '#api_key_huggingface',
+    [SECRET_KEYS.ELECTRONHUB]: '#api_key_electronhub',
     [SECRET_KEYS.NANOGPT]: '#api_key_nanogpt',
     [SECRET_KEYS.GENERIC]: '#api_key_generic',
     [SECRET_KEYS.DEEPSEEK]: '#api_key_deepseek',
@@ -157,6 +162,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.MOONSHOT]: '#api_key_moonshot',
     [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
     [SECRET_KEYS.COMETAPI]: '#api_key_cometapi',
+    [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
 };
 
 const getLabel = () => moment().format('L LT');

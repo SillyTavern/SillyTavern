@@ -1,0 +1,229 @@
+/* Main Page Backgrounds */
+#bg1,
+#bg_custom {
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: background-image var(--animation-duration-3x) ease-in-out;
+}
+
+/* Fitting options */
+#background_fitting {
+    max-width: 6em;
+}
+
+/* Fill/Cover - scales to fill width while maintaining aspect ratio */
+#bg1.cover,
+#bg_custom.cover {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Fit/Contain - shows entire image maintaining aspect ratio */
+#bg1.contain,
+#bg_custom.contain {
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Stretch - stretches to fill entire space */
+#bg1.stretch,
+#bg_custom.stretch {
+    background-size: 100% 100%;
+}
+
+/* Center - centers without scaling */
+#bg1.center,
+#bg_custom.center {
+    background-size: auto;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.reduced-motion #bg1,
+body.reduced-motion #bg_custom {
+    transition: none;
+}
+
+#bg1 {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+    z-index: -3;
+}
+
+#bg_custom {
+    background-image: none;
+    z-index: -2;
+}
+
+.bg_example.flex-container.locked:not(:focus-visible) {
+    outline-color: var(--golden);
+}
+
+/* This is the main flex container for the entire drawer */
+#Backgrounds.drawer-content.openDrawer.bg-drawer-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--topBarBlockSize));
+    max-height: calc(100vh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
+    overflow: hidden;
+    width: var(--sheldWidth);
+    max-width: var(--sheldWidth);
+    padding: 0;
+}
+
+#bg-header-fixed {
+    flex-shrink: 0;
+    padding: 5px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+#bg-header-fixed>.flex-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#bg-scrollable-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 5px 5px;
+}
+
+#bg-filter {
+    font-size: calc(var(--mainFontSize) * 0.95);
+}
+
+/* Thumbnail Menu & Buttons */
+.bg_example .mobile-only-menu-toggle {
+    display: none;
+}
+
+.bg_example.flex-container {
+    width: 30%;
+    max-width: 200px;
+    margin: 5px;
+    aspect-ratio: 16/9;
+    cursor: pointer;
+    box-shadow: 0 0 7px var(--black50a);
+
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 0px solid transparent;
+    outline: 2px solid var(--SmartThemeBorderColor);
+    outline-offset: -1px;
+}
+
+.bg_example.flex-container:focus-visible {
+    outline-offset: inherit;
+}
+
+.bg_example_img {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+
+    background-image: inherit;
+
+    background-size: cover;
+    background-position: center;
+}
+
+.bg_example .jg-menu {
+    display: flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    gap: 3px;
+    padding: 3px 5px;
+    z-index: 3;
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--SmartThemeBorderColor);
+    justify-items: center;
+    align-items: center;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9);
+    transform-origin: center;
+    transition: opacity var(--animation-duration) ease-out, visibility var(--animation-duration) ease-out, transform var(--animation-duration) ease-out;
+}
+
+.bg_example:hover .jg-menu,
+.bg_example:focus-within .jg-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+.bg_example .jg-button {
+    display: flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 5px;
+    font-size: 1.1em;
+    border-radius: 6px;
+    transition: background-color var(--animation-duration) ease;
+}
+
+.bg_example .jg-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.bg_example .jg-unlock {
+    display: none;
+}
+
+.bg_example.locked .jg-lock {
+    display: none;
+}
+
+.bg_example.locked .jg-unlock {
+    display: flex;
+}
+
+.bg_example:not([custom="true"]) .jg-copy,
+.bg_example[custom="true"] .jg-edit {
+    display: none;
+}
+
+/* Thumbnail Title */
+.bg_example .BGSampleTitle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    color: var(--SmartThemeBodyColor);
+    font-size: 0.9em;
+    font-weight: 600;
+    padding: 0px 6px 2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity var(--animation-duration) ease-in-out;
+    pointer-events: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.bg_example:hover .BGSampleTitle,
+.bg_example:focus-within .BGSampleTitle {
+    opacity: 1;
+}

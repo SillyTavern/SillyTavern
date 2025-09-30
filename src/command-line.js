@@ -27,6 +27,7 @@ import { initConfig } from './config-init.js';
  * @property {boolean} ssl If enable SSL
  * @property {string} certPath Path to certificate
  * @property {string} keyPath Path to private key
+ * @property {string} keyPassphrase SSL private key passphrase
  * @property {boolean} whitelistMode If enable whitelist mode
  * @property {boolean} basicAuthMode If enable basic authentication
  * @property {boolean} requestProxyEnabled If enable outgoing request proxy
@@ -70,6 +71,7 @@ export class CommandLineParser {
             ssl: false,
             certPath: 'certs/cert.pem',
             keyPath: 'certs/privkey.pem',
+            keyPassphrase: '',
             whitelistMode: true,
             basicAuthMode: false,
             requestProxyEnabled: false,
@@ -193,6 +195,11 @@ export class CommandLineParser {
                 default: null,
                 describe: 'Path to SSL private key file',
             })
+            .option('keyPassphrase', {
+                type: 'string',
+                default: null,
+                describe: 'Passphrase for the SSL private key',
+            })
             .option('whitelist', {
                 type: 'boolean',
                 default: null,
@@ -291,6 +298,7 @@ export class CommandLineParser {
             ssl: cliArguments.ssl ?? getConfigValue('ssl.enabled', defaultConfig.ssl, 'boolean'),
             certPath: cliArguments.certPath ?? getConfigValue('ssl.certPath', defaultConfig.certPath),
             keyPath: cliArguments.keyPath ?? getConfigValue('ssl.keyPath', defaultConfig.keyPath),
+            keyPassphrase: cliArguments.keyPassphrase ?? getConfigValue('ssl.keyPassphrase', defaultConfig.keyPassphrase),
             whitelistMode: cliArguments.whitelist ?? getConfigValue('whitelistMode', defaultConfig.whitelistMode, 'boolean'),
             basicAuthMode: cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', defaultConfig.basicAuthMode, 'boolean'),
             requestProxyEnabled: cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', defaultConfig.requestProxyEnabled, 'boolean'),
