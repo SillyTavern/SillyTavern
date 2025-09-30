@@ -24,7 +24,6 @@ import { debounce_timeout } from './constants.js';
 
 import {
     chat,
-    chatTree,
     sendSystemMessage,
     printMessages,
     substituteParams,
@@ -78,7 +77,6 @@ import {
     shouldAutoContinue,
     unshallowCharacter,
     chatElement,
-    setChatTree,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -86,6 +84,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { chatTree, setChatTree } from './chat-tree.js';
 
 export {
     selected_group,

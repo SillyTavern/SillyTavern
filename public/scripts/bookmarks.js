@@ -9,7 +9,6 @@ import {
     getThumbnailUrl,
     getCharacters,
     chat,
-    chatTree,
     saveChatConditional,
     saveItemizedPrompts,
 } from '../script.js';
@@ -39,6 +38,7 @@ import {
     getUniqueName,
     isTrueBoolean,
 } from './utils.js';
+import { chatTree } from './chat-tree.js';
 
 const bookmarkNameToken = 'Checkpoint #';
 
