@@ -9,6 +9,7 @@ import {
     getThumbnailUrl,
     getCharacters,
     chat,
+    chatTree,
     saveChatConditional,
     saveItemizedPrompts,
 } from '../script.js';
@@ -367,7 +368,7 @@ export async function convertSoloToGroupChat() {
     const createChatResponse = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatName, chat: groupChat }),
+        body: JSON.stringify({ id: chatName, chat: groupChat, chatTree: chatTree }),
     });
 
     if (!createChatResponse.ok) {

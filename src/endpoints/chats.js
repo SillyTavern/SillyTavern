@@ -430,9 +430,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
     try {
         const directoryName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body.chat;
+        const chatTreeData = request.body?.chatTree;
         const jsonlData = chatData.map(JSON.stringify).join('\n');
         const fileName = `${String(request.body.file_name)}.jsonl`;
         const filePath = path.join(request.user.directories.chats, directoryName, sanitize(fileName));
+        const treeFileName = `${String(request.body.file_name)}.json`;
+        const treeFilePath = path.join(request.user.directories.chats, directoryName, sanitize(treeFileName));
         if (checkIntegrity && !request.body.force) {
             const integritySlug = chatData?.[0]?.chat_metadata?.integrity;
             const isIntact = await checkChatIntegrity(filePath, integritySlug);
@@ -442,6 +445,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             }
         }
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
+        //Write the chatTree
+        if (!isNaN(chatTreeData?.['branch_id'])) {
+            //Spaces increase file size.
+            const jsonChatTree = JSON.stringify(chatTreeData, null, 0);
+            writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
+        }
         getBackupFunction(request.user.profile.handle)(request.user.directories.backups, directoryName, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
@@ -468,6 +477,10 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 
         const fileName = `${String(request.body.file_name)}.jsonl`;
         const filePath = path.join(directoryPath, sanitize(fileName));
+
+        const treeFileName = `${String(request.body.file_name)}.json`;
+        const treeFilePath = path.join(directoryPath, sanitize(treeFileName));
+
         const chatFileExists = fs.existsSync(filePath);
 
         if (!chatFileExists) {
@@ -479,7 +492,21 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 
         // Iterate through the array of strings and parse each line as JSON
         const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { return; } }).filter(x => x);
-        return response.send(jsonData);
+
+        //Attempt to load the chatTree
+        let jsonTreeData;
+        try {
+            const treeData = fs.readFileSync(treeFilePath, 'utf8');
+            jsonTreeData = JSON.parse(treeData);
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
+            } else {
+                console.error(`Error reading file: ${error.message}`);
+            }
+        }
+
+        return response.send({ chatData:jsonData, chatTreeData:jsonTreeData });
     } catch (error) {
         console.error(error);
         return response.send({});
@@ -497,6 +524,10 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
             : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
         const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
         const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
+
+        const pathToOriginalTreeFile = path.format({ ...path.parse(pathToOriginalFile), base: '', ext: '.json' });
+        const pathToRenamedTreeFile = path.format({ ...path.parse(pathToRenamedFile), base: '', ext: '.json' });
+
         const sanitizedFileName = path.parse(pathToRenamedFile).name;
         console.debug('Old chat name', pathToOriginalFile);
         console.debug('New chat name', pathToRenamedFile);
@@ -508,6 +539,15 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
         fs.unlinkSync(pathToOriginalFile);
+
+        if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
+            console.warn('Either Source or Destination files are not available');
+            // return response.status(400).send({ error: true });
+        } else {
+            fs.copyFileSync(pathToOriginalTreeFile, pathToRenamedTreeFile);
+            fs.unlinkSync(pathToOriginalTreeFile);
+        }
+
         console.info('Successfully renamed chat file.');
         return response.send({ ok: true, sanitizedFileName });
     } catch (error) {
@@ -520,6 +560,7 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
     const dirName = String(request.body.avatar_url).replace('.png', '');
     const fileName = String(request.body.chatfile);
     const filePath = path.join(request.user.directories.chats, dirName, sanitize(fileName));
+    const treeFilePath = path.format({ ...path.parse(filePath), base: '', ext: '.json' });
     const chatFileExists = fs.existsSync(filePath);
 
     if (!chatFileExists) {
@@ -529,6 +570,13 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
 
     fs.unlinkSync(filePath);
     console.info(`Deleted chat file: ${filePath}`);
+
+    //Delete chatTree file.
+    if (fs.existsSync(treeFilePath)) {
+        fs.unlinkSync(treeFilePath);
+        console.info(`Deleted chatTree file: ${treeFilePath}`);
+    }
+
     return response.send('ok');
 });
 
@@ -724,6 +772,8 @@ router.post('/group/get', (request, response) => {
 
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+    const treeFilePath = path.join(request.user.directories.groupChats, `${id}.json`);
+
 
     if (fs.existsSync(pathToFile)) {
         const data = fs.readFileSync(pathToFile, 'utf8');
@@ -731,7 +781,22 @@ router.post('/group/get', (request, response) => {
 
         // Iterate through the array of strings and parse each line as JSON
         const jsonData = lines.map(line => tryParse(line)).filter(x => x);
-        return response.send(jsonData);
+
+        //Attempt to load the chatTree
+        let jsonTreeData;
+        try {
+            const treeData = fs.readFileSync(treeFilePath, 'utf8');
+            jsonTreeData = JSON.parse(treeData);
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
+            } else {
+                console.error(`Error reading file: ${error.message}`);
+            }
+        }
+
+        return response.send({ chatData:jsonData, chatTreeData:jsonTreeData });
+
     } else {
         return response.send([]);
     }
@@ -744,9 +809,18 @@ router.post('/group/delete', (request, response) => {
 
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+    const treeFilePath = path.format({ ...path.parse(pathToFile), base: '', ext: '.json' });
+
 
     if (fs.existsSync(pathToFile)) {
         fs.unlinkSync(pathToFile);
+
+        //Delete chatTree file.
+        if (fs.existsSync(treeFilePath)) {
+            fs.unlinkSync(treeFilePath);
+            console.info(`Deleted chatTree file: ${treeFilePath}`);
+        }
+
         return response.send({ ok: true });
     }
 
@@ -768,6 +842,16 @@ router.post('/group/save', (request, response) => {
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
     writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
+
+    const chatTreeData = request.body?.chatTree;
+    const treeFilePath = path.join(request.user.directories.groupChats, `${id}.json`);
+    //Write the chatTree
+    if (!isNaN(chatTreeData?.['branch_id'])) {
+        //Spaces increase file size.
+        const jsonChatTree = JSON.stringify(chatTreeData, null, 0);
+        writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
+    }
+
     getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
     return response.send({ ok: true });
 });
