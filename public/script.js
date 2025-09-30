@@ -8853,8 +8853,10 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
     console.assert(chat[mesId]['swipe_id'] < chat[mesId]?.swipes?.length, `swipe_id = ${chat[mesId]['swipe_id']}/${chat[mesId]?.swipes?.length}`);
 
-    //Save the chat to the chatTree.
-    saveChatToTree(chatTree, chat);
+    if (power_user.show_swipes_for_all_messages) {
+        //Save the chat to the chatTree.
+        saveChatToTree(chatTree, chat);
+    }
 
     if (swipe_right) {
         // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
@@ -8897,29 +8899,31 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
         if (parseInt(chat[mesId]['swipe_id']) === chat[mesId]['swipes'].length && (chat.length !== 1 || !isPristine)) {
 
-            //Allow edits to user messages before generation. Else trigger a swipe generation.
-            if (chat[mesId].is_user || mesId === 0) {
+            if (power_user.show_swipes_for_all_messages) {
+                //Allow edits to user messages before generation. Else trigger a swipe generation.
+                if (chat[mesId].is_user || mesId === 0) {
 
-                //Start edit.
-                this_mes_div.find('.mes_edit').trigger('click');
-                let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], this_mes_div);
-                if (result.includes('mes_edit_done')) {
-                    let mes_edited = this_mes_div.find('.mes_edit_done');
-                    await messageEditDone(mes_edited);
+                    //Start edit.
+                    this_mes_div.find('.mes_edit').trigger('click');
+                    let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], this_mes_div);
+                    if (result.includes('mes_edit_done')) {
+                        let mes_edited = this_mes_div.find('.mes_edit_done');
+                        await messageEditDone(mes_edited);
 
-                    updateSwipeCounter(mesId);
+                        updateSwipeCounter(mesId);
 
-                    const lastMesId = Number(chatElement.children().last().attr('mesid'));
-                    await deleteMessages(mesId + 1, lastMesId);
-                    await redisplayChat(chat, mesId);
+                        const lastMesId = Number(chatElement.children().last().attr('mesid'));
+                        await deleteMessages(mesId + 1, lastMesId);
+                        await redisplayChat(chat, mesId);
 
-                    run_generate = false;
-                    run_swipe = false;
-                    Generate('normal');
-                }
-                //Cancel swipe.
-                else {
-                    chat[mesId]['swipe_id'] = original_swipe_id;
+                        run_generate = false;
+                        run_swipe = false;
+                        Generate('normal');
+                    }
+                    //Cancel swipe.
+                    else {
+                        chat[mesId]['swipe_id'] = original_swipe_id;
+                    }
                 }
             } else {
                 delete chat[mesId].gen_started;
@@ -8942,23 +8946,25 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         // handles animated transitions when swipe right, specifically height transitions between messages
         if (run_generate || run_swipe) {
 
+            if (power_user.show_swipes_for_all_messages) {
 
-            //Get chat after the swipe.
-            let stick = getStickFromTree(chatTree, chat, mesId);
+                //Get chat after the swipe.
+                let stick = getStickFromTree(chatTree, chat, mesId);
 
-            //When editing user messages, the length is zero.
-            if (stick.length == 0) {
-                //Simply Subsequent logic.
-                stick[0] = chat[mesId];
+                //When editing user messages, the length is zero.
+                if (stick.length == 0) {
+                    //Simply Subsequent logic.
+                    stick[0] = chat[mesId];
+                }
+                //Re-apply the swipe.
+                else {
+                    stick[0]['swipe_id'] = chat[mesId]['swipe_id'];
+                }
+
+                //Update chat.
+                await spliceStickToChat(stick, chat, mesId);
+                await redisplayChat(chat, mesId);
             }
-            //Re-apply the swipe.
-            else {
-                stick[0]['swipe_id'] = chat[mesId]['swipe_id'];
-            }
-
-            //Update chat.
-            await spliceStickToChat(stick, chat, mesId);
-            await redisplayChat(chat, mesId);
 
             updateSwipeCounter(mesId);
 

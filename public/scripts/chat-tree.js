@@ -1,8 +1,13 @@
 import { saveChatConditional, saveChatDebounced, hideSwipeButtons, showSwipeButtons, updateViewMessageIds } from '../script.js';
 import { eventSource, event_types } from './events.js';
+import { power_user } from './power-user.js';
 
 export let chatTree = {};
-export function setChatTree(newChat) { chatTree = newChat; }
+export function setChatTree(newChat) {
+    if (power_user.show_swipes_for_all_messages) {
+        chatTree = newChat;
+    }
+}
 
 
 /**

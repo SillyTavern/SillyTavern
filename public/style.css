@@ -1250,15 +1250,26 @@ body .panelControlBar {
     height: var(--swipeCounterHeight);
 }
 
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter {
+body:not(.swipeNumAllMessages) .mes:not(.last_mes) .swipes-counter {
     visibility: hidden;
 }
 
-body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
+body.swipeNumAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
     opacity: 0.3 !important;
     display: flex !important;
 }
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_left,
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_right {
+    /* Red for Error if visible */
+    color: red !important;
+    visibility: hidden;
+}
+/* Debugging */
+/* body.swipeAllMessages .mes:not(.last_mes) .swipe_left,
+body.swipeAllMessages .mes:not(.last_mes) .swipe_right {
+    color:lime !important;
+} */
 
 .swipe_left {
     right: auto;

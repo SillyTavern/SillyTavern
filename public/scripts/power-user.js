@@ -330,6 +330,7 @@ export const power_user = {
     reduced_motion: false,
     compact_input_area: true,
     show_swipe_num_all_messages: false,
+    show_swipes_for_all_messages: false,
     auto_connect: false,
     auto_load_chat: false,
     forbid_external_media: true,
@@ -512,7 +513,12 @@ function switchCompactInputArea() {
 
 function switchSwipeNumAllMessages() {
     $('#show_swipe_num_all_messages').prop('checked', power_user.show_swipe_num_all_messages);
-    $('body').toggleClass('swipeAllMessages', !!power_user.show_swipe_num_all_messages);
+    $('body').toggleClass('swipeNumAllMessages', !!power_user.show_swipe_num_all_messages);
+}
+
+function switchSwipesAllMessages() {
+    $('#show_swipes_for_all_messages').prop('checked', power_user.show_swipes_for_all_messages);
+    $('body').toggleClass('swipeAllMessages', !!power_user.show_swipes_for_all_messages);
 }
 
 var originalSliderValues = [];
@@ -1362,6 +1368,13 @@ function applyTheme(name) {
             },
         },
         {
+            key: '#show_swipes_for_all_messages',
+            action: () => {
+                $('#show_swipes_for_all_messages').prop('checked', power_user.show_swipes_for_all_messages);
+                switchSwipesAllMessages();
+            },
+        },
+        {
             key: 'click_to_edit',
             action: () => {
                 $('#click_to_edit').prop('checked', power_user.click_to_edit);
@@ -1435,6 +1448,7 @@ export function applyPowerUserSettings() {
     switchTokenCount();
     switchMessageActions();
     switchSwipeNumAllMessages();
+    switchSwipesAllMessages();
 }
 
 export function applyStylePins() {
@@ -4065,6 +4079,12 @@ jQuery(() => {
     $('#show_swipe_num_all_messages').on('input', function () {
         power_user.show_swipe_num_all_messages = !!$(this).prop('checked');
         switchSwipeNumAllMessages();
+        saveSettingsDebounced();
+    });
+
+    $('#show_swipes_for_all_messages').on('input', function () {
+        power_user.show_swipes_for_all_messages = !!$(this).prop('checked');
+        switchSwipesAllMessages();
         saveSettingsDebounced();
     });
 
