@@ -540,7 +540,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
         fs.unlinkSync(pathToOriginalFile);
 
-        if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
+        if (!fs.existsSync(pathToOriginalTreeFile) || fs.existsSync(pathToRenamedTreeFile)) {
             console.warn('Either Source or Destination files are not available');
             // return response.status(400).send({ error: true });
         } else {
