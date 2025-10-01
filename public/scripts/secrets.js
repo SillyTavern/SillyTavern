@@ -574,7 +574,10 @@ async function openKeyManagerDialog(key) {
                 }
             },
         });
-        if (!value && result === POPUP_RESULT.AFFIRMATIVE) {
+        if (!value) {
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                return;
+            }
             const allowEmpty = await Popup.show.confirm(t`No value entered`, t`No value was entered for the secret. Do you want to add an empty secret?`);
             if (!allowEmpty) {
                 return;
