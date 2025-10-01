@@ -365,6 +365,7 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
+export let swiping = false; //true when a swipe is in progress.
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
@@ -8798,6 +8799,13 @@ function formatSwipeCounter(current, total) {
  */
 export async function swipe(_event, swipe_right, { source, repeated, message = chat[chat.length - 1] } = {}) {
 
+    //Only allow one concurrent swipe.
+    if (swiping) {
+        console.info('The swipe has been ignored because another is in progress.');
+        return;
+    }
+    swiping = true;
+
     const mesId = Number($(this).closest('.mes').attr('mesid') ?? chat.indexOf(message) ?? chat.length - 1);
 
     let this_mes_div = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
@@ -8823,6 +8831,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     }
 
     if (isHordeGenerationNotAllowed()) {
+        swiping = false;
         return unblockGeneration();
     }
 
@@ -8831,6 +8840,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
     // If the user is holding down the key and we're at the first swipe, don't do anything
     if (source === 'keyboard' && repeated && chat[mesId].swipe_id === 0) {
+        swiping = false;
         return;
     }
 
@@ -8865,6 +8875,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         } else {
             // If the user is holding down the key and we're at the last swipe, don't do anything
             if (source === 'keyboard' && repeated && chat[mesId].swipe_id === chat[mesId].swipes.length - 1) {
+                swiping = false;
                 return;
             }
             // make new slot in array
@@ -9084,6 +9095,9 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     }
     //Fallback.
     updateSwipeCounter(mesId);
+
+    //Done swiping.
+    swiping = false;
 }
 
 /**
