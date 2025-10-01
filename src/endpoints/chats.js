@@ -24,14 +24,17 @@ const throttleInterval = Number(getConfigValue('backups.chat.throttleInterval', 
 const checkIntegrity = !!getConfigValue('backups.chat.checkIntegrity', true, 'boolean');
 
 export const CHAT_BACKUPS_PREFIX = 'chat_';
+export const CHAT_TREES_BACKUPS_PREFIX = 'chatTree_';
 
 /**
  * Saves a chat to the backups directory.
  * @param {string} directory The user's backups directory.
+ * @param {string} treeDirectory The user's chat tree backups directory.
  * @param {string} name The name of the chat.
  * @param {string} chat The serialized chat to save.
+ * @param {string|undefined} chatTree The serialized chatTree to save.
  */
-function backupChat(directory, name, chat) {
+function backupChat(directory, treeDirectory, name, chat, chatTree = undefined) {
     try {
         if (!isBackupEnabled || !fs.existsSync(directory)) {
             return;
@@ -41,29 +44,38 @@ function backupChat(directory, name, chat) {
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
         const backupFile = path.join(directory, `${CHAT_BACKUPS_PREFIX}${name}_${generateTimestamp()}.jsonl`);
+        const backupTreeFile = path.join(treeDirectory, `${CHAT_TREES_BACKUPS_PREFIX}${name}_${generateTimestamp()}.json`);
         writeFileAtomicSync(backupFile, chat, 'utf-8');
 
         removeOldBackups(directory, `${CHAT_BACKUPS_PREFIX}${name}_`);
+        if (chatTree) {
+            writeFileAtomicSync(backupTreeFile, chatTree, 'utf-8');
+            removeOldBackups(treeDirectory, `${CHAT_TREES_BACKUPS_PREFIX}${name}_`);
+        }
+
 
         if (isNaN(maxTotalChatBackups) || maxTotalChatBackups < 0) {
             return;
         }
 
         removeOldBackups(directory, CHAT_BACKUPS_PREFIX, maxTotalChatBackups);
+        if (chatTree) {
+            removeOldBackups(treeDirectory, CHAT_TREES_BACKUPS_PREFIX, maxTotalChatBackups);
+        }
     } catch (err) {
         console.error(`Could not backup chat for ${name}`, err);
     }
 }
 
 /**
- * @type {Map<string, import('lodash').DebouncedFunc<function(string, string, string): void>>}
+ * @type {Map<string, import('lodash').DebouncedFunc<function(string, string, string, string, string|undefined): void>>}
  */
 const backupFunctions = new Map();
 
 /**
  * Gets a backup function for a user.
  * @param {string} handle User handle
- * @returns {function(string, string, string): void} Backup function
+ * @returns {function(string, string, string, string, string|undefined): void} Backup function
  */
 function getBackupFunction(handle) {
     if (!backupFunctions.has(handle)) {
@@ -435,7 +447,8 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         const fileName = `${String(request.body.file_name)}.jsonl`;
         const filePath = path.join(request.user.directories.chats, directoryName, sanitize(fileName));
         const treeFileName = `${String(request.body.file_name)}.json`;
-        const treeFilePath = path.join(request.user.directories.chats, directoryName, sanitize(treeFileName));
+        const treeDirectoryPath = path.join(request.user.directories.chatTrees, directoryName);
+        const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
         if (checkIntegrity && !request.body.force) {
             const integritySlug = chatData?.[0]?.chat_metadata?.integrity;
             const isIntact = await checkChatIntegrity(filePath, integritySlug);
@@ -445,13 +458,19 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             }
         }
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
+        let jsonChatTree;
         //Write the chatTree
         if (!isNaN(chatTreeData?.['branch_id'])) {
+            //Create directory.
+            if (!fs.existsSync(treeDirectoryPath)) {
+                fs.mkdirSync(treeDirectoryPath);
+            }
+
             //Spaces increase file size.
-            const jsonChatTree = JSON.stringify(chatTreeData);
+            jsonChatTree = JSON.stringify(chatTreeData);
             writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
         }
-        getBackupFunction(request.user.profile.handle)(request.user.directories.backups, directoryName, jsonlData);
+        getBackupFunction(request.user.profile.handle)(request.user.directories.backups, request.user.directories.chatTreeBackups, directoryName, jsonlData, jsonChatTree);
         return response.send({ result: 'ok' });
     } catch (error) {
         console.error(error);
@@ -463,6 +482,7 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
+        const treeDirectoryPath = path.join(request.user.directories.chatTrees, dirName);
         const chatDirExists = fs.existsSync(directoryPath);
 
         //if no chat dir for the character is found, make one with the character name
@@ -479,7 +499,7 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         const filePath = path.join(directoryPath, sanitize(fileName));
 
         const treeFileName = `${String(request.body.file_name)}.json`;
-        const treeFilePath = path.join(directoryPath, sanitize(treeFileName));
+        const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
 
         const chatFileExists = fs.existsSync(filePath);
 
@@ -522,11 +542,15 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         const pathToFolder = request.body.is_group
             ? request.user.directories.groupChats
             : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
+
+        const pathToTreeFolder = request.body.is_group
+            ? request.user.directories.groupChatTrees
+            : path.join(request.user.directories.chatTrees, String(request.body.avatar_url).replace('.png', ''));
         const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
         const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
 
-        const pathToOriginalTreeFile = path.format({ ...path.parse(pathToOriginalFile), base: '', ext: '.json' });
-        const pathToRenamedTreeFile = path.format({ ...path.parse(pathToRenamedFile), base: '', ext: '.json' });
+        const pathToOriginalTreeFile = path.format({ ...path.parse(path.join(pathToTreeFolder, sanitize(request.body.original_file))), base: '', ext: '.json' });
+        const pathToRenamedTreeFile = path.format({ ...path.parse(path.join(pathToTreeFolder, sanitize(request.body.renamed_file))), base: '', ext: '.json' });
 
         const sanitizedFileName = path.parse(pathToRenamedFile).name;
         console.debug('Old chat name', pathToOriginalFile);
@@ -562,7 +586,7 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
     const dirName = String(request.body.avatar_url).replace('.png', '');
     const fileName = String(request.body.chatfile);
     const filePath = path.join(request.user.directories.chats, dirName, sanitize(fileName));
-    const treeFilePath = path.format({ ...path.parse(filePath), base: '', ext: '.json' });
+    const treeFilePath = path.format({ ...path.parse(path.join(request.user.directories.chatTrees, dirName, sanitize(fileName))), base: '', ext: '.json' });
     const chatFileExists = fs.existsSync(filePath);
 
     if (!chatFileExists) {
@@ -774,7 +798,7 @@ router.post('/group/get', (request, response) => {
 
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
-    const treeFilePath = path.join(request.user.directories.groupChats, `${id}.json`);
+    const treeFilePath = path.join(request.user.directories.groupChatTrees, `${id}.json`);
 
 
     if (fs.existsSync(pathToFile)) {
@@ -811,7 +835,7 @@ router.post('/group/delete', (request, response) => {
 
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
-    const treeFilePath = path.format({ ...path.parse(pathToFile), base: '', ext: '.json' });
+    const treeFilePath = path.join(request.user.directories.groupChatTrees, `${id}.json`);
 
 
     if (fs.existsSync(pathToFile)) {
@@ -846,15 +870,23 @@ router.post('/group/save', (request, response) => {
     writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
 
     const chatTreeData = request.body?.chatTree;
-    const treeFilePath = path.join(request.user.directories.groupChats, `${id}.json`);
+    const treeDirectoryPath = path.join(request.user.directories.groupChatTrees);
+    const treeFilePath = path.join(treeDirectoryPath, `${id}.json`);
+
+    let jsonChatTree;
     //Write the chatTree
     if (!isNaN(chatTreeData?.['branch_id'])) {
+        //Create directory.
+        if (!fs.existsSync(treeDirectoryPath)) {
+            fs.mkdirSync(treeDirectoryPath);
+        }
+
         //Spaces increase file size.
-        const jsonChatTree = JSON.stringify(chatTreeData, null, 0);
+        jsonChatTree = JSON.stringify(chatTreeData, null, 0);
         writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
     }
 
-    getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
+    getBackupFunction(request.user.profile.handle)(request.user.directories.backups, request.user.directories.chatTreeBackups, String(id), jsonlData, jsonChatTree);
     return response.send({ ok: true });
 });
 

@@ -116,9 +116,13 @@ router.post('/delete', getFileNameValidationFunction('id'), async (request, resp
             for (const chat of group.chats) {
                 console.info('Deleting group chat', chat);
                 const pathToFile = path.join(request.user.directories.groupChats, sanitize(`${chat}.jsonl`));
+                const pathToTreeFile = path.join(request.user.directories.groupChatTrees, sanitize(`${chat}.json`));
 
                 if (fs.existsSync(pathToFile)) {
                     fs.unlinkSync(pathToFile);
+                }
+                if (fs.existsSync(pathToTreeFile)) {
+                    fs.unlinkSync(pathToTreeFile);
                 }
             }
         }
