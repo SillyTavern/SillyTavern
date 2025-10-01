@@ -2257,11 +2257,6 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         const currentUser = _name1 ?? name1;
         const currentSpeaker = _name2 ?? name2;
 
-        // Impersonate mode: {{char}} is {{user}}, so {{notChar}} should be the full group.
-        if (currentSpeaker === currentUser) {
-            return getGroupValue(true);
-        }
-
         // Single character chat
         if (!selected_group) {
             return currentUser;
