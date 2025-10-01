@@ -8169,9 +8169,11 @@ export function showSwipeButtons(mesId = chat.length - 1) {
 }
 
 export function hideSwipeButtons() {
-    chatElement.find('.swipe_right').hide();
-    chatElement.find('.last_mes .swipes-counter').hide();
-    chatElement.find('.swipe_left').hide();
+    const messageElement = chatElement.find(`[mesid="${ chat.length - 1 }"]`);
+
+    messageElement.find('.swipe_right').hide();
+    messageElement.find('.swipes-counter').hide();
+    messageElement.find('.swipe_left').hide();
 }
 
 /**
