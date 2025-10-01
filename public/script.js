@@ -8104,7 +8104,8 @@ export function updateSwipeCounter(mesId) {
     swipeCounter.text(swipeCounterText).show();
 }
 
-export function showSwipeButtons() {
+export function showSwipeButtons(mesId = chat.length - 1) {
+
     if (chat.length === 0 || this_edit_mes_id >= 0) {
         return;
     }
@@ -8929,7 +8930,8 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
                         run_generate = false;
                         run_swipe = false;
-                        Generate('normal');
+                        await Generate('normal');
+                        showSwipeButtons(mesId);
                     }
                     //Cancel swipe.
                     else {
