@@ -448,7 +448,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         //Write the chatTree
         if (!isNaN(chatTreeData?.['branch_id'])) {
             //Spaces increase file size.
-            const jsonChatTree = JSON.stringify(chatTreeData, null, 0);
+            const jsonChatTree = JSON.stringify(chatTreeData);
             writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
         }
         getBackupFunction(request.user.profile.handle)(request.user.directories.backups, directoryName, jsonlData);
@@ -850,7 +850,7 @@ router.post('/group/save', (request, response) => {
     //Write the chatTree
     if (!isNaN(chatTreeData?.['branch_id'])) {
         //Spaces increase file size.
-        const jsonChatTree = JSON.stringify(chatTreeData, null, 0);
+        const jsonChatTree = JSON.stringify(chatTreeData);
         writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
     }
 
