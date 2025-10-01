@@ -8866,7 +8866,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
     if (power_user.show_swipes_for_all_messages) {
         //Save the chat to the chatTree.
-        saveChatToTree(chatTree, chat);
+        saveChatToTree(chat);
     }
 
     if (swipe_right) {

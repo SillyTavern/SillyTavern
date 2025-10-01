@@ -630,8 +630,11 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                         });
                     }
                 }
-                //Recursively update the chatTree.
-                updateBranch(treeData['branch']);
+
+                if (treeData?.['branch_id']) {
+                    //Recursively update the chatTree.
+                    updateBranch(treeData['branch']);
+                }
 
                 // Chat shouldn't be empty
                 if (Array.isArray(messages) && messages.length) {

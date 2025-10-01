@@ -12,10 +12,13 @@ export function setChatTree(newChat) {
 
 /**
  * Save the Chat to the chatTree.
- * @param {object} chatTree
  * @param {Array} chat
  */
-export function saveChatToTree(chatTree, chat) {
+export function saveChatToTree(chat) {
+
+    if (typeof chatTree == 'undefined') {
+        chatTree = {};
+    }
 
     //Track the current branch
     let branch = chatTree;
