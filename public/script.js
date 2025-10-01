@@ -8861,7 +8861,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         //assign swipe info array with last message from chat
     }
 
-    console.assert(chat[mesId]['swipe_id'] < chat[mesId]?.swipes?.length, `swipe_id = ${chat[mesId]['swipe_id']}/${chat[mesId]?.swipes?.length}`);
+    console.assert(chat[mesId]['swipe_id'] < chat[mesId]?.swipes?.length, `swipe = ${chat[mesId]['swipe_id'] + 1}/${chat[mesId]?.swipes?.length}`);
 
     if (power_user.show_swipes_for_all_messages) {
         //Save the chat to the chatTree.
@@ -8908,12 +8908,12 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
             chat[mesId]['swipe_info'] = [];
         }
         //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
-        if (parseInt(chat[mesId]['swipe_id']) === chat[mesId]['swipes'].length && (chat.length !== 1 || !isPristine)) {
+        if (parseInt(chat[mesId]['swipe_id']) >= chat[mesId]['swipes'].length && (chat.length !== 1 || !isPristine)) {
+            chat[mesId]['swipe_id'] = chat[mesId]['swipes'].length;
 
-            if (power_user.show_swipes_for_all_messages) {
-                //Allow edits to user messages before generation. Else trigger a swipe generation.
-                if (chat[mesId].is_user || mesId === 0) {
-
+            //Allow edits to user messages before generation. Else trigger a swipe generation.
+            if (chat[mesId].is_user || mesId === 0) {
+                if (power_user.show_swipes_for_all_messages) {
                     //Start edit.
                     this_mes_div.find('.mes_edit').trigger('click');
                     let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], this_mes_div);
