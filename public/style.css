@@ -1271,6 +1271,13 @@ body.swipeAllMessages .mes:not(.last_mes) .swipe_right {
     color:lime !important;
 } */
 
+body.hideAllSwipeButtons .swipe_left,
+body.hideAllSwipeButtons .swipe_right {
+    /* Red for Error if visible */
+    color: red !important;
+    visibility: hidden;
+}
+
 .swipe_left {
     right: auto;
     left: auto;

@@ -330,7 +330,7 @@ export const power_user = {
     reduced_motion: false,
     compact_input_area: true,
     show_swipe_num_all_messages: false,
-    show_swipes_for_all_messages: false,
+    enable_chat_tree: false,
     auto_connect: false,
     auto_load_chat: false,
     forbid_external_media: true,
@@ -517,8 +517,8 @@ function switchSwipeNumAllMessages() {
 }
 
 function switchSwipesAllMessages() {
-    $('#show_swipes_for_all_messages').prop('checked', power_user.show_swipes_for_all_messages);
-    $('body').toggleClass('swipeAllMessages', !!power_user.show_swipes_for_all_messages);
+    $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
+    $('body').toggleClass('swipeAllMessages', !!power_user.enable_chat_tree);
 }
 
 var originalSliderValues = [];
@@ -1370,7 +1370,7 @@ function applyTheme(name) {
         {
             key: '#show_swipes_for_all_messages',
             action: () => {
-                $('#show_swipes_for_all_messages').prop('checked', power_user.show_swipes_for_all_messages);
+                $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
                 switchSwipesAllMessages();
             },
         },
@@ -4083,7 +4083,7 @@ jQuery(() => {
     });
 
     $('#show_swipes_for_all_messages').on('input', function () {
-        power_user.show_swipes_for_all_messages = !!$(this).prop('checked');
+        power_user.enable_chat_tree = !!$(this).prop('checked');
         switchSwipesAllMessages();
         saveSettingsDebounced();
     });
