@@ -36,6 +36,7 @@ export const event_types = {
     OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     WORLDINFO_UPDATED: 'worldinfo_updated',
+    CHARACTER_SELECT_SELECTED: 'character_select_selected',
     CHARACTER_EDITED: 'character_edited',
     CHARACTER_PAGE_LOADED: 'character_page_loaded',
     CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE: 'character_group_overlay_state_change_before',
