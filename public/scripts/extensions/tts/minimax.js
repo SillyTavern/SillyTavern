@@ -19,9 +19,9 @@ class MiniMaxTtsProvider {
         apiHost: 'https://api.minimax.io',
         model: 'speech-02-hd',
         voiceMap: {},
-        speed: 1.0,
-        volume: 1.0,
-        pitch: 0,
+        speed: { default: 1.0, min: 0.5, max: 2.0, step: 0.1 },
+        volume: { default: 1.0, min: 0.0, max: 10.0, step: 0.1 },
+        pitch: { default: 0, min: -12, max: 12, step: 1 },
         audioSampleRate: 32000,
         bitrate: 128000,
         format: 'mp3',
@@ -84,15 +84,15 @@ class MiniMaxTtsProvider {
 
             <div class="tts_block">
                 <label for="minimax_tts_speed">Speed: <span id="minimax_tts_speed_output"></span></label>
-                <input id="minimax_tts_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2.0" step="0.1" />
+                <input id="minimax_tts_speed" type="range" value="${this.defaultSettings.speed.default}" min="${this.defaultSettings.speed.min}" max="${this.defaultSettings.speed.max}" step="${this.defaultSettings.speed.step}" />
             </div>
             <div class="tts_block">
                 <label for="minimax_tts_volume">Volume: <span id="minimax_tts_volume_output"></span></label>
-                <input id="minimax_tts_volume" type="range" value="${this.defaultSettings.volume}" min="0.1" max="2.0" step="0.1" />
+                <input id="minimax_tts_volume" type="range" value="${this.defaultSettings.volume.default}" min="${this.defaultSettings.volume.min}" max="${this.defaultSettings.volume.max}" step="${this.defaultSettings.volume.step}" />
             </div>
             <div class="tts_block">
                 <label for="minimax_tts_pitch">Pitch: <span id="minimax_tts_pitch_output"></span></label>
-                <input id="minimax_tts_pitch" type="range" value="${this.defaultSettings.pitch}" min="-12" max="12" step="1" />
+                <input id="minimax_tts_pitch" type="range" value="${this.defaultSettings.pitch.default}" min="${this.defaultSettings.pitch.min}" max="${this.defaultSettings.pitch.max}" step="${this.defaultSettings.pitch.step}" />
             </div>
             <div class="tts_block">
                 <label for="minimax_tts_format">Audio Format</label>
@@ -771,14 +771,17 @@ class MiniMaxTtsProvider {
             throw error;
         }
 
+        /** @param {number} number @param {number} lower @param {number} upper @returns {number} */
+        const clamp = (number, lower, upper) => Math.min(Math.max(number, lower), upper);
+
         const requestBody = {
             text: inputText,
             voiceId: voiceId,
             apiHost: this.settings.apiHost,
             model: this.settings.model || this.defaultSettings.model,
-            speed: Number(this.settings.speed) || this.defaultSettings.speed,
-            volume: Number(this.settings.volume) || this.defaultSettings.volume,
-            pitch: Math.round(Number(this.settings.pitch)) || this.defaultSettings.pitch,
+            speed: clamp(Number(this.settings.speed) || this.defaultSettings.speed.default, this.defaultSettings.speed.min, this.defaultSettings.speed.max),
+            volume: clamp(Number(this.settings.volume) || this.defaultSettings.volume.default, this.defaultSettings.volume.min, this.defaultSettings.volume.max),
+            pitch: clamp(Math.round(Number(this.settings.pitch)) || this.defaultSettings.pitch.default, this.defaultSettings.pitch.min, this.defaultSettings.pitch.max),
             audioSampleRate: Number(this.settings.audioSampleRate) || this.defaultSettings.audioSampleRate,
             bitrate: Number(this.settings.bitrate) || this.defaultSettings.bitrate,
             format: this.settings.format || this.defaultSettings.format,
