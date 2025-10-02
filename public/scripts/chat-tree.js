@@ -23,6 +23,7 @@ export function saveChatToTree(chat) {
     //Track the current branch
     let branch = chatTree;
 
+    const startTime = performance.now();
     // Traverse the tree following the chat's path.
     for (const chatMessage of chat) {
 
@@ -48,12 +49,12 @@ export function saveChatToTree(chat) {
 
             //branch = Full Message < swipe_info < Swipe message.
             if (!branch['branch'][i]) {branch['branch'][i] = {};}
-            Object.assign(branch['branch'][i], { ...structuredClone(swipelessMessage), ...structuredClone(chatMessage?.swipe_info[i]), mes: swipe } );
+            Object.assign(branch['branch'][i], { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
         });
 
         //Set the full message while preserving branches.
         if (!branch['branch'][branch_id]) {branch['branch'][branch_id] = {};}
-        Object.assign(branch['branch'][branch_id], {  ...structuredClone(swipelessMessage) });
+        Object.assign(branch['branch'][branch_id], { ...swipelessMessage });
         //Follow the branch.
         branch = branch['branch'][branch_id];
     }
@@ -64,6 +65,9 @@ export function saveChatToTree(chat) {
         delete branch['branch_id'];
         delete branch['branch'];
     }
+
+    const endTime = performance.now();
+    console.log(`Saved ${chat.length} messages to chatTree in ${(endTime - startTime) / 1000} seconds`);
 }
 
 /**
@@ -107,7 +111,7 @@ export function getStickFromTree(chatTree, chat, index) {
 
                 //Push the message without it's branches.
                 // eslint-disable-next-line no-unused-vars
-                let { branch: _, ...message } = structuredClone(branch['branch'][branch_id]);
+                let { branch: _, ...message } = branch['branch'][branch_id];
 
                 //Deccompress swipe.
                 message['swipes'] = branch['branch'].map((m) => m.mes);
@@ -118,7 +122,7 @@ export function getStickFromTree(chatTree, chat, index) {
                         'send_date': m['send_date'],
                         'gen_started': m['gen_started'],
                         'gen_finished': m['gen_finished'],
-                        'extra': structuredClone(m['extra']),
+                        'extra': m['extra'],
                     };
                 });
 
