@@ -561,12 +561,13 @@ router.post('/find', (request, response) => {
         }
 
         const manager = new SecretManager(request.user.directories);
-        const secretValue = manager.readSecret(key, id);
+        const state = manager.getSecretState();
 
-        if (!secretValue) {
+        if (!state[key]) {
             return response.sendStatus(404);
         }
 
+        const secretValue = manager.readSecret(key, id);
         return response.send({ value: secretValue });
     } catch (error) {
         console.error('Error finding secret:', error);
