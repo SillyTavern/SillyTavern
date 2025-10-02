@@ -274,7 +274,7 @@ import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
-import { chatTree, getStickFromTree, saveChatToTree, setChatTree, spliceStickToChat } from './scripts/chat-tree.js';
+import { chatTree, getStickFromTree, saveChatToTree, setChatTree, spliceStickToChat, updateChatTreeMessages } from './scripts/chat-tree.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -6388,15 +6388,23 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
             if (getChatResponse.ok) {
                 const { chatData:currentChat, chatTreeData:currentChatTree } = await getChatResponse.json();
 
-                for (const message of currentChat) {
+                function rename(message) {
                     if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
-                        continue;
+                        return false;
                     }
 
                     if (message.name !== undefined) {
                         message.name = newName;
+                        return true;
                     }
                 }
+
+                for (const message of currentChat) {
+                    rename(message);
+                }
+
+                //Recursively update the chatTree
+                updateChatTreeMessages(currentChatTree, rename, newName);
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 

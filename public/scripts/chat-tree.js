@@ -23,6 +23,13 @@ export function saveChatToTree(chat) {
     //Track the current branch
     let branch = chatTree;
 
+    function addMessage(branch, branch_id, message)
+    {
+        if (!branch['branch'][branch_id]) {branch['branch'][branch_id] = {};}
+        Object.assign(branch['branch'][branch_id], message);
+    }
+
+
     const startTime = performance.now();
     // Traverse the tree following the chat's path.
     for (const chatMessage of chat) {
@@ -48,13 +55,11 @@ export function saveChatToTree(chat) {
             console.assert(chatMessage['swipe_info']?.length <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
 
             //branch = Full Message < swipe_info < Swipe message.
-            if (!branch['branch'][i]) {branch['branch'][i] = {};}
-            Object.assign(branch['branch'][i], { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
+            addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
         });
 
         //Set the full message while preserving branches.
-        if (!branch['branch'][branch_id]) {branch['branch'][branch_id] = {};}
-        Object.assign(branch['branch'][branch_id], { ...swipelessMessage });
+        addMessage(branch, branch_id, { ...swipelessMessage });
         //Follow the branch.
         branch = branch['branch'][branch_id];
     }
@@ -95,7 +100,7 @@ export function getStickFromTree(chatTree, chat, index) {
     let i = 0;
     while (branch['branch']?.length  >= 1) {
 
-        //Follow chatMessage's swipe_id, or the branch's swipe_id, or the first swipe.
+        //Follow messages's swipe_id, or the branch's branch_id, or the first swipe.
         let branch_id = chat[i]?.['swipe_id'] ?? branch?.['branch_id'] ?? 0;
 
         //Debugging.
@@ -159,4 +164,34 @@ export async function spliceStickToChat(stick, chat, index = 0) {
     showSwipeButtons();
 
     eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+}
+
+/**
+ * Update each message in the chatTree. Used for renaming characters.
+ * @param {object} tree chatTree.
+ * @param {function} updateFunction The function to run on each message.
+ * @param {string} attr The attribute for logging.
+ */
+export function updateChatTreeMessages(tree, updateFunction, attr = 'value'){
+
+    if (typeof tree?.['branch_id'] === 'number') {
+        const startTime = performance.now();
+        let count = 0;
+
+        function updateBranch(branch) {
+            if (branch?.length > 0 ) {
+                branch.forEach((m) => {
+                    if (updateFunction(m)) { count++; }
+                    updateBranch(m['branch']);
+                });
+            }
+        }
+
+        //Recursively update the chatTree.
+        updateBranch(tree['branch']);
+        const endTime = performance.now();
+        if (count) {
+            console.log(`Updated ${attr} in ${count} of chatTree's messages within ${(endTime - startTime) / 1000} seconds`);
+        }
+    }
 }

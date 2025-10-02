@@ -49,6 +49,10 @@ function backupChat(directory, treeDirectory, name, chat, chatTree = undefined) 
 
         removeOldBackups(directory, `${CHAT_BACKUPS_PREFIX}${name}_`);
         if (chatTree) {
+            //Ensure the directory exists, then write the backup.
+            if (!fs.existsSync(treeDirectory)) {
+                fs.mkdirSync(treeDirectory, { recursive: true });
+            }
             writeFileAtomicSync(backupTreeFile, chatTree, 'utf-8');
             removeOldBackups(treeDirectory, `${CHAT_TREES_BACKUPS_PREFIX}${name}_`);
         }
@@ -461,9 +465,9 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         let jsonChatTree;
         //Write the chatTree
         if (!isNaN(chatTreeData?.['branch_id'])) {
-            //Create directory.
+            //Ensure the directory exists.
             if (!fs.existsSync(treeDirectoryPath)) {
-                fs.mkdirSync(treeDirectoryPath);
+                fs.mkdirSync(treeDirectoryPath, { recursive: true });
             }
 
             //Spaces increase file size.
@@ -876,9 +880,9 @@ router.post('/group/save', (request, response) => {
     let jsonChatTree;
     //Write the chatTree
     if (!isNaN(chatTreeData?.['branch_id'])) {
-        //Create directory.
+        //Ensure the directory exists.
         if (!fs.existsSync(treeDirectoryPath)) {
-            fs.mkdirSync(treeDirectoryPath);
+            fs.mkdirSync(treeDirectoryPath, { recursive: true });
         }
 
         //Spaces increase file size.

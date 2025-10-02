@@ -84,7 +84,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { chatTree, setChatTree } from './chat-tree.js';
+import { chatTree, setChatTree, updateChatTreeMessages } from './chat-tree.js';
 
 export {
     selected_group,
@@ -618,23 +618,14 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                         message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
                         message.original_avatar = newAvatar;
                         hadChanges = true;
+                        return true;
+                    } else {
+                        return false;
                     }
                 }
 
-                function updateBranch(branch) {
-                    if (branch?.length > 0 ) {
-                        branch.forEach( (m) => {
-                            updateMessage(m);
-                            console.log(m);
-                            updateBranch(m['branch']);
-                        });
-                    }
-                }
-
-                if (treeData?.['branch_id']) {
-                    //Recursively update the chatTree.
-                    updateBranch(treeData['branch']);
-                }
+                //Recursively update the chatTree
+                updateChatTreeMessages(treeData, updateMessage, newName);
 
                 // Chat shouldn't be empty
                 if (Array.isArray(messages) && messages.length) {
