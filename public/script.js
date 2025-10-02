@@ -7597,7 +7597,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     // Update some stuff about the char management dropdown
     $('#character_source').attr('disabled', !getCharacterSource(this_chid) ? '' : null);
 
-    eventSource.emit(event_types.CHARACTER_SELECT_SELECTED, chid);
+    eventSource.emit(event_types.CHARACTER_EDITOR_OPENED, chid);
 
     saveSettingsDebounced();
 }
