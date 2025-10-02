@@ -8177,11 +8177,14 @@ export function showSwipeButtons(mesId = chat.length - 1) {
 }
 
 export function hideSwipeButtons() {
-    const messageElement = chatElement.find(`[mesid="${ chat.length - 1 }"]`);
-
-    messageElement.find('.swipe_right').hide();
-    messageElement.find('.swipes-counter').hide();
-    messageElement.find('.swipe_left').hide();
+    let element = chatElement;
+    //If show_swipe_for_all_messages is enabled, only hide the last message.
+    if (power_user.show_swipes_for_all_messages) {
+        element = chatElement.find(`[mesid="${ chat.length - 1 }"]`);
+    }
+    element.find('.swipe_right').hide();
+    element.find('.last_mes .swipes-counter').hide();
+    element.find('.swipe_left').hide();
 }
 
 /**
@@ -8778,6 +8781,7 @@ export async function redisplayChat(chat, index) {
     //Skip to index, then add extra messages.
     for (let i = index + 1; i <= chat.length - 1; i++) {
         addOneMessage(chat[i], { scroll: false, showSwipes: true, forceId: i } );
+        updateSwipeCounter(i);
     }
 
     //Update last_mes.
@@ -8816,6 +8820,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         return;
     }
     swiping = true;
+    let generation;
 
     const mesId = Number($(this).closest('.mes').attr('mesid') ?? chat.indexOf(message) ?? chat.length - 1);
 
@@ -8842,7 +8847,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     }
 
     if (isHordeGenerationNotAllowed()) {
-        swiping = false;
+        await endSwipe();
         return unblockGeneration();
     }
 
@@ -8851,7 +8856,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
     // If the user is holding down the key and we're at the first swipe, don't do anything
     if (source === 'keyboard' && repeated && chat[mesId].swipe_id === 0) {
-        swiping = false;
+        await endSwipe();
         return;
     }
 
@@ -8877,6 +8882,23 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     if (power_user.show_swipes_for_all_messages) {
         //Save the chat to the chatTree.
         saveChatToTree(chat);
+        //Hide swipe buttons.
+        $('body').toggleClass('swipeAllMessages', false);
+    }
+
+    async function endSwipe() {
+        //Wait for the generation to end.
+        await generation;
+
+        //Allow for another swipe.
+        swiping = false;
+
+        if (power_user.show_swipes_for_all_messages) {
+            //Show swipe buttons.
+            $('body').toggleClass('swipeAllMessages', true);
+            showSwipeButtons(mesId);
+            // updateSwipeCounter(mesId)
+        }
     }
 
     if (swipe_right) {
@@ -8886,7 +8908,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         } else {
             // If the user is holding down the key and we're at the last swipe, don't do anything
             if (source === 'keyboard' && repeated && chat[mesId].swipe_id === chat[mesId].swipes.length - 1) {
-                swiping = false;
+                await endSwipe();
                 return;
             }
             // make new slot in array
@@ -8940,8 +8962,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
                         run_generate = false;
                         run_swipe = false;
-                        await Generate('normal');
-                        showSwipeButtons(mesId);
+                        generation = Generate('normal');
                     }
                     //Cancel swipe.
                     else {
@@ -9084,7 +9105,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
             if (run_generate && !is_send_press && parseInt(chat[mesId]['swipe_id']) === chat[mesId]['swipes'].length) {
                 console.debug('caught here 2');
                 is_send_press = true;
-                Generate('swipe');
+                generation = Generate('swipe');
             } else {
                 if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
                     saveChatDebounced();
@@ -9108,8 +9129,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     //Fallback.
     updateSwipeCounter(mesId);
 
-    //Done swiping.
-    swiping = false;
+    await endSwipe();
 }
 
 /**
