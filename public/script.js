@@ -5679,9 +5679,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
                 chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
             }
             const chat_id = (chat.length - 1);
-            await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
+            !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
             addOneMessage(chat[chat_id], { type: 'swipe' });
-            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
+            !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
@@ -5703,9 +5703,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
         }
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
+        !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id], { type: 'swipe' });
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
+        !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
     } else if (type === 'appendFinal') {
         oldMessage = chat[chat.length - 1]['mes'];
         console.debug('Trying to appendFinal.');
@@ -5724,9 +5724,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
         }
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
+        !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id], { type: 'swipe' });
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
+        !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
 
     } else {
         console.debug('entering chat update routine for non-swipe post');
