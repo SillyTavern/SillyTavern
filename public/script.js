@@ -8928,10 +8928,14 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
             throw new Error(`Server returned an error: ${data.error}`);
         }
 
-        // Refresh existing thumbnail
-        await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'reload' });
-
         if (data.file_name !== undefined) {
+            let avatarFileName = `${data.file_name}.png`;
+
+            // Refresh existing thumbnail
+            if (exists && this_chid !== undefined) {
+                await fetch(getThumbnailUrl('avatar', avatarFileName), { cache: 'reload' });
+            }
+
             $('#character_search_bar').val('').trigger('input');
 
             if (exists) {
@@ -8939,7 +8943,6 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
             } else {
                 toastr.success(t`Character Created: ${String(data.file_name).replace('.png', '')}`);
             }
-            let avatarFileName = `${data.file_name}.png`;
             if (importTags) {
                 await importCharactersTags([avatarFileName]);
                 selectImportedChar(data.file_name);
