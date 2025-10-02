@@ -458,6 +458,16 @@ class MiniMaxTtsProvider {
         // Only accept keys defined in defaultSettings
         this.settings = { ...this.defaultSettings };
 
+        // Flatten the settings fields with default/min/max definitions so the actual values are used
+        this.settings = Object.fromEntries(
+            Object.entries(this.defaultSettings).map(([key, value]) => {
+                if (value && typeof value === 'object' && 'default' in value) {
+                    return [key, value.default];
+                }
+                return [key, value];
+            }),
+        );
+
         for (const key in settings) {
             if (key in this.settings) {
                 this.settings[key] = settings[key];
