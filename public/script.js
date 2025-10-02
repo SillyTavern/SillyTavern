@@ -43,7 +43,6 @@ import {
     importEmbeddedWorldInfo,
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
-    importWorldInfo,
     wi_anchor_position,
     world_info_include_names,
     initWorldInfo,
