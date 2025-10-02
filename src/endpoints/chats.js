@@ -561,7 +561,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         console.debug('New chat name', pathToRenamedFile);
 
         if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
-            console.error('Either Source or Destination files are not available');
+            console.error('Either Source or Destination chat files are not available');
             return response.status(400).send({ error: true });
         }
 
@@ -573,8 +573,9 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
                 fs.copyFileSync(pathToOriginalTreeFile, pathToRenamedTreeFile);
                 fs.unlinkSync(pathToOriginalTreeFile);
             } else {
-                console.warn(`The Destination tree file path is not available. ${pathToRenamedTreeFile}`);
-                // return response.status(400).send({ error: true });
+                let errorMessage = `The chat was saved to ${pathToOriginalFile}, but the the destination tree file path is not available.\nTry fixing the path then trigger a swipe.\nOr manually rename ${pathToOriginalTreeFile} to ${pathToRenamedTreeFile}`;
+                console.error(errorMessage);
+                return response.status(400).send({ error: true, message:errorMessage });
             }
         }
 
