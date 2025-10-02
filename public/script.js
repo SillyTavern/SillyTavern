@@ -7594,6 +7594,9 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#character_media_allowed_icon').toggle(externalMediaState);
     $('#character_media_forbidden_icon').toggle(!externalMediaState);
 
+    // Update some stuff about the char management dropdown
+    $('#character_source').attr('disabled', !getCharacterSource(this_chid) ? '' : null);
+
     saveSettingsDebounced();
 }
 
