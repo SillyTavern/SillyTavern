@@ -118,7 +118,7 @@ export function getStickFromTree(chatTree, chat, index) {
                 // eslint-disable-next-line no-unused-vars
                 let { branch: _, ...message } = branch['branch'][branch_id];
 
-                //Deccompress swipe.
+                //Decompress swipe.
                 message['swipes'] = branch['branch'].map((m) => m.mes);
                 message['swipe_id'] = branch['branch_id'];
                 message['swipe_info'] = branch['branch'].map((m) =>

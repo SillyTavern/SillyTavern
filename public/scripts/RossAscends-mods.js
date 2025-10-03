@@ -1112,7 +1112,7 @@ export function initRossMods() {
             if (
                 allow_swiping &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_left:last').css('display') === 'flex' &&
+                // $('.swipe_left:last').css('display') === 'flex' && //Redundant due to allow_swiping.
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
@@ -1127,7 +1127,7 @@ export function initRossMods() {
             if (
                 allow_swiping &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_right:last').css('display') === 'flex' &&
+                // $('.swipe_right:last').css('display') === 'flex' && //Redundant due to allow_swiping.
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
