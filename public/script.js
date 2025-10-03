@@ -7516,7 +7516,7 @@ export function select_rm_info(type, charId, previousCharId = null) {
 
 /**
  * Selects the right menu for displaying the character editor.
- * @param {number|string} chid Character array index
+ * @param {string} chid Character array index
  * @param {object} [param1] Options for the switch
  * @param {boolean} [param1.switchMenu=true] Whether to switch the menu
  */
@@ -7595,7 +7595,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#character_media_forbidden_icon').toggle(!externalMediaState);
 
     // Update some stuff about the char management dropdown
-    $('#character_source').attr('disabled', !getCharacterSource(this_chid) ? '' : null);
+    $('#character_source').attr('disabled', selected_group || !getCharacterSource(chid) ? '' : null);
 
     eventSource.emit(event_types.CHARACTER_EDITOR_OPENED, chid);
 
