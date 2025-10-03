@@ -1131,7 +1131,7 @@ function onPersonaDescriptionInput() {
         object.description = power_user.persona_description;
     }
 
-    $(`.avatar-container[imgfile="${user_avatar}"] .ch_description`)
+    $(`.avatar-container[data-avatar-id="${user_avatar}"] .ch_description`)
         .text(power_user.persona_description || $('#user_avatar_block').attr('no_desc_text'))
         .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
