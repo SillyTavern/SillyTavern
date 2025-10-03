@@ -3299,6 +3299,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
+#rm_group_top_bar:not(:has(#rm_group_activation_strategy option[value="0"]:checked)) label:has(#rm_group_allow_self_responses) {
+    display: none;
+}
+
 .group_member .queue_position:not(:empty)::before {
     content: "#";
 }
