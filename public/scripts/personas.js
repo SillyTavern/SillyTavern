@@ -1559,7 +1559,7 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
 export function getConnectedPersonas(characterKey = undefined) {
     characterKey ??= selected_group || characters[Number(this_chid)]?.avatar;
     const connectedPersonas = Object.entries(power_user.persona_descriptions)
-        .filter(([_, { connections }]) => connections?.some(conn => conn.type === (selected_group ? 'group' : 'character') && conn.id === characterKey))
+        .filter(([_, { connections }]) => connections?.some(conn => conn.id === characterKey))
         .map(([key, _]) => key);
     return connectedPersonas;
 }
