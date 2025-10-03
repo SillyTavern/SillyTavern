@@ -12,6 +12,7 @@ export const event_types = {
     MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
     MESSAGE_REASONING_EDITED: 'message_reasoning_edited',
     MESSAGE_REASONING_DELETED: 'message_reasoning_deleted',
+    MESSAGE_SWIPE_DELETED: 'message_swipe_deleted',
     MORE_MESSAGES_LOADED: 'more_messages_loaded',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',

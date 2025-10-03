@@ -7977,6 +7977,8 @@ export async function deleteSwipe(swipeId = null) {
     const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
     syncSwipeToMes(null, newSwipeId);
 
+    await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { swipeId, newSwipeId });
+
     await saveChatConditional();
     await reloadCurrentChat();
 
