@@ -1637,13 +1637,18 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
  * @param {{ (): boolean; }} condition The condition to wait for.
  * @param {number} [timeout=1000] The timeout in milliseconds.
  * @param {number} [interval=100] The interval in milliseconds.
+ * @param {object} [options] Options object
+ * @param {boolean} [options.rejectOnTimeout=true] Whether to reject the promise on timeout or resolve it.
  * @returns {Promise<void>} A promise that resolves when the condition is true.
  */
-export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+export async function waitUntilCondition(condition, timeout = 1000, interval = 100, options = {}) {
+    const { rejectOnTimeout = true } = options;
+
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             clearInterval(intervalId);
-            reject(new Error('Timed out waiting for condition to be true'));
+            const timeoutFn = rejectOnTimeout ? reject : resolve;
+            timeoutFn(new Error('Timed out waiting for condition to be true'));
         }, timeout);
 
         const intervalId = setInterval(() => {

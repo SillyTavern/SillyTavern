@@ -723,13 +723,11 @@ async function renderDetailsContent(detailsContent) {
             if (shouldAwait) {
                 await awaitPromise;
 
-                try {
-                    // We should also await the connection to be established
-                    const parsedTimeout = parseInt(args?.timeout?.toString());
-                    const timeout = !isNaN(parsedTimeout) ? Math.max(0, parsedTimeout) : 2000;
-                    await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100);
-                } catch (e) {
-                    console.log(e);
+                // We should also await the connection to be established
+                const parsedTimeout = parseInt(args?.timeout?.toString());
+                const timeout = !isNaN(parsedTimeout) ? Math.max(0, parsedTimeout) : 2000;
+                if (timeout > 0) {
+                    await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100, { rejectOnTimeout: false });
                 }
             }
 
