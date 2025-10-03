@@ -8828,6 +8828,11 @@ function formatSwipeCounter(current, total) {
  */
 export async function swipe(_event, swipe_right, { source, repeated, message = chat[chat.length - 1] } = {}) {
 
+    if (chat.length === 0) {
+        console.error('Swipe was called on an empty chat.');
+        return;
+    }
+
     //Only allow one concurrent swipe.
     if (!allow_swiping) {
         console.info('The swipe has been ignored because another is in progress.');
@@ -8845,7 +8850,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     let this_mes_text = this_mes_div.find('.mes_block .mes_text');
     const this_mes_div_height = this_mes_div[0].scrollHeight;
     const this_mes_text_height = this_mes_text[0].scrollHeight;
-    const original_swipe_id = chat[mesId]['swipe_id'];
+    const original_swipe_id = chat[mesId]?.['swipe_id'] ?? 0;
 
     const isPristine = !chat_metadata?.tainted;
 
