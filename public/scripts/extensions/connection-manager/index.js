@@ -684,6 +684,13 @@ async function renderDetailsContent(detailsContent) {
                 defaultValue: 'true',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'timeout',
+                description: 'Maximum time to wait for the API connection to be established, in milliseconds. Set to 0 to disable. Only applies when await=true.',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '2000',
+            }),
         ],
         callback: async (args, value) => {
             if (!value || typeof value !== 'string') {
@@ -716,8 +723,14 @@ async function renderDetailsContent(detailsContent) {
             if (shouldAwait) {
                 await awaitPromise;
 
-                // We should also await the connection to be established
-                await waitUntilCondition(() => online_status !== 'no_connection', 5000, 100);
+                try {
+                    // We should also await the connection to be established
+                    const parsedTimeout = parseInt(args?.timeout?.toString());
+                    const timeout = !isNaN(parsedTimeout) ? Math.max(0, parsedTimeout) : 2000;
+                    await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100);
+                } catch (e) {
+                    console.log(e);
+                }
             }
 
             return profile.name;
