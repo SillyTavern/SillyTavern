@@ -8134,7 +8134,7 @@ export function showSwipeButtons(mesId = chat.length - 1) {
         chat[mesId].is_system ||
         !swipes ||
         Number($('.mes:last').attr('mesid')) < 0 ||
-        // chat[mesId].is_user ||
+        chat[mesId].is_user ||
         (selected_group && is_group_generating)
     ) {
         return;
@@ -8878,7 +8878,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         }
 
         // //Clamp Id between swipes.
-        let clampedId = clamp(chat[mesId]['swipe_id'], 0, chat[mesId]['swipes'].length - 1);
+        let clampedId = clamp(chat[mesId]['swipe_id'], 0, Math.max(0,chat[mesId]['swipes'].length - 1));
 
         //If the id is not within bounds, Swipe back.
         if (chat[mesId]['swipe_id'] !== clampedId) {
@@ -8894,7 +8894,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         }
     }
 
-    async function handleSwipeRight() {
+    async function swipeGenerate() {
 
         //Cancel the generation if it's a user message and chatTree is disabled.
         if (chat[mesId].is_user || mesId === 0) {
@@ -8913,7 +8913,10 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
                     await deleteMessages(mesId + 1, lastMesId);
                     await redisplayChat(chat, mesId);
 
-                    generation = Generate('normal');
+                    // If it's not the greeting, generate.
+                    if (chat.length !== 1) {
+                        generation = Generate('normal');
+                    }
                 }
                 //Cancel swipe.
                 else {
@@ -9100,22 +9103,30 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         return unblockGeneration();
     }
 
+
+    // Make sure ad-hoc changes to extras are saved before swiping away
+    syncMesToSwipe(mesId);
+
+    if (chat[mesId]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+        chat[mesId]['swipe_id'] = 0;                        // set it to id 0
+        chat[mesId]['swipes'] = [];                         // empty the array
+        chat[mesId]['swipe_info'] = [];
+        chat[mesId]['swipes'][0] = chat[mesId]['mes'];  //assign swipe array with last chat[mesId] from chat
+        chat[mesId]['swipe_info'][0] = {
+            'send_date': chat[mesId]['send_date'],
+            'gen_started': chat[mesId]['gen_started'],
+            'gen_finished': chat[mesId]['gen_finished'],
+            'extra': structuredClone(chat[mesId]['extra']),
+        };
+    }
+
     // If the user is holding down the key and we're at the last or first swipe, don't do anything.
-    let isLastSwipe = swipe_right ? (chat[mesId].swipe_id === chat[mesId].swipes.length - 1) : chat[mesId].swipe_id === 0;
+    let isLastSwipe = swipe_right ? (chat[mesId].swipe_id === Math.max(0,chat[mesId]['swipes'].length - 1)) : chat[mesId].swipe_id === 0;
     if (source === 'keyboard' && repeated && isLastSwipe) {
         await endSwipe();
         return;
     }
 
-    // Make sure ad-hoc changes to extras are saved before swiping away
-    // https://stackoverflow.com/a/62824667
-    // Logical nullish assignment, ES2021+ solution
-    chat[mesId]['swipe_id'] ??= 0;              // if there is no swipe-message in the last spot of the chat array set it to id 0
-    chat[mesId]['swipes'] ??= [];                         // empty the array
-    chat[mesId]['swipe_info'] ??= [];
-    //assign swipe array with last chat[mesId] from chat
-    //assign swipe info array with last message from chat
-    syncMesToSwipe(mesId);
 
     if (power_user.enable_chat_tree) {
         //Save the chat to the chatTree.
@@ -9127,16 +9138,18 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         // make new slot in array
         chat[mesId]['swipe_id']++;
 
-        // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
-        if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1 && isPristine) {
-            chat[0]['swipe_id'] = 0;
-        }
-        //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
-        if (chat[mesId]['swipe_id'] >= chat[mesId]['swipes'].length && (chat.length !== 1 || !isPristine)) {
+
+        //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting, or chatTree is enabled.
+        if (chat[mesId]['swipe_id'] >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {
             chat[mesId]['swipe_id'] = chat[mesId]['swipes'].length;
-            await handleSwipeRight();
-        //Else, normally swipe.
-        } else {
+            await swipeGenerate();
+        }
+        else {
+            // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
+            if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length && isPristine) {
+                chat[0]['swipe_id'] = 0;
+            }
+            //Else, normally swipe.
             await syncWithSwipeId();
             await animeSwipe();
         }
@@ -9146,7 +9159,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         chat[mesId]['swipe_id']--;
         //Loop to last swipe if negative.
         if (chat[mesId]['swipe_id'] < 0) {
-            chat[mesId]['swipe_id'] = chat[mesId]['swipes'].length - 1;
+            chat[mesId]['swipe_id'] = Math.max(0,chat[mesId]['swipes'].length - 1);
         }
         await syncWithSwipeId();
         await animeSwipe();

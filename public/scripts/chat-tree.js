@@ -16,31 +16,34 @@ export function setChatTree(newChat) {
  */
 export function saveChatToTree(chat) {
 
-    if (typeof chatTree == 'undefined') {
-        chatTree = {};
-    }
+    chatTree ??= {};
 
     //Track the current branch
     let branch = chatTree;
 
     function addMessage(branch, branch_id, message)
     {
-        if (!branch['branch'][branch_id]) {branch['branch'][branch_id] = {};}
+        branch['branch'][branch_id] ??= {};
         Object.assign(branch['branch'][branch_id], message);
     }
 
+    //Debugging.
+    // let swipe_path = [];
 
     const startTime = performance.now();
     // Traverse the tree following the chat's path.
     for (const chatMessage of chat) {
+        console.assert(typeof branch !== 'undefined', 'The branch must exist.');
 
         //Default to the first swipe.
         let branch_id = chatMessage['swipe_id'] ?? 0;
+        console.assert(typeof branch_id !== 'undefined', 'The branch_id must exist.');
         branch['branch_id'] = branch_id;
 
-        if (!Array.isArray(branch['branch'])) {
-            branch['branch'] = [];
-        }
+        //Debugging.
+        // swipe_path.push(branch_id);
+
+        branch['branch'] ??= [];
 
         // eslint-disable-next-line no-unused-vars
         const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...chatMessage };
@@ -100,8 +103,9 @@ export function getStickFromTree(chatTree, chat, index) {
     let i = 0;
     while (branch['branch']?.length  >= 1) {
 
-        //Follow messages's swipe_id, or the branch's branch_id, or the first swipe.
-        let branch_id = chat[i]?.['swipe_id'] ?? branch?.['branch_id'] ?? 0;
+        //Follow messages's swipe_id before index, then the branch's branch_id, then the first swipe.
+        let branch_id;
+        branch_id = ((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0;
 
         //Debugging.
         // swipe_path.push(chat[i]?.['swipe_id'])
@@ -116,11 +120,11 @@ export function getStickFromTree(chatTree, chat, index) {
 
                 //Push the message without it's branches.
                 // eslint-disable-next-line no-unused-vars
-                let { branch: _, ...message } = branch['branch'][branch_id];
+                let { branch: _b, branch_id: _bi, ...message } = branch['branch'][branch_id];
 
                 //Decompress swipe.
                 message['swipes'] = branch['branch'].map((m) => m.mes);
-                message['swipe_id'] = branch['branch_id'];
+                message['swipe_id'] = branch_id;
                 message['swipe_info'] = branch['branch'].map((m) =>
                 {
                     return {
@@ -139,7 +143,7 @@ export function getStickFromTree(chatTree, chat, index) {
             i++;
         }
         else {
-            console.warn('The expected branch does not exist.', branch, branch_id);
+            console.warn(`The expected branch #${branch_id} does not exist.`, branch);
             break;
         }
     }
