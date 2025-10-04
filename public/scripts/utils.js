@@ -289,6 +289,15 @@ export function removeFromArray(array, item) {
 }
 
 /**
+ * Normalizes an array by removing duplicates, trimming strings, and filtering out empty values.
+ * @param {any[]} arr - The array to normalize.
+ * @returns {any[]} The normalized array.
+ */
+export function normalizeArray(arr) {
+    return [...new Set((arr ?? []).map(s => typeof s === 'string' ? s.trim() : s).filter(Boolean))];
+}
+
+/**
  * Checks if a string only contains digits.
  * @param {string} str The string to check.
  * @returns {boolean} True if the string only contains digits, false otherwise.

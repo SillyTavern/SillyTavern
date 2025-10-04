@@ -46,6 +46,8 @@ import {
     wi_anchor_position,
     world_info_include_names,
     initWorldInfo,
+    charUpdatePrimaryWorld,
+    charSetAuxWorlds,
 } from './scripts/world-info.js';
 
 import {
@@ -8151,61 +8153,16 @@ async function openCharacterWorldPopup() {
         const selectedValue = $(this).val();
         const worldIndex = selectedValue !== '' ? Number(selectedValue) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
-        const previousValue = $('#character_world').val();
-        $('#character_world').val(name);
-
-        console.debug('Character world selected:', name);
-
-        if (menu_type == 'create') {
-            create_save.world = name;
-        } else {
-            if (previousValue && !name) {
-                try {
-                    // Dirty hack to remove embedded lorebook from character JSON data.
-                    const data = JSON.parse(String($('#character_json_data').val()));
-
-                    if (data?.data?.character_book) {
-                        data.data.character_book = undefined;
-                    }
-
-                    $('#character_json_data').val(JSON.stringify(data));
-                    toastr.info(t`Embedded lorebook will be removed from this character.`);
-                } catch {
-                    console.error('Failed to parse character JSON data.');
-                }
-            }
-
-            await createOrEditCharacter();
-        }
-
-        setWorldInfoButtonClass(undefined, !!name);
+        await charUpdatePrimaryWorld(name);
     }
 
-    function handleExtrasWorldSelect() {
-        const selectedValues = $(this).val();
-        const selectedWorlds = Array.isArray(selectedValues) ? selectedValues : [];
-        let charLore = world_info.charLore ?? [];
-        const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter(Boolean);
-        const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
-
-        if (menu_type == 'create') {
-            create_save.extra_books = tempExtraBooks;
-            return;
-        }
-
-        if (existingCharIndex === -1) {
-            // Add record only if at least 1 lorebook is selected.
-            if (tempExtraBooks.length > 0) {
-                charLore.push({ name: fileName, extraBooks: tempExtraBooks });
-            }
-        } else if (tempExtraBooks.length === 0) {
-            charLore.splice(existingCharIndex, 1);
-        } else {
-            charLore[existingCharIndex].extraBooks = tempExtraBooks;
-        }
-
-        Object.assign(world_info, { charLore: charLore });
-        saveSettingsDebounced();
+    function handleExtrasWorldSelect(evt) {
+        const el = evt?.currentTarget ?? this;
+        const selectedValues = $(el).val();
+        const selected = Array.isArray(selectedValues) ? selectedValues : [];
+        const fileName = getCharaFilename(null, {});
+        const nextList = selected.map(i => world_names[i]).filter(Boolean);
+        charSetAuxWorlds(fileName, nextList);
     }
 
     // --- Populate Dropdowns ---
@@ -8328,7 +8285,7 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
  * Creates or edits a character based on the form data.
  * @param {Event} [e] Event that triggered the function call.
  */
-async function createOrEditCharacter(e) {
+export async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
     const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
     formData.set('fav', String(fav_ch_checked));
