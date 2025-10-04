@@ -24,8 +24,8 @@ import { serverDirectory } from './server-directory.js';
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
-const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false, 'boolean');
-const AUTHENTIK_AUTH = getConfigValue('authentikAuth', false, 'boolean');
+const AUTHELIA_AUTH = getConfigValue('sso.autheliaAuth', false, 'boolean');
+const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
