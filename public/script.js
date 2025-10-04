@@ -6680,7 +6680,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || '';
+    const firstMes = characters[this_chid]?.first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
