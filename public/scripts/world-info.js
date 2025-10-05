@@ -22,7 +22,7 @@ import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { setPersonaDescription } from './personas.js';
+import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -4081,6 +4081,16 @@ export async function deleteWorldInfo(worldInfoName) {
         if (menu_type != 'create') {
             saveCharacterDebounced();
         }
+    }
+
+    if (power_user.persona_description_lorebook === worldInfoName) {
+        power_user.persona_description_lorebook = '';
+        if (power_user.personas[user_avatar]) {
+            const object = getOrCreatePersonaDescriptor();
+            object.lorebook = '';
+        }
+        $('#persona_lore_button').toggleClass('world_set', false);
+        saveSettingsDebounced();
     }
 
     return true;

@@ -1219,7 +1219,7 @@ function onPersonaDescriptionPositionInput() {
     $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
 }
 
-function getOrCreatePersonaDescriptor() {
+export function getOrCreatePersonaDescriptor() {
     let object = power_user.persona_descriptions[user_avatar];
 
     if (!object) {
