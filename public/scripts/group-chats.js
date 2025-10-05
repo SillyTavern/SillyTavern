@@ -2032,14 +2032,14 @@ export async function deleteGroupChat(groupId, chatId, { jumpToNewChat = true } 
         return;
     }
 
+    group.chats.splice(group.chats.indexOf(chatId), 1);
+    delete group.past_metadata[chatId];
+
     if (group.chat_id === chatId) {
-        group.chat_metadata = {};
         group.chat_id = '';
-        delete group.past_metadata[chatId];
+        group.chat_metadata = {};
         updateChatMetadata(group.chat_metadata, true);
     }
-
-    group.chats.splice(group.chats.indexOf(chatId), 1);
 
     const response = await fetch('/api/chats/group/delete', {
         method: 'POST',
