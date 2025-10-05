@@ -2039,6 +2039,8 @@ export async function deleteGroupChat(groupId, chatId, { jumpToNewChat = true } 
         updateChatMetadata(group.chat_metadata, true);
     }
 
+    group.chats.splice(group.chats.indexOf(chatId), 1);
+
     const response = await fetch('/api/chats/group/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
