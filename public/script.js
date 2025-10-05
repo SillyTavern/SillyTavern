@@ -5040,6 +5040,8 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     await populateFileAttachment(message);
     statMesProcess(message, 'user', characters, this_chid, '');
 
+    chat_metadata['tainted'] = true;
+
     if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
