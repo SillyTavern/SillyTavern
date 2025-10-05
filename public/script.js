@@ -347,43 +347,11 @@ toastr.options = {
 try {
     // Wrap fetch to log attempts to retrieve character assets
     const _origFetch = window.fetch.bind(window);
-    window.fetch = async function (input, init) {
-        try {
-            const url = (typeof input === 'string') ? input : (input && input.url) || '';
-            if (url && url.includes('/characters/') || (typeof input === 'string' && input.endsWith('.webp'))) {
-                console.debug('[fetch-diagnostic] fetching', { url, init });
-            }
-        } catch (e) {
-            console.debug('[fetch-diagnostic] failed to inspect fetch args');
-        }
-        return _origFetch(input, init);
-    };
+    // NOTE: diagnostics wrapper removed for production; keep original fetch behavior
+    window.fetch = _origFetch;
 
     // Observe DOM additions to find any video/img elements that reference .webp
-    const observer = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-            for (const node of m.addedNodes) {
-                try {
-                    if (!(node instanceof Element)) continue;
-                    if (node.tagName === 'VIDEO' || node.tagName === 'IMG') {
-                        const src = node.getAttribute('src') || '';
-                        if (src.includes('.webp') || src.includes('/characters/')) {
-                            console.debug('[dom-diagnostic] added media element', { tag: node.tagName, src, outerHTML: node.outerHTML.slice(0, 200) });
-                        }
-                    }
-                    // check descendants
-                    const imgs = node.querySelectorAll && node.querySelectorAll('video[src*=".webp"], img[src*=".webp"], video[src*="/characters/"], img[src*="/characters/"]');
-                    if (imgs && imgs.length) {
-                        imgs.forEach(el => console.debug('[dom-diagnostic] descendant media element', { tag: el.tagName, src: el.getAttribute('src') }));
-                    }
-                } catch (err) {
-                    /* ignore */
-                }
-            }
-        }
-    });
-    observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
-    console.debug('[diagnostic] fetch wrapper and DOM observer installed');
+    // DOM diagnostics removed to avoid runtime overhead in production.
 } catch (diagErr) {
     console.warn('[diagnostic] failed to install fetch/dom diagnostics', diagErr);
 }
@@ -899,36 +867,31 @@ function getCharacterBlock(item, id) {
     const imgEl = template.find('img');
     imgEl.attr('src', this_avatar).attr('alt', item.name);
     try {
-        const videoAvatar = item?.data?.extensions && item.data.extensions['video_avatar'];
-        const ext = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
-        console.log('[test] getCharacterBlock start', { id, name: item?.name, avatar: item?.avatar, videoAvatar, ext });
+    const videoAvatar = item?.data?.extensions && item.data.extensions['video_avatar'];
+    const ext = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
         if (videoAvatar && ext === 'webp') {
             imgEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`).addClass('avatar-animated');
-            console.log('[test] getCharacterBlock apply webp', { id, src: `/characters/${encodeURIComponent(videoAvatar)}` });
         } else if (videoAvatar && ['webm','mp4','ogg'].includes(ext)) {
             const videoEl = $(`<video muted autoplay loop playsinline preload="metadata" class="avatar-video"></video>`);
             videoEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`);
             videoEl.attr('alt', item.name);
             imgEl.replaceWith(videoEl);
-            console.log('[test] getCharacterBlock apply video', { id, src: `/characters/${encodeURIComponent(videoAvatar)}` });
         } else if (!videoAvatar && item?.avatar && /\.(png|jpg|jpeg)$/i.test(item.avatar)) {
             // probe for companion webp
             const candidate = item.avatar.replace(/\.[^.]+$/, '.webp');
             const candidateUrl = `/characters/${encodeURIComponent(candidate)}`;
-            console.log('[test] getCharacterBlock probe start', { id, candidateUrl });
             const probe = new Image();
             probe.onload = () => {
                 // only swap if still showing original thumbnail
                 if (!/\.webp(\?|$)/i.test(String(imgEl.attr('src')))) {
                     imgEl.attr('src', candidateUrl).addClass('avatar-animated');
-                    console.log('[test] getCharacterBlock probe success', { id, candidateUrl });
                 }
             };
-            probe.onerror = () => console.log('[test] getCharacterBlock probe fail', { id, candidateUrl });
+            probe.onerror = () => { /* probe failed */ };
             probe.src = candidateUrl;
         }
     } catch (e) {
-        console.log('[test] getCharacterBlock exception', { id, error: e?.message });
+        // swallow non-fatal errors
     }
     template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
     template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
@@ -1303,28 +1266,7 @@ export async function getCharacters() {
         }
 
         // Diagnostic: log a brief summary of fetched characters and any companion video avatars
-        try {
-            console.debug('[getCharacters] fetched', { count: characters.length, sample: characters.slice(0, 8).map(c => ({ name: c.name, avatar: c.avatar, hasVideo: !!(c?.data?.extensions?.video_avatar) })) });
-            // Expose lightweight debug access to module-scoped values for DevTools console
-            try {
-                if (typeof window !== 'undefined') {
-                    window._ST = window._ST || {};
-                    // provide live access (getter) to the module-scoped characters array
-                    Object.defineProperty(window._ST, 'characters', {
-                        configurable: true,
-                        enumerable: true,
-                        get() { return characters; },
-                    });
-                    // expose helper functions when available
-                    window._ST.getAvatarMedia = (c) => (typeof getAvatarMedia === 'function' ? getAvatarMedia(c) : null);
-                    console.debug('[diagnostic] window._ST created (characters/getAvatarMedia)');
-                }
-            } catch (e) {
-                console.warn('[diagnostic] failed to expose window._ST', e);
-            }
-        } catch (e) {
-            console.debug('[getCharacters] fetched (failed to stringify)');
-        }
+        // diagnostics removed in production build
 
         if (previousAvatar) {
             const newCharacterId = characters.findIndex(x => x.avatar === previousAvatar);
@@ -6672,12 +6614,7 @@ export function getThumbnailUrl(type, file, t = false) {
  * @param {object|string} character Either the parsed character object or avatar filename string
  */
 export function getAvatarMedia(character) {
-    // Diagnostic logging
-    try {
-        console.debug('[getAvatarMedia] called', { characterSample: typeof character === 'string' ? character : (character && character.avatar ? character.avatar : (character && character.data ? '[has data]' : '[no data]')) });
-    } catch (e) {
-        console.debug('[getAvatarMedia] called (failed to stringify)');
-    }
+    // Intentionally lightweight; avoid verbose logging in production
 
     // If caller passed a filename, just return the thumbnail URL
     if (typeof character === 'string') {
@@ -6693,20 +6630,12 @@ export function getAvatarMedia(character) {
         // media type, which causes "Failed to init decoder" errors.
         const ext = (vid.split('.').pop() || '').toLowerCase();
         const url = `/characters/${encodeURIComponent(vid)}`;
-        if (ext === 'webp') {
-            const res = { kind: 'image', url, animated: true };
-            console.debug('[getAvatarMedia] return (webp animated image)', res);
-            return res;
-        }
-        const res = { kind: 'video', url, ext };
-        console.debug('[getAvatarMedia] return', res);
-        return res;
+        if (ext === 'webp') return { kind: 'image', url, animated: true };
+        return { kind: 'video', url, ext };
     }
 
     if (character?.avatar) {
-        const res = { kind: 'image', url: getThumbnailUrl('avatar', character.avatar) };
-        console.debug('[getAvatarMedia] return', res);
-        return res;
+    return { kind: 'image', url: getThumbnailUrl('avatar', character.avatar) };
     }
 
     const res = { kind: 'image', url: default_avatar };
@@ -6717,34 +6646,7 @@ export function getAvatarMedia(character) {
 // If an extension provides convertVideoToAnimatedWebp, wrap it with a logger so we can
 // trace start/finish/errors from the page console. This avoids editing the extension
 // itself but gives the visibility you asked for.
-try {
-    if (typeof globalThis.convertVideoToAnimatedWebp === 'function' && !globalThis.__convertVideoToAnimatedWebp_wrapper_installed) {
-        console.log('[convert-wrapper] Installing convertVideoToAnimatedWebp wrapper');
-        const _origConvert = globalThis.convertVideoToAnimatedWebp;
-        globalThis.__convertVideoToAnimatedWebp_orig = _origConvert;
-        globalThis.convertVideoToAnimatedWebp = async function (opts) {
-            try {
-                console.log('[convert-wrapper] called convertVideoToAnimatedWebp for', opts?.name, 'bufferLength=', opts?.buffer?.length ?? opts?.buffer?.byteLength);
-            } catch (e) {
-                console.log('[convert-wrapper] called convertVideoToAnimatedWebp (failed to read opts)', e);
-            }
-            const start = performance.now();
-            try {
-                const result = await _origConvert(opts);
-                const dur = Math.round(performance.now() - start);
-                console.log('[convert-wrapper] convertVideoToAnimatedWebp completed in', dur, 'ms', 'resultLength=', result?.length ?? result?.byteLength ?? 'unknown');
-                return result;
-            } catch (err) {
-                const dur = Math.round(performance.now() - start);
-                console.error('[convert-wrapper] convertVideoToAnimatedWebp threw after', dur, 'ms', err);
-                throw err;
-            }
-        };
-        globalThis.__convertVideoToAnimatedWebp_wrapper_installed = true;
-    }
-} catch (e) {
-    console.warn('[convert-wrapper] failed to install wrapper', e);
-}
+    // Do not install a global wrapper for convertVideoToAnimatedWebp in production.
 
 /**
  * If the FormData contains an 'avatar' File that is a video, attempt to convert it to

@@ -1396,14 +1396,6 @@ function getPngName(file, directories) {
     return file;
 }
 
-async function fileExists(filePath) {
-    try {
-        await fs.promises.access(filePath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
 
 /**
  * Gets the preserved name for the uploaded file if the request is valid.
