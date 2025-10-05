@@ -566,11 +566,30 @@ export class Popup {
             else value = false; // Might a custom negative value?
         }
 
-        // Cropped image should be returned as a data URL
+        // Cropped image should be returned as a data URL. Guard in case the cropper
+        // instance isn't available (e.g., failed init or removed). Fall back to the
+        // original image src when possible, otherwise return null.
         if (this.type === POPUP_TYPE.CROP) {
-            value = result >= POPUP_RESULT.AFFIRMATIVE
-                ? $(this.cropImage).data('cropper').getCroppedCanvas().toDataURL('image/jpeg')
-                : null;
+            if (result >= POPUP_RESULT.AFFIRMATIVE) {
+                try {
+                    const $img = $(this.cropImage);
+                    const cropper = $img.data('cropper');
+                    if (cropper && typeof cropper.getCroppedCanvas === 'function') {
+                        const canvas = cropper.getCroppedCanvas();
+                        value = canvas ? canvas.toDataURL('image/jpeg') : null;
+                    } else if (this.cropData && this.cropImage && this.cropImage.src) {
+                        // If cropper isn't present but we have image src, use it as a best-effort fallback
+                        value = this.cropImage.src;
+                    } else {
+                        value = null;
+                    }
+                } catch (err) {
+                    console.warn('Cropper unavailable or getCroppedCanvas failed:', err);
+                    value = this.cropImage?.src ?? null;
+                }
+            } else {
+                value = null;
+            }
         }
 
         if (this.customInputs?.length) {

@@ -59,10 +59,23 @@ router.post('/rename', function (request, response) {
 });
 
 router.post('/upload', function (request, response) {
-    if (!request.body || !request.file) return response.sendStatus(400);
+    if (!request.body) return response.sendStatus(400);
 
-    const img_path = path.join(request.file.destination, request.file.filename);
-    const filename = request.file.originalname;
+    let fileObj = request.file;
+    if (!fileObj && request.files) {
+        if (Array.isArray(request.files)) fileObj = request.files[0];
+        else {
+            const keys = Object.keys(request.files);
+            if (keys.length > 0 && Array.isArray(request.files[keys[0]]) && request.files[keys[0]][0]) {
+                fileObj = request.files[keys[0]][0];
+            }
+        }
+    }
+
+    if (!fileObj) return response.sendStatus(400);
+
+    const img_path = path.join(fileObj.destination, fileObj.filename);
+    const filename = fileObj.originalname || fileObj.filename || path.basename(fileObj.path);
 
     try {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));

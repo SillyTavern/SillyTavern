@@ -959,21 +959,55 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
 
         request.body.ch_name = sanitize(request.body.ch_name);
 
-        const char = JSON.stringify(charaFormatData(request.body, request.user.directories));
+    let char = JSON.stringify(charaFormatData(request.body, request.user.directories));
         const internalName = request.body.file_name || getPngName(request.body.ch_name, request.user.directories);
         const avatarName = `${internalName}.png`;
         const chatsPath = path.join(request.user.directories.chats, internalName);
 
         if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
-        if (!request.file) {
+        // Multer fields() will populate request.files as an object, but some middleware variations
+        // may leave request.files as an array. Normalize access safely.
+        const filesObj = request.files;
+        let avatarFile;
+        let videoFile;
+        if (filesObj) {
+            if (Array.isArray(filesObj)) {
+                avatarFile = filesObj.find(f => f.fieldname === 'avatar');
+                videoFile = filesObj.find(f => f.fieldname === 'video_avatar');
+            } else {
+                avatarFile = filesObj.avatar && filesObj.avatar[0];
+                videoFile = filesObj.video_avatar && filesObj.video_avatar[0];
+            }
+        }
+
+        // If a companion webp was uploaded, move it into the characters directory and record it in the JSON
+        if (videoFile) {
+            try {
+                const safeVideoName = `${internalName}.webp`;
+                const destVideoPath = path.join(request.user.directories.characters, safeVideoName);
+                await fs.promises.rename(path.join(videoFile.destination || videoFile.path && path.dirname(videoFile.path), videoFile.filename || path.basename(videoFile.path)), destVideoPath);
+                // attach extension reference
+                const parsed = tryParse(char) || JSON.parse(char);
+                parsed.data = parsed.data || {};
+                parsed.data.extensions = parsed.data.extensions || {};
+                parsed.data.extensions.video_avatar = safeVideoName;
+                // update char string
+                char = JSON.stringify(parsed);
+            } catch (err) {
+                console.error('Failed to persist video_avatar companion on create', err);
+            }
+        }
+
+        if (!avatarFile) {
             await writeCharacterData(DEFAULT_AVATAR_PATH, char, internalName, request);
             return response.send(avatarName);
         } else {
             const crop = tryParse(request.query.crop);
-            const uploadPath = path.join(request.file.destination, request.file.filename);
+            const uploadPath = path.join(avatarFile.destination || path.dirname(avatarFile.path), avatarFile.filename || path.basename(avatarFile.path));
+
             await writeCharacterData(uploadPath, char, internalName, request, crop);
-            fs.unlinkSync(uploadPath);
+            try { fs.unlinkSync(uploadPath); } catch (e) { }
             return response.send(avatarName);
         }
     } catch (err) {
@@ -999,13 +1033,30 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     const newChatsPath = path.join(request.user.directories.chats, newInternalName);
 
     try {
-        // Read old file, replace name int it
+        // Read old file, replace name in it
         const rawOldData = await readCharacterData(oldAvatarPath);
         if (rawOldData === undefined) throw new Error('Failed to read character file');
 
         const oldData = getCharaCardV2(JSON.parse(rawOldData), request.user.directories);
         _.set(oldData, 'data.name', newName);
         _.set(oldData, 'name', newName);
+
+        // If there is a companion video file, attempt to rename it to match the new internal name
+        try {
+            const oldVideo = _.get(oldData, 'data.extensions.video_avatar');
+            if (oldVideo) {
+                const oldVideoPath = path.join(request.user.directories.characters, oldVideo);
+                const newVideoName = `${newInternalName}.webp`;
+                const newVideoPath = path.join(request.user.directories.characters, newVideoName);
+                if (fs.existsSync(oldVideoPath)) {
+                    await fs.promises.rename(oldVideoPath, newVideoPath);
+                }
+                _.set(oldData, 'data.extensions.video_avatar', newVideoName);
+            }
+        } catch (e) {
+            console.error('Failed to rename companion webp', e);
+        }
+
         const newData = JSON.stringify(oldData);
 
         // Write data to new location
@@ -1049,18 +1100,52 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
     let targetFile = (request.body.avatar_url).replace('.png', '');
 
     try {
-        if (!request.file) {
-            const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
-            await writeCharacterData(avatarPath, char, targetFile, request);
-        } else {
-            const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join(request.file.destination, request.file.filename);
+        // Multer fields() populates request.files; check for uploaded avatar/video files
+        const filesObjEdit = request.files;
+        let avatarFile = undefined;
+        let videoFile = undefined;
+        if (filesObjEdit) {
+            if (Array.isArray(filesObjEdit)) {
+                avatarFile = filesObjEdit.find(f => f.fieldname === 'avatar');
+                videoFile = filesObjEdit.find(f => f.fieldname === 'video_avatar');
+            } else {
+                avatarFile = filesObjEdit.avatar && filesObjEdit.avatar[0];
+                videoFile = filesObjEdit.video_avatar && filesObjEdit.video_avatar[0];
+            }
+        }
+
+        const outputPngPath = path.join(request.user.directories.characters, `${targetFile}.png`);
+
+        // If a companion video avatar was uploaded, persist it and update data.extensions
+        if (videoFile) {
+            try {
+                const safeVideoName = `${targetFile}.webp`;
+                const destVideoPath = path.join(request.user.directories.characters, safeVideoName);
+                await fs.promises.rename(path.join(videoFile.destination || path.dirname(videoFile.path), videoFile.filename || path.basename(videoFile.path)), destVideoPath);
+                char = tryParse(char) || JSON.parse(char);
+                char.data = char.data || {};
+                char.data.extensions = char.data.extensions || {};
+                char.data.extensions.video_avatar = safeVideoName;
+                char = JSON.stringify(char);
+            } catch (err) {
+                console.error('Failed to persist video_avatar companion on edit', err);
+            }
+        }
+
+        if (avatarFile) {
+            // user provided a new avatar - overwrite using uploaded thumbnail
+            const newAvatarPath = path.join(avatarFile.destination || path.dirname(avatarFile.path), avatarFile.filename || path.basename(avatarFile.path));
             invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
-            await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
-            fs.unlinkSync(newAvatarPath);
+
+            await writeCharacterData(newAvatarPath, char, targetFile, request, tryParse(request.query.crop));
+            try { fs.unlinkSync(newAvatarPath); } catch (e) {}
 
             // Bust cache to reload the new avatar
             cacheBuster.bust(request, response);
+        } else {
+            // no avatar provided, just update metadata on existing PNG
+            const currentPngPath = path.join(request.user.directories.characters, request.body.avatar_url);
+            await writeCharacterData(currentPngPath, char, targetFile, request);
         }
 
         return response.sendStatus(200);
@@ -1171,6 +1256,23 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
     if (!fs.existsSync(avatarPath)) {
         return response.sendStatus(400);
     }
+
+    // Attempt to remove any companion video referenced in the PNG JSON
+        const pngJson = await readCharacterData(avatarPath);
+        if (typeof pngJson === 'string') {
+            try {
+                const parsed = JSON.parse(pngJson);
+                const videoName = parsed?.data?.extensions?.video_avatar;
+                if (videoName) {
+                    const videoPath = path.join(request.user.directories.characters, videoName);
+                    if (fs.existsSync(videoPath)) {
+                        fs.unlinkSync(videoPath);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to parse PNG JSON while deleting companion video', err);
+            }
+        }
 
     fs.unlinkSync(avatarPath);
     invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
@@ -1294,6 +1396,15 @@ function getPngName(file, directories) {
     return file;
 }
 
+async function fileExists(filePath) {
+    try {
+        await fs.promises.access(filePath, fs.constants.F_OK);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
 /**
  * Gets the preserved name for the uploaded file if the request is valid.
  * @param {import("express").Request} request - Express request object
@@ -1306,9 +1417,35 @@ function getPreservedName(request) {
 }
 
 router.post('/import', async function (request, response) {
-    if (!request.body || !request.file) return response.sendStatus(400);
+    if (!request.body) return response.sendStatus(400);
 
-    const uploadPath = path.join(request.file.destination, request.file.filename);
+    // support both request.file (single) and request.files (fields)
+    let uploadPath;
+    if (request.file) {
+        uploadPath = path.join(request.file.destination, request.file.filename);
+    } else if (request.files) {
+        const filesObj = request.files;
+        if (Array.isArray(filesObj)) {
+            if (filesObj.length > 0) {
+                const f = filesObj[0];
+                uploadPath = path.join(f.destination || path.dirname(f.path), f.filename || path.basename(f.path));
+            }
+        } else {
+            // Prefer field named 'file'
+            if (filesObj.file && filesObj.file[0]) {
+                const f = filesObj.file[0];
+                uploadPath = path.join(f.destination || path.dirname(f.path), f.filename || path.basename(f.path));
+            } else {
+                const keys = Object.keys(filesObj);
+                if (keys.length > 0 && Array.isArray(filesObj[keys[0]]) && filesObj[keys[0]][0]) {
+                    const f = filesObj[keys[0]][0];
+                    uploadPath = path.join(f.destination || path.dirname(f.path), f.filename || path.basename(f.path));
+                }
+            }
+        }
+    }
+
+    if (!uploadPath) return response.sendStatus(400);
     const format = request.body.file_type;
     const preservedFileName = getPreservedName(request);
 
@@ -1328,7 +1465,7 @@ router.post('/import', async function (request, response) {
             throw new Error(`Unsupported format: ${format}`);
         }
 
-        const fileName = await importFunction(uploadPath, { request, response }, preservedFileName);
+    const fileName = await importFunction(uploadPath, { request, response }, preservedFileName);
 
         if (!fileName) {
             console.warn('Failed to import character');

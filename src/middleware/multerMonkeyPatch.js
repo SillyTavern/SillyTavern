@@ -22,6 +22,26 @@ export default function multerMonkeyPatch(req, _res, next) {
             req.file.originalname = decodeFileName(req.file.originalname);
         }
 
+        // If multiple files were uploaded via fields(), multer sets req.files as an object
+        // where each key is a fieldname and the value is an array of files.
+        if (req.files && typeof req.files === 'object') {
+            if (Array.isArray(req.files)) {
+                // Some variants might leave an array of files
+                for (const f of req.files) {
+                    if (f && f.originalname) f.originalname = decodeFileName(f.originalname);
+                }
+            } else {
+                for (const key of Object.keys(req.files)) {
+                    const arr = req.files[key];
+                    if (Array.isArray(arr)) {
+                        for (const f of arr) {
+                            if (f && f.originalname) f.originalname = decodeFileName(f.originalname);
+                        }
+                    }
+                }
+            }
+        }
+
         next();
     } catch (error) {
         console.error('Error in multerMonkeyPatch:', error);

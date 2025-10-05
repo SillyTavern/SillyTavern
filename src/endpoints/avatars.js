@@ -39,10 +39,22 @@ router.post('/delete', getFileNameValidationFunction('avatar'), function (reques
 });
 
 router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (request, response) => {
-    if (!request.file) return response.sendStatus(400);
+    // support both request.file and request.files
+    let fileObj = request.file;
+    if (!fileObj && request.files) {
+        if (Array.isArray(request.files)) fileObj = request.files[0];
+        else {
+            const keys = Object.keys(request.files);
+            if (keys.length > 0 && Array.isArray(request.files[keys[0]]) && request.files[keys[0]][0]) {
+                fileObj = request.files[keys[0]][0];
+            }
+        }
+    }
+
+    if (!fileObj) return response.sendStatus(400);
 
     try {
-        const pathToUpload = path.join(request.file.destination, request.file.filename);
+        const pathToUpload = path.join(fileObj.destination, fileObj.filename);
         const crop = tryParse(request.query.crop);
         const rawImg = await Jimp.read(pathToUpload);
         const image = await applyAvatarCropResize(rawImg, crop);
@@ -56,7 +68,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const filename = sanitize(request.body.overwrite_name || `${Date.now()}.png`);
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
-        fs.unlinkSync(pathToUpload);
+        try { fs.unlinkSync(pathToUpload); } catch (e) {}
         return response.send({ path: filename });
     } catch (err) {
         console.error('Error uploading user avatar:', err);
