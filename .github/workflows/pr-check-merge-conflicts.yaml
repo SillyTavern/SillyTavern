@@ -23,6 +23,6 @@ jobs:
         uses: eps1lon/actions-label-merge-conflict@v3.0.3
         with:
           dirtyLabel: '🚫 Merge Conflicts'
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          repoToken: ${{ secrets.ISSUES_BOT_TOKEN }}
           commentOnDirty: >
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.

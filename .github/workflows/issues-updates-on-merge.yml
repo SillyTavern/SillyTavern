@@ -31,7 +31,7 @@ jobs:
       - name: Label Linked Issues
         id: label_linked_issues
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ISSUES_BOT_TOKEN }}
         run: |
             for ISSUE in $(echo $issues | jq -r '.[]'); do
             if [ "${{ github.ref }}" == "refs/heads/staging" ]; then

@@ -23,6 +23,6 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: remove-labels
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
           labels: '🚏 Awaiting User Response,🧑‍💻 In Progress,📌 Keep Open,🚫 Merge Conflicts,🔬 Needs Testing,🔨 Needs Work,⚰️ Stale,⛔ Waiting For External/Upstream'

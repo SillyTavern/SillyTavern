@@ -32,7 +32,7 @@ jobs:
         with:
           configuration-path: .github/issues-auto-labels.yml
           enable-versioned-regex: 0
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
 
   label-on-labels:
     name: 🏷️ Label Issues by Labels
@@ -46,7 +46,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'add-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           labels: '👍 Approved'
 
       - name: ❌ Remove progress labels when issue is marked done or stale
@@ -56,7 +56,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           labels: '🧑‍💻 In Progress,🤔 Unsure,🤔 Under Consideration'
 
       - name: ❌ Remove temporary labels when confirmed labels are added
@@ -66,7 +66,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           labels: '🤔 Unsure,🤔 Under Consideration'
 
       - name: ❌ Remove no bug labels when "🪲 Confirmed" is added
@@ -76,7 +76,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           labels: '✖️ Not Reproducible,✖️ Not A Bug'
 
   remove-stale-label:
@@ -92,7 +92,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           labels: '⚰️ Stale,🕸️ Inactive,🚏 Awaiting User Response,🛑 No Response'
 
@@ -113,4 +113,4 @@ jobs:
         uses: peaceiris/actions-label-commenter@v1.10.0
         with:
           config_file: .github/issues-auto-comments.yml
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.ISSUES_BOT_TOKEN }}

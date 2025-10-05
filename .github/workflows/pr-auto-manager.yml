@@ -76,7 +76,7 @@ jobs:
         # https://github.com/marketplace/actions/pull-request-size-labeler
         uses: codelytv/pr-size-labeler@v1.10.2
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ISSUES_BOT_TOKEN }}
           xs_label: '🟩 ⬤○○○○'
           xs_max_size: '20'
           s_label: '🟩 ⬤⬤○○○'
@@ -109,7 +109,7 @@ jobs:
         uses: actions/labeler@v5.0.0
         with:
           configuration-path: .github/pr-auto-labels-by-branch.yml
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
 
   label-by-files:
     name: 🏷️ Label PR by Files
@@ -129,7 +129,7 @@ jobs:
         uses: actions/labeler@v5.0.0
         with:
           configuration-path: .github/pr-auto-labels-by-files.yml
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
 
   remove-stale-label:
     name: 🗑️ Remove Stale Label on Comment
@@ -150,7 +150,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ISSUES_BOT_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           labels: '⚰️ Stale'
 
@@ -250,7 +250,7 @@ jobs:
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
           API_URL="https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/issues"
-          ISSUES=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
+          ISSUES=$(curl -s -H "Authorization: token ${{ secrets.ISSUES_BOT_TOKEN }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
           echo "linked_issues=$ISSUES" >> $GITHUB_ENV
 
       - name: Merge Issue Lists
@@ -262,7 +262,7 @@ jobs:
       - name: Label Linked Issues
         id: label_linked_issues
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ISSUES_BOT_TOKEN }}
         run: |
           for ISSUE in $(echo $final_issues | jq -r '.[]'); do
             gh issue edit $ISSUE -R ${{ github.repository }} --add-label "✅ Done (staging)" --remove-label "🧑‍💻 In Progress"
