@@ -6401,7 +6401,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                 }
 
                 //Recursively update the chatTree
-                updateChatTreeMessages(currentChatTree, rename, newName);
+                await updateChatTreeMessages(currentChatTree, rename, newName);
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
@@ -8851,6 +8851,8 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     const this_mes_div_height = this_mes_div[0].scrollHeight;
     const this_mes_text_height = this_mes_text[0].scrollHeight;
     const original_swipe_id = chat[mesId]?.['swipe_id'] ?? 0;
+    let new_swipe_id = original_swipe_id;
+    let direction = swipe_right ? 'right' : 'left';
 
     const isPristine = !chat_metadata?.tainted;
 
@@ -8910,8 +8912,15 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
                     await updateSwipeCounter(mesId);
 
                     const lastMesId = Number(chatElement.children().last().attr('mesid'));
-                    await deleteMessages(mesId + 1, lastMesId);
+
+                    //Swipe out.
+                    await animateSwipeTransition(mesId, swipe_range,  animation_duration > 0 ? swipe_duration : 0);
+                    await deleteMessages(mesId + 1, lastMesId); // This should happen after the swipe
                     await redisplayChat(chat, mesId);
+                    //Jump to the opposite side.
+                    await animateSwipeTransition(mesId, -swipe_range, 0);
+                    //Swipe in.
+                    await animateSwipeTransition(mesId, 0,  animation_duration > 0 ? swipe_duration : 0);
 
                     // If it's not the greeting, generate.
                     if (chat.length !== 1) {
@@ -8943,9 +8952,8 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
             delete chat[mesId].gen_started;
             delete chat[mesId].gen_finished;
 
-            run_generate = true;
-            await syncWithSwipeId();
-            await animeSwipe(run_generate);
+            await syncWithSwipeId(mesId);
+            await animateSwipe(run_generate = true);
         }
     }
 
@@ -8953,11 +8961,11 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     /**
      * Syncs with swipe_id, using the chatTree or swipes.
      */
-    async function syncWithSwipeId(){
+    async function syncWithSwipeId(mesId){
         if (power_user.enable_chat_tree) {
 
             //Get chat after the swipe.
-            let stick = getStickFromTree(chatTree, chat, mesId);
+            let stick = await getStickFromTree(chatTree, chat, mesId);
 
             //When editing user messages, the length is zero.
             if (stick.length == 0) {
@@ -8971,7 +8979,6 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
 
             //Update chat.
             await spliceStickToChat(stick, chat, mesId);
-            await redisplayChat(chat, mesId);
         }
         //If not the chatTree, load from swipes.
         else if (!run_generate)
@@ -8980,55 +8987,82 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         }
     }
 
+    //Deepseek-V3.1
+    // Helper function to convert transition to promise
+    const transitionPromise = (element, properties) => {
+        return new Promise((resolve) => {
+            element.transition({
+                ...properties,
+                complete: resolve,
+            });
+        });
+    };
+
+    /**
+     * Animates a swipe for all messages >= mesId.
+     * @param {number} mesId
+     * @param {number} x
+     * @param {number} duration
+     */
+    async function animateSwipeTransition(mesId, x, duration) {
+        //Select messages after mesId.
+        const swiped_messages_div  = chatElement.children().filter((index, div) => {
+            const $div = $(div);
+            return Number($div.attr('mesid')) >= mesId;
+        });
+        const swiped_elements_div = swiped_messages_div.children('.mes_block, .mesAvatarWrapper');
+
+        //Swipe.
+        await transitionPromise(swiped_elements_div, {
+            x: x,
+            duration: duration,
+            easing: animation_easing,
+            queue: false,
+        } ); // this moves the div back and forth
+    }
+
+    function expandNewMessage(this_mes_div) {
+        //Only scroll if the view is not near the bottom.
+        const is_animation_scroll = (chatElement.scrollTop() >= (chatElement.prop('scrollHeight') - chatElement.outerHeight()) - 10);
+
+        let new_height = this_mes_div_height - (this_mes_text_height - this_mes_text[0].scrollHeight);
+        if (new_height < 103) new_height = 103;
+
+        //Keep the swipe buttons at the same height when scrolling is finished.
+        let chatBottom = chatElement.scrollTop() + chatElement.height();
+        let messageBottom = this_mes_div.offset().top + this_mes_div.height();
+        let difference = (chatBottom - messageBottom);
+        this_mes_div.css({ 'scroll-margin':difference });
+
+        //Expand new message.
+        this_mes_div.animate({ height: new_height + 'px' }, {
+            duration: 100,
+            queue: false,
+            progress: function (animation, progress, remainingMs) {
+
+                // Scroll the chat down as the message expands
+                if (is_animation_scroll) this_mes_div[0].scrollIntoView(false);
+            },
+            complete: function () {
+                this_mes_div.css('height', 'auto');
+                this_mes_div.css('overflow', '');
+                //Correct height auto offset.
+                this_mes_div[0].scrollIntoView(false);
+                this_mes_div.css({ 'scroll-margin':'' });
+            },
+        });
+    }
+
     /**
      * Anime a swipe, optionally running a generation.
      * @param {boolean} run_generate
      */
-    async function animeSwipe(run_generate = false) {
-        // this_mes_div.children('.swipe_left').css('display', 'flex ');
-        this_mes_div.css('height', this_mes_div_height);
-
-
-        /**
-         * Animates a swipe for all messages >= mesId.
-         * @param {number} mesId
-         * @param {number} x
-         * @param {number} duration
-         */
-        async function animateSwipeTransition(mesId, x, duration) {
-            //Select messages after mesId.
-            const swiped_messages_div  = chatElement.children().filter((index, div) => {
-                const $div = $(div);
-                return Number($div.attr('mesid')) >= mesId;
-            });
-            const swiped_elements_div = swiped_messages_div.children('.mes_block, .mesAvatarWrapper');
-
-            //Deepseek-V3.1
-            // Helper function to convert transition to promise
-            const transitionPromise = (element, properties) => {
-                return new Promise((resolve) => {
-                    element.transition({
-                        ...properties,
-                        complete: resolve,
-                    });
-                });
-            };
-
-            //Swipe.
-            await transitionPromise(swiped_elements_div, {
-                x: x,
-                duration: duration,
-                easing: animation_easing,
-                queue: false,
-            } ); // this moves the div back and forth
-        }
+    async function animateSwipe(run_generate = false) {
 
         //Swipe out.
         await animateSwipeTransition(mesId, swipe_range,  animation_duration > 0 ? swipe_duration : 0);
 
-        const is_animation_scroll = (chatElement.scrollTop() >= (chatElement.prop('scrollHeight') - chatElement.outerHeight()) - 10);
-
-        if (run_generate && parseInt(chat[mesId]['swipe_id']) === chat[mesId]['swipes'].length) {
+        if (run_generate) {
             //shows "..." while generating
             this_mes_div.find('.mes_text').html('...');
             // resets the timer
@@ -9054,37 +9088,29 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
                 this_mes_div.find('.tokenCounterDisplay').text(`${tokenCount}t`);
             }
         }
-        let new_height = this_mes_div_height - (this_mes_text_height - this_mes_text[0].scrollHeight);
-        if (new_height < 103) new_height = 103;
 
-        //Expand generating message.
-        this_mes_div.animate({ height: new_height + 'px' }, {
-            duration: 0, //used to be 100
-            queue: false,
-            progress: function () {
-                // Scroll the chat down as the message expands
+        //Swap in updated messages.
+        if (power_user.enable_chat_tree) {
+            await redisplayChat(chat, mesId);
+        }
 
-                if (is_animation_scroll) chatElement.scrollTop(chatElement[0].scrollHeight);
-            },
-            complete: function () {
-                this_mes_div.css('height', 'auto');
-                // Scroll the chat down to the bottom once the animation is complete
-                if (is_animation_scroll) chatElement.scrollTop(chatElement[0].scrollHeight);
-            },
-        });
+        //Animate expanding to the new message height.
+        this_mes_div.css('height', this_mes_div_height);
+        expandNewMessage(this_mes_div);
+
 
         //Jump to the opposite side.
         await animateSwipeTransition(mesId, -swipe_range, 0);
 
         appendMediaToMessage(chat[mesId], this_mes_div);
+
         await eventSource.emit(event_types.MESSAGE_SWIPED, (mesId));
-        if (run_generate && !is_send_press && parseInt(chat[mesId]['swipe_id']) === chat[mesId]['swipes'].length) {
+
+        if (run_generate && !is_send_press) {
             is_send_press = true;
             generation = Generate('swipe');
-        } else {
-            if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
-                saveChatDebounced();
-            }
+        } else if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
+            saveChatDebounced();
         }
 
         //Swipe in.
@@ -9128,45 +9154,66 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     }
 
 
-    if (power_user.enable_chat_tree) {
-        //Save the chat to the chatTree.
-        saveChatToTree(chat);
+
+
+    //If swiping left.
+    if (!swipe_right) {
+        new_swipe_id--;
+        //Loop to last swipe if negative.
+        if (new_swipe_id < 0) {
+            new_swipe_id = Math.max(0,chat[mesId]['swipes'].length - 1);
+        }
     }
-
     //If swiping right.
-    if (swipe_right) {
+    else if (swipe_right) {
         // make new slot in array
-        chat[mesId]['swipe_id']++;
-
+        new_swipe_id++;
 
         //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting, or chatTree is enabled.
-        if (chat[mesId]['swipe_id'] >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {
-            chat[mesId]['swipe_id'] = chat[mesId]['swipes'].length;
+        if (new_swipe_id >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {
+            new_swipe_id = chat[mesId]['swipes'].length;
+
+            //Update the swipe_id.
+            chat[mesId]['swipe_id'] = new_swipe_id;
+
             await swipeGenerate();
+            await endSwipe();
+            return;
         }
         else {
             // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
-            if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length && isPristine) {
-                chat[0]['swipe_id'] = 0;
+            if (chat.length === 1 && new_swipe_id !== undefined && new_swipe_id === chat[0]['swipes'].length && isPristine) {
+                new_swipe_id = 0;
             }
-            //Else, normally swipe.
-            await syncWithSwipeId();
-            await animeSwipe();
         }
     }
-    //If swiping left.
-    else if (!swipe_right) {
-        chat[mesId]['swipe_id']--;
-        //Loop to last swipe if negative.
-        if (chat[mesId]['swipe_id'] < 0) {
-            chat[mesId]['swipe_id'] = Math.max(0,chat[mesId]['swipes'].length - 1);
-        }
-        await syncWithSwipeId();
-        await animeSwipe();
-    }
-    updateSwipeCounter(mesId);
 
-    await endSwipe();
+    //If swipe_id has changed.
+    if (new_swipe_id !== original_swipe_id)
+    {
+        if (power_user.enable_chat_tree) {
+            //Save the chat to the chatTree.
+            await saveChatToTree(chat);
+        }
+
+        //Update the swipe_id.
+        chat[mesId]['swipe_id'] = new_swipe_id;
+        //Update the chat.
+        await syncWithSwipeId(mesId);
+        //Transition to the new chat.
+        await animateSwipe();
+        await endSwipe();
+        return;
+    }
+    //User feedback.
+    else {
+        //Shake
+        this_mes_div.effect('shake', { direction: direction, distance: 20, times: 1 });
+        await endSwipe();
+        //Flash red.
+        await this_mes_div.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+        return;
+    }
 }
 
 /**

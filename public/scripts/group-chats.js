@@ -625,7 +625,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                 }
 
                 //Recursively update the chatTree
-                updateChatTreeMessages(treeData, updateMessage, newName);
+                await updateChatTreeMessages(treeData, updateMessage, newName);
 
                 // Chat shouldn't be empty
                 if (Array.isArray(messages) && messages.length) {

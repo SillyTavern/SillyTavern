@@ -14,7 +14,7 @@ export function setChatTree(newChat) {
  * Save the Chat to the chatTree.
  * @param {Array} chat
  */
-export function saveChatToTree(chat) {
+export async function saveChatToTree(chat) {
 
     chatTree ??= {};
 
@@ -83,9 +83,9 @@ export function saveChatToTree(chat) {
  * @param {object} chatTree
  * @param {Array} chat
  * @param {number} index - The starting index in the chat array
- * @returns {Array} - A stick is a stripped branch. The flattened chat array after the index.
+ * @returns {Promise<Array>} - A stick is a stripped branch. The flattened chat array after the index.
  */
-export function getStickFromTree(chatTree, chat, index) {
+export async function getStickFromTree(chatTree, chat, index) {
 
     //Accumulates messages.
     const stick = [];
@@ -173,7 +173,7 @@ export async function spliceStickToChat(stick, chat, index = 0) {
  * @param {function} updateFunction The function to run on each message.
  * @param {string} attr The attribute for logging.
  */
-export function updateChatTreeMessages(tree, updateFunction, attr = 'value'){
+export async function updateChatTreeMessages(tree, updateFunction, attr = 'value'){
 
     if (typeof tree?.['branch_id'] === 'number') {
         const startTime = performance.now();
