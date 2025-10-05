@@ -7,6 +7,7 @@ import {
     default_user_avatar,
     eventSource,
     event_types,
+    getCurrentChatId,
     getRequestHeaders,
     getThumbnailUrl,
     groupToEntity,
@@ -69,6 +70,9 @@ export let user_avatar = '';
 /** @type {FilterHelper} Filter helper for the persona list */
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, debounce_timeout.quick));
 
+/** @type {string} The last loaded chat id to remember for persona loading */
+let personaLastLoadedChatId = null;
+
 /** @type {function(string): void} */
 let navigateToAvatar = () => { };
 
@@ -107,12 +111,16 @@ export function initUserAvatar(avatar) {
  * @param {boolean} [options.toastPersonaNameChange=true] Whether to show a toast when the persona name is changed
  * @param {boolean} [options.navigateToCurrent=false] Whether to navigate to the current persona after setting the avatar
  */
-export function setUserAvatar(imgfile, { toastPersonaNameChange = true, navigateToCurrent = false } = {}) {
+export async function setUserAvatar(imgfile, { toastPersonaNameChange = true, navigateToCurrent = false } = {}) {
+    const currentUserAvatar = user_avatar;
     user_avatar = imgfile && typeof imgfile === 'string' ? imgfile : $(this).attr('data-avatar-id');
+    if (currentUserAvatar === user_avatar) {
+        return;
+    }
     reloadUserAvatar();
     updatePersonaUIStates({ navigateToCurrent: navigateToCurrent });
     selectCurrentPersona({ toastPersonaNameChange: toastPersonaNameChange });
-    retriggerFirstMessageOnEmptyChat();
+    await retriggerFirstMessageOnEmptyChat();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
 }
@@ -732,13 +740,13 @@ export async function askForPersonaSelection(title, text, personas, { okButton =
 /**
  * Automatically selects a persona based on the given name if a matching persona exists.
  * @param {string} name - The name to search for
- * @returns {boolean} True if a matching persona was found and selected, false otherwise
+ * @returns {Promise<boolean>} True if a matching persona was found and selected, false otherwise
  */
-export function autoSelectPersona(name) {
+export async function autoSelectPersona(name) {
     for (const [key, value] of Object.entries(power_user.personas)) {
         if (value === name) {
             console.log(`Auto-selecting persona ${key} for name ${name}`);
-            setUserAvatar(key);
+            await setUserAvatar(key);
             return true;
         }
     }
@@ -1429,13 +1437,16 @@ function getPersonaTemporaryLockInfo() {
  * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether a persona was selected
  */
 async function loadPersonaForCurrentChat({ doRender = false } = {}) {
+    if (getCurrentChatId() === personaLastLoadedChatId) return;
+    personaLastLoadedChatId = getCurrentChatId();
+
     // Cache persona list to check if they exist
     const userAvatars = await getUserAvatars(doRender);
 
     // Check if the user avatar is set and exists in the list of user avatars
     if (userAvatars.length && !userAvatars.includes(user_avatar)) {
         console.log(`User avatar ${user_avatar} not found in user avatars list, pick the first available one`);
-        setUserAvatar(userAvatars[0], { toastPersonaNameChange: false, navigateToCurrent: true });
+        await setUserAvatar(userAvatars[0], { toastPersonaNameChange: false, navigateToCurrent: true });
     }
 
     // Define a persona for this chat
@@ -1530,7 +1541,7 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
     // Persona avatar found, select it
     if (chatPersona && user_avatar !== chatPersona) {
         const willAutoLock = power_user.persona_auto_lock && user_avatar !== chat_metadata['persona'];
-        setUserAvatar(chatPersona, { toastPersonaNameChange: false, navigateToCurrent: true });
+        await setUserAvatar(chatPersona, { toastPersonaNameChange: false, navigateToCurrent: true });
 
         if (power_user.persona_show_notifications) {
             let message = t`Auto-selected persona based on ${connectType} connection.<br />Your messages will now be sent as ${power_user.personas[chatPersona]}.`;
@@ -1542,7 +1553,7 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
     }
     // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
     else if (chatPersona && power_user.persona_auto_lock && !chat_metadata['persona']) {
-        lockPersona('chat');
+        await lockPersona('chat');
     }
 
     updatePersonaUIStates();
@@ -1606,7 +1617,7 @@ export async function showCharConnections() {
 
     // One of the persona was selected. So load it.
     if (!isRemoving && selectedPersona) {
-        setUserAvatar(selectedPersona, { toastPersonaNameChange: false });
+        await setUserAvatar(selectedPersona, { toastPersonaNameChange: false });
         if (power_user.persona_show_notifications) {
             toastr.success(t`Selected persona ${power_user.personas[selectedPersona]} for current chat.`, t`Connected Persona Selected`);
         }
@@ -1739,8 +1750,11 @@ async function syncUserNameToPersona() {
  *
  * Only works if only the first message is present, and not in group mode.
  */
-export function retriggerFirstMessageOnEmptyChat() {
-    if (Number(this_chid) >= 0 && !selected_group && chat.length === 1) {
+export async function retriggerFirstMessageOnEmptyChat() {
+    if (selected_group) {
+        await reloadCurrentChat();
+    }
+    if (Number(this_chid) >= 0 && chat.length === 1) {
         $('#firstmessage_textarea').trigger('input');
     }
 }
@@ -1838,9 +1852,9 @@ async function lockPersonaCallback(_args, value) {
  * Sets a persona name and optionally an avatar.
  * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs Named arguments
  * @param {string} name Name to set
- * @returns {string}
+ * @returns {Promise<string>}
  */
-function setNameCallback({ mode = 'all' }, name) {
+async function setNameCallback({ mode = 'all' }, name) {
     if (!name) {
         toastr.warning('You must specify a name to change to');
         return '';
@@ -1858,7 +1872,7 @@ function setNameCallback({ mode = 'all' }, name) {
         let persona = Object.entries(power_user.personas).find(([avatar, _]) => avatar === name)?.[1];
         if (!persona) persona = Object.entries(power_user.personas).find(([_, personaName]) => personaName.toLowerCase() === name.toLowerCase())?.[1];
         if (persona) {
-            autoSelectPersona(persona);
+            await autoSelectPersona(persona);
             return '';
         } else if (mode === 'lookup') {
             toastr.warning(`Persona ${name} not found`);
@@ -2016,9 +2030,9 @@ export async function initPersonas() {
     $('#sync_name_button').on('click', syncUserNameToPersona);
     $('#avatar_upload_file').on('change', changeUserAvatar);
 
-    $(document).on('click', '#user_avatar_block .avatar-container', function () {
+    $(document).on('click', '#user_avatar_block .avatar-container', async function () {
         const imgfile = $(this).attr('data-avatar-id');
-        setUserAvatar(imgfile);
+        await setUserAvatar(imgfile);
     });
 
     $('#persona_rename_button').on('click', () => renamePersona(user_avatar));
