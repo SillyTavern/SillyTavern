@@ -8824,7 +8824,7 @@ function formatSwipeCounter(current, total) {
  * @param {object} params Additional parameters.
  * @param {string} [params.source] The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
- * @param {object} [params.message] The chat message to swipe.
+ * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  */
 export async function swipe(_event, swipe_right, { source, repeated, message = chat[chat.length - 1] } = {}) {
 
@@ -8850,8 +8850,8 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     let this_mes_text = this_mes_div.find('.mes_block .mes_text');
     const this_mes_div_height = this_mes_div[0].scrollHeight;
     const this_mes_text_height = this_mes_text[0].scrollHeight;
-    const original_swipe_id = chat[mesId]?.['swipe_id'] ?? 0;
-    let new_swipe_id = original_swipe_id;
+    const original_swipe_id = Number(chat[mesId]?.['swipe_id'] ?? 0);
+    let new_swipe_id = Number(original_swipe_id);
     let direction = swipe_right ? 'right' : 'left';
 
     const isPristine = !chat_metadata?.tainted;
@@ -8861,7 +8861,6 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     if (swipe_right) {
         swipe_range *= -1;
     }
-    let run_generate = false;
 
     async function endSwipe() {
         //Wait for the generation to end.
@@ -8952,7 +8951,8 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
             delete chat[mesId].gen_started;
             delete chat[mesId].gen_finished;
 
-            await syncWithSwipeId(mesId);
+            let run_generate = true;
+            await syncWithSwipeId(mesId, run_generate);
             await animateSwipe(run_generate = true);
         }
     }
@@ -8961,7 +8961,7 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     /**
      * Syncs with swipe_id, using the chatTree or swipes.
      */
-    async function syncWithSwipeId(mesId){
+    async function syncWithSwipeId(mesId, run_generate = false){
         if (power_user.enable_chat_tree) {
 
             //Get chat after the swipe.
@@ -9163,11 +9163,26 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         if (new_swipe_id < 0) {
             new_swipe_id = Math.max(0,chat[mesId]['swipes'].length - 1);
         }
+        //Limit swipe_id to swipes.
+        if (new_swipe_id > chat[mesId]['swipes'].length - 1) {
+            toastr.warning(`The swipe_id for message #${mesId} was ${new_swipe_id}. It has been reset to ${chat[mesId]['swipes'].length - 1}.`);
+            chat[mesId]['swipe_id'] = chat[mesId]['swipes'].length - 1;
+            await endSwipe();
+            return;
+        }
     }
     //If swiping right.
     else if (swipe_right) {
         // make new slot in array
         new_swipe_id++;
+
+        //Minimum of zero.
+        if (new_swipe_id < 0) {
+            toastr.warning(`The swipe_id for message #${mesId} was ${new_swipe_id}. It has been reset to zero.`);
+            chat[mesId]['swipe_id'] = 0;
+            await endSwipe();
+            return;
+        }
 
         //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting, or chatTree is enabled.
         if (new_swipe_id >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {

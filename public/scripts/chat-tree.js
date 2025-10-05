@@ -13,8 +13,9 @@ export function setChatTree(newChat) {
 /**
  * Save the Chat to the chatTree.
  * @param {Array} chat
+ * @param {object} chatTree
  */
-export async function saveChatToTree(chat) {
+export async function saveChatToTree(chat, chatTree) {
 
     chatTree ??= {};
 
@@ -36,7 +37,7 @@ export async function saveChatToTree(chat) {
         console.assert(typeof branch !== 'undefined', 'The branch must exist.');
 
         //Default to the first swipe.
-        let branch_id = chatMessage['swipe_id'] ?? 0;
+        let branch_id = Number(chatMessage['swipe_id'] ?? 0);
         console.assert(typeof branch_id !== 'undefined', 'The branch_id must exist.');
         branch['branch_id'] = branch_id;
 
@@ -67,7 +68,7 @@ export async function saveChatToTree(chat) {
         branch = branch['branch'][branch_id];
     }
 
-    //Prune deleted branch.
+    //Prune deleted branch, A branch cannot be empty.
     if (typeof(branch['branch_id']) == 'number') {
         console.log('Pruning deleted branch.', branch);
         delete branch['branch_id'];
@@ -105,7 +106,7 @@ export async function getStickFromTree(chatTree, chat, index) {
 
         //Follow messages's swipe_id before index, then the branch's branch_id, then the first swipe.
         let branch_id;
-        branch_id = ((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0;
+        branch_id = Number((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0;
 
         //Debugging.
         // swipe_path.push(chat[i]?.['swipe_id'])
