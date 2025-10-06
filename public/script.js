@@ -11169,7 +11169,6 @@ jQuery(async function () {
     $(document).on('click', '.mes .avatar', function () {
         const messageElement = $(this).closest('.mes');
         const thumbURL = $(this).children('img').attr('src');
-        const charsPath = '/characters/';
         const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf('=') + 1);
         const charname = targetAvatarImg.replace('.png', '');
         const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
@@ -11240,11 +11239,15 @@ jQuery(async function () {
                 }
             });
 
-            zoomedAvatarImgElement.on('dragstart', (e) => {
-                console.log('saw drag on avatar!');
-                e.preventDefault();
-                return false;
-            });
+            // Bind dragstart handler to the image/video inside the newly-created zoomed avatar element (scope to newElement)
+            const zoomedAvatarImgElement = newElement.find('img, video').first();
+            if (zoomedAvatarImgElement && zoomedAvatarImgElement.length) {
+                zoomedAvatarImgElement.on('dragstart', (e) => {
+                    console.log('saw drag on avatar!');
+                    e.preventDefault();
+                    return false;
+                });
+            }
         }
     });
 
