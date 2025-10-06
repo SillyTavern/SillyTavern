@@ -343,7 +343,6 @@ toastr.options = {
     },
 };
 
-
 export const characterGroupOverlay = new BulkEditOverlay();
 
 // Markdown converter
@@ -7978,7 +7977,6 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
 
     updateFavButtonState(characters[chid].fav || characters[chid].fav == 'true');
 
-    // (legacy inline preview logic removed in favor of unified resolver)
     // Unified avatar preview (static thumbnail or animated webp). We deliberately disallow <video>
     try {
         const cObj = characters?.[chid];
@@ -8115,16 +8113,17 @@ export function setExtensionPrompt(key, value, position, depth, scan = false, ro
  * @returns {number} The role id of the extension prompt.
  */
 export function getExtensionPromptRoleByName(roleName) {
-    // If the role is already a valid number, return it
-    if (typeof roleName === 'number' && Object.values(extension_prompt_roles).includes(roleName)) {
-        return roleName;
+    switch (roleName) {
+        case 'system':
+            return extension_prompt_roles.SYSTEM;
+        case 'user':
+            return extension_prompt_roles.USER;
+        case 'assistant':
+            return extension_prompt_roles.ASSISTANT;
     }
-    switch (String(roleName).toLowerCase()) {
-        case 'system': return extension_prompt_roles.SYSTEM;
-        case 'assistant': return extension_prompt_roles.ASSISTANT;
-        case 'user': return extension_prompt_roles.USER;
-        default: return extension_prompt_roles.SYSTEM;
-    }
+
+    // Skill issue?
+    return extension_prompt_roles.SYSTEM;
 }
 
 /**
@@ -11239,7 +11238,6 @@ jQuery(async function () {
                 }
             });
 
-            // Bind dragstart handler to the image/video inside the newly-created zoomed avatar element (scope to newElement)
             const zoomedAvatarImgElement = newElement.find('img, video').first();
             if (zoomedAvatarImgElement && zoomedAvatarImgElement.length) {
                 zoomedAvatarImgElement.on('dragstart', (e) => {
@@ -11536,4 +11534,4 @@ jQuery(async function () {
             e.returnValue = true;
         }
     });
-}); // end jQuery async DOM handlers
+});
