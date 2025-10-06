@@ -11,6 +11,7 @@ import {
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -677,7 +678,7 @@ async function firstLoadInit() {
     initWorldInfo();
     initHorde();
     initRossMods();
-    initStats();
+    try { if (typeof initStats === 'function') initStats(); } catch (e) { /* no-op */ }
     initCfg();
     initLogprobs();
     initInputMarkdown();
@@ -6750,17 +6751,17 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
         // Populate the template
         const avatarTemplate = $(`#${templateId} .avatar`).clone();
 
-    let this_avatar = default_avatar;
-    const media = getAvatarMedia(entity.item.avatar ? entity.item : entity.item);
-    console.debug('[buildAvatarList] entity media', { id, media });
+        let this_avatar = default_avatar;
+        const media = getAvatarMedia(entity.item.avatar ? entity.item : entity.item);
+        console.debug('[buildAvatarList] entity media', { id, media });
 
         avatarTemplate.attr('data-type', entity.type);
         avatarTemplate.attr('data-chid', id);
 
         const imgEl = avatarTemplate.find('img');
         // Prefer explicit video avatar metadata if present
-    // Access custom extension key via bracket notation to avoid TS complaints
-    const videoAvatar = entity?.item?.data?.extensions && entity.item.data.extensions['video_avatar'];
+        // Access custom extension key via bracket notation to avoid TS complaints
+        const videoAvatar = entity?.item?.data?.extensions && entity.item.data.extensions['video_avatar'];
         const videoExt = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
         const supportsVideoTag = ['webm','mp4','ogg'].includes(videoExt);
 
