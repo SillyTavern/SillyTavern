@@ -303,7 +303,6 @@ async function sendWelcomePanel(chats, expand = false) {
                         imgEl.dataset.animatedSrc = url;
                         imgEl.src = url;
                         upgraded = true;
-                        
                     }
                 }
                 // Fallback probe: if original avatar is png and no explicit companion, try swapping .png->.webp
@@ -316,16 +315,13 @@ async function sendWelcomePanel(chats, expand = false) {
                         imgEl.dataset.staticSrc = imgEl.getAttribute('src') || '';
                         imgEl.dataset.animatedSrc = url;
                         imgEl.src = url;
-                        
                     };
                     probeImg.onerror = () => {
-                        
                     };
                     probeImg.src = url;
                 }
             });
         } catch (e) {
-            
         }
     } catch (error) {
         console.error('Welcome screen error:', error);
