@@ -6132,7 +6132,7 @@ export function setOnlineStatus(value) {
 }
 
 export function setEditedMessageId(value) {
-    this_edit_mes_id = value;
+    this_edit_mes_id = Number(value);
 }
 
 export function setSendButtonState(value) {
@@ -7943,16 +7943,16 @@ export function hideSwipeButtons() {
  * Deletes a swipe from the chat.
  *
  * @param {number?} [swipeId = null] - The ID of the swipe to delete. If not provided, the current swipe will be deleted.
- * @param {number?} [mesId = chat.length - 1] - The ID of the message to delete from. If not provided, the last message will be targeted.
+ * @param {number?} [messageId = chat.length - 1] - The ID of the message to delete from. If not provided, the last message will be targeted.
  * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
  */
-export async function deleteSwipe(swipeId = null, mesId = chat.length - 1) {
+export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
         toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
         return;
     }
 
-    const message = chat[mesId];
+    const message = chat[messageId];
     if (!message || !Array.isArray(message.swipes) || !message.swipes.length) {
         toastr.warning(t`No messages to delete swipes from.`);
         return;
@@ -7978,9 +7978,9 @@ export async function deleteSwipe(swipeId = null, mesId = chat.length - 1) {
 
     // Select the next swipe, or the one before if it was the last one
     const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
-    syncSwipeToMes(mesId, newSwipeId);
+    syncSwipeToMes(messageId, newSwipeId);
 
-    await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { mesId, swipeId, newSwipeId });
+    await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
 
     await saveChatConditional();
     await reloadCurrentChat();
@@ -10227,7 +10227,7 @@ jQuery(async function () {
             $(this).closest('.mes_block').find('.mes_buttons').css('display', 'none');
             $(this).closest('.mes_block').find('.mes_edit_buttons').css('display', 'inline-flex');
             var edit_mes_id = $(this).closest('.mes').attr('mesid');
-            this_edit_mes_id = edit_mes_id;
+            this_edit_mes_id = Number(edit_mes_id);
 
             // Also edit reasoning, if it exists
             const reasoningEdit = $(this).closest('.mes_block').find('.mes_reasoning_edit:visible');
@@ -10487,7 +10487,7 @@ jQuery(async function () {
         if (deleteOnlySwipe) {
             const message = chat[this_edit_mes_id];
             const swipe_id = message.swipe_id;
-            await deleteSwipe(swipe_id, this_edit_mes_id);
+            await deleteSwipe(swipe_id, Number(this_edit_mes_id));
             return;
         }
 
