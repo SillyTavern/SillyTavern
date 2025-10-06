@@ -1110,9 +1110,9 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
                 avatarFile = filesObjEdit.avatar && filesObjEdit.avatar[0];
                 videoFile = filesObjEdit.video_avatar && filesObjEdit.video_avatar[0];
             }
-    }
+        }
 
-    // If a companion video avatar was uploaded, persist it and update data.extensions
+        // If a companion video avatar was uploaded, persist it and update data.extensions
         if (videoFile) {
             try {
                 const safeVideoName = `${targetFile}.webp`;
