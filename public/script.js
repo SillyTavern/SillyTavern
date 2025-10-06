@@ -6132,7 +6132,7 @@ export function setOnlineStatus(value) {
 }
 
 export function setEditedMessageId(value) {
-    this_edit_mes_id = Number(value);
+    this_edit_mes_id = value;
 }
 
 export function setSendButtonState(value) {
@@ -10227,7 +10227,7 @@ jQuery(async function () {
             $(this).closest('.mes_block').find('.mes_buttons').css('display', 'none');
             $(this).closest('.mes_block').find('.mes_edit_buttons').css('display', 'inline-flex');
             var edit_mes_id = $(this).closest('.mes').attr('mesid');
-            this_edit_mes_id = Number(edit_mes_id);
+            this_edit_mes_id = edit_mes_id;
 
             // Also edit reasoning, if it exists
             const reasoningEdit = $(this).closest('.mes_block').find('.mes_reasoning_edit:visible');
