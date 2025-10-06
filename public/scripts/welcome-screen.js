@@ -281,48 +281,21 @@ async function sendWelcomePanel(chats, expand = false) {
             });
         }
 
-        // Upgrade recent chat avatars to animated webp if a companion exists
+        // Upgrade recent chat avatars using shared resolver
         try {
             const recentChatNodes = chatElement.querySelectorAll('.recentChat');
             recentChatNodes.forEach(rc => {
                 const avatarId = rc.getAttribute('data-avatar');
                 if (!avatarId) return;
-                const imgEl = rc.querySelector('.avatar img');
-                if (!(imgEl instanceof HTMLImageElement)) return;
-                // Skip if we've already processed this avatar
-                if (imgEl.dataset.animatedSrc || imgEl.dataset.staticSrc) return;
                 const character = characters.find(c => c.avatar === avatarId);
-                // Use bracket notation to avoid TS property complaint
-                const companion = character?.data?.extensions && character.data.extensions['video_avatar'];
-                let upgraded = false;
-                if (typeof companion === 'string') {
-                    const ext = companion.split('.').pop()?.toLowerCase();
-                    if (ext === 'webp') {
-                        const url = `/characters/${encodeURIComponent(companion)}`.replace(/(\/characters\/){2,}/g, '/characters/');
-                        imgEl.dataset.staticSrc = imgEl.getAttribute('src') || '';
-                        imgEl.dataset.animatedSrc = url;
-                        imgEl.src = url;
-                        upgraded = true;
-                    }
-                }
-                // Fallback probe: if original avatar is png and no explicit companion, try swapping .png->.webp
-                if (!upgraded && avatarId.toLowerCase().endsWith('.png')) {
-                    const probed = avatarId.replace(/\.png$/i, '.webp');
-                    const url = `/characters/${encodeURIComponent(probed)}`;
-                    // Lightweight existence check via image element
-                    const probeImg = new Image();
-                    probeImg.onload = () => {
-                        imgEl.dataset.staticSrc = imgEl.getAttribute('src') || '';
-                        imgEl.dataset.animatedSrc = url;
-                        imgEl.src = url;
-                    };
-                    probeImg.onerror = () => {
-                        /* no-op */
-                    };
-                    probeImg.src = url;
+                if (!character) return;
+                const avatarWrapper = rc.querySelector('.avatar');
+                if (!avatarWrapper) return;
+                if (typeof window.resolveAndApplyAvatar === 'function') {
+                    window.resolveAndApplyAvatar(character, avatarWrapper, { allowVideo: false });
                 }
             });
-        } catch (e) { /* no-op */ }
+        } catch (e) { /* silent */ }
     } catch (error) {
         console.error('Welcome screen error:', error);
     }
