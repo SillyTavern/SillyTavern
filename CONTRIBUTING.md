@@ -29,11 +29,22 @@
   - Updating GitHub Actions.
   - Hotfixing a critical bug.
 4. Project maintainers will test and can change your code before merging.
-5. Write at least somewhat meaningful PR descriptions. There's no "right" way to do it, but the following may help with outlining a general structure:
+5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first.
+6. Write at least somewhat meaningful PR descriptions. There's no "right" way to do it, but the following may help with outlining a general structure:
   - What is the reason for a change?
   - What did you do to achieve this?
   - How would a reviewer test the change?
-6. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
+7. English is the primary language of communication in this project. Please use only English when writing commit messages, PR descriptions, comments and other text. This does not apply to contributions to localization files.
+8. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
+
+## Use of AI coding assistant tools ("Vibe Coding")
+
+We do not prohibit, nor encourage the use of AI tools for coding assistance (like GitHub Copilot, OpenAI Codex, etc.) to help you write code, documentation, etc. However, please keep in mind the following:
+
+- No matter who (or what) wrote the code, you are responsible for it. Make sure to carefully review and test everything before committing, and be ready to discuss and fix any issues that may arise during the review.
+- Contributions maintain the right to reject reviewing and accepting PRs of very low quality, i.e. if the time to fix the issues exceeds the time to write the code from scratch.
+- Avoid common mistakes attributed to AI tools, such as: adding/removing unrelated comments, excessive logging, unawareness of the project context and conventions, etc.
+- You are allowed, but not required, to trigger AI tools that are added to the project by maintainers. Keep in mind that any feedback (comments, suggestions) that these tools generate is not a call to action, make sure to properly assess it before applying.
 
 ## Further reading
 
