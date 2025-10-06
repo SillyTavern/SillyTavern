@@ -1749,14 +1749,15 @@ async function syncUserNameToPersona() {
 
 /**
  * Retriggers the first message to reload it from the char definition.
- *
- * Only works if only the first message is present, and not in group mode.
  */
 export async function retriggerFirstMessageOnEmptyChat() {
+    if (chat_metadata.tainted) {
+        return;
+    }
     if (selected_group) {
         await reloadCurrentChat();
     }
-    if (Number(this_chid) >= 0 && chat.length === 1) {
+    if (!selected_group && Number(this_chid) >= 0 && chat.length === 1) {
         await createOrEditCharacter();
     }
 }
