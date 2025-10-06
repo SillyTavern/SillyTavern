@@ -566,6 +566,7 @@ export class Popup {
             else value = false; // Might a custom negative value?
         }
 
+        // Cropped image should be returned as a data URL
         if (this.type === POPUP_TYPE.CROP) {
             if (result >= POPUP_RESULT.AFFIRMATIVE) {
                 try {

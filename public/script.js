@@ -1265,9 +1265,6 @@ export async function getCharacters() {
             characters[i]['chat'] = String(characters[i]['chat']);
         }
 
-        // Diagnostic: log a brief summary of fetched characters and any companion video avatars
-        // diagnostics removed in production build
-
         if (previousAvatar) {
             const newCharacterId = characters.findIndex(x => x.avatar === previousAvatar);
             if (newCharacterId >= 0) {
@@ -6615,11 +6612,12 @@ export function getThumbnailUrl(type, file, t = false) {
  */
 export function getAvatarMedia(character) {
     // Intentionally lightweight; avoid verbose logging in production
+    // (no verbose debug logging here)
 
     // If caller passed a filename, just return the thumbnail URL
     if (typeof character === 'string') {
         const res = { kind: 'image', url: getThumbnailUrl('avatar', character) };
-        console.debug('[getAvatarMedia] return', res);
+        
         return res;
     }
 
@@ -6639,7 +6637,7 @@ export function getAvatarMedia(character) {
     }
 
     const res = { kind: 'image', url: default_avatar };
-    console.debug('[getAvatarMedia] return', res);
+    
     return res;
 }
 
@@ -6664,15 +6662,14 @@ export async function convertFileIfVideo(formData) {
     }
     let toastMessage = null;
     try {
-        console.log('[convertFileIfVideo] starting conversion for', file.name, file.type, file.size, 'bytes');
         toastMessage = toastr.info(t`Preparing video for upload. This may take several minutes.`, t`Please wait`, { timeOut: 0, extendedTimeOut: 0 });
 
         const sourceBuffer = await file.arrayBuffer();
-        console.log('[convertFileIfVideo] read file into buffer, length:', sourceBuffer.byteLength);
+    
 
         // Convert to animated WebP via extension
         const convertedBuffer = await globalThis.convertVideoToAnimatedWebp({ buffer: new Uint8Array(sourceBuffer), name: file.name });
-        console.log('[convertFileIfVideo] conversion completed, output length:', convertedBuffer?.length ?? convertedBuffer?.byteLength ?? 'unknown');
+    
 
         const convertedFileName = file.name.replace(/\.[^/.]+$/, '.webp');
         const webpBlob = new Blob([convertedBuffer], { type: 'image/webp' });
@@ -6716,15 +6713,15 @@ export async function convertFileIfVideo(formData) {
         // Put both files into FormData: thumbnail as avatar, converted webp as video_avatar
         if (thumbnailFile) {
             formData.set('avatar', thumbnailFile);
-            console.log('[convertFileIfVideo] set avatar to PNG thumbnail', thumbnailFile.name);
+            
         } else {
             // If thumbnail creation failed, remove avatar to avoid invalid upload
             formData.delete('avatar');
             console.warn('[convertFileIfVideo] thumbnail creation failed, avatar removed from form');
         }
 
-        formData.set('video_avatar', convertedWebpFile);
-        console.log('[convertFileIfVideo] set video_avatar to converted file', convertedFileName);
+    formData.set('video_avatar', convertedWebpFile);
+    
     } catch (error) {
         console.error('[convertFileIfVideo] Error converting video to animated webp:', error);
         try {
@@ -6739,13 +6736,10 @@ export async function convertFileIfVideo(formData) {
         try {
             if (toastMessage) {
                 if (typeof toastr.clear === 'function') {
-                    console.log('[convertFileIfVideo] clearing toast via toastr.clear');
                     toastr.clear(toastMessage);
                 } else if (toastMessage.remove) {
-                    console.log('[convertFileIfVideo] removing toast via toastMessage.remove');
                     toastMessage.remove();
                 } else {
-                    console.log('[convertFileIfVideo] no toast removal API available; attempting toastr.clear() without args');
                     try { toastr.clear(); } catch (e) { console.warn('[convertFileIfVideo] toastr.clear() threw', e); }
                 }
             }
@@ -6788,29 +6782,29 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
     const videoAvatar = entity?.item?.data?.extensions && entity.item.data.extensions['video_avatar'];
         const videoExt = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
         const supportsVideoTag = ['webm','mp4','ogg'].includes(videoExt);
-        try { console.log('[test] buildAvatarList entity', { id, name: entity?.item?.name, avatar: entity?.item?.avatar, videoAvatar, videoExt, supportsVideoTag }); } catch {}
+    try { } catch {}
 
         if (videoAvatar && videoExt === 'webp') {
             // Animated webp treated as plain <img>
             imgEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`).attr('alt', entity.item.name).addClass('avatar-animated');
-            console.log('[test] using webp image for avatar', { id, src: `/characters/${encodeURIComponent(videoAvatar)}` });
+            
         } else if (videoAvatar && supportsVideoTag) {
             const videoEl = $(`<video muted autoplay loop playsinline preload="metadata" class="avatar-video"></video>`);
             videoEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`);
             videoEl.attr('alt', entity.item.name);
             imgEl.replaceWith(videoEl);
-            console.log('[test] using video tag for avatar', { id, src: `/characters/${encodeURIComponent(videoAvatar)}` });
+            
         } else {
             // Fallback to previously computed media (png thumbnail or default)
             if (media && media.url) {
                 imgEl.attr('src', media.url).attr('alt', entity.item.name);
-                console.log('[test] fallback media url used', { id, src: media.url });
+                
             } else {
                 if (entity.item.avatar !== undefined && entity.item.avatar !== 'none') {
                     this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
                 }
                 imgEl.attr('src', this_avatar).attr('alt', entity.item.name);
-                console.log('[test] fallback default or thumbnail used', { id, src: this_avatar });
+                
             }
         }
         avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
@@ -6849,29 +6843,29 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
                 const candidate = entity.item.avatar.replace(/\.[^.]+$/, '.webp');
                 const candidateUrl = `/characters/${encodeURIComponent(candidate)}`;
                 const probeImg = new Image();
-                console.log('[test] probe start', { id, candidateUrl });
+                
                 probeImg.onload = () => {
                     const targetImg = block.find(`.avatar[data-chid="${id}"] img`);
                     if (targetImg.length && !/\.webp(\?|$)/i.test(String(targetImg.attr('src')))) {
                         targetImg.attr('src', candidateUrl).addClass('avatar-animated');
                         console.debug('[avatar-webp-inline] probe success swap', { id, candidate });
-                        console.log('[test] probe success swap', { id, candidateUrl });
+                        
                         if (String(this_chid) === String(id)) {
                             const preview = /** @type {HTMLImageElement|null} */(document.getElementById('avatar_load_preview'));
-                            if (preview && !/\.webp(\?|$)/i.test(preview.src)) { preview.src = candidateUrl; console.log('[test] preview updated via probe', { id, candidateUrl }); }
+                            if (preview && !/\.webp(\?|$)/i.test(preview.src)) { preview.src = candidateUrl; }
                         }
                     }
                 };
-                probeImg.onerror = () => { console.log('[test] probe failed', { id, candidateUrl }); };
+                probeImg.onerror = () => { };
                 probeImg.src = candidateUrl;
             } else if (videoAvatar && videoExt === 'webp' && String(this_chid) === String(id)) {
                 // Sync edit panel preview immediately
                 const preview = /** @type {HTMLImageElement|null} */(document.getElementById('avatar_load_preview'));
-                if (preview) { preview.src = `/characters/${encodeURIComponent(videoAvatar)}`; console.log('[test] preview set from explicit video_avatar webp', { id, videoAvatar }); }
+                if (preview) { preview.src = `/characters/${encodeURIComponent(videoAvatar)}`; }
             }
         } catch (e) {
             console.debug('[avatar-webp-inline] probe failed', e);
-            console.log('[test] probe exception', { id, error: e?.message });
+            
         }
     }
 }
@@ -6886,7 +6880,7 @@ function refreshCharacterAvatarInDom(chIndex) {
     const sel = `.avatar[data-chid="${chIndex}"]`;
     const wrapper = document.querySelector(sel);
     if (!wrapper) return;
-    console.log('[test] refreshCharacterAvatarInDom enter', { chIndex, video_avatar: v, ext });
+    
     // If webp: ensure an <img> points to it
     if (ext === 'webp') {
         let img = wrapper.querySelector('img');
@@ -6895,11 +6889,11 @@ function refreshCharacterAvatarInDom(chIndex) {
             wrapper.appendChild(img);
         }
         const target = `/characters/${encodeURIComponent(v)}`;
-        if (!img.src.endsWith(v)) {
+            if (!img.src.endsWith(v)) {
             img.src = target;
             img.alt = c.name;
             img.classList.add('avatar-animated');
-            console.log('[test] refreshed wrapper to webp', { chIndex, target });
+            
         }
     } else if (['webm','mp4','ogg'].includes(ext)) {
         // Replace existing img with video if not already
@@ -6907,11 +6901,13 @@ function refreshCharacterAvatarInDom(chIndex) {
         if (!existingVideo) {
             const img = wrapper.querySelector('img');
             const videoEl = document.createElement('video');
-            videoEl.muted = true; videoEl.autoplay = true; videoEl.loop = true; videoEl.playsInline = true;
+            videoEl.muted = true;
+            videoEl.autoplay = true;
+            videoEl.loop = true;
+            videoEl.playsInline = true;
             videoEl.src = `/characters/${encodeURIComponent(v)}`;
             videoEl.className = 'avatar-video';
             if (img) img.replaceWith(videoEl); else wrapper.appendChild(videoEl);
-            console.log('[test] refreshed wrapper to video element', { chIndex, src: videoEl.src });
         }
     }
     // Sync edit panel preview for selected character
@@ -6921,20 +6917,20 @@ function refreshCharacterAvatarInDom(chIndex) {
             if (preview) {
                 if (ext === 'webp') {
                     preview.src = `/characters/${encodeURIComponent(v)}`;
-                    console.log('[test] preview synced to webp', { chIndex, src: preview.src });
                 } else if (['webm','mp4','ogg'].includes(ext) && preview.tagName.toLowerCase() === 'img') {
                     const videoEl = document.createElement('video');
-                    videoEl.muted = true; videoEl.autoplay = true; videoEl.loop = true; videoEl.playsInline = true;
+                    videoEl.muted = true;
+                    videoEl.autoplay = true;
+                    videoEl.loop = true;
+                    videoEl.playsInline = true;
                     videoEl.src = `/characters/${encodeURIComponent(v)}`;
                     videoEl.id = preview.id;
                     preview.replaceWith(videoEl);
-                    console.log('[test] preview replaced with video element', { chIndex, src: videoEl.src });
                 }
             }
         }
     } catch (e) {
         console.debug('[avatar-webp-inline] preview sync failed', e);
-        console.log('[test] preview sync exception', { chIndex, error: e?.message });
     }
 }
 
@@ -6953,26 +6949,22 @@ export async function unshallowCharacter(characterId) {
     const character = characters[characterId];
     if (!character) {
         console.debug('Character not found:', characterId);
-        console.log('[test] unshallow character not found', { characterId });
         return;
     }
 
     // Character is not shallow
     if (!character.shallow) {
-        console.log('[test] unshallow skip (already full)', { characterId });
         return;
     }
 
     const avatar = character.avatar;
     if (!avatar) {
         console.debug('Character has no avatar field:', characterId);
-        console.log('[test] unshallow no avatar field', { characterId });
         return;
     }
 
     await getOneCharacter(avatar);
-    console.log('[test] unshallow getOneCharacter done', { characterId, avatar });
-    // After loading full data, refresh avatar in DOM if a companion media now exists
+        // After loading full data, refresh avatar in DOM if a companion media now exists
     try { refreshCharacterAvatarInDom(characterId); } catch (e) { /* ignore */ }
 }
 
@@ -7035,7 +7027,7 @@ async function getChatResult() {
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
     // Upgrade any static chat avatars to animated webp (if available)
-    try { upgradeChatAvatars(); } catch (e) { console.warn('[test] upgradeChatAvatars post-print exception', e); }
+    try { upgradeChatAvatars(); } catch (e) { /* ignore post-print upgrade errors */ }
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
@@ -7247,9 +7239,7 @@ function reloadLoop() {
 
 // Replace static PNG chat avatars with their animated webp companions where possible
 function upgradeChatAvatars() {
-    console.log('[test] upgradeChatAvatars start');
     if (!Array.isArray(characters) || !characters.length) {
-        console.log('[test] upgradeChatAvatars skip no characters');
         return;
     }
     const imgs = document.querySelectorAll('.mes[is_user="false"] .mesAvatarWrapper .avatar img');
@@ -7271,9 +7261,8 @@ function upgradeChatAvatars() {
             if (!img.getAttribute('data-static-src')) img.setAttribute('data-static-src', img.getAttribute('src') || '');
             img.setAttribute('src', animUrl);
             img.setAttribute('data-animated-src', animUrl);
-            console.log('[test] upgradeChatAvatars apply webp', { chName, src: animUrl });
         } catch (e) {
-            console.warn('[test] upgradeChatAvatars item exception', e);
+            console.warn('[upgradeChatAvatars] item exception', e);
         }
     });
 }
@@ -7294,7 +7283,6 @@ function fixZoomAvatarPanels() {
                         if (finalSrc !== src) {
                             img.setAttribute('src', finalSrc);
                             img.setAttribute('data-animated-src', finalSrc);
-                            console.log('[test] fixZoomAvatarPanels cleaned img src', { before: src, after: finalSrc });
                         }
                     }
                 }
@@ -7304,15 +7292,14 @@ function fixZoomAvatarPanels() {
                     const fixed = forChar.replace(/\/characters\/+/g, '/characters/').replace(/(\/characters\/){2,}/g, '/characters/');
                     if (fixed !== forChar) {
                         panel.setAttribute('forchar', fixed);
-                        console.log('[test] fixZoomAvatarPanels cleaned forchar', { before: forChar, after: fixed });
                     }
                 }
             } catch (e) {
-                console.warn('[test] fixZoomAvatarPanels panel exception', e);
+                console.warn('[fixZoomAvatarPanels] panel exception', e);
             }
         });
     } catch (e) {
-        console.warn('[test] fixZoomAvatarPanels exception', e);
+        console.warn('[fixZoomAvatarPanels] exception', e);
     }
 }
 
@@ -7331,16 +7318,15 @@ document.addEventListener('click', (ev) => {
             const ext = (v.split('.').pop() || '').toLowerCase();
             if (ext !== 'webp') return;
             const animUrl = `/characters/${encodeURIComponent(v)}`;
-            if (!t.src.includes(animUrl)) {
+                if (!t.src.includes(animUrl)) {
                 if (!t.getAttribute('data-static-src')) t.setAttribute('data-static-src', t.getAttribute('src') || '');
                 t.src = animUrl;
                 t.setAttribute('data-animated-src', animUrl);
-                console.log('[test] chat avatar click upgrade webp', { chName, src: animUrl });
             }
             // Re-run for any newly inserted clones shortly after
             setTimeout(() => { try { upgradeChatAvatars(); fixZoomAvatarPanels(); } catch (_) {} }, 50);
         } catch (e) {
-            console.warn('[test] chat avatar click handler exception', e);
+            console.warn('[chat avatar click handler] exception', e);
         }
     }
 }, { capture: true });
@@ -8075,7 +8061,6 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
             const baseStatic = c.avatar != 'none' ? getThumbnailUrl('avatar', c.avatar) : default_avatar;
             if (!videoAvatar) {
                 $('#avatar_load_preview').attr('src', baseStatic);
-                console.log('[test] select_selected_character static preview', { chid, src: baseStatic });
                 return;
             }
             const ext = (videoAvatar.split('.').pop() || '').toLowerCase();
@@ -8083,18 +8068,15 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
             if (ext === 'webp') {
                 // Animated webp can be shown directly in img tag
                 $('#avatar_load_preview').attr('src', mediaUrl);
-                console.log('[test] select_selected_character apply webp', { chid, src: mediaUrl });
             } else if (/^(mp4|webm|mkv|mov|avi)$/.test(ext)) {
                 // We only have an <img> element; fall back to static and log
                 $('#avatar_load_preview').attr('src', baseStatic);
-                console.log('[test] select_selected_character video (non-webp) fallback static', { chid, video_avatar: videoAvatar, ext, static: baseStatic });
             } else {
                 // Unknown extension; use static
                 $('#avatar_load_preview').attr('src', baseStatic);
-                console.log('[test] select_selected_character unknown ext fallback', { chid, video_avatar: videoAvatar, ext, static: baseStatic });
             }
         } catch (e) {
-            console.warn('[test] select_selected_character preview exception', e);
+            console.warn('[select_selected_character] preview exception', e);
         }
     })();
     // Ensure list/grid avatar stays/gets upgraded if needed after selection
@@ -11313,15 +11295,10 @@ jQuery(async function () {
                 const ext = (companion.split('.').pop() || '').toLowerCase();
                 if (ext === 'webp') {
                     avatarSrc = `/characters/${encodeURIComponent(companion)}`;
-                    console.log('[test] zoom choose animated webp', { charname, avatarSrc });
-                } else {
-                    console.log('[test] zoom companion non-webp skip', { charname, companion });
                 }
-            } else {
-                console.log('[test] zoom no companion', { charname });
             }
         } catch (e) {
-            console.warn('[test] zoom companion detection exception', e);
+            console.warn('[zoom] companion detection exception', e);
         }
         // Normalize duplicate /characters/ segments if any
         avatarSrc = avatarSrc.replace(/(\/characters\/){2,}/g, '/characters/');

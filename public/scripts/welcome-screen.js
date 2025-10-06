@@ -303,7 +303,7 @@ async function sendWelcomePanel(chats, expand = false) {
                         imgEl.dataset.animatedSrc = url;
                         imgEl.src = url;
                         upgraded = true;
-                        console.log('[test] recentChats upgrade companion webp', { avatarId, companion, url });
+                        
                     }
                 }
                 // Fallback probe: if original avatar is png and no explicit companion, try swapping .png->.webp
@@ -316,16 +316,16 @@ async function sendWelcomePanel(chats, expand = false) {
                         imgEl.dataset.staticSrc = imgEl.getAttribute('src') || '';
                         imgEl.dataset.animatedSrc = url;
                         imgEl.src = url;
-                        console.log('[test] recentChats probe success webp', { avatarId, probed, url });
+                        
                     };
                     probeImg.onerror = () => {
-                        console.log('[test] recentChats probe fail webp', { avatarId, probed });
+                        
                     };
                     probeImg.src = url;
                 }
             });
         } catch (e) {
-            console.log('[test] recentChats upgrade error', e);
+            
         }
     } catch (error) {
         console.error('Welcome screen error:', error);
