@@ -4,6 +4,7 @@ import {
     characters,
     chat,
     chat_metadata,
+    createOrEditCharacter,
     default_user_avatar,
     eventSource,
     event_types,
@@ -1755,7 +1756,7 @@ export async function retriggerFirstMessageOnEmptyChat() {
         await reloadCurrentChat();
     }
     if (Number(this_chid) >= 0 && chat.length === 1) {
-        $('#firstmessage_textarea').trigger('input');
+        await createOrEditCharacter();
     }
 }
 
