@@ -8730,12 +8730,16 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
-    //Hide swipe buttons.
-    hideSwipeButtons();
 
     let generation;
 
-    const mesId = Number($(this).closest('.mes').attr('mesid') ?? chat.indexOf(message) ?? chat.length - 1);
+    const messageIndex = chat.indexOf(message);
+    if (messageIndex == -1 && typeof message != 'undefined') {
+        console.error(`The message must exist in chat. ${message};`);
+        return;
+    }
+
+    const mesId = Number($(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
 
     let this_mes_div = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
 
@@ -8844,10 +8848,10 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
      * @param {number} duration
      */
     async function animateSwipeTransition(mesId, x, duration) {
-        //Select messages after mesId.
+        //Select 20 messages after mesId.
         const swiped_messages_div  = chatElement.children().filter((index, div) => {
             const $div = $(div);
-            return Number($div.attr('mesid')) >= mesId;
+            return mesId <= Number($div.attr('mesid')) && Number($div.attr('mesid')) <= mesId + 20;
         });
         const swiped_elements_div = swiped_messages_div.children('.mes_block, .mesAvatarWrapper');
 
@@ -8959,9 +8963,11 @@ export async function swipe(_event, swipe_right, { source, repeated, message = c
     }
 
     if (isHordeGenerationNotAllowed()) {
-        await endSwipe();
         return unblockGeneration();
     }
+
+    //Hide swipe buttons.
+    hideSwipeButtons();
 
 
     // Make sure ad-hoc changes to extras are saved before swiping away
