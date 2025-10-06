@@ -566,9 +566,6 @@ export class Popup {
             else value = false; // Might a custom negative value?
         }
 
-        // Cropped image should be returned as a data URL. Guard in case the cropper
-        // instance isn't available (e.g., failed init or removed). Fall back to the
-        // original image src when possible, otherwise return null.
         if (this.type === POPUP_TYPE.CROP) {
             if (result >= POPUP_RESULT.AFFIRMATIVE) {
                 try {

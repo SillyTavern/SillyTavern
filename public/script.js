@@ -6643,11 +6643,6 @@ export function getAvatarMedia(character) {
     return res;
 }
 
-// If an extension provides convertVideoToAnimatedWebp, wrap it with a logger so we can
-// trace start/finish/errors from the page console. This avoids editing the extension
-// itself but gives the visibility you asked for.
-    // Do not install a global wrapper for convertVideoToAnimatedWebp in production.
-
 /**
  * If the FormData contains an 'avatar' File that is a video, attempt to convert it to
  * an animated WebP via `globalThis.convertVideoToAnimatedWebp` (provided by an optional extension).
@@ -6879,11 +6874,8 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
             console.log('[test] probe exception', { id, error: e?.message });
         }
     }
-
-    // No post-build upgrade pass needed; build logic handled webp/video directly.
 }
 
-// Helper to update a single character's avatar in DOM after it becomes unshallowed
 function refreshCharacterAvatarInDom(chIndex) {
     const c = characters?.[chIndex];
     if (!c) return;
@@ -6954,7 +6946,6 @@ function refreshCharacterAvatarInDom(chIndex) {
 export async function unshallowCharacter(characterId) {
     if (characterId === undefined) {
         console.debug('Undefined character cannot be unshallowed');
-        console.log('[test] unshallow abort undefined id');
         return;
     }
 

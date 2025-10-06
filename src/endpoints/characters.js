@@ -966,8 +966,6 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
 
         if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
-        // Multer fields() will populate request.files as an object, but some middleware variations
-        // may leave request.files as an array. Normalize access safely.
         const filesObj = request.files;
         let avatarFile;
         let videoFile;
@@ -1033,7 +1031,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     const newChatsPath = path.join(request.user.directories.chats, newInternalName);
 
     try {
-        // Read old file, replace name in it
+        // Read old file, replace name int it
         const rawOldData = await readCharacterData(oldAvatarPath);
         if (rawOldData === undefined) throw new Error('Failed to read character file');
 
@@ -1395,7 +1393,6 @@ function getPngName(file, directories) {
     }
     return file;
 }
-
 
 /**
  * Gets the preserved name for the uploaded file if the request is valid.
