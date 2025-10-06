@@ -343,18 +343,6 @@ toastr.options = {
     },
 };
 
-// --- Global diagnostics for avatar/webp activity ---
-try {
-    // Wrap fetch to log attempts to retrieve character assets
-    const _origFetch = window.fetch.bind(window);
-    // NOTE: diagnostics wrapper removed for production; keep original fetch behavior
-    window.fetch = _origFetch;
-
-    // Observe DOM additions to find any video/img elements that reference .webp
-    // DOM diagnostics removed to avoid runtime overhead in production.
-} catch (diagErr) {
-    console.warn('[diagnostic] failed to install fetch/dom diagnostics', diagErr);
-}
 
 export const characterGroupOverlay = new BulkEditOverlay();
 
