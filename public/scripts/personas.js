@@ -1438,8 +1438,9 @@ function getPersonaTemporaryLockInfo() {
  * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether a persona was selected
  */
 async function loadPersonaForCurrentChat({ doRender = false } = {}) {
-    if (getCurrentChatId() === personaLastLoadedChatId) return;
-    personaLastLoadedChatId = getCurrentChatId();
+    const currentChatId = getCurrentChatId();
+    if (currentChatId === personaLastLoadedChatId) return;
+    personaLastLoadedChatId = currentChatId;
 
     // Cache persona list to check if they exist
     const userAvatars = await getUserAvatars(doRender);
