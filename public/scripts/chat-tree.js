@@ -1,4 +1,4 @@
-import { saveChatConditional, saveChatDebounced, updateViewMessageIds } from '../script.js';
+import { chat, saveChatConditional, saveChatDebounced, swipe, updateViewMessageIds } from '../script.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
 
@@ -14,8 +14,11 @@ export function setChatTree(newChat) {
  * Save the Chat to the chatTree.
  * @param {Array} chat
  * @param {object} chatTree
+ * @param {Object} [params={}] - Optional parameters.
+ * @param {number} [params.start=0] The first message to save. Modifying start may cause an invalid tree.
+ * @param {object} [params.end=chat.length] The last message to save, Everything below will be deleted.
  */
-export async function saveChatToTree(chat, chatTree) {
+export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.length } = {}) {
 
     chatTree ??= {};
 
@@ -33,7 +36,7 @@ export async function saveChatToTree(chat, chatTree) {
 
     const startTime = performance.now();
     // Traverse the tree following the chat's path.
-    for (const chatMessage of chat) {
+    for (const chatMessage of chat.slice(0, end + 1)) { //This will cause all branches after end to be deleted.
         console.assert(typeof branch !== 'undefined', 'The branch must exist.');
 
         //Default to the first swipe.
@@ -46,24 +49,29 @@ export async function saveChatToTree(chat, chatTree) {
 
         branch['branch'] ??= [];
 
-        // eslint-disable-next-line no-unused-vars
-        const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...chatMessage };
+        //Save only the messages between start and end.
+        if (start <= chat.indexOf(chatMessage)) {
 
-        //There must be at least as many messages as branch_id
-        console.assert(branch_id <= (chatMessage['swipes']?.length ?? 0), 'There must be at least as many messages as branch_id');
+            // eslint-disable-next-line no-unused-vars
+            const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...chatMessage };
 
-        //For each swipe, update a branch. This may run zero times.
-        chatMessage['swipes']?.forEach((swipe, i) => {
+            //There must be at least as many messages as branch_id
+            console.assert(branch_id <= (chatMessage['swipes']?.length ?? 0), 'There must be at least as many messages as branch_id');
 
-            // There must be at least a message for every swipe_info.
-            console.assert(chatMessage['swipe_info']?.length <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
+            //For each swipe, update a branch. This may run zero times.
+            chatMessage['swipes']?.forEach((swipe, i) => {
 
-            //branch = Full Message < swipe_info < Swipe message.
-            addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
-        });
+                // There must be at least a message for every swipe_info.
+                console.assert(chatMessage['swipe_info']?.length <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
 
-        //Set the full message while preserving branches.
-        addMessage(branch, branch_id, { ...swipelessMessage });
+                //branch = Full Message < swipe_info < Swipe message.
+                addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
+            });
+
+            //Set the full message while preserving branches.
+            addMessage(branch, branch_id, { ...swipelessMessage });
+        }
+
         //Follow the branch.
         branch = branch['branch'][branch_id];
     }
@@ -106,7 +114,7 @@ export async function getStickFromTree(chatTree, chat, index) {
 
         //Follow messages's swipe_id before index, then the branch's branch_id, then the first swipe.
         let branch_id;
-        branch_id = Number((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0;
+        branch_id = Number((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id'] ?? 0);
 
         //Debugging.
         // swipe_path.push(chat[i]?.['swipe_id'])
@@ -197,3 +205,53 @@ export async function updateChatTreeMessages(tree, updateFunction, attr = 'value
         }
     }
 }
+
+/**
+ * Deletes a branch if it exists.
+ * @param {object} tree
+ * @param {number} mesId
+ * @param {number} swipeId
+ */
+export async function deleteBranch(tree, chat, mesId, swipeId) {
+
+    //Track current branch
+    let branch = tree;
+
+    let i = 0;
+    while (branch['branch']?.length  >= 1) {
+
+        //Follow messages's swipe_id, then the first swipe.
+        let branch_id = Number(chat[i]?.['swipe_id'] ?? 0);
+
+        //If the branch exists.
+        if (branch['branch']?.[branch_id]) {
+
+            //Add all messages after index to chatBranch.
+            if (i == mesId) {
+
+                console.log(`Deleting branch #${swipeId} at depth ${i}`, branch['branch'][swipeId]);
+                branch['branch'].pop(swipeId);
+                break;
+            }
+
+            //Follow the branch.
+            branch = branch['branch'][branch_id];
+            i++;
+        }
+        else {
+            console.warn(`The expected branch #${branch_id} does not exist.`, branch);
+            break;
+        }
+    }
+}
+
+eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ mesId, swipeId, newSwipeId }) => {
+    if (power_user.enable_chat_tree) {
+        mesId = Number(mesId);
+        swipeId = Number(swipeId);
+        newSwipeId = Number(newSwipeId);
+        await deleteBranch(chatTree, chat, mesId, swipeId);
+        let swipe_right = swipeId <= newSwipeId;
+        await swipe(null, swipe_right,  { source: 'delete', repeated: false, force_mes_id: mesId, force_swipe_id: newSwipeId });
+    }
+});
