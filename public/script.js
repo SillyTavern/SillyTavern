@@ -11,7 +11,6 @@ import {
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
-import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -854,32 +853,34 @@ function getCharacterBlock(item, id) {
     template.attr({ 'data-chid': id, 'id': `CharID${id}` });
     const imgEl = template.find('img');
     imgEl.attr('src', this_avatar).attr('alt', item.name);
-    try {
     const videoAvatar = item?.data?.extensions && item.data.extensions['video_avatar'];
     const ext = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
-        if (videoAvatar && ext === 'webp') {
-            imgEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`).addClass('avatar-animated');
-        } else if (videoAvatar && ['webm','mp4','ogg'].includes(ext)) {
-            const videoEl = $(`<video muted autoplay loop playsinline preload="metadata" class="avatar-video"></video>`);
-            videoEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`);
-            videoEl.attr('alt', item.name);
-            imgEl.replaceWith(videoEl);
-        } else if (!videoAvatar && item?.avatar && /\.(png|jpg|jpeg)$/i.test(item.avatar)) {
-            // probe for companion webp
-            const candidate = item.avatar.replace(/\.[^.]+$/, '.webp');
-            const candidateUrl = `/characters/${encodeURIComponent(candidate)}`;
-            const probe = new Image();
-            probe.onload = () => {
-                // only swap if still showing original thumbnail
-                if (!/\.webp(\?|$)/i.test(String(imgEl.attr('src')))) {
-                    imgEl.attr('src', candidateUrl).addClass('avatar-animated');
-                }
-            };
-            probe.onerror = () => { /* probe failed */ };
-            probe.src = candidateUrl;
-        }
-    } catch (e) {
-        // swallow non-fatal errors
+    if (videoAvatar && ext === 'webp') {
+        imgEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`).addClass('avatar-animated');
+    } else if (videoAvatar && ['webm','mp4','ogg'].includes(ext)) {
+        const videoEl = document.createElement('video');
+        videoEl.muted = true;
+        videoEl.autoplay = true;
+        videoEl.loop = true;
+        videoEl.playsInline = true;
+        videoEl.preload = 'metadata';
+        videoEl.className = 'avatar-video';
+        videoEl.src = `/characters/${encodeURIComponent(videoAvatar)}`;
+        videoEl.setAttribute('alt', item.name);
+        imgEl.replaceWith(videoEl);
+    } else if (!videoAvatar && item?.avatar && /\.(png|jpg|jpeg)$/i.test(item.avatar)) {
+        // probe for companion webp
+        const candidate = item.avatar.replace(/\.[^.]+$/, '.webp');
+        const candidateUrl = `/characters/${encodeURIComponent(candidate)}`;
+        const probe = new Image();
+        probe.onload = () => {
+            // only swap if still showing original thumbnail
+            if (!/\.webp(\?|$)/i.test(String(imgEl.attr('src')))) {
+                imgEl.attr('src', candidateUrl).addClass('avatar-animated');
+            }
+        };
+        probe.onerror = () => { /* probe failed */ };
+        probe.src = candidateUrl;
     }
     template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
     template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
@@ -6617,10 +6618,10 @@ export function getAvatarMedia(character) {
     }
 
     if (character?.avatar) {
-    return { kind: 'image', url: getThumbnailUrl('avatar', character.avatar) };
+        return { kind: 'image', url: getThumbnailUrl('avatar', character.avatar) };
     }
 
-    const res = { kind: 'image', url: default_avatar };    
+    const res = { kind: 'image', url: default_avatar };
     return res;
 }
 
@@ -6700,12 +6701,12 @@ export async function convertFileIfVideo(formData) {
             console.warn('[convertFileIfVideo] thumbnail creation failed, avatar removed from form');
         }
 
-    formData.set('video_avatar', convertedWebpFile);
+        formData.set('video_avatar', convertedWebpFile);
 
     } catch (error) {
         console.error('[convertFileIfVideo] Error converting video to animated webp:', error);
         try {
-            toastr.error(t`Error converting video to animated webp`);
+            toastr.error('Error converting video to animated webp');
         } catch (e) {
             console.error('[convertFileIfVideo] toastr.error failed:', e);
         }
@@ -6762,13 +6763,12 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
     const videoAvatar = entity?.item?.data?.extensions && entity.item.data.extensions['video_avatar'];
         const videoExt = (videoAvatar && videoAvatar.split('.').pop() || '').toLowerCase();
         const supportsVideoTag = ['webm','mp4','ogg'].includes(videoExt);
-    try { } catch {}
 
         if (videoAvatar && videoExt === 'webp') {
             // Animated webp treated as plain <img>
             imgEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`).attr('alt', entity.item.name).addClass('avatar-animated');
         } else if (videoAvatar && supportsVideoTag) {
-            const videoEl = $(`<video muted autoplay loop playsinline preload="metadata" class="avatar-video"></video>`);
+            const videoEl = $('<video muted autoplay loop playsinline preload="metadata" class="avatar-video"></video>');
             videoEl.attr('src', `/characters/${encodeURIComponent(videoAvatar)}`);
             videoEl.attr('alt', entity.item.name);
             imgEl.replaceWith(videoEl);
@@ -6830,7 +6830,7 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
                         }
                     }
                 };
-                probeImg.onerror = () => { };
+                probeImg.onerror = () => { /* no-op */ };
                 probeImg.src = candidateUrl;
             } else if (videoAvatar && videoExt === 'webp' && String(this_chid) === String(id)) {
                 // Sync edit panel preview immediately
@@ -6861,7 +6861,7 @@ function refreshCharacterAvatarInDom(chIndex) {
             wrapper.appendChild(img);
         }
         const target = `/characters/${encodeURIComponent(v)}`;
-            if (!img.src.endsWith(v)) {
+        if (!img.src.endsWith(v)) {
             img.src = target;
             img.alt = c.name;
             img.classList.add('avatar-animated');
@@ -6935,8 +6935,8 @@ export async function unshallowCharacter(characterId) {
     }
 
     await getOneCharacter(avatar);
-        // After loading full data, refresh avatar in DOM if a companion media now exists
-    try { refreshCharacterAvatarInDom(characterId); } catch (e) { /* ignore */ }
+    // After loading full data, refresh avatar in DOM if a companion media now exists
+    try { refreshCharacterAvatarInDom(characterId); } catch (e) { void e; }
 }
 
 export async function getChat() {
@@ -7230,7 +7230,7 @@ function upgradeChatAvatars() {
             if (img.getAttribute('data-animated-src') === animUrl) return; // already upgraded
             if (img.src.includes(animUrl)) return; // already points there
             if (!img.getAttribute('data-static-src')) img.setAttribute('data-static-src', img.getAttribute('src') || '');
-            img.setAttribute('src', animUrl);
+            img.src = animUrl;
             img.setAttribute('data-animated-src', animUrl);
         } catch (e) {
             console.warn('[upgradeChatAvatars] item exception', e);
@@ -7289,13 +7289,13 @@ document.addEventListener('click', (ev) => {
             const ext = (v.split('.').pop() || '').toLowerCase();
             if (ext !== 'webp') return;
             const animUrl = `/characters/${encodeURIComponent(v)}`;
-                if (!t.src.includes(animUrl)) {
+            if (!t.src.includes(animUrl)) {
                 if (!t.getAttribute('data-static-src')) t.setAttribute('data-static-src', t.getAttribute('src') || '');
                 t.src = animUrl;
                 t.setAttribute('data-animated-src', animUrl);
             }
             // Re-run for any newly inserted clones shortly after
-            setTimeout(() => { try { upgradeChatAvatars(); fixZoomAvatarPanels(); } catch (_) {} }, 50);
+            setTimeout(() => { try { upgradeChatAvatars(); fixZoomAvatarPanels(); } catch (_) { /* no-op */ } }, 50);
         } catch (e) {
             console.warn('[chat avatar click handler] exception', e);
         }

@@ -959,7 +959,7 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
 
         request.body.ch_name = sanitize(request.body.ch_name);
 
-    let char = JSON.stringify(charaFormatData(request.body, request.user.directories));
+        let char = JSON.stringify(charaFormatData(request.body, request.user.directories));
         const internalName = request.body.file_name || getPngName(request.body.ch_name, request.user.directories);
         const avatarName = `${internalName}.png`;
         const chatsPath = path.join(request.user.directories.chats, internalName);
@@ -1005,7 +1005,7 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
             const uploadPath = path.join(avatarFile.destination || path.dirname(avatarFile.path), avatarFile.filename || path.basename(avatarFile.path));
 
             await writeCharacterData(uploadPath, char, internalName, request, crop);
-            try { fs.unlinkSync(uploadPath); } catch (e) { }
+            try { fs.unlinkSync(uploadPath); } catch (e) { void e; }
             return response.send(avatarName);
         }
     } catch (err) {
@@ -1112,7 +1112,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
             }
         }
 
-        const outputPngPath = path.join(request.user.directories.characters, `${targetFile}.png`);
+        
 
         // If a companion video avatar was uploaded, persist it and update data.extensions
         if (videoFile) {
@@ -1136,7 +1136,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
             invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
 
             await writeCharacterData(newAvatarPath, char, targetFile, request, tryParse(request.query.crop));
-            try { fs.unlinkSync(newAvatarPath); } catch (e) {}
+            try { fs.unlinkSync(newAvatarPath); } catch (e) { void e; }
 
             // Bust cache to reload the new avatar
             cacheBuster.bust(request, response);
@@ -1256,21 +1256,21 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
     }
 
     // Attempt to remove any companion video referenced in the PNG JSON
-        const pngJson = await readCharacterData(avatarPath);
-        if (typeof pngJson === 'string') {
-            try {
-                const parsed = JSON.parse(pngJson);
-                const videoName = parsed?.data?.extensions?.video_avatar;
-                if (videoName) {
-                    const videoPath = path.join(request.user.directories.characters, videoName);
-                    if (fs.existsSync(videoPath)) {
-                        fs.unlinkSync(videoPath);
-                    }
+    const pngJson = await readCharacterData(avatarPath);
+    if (typeof pngJson === 'string') {
+        try {
+            const parsed = JSON.parse(pngJson);
+            const videoName = parsed?.data?.extensions?.video_avatar;
+            if (videoName) {
+                const videoPath = path.join(request.user.directories.characters, videoName);
+                if (fs.existsSync(videoPath)) {
+                    fs.unlinkSync(videoPath);
                 }
-            } catch (err) {
-                console.error('Failed to parse PNG JSON while deleting companion video', err);
             }
+        } catch (err) {
+            console.error('Failed to parse PNG JSON while deleting companion video', err);
         }
+    }
 
     fs.unlinkSync(avatarPath);
     invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
@@ -1454,7 +1454,7 @@ router.post('/import', async function (request, response) {
             throw new Error(`Unsupported format: ${format}`);
         }
 
-    const fileName = await importFunction(uploadPath, { request, response }, preservedFileName);
+        const fileName = await importFunction(uploadPath, { request, response }, preservedFileName);
 
         if (!fileName) {
             console.warn('Failed to import character');

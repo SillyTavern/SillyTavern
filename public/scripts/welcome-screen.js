@@ -317,12 +317,12 @@ async function sendWelcomePanel(chats, expand = false) {
                         imgEl.src = url;
                     };
                     probeImg.onerror = () => {
+                        /* no-op */
                     };
                     probeImg.src = url;
                 }
             });
-        } catch (e) {
-        }
+    } catch (e) { /* no-op */ }
     } catch (error) {
         console.error('Welcome screen error:', error);
     }

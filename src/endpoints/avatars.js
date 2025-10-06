@@ -68,7 +68,7 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const filename = sanitize(request.body.overwrite_name || `${Date.now()}.png`);
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
-        try { fs.unlinkSync(pathToUpload); } catch (e) {}
+        try { fs.unlinkSync(pathToUpload); } catch (e) { void e; }
         return response.send({ path: filename });
     } catch (err) {
         console.error('Error uploading user avatar:', err);
