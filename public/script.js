@@ -46,6 +46,8 @@ import {
     wi_anchor_position,
     world_info_include_names,
     initWorldInfo,
+    charUpdatePrimaryWorld,
+    charSetAuxWorlds,
 } from './scripts/world-info.js';
 
 import {
@@ -391,7 +393,7 @@ let isExportPopupOpen = false;
 
 // Saved here for performance reasons
 const messageTemplate = $('#message_template .mes');
-const chatElement = $('#chat');
+export const chatElement = $('#chat');
 
 let dialogueResolve = null;
 let dialogueCloseStop = false;
@@ -677,7 +679,7 @@ async function firstLoadInit() {
     initWorldInfo();
     initHorde();
     initRossMods();
-    try { if (typeof initStats === 'function') initStats(); } catch (e) { /* no-op */ }
+    initStats();
     initCfg();
     initLogprobs();
     initInputMarkdown();
@@ -844,17 +846,37 @@ async function getHiddenBlock(hidden) {
 }
 
 function getCharacterBlock(item, id) {
+    // Populate the template (defer avatar src to unified resolver for static/animated handling)
     const template = $('#character_template .character_select').clone();
     template.attr({ 'data-chid': id, 'id': `CharID${id}` });
-    resolveAndApplyAvatar(item, template.find('.avatar'));
+    try {
+        // @ts-ignore runtime-injected by extension / avatar-media module
+        if (typeof (window).resolveAndApplyAvatar === 'function') {
+            // @ts-ignore
+            (window).resolveAndApplyAvatar(item, template.find('.avatar'), { allowVideo: false });
+        } else {
+            // Fallback to thumbnail if resolver not injected yet
+            const fallbackAvatar = (item.avatar && item.avatar !== 'none') ? getThumbnailUrl('avatar', item.avatar) : default_avatar;
+            template.find('img').attr('src', fallbackAvatar).attr('alt', item.name);
+        }
+    } catch (e) {
+        const fallbackAvatar = (item.avatar && item.avatar !== 'none') ? getThumbnailUrl('avatar', item.avatar) : default_avatar;
+        template.find('img').attr('src', fallbackAvatar).attr('alt', item.name);
+    }
     template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
     template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
-    if (power_user.show_card_avatar_urls) template.find('.ch_avatar_url').text(item.avatar);
+    if (power_user.show_card_avatar_urls) {
+        template.find('.ch_avatar_url').text(item.avatar);
+    }
     template.find('.ch_fav_icon').css('display', 'none');
     template.toggleClass('is_fav', item.fav || item.fav == 'true');
     template.find('.ch_fav').val(item.fav);
+
     const isAssistant = item.avatar === getPermanentAssistantAvatar();
-    if (!isAssistant) template.find('.ch_assistant').remove();
+    if (!isAssistant) {
+        template.find('.ch_assistant').remove();
+    }
+
     const description = item.data?.creator_notes || '';
     if (description) {
         template.find('.ch_description').text(description);
@@ -2104,21 +2126,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
-
-    // Ensure avatar media is resolved/applied immediately when a message is inserted.
-    try {
-        if (!mes?.is_user) {
-            const chObj = Array.isArray(characters) ? characters.find(c => c && c.name === mes.name) : null;
-            if (chObj) {
-                const wrapper = newMessage.find('.avatar');
-                if (wrapper && wrapper.length) {
-                    try { resolveAndApplyAvatar(chObj, wrapper); } catch (e) { console.warn('[addOneMessage] resolveAndApplyAvatar failed', e); }
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('[addOneMessage avatar upgrade]', e);
-    }
 }
 
 /**
@@ -4459,7 +4466,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
-    await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data);
+    await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data, dryRun);
 
     if (dryRun) {
         return Promise.resolve();
@@ -5043,6 +5050,8 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
 
     await populateFileAttachment(message);
     statMesProcess(message, 'user', characters, this_chid, '');
+
+    chat_metadata['tainted'] = true;
 
     if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -6470,51 +6479,39 @@ async function read_avatar_load(input) {
 
         crop_data = undefined;
         const file = input.files[0];
-        // If this is a video, skip the cropper (it expects images) and create a preview frame.
+        // Video path: generate a thumbnail frame and skip cropper entirely (cropper expects an image)
         if (file.type.startsWith('video/')) {
-            // Try to capture a single frame for preview using a video element + canvas
             try {
                 const url = URL.createObjectURL(file);
                 const video = document.createElement('video');
-                video.src = url;
-                video.muted = true;
-                video.playsInline = true;
-                await video.play().catch(() => {}); // some browsers require play() to be awaited
-
-                // Seek a bit into the video to allow rendering a frame
+                video.src = url; video.muted = true; video.playsInline = true;
+                await video.play().catch(() => {});
                 const seekTime = Math.min(0.5, video.duration || 0);
-                await new Promise((resolve) => {
-                    if (isNaN(seekTime) || seekTime === 0) return resolve();
-                    const handler = () => { video.removeEventListener('seeked', handler); resolve(); };
-                    video.addEventListener('seeked', handler);
-                    video.currentTime = seekTime;
-                }).catch(() => {});
-
+                if (seekTime > 0) {
+                    await new Promise(resolve => {
+                        const handler = () => { video.removeEventListener('seeked', handler); resolve(); };
+                        video.addEventListener('seeked', handler); video.currentTime = seekTime;
+                    }).catch(()=>{});
+                }
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth || 256;
                 canvas.height = video.videoHeight || 256;
-                const ctx = canvas.getContext('2d');
-                if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const ctx2 = canvas.getContext('2d');
+                if (ctx2) ctx2.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/png');
                 $('#avatar_load_preview').attr('src', dataUrl);
                 URL.revokeObjectURL(url);
-                // Do not set crop_data; video uploads will be converted client-side before upload
             } catch (err) {
-                console.warn('Failed to generate preview from video:', err);
-                // Clear preview to avoid stale image
+                console.warn('[read_avatar_load] video preview generation failed', err);
                 $('#avatar_load_preview').attr('src', default_avatar);
             }
         } else {
+            // Image path: original behavior with optional crop
             const fileData = await getBase64Async(file);
-
             if (!power_user.never_resize_avatars) {
                 const dlg = new Popup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: fileData });
                 const croppedImage = await dlg.show();
-
-                if (!croppedImage) {
-                    return;
-                }
-
+                if (!croppedImage) { return; }
                 crop_data = dlg.cropData;
                 $('#avatar_load_preview').attr('src', String(croppedImage));
             } else {
@@ -6566,335 +6563,25 @@ export function getThumbnailUrl(type, file, t = false) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}${t ? `&t=${Date.now()}` : ''}`;
 }
 
-/**
- * Returns media info for a character avatar. If the parsed character object
- * contains a companion video avatar (data.extensions.video_avatar) this will
- * return kind:'video' and a direct URL to the static `/characters/<video>` path.
- * Otherwise returns kind:'image' with a thumbnail URL.
- * @param {object|string} character Either the parsed character object or avatar filename string
- */
-export function getAvatarMedia(character) {
-    // If caller passed a filename, just return the thumbnail URL
-    if (typeof character === 'string') {
-        const res = { kind: 'image', url: getThumbnailUrl('avatar', character) };
-        return res;
-    }
-
-    const vid = character?.data?.extensions?.video_avatar;
-    if (vid && typeof vid === 'string') {
-        // If the companion file is an animated WebP, treat it as an (animated) image
-        // rather than a video element. Browsers don't decode image/webp as a video
-        // media type, which causes "Failed to init decoder" errors.
-        const ext = (vid.split('.').pop() || '').toLowerCase();
-        const url = `/characters/${encodeURIComponent(vid)}`;
-        if (ext === 'webp') return { kind: 'image', url, animated: true };
-        return { kind: 'video', url, ext };
-    }
-
-    if (character?.avatar) {
-        return { kind: 'image', url: getThumbnailUrl('avatar', character.avatar) };
-    }
-
-    const res = { kind: 'image', url: default_avatar };
-    return res;
-}
-
-const AVATAR_VIDEO_EXTS = ['webm', 'mp4', 'ogg'];
-const AVATAR_ANIMATED_IMAGE_EXTS = ['webp'];
-const avatarProbeCache = new Map();
-
-function normalizeCharactersUrl(url) {
-    return url ? url.replace(/(\/characters\/){2,}/g, '/characters/') : url;
-}
-
-function resolveCharacterAvatar(character) {
-    const base = getAvatarMedia(character) || {};
-    /** @type {any} */
-    const result = {
-        kind: base.kind || 'image',
-        url: base.url || default_avatar,
-        staticUrl: undefined,
-        ext: '',
-        tag: 'img',
-        animated: !!base.animated,
-        needsProbe: false,
-        alt: (typeof character === 'object' ? character?.name : '') || 'avatar',
-    };
-    result.ext = (result.url.split('.').pop() || '').toLowerCase();
-    result.tag = (result.kind === 'video' && AVATAR_VIDEO_EXTS.includes(result.ext)) ? 'video' : 'img';
-    if (typeof character === 'object' && character?.avatar && character.avatar !== 'none') {
-        result.staticUrl = getThumbnailUrl('avatar', character.avatar);
-    } else {
-        result.staticUrl = default_avatar;
-    }
-    result.animated = AVATAR_ANIMATED_IMAGE_EXTS.includes(result.ext) || result.tag === 'video';
-    if (typeof character === 'object' && !character?.data?.extensions?.video_avatar) {
-        const av = character?.avatar || '';
-        result.needsProbe = /\.(png|jpe?g)$/i.test(av);
-    }
-    return result;
-}
-
-function applyAvatarMedia(container, character, { allowVideo = true } = {}) {
-    if (!container) return null;
-    const $wrapper = (window.jQuery && container instanceof jQuery) ? container : $(container);
-    const media = resolveCharacterAvatar(character);
-    let el = $wrapper.find('img,video').first();
-    const desiredTag = (media.tag === 'video' && allowVideo) ? 'video' : 'img';
-    if (!el.length || String(el.prop('tagName')).toLowerCase() !== desiredTag) {
-        const newEl = $(document.createElement(desiredTag));
-        if (el.length) {
-            el.replaceWith(newEl);
-        } else {
-            $wrapper.append(newEl);
-        }
-        el = newEl;
-    }
-    const domEl = el.get(0);
-    const chosenUrl = normalizeCharactersUrl((desiredTag === 'video' && allowVideo) ? media.url : (media.tag === 'video' ? media.staticUrl : media.url));
-    if (domEl.getAttribute('src') !== chosenUrl) {
-        domEl.setAttribute('src', chosenUrl);
-    }
-    domEl.setAttribute('alt', media.alt);
-    el.toggleClass('avatar-video', desiredTag === 'video');
-    el.toggleClass('avatar-animated', media.animated && desiredTag === 'img');
-    el.attr({
-        'data-avatar-kind': media.kind,
-        'data-avatar-src': chosenUrl,
-        'data-avatar-animated': String(media.animated),
-    });
-    if (desiredTag === 'video') {
-        domEl.muted = true;
-        domEl.autoplay = true;
-        domEl.loop = true;
-        domEl.playsInline = true;
-        domEl.setAttribute('preload', 'metadata');
-    }
-    if (desiredTag === 'img' && media.animated && media.staticUrl && media.staticUrl !== chosenUrl) {
-        domEl.onerror = () => {
-            if (domEl.getAttribute('src') !== media.staticUrl) {
-                domEl.setAttribute('src', media.staticUrl);
-                el.removeClass('avatar-animated');
-            }
-        };
-    }
-    return domEl;
-}
-
-function maybeProbeForAnimatedWebp(character, container) {
-    if (!character || typeof character !== 'object') return;
-    if (character?.data?.extensions?.video_avatar) return; // already explicit
-    const avatar = character.avatar;
-    if (!/\.(png|jpe?g)$/i.test(String(avatar))) return;
-    const base = String(avatar).replace(/\.[^.]+$/, '');
-    if (avatarProbeCache.has(base)) return;
-    const candidate = `${base}.webp`;
-    const candidateUrl = normalizeCharactersUrl(`/characters/${encodeURIComponent(candidate)}`);
-    avatarProbeCache.set(base, false);
-    const probeImg = new Image();
-    probeImg.onload = () => {
-        avatarProbeCache.set(base, true);
-        const fakeCharacter = {
-            ...character,
-            data: {
-                ...(character.data || {}),
-                extensions: { ...(character.data?.extensions || {}), video_avatar: candidate },
-            },
-        };
-        applyAvatarMedia(container, fakeCharacter, {});
-        if (String(this_chid) === String(characters.indexOf(character))) {
-            const preview = document.getElementById('avatar_load_preview');
-            if (preview && !/\.webp(\?|$)/i.test(preview.getAttribute('src') || '')) {
-                preview.setAttribute('src', candidateUrl);
-            }
-        }
-    };
-    probeImg.onerror = () => { avatarProbeCache.set(base, false); };
-    probeImg.src = candidateUrl;
-}
-
-function resolveAndApplyAvatar(character, container, { allowVideo = true } = {}) {
-    applyAvatarMedia(container, character, { allowVideo });
-    maybeProbeForAnimatedWebp(character, container);
-}
-
-// MutationObserver to catch avatar wrappers inserted by dynamic code and auto-resolve their media.
-function initChatAvatarObserver() {
-    try {
-        const chatEl = document.getElementById('chat');
-        if (!chatEl) return;
-        if (chatEl.__avatarObserver) return; // already initialized
-
-        const pending = new Set();
-        const flush = debounce(() => {
-            for (const el of Array.from(pending)) {
-                try {
-                    const mes = el.closest('.mes');
-                    const chName = mes && mes.getAttribute && mes.getAttribute('ch_name');
-                    if (!chName) continue;
-                    const ch = Array.isArray(characters) ? characters.find(c => c && c.name === chName) : null;
-                    if (ch) resolveAndApplyAvatar(ch, el);
-                } catch (e) {
-                    console.warn('[initChatAvatarObserver flush] item upgrade failed', e);
-                }
-            }
-            pending.clear();
-        }, 30);
-
-        const obs = new MutationObserver(mutations => {
-            for (const m of mutations) {
-                for (const n of Array.from(m.addedNodes || [])) {
-                    if (!(n instanceof HTMLElement)) continue;
-                    if (n.matches && n.matches('.mesAvatarWrapper .avatar')) {
-                        pending.add(n);
-                    } else if (n.querySelectorAll) {
-                        n.querySelectorAll('.mesAvatarWrapper .avatar').forEach(a => pending.add(a));
-                    }
-                }
-            }
-            if (pending.size) flush();
-        });
-
-        obs.observe(chatEl, { childList: true, subtree: true });
-        chatEl.__avatarObserver = obs;
-    } catch (e) {
-        console.warn('[initChatAvatarObserver] failed to initialize', e);
-    }
-}
-
-// Expose helpers for other legacy scripts (e.g., welcome screen) without converting everything to modules yet
-if (typeof window !== 'undefined') {
-    // @ts-ignore
-    window.resolveAndApplyAvatar = resolveAndApplyAvatar;
-    // @ts-ignore expose normalization in case external code wants it
-    window.normalizeCharactersUrl = normalizeCharactersUrl;
-}
-
-/**
- * If the FormData contains an 'avatar' File that is a video, attempt to convert it to
- * an animated WebP via `globalThis.convertVideoToAnimatedWebp` (provided by an optional extension).
- * Replaces the 'avatar' entry in the FormData with the converted WebP File.
- * If conversion isn't available, shows a warning to the user and leaves the FormData unchanged.
- * @param {FormData} formData
- */
-export async function convertFileIfVideo(formData) {
-    const file = formData.get('avatar');
-    if (!(file instanceof File)) return;
-    if (!file.type.startsWith('video/')) return;
-    if (typeof globalThis.convertVideoToAnimatedWebp !== 'function') {
-        toastr.warning(t`Click here to install the Video Background Loader extension`, t`Video background uploads require a downloadable add-on`, {
-            timeOut: 0,
-            extendedTimeOut: 0,
-            onclick: () => window.open('https://github.com/SillyTavern/Extension-VideoBackgroundLoader'),
-        });
-        return;
-    }
-    let toastMessage = null;
-    try {
-        toastMessage = toastr.info(t`Preparing video for upload. This may take several minutes.`, t`Please wait`, { timeOut: 0, extendedTimeOut: 0 });
-
-        const sourceBuffer = await file.arrayBuffer();
-
-        // Convert to animated WebP via extension
-        const convertedBuffer = await globalThis.convertVideoToAnimatedWebp({ buffer: new Uint8Array(sourceBuffer), name: file.name });
-
-        const convertedFileName = file.name.replace(/\.[^/.]+$/, '.webp');
-        const webpBlob = new Blob([convertedBuffer], { type: 'image/webp' });
-        const convertedWebpFile = new File([webpBlob], convertedFileName, { type: 'image/webp' });
-
-        // Create a PNG thumbnail from the first frame so server receives a Jimp-decodable image
-        let thumbnailFile = null;
-        try {
-            const url = URL.createObjectURL(file);
-            const video = document.createElement('video');
-            video.src = url;
-            video.muted = true;
-            video.playsInline = true;
-            // try play to ensure metadata loaded
-            await video.play().catch(() => {});
-            // seek to 0.5s or start
-            const seekTime = Math.min(0.5, video.duration || 0);
-            await new Promise((resolve) => {
-                if (isNaN(seekTime) || seekTime === 0) return resolve();
-                const handler = () => { video.removeEventListener('seeked', handler); resolve(); };
-                video.addEventListener('seeked', handler);
-                video.currentTime = seekTime;
-            }).catch(() => {});
-            const canvas = document.createElement('canvas');
-            const thumbW = 256;
-            const thumbH = Math.round((video.videoHeight / video.videoWidth) * thumbW) || 256;
-            canvas.width = thumbW;
-            canvas.height = thumbH;
-            const ctx = canvas.getContext('2d');
-            if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/png');
-            const res = await fetch(dataUrl);
-            const pngBlob = await res.blob();
-            const thumbName = file.name.replace(/\.[^/.]+$/, '.png');
-            thumbnailFile = new File([pngBlob], thumbName, { type: 'image/png' });
-            URL.revokeObjectURL(url);
-        } catch (thumbErr) {
-            console.warn('Failed to generate thumbnail from video:', thumbErr);
-        }
-
-        // Put both files into FormData: thumbnail as avatar, converted webp as video_avatar
-        if (thumbnailFile) {
-            formData.set('avatar', thumbnailFile);
-        } else {
-            // If thumbnail creation failed, remove avatar to avoid invalid upload
-            formData.delete('avatar');
-            console.warn('[convertFileIfVideo] thumbnail creation failed, avatar removed from form');
-        }
-
-        formData.set('video_avatar', convertedWebpFile);
-
-    } catch (error) {
-        console.error('[convertFileIfVideo] Error converting video to animated webp:', error);
-        try {
-            toastr.error('Error converting video to animated webp');
-        } catch (e) {
-            console.error('[convertFileIfVideo] toastr.error failed:', e);
-        }
-        // remove avatar so upload won't attempt to send invalid content
-        try { formData.delete('avatar'); } catch (e) { console.warn('[convertFileIfVideo] failed to delete avatar from FormData', e); }
-    } finally {
-        // Ensure the persistent toast is cleared in all cases. Use toastr.clear where available.
-        try {
-            if (toastMessage) {
-                if (typeof toastr.clear === 'function') {
-                    toastr.clear(toastMessage);
-                } else if (toastMessage.remove) {
-                    toastMessage.remove();
-                } else {
-                    try { toastr.clear(); } catch (e) { console.warn('[convertFileIfVideo] toastr.clear() threw', e); }
-                }
-            }
-        } catch (e) {
-            console.warn('[convertFileIfVideo] failed to clear toast:', e);
-        }
-    }
-}
-
 export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, interactable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
     }
 
-    console.debug('[buildAvatarList] called', { templateId, empty, interactable, highlightFavs, entitiesLength: Array.isArray(entities) ? entities.length : 0 });
-
     for (const entity of entities) {
         const id = entity.id;
 
-        try {
-            const name = entity?.item?.name;
-            console.debug('[buildAvatarList] entity start', { id, type: entity.type, name });
-        } catch (e) {
-            console.debug('[buildAvatarList] entity start (failed to read)', { id });
+        // Populate the template
+        const avatarTemplate = $(`#${templateId} .avatar`).clone();
+
+        let this_avatar = default_avatar;
+        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
+            this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
         }
 
-        const avatarTemplate = $(`#${templateId} .avatar`).clone();
-        avatarTemplate.attr('data-type', entity.type).attr('data-chid', id);
-        resolveAndApplyAvatar(entity.item, avatarTemplate);
+        avatarTemplate.attr('data-type', entity.type);
+        avatarTemplate.attr('data-chid', id);
+        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
         avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
         if (highlightFavs) {
             avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
@@ -6924,16 +6611,6 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
         }
 
         block.append(avatarTemplate);
-    }
-}
-
-function refreshCharacterAvatarInDom(chIndex) {
-    const c = characters?.[chIndex];
-    if (!c) return; const wrapper = document.querySelector(`.avatar[data-chid="${chIndex}"]`);
-    if (!wrapper) return; resolveAndApplyAvatar(c, wrapper);
-    if (String(this_chid) === String(chIndex)) {
-        const preview = document.getElementById('avatar_load_preview');
-        if (preview) { resolveAndApplyAvatar(c, $(preview).parent(), { allowVideo: false }); }
     }
 }
 
@@ -6967,8 +6644,6 @@ export async function unshallowCharacter(characterId) {
     }
 
     await getOneCharacter(avatar);
-    // After loading full data, refresh avatar in DOM if a companion media now exists
-    try { refreshCharacterAvatarInDom(characterId); } catch (e) { void e; }
 }
 
 export async function getChat() {
@@ -7029,8 +6704,6 @@ async function getChatResult() {
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
-    // Upgrade any static chat avatars to animated webp (if available)
-    try { upgradeChatAvatars(); } catch (e) { /* ignore post-print upgrade errors */ }
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
@@ -7239,53 +6912,6 @@ function reloadLoop() {
         window.location.reload();
     }
 }
-
-// Replace static PNG chat avatars with their animated webp companions where possible
-function upgradeChatAvatars() {
-    if (!Array.isArray(characters) || !characters.length) return;
-    const wrappers = document.querySelectorAll('.mes[is_user="false"] .mesAvatarWrapper .avatar');
-    wrappers.forEach(w => {
-        try {
-            const mes = w.closest('.mes');
-            const chName = mes && mes.getAttribute('ch_name');
-            if (!chName) return;
-            const character = characters.find(c => c?.name === chName);
-            if (!character) return;
-            resolveAndApplyAvatar(character, w);
-        } catch (e) {
-            console.warn('[upgradeChatAvatars] wrapper exception', e);
-        }
-    });
-}
-
-// Normalize zoom popup avatar paths (avoid duplicated /characters/ prefixes)
-function fixZoomAvatarPanels() {
-    try {
-        document.querySelectorAll('.zoomed_avatar').forEach(panel => {
-            try {
-                const img = panel.querySelector('.zoomed_avatar_img');
-                if (img) {
-                    const src = img.getAttribute('src') || '';
-                    const finalSrc = normalizeCharactersUrl(src);
-                    if (finalSrc !== src) {
-                        img.setAttribute('src', finalSrc);
-                        img.setAttribute('data-animated-src', finalSrc);
-                    }
-                }
-                const forChar = panel.getAttribute('forchar');
-                if (forChar) {
-                    const fixed = normalizeCharactersUrl(forChar);
-                    if (fixed !== forChar) panel.setAttribute('forchar', fixed);
-                }
-            } catch (e) {
-                console.warn('[fixZoomAvatarPanels] panel exception', e);
-            }
-        });
-    } catch (e) {
-        console.warn('[fixZoomAvatarPanels] exception', e);
-    }
-}
-
 
 //MARK: getSettings()
 ///////////////////////////////////////////
@@ -8009,18 +7635,39 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
 
     updateFavButtonState(characters[chid].fav || characters[chid].fav == 'true');
 
-    // Unified avatar preview (static thumbnail or animated webp). We deliberately disallow <video>
+    // Preview: use unified resolver (no <video> tag) instead of always static PNG
     try {
-        const cObj = characters?.[chid];
         const previewImg = document.getElementById('avatar_load_preview');
-        if (cObj && previewImg && previewImg.parentElement) {
-            resolveAndApplyAvatar(cObj, previewImg.parentElement, { allowVideo: false });
+        if (previewImg && previewImg.parentElement) {
+            // @ts-ignore runtime-injected by extension/avatar-media module
+            if (typeof (window).resolveAndApplyAvatar === 'function') {
+                // @ts-ignore
+                (window).resolveAndApplyAvatar(characters[chid], previewImg.parentElement, { allowVideo: false });
+            } else {
+                const avatarUrl = characters[chid].avatar != 'none' ? getThumbnailUrl('avatar', characters[chid].avatar) : default_avatar;
+                $('#avatar_load_preview').attr('src', avatarUrl);
+            }
+            // Retry loop in case video_avatar metadata arrives slightly after selection (unshallow async)
+            if (!previewImg.getAttribute('data-vaf-preview-loop')) {
+                previewImg.setAttribute('data-vaf-preview-loop', '1');
+                let attempts = 0; const maxAttempts = 25; // ~2.5s @100ms
+                (function retry(){
+                    attempts++;
+                    try {
+                        const ch = characters[chid];
+                        const vid = ch?.data?.extensions?.video_avatar;
+                        // @ts-ignore
+                        if (vid && /\.webp$/i.test(vid) && typeof (window).resolveAndApplyAvatar === 'function') {
+                            // @ts-ignore
+                            (window).resolveAndApplyAvatar(ch, previewImg.parentElement, { allowVideo: false });
+                            return; // success
+                        }
+                    } catch(e) { /* silent */ }
+                    if (attempts < maxAttempts) setTimeout(retry, 100);
+                })();
+            }
         }
-    } catch (e) {
-        console.warn('[select_selected_character] preview exception', e);
-    }
-    // Ensure list/grid avatar stays/gets upgraded if needed after selection
-    try { refreshCharacterAvatarInDom(chid); } catch (_) { /* no-op */ }
+    } catch (e) { console.warn('[select_selected_character preview]', e); }
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
     setWorldInfoButtonClass(chid);
@@ -8145,6 +7792,11 @@ export function setExtensionPrompt(key, value, position, depth, scan = false, ro
  * @returns {number} The role id of the extension prompt.
  */
 export function getExtensionPromptRoleByName(roleName) {
+    // If the role is already a valid number, return it
+    if (typeof roleName === 'number' && Object.values(extension_prompt_roles).includes(roleName)) {
+        return roleName;
+    }
+
     switch (roleName) {
         case 'system':
             return extension_prompt_roles.SYSTEM;
@@ -8171,9 +7823,9 @@ export function removeDepthPrompts() {
 }
 
 /**
- * Adds or updates chat metadata values.
- * @param {Object} newValues Key-value pairs to merge.
- * @param {boolean} reset If true replaces the entire metadata object.
+ * Adds or updates the metadata for the currently active chat.
+ * @param {Object} newValues An object with collection of new values to be added into the metadata.
+ * @param {boolean} reset Should a metadata be reset by this call.
  */
 export function updateChatMetadata(newValues, reset) {
     chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
@@ -8356,44 +8008,45 @@ export function hideSwipeButtons() {
 /**
  * Deletes a swipe from the chat.
  *
- * @param {number?} swipeId - The ID of the swipe to delete. If not provided, the current swipe will be deleted.
+ * @param {number?} [swipeId = null] - The ID of the swipe to delete. If not provided, the current swipe will be deleted.
+ * @param {number?} [messageId = chat.length - 1] - The ID of the message to delete from. If not provided, the last message will be targeted.
  * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
  */
-export async function deleteSwipe(swipeId = null) {
+export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
         toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
         return;
     }
 
-    const lastMessage = chat[chat.length - 1];
-    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
+    const message = chat[messageId];
+    if (!message || !Array.isArray(message.swipes) || !message.swipes.length) {
         toastr.warning(t`No messages to delete swipes from.`);
         return;
     }
 
-    if (lastMessage.swipes.length <= 1) {
+    if (message.swipes.length <= 1) {
         toastr.warning(t`Can't delete the last swipe.`);
         return;
     }
 
-    swipeId = swipeId ?? lastMessage.swipe_id;
+    swipeId = swipeId ?? message.swipe_id;
 
-    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+    if (swipeId < 0 || swipeId >= message.swipes.length) {
         toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
         return;
     }
 
-    lastMessage.swipes.splice(swipeId, 1);
+    message.swipes.splice(swipeId, 1);
 
-    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
-        lastMessage.swipe_info.splice(swipeId, 1);
+    if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
+        message.swipe_info.splice(swipeId, 1);
     }
 
     // Select the next swipe, or the one before if it was the last one
-    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
-    syncSwipeToMes(null, newSwipeId);
+    const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
+    syncSwipeToMes(messageId, newSwipeId);
 
-    await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { swipeId, newSwipeId });
+    await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
 
     await saveChatConditional();
     await reloadCurrentChat();
@@ -8567,61 +8220,16 @@ async function openCharacterWorldPopup() {
         const selectedValue = $(this).val();
         const worldIndex = selectedValue !== '' ? Number(selectedValue) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
-        const previousValue = $('#character_world').val();
-        $('#character_world').val(name);
-
-        console.debug('Character world selected:', name);
-
-        if (menu_type == 'create') {
-            create_save.world = name;
-        } else {
-            if (previousValue && !name) {
-                try {
-                    // Dirty hack to remove embedded lorebook from character JSON data.
-                    const data = JSON.parse(String($('#character_json_data').val()));
-
-                    if (data?.data?.character_book) {
-                        data.data.character_book = undefined;
-                    }
-
-                    $('#character_json_data').val(JSON.stringify(data));
-                    toastr.info(t`Embedded lorebook will be removed from this character.`);
-                } catch {
-                    console.error('Failed to parse character JSON data.');
-                }
-            }
-
-            await createOrEditCharacter();
-        }
-
-        setWorldInfoButtonClass(undefined, !!name);
+        await charUpdatePrimaryWorld(name);
     }
 
-    function handleExtrasWorldSelect() {
-        const selectedValues = $(this).val();
-        const selectedWorlds = Array.isArray(selectedValues) ? selectedValues : [];
-        let charLore = world_info.charLore ?? [];
-        const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter(Boolean);
-        const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
-
-        if (menu_type == 'create') {
-            create_save.extra_books = tempExtraBooks;
-            return;
-        }
-
-        if (existingCharIndex === -1) {
-            // Add record only if at least 1 lorebook is selected.
-            if (tempExtraBooks.length > 0) {
-                charLore.push({ name: fileName, extraBooks: tempExtraBooks });
-            }
-        } else if (tempExtraBooks.length === 0) {
-            charLore.splice(existingCharIndex, 1);
-        } else {
-            charLore[existingCharIndex].extraBooks = tempExtraBooks;
-        }
-
-        Object.assign(world_info, { charLore: charLore });
-        saveSettingsDebounced();
+    function handleExtrasWorldSelect(evt) {
+        const el = evt?.currentTarget ?? this;
+        const selectedValues = $(el).val();
+        const selected = Array.isArray(selectedValues) ? selectedValues : [];
+        const fileName = getCharaFilename(null, {});
+        const nextList = selected.map(i => world_names[i]).filter(Boolean);
+        charSetAuxWorlds(fileName, nextList);
     }
 
     // --- Populate Dropdowns ---
@@ -8744,7 +8352,7 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
  * Creates or edits a character based on the form data.
  * @param {Event} [e] Event that triggered the function call.
  */
-async function createOrEditCharacter(e) {
+export async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
     const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
     formData.set('fav', String(fav_ch_checked));
@@ -8755,9 +8363,6 @@ async function createOrEditCharacter(e) {
         const convertedFile = await ensureImageFormatSupported(rawFile);
         formData.set('avatar', convertedFile);
     }
-
-    // If the avatar is a video, convert it to an animated WebP via extension before upload
-    await convertFileIfVideo(formData);
 
     const headers = getRequestHeaders({ omitContentType: true });
 
@@ -9386,9 +8991,6 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     formData.append('file_type', format);
     if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
-    // Convert video files to animated WebP if the extension is a video (extension handled in convertFileIfVideo)
-    await convertFileIfVideo(formData);
-
     try {
         const result = await fetch('/api/characters/import', {
             method: 'POST',
@@ -9476,7 +9078,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
 
     if (selected_group) {
         await createNewGroupChat(selected_group);
-        if (deleteCurrentChat) await deleteGroupChat(selected_group, chat_file_for_del);
+        if (deleteCurrentChat) await deleteGroupChat(selected_group, chat_file_for_del, { jumpToNewChat: false }); // don't jump, new chat was already created and jumped to above
     }
     else {
         //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
@@ -9982,8 +9584,6 @@ jQuery(async function () {
     $(document).on('click', '.last_mes .swipe_left', swipe_left);
 
     initCharacterSearch();
-    // Initialize the MutationObserver to auto-upgrade newly inserted avatars
-    try { initChatAvatarObserver(); } catch (e) { console.warn('[init] initChatAvatarObserver failed', e); }
 
     $('#mes_impersonate').on('click', function () {
         $('#option_impersonate').trigger('click');
@@ -10953,7 +10553,7 @@ jQuery(async function () {
         if (deleteOnlySwipe) {
             const message = chat[this_edit_mes_id];
             const swipe_id = message.swipe_id;
-            await deleteSwipe(swipe_id);
+            await deleteSwipe(swipe_id, Number(this_edit_mes_id));
             return;
         }
 
@@ -11206,63 +10806,96 @@ jQuery(async function () {
 
     $(document).on('click', '.mes .avatar', function () {
         const messageElement = $(this).closest('.mes');
-        const thumbURL = $(this).children('img').attr('src');
-        const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf('=') + 1);
-        const charname = targetAvatarImg.replace('.png', '');
-        const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
+        const $imgChild = $(this).children('img').first();
+        const $videoChild = $(this).children('video').first();
+        let thumbURL;
+        try {
+            thumbURL = ($imgChild && $imgChild.length && $imgChild.attr('src')) || ($videoChild && $videoChild.length && $videoChild.attr('src')) || ($imgChild && $imgChild.length && ($imgChild.attr('data-animated-src') || $imgChild.attr('data-izoomify-url') || $imgChild.attr('data-video-src')));
+        } catch (e) { thumbURL = undefined; }
+        if (!thumbURL) return;
+        // Determine character via message attribute (preferred) else fallback to old extraction
+        const chNameAttr = messageElement.attr('ch_name');
+        let charObj = Array.isArray(characters) ? characters.find(c => c && c.name === chNameAttr) : null;
+        // Legacy extraction (from thumbnail query param) if ch_name not present
+        const candidateFromQuery = thumbURL.includes('=') ? thumbURL.substring(thumbURL.lastIndexOf('=') + 1) : thumbURL.split('/').pop();
+        if (!charObj && candidateFromQuery) {
+            charObj = Array.isArray(characters) ? characters.find(c => c && (c.avatar === decodeURIComponent(candidateFromQuery) || c.name === candidateFromQuery.replace(/\.(png|webp|jpg|jpeg)$/i,''))) : null;
+        }
+        const isCharacter = !!charObj;
+        // Build stable base name for forChar attribute (avoid embedding /characters/ path there)
+        const baseForChar = charObj ? (charObj.avatar ? charObj.avatar.replace(/\.[^.]+$/,'') : charObj.name) : (candidateFromQuery || '').replace(/\.[^.]+$/,'').replace(/^.*\//,'');
+        // Normalized avatarSrc fallback if we cannot use resolver
+        const normalizedThumbIsCharacters = /^\/characters\//.test(thumbURL);
+        const avatarSrcFallback = normalizedThumbIsCharacters ? thumbURL.replace(/(\/characters\/)+/g,'/characters/') : (/^\/img\//.test(thumbURL) || isDataURL(thumbURL) ? thumbURL : '/characters/' + candidateFromQuery);
+        const isValidCharacter = isCharacter; // replaces previous heuristic
 
         // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
         if (!power_user.movingUI) {
             $('.zoomed_avatar').each(function () {
                 const currentForChar = $(this).attr('forChar');
-                if (currentForChar !== charname && typeof currentForChar !== 'undefined') {
+                if (currentForChar && currentForChar !== baseForChar) {
                     console.debug(`Removing zoomed avatar for character: ${currentForChar}`);
                     $(this).remove();
                 }
             });
         }
 
-        // Determine associated character/persona data
-        const characterObj = characters.find(c => c && c.avatar === decodeURIComponent(targetAvatarImg));
-        if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
+        if ($(`.zoomed_avatar[forChar="${baseForChar}"]`).length) {
             console.debug('removing container as it already existed');
-            $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+            $(`.zoomed_avatar[forChar="${baseForChar}"]`).fadeOut(animation_duration, () => {
+                $(`.zoomed_avatar[forChar="${baseForChar}"]`).remove();
             });
         } else {
             console.debug('making new container from template');
             const template = $('#zoomed_avatar_template').html();
             const newElement = $(template);
-            newElement.attr('forChar', charname);
-            newElement.attr('id', `zoomFor_${charname}`);
+            newElement.attr('forChar', baseForChar);
+            newElement.attr('id', `zoomFor_${baseForChar}`);
             newElement.addClass('draggable');
-            newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
+            newElement.find('.drag-grabber').attr('id', `zoomFor_${baseForChar}header`);
 
             $('body').append(newElement);
             newElement.fadeIn(animation_duration);
-            const zoomWrapper = $(`.zoomed_avatar[forChar="${charname}"] .zoomed_avatar_img`).parent();
-            if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) {
-                // user/system persona: just mirror the existing img src (no probing / video)
-                const zoomImg = $(`.zoomed_avatar[forChar="${charname}"] img`);
-                const personaSrc = (() => {
-                    const isValidPersona = decodeURIComponent(targetAvatarImg) in power_user.personas;
-                    if (isValidPersona) return getUserAvatar(targetAvatarImg);
-                    return thumbURL;
-                })();
-                zoomImg.attr('src', personaSrc);
-                zoomImg.attr('data-izoomify-url', personaSrc);
-            } else if (messageElement.attr('is_user') == 'false' && characterObj) {
-                // character avatar: reuse unified resolver (allowVideo false: zoom panel wants static/animated image only)
-                resolveAndApplyAvatar(characterObj, zoomWrapper, { allowVideo: false });
-                const applied = $(`.zoomed_avatar[forChar="${charname}"] img, .zoomed_avatar[forChar="${charname}"] video`).first();
-                const appliedSrc = applied.attr('src') || '';
-                $(`.zoomed_avatar[forChar="${charname}"] img, .zoomed_avatar[forChar="${charname}"] video`).attr('data-izoomify-url', appliedSrc);
-                if (appliedSrc.endsWith('.webp')) {
-                    applied.attr('data-animated-src', appliedSrc);
+            const zoomWrapper = $(`.zoomed_avatar[forChar="${baseForChar}"] .zoomed_avatar_container`);
+            const imgEl = $(`.zoomed_avatar[forChar="${baseForChar}"] img`);
+            const isUserMsg = messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter);
+            if (isUserMsg) {
+                // user/system: keep previous logic but fix duplication
+                const isValidPersona = candidateFromQuery && (decodeURIComponent(candidateFromQuery) in power_user.personas);
+                const personaSrc = isValidPersona ? getUserAvatar(candidateFromQuery) : thumbURL;
+                imgEl.attr('src', personaSrc).attr('data-izoomify-url', personaSrc);
+            } else if (isCharacter && charObj) {
+                // Character: prefer unified resolver (allowVideo false for static/animated image element only)
+                try {
+                    // @ts-ignore
+                    if (typeof (window).resolveAndApplyAvatar === 'function') {
+                        // @ts-ignore apply to container so resolver can create/replace img if needed
+                        (window).resolveAndApplyAvatar(charObj, zoomWrapper.length ? zoomWrapper.get(0) : imgEl.parent().get(0), { allowVideo: false });
+                        const applied = $(`.zoomed_avatar[forChar="${baseForChar}"] img, .zoomed_avatar[forChar="${baseForChar}"] video`).first();
+                        const src = applied.attr('src') || '';
+                        applied.attr('data-izoomify-url', src);
+                        if (src.endsWith('.webp')) applied.attr('data-animated-src', src);
+                    } else {
+                        imgEl.attr('src', avatarSrcFallback).attr('data-izoomify-url', avatarSrcFallback);
+                    }
+                } catch (e) {
+                    imgEl.attr('src', avatarSrcFallback).attr('data-izoomify-url', avatarSrcFallback);
                 }
+            } else {
+                // Fallback unknown case
+                imgEl.attr('src', avatarSrcFallback).attr('data-izoomify-url', avatarSrcFallback);
             }
+            // Normalize any accidental duplicate /characters/ in final src
+            try {
+                const mediaEl = $(`.zoomed_avatar[forChar="${baseForChar}"] img, .zoomed_avatar[forChar="${baseForChar}"] video`).first();
+                const src = mediaEl.attr('src');
+                if (src && /(\/characters\/){2,}/.test(src)) {
+                    const norm = src.replace(/(\/characters\/)+/g,'/characters/');
+                    mediaEl.attr('src', norm).attr('data-izoomify-url', norm);
+                }
+            } catch(_){}
             loadMovingUIState();
-            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
+            $(`.zoomed_avatar[forChar="${baseForChar}"]`).css('display', 'flex');
             dragElement(newElement);
 
             if (power_user.zoomed_avatar_magnification) {
@@ -11271,20 +10904,17 @@ jQuery(async function () {
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                        $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                    $(`.zoomed_avatar[forChar="${baseForChar}"]`).fadeOut(animation_duration, () => {
+                        $(`.zoomed_avatar[forChar="${baseForChar}"]`).remove();
                     });
                 }
             });
 
-            const zoomedAvatarImgElement = newElement.find('img, video').first();
-            if (zoomedAvatarImgElement && zoomedAvatarImgElement.length) {
-                zoomedAvatarImgElement.on('dragstart', (e) => {
-                    console.log('saw drag on avatar!');
-                    e.preventDefault();
-                    return false;
-                });
-            }
+            imgEl.on('dragstart', (e) => {
+                console.log('saw drag on avatar!');
+                e.preventDefault();
+                return false;
+            });
         }
     });
 
@@ -11467,7 +11097,6 @@ jQuery(async function () {
         if (!(e.target instanceof HTMLElement)) {
             return;
         }
-        e.target.focus();
         e.target.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
     });
 

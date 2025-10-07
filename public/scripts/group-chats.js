@@ -76,6 +76,7 @@ import {
     depth_prompt_role_default,
     shouldAutoContinue,
     unshallowCharacter,
+    chatElement,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -236,37 +237,37 @@ export async function getGroupChat(groupId, reload = false) {
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
     const metadata = group.chat_metadata ?? {};
-    let freshChat = false;
+    const freshChat = !metadata.tainted;
 
     await loadItemizedPrompts(getCurrentChatId());
 
-    if (Array.isArray(data) && data.length) {
+    if (group && Array.isArray(group.members) && freshChat) {
+        chat.splice(0, chat.length);
+        chatElement.find('.mes').remove();
+        for (let member of group.members) {
+            const character = characters.find(x => x.avatar === member || x.name === member);
+            if (!character) {
+                continue;
+            }
+
+            const mes = await getFirstCharacterMessage(character);
+
+            // No first message
+            if (!(mes?.mes)) {
+                continue;
+            }
+
+            chat.push(mes);
+            await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1), 'first_message');
+            addOneMessage(mes);
+            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
+        }
+        await saveGroupChat(groupId, false);
+    } else if (Array.isArray(data) && data.length) {
         data[0].is_group = true;
         chat.splice(0, chat.length, ...data);
+        chatElement.find('.mes').remove();
         await printMessages();
-    } else {
-        freshChat = !metadata.tainted;
-        if (group && Array.isArray(group.members) && freshChat) {
-            for (let member of group.members) {
-                const character = characters.find(x => x.avatar === member || x.name === member);
-                if (!character) {
-                    continue;
-                }
-
-                const mes = await getFirstCharacterMessage(character);
-
-                // No first message
-                if (!(mes?.mes)) {
-                    continue;
-                }
-
-                chat.push(mes);
-                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1), 'first_message');
-                addOneMessage(mes);
-                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
-            }
-            await saveGroupChat(groupId, false);
-        }
     }
 
     updateChatMetadata(metadata, true);
@@ -2018,7 +2019,14 @@ export async function deleteGroupChatByName(groupId, chatName) {
     await eventSource.emit(event_types.GROUP_CHAT_DELETED, chatName);
 }
 
-export async function deleteGroupChat(groupId, chatId) {
+/**
+ * Deletes a group chat by name.
+ * @param {string} groupId The ID of the group containing the chat to delete.
+ * @param {string} chatId The id/name of the chat to delete.
+ * @param {object} [options={}] Options for the deletion.
+ * @param {boolean} [options.jumpToNewChat=true] Whether to jump to a new chat after deletion (existing one, or create a new one if none exists)
+ */
+export async function deleteGroupChat(groupId, chatId, { jumpToNewChat = true } = {}) {
     const group = groups.find(x => x.id === groupId);
 
     if (!group || !group.chats.includes(chatId)) {
@@ -2026,10 +2034,13 @@ export async function deleteGroupChat(groupId, chatId) {
     }
 
     group.chats.splice(group.chats.indexOf(chatId), 1);
-    group.chat_metadata = {};
-    group.chat_id = '';
     delete group.past_metadata[chatId];
-    updateChatMetadata(group.chat_metadata, true);
+
+    if (group.chat_id === chatId) {
+        group.chat_id = '';
+        group.chat_metadata = {};
+        updateChatMetadata(group.chat_metadata, true);
+    }
 
     const response = await fetch('/api/chats/group/delete', {
         method: 'POST',
@@ -2038,10 +2049,12 @@ export async function deleteGroupChat(groupId, chatId) {
     });
 
     if (response.ok) {
-        if (group.chats.length) {
-            await openGroupChat(groupId, group.chats[group.chats.length - 1]);
-        } else {
-            await createNewGroupChat(groupId);
+        if (jumpToNewChat) {
+            if (group.chats.length) {
+                await openGroupChat(groupId, group.chats[group.chats.length - 1]);
+            } else {
+                await createNewGroupChat(groupId);
+            }
         }
 
         await eventSource.emit(event_types.GROUP_CHAT_DELETED, chatId);

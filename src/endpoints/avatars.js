@@ -69,7 +69,37 @@ router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (r
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
         try { fs.unlinkSync(pathToUpload); } catch (e) { void e; }
-        return response.send({ path: filename });
+
+        // If client uploaded a companion 'video_avatar' field, persist it into the user's avatars folder
+        let videoSavedName = null;
+        try {
+            const filesObj = request.files;
+            let videoFile = null;
+            if (filesObj) {
+                if (Array.isArray(filesObj)) videoFile = filesObj.find(f => f.fieldname === 'video_avatar');
+                else videoFile = (filesObj.video_avatar && filesObj.video_avatar[0]) || null;
+            }
+            if (videoFile) {
+                const originalName = (videoFile.originalname || videoFile.filename || 'video_avatar').toLowerCase();
+                const ext = path.extname(originalName).replace(/[^.a-z0-9]/g, '') || '.bin';
+                const allowed = ['.webm', '.mp4', '.ogg', '.mov', '.m4v'];
+                const safeExt = allowed.includes(ext) ? ext : '.bin';
+                const baseName = (request.body.overwrite_name && String(request.body.overwrite_name).replace(/\.[^.]+$/, '')) || String(filename).replace(/\.[^.]+$/, '');
+                const safeVideoName = `${baseName}${safeExt}`;
+                const srcPath = path.join(videoFile.destination || path.dirname(videoFile.path), videoFile.filename || path.basename(videoFile.path));
+                const destPath = path.join(request.user.directories.avatars, safeVideoName);
+                try {
+                    await fs.promises.rename(srcPath, destPath);
+                    videoSavedName = safeVideoName;
+                } catch (err) {
+                    try { fs.copyFileSync(srcPath, destPath); fs.unlinkSync(srcPath); videoSavedName = safeVideoName; } catch (err2) { console.error('Failed to persist companion video_avatar', err2); }
+                }
+            }
+        } catch (err) { console.error('Error persisting companion video_avatar:', err); }
+
+        const result = { path: filename };
+        if (videoSavedName) result.video = videoSavedName;
+        return response.send(result);
     } catch (err) {
         console.error('Error uploading user avatar:', err);
         return response.status(400).send('Is not a valid image');

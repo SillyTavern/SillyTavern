@@ -289,6 +289,15 @@ export function removeFromArray(array, item) {
 }
 
 /**
+ * Normalizes an array by removing duplicates, trimming strings, and filtering out empty values.
+ * @param {any[]} arr - The array to normalize.
+ * @returns {any[]} The normalized array.
+ */
+export function normalizeArray(arr) {
+    return [...new Set((arr ?? []).map(s => typeof s === 'string' ? s.trim() : s).filter(Boolean))];
+}
+
+/**
  * Checks if a string only contains digits.
  * @param {string} str The string to check.
  * @returns {boolean} True if the string only contains digits, false otherwise.
@@ -620,7 +629,7 @@ export function isElementInViewport(el) {
 /**
  * Returns a name that is unique among the names that exist.
  * @param {string} name The name to check.
- * @param {{ (y: any): boolean; }} exists Function to check if name exists.
+ * @param {{ (name: string): boolean; }} exists Function to check if name exists.
  * @returns {string} A unique name.
  */
 export function getUniqueName(name, exists) {

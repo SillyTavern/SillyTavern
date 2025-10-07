@@ -280,22 +280,6 @@ async function sendWelcomePanel(chats, expand = false) {
                 }
             });
         }
-
-        // Upgrade recent chat avatars using shared resolver
-        try {
-            const recentChatNodes = chatElement.querySelectorAll('.recentChat');
-            recentChatNodes.forEach(rc => {
-                const avatarId = rc.getAttribute('data-avatar');
-                if (!avatarId) return;
-                const character = characters.find(c => c.avatar === avatarId);
-                if (!character) return;
-                const avatarWrapper = rc.querySelector('.avatar');
-                if (!avatarWrapper) return;
-                if (typeof window.resolveAndApplyAvatar === 'function') {
-                    window.resolveAndApplyAvatar(character, avatarWrapper, { allowVideo: false });
-                }
-            });
-        } catch (e) { /* silent */ }
     } catch (error) {
         console.error('Welcome screen error:', error);
     }

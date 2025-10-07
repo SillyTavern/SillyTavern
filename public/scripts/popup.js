@@ -571,19 +571,17 @@ export class Popup {
             if (result >= POPUP_RESULT.AFFIRMATIVE) {
                 try {
                     const $img = $(this.cropImage);
-                    const cropper = $img.data('cropper');
+                    const cropper = $img && typeof $img.data === 'function' ? $img.data('cropper') : null;
                     if (cropper && typeof cropper.getCroppedCanvas === 'function') {
                         const canvas = cropper.getCroppedCanvas();
-                        value = canvas ? canvas.toDataURL('image/jpeg') : null;
-                    } else if (this.cropData && this.cropImage && this.cropImage.src) {
-                        // If cropper isn't present but we have image src, use it as a best-effort fallback
-                        value = this.cropImage.src;
+                        value = canvas ? canvas.toDataURL('image/jpeg') : (this.cropImage?.src || null);
                     } else {
-                        value = null;
+                        // Fallback: if no cropper (e.g., video placeholder), use original src if present
+                        value = this.cropImage?.src || null;
                     }
                 } catch (err) {
-                    console.warn('Cropper unavailable or getCroppedCanvas failed:', err);
-                    value = this.cropImage?.src ?? null;
+                    console.warn('[popup] crop completion failed, falling back to image src', err);
+                    value = this.cropImage?.src || null;
                 }
             } else {
                 value = null;
