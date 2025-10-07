@@ -584,10 +584,14 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
  * @returns {Promise<void>}
  */
 async function moveRegexScript(script, toType, fromType = null, saveSettings = true) {
+    if (!Object.values(SCRIPT_TYPES).includes(toType)) {
+        console.warn(`moveRegexScript: Invalid target script type ${toType}`);
+        return;
+    }
     if (!Object.values(SCRIPT_TYPES).includes(fromType)) {
         fromType = getScriptType(script);
     }
-    if (fromType === toType || fromType === SCRIPT_TYPES.UNKNOWN) {
+    if (fromType === toType || fromType === SCRIPT_TYPES.UNKNOWN || toType === SCRIPT_TYPES.UNKNOWN) {
         return;
     }
     await deleteRegexScript(script.id, fromType, false);
