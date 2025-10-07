@@ -11046,6 +11046,13 @@ jQuery(async function () {
         isManualInput = false;
     });
 
+    // Trap mouse wheel inside of focused number inputs to prevent scrolling their containers
+    document.addEventListener('wheel', (e) => {
+        if (e.target === document.activeElement && document.activeElement.matches('input[type="number"]')) {
+            e.stopPropagation();
+        }
+    }, { passive: false });
+
     $('.user_stats_button').on('click', function () {
         userStatsHandler();
     });
