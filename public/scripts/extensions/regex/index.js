@@ -478,8 +478,7 @@ function setToggleAllIcon(allAreChecked) {
 
 function setMoveButtonsVisibility() {
     const hasGlobalScripts = $('#saved_regex_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
-    const hasScopedScripts =
-        $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
+    const hasScopedScripts = $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
     $('#bulk_regex_move_to_global').toggle(hasScopedScripts);
     $('#bulk_regex_move_to_scoped').toggle(hasGlobalScripts);
 }
@@ -585,7 +584,7 @@ async function moveRegexScript(script, toType, fromType = null, saveSettings = t
     if (!fromType) {
         fromType = getScriptType(script);
     }
-    if (fromType === toType || fromType === -1) {
+    if (fromType === toType || fromType === SCRIPT_TYPES.UNKNOWN) {
         return;
     }
     await deleteRegexScript(script.id, fromType, false);
@@ -1465,10 +1464,23 @@ async function onRegexImportFileChange(file, scriptType) {
     }
 }
 
+/**
+ * Determines the type of a given script.
+ * @param {RegexScript} script The script to check
+ * @returns {SCRIPT_TYPES} The script type.
+ */
 function getScriptType(script) {
-    return getScriptsByType(SCRIPT_TYPES.SCOPED).some(s => s.id === script.id)
-        ? SCRIPT_TYPES.SCOPED
-        : SCRIPT_TYPES.GLOBAL;
+    const scopedScripts = getScriptsByType(SCRIPT_TYPES.SCOPED);
+    if (scopedScripts.some(s => s.id === script.id)) {
+        return SCRIPT_TYPES.SCOPED;
+    }
+
+    const globalScripts = getScriptsByType(SCRIPT_TYPES.GLOBAL);
+    if (globalScripts.some(s => s.id === script.id)) {
+        return SCRIPT_TYPES.GLOBAL;
+    }
+
+    return SCRIPT_TYPES.UNKNOWN;
 }
 
 function getSelectedScripts() {
@@ -1641,8 +1653,22 @@ jQuery(async () => {
             await reloadCurrentChat();
         }
     }
-    $('#bulk_regex_move_to_global').on('click', () => bulkMoveRegexScript(SCRIPT_TYPES.GLOBAL));
-    $('#bulk_regex_move_to_scoped').on('click', () => bulkMoveRegexScript(SCRIPT_TYPES.SCOPED));
+
+    $('#bulk_regex_move_to_global').on('click', async () => {
+        const confirm = await callGenericPopup('Are you sure you want to move the selected regex scripts to global?', POPUP_TYPE.CONFIRM);
+        if (!confirm) {
+            return;
+        }
+        await bulkMoveRegexScript(SCRIPT_TYPES.GLOBAL);
+    });
+
+    $('#bulk_regex_move_to_scoped').on('click', async () => {
+        const confirm = await callGenericPopup('Are you sure you want to move the selected regex scripts to scoped?', POPUP_TYPE.CONFIRM);
+        if (!confirm) {
+            return;
+        }
+        await bulkMoveRegexScript(SCRIPT_TYPES.SCOPED);
+    });
 
     $('#bulk_delete_regex').on('click', async function () {
         const scripts = getSelectedScripts();

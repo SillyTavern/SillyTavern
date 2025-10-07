@@ -1,16 +1,13 @@
 import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
-export {
-    regex_placement,
-    getRegexedString,
-    runRegexScript,
-};
 
 /**
  * @enum {number} Regex scripts types
+ * @readonly
  */
 export const SCRIPT_TYPES = {
+    UNKNOWN: -1,
     GLOBAL: 0,
     SCOPED: 1,
 };
@@ -21,24 +18,28 @@ export const SCRIPT_TYPES = {
 
 /**
  * @typedef {object} GetRegexScriptsOptions
- * @property {boolean} allowedOnly only return allowed scripts
+ * @property {boolean} allowedOnly Only return allowed scripts
  */
-const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = { allowedOnly: false };
+
+/**
+ * @type {Readonly<GetRegexScriptsOptions>}
+ */
+const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
 
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
  *
- * @param {GetRegexScriptsOptions} option
+ * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts(option = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
-    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, option))];
+export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
 }
 
 /**
  * Retrieves the regex scripts for a specific type.
- * @param {SCRIPT_TYPES} scriptType
- * @param {GetRegexScriptsOptions} option
+ * @param {SCRIPT_TYPES} scriptType The type of regex scripts to retrieve.
+ * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
 export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
@@ -53,14 +54,16 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         default:
+            console.warn(`getScriptsByType: Unknown script type ${scriptType}`);
             return [];
     }
 }
 
 /**
  * @enum {number} Where the regex script should be applied
+ * @readonly
  */
-const regex_placement = {
+export const regex_placement = {
     /**
      * @deprecated MD Display is deprecated. Do not use.
      */
@@ -73,6 +76,10 @@ const regex_placement = {
     REASONING: 6,
 };
 
+/**
+ * @enum {number} How to substitute parameters in the find regex
+ * @readonly
+ */
 export const substitute_find_regex = {
     NONE: 0,
     RAW: 1,
@@ -109,7 +116,7 @@ function sanitizeRegexMacro(x) {
  * @returns {string} The regexed string
  * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, isEdit?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
  */
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
+export function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -166,7 +173,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
  * @returns {string} The new string
  * @typedef {{characterOverride?: string}} RegexScriptParams The parameters to use for the regex script
  */
-function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
+export function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     let newString = rawString;
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
         return newString;
