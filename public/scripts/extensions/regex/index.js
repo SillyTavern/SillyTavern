@@ -549,7 +549,14 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
     }
 }
 
-async function deleteRegexScript({ id, scriptType, saveSettings = true }) {
+/**
+ * Delete a regex script
+ * @param {string} id
+ * @param {SCRIPT_TYPES} scriptType
+ * @param {boolean} saveSettings
+ * @returns {Promise<void>}
+ */
+async function deleteRegexScript(id, scriptType, saveSettings = true) {
     const array = getScriptsByType(scriptType);
 
     const existingScriptIndex = array.findIndex(script => script.id === id);
@@ -566,18 +573,22 @@ async function deleteRegexScript({ id, scriptType, saveSettings = true }) {
     }
 }
 
+/**
+ * Move a regex script from one type to another
+ * @param {import('../../char-data.js').RegexScriptData} script
+ * @param {SCRIPT_TYPES} toType
+ * @param {SCRIPT_TYPES|null} fromType
+ * @param {boolean} saveSettings
+ * @returns {Promise<void>}
+ */
 async function moveRegexScript(script, toType, fromType = null, saveSettings = true) {
     if (!fromType) {
         fromType = getScriptType(script);
     }
-    if (!toType || fromType === toType || fromType === -1) {
+    if (fromType === toType || fromType === -1) {
         return;
     }
-    await deleteRegexScript({
-        id: script.id,
-        scriptType: fromType,
-        saveSettings: false,
-    });
+    await deleteRegexScript(script.id, fromType, false);
     await saveRegexScript(script, -1, toType, saveSettings);
 }
 
@@ -653,7 +664,7 @@ async function loadRegexScripts() {
             if (!confirm) {
                 return;
             }
-            await deleteRegexScript({ id: script.id, scriptType });
+            await deleteRegexScript(script.id, scriptType);
             await reloadCurrentChat();
         });
         scriptHtml.find('.regex_bulk_checkbox').on('change', function () {
@@ -1644,7 +1655,7 @@ jQuery(async () => {
             return;
         }
         for (const script of scripts) {
-            await deleteRegexScript({ id: script.id, scriptType: getScriptType(script), saveSettings: false });
+            await deleteRegexScript(script.id, getScriptType(script), false);
         }
         saveSettingsDebounced();
         await loadRegexScripts();
