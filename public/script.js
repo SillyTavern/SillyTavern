@@ -2104,6 +2104,21 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+
+    // Ensure avatar media is resolved/applied immediately when a message is inserted.
+    try {
+        if (!mes?.is_user) {
+            const chObj = Array.isArray(characters) ? characters.find(c => c && c.name === mes.name) : null;
+            if (chObj) {
+                const wrapper = newMessage.find('.avatar');
+                if (wrapper && wrapper.length) {
+                    try { resolveAndApplyAvatar(chObj, wrapper); } catch (e) { console.warn('[addOneMessage] resolveAndApplyAvatar failed', e); }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[addOneMessage avatar upgrade]', e);
+    }
 }
 
 /**
@@ -6703,6 +6718,50 @@ function resolveAndApplyAvatar(character, container, { allowVideo = true } = {})
     maybeProbeForAnimatedWebp(character, container);
 }
 
+// MutationObserver to catch avatar wrappers inserted by dynamic code and auto-resolve their media.
+function initChatAvatarObserver() {
+    try {
+        const chatEl = document.getElementById('chat');
+        if (!chatEl) return;
+        if (chatEl.__avatarObserver) return; // already initialized
+
+        const pending = new Set();
+        const flush = debounce(() => {
+            for (const el of Array.from(pending)) {
+                try {
+                    const mes = el.closest('.mes');
+                    const chName = mes && mes.getAttribute && mes.getAttribute('ch_name');
+                    if (!chName) continue;
+                    const ch = Array.isArray(characters) ? characters.find(c => c && c.name === chName) : null;
+                    if (ch) resolveAndApplyAvatar(ch, el);
+                } catch (e) {
+                    console.warn('[initChatAvatarObserver flush] item upgrade failed', e);
+                }
+            }
+            pending.clear();
+        }, 30);
+
+        const obs = new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const n of Array.from(m.addedNodes || [])) {
+                    if (!(n instanceof HTMLElement)) continue;
+                    if (n.matches && n.matches('.mesAvatarWrapper .avatar')) {
+                        pending.add(n);
+                    } else if (n.querySelectorAll) {
+                        n.querySelectorAll('.mesAvatarWrapper .avatar').forEach(a => pending.add(a));
+                    }
+                }
+            }
+            if (pending.size) flush();
+        });
+
+        obs.observe(chatEl, { childList: true, subtree: true });
+        chatEl.__avatarObserver = obs;
+    } catch (e) {
+        console.warn('[initChatAvatarObserver] failed to initialize', e);
+    }
+}
+
 // Expose helpers for other legacy scripts (e.g., welcome screen) without converting everything to modules yet
 if (typeof window !== 'undefined') {
     // @ts-ignore
@@ -7227,33 +7286,6 @@ function fixZoomAvatarPanels() {
     }
 }
 
-// Delegate click to try re-upgrading (e.g., after dynamic replacements or zoom panels)
-document.addEventListener('click', (ev) => {
-    const t = ev.target;
-    if (!(t instanceof HTMLElement)) return;
-    if (t.matches('.mesAvatarWrapper .avatar img')) {
-        try {
-            const mes = t.closest('.mes');
-            const chName = mes?.getAttribute('ch_name');
-            if (!chName) return;
-            const character = characters.find(c => c?.name === chName);
-            const v = character?.data?.extensions && character.data.extensions['video_avatar'];
-            if (!v) return;
-            const ext = (v.split('.').pop() || '').toLowerCase();
-            if (ext !== 'webp') return;
-            const animUrl = `/characters/${encodeURIComponent(v)}`;
-            if (!t.src.includes(animUrl)) {
-                if (!t.getAttribute('data-static-src')) t.setAttribute('data-static-src', t.getAttribute('src') || '');
-                t.src = animUrl;
-                t.setAttribute('data-animated-src', animUrl);
-            }
-            // Re-run for any newly inserted clones shortly after
-            setTimeout(() => { try { upgradeChatAvatars(); fixZoomAvatarPanels(); } catch (_) { /* no-op */ } }, 50);
-        } catch (e) {
-            console.warn('[chat avatar click handler] exception', e);
-        }
-    }
-}, { capture: true });
 
 //MARK: getSettings()
 ///////////////////////////////////////////
@@ -8127,11 +8159,14 @@ export function getExtensionPromptRoleByName(roleName) {
 }
 
 /**
- * Removes all depth prompt injections (character/group A/N style prompts).
+ * Removes all char A/N prompt injections from the chat.
+ * To clean up when switching from groups to solo and vice versa.
  */
 export function removeDepthPrompts() {
     for (const key of Object.keys(extension_prompts)) {
-        if (key.startsWith(inject_ids.DEPTH_PROMPT)) delete extension_prompts[key];
+        if (key.startsWith(inject_ids.DEPTH_PROMPT)) {
+            delete extension_prompts[key];
+        }
     }
 }
 
@@ -8143,6 +8178,8 @@ export function removeDepthPrompts() {
 export function updateChatMetadata(newValues, reset) {
     chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
 }
+
+
 /**
  * Updates the state of the favorite button based on the provided state.
  * @param {boolean} state Whether the favorite button should be on or off.
@@ -9945,6 +9982,8 @@ jQuery(async function () {
     $(document).on('click', '.last_mes .swipe_left', swipe_left);
 
     initCharacterSearch();
+    // Initialize the MutationObserver to auto-upgrade newly inserted avatars
+    try { initChatAvatarObserver(); } catch (e) { console.warn('[init] initChatAvatarObserver failed', e); }
 
     $('#mes_impersonate').on('click', function () {
         $('#option_impersonate').trigger('click');
