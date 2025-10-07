@@ -6059,7 +6059,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
     }
 
     const targetSwipeId = targetMessage.swipe_id;
-    if (typeof targetMessage.swipes?.[targetSwipeId] !== 'string' || typeof targetMessage.swipe_info?.[targetSwipeId] !== 'object') {
+    if (typeof targetMessage.swipes[targetSwipeId] !== 'string' || typeof targetMessage.swipe_info[targetSwipeId] !== 'object') {
         console.warn(`[syncSwipeToMes] Invalid swipe ID: ${targetSwipeId}`);
         return false;
     }
@@ -8849,10 +8849,10 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {number} duration
      */
     async function animateSwipeTransition(mesId, x, duration) {
-        //Select 20 messages after mesId.
+        //Selects the swiped message.
         const swipedMessagesDiv  = chatElement.children().filter((index, div) => {
             const $div = $(div);
-            return mesId <= Number($div.attr('mesid')) && Number($div.attr('mesid')) <= mesId + 20;
+            return mesId === Number($div.attr('mesid'));
         });
         const swipedElementsDiv = swipedMessagesDiv.children('.mes_block, .mesAvatarWrapper');
 
@@ -9049,15 +9049,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Transition to the new chat.
         await animateSwipe();
         await endSwipe();
-        return;
-    }
-    //User feedback.
-    else {
-        //Shake
-        thisMesDiv.effect('shake', { direction: direction, distance: 20, times: 1 });
-        await endSwipe();
-        //Flash red.
-        await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         return;
     }
 }
