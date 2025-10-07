@@ -154,12 +154,6 @@ jobs:
         # https://github.com/marketplace/actions/checkout
         uses: actions/checkout@v4.2.2
 
-      # temp check
-      - name: Sanity token can hit API
-        env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: gh api /rate_limit >/dev/null
-
       - name: Apply Labels Based on Changed Files
         # Pull Request Labeler
         # https://github.com/marketplace/actions/labeler
