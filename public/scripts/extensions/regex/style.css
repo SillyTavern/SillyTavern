@@ -1,9 +1,5 @@
 @import "debugger.css";
 
-.regex_settings [hidden] {
-    display: none !important;
-}
-
 .regex_settings .menu_button {
     width: fit-content;
     display: flex;
