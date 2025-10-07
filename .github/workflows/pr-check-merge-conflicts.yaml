@@ -38,13 +38,12 @@ jobs:
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.
 
       # Just for testing
-
-      - name: ✅ Add "⛔ Don't Merge" for relevant labels
-        if: always()
-        # 🤖 Issues Helper
-        # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+      - name: Add Label
+        # Add a label to the current PR
+        uses: actions/labeler@v5.0.0
         with:
-          actions: 'add-labels'
-          token: ${{ steps.app.outputs.token }}
-          labels: '⛔ Don''t Merge'
+          configuration-path: .github/labels.yml
+          repo-token: ${{ steps.app.outputs.token }}
+          labels: |
+            - "⛔ Don't Merge"
+
