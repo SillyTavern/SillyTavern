@@ -23,6 +23,7 @@ export const SCRIPT_TYPES = {
  * @typedef {object} GetRegexScriptsOptions
  * @property {boolean} allowedOnly only return allowed scripts
  */
+const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = { allowedOnly: false };
 
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
@@ -30,8 +31,8 @@ export const SCRIPT_TYPES = {
  * @param {GetRegexScriptsOptions} option
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts(option = { allowedOnly: false }) {
-    return [...(getScriptsByType(SCRIPT_TYPES.GLOBAL, option)), ...(getScriptsByType(SCRIPT_TYPES.SCOPED, option))];
+export function getRegexScripts(option = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, option))];
 }
 
 /**
@@ -40,7 +41,7 @@ export function getRegexScripts(option = { allowedOnly: false }) {
  * @param {GetRegexScriptsOptions} option
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
-export function getScriptsByType(scriptType, { allowedOnly } = { allowedOnly: false }) {
+export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
     switch (scriptType) {
         case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
@@ -51,8 +52,9 @@ export function getScriptsByType(scriptType, { allowedOnly } = { allowedOnly: fa
             const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
+        default:
+            return [];
     }
-    return [];
 }
 
 /**
