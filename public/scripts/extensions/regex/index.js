@@ -540,7 +540,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
 
         // Reload the current chat to undo previous markdown
         const currentChatId = getCurrentChatId();
-        if (currentChatId !== undefined && currentChatId !== null) {
+        if (currentChatId) {
             await reloadCurrentChat();
         }
     }
