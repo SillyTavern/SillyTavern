@@ -11047,9 +11047,46 @@ jQuery(async function () {
     });
 
     // Trap mouse wheel inside of focused number inputs to prevent scrolling their containers
+    // Instead of firing wheel events, manually update both slider and input values
+    // This also makes wheel work inside Firefox
     document.addEventListener('wheel', (e) => {
-        if (e.target === document.activeElement && document.activeElement.matches('input[type="number"]')) {
-            e.stopPropagation();
+        if (document.activeElement.matches('input[type="number"][step]')) {
+            // Some sliders have a range block, others an undefined div. Let's guess the parent
+            let parent = $(document.activeElement).closest('.range-block-range-and-counter');
+            if (!parent.length) parent = $(document.activeElement).closest('div');
+
+            // Get the input and slider elements
+            const input = /** @type {HTMLInputElement} */ (document.activeElement);
+            const slider = /** @type {HTMLInputElement} */ (parent.find('input[type="range"]')?.[0]);
+
+            // Stop propagation for either target
+            if (e.target == input || (slider && e.target == slider)) {
+                e.stopPropagation();
+                e.preventDefault();
+
+                if (input) {
+                    const currentValue = parseFloat(input.value) ?? 0;
+                    const step = parseFloat(input.step) ?? 1;
+                    const min = parseFloat(input.min) ?? 0;
+                    const max = parseFloat(input.max) ?? 100;
+
+                    // Calculate new value based on wheel movement delta (negative = up, positive = down)
+                    let newValue = currentValue + (e.deltaY > 0 ? -step : step);
+                    // Ensure it's a multiple of step
+                    newValue = Math.round(newValue / step) * step;
+                    // Ensure it's within the min and max range
+                    newValue = Math.min(Math.max(newValue, min), max);
+                    // Simple fix for floating point precision issues
+                    newValue = Math.round(newValue * 1e10) / 1e10;
+
+                    // Update both input and slider values
+                    input.value = newValue.toString();
+                    if (slider) slider.value = newValue.toString();
+                    // Trigger input event (just ONE) to update any listeners
+                    const inputEvent = new Event('input', { bubbles: true });
+                    input.dispatchEvent(inputEvent);
+                }
+            }
         }
     }, { passive: false });
 
