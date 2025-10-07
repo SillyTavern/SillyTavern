@@ -552,10 +552,10 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
 }
 
 /**
- * Delete a regex script
- * @param {string} id
- * @param {SCRIPT_TYPES} scriptType
- * @param {boolean} saveSettings
+ * Delete a regex script by ID
+ * @param {string} id ID of the script to delete
+ * @param {SCRIPT_TYPES} scriptType global? scoped?
+ * @param {boolean} saveSettings Whether to save the settings immediately
  * @returns {Promise<void>}
  */
 async function deleteRegexScript(id, scriptType, saveSettings = true) {
@@ -577,10 +577,10 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
 
 /**
  * Move a regex script from one type to another
- * @param {import('../../char-data.js').RegexScriptData} script
- * @param {SCRIPT_TYPES} toType
- * @param {SCRIPT_TYPES|null} fromType
- * @param {boolean} saveSettings
+ * @param {import('../../char-data.js').RegexScriptData} script The script to move
+ * @param {SCRIPT_TYPES} toType Target type
+ * @param {SCRIPT_TYPES|null} fromType Source type, if null it will be determined automatically
+ * @param {boolean} saveSettings Whether to save the settings immediately
  * @returns {Promise<void>}
  */
 async function moveRegexScript(script, toType, fromType = null, saveSettings = true) {
