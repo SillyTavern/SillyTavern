@@ -16,3 +16,7 @@ runs:
     - name: Write App Token -> env.BOT_TOKEN
       run: echo "BOT_TOKEN=${{ steps.app.outputs.token }}" >> $GITHUB_ENV
       shell: bash
+
+outputs:
+  token:
+    value: ${{ steps.app.outputs.token }}
