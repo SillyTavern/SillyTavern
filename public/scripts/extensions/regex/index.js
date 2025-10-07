@@ -1029,7 +1029,7 @@ function populateDebuggerRuleList(container) {
                 {
                     [scriptTypes.SCOPED]: t`Scoped`,
                     [scriptTypes.GLOBAL]: t`Global`,
-                }[script.type]
+                }[script.type],
             );
         ruleElement.find('.rule-enabled').prop('checked', !script.disabled);
         // @ts-ignore
