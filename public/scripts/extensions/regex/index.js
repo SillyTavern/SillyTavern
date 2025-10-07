@@ -476,6 +476,9 @@ function setToggleAllIcon(allAreChecked) {
     selectAllIcon.toggleClass('fa-minus', allAreChecked);
 }
 
+/**
+ * Sets the visibility of the bulk move buttons based on selected scripts.
+ */
 function setMoveButtonsVisibility() {
     const hasGlobalScripts = $('#saved_regex_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
     const hasScopedScripts = $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
@@ -1603,6 +1606,7 @@ jQuery(async () => {
 
         checkboxes.prop('checked', newState);
         setToggleAllIcon(newState);
+        setMoveButtonsVisibility();
     });
 
     $('#bulk_enable_regex').on('click', async function () {
