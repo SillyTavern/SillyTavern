@@ -1240,13 +1240,13 @@ async function onRegexDebuggerOpenClick() {
         });
 
         popupContainer.append(navPanel).append(contentPanel);
-        callGenericPopup(popupContainer, POPUP_TYPE.TEXT, 'Step-by-step Transformation', { wide: true, allowVerticalScrolling: false });
+        callGenericPopup(popupContainer, POPUP_TYPE.TEXT, t`Step-by-step Transformation`, { wide: true, allowVerticalScrolling: false });
     });
 
     debuggerHtml.find('#regex_debugger_expand_final').on('click', function () {
         const content = $('#regex_debugger_final_output').html();
         const popupContent = $('<div class="regex-popup-content"></div>').html(content);
-        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Final Output', { wide: true, large: true, allowVerticalScrolling: true });
+        callGenericPopup(popupContent, POPUP_TYPE.TEXT, t`Final Output`, { wide: true, large: true, allowVerticalScrolling: true });
     });
 
     await callGenericPopup(debuggerHtml.children(), POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
@@ -1663,7 +1663,7 @@ jQuery(async () => {
     }
 
     $('#bulk_regex_move_to_global').on('click', async () => {
-        const confirm = await callGenericPopup('Are you sure you want to move the selected regex scripts to global?', POPUP_TYPE.CONFIRM);
+        const confirm = await callGenericPopup(t`Are you sure you want to move the selected regex scripts to global?`, POPUP_TYPE.CONFIRM);
         if (!confirm) {
             return;
         }
@@ -1671,7 +1671,7 @@ jQuery(async () => {
     });
 
     $('#bulk_regex_move_to_scoped').on('click', async () => {
-        const confirm = await callGenericPopup('Are you sure you want to move the selected regex scripts to scoped?', POPUP_TYPE.CONFIRM);
+        const confirm = await callGenericPopup(t`Are you sure you want to move the selected regex scripts to scoped?`, POPUP_TYPE.CONFIRM);
         if (!confirm) {
             return;
         }
@@ -1684,7 +1684,7 @@ jQuery(async () => {
             toastr.warning(t`No regex scripts selected for deletion.`);
             return;
         }
-        const confirm = await callGenericPopup('Are you sure you want to delete the selected regex scripts?', POPUP_TYPE.CONFIRM);
+        const confirm = await callGenericPopup(t`Are you sure you want to delete the selected regex scripts?`, POPUP_TYPE.CONFIRM);
         if (!confirm) {
             return;
         }
