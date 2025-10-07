@@ -12,8 +12,28 @@ permissions:
   pull-requests: write
 
 jobs:
+  app-auth:
+    name: 🔑 Mint App token
+    runs-on: ubuntu-latest
+    if: always()
+
+    outputs:
+      app_token: ${{ steps.app.outputs.token }}
+
+    steps:
+      - name: Create GitHub App Token
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
   check-merge-conflicts:
     name: ⚔️ Check Merge Conflicts
+    needs: [app-auth]
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +43,6 @@ jobs:
         uses: eps1lon/actions-label-merge-conflict@v3.0.3
         with:
           dirtyLabel: '🚫 Merge Conflicts'
-          repoToken: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repoToken: ${{ needs.app-auth.outputs.app_token }}
           commentOnDirty: >
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.

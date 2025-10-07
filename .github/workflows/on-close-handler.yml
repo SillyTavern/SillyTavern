@@ -12,8 +12,28 @@ permissions:
   pull-requests: write
 
 jobs:
+  app-auth:
+    name: 🔑 Mint App token
+    runs-on: ubuntu-latest
+    if: always()
+
+    outputs:
+      app_token: ${{ steps.app.outputs.token }}
+
+    steps:
+      - name: Create GitHub App Token
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
   remove-labels:
     name: 🗑️ Remove Pending Labels on Close
+    needs: [app-auth]
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +43,6 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: remove-labels
-          token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          token: ${{ needs.app-auth.outputs.app_token }}
           issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
           labels: '🚏 Awaiting User Response,🧑‍💻 In Progress,📌 Keep Open,🚫 Merge Conflicts,🔬 Needs Testing,🔨 Needs Work,⚰️ Stale,⛔ Waiting For External/Upstream'

@@ -67,7 +67,7 @@ jobs:
         # https://github.com/marketplace/actions/action-eslint
         uses: sibiraj-s/action-eslint@v3.0.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}                # ESLint can run with the original permissions
           eslint-args: '--ignore-path=.gitignore --quiet'
           extensions: 'js'
           annotations: true
@@ -154,6 +154,7 @@ jobs:
 
   remove-stale-label:
     name: 🗑️ Remove Stale Label on Comment
+    needs: [app-auth]
     runs-on: ubuntu-latest
     # Only runs on comments not done by the github actions bot
     if: github.event_name == 'pull_request_review_comment' && github.actor != 'github-actions[bot]'
@@ -171,7 +172,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          token: ${{ needs.app-auth.outputs.app_token }}
           issue-number: ${{ github.event.pull_request.number }}
           labels: '⚰️ Stale'
 
@@ -227,7 +228,7 @@ jobs:
 
   write-auto-comments:
     name: 💬 Post PR Comments Based on Labels
-    needs: [label-by-branches, label-by-files]
+    needs: [app-auth, label-by-branches, label-by-files]
     runs-on: ubuntu-latest
     # Run, even if the previous jobs were skipped/failed
     if: always()
@@ -244,11 +245,12 @@ jobs:
         uses: peaceiris/actions-label-commenter@v1.10.0
         with:
           config_file: .github/pr-auto-comments.yml
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ needs.app-auth.outputs.app_token }}
 
   # This runs on merged PRs to staging, reading the PR body and directly linked issues. Check `issues-updates-on-merge.yml`:`update-linked-issues` for commit-based updates.
   update-linked-issues:
     name: 🔗 Mark Linked Issues Done on Staging Merge
+    needs: [app-auth]
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'staging'
 
@@ -271,7 +273,7 @@ jobs:
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
           API_URL="https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/issues"
-          ISSUES=$(curl -s -H "Authorization: token ${{ secrets.ISSUES_BOT_TOKEN }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
+          ISSUES=$(curl -s -H "Authorization: token ${{ needs.app-auth.outputs.app_token }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
           echo "linked_issues=$ISSUES" >> $GITHUB_ENV
 
       - name: Merge Issue Lists
@@ -283,7 +285,7 @@ jobs:
       - name: Label Linked Issues
         id: label_linked_issues
         env:
-          GH_TOKEN: ${{ secrets.ISSUES_BOT_TOKEN }}
+          GH_TOKEN: ${{ needs.app-auth.outputs.app_token }}
         run: |
           for ISSUE in $(echo $final_issues | jq -r '.[]'); do
             gh issue edit $ISSUE -R ${{ github.repository }} --add-label "✅ Done (staging)" --remove-label "🧑‍💻 In Progress"

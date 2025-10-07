@@ -12,8 +12,28 @@ permissions:
   pull-requests: write
 
 jobs:
+  app-auth:
+    name: 🔑 Mint App token
+    runs-on: ubuntu-latest
+    if: always()
+
+    outputs:
+      app_token: ${{ steps.app.outputs.token }}
+
+    steps:
+      - name: Create GitHub App Token
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
   mark-inactivity:
     name: ⏳ Mark Issues/PRs without Activity
+    needs: [app-auth]
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +42,7 @@ jobs:
         # https://github.com/marketplace/actions/close-stale-issues
         uses: actions/stale@v9.1.0
         with:
-          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repo-token: ${{ needs.app-auth.outputs.app_token }}
           days-before-stale: 183
           days-before-close: 7
           operations-per-run: 30
@@ -47,8 +67,8 @@ jobs:
 
   await-user-response:
     name: ⚠️ Mark Issues/PRs Awaiting User Response
+    needs: [app-auth, mark-inactivity]
     runs-on: ubuntu-latest
-    needs: mark-inactivity
 
     steps:
       - name: Mark Issues/PRs Awaiting User Response
@@ -56,7 +76,7 @@ jobs:
         # https://github.com/marketplace/actions/close-stale-issues
         uses: actions/stale@v9.1.0
         with:
-          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repo-token: ${{ needs.app-auth.outputs.app_token }}
           days-before-stale: 7
           days-before-close: 7
           operations-per-run: 30
@@ -74,8 +94,8 @@ jobs:
 
   alternative-exists:
     name: 🔄 Mark Issues with Alternative Exists
+    needs: [app-auth, await-user-response]
     runs-on: ubuntu-latest
-    needs: await-user-response
 
     steps:
       - name: Mark Issues with Alternative Exists
@@ -83,7 +103,7 @@ jobs:
         # https://github.com/marketplace/actions/close-stale-issues
         uses: actions/stale@v9.1.0
         with:
-          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repo-token: ${{ needs.app-auth.outputs.app_token }}
           days-before-stale: 7
           days-before-close: 7
           operations-per-run: 30
