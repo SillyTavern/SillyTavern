@@ -36,3 +36,10 @@ jobs:
           repoToken: ${{ steps.app.outputs.token }}
           commentOnDirty: >
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.
+
+            # Just for testing
+      - name: Add Test Label
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ steps.app.outputs.token }}
+          labels: '⛔ Don''t Merge'
