@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   check-merge-conflicts:
@@ -40,10 +41,17 @@ jobs:
       # Just for testing
       - name: Add Debug Label
         # Add a debug label to the current PR (PR events only)
-        if: always()
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          github_token: ${{ steps.app.outputs.token }}
-          labels: |
-            ⛔ Don't Merge
+        if: github.event_name == 'pull_request_target'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LABEL: "⛔ Don't Merge"
+        run: |
+          set -euo pipefail
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/labels \
+            -d "{\"labels\":[\"${LABEL}\"]}"
 
