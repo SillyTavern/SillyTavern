@@ -37,7 +37,7 @@
 7. English is the primary language of communication in this project. Please use only English when writing commit messages, PR descriptions, comments and other text. This does not apply to contributions to localization files.
 8. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
 
-## Use of AI coding assistant tools ("Vibe Coding")
+## Use of AI coding assistance tools ("Vibe Coding")
 
 We do not prohibit nor encourage the use of AI tools for coding assistance (like GitHub Copilot, OpenAI Codex, etc.) to help you write code, documentation, etc. However, please keep in mind the following:
 
