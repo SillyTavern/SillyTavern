@@ -1035,8 +1035,7 @@ export async function initPresetManager() {
 
         await presetManager.renamePreset(newName);
 
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: oldName });
-        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: apiId, name: newName });
+        await eventSource.emit(event_types.PRESET_RENAMED, { apiId: apiId, oldName: oldName, newName: newName });
 
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
