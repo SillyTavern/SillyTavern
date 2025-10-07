@@ -29,7 +29,7 @@
   - Updating GitHub Actions.
   - Hotfixing a critical bug.
 4. Project maintainers will test and can change your code before merging.
-5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **500 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first.
+5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first.
 6. Write at least somewhat meaningful PR descriptions and commit messages. There's no "right" way to do it, but the following may help with outlining a general structure:
   - What is the reason for a change?
   - What did you do to achieve this?
