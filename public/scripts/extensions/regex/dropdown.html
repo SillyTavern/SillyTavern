@@ -31,7 +31,8 @@
                     <small data-i18n="ext_regex_debugger">Debugger</small>
                 </div>
             </div>
-            <div class="regex_bulk_operations flex-container justifyCenter">
+            <hr class="regex_bulk_operations_hr" />
+            <div class="regex_bulk_operations flex-container">
                 <div id="bulk_select_all_toggle" class="menu_button menu_button_icon" title="Toggle Select All">
                     <i class="fa-solid fa-check-double"></i>
                 </div>
@@ -42,6 +43,14 @@
                 <div id="bulk_disable_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-toggle-off"></i>
                     <small data-i18n="Disable">Disable</small>
+                </div>
+                <div id="bulk_regex_move_to_global" class="menu_button menu_button_icon" hidden>
+                    <i class="fa-solid fa-globe"></i>
+                    <small data-i18n="ext_regex_move_to_global">Move to global scripts</small>
+                </div>
+                <div id="bulk_regex_move_to_scoped" class="menu_button menu_button_icon" hidden>
+                    <i class="fa-solid fa-address-card"></i>
+                    <small data-i18n="ext_regex_move_to_scoped">Move to scoped scripts</small>
                 </div>
                 <div id="bulk_export_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-file-export"></i>

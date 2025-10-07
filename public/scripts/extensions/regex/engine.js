@@ -7,6 +7,43 @@ export {
     runRegexScript,
 };
 
+export const scriptTypes = {
+    GLOBAL: 0,
+    SCOPED: 1,
+};
+
+/**
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
+ */
+
+/**
+ * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
+ *
+ * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
+ */
+export function getRegexScripts(allowedOnly = false) {
+    return [...(getScriptsByType(scriptTypes.GLOBAL, allowedOnly)), ...(getScriptsByType(scriptTypes.SCOPED, allowedOnly))];
+}
+
+/**
+ * Retrieves the regex scripts for a specific type.
+ * @param {number} scriptType
+ * @returns {RegexScript[]} An array of regex scripts for the specified type.
+ */
+export function getScriptsByType(scriptType, allowedOnly = false) {
+    switch (scriptType) {
+        case scriptTypes.GLOBAL:
+            return extension_settings.regex ?? [];
+        case scriptTypes.SCOPED: {
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
+                return [];
+            }
+            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+            return Array.isArray(scopedScripts) ? scopedScripts : [];
+        }
+    }
+}
+
 /**
  * @enum {number} Where the regex script should be applied
  */
@@ -51,22 +88,6 @@ function sanitizeRegexMacro(x) {
         }) : x;
 }
 
-function getScopedRegex() {
-    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
-
-    if (!isAllowed) {
-        return [];
-    }
-
-    const scripts = characters[this_chid]?.data?.extensions?.regex_scripts;
-
-    if (!Array.isArray(scripts)) {
-        return [];
-    }
-
-    return scripts;
-}
-
 /**
  * Parent function to fetch a regexed version of a raw string
  * @param {string} rawString The raw string to be regexed
@@ -87,7 +108,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? [])];
+    const allRegex = getRegexScripts(true);
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
@@ -126,7 +147,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
 
 /**
  * Runs the provided regex script on the given string
- * @param {import('./index.js').RegexScript} regexScript The regex script to run
+ * @param {RegexScript} regexScript The regex script to run
  * @param {string} rawString The string to run the regex script on
  * @param {RegexScriptParams} params The parameters to use for the regex script
  * @returns {string} The new string
