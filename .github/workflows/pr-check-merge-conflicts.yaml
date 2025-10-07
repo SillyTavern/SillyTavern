@@ -38,12 +38,12 @@ jobs:
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.
 
       # Just for testing
-      - name: Add Label
-        # Add a label to the current PR
-        uses: actions/labeler@v5.0.0
+      - name: Add Debug Label
+        # Add a debug label to the current PR (PR events only)
+        if: github.event_name == 'pull_request_target'
+        uses: actions-ecosystem/action-add-labels@v1
         with:
-          configuration-path: .github/labels.yml
-          repo-token: ${{ steps.app.outputs.token }}
+          github_token: ${{ steps.app.outputs.token }}
           labels: |
-            - "⛔ Don't Merge"
+            ⛔ Don't Merge
 
