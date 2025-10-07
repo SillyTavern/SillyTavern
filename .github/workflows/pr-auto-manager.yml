@@ -12,6 +12,25 @@ permissions:
   pull-requests: write
 
 jobs:
+  app-auth:
+    name: 🔑 Mint App token
+    runs-on: ubuntu-latest
+    if: always()
+
+    outputs:
+      app_token: ${{ steps.app.outputs.token }}
+
+    steps:
+      - name: Create GitHub App Token
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_SECRET }}
+          owner: ${{ github.repository_owner }}
+
   run-eslint:
     name: ✅ Check ESLint on PR
     runs-on: ubuntu-latest
@@ -59,7 +78,7 @@ jobs:
   label-by-size:
     name: 🏷️ Label PR by Size
     # This job should run after all others, to prevent possible concurrency issues
-    needs: [label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels, write-auto-comments]
+    needs: [app-auth, label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels, write-auto-comments]
     runs-on: ubuntu-latest
     # Only needs to run when code is changed
     if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
@@ -76,7 +95,7 @@ jobs:
         # https://github.com/marketplace/actions/pull-request-size-labeler
         uses: codelytv/pr-size-labeler@v1.10.2
         with:
-          GITHUB_TOKEN: ${{ secrets.ISSUES_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ needs.app-auth.outputs.app_token }}
           xs_label: '🟩 ⬤○○○○'
           xs_max_size: '20'
           s_label: '🟩 ⬤⬤○○○'
@@ -93,6 +112,7 @@ jobs:
 
   label-by-branches:
     name: 🏷️ Label PR by Branches
+    needs: [app-auth]
     runs-on: ubuntu-latest
     # Only label once when PR is created or when base branch is changed, to allow manual label removal
     if: github.event.action == 'opened' || (github.event.action == 'synchronize' && github.event.changes.base)
@@ -109,10 +129,11 @@ jobs:
         uses: actions/labeler@v5.0.0
         with:
           configuration-path: .github/pr-auto-labels-by-branch.yml
-          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repo-token: ${{ needs.app-auth.outputs.app_token }}
 
   label-by-files:
     name: 🏷️ Label PR by Files
+    needs: [app-auth]
     runs-on: ubuntu-latest
     # Only needs to run when code is changed
     if: github.event.action == 'opened' || github.event.action == 'synchronize'
@@ -129,7 +150,7 @@ jobs:
         uses: actions/labeler@v5.0.0
         with:
           configuration-path: .github/pr-auto-labels-by-files.yml
-          repo-token: ${{ secrets.ISSUES_BOT_TOKEN }}
+          repo-token: ${{ needs.app-auth.outputs.app_token }}
 
   remove-stale-label:
     name: 🗑️ Remove Stale Label on Comment
