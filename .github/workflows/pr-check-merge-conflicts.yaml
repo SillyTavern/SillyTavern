@@ -38,20 +38,66 @@ jobs:
           commentOnDirty: >
             ⚠️ This PR has conflicts that need to be resolved before it can be merged.
 
+      # Install jq for JSON parsing
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       # Just for testing
       - name: Add Debug Label
-        # Add a debug label to the current PR (PR events only)
-        if: always()
+        # Add a debug label to the current PR if this commit is part of a PR
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           LABEL: "⛔ Don't Merge"
         run: |
           set -euo pipefail
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
+
+          # Determine PR number based on event type
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            echo "Running on pull_request_target event for PR #$PR_NUMBER"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # For push events, try to find associated PR
+            echo "Running on push event, checking for associated PR"
+            PR_JSON=$(curl -sS \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/commits/$GITHUB_SHA/pulls")
+
+            # Check if the response is an array (multiple PRs) or object (single PR)
+            if echo "$PR_JSON" | jq -e 'type == "array"' > /dev/null; then
+              PR_NUMBER=$(echo "$PR_JSON" | jq -r '.[0].number')
+            else
+              PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+            fi
+
+            # Validate PR number
+            if [[ "$PR_NUMBER" == "null" ]] || [[ -z "$PR_NUMBER" ]]; then
+              echo "No associated PR found for this commit"
+              exit 0
+            fi
+
+            echo "Found associated PR #$PR_NUMBER for this commit"
+          else
+            echo "Unsupported event type: $GITHUB_EVENT_NAME"
+            exit 0
+          fi
+
+          echo "Adding label '$LABEL' to PR #$PR_NUMBER in repo $REPO"
+          response=$(curl -sS -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/labels \
-            -d "{\"labels\":[\"${LABEL}\"]}"
+            https://api.github.com/repos/$REPO/issues/$PR_NUMBER/labels \
+            -d "{\"labels\":[\"$LABEL\"]}")
+
+          http_code=${response: -3}
+          response_body=${response%???}
+
+          if [[ "$http_code" == "200" ]]; then
+            echo "Label successfully added"
+          else
+            echo "Failed to add label. HTTP code: $http_code"
+            echo "Response: $response_body"
+            exit 1
+          fi
 
