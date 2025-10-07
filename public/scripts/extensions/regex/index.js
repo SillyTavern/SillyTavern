@@ -476,21 +476,12 @@ function setToggleAllIcon(allAreChecked) {
     selectAllIcon.toggleClass('fa-minus', allAreChecked);
 }
 
-function hideOrShowElement(element, show) {
-    if (show && element.attr('hidden') !== undefined) {
-        element.removeAttr('hidden');
-    }
-    if (!show) {
-        element.attr('hidden', '');
-    }
-}
-
 function setMoveButtonsVisibility() {
     const hasGlobalScripts = $('#saved_regex_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
     const hasScopedScripts =
         $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
-    hideOrShowElement($('#bulk_regex_move_to_global'), hasScopedScripts);
-    hideOrShowElement($('#bulk_regex_move_to_scoped'), hasGlobalScripts);
+    $('#bulk_regex_move_to_global').toggle(hasScopedScripts);
+    $('#bulk_regex_move_to_scoped').toggle(hasGlobalScripts);
 }
 
 /**
@@ -1617,34 +1608,18 @@ jQuery(async () => {
         await loadRegexScripts();
     });
 
-    $('#bulk_regex_move_to_global').on('click', async function () {
+    /**
+     * Bulk move regex scripts to the specified type
+     * @param {SCRIPT_TYPES} toType destination type
+     */
+    async function bulkMoveRegexScript(toType) {
         const scripts = getSelectedScripts();
         if (scripts.length === 0) {
             toastr.warning(t`No regex scripts selected for moving.`);
             return;
         }
         for (const script of scripts) {
-            await moveRegexScript(script, SCRIPT_TYPES.GLOBAL, getScriptType(script), false);
-        }
-
-        saveSettingsDebounced();
-        await loadRegexScripts();
-
-        // Reload the current chat to undo previous markdown
-        const currentChatId = getCurrentChatId();
-        if (currentChatId !== undefined && currentChatId !== null) {
-            await reloadCurrentChat();
-        }
-    });
-
-    $('#bulk_regex_move_to_scoped').on('click', async function () {
-        const scripts = getSelectedScripts();
-        if (scripts.length === 0) {
-            toastr.warning(t`No regex scripts selected for moving.`);
-            return;
-        }
-        for (const script of scripts) {
-            await moveRegexScript(script, SCRIPT_TYPES.SCOPED, getScriptType(script), false);
+            await moveRegexScript(script, toType, getScriptType(script), false);
         }
 
         await loadRegexScripts();
@@ -1654,7 +1629,9 @@ jQuery(async () => {
         if (currentChatId !== undefined && currentChatId !== null) {
             await reloadCurrentChat();
         }
-    });
+    }
+    $('#bulk_regex_move_to_global').on('click', () => bulkMoveRegexScript(SCRIPT_TYPES.GLOBAL));
+    $('#bulk_regex_move_to_scoped').on('click', () => bulkMoveRegexScript(SCRIPT_TYPES.SCOPED));
 
     $('#bulk_delete_regex').on('click', async function () {
         const scripts = getSelectedScripts();
@@ -1756,15 +1733,47 @@ jQuery(async () => {
     // @ts-ignore
     $('#saved_regex_scripts').sortable('enable');
 
+    /**
+     * @typedef {object} ScriptDecorators
+     * @property {string} typename
+     * @property {import('../../slash-commands/SlashCommandEnumValue.js').EnumType} color
+     * @property {string} icon
+     */
+    /**
+     * @param {SCRIPT_TYPES} type
+     * @returns {ScriptDecorators}
+     */
+    function getScriptDecorators(type) {
+        switch (type) {
+            case SCRIPT_TYPES.GLOBAL:
+                return {
+                    typename: 'global',
+                    color: enumTypes.enum,
+                    icon: 'G',
+                };
+            case SCRIPT_TYPES.SCOPED:
+                return {
+                    typename: 'scoped',
+                    color: enumTypes.name,
+                    icon: 'S',
+                };
+        }
+        return {
+            typename: 'Unknown',
+            color: enumTypes.variable,
+            icon: 'Unknown',
+        };
+    }
     const localEnumProviders = {
         regexScripts: () =>
             getRegexScripts().map(script => {
                 const type = getScriptType(script);
+                const { typename, color, icon } = getScriptDecorators(type);
                 return new SlashCommandEnumValue(
                     script.scriptName,
-                    `${enumIcons.getStateIcon(!script.disabled)} [${type === SCRIPT_TYPES.GLOBAL ? 'global' : 'scoped'}] ${script.findRegex}`,
-                    type === SCRIPT_TYPES.GLOBAL ? enumTypes.enum : enumTypes.name,
-                    type === SCRIPT_TYPES.GLOBAL ? 'G' : 'S',
+                    `${enumIcons.getStateIcon(!script.disabled)} [${typename}] ${script.findRegex}`,
+                    color,
+                    icon,
                 );
             }),
     };
