@@ -44,6 +44,8 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
  */
 export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
     switch (scriptType) {
+        case SCRIPT_TYPES.UNKNOWN:
+            return [];
         case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
         case SCRIPT_TYPES.SCOPED: {
@@ -54,7 +56,7 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         default:
-            console.warn(`getScriptsByType: Unknown script type ${scriptType}`);
+            console.warn(`getScriptsByType: Invalid script type ${scriptType}`);
             return [];
     }
 }
