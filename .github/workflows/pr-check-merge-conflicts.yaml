@@ -41,7 +41,7 @@ jobs:
       # Just for testing
       - name: Add Debug Label
         # Add a debug label to the current PR (PR events only)
-        if: github.event_name == 'pull_request_target'
+        if: always()
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           REPO: ${{ github.repository }}
