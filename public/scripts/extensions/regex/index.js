@@ -1653,7 +1653,7 @@ jQuery(async () => {
 
         // Reload the current chat to undo previous markdown
         const currentChatId = getCurrentChatId();
-        if (currentChatId !== undefined && currentChatId !== null) {
+        if (currentChatId) {
             await reloadCurrentChat();
         }
     }
@@ -1780,9 +1780,10 @@ jQuery(async () => {
      * @property {import('../../slash-commands/SlashCommandEnumValue.js').EnumType} color
      * @property {string} icon
      */
+
     /**
-     * @param {SCRIPT_TYPES} type
-     * @returns {ScriptDecorators}
+     * @param {SCRIPT_TYPES} type The script type
+     * @returns {ScriptDecorators} The decorators for the script type
      */
     function getScriptDecorators(type) {
         switch (type) {
@@ -1798,13 +1799,15 @@ jQuery(async () => {
                     color: enumTypes.name,
                     icon: 'S',
                 };
+            default:
+                return {
+                    typename: 'Unknown',
+                    color: enumTypes.variable,
+                    icon: 'Unknown',
+                };
         }
-        return {
-            typename: 'Unknown',
-            color: enumTypes.variable,
-            icon: 'Unknown',
-        };
     }
+
     const localEnumProviders = {
         regexScripts: () =>
             getRegexScripts().map(script => {
