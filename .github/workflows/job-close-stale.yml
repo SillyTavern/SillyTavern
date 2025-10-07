@@ -15,6 +15,7 @@ jobs:
   mark-inactivity:
     name: ⏳ Mark Issues/PRs without Activity
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Mint App Token
@@ -59,6 +60,7 @@ jobs:
     name: ⚠️ Mark Issues/PRs Awaiting User Response
     needs: [mark-inactivity]
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Mint App Token
@@ -96,6 +98,7 @@ jobs:
     name: 🔄 Mark Issues with Alternative Exists
     needs: [mark-inactivity, await-user-response]
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Mint App Token

@@ -15,7 +15,7 @@ jobs:
   label-maintainer:
     name: 🏷️ Label if Author is a Repo Maintainer
     runs-on: ubuntu-latest
-    if: contains(fromJson('["Cohee1207", "RossAscends", "Wolfsblvt"]'), github.actor)
+    if: always() && contains(fromJson('["Cohee1207", "RossAscends", "Wolfsblvt"]'), github.actor)
 
     steps:
       - name: Mint App Token

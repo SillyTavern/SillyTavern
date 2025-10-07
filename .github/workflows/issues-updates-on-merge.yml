@@ -15,6 +15,7 @@ jobs:
   update-linked-issues:
     name: 🔗 Mark Linked Issues Done on Push
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Mint App Token

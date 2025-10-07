@@ -16,7 +16,7 @@ jobs:
     name: ✅ Check ESLint on PR
     runs-on: ubuntu-latest
     # Only needs to run when code is changed
-    if: github.event.action == 'opened' || github.event.action == 'synchronize'
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
 
     # Override permissions, linter likely needs write access to issues
     permissions:
@@ -105,7 +105,7 @@ jobs:
     name: 🏷️ Label PR by Branches
     runs-on: ubuntu-latest
     # Only label once when PR is created or when base branch is changed, to allow manual label removal
-    if: github.event.action == 'opened' || (github.event.action == 'synchronize' && github.event.changes.base)
+    if: always() && (github.event.action == 'opened' || (github.event.action == 'synchronize' && github.event.changes.base))
 
     steps:
       - name: Mint App Token
@@ -136,7 +136,7 @@ jobs:
     needs: [label-by-branches]
     runs-on: ubuntu-latest
     # Only needs to run when code is changed
-    if: github.event.action == 'opened' || github.event.action == 'synchronize'
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
 
     steps:
       - name: Mint App Token
@@ -169,7 +169,7 @@ jobs:
     needs: [label-by-branches, label-by-files]
     runs-on: ubuntu-latest
     # Only runs on comments not done by the github actions bot
-    if: github.event_name == 'pull_request_review_comment' && github.actor != 'github-actions[bot]'
+    if: always() && (github.event_name == 'pull_request_review_comment' && github.actor != 'github-actions[bot]')
 
     # Override permissions, issue labeler needs issues write access
     permissions:
@@ -283,7 +283,7 @@ jobs:
   update-linked-issues:
     name: 🔗 Mark Linked Issues Done on Staging Merge
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'staging'
+    if: always() && (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'staging')
 
     # Override permissions, We need to be able to write to issues
     permissions:
