@@ -7,7 +7,10 @@ export {
     runRegexScript,
 };
 
-export const scriptTypes = {
+/**
+ * @enum {number} Regex scripts types
+ */
+export const SCRIPT_TYPES = {
     GLOBAL: 0,
     SCOPED: 1,
 };
@@ -17,24 +20,31 @@ export const scriptTypes = {
  */
 
 /**
+ * @typedef {object} GetRegexScriptsOptions
+ * @property {boolean} allowedOnly only return allowed scripts
+ */
+
+/**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
  *
- * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
+ * @param {GetRegexScriptsOptions} option
+ * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts(allowedOnly = false) {
-    return [...(getScriptsByType(scriptTypes.GLOBAL, allowedOnly)), ...(getScriptsByType(scriptTypes.SCOPED, allowedOnly))];
+export function getRegexScripts(option = { allowedOnly: false }) {
+    return [...(getScriptsByType(SCRIPT_TYPES.GLOBAL, option)), ...(getScriptsByType(SCRIPT_TYPES.SCOPED, option))];
 }
 
 /**
  * Retrieves the regex scripts for a specific type.
- * @param {number} scriptType
+ * @param {SCRIPT_TYPES} scriptType
+ * @param {GetRegexScriptsOptions} option
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
-export function getScriptsByType(scriptType, allowedOnly = false) {
+export function getScriptsByType(scriptType, { allowedOnly } = { allowedOnly: false }) {
     switch (scriptType) {
-        case scriptTypes.GLOBAL:
+        case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
-        case scriptTypes.SCOPED: {
+        case SCRIPT_TYPES.SCOPED: {
             if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
                 return [];
             }
@@ -108,7 +118,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    const allRegex = getRegexScripts(true);
+    const allRegex = getRegexScripts({ allowedOnly: true });
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
