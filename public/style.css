@@ -162,6 +162,8 @@ body {
     color: var(--SmartThemeBodyColor);
     overflow: hidden;
     color-scheme: only light;
+    --interactable-outline-color: transparent;
+    --interactable-outline-color-faint: transparent;
 }
 
 ::-webkit-scrollbar {
