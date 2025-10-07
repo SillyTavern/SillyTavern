@@ -584,7 +584,7 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
  * @returns {Promise<void>}
  */
 async function moveRegexScript(script, toType, fromType = null, saveSettings = true) {
-    if (!fromType) {
+    if (!Object.values(SCRIPT_TYPES).includes(fromType)) {
         fromType = getScriptType(script);
     }
     if (fromType === toType || fromType === SCRIPT_TYPES.UNKNOWN) {
