@@ -52,6 +52,7 @@ export function getScriptsByType(scriptType, { allowedOnly } = { allowedOnly: fa
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
     }
+    return [];
 }
 
 /**
