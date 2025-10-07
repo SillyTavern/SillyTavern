@@ -57,6 +57,24 @@ export class MacrosParser {
     };
 
     /**
+     * Access a macro by its name.
+     * @param {string} key Macro name (key)
+     * @returns {string|MacroFunction|undefined} The macro value
+     */
+    static get(key) {
+        return MacrosParser.#macros.get(key);
+    }
+
+    /**
+     * Checks if a macro is registered.
+     * @param {string} key Macro name (key)
+     * @returns {boolean} True if the macro is registered, false otherwise
+     */
+    static has(key) {
+        return MacrosParser.#macros.has(key);
+    }
+
+    /**
      * Registers a global macro that can be used anywhere where substitution is allowed.
      * @param {string} key Macro name (key)
      * @param {string|MacroFunction} value A string or a function that returns a string
