@@ -12,31 +12,21 @@ permissions:
   issues: write
 
 jobs:
-  app-auth:
-    name: 🔑 Mint App token
+  label-on-content:
+    name: 🏷️ Label Issues by Content
     runs-on: ubuntu-latest
-    if: always()
-
-    outputs:
-      app_token: ${{ steps.app.outputs.token }}
 
     steps:
-      - name: Create GitHub App Token
+      - name: Mint App Token
+        id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
         uses: actions/create-github-app-token@v2
-        id: app
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-  label-on-content:
-    name: 🏷️ Label Issues by Content
-    needs: [app-auth]
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
@@ -52,14 +42,24 @@ jobs:
         with:
           configuration-path: .github/issues-auto-labels.yml
           enable-versioned-regex: 0
-          repo-token: ${{ needs.app-auth.outputs.app_token }}
+          repo-token: ${{ steps.app.outputs.token }}
 
   label-on-labels:
     name: 🏷️ Label Issues by Labels
-    needs: [app-auth, label-on-content]
+    needs: [label-on-content]
     runs-on: ubuntu-latest
 
     steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: ✅ Add "👍 Approved" for relevant labels
         if: contains(fromJSON('["👩‍💻 Good First Issue", "🙏 Help Wanted", "🪲 Confirmed", "⚠️ High Priority", "❕ Medium Priority", "💤 Low Priority"]'), github.event.label.name)
         # 🤖 Issues Helper
@@ -67,7 +67,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'add-labels'
-          token: ${{ needs.app-auth.outputs.app_token }}
+          token: ${{ steps.app.outputs.token }}
           labels: '👍 Approved'
 
       - name: ❌ Remove progress labels when issue is marked done or stale
@@ -77,7 +77,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ needs.app-auth.outputs.app_token }}
+          token: ${{ steps.app.outputs.token }}
           labels: '🧑‍💻 In Progress,🤔 Unsure,🤔 Under Consideration'
 
       - name: ❌ Remove temporary labels when confirmed labels are added
@@ -87,7 +87,7 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ needs.app-auth.outputs.app_token }}
+          token: ${{ steps.app.outputs.token }}
           labels: '🤔 Unsure,🤔 Under Consideration'
 
       - name: ❌ Remove no bug labels when "🪲 Confirmed" is added
@@ -97,33 +97,53 @@ jobs:
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ needs.app-auth.outputs.app_token }}
+          token: ${{ steps.app.outputs.token }}
           labels: '✖️ Not Reproducible,✖️ Not A Bug'
 
   remove-stale-label:
     name: 🗑️ Remove Stale Label on Comment
-    needs: [app-auth, label-on-content, label-on-labels]
+    needs: [label-on-content, label-on-labels]
     runs-on: ubuntu-latest
     # Only run this on new comments, to automatically remove the stale label
     if: github.event_name == 'issue_comment' && github.actor != 'github-actions[bot]'
 
     steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Remove Stale Label
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
         uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
-          token: ${{ needs.app-auth.outputs.app_token }}
+          token: ${{ steps.app.outputs.token }}
           issue-number: ${{ github.event.issue.number }}
           labels: '⚰️ Stale,🕸️ Inactive,🚏 Awaiting User Response,🛑 No Response'
 
   write-auto-comments:
     name: 💬 Post Issue Comments Based on Labels
-    needs: [app-auth, label-on-content, label-on-labels]
+    needs: [label-on-content, label-on-labels, remove-stale-label]
     runs-on: ubuntu-latest
 
     steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
@@ -135,4 +155,4 @@ jobs:
         uses: peaceiris/actions-label-commenter@v1.10.0
         with:
           config_file: .github/issues-auto-comments.yml
-          github_token: ${{ needs.app-auth.outputs.app_token }}
+          github_token: ${{ steps.app.outputs.token }}
