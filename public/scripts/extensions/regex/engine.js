@@ -1,5 +1,6 @@
-import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { characters, main_api, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { getPresetManager } from '../../preset-manager.js';
 import { regexFromString } from '../../utils.js';
 
 /**
@@ -10,6 +11,7 @@ export const SCRIPT_TYPES = {
     UNKNOWN: -1,
     GLOBAL: 0,
     SCOPED: 1,
+    PRESET: 2,
 };
 
 /**
@@ -55,10 +57,26 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
+        case SCRIPT_TYPES.PRESET: {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
+                return [];
+            }
+            const presetManager = getPresetManager();
+            const presetScripts = presetManager?.readPresetExtensionField({ path: 'regex_scripts' });
+            return Array.isArray(presetScripts) ? presetScripts : [];
+        }
         default:
             console.warn(`getScriptsByType: Invalid script type ${scriptType}`);
             return [];
     }
+}
+
+/**
+ * Gets the name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
+ * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
+ */
+export function getPresetName() {
+    return getPresetManager().getSelectedPresetName();
 }
 
 /**
