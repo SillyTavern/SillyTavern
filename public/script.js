@@ -6059,21 +6059,21 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
     }
 
     const targetSwipeId = targetMessage.swipe_id;
-    if (typeof targetMessage.swipes[targetSwipeId] !== 'string' || typeof targetMessage.swipe_info[targetSwipeId] !== 'object') {
+    if (typeof targetMessage.swipes[targetSwipeId] !== 'string') {
         console.warn(`[syncSwipeToMes] Invalid swipe ID: ${targetSwipeId}`);
         return false;
     }
 
-    const targetSwipeInfo = targetMessage.swipe_info[targetSwipeId];
+    const targetSwipeInfo = targetMessage?.swipe_info[targetSwipeId];
     if (typeof targetSwipeInfo !== 'object') {
-        return false;
+        console.warn(`[syncSwipeToMes] Invalid swipe info: ${targetSwipeId}`);
     }
 
     targetMessage.mes = targetMessage.swipes[targetSwipeId];
-    targetMessage.send_date = targetSwipeInfo.send_date;
-    targetMessage.gen_started = targetSwipeInfo.gen_started;
-    targetMessage.gen_finished = targetSwipeInfo.gen_finished;
-    targetMessage.extra = structuredClone(targetSwipeInfo.extra);
+    targetMessage.send_date = targetSwipeInfo?.send_date;
+    targetMessage.gen_started = targetSwipeInfo?.gen_started;
+    targetMessage.gen_finished = targetSwipeInfo?.gen_finished;
+    targetMessage.extra = structuredClone(targetSwipeInfo?.extra) ?? {};
 
     return true;
 }
@@ -8880,7 +8880,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Expand new message.
         thisMesDiv.animate({ height: new_height + 'px' }, {
-            duration: 100,
+            duration: 1000,
             queue: false,
             progress: function (animation, progress, remainingMs) {
 
@@ -10554,8 +10554,6 @@ jQuery(async function () {
 
     $(document).on('click', '.mes_edit_cancel', async function () {
         await messageEditCancel.call(this, this_edit_mes_id);
-
-        showSwipeButtons();
     });
 
     $(document).on('click', '.mes_edit_up', async function () {
