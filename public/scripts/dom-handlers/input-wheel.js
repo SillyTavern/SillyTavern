@@ -9,7 +9,7 @@ export function handleInputWheel() {
         const input = document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
         if (input && input.type === 'number' && input.hasAttribute('step')) {
             const parent = input.closest('.range-block-range-and-counter') ?? input.closest('div') ?? input.parentElement;
-            const slider = /** @type {HTMLInputElement} */ (parent && parent.querySelector('input[type="range"]'));
+            const slider = /** @type {HTMLInputElement} */ (parent?.querySelector('input[type="range"]'));
 
             // Stop propagation for either target
             if (e.target === input || (slider && e.target === slider)) {
