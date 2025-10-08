@@ -1,3 +1,5 @@
+import { throttle } from './utils.js';
+
 export function initDomHandlers() {
     handleInputWheel();
 }
@@ -8,8 +10,38 @@ export function initDomHandlers() {
  * This also makes wheel work inside Firefox.
  */
 function handleInputWheel() {
-    let lastUpdate = 0;
     const minInterval = 25; // ms
+
+    /**
+     * Update input and slider values based on wheel delta
+     * @param {HTMLInputElement} input The number input element
+     * @param {HTMLInputElement|null} slider The associated range input element, if any
+     * @param {number} deltaY The wheel deltaY value
+     */
+    function updateValue(input, slider, deltaY) {
+        const currentValue = parseFloat(input.value);
+        const step = parseFloat(input.step);
+        const min = parseFloat(input.min);
+        const max = parseFloat(input.max);
+
+        // Calculate new value based on wheel movement delta (negative = up, positive = down)
+        let newValue = currentValue + (deltaY > 0 ? -step : step);
+        // Ensure it's a multiple of step
+        newValue = Math.round(newValue / step) * step;
+        // Ensure it's within the min and max range
+        newValue = Math.min(Math.max(newValue, min), max);
+        // Simple fix for floating point precision issues
+        newValue = Math.round(newValue * 1e10) / 1e10;
+
+        // Update both input and slider values
+        input.value = newValue.toString();
+        if (slider) slider.value = newValue.toString();
+        // Trigger input event (just ONE) to update any listeners
+        const inputEvent = new Event('input', { bubbles: true });
+        input.dispatchEvent(inputEvent);
+    }
+
+    const updateValueThrottled = throttle(updateValue, minInterval);
 
     document.addEventListener('wheel', (e) => {
         // Try to carefully narrow down if we even need to fire this handler
@@ -23,33 +55,7 @@ function handleInputWheel() {
                 e.stopPropagation();
                 e.preventDefault();
 
-                // Throttle to prevent excessive updates
-                const now = Date.now();
-                if (now - lastUpdate < minInterval) {
-                    return;
-                }
-                lastUpdate = now;
-
-                const currentValue = parseFloat(input.value);
-                const step = parseFloat(input.step);
-                const min = parseFloat(input.min);
-                const max = parseFloat(input.max);
-
-                // Calculate new value based on wheel movement delta (negative = up, positive = down)
-                let newValue = currentValue + (e.deltaY > 0 ? -step : step);
-                // Ensure it's a multiple of step
-                newValue = Math.round(newValue / step) * step;
-                // Ensure it's within the min and max range
-                newValue = Math.min(Math.max(newValue, min), max);
-                // Simple fix for floating point precision issues
-                newValue = Math.round(newValue * 1e10) / 1e10;
-
-                // Update both input and slider values
-                input.value = newValue.toString();
-                if (slider) slider.value = newValue.toString();
-                // Trigger input event (just ONE) to update any listeners
-                const inputEvent = new Event('input', { bubbles: true });
-                input.dispatchEvent(inputEvent);
+                updateValueThrottled(input, slider, e.deltaY);
             }
         }
     }, { passive: false });
