@@ -253,7 +253,7 @@
                         </div>
                         <div id="common-gen-settings-block" class="width100p">
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
-                                <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div id="amount_gen_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small data-i18n="response legth(tokens)">Response (tokens)</small>
                                     <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="2048" step="1">
                                     <div data-randomization-disabled="true" class="wide100p">
@@ -284,7 +284,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div id="max_context_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div id="max_context_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small data-i18n="context size(tokens)">Context (tokens)</small>
                                     <input class="neo-range-slider" type="range" id="max_context" name="volume" min="512" max="8192" step="64">
                                     <div data-randomization-disabled="true" class="wide100p">
@@ -648,7 +648,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536" step="1">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai">
@@ -4231,7 +4231,7 @@
                                         Token Padding
                                     </small>
                                 </div>
-                                <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
+                                <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" step="1" />
                             </div>
                         </div>
                         <div>
