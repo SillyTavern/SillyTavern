@@ -7210,6 +7210,101 @@ function messageEditAuto(div) {
     saveChatDebounced();
 }
 
+async function messageEdit(edit_mes_id) {
+    hideSwipeButtons();
+    let chatScrollPosition = chatElement.scrollTop();
+
+    this_edit_mes_id = edit_mes_id;
+
+    let thisMesDiv = chatElement.children().filter(`.mes[mesid="${edit_mes_id}"]`);
+
+    let thisMesBlock = thisMesDiv.find('.mes_block');
+    let thisMesText = thisMesBlock.find('.mes_text');
+
+    thisMesText.empty();
+    thisMesBlock.find('.mes_buttons').css('display', 'none');
+    thisMesBlock.find('.mes_edit_buttons').css('display', 'inline-flex');
+
+    // Also edit reasoning, if it exists
+    const reasoningEdit = thisMesBlock.find('.mes_reasoning_edit:visible');
+    if (reasoningEdit.length > 0) {
+        reasoningEdit.trigger('click');
+    }
+
+    var text = chat[edit_mes_id]['mes'];
+    if (chat[edit_mes_id]['is_user']) {
+        this_edit_mes_chname = name1;
+    } else if (chat[edit_mes_id]['force_avatar']) {
+        this_edit_mes_chname = chat[edit_mes_id]['name'];
+    } else {
+        this_edit_mes_chname = name2;
+    }
+    if (power_user.trim_spaces) {
+        text = text.trim();
+    }
+    thisMesText.append(
+        '<textarea id=\'curEditTextarea\' class=\'edit_textarea mdHotkeys\'></textarea>',
+    );
+
+    let edit_textarea = thisMesBlock.find('.edit_textarea');
+    edit_textarea.val(text);
+
+    const cssAutofit = CSS.supports('field-sizing', 'content');
+    if (!cssAutofit) {
+        edit_textarea.height(0);
+        edit_textarea.height(edit_textarea[0].scrollHeight);
+    }
+    edit_textarea.trigger('focus');
+    const textAreaElement = /** @type {HTMLTextAreaElement} */ (edit_textarea[0]);
+    // Sets the cursor at the end of the text
+    textAreaElement.setSelectionRange(
+        String(edit_textarea.val()).length,
+        String(edit_textarea.val()).length,
+    );
+    if (Number(this_edit_mes_id) === chat.length - 1) {
+        chatElement.scrollTop(chatScrollPosition);
+    }
+
+    updateEditArrowClasses();
+}
+
+/**
+ * Close the open message editor.
+ * This deletes the user's unsaved changes.
+ * @param {number} [messageId=this_edit_mes_id]
+ */
+async function messageEditCancel(messageId = this_edit_mes_id) {
+    let text = chat[messageId]['mes'];
+
+    const thisMesDiv = $(this) ?? chatElement.children().filter(`[mesid="${messageId}"]`);
+    const thisMesBlock = thisMesDiv.closest('.mes_block') ?? thisMesDiv.find('.mes_block');
+    thisMesBlock.find('.mes_text').empty();
+    thisMesDiv.closest('.mes_edit_buttons').css('display', 'none');
+    thisMesBlock.find('.mes_buttons').css('display', '');
+    thisMesBlock.find('.mes_text')
+        .append(messageFormatting(
+            text,
+            this_edit_mes_chname,
+            chat[messageId].is_system,
+            chat[messageId].is_user,
+            messageId,
+            {},
+            false,
+        ));
+    appendMediaToMessage(chat[messageId], thisMesDiv);
+    addCopyToCodeBlocks(thisMesDiv);
+
+    const reasoningEditDone = thisMesBlock.find('.mes_reasoning_edit_cancel:visible');
+    if (reasoningEditDone.length > 0) {
+        reasoningEditDone.trigger('click');
+    }
+
+    await eventSource.emit(event_types.MESSAGE_UPDATED, messageId);
+    messageId = undefined;
+
+    showSwipeButtons();
+}
+
 async function messageEditDone(div) {
     let { mesBlock, text, mes, bias } = updateMessage(div);
     if (this_edit_mes_id == 0) {
@@ -8526,8 +8621,8 @@ export function swipe_left(_event, { source, repeated } = {}) {
 
     // If the user is holding down the key and we're at the first swipe, don't do anything
     if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === 0) {
-        return;
-    }
+            return;
+        }
 
     const swipe_duration = 120;
     const swipe_range = '700px';
@@ -8555,14 +8650,14 @@ export function swipe_left(_event, { source, repeated } = {}) {
         chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra);
 
         if (chat[chat.length - 1].extra) {
-            // if message has memory attached - remove it to allow regen
+                // if message has memory attached - remove it to allow regen
             if (chat[chat.length - 1].extra.memory) {
                 delete chat[chat.length - 1].extra.memory;
-            }
-            // ditto for display text
+                }
+                // ditto for display text
             if (chat[chat.length - 1].extra.display_text) {
                 delete chat[chat.length - 1].extra.display_text;
-            }
+                }
         }
         $(this).parent().children('.mes_block').transition({
             x: swipe_range,
@@ -8605,8 +8700,8 @@ export function swipe_left(_event, { source, repeated } = {}) {
                 $(this).parent().children('.mes_block').transition({
                     x: '-' + swipe_range,
                     duration: 0,
-                    easing: animation_easing,
-                    queue: false,
+            easing: animation_easing,
+            queue: false,
                     complete: function () {
                         $(this).parent().children('.mes_block').transition({
                             x: '0px',
@@ -8635,7 +8730,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
                     duration: 0,
                     easing: animation_easing,
                     queue: false,
-                    complete: function () {
+            complete: function () {
                         $(this).parent().children('.avatar').transition({
                             x: '0px',
                             duration: animation_duration > 0 ? swipe_duration : 0,
@@ -8700,8 +8795,8 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     } else {
         // If the user is holding down the key and we're at the last swipe, don't do anything
         if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === chat[chat.length - 1].swipes.length - 1) {
-            return;
-        }
+        return;
+    }
         // make new slot in array
         chat[chat.length - 1]['swipe_id']++;
     }
@@ -8722,7 +8817,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     }
     if (!Array.isArray(chat[chat.length - 1]['swipe_info'])) {
         chat[chat.length - 1]['swipe_info'] = [];
-    }
+        }
     //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
     if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length && (chat.length !== 1 || !isPristine)) {
         delete chat[chat.length - 1].gen_started;
@@ -10236,7 +10331,6 @@ jQuery(async function () {
                 return;
             }*/
 
-            let chatScrollPosition = chatElement.scrollTop();
             if (this_edit_mes_id !== undefined) {
                 let mes_edited = chatElement.find(`[mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
                 if (Number(edit_mes_id) == chat.length - 1) { //if the generating swipe (...)
@@ -10252,55 +10346,9 @@ jQuery(async function () {
                 }
                 await messageEditDone(mes_edited);
             }
-            $(this).closest('.mes_block').find('.mes_text').empty();
-            $(this).closest('.mes_block').find('.mes_buttons').css('display', 'none');
-            $(this).closest('.mes_block').find('.mes_edit_buttons').css('display', 'inline-flex');
-            var edit_mes_id = $(this).closest('.mes').attr('mesid');
-            this_edit_mes_id = edit_mes_id;
+            var edit_mes_id = Number($(this).closest('.mes').attr('mesid'));
 
-            // Also edit reasoning, if it exists
-            const reasoningEdit = $(this).closest('.mes_block').find('.mes_reasoning_edit:visible');
-            if (reasoningEdit.length > 0) {
-                reasoningEdit.trigger('click');
-            }
-
-            var text = chat[edit_mes_id]['mes'];
-            if (chat[edit_mes_id]['is_user']) {
-                this_edit_mes_chname = name1;
-            } else if (chat[edit_mes_id]['force_avatar']) {
-                this_edit_mes_chname = chat[edit_mes_id]['name'];
-            } else {
-                this_edit_mes_chname = name2;
-            }
-            if (power_user.trim_spaces) {
-                text = text.trim();
-            }
-            $(this)
-                .closest('.mes_block')
-                .find('.mes_text')
-                .append(
-                    '<textarea id=\'curEditTextarea\' class=\'edit_textarea mdHotkeys\'></textarea>',
-                );
-            $('#curEditTextarea').val(text);
-            let edit_textarea = $(this)
-                .closest('.mes_block')
-                .find('.edit_textarea');
-            if (!cssAutofit) {
-                edit_textarea.height(0);
-                edit_textarea.height(edit_textarea[0].scrollHeight);
-            }
-            edit_textarea.trigger('focus');
-            const textAreaElement = /** @type {HTMLTextAreaElement} */ (edit_textarea[0]);
-            // Sets the cursor at the end of the text
-            textAreaElement.setSelectionRange(
-                String(edit_textarea.val()).length,
-                String(edit_textarea.val()).length,
-            );
-            if (Number(this_edit_mes_id) === chat.length - 1) {
-                chatElement.scrollTop(chatScrollPosition);
-            }
-
-            updateEditArrowClasses();
+            await messageEdit(edit_mes_id);
         }
     });
 
@@ -10379,33 +10427,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_edit_cancel', async function () {
-        let text = chat[this_edit_mes_id]['mes'];
-
-        $(this).closest('.mes_block').find('.mes_text').empty();
-        $(this).closest('.mes_edit_buttons').css('display', 'none');
-        $(this).closest('.mes_block').find('.mes_buttons').css('display', '');
-        $(this)
-            .closest('.mes_block')
-            .find('.mes_text')
-            .append(messageFormatting(
-                text,
-                this_edit_mes_chname,
-                chat[this_edit_mes_id].is_system,
-                chat[this_edit_mes_id].is_user,
-                this_edit_mes_id,
-                {},
-                false,
-            ));
-        appendMediaToMessage(chat[this_edit_mes_id], $(this).closest('.mes'));
-        addCopyToCodeBlocks($(this).closest('.mes'));
-
-        const reasoningEditDone = $(this).closest('.mes_block').find('.mes_reasoning_edit_cancel:visible');
-        if (reasoningEditDone.length > 0) {
-            reasoningEditDone.trigger('click');
-        }
-
-        await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
-        this_edit_mes_id = undefined;
+        await messageEditCancel.call(this, this_edit_mes_id);
     });
 
     $(document).on('click', '.mes_edit_up', async function () {
