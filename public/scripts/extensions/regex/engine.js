@@ -90,6 +90,9 @@ export async function saveScriptsByType(scripts, scriptType) {
             const presetManager = getPresetManager();
             await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
             break;
+        default:
+            console.warn(`saveScriptsByType: Invalid script type ${scriptType}`);
+            break;
     }
 }
 
