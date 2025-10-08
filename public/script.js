@@ -8864,6 +8864,17 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         });
     }
 
+    function getMessageBottomHeight(thisMesDiv) {
+        const thisMesRect = thisMesDiv[0].getBoundingClientRect();
+        //Scroll position + Chat height = Bottom of chat height.
+        const chatBottom = chatElement.scrollTop() - chatElement.height();
+        //Message offset from viewport top + height = Bottom of message offset.
+        const messageBottom = thisMesRect.top + thisMesDiv.height();
+        // Bottom of chat + Bottom of message offset = target scroll position.
+        const scrollHeight = (chatBottom + messageBottom);
+        return scrollHeight;
+    }
+
     function expandNewMessage(thisMesDiv) {
         //Only scroll if the view is not near the bottom.
         const is_animation_scroll = (chatElement.scrollTop() >= (chatElement.prop('scrollHeight') - chatElement.outerHeight()) - 10);
@@ -8872,26 +8883,19 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (new_height < 103) new_height = 103;
 
         //Keep the swipe buttons at the same height when scrolling is finished.
-        let chatBottom = chatElement.scrollTop() + chatElement.height();
-        let messageBottom = thisMesDiv.offset().top + thisMesDiv.height();
-        let difference = (chatBottom - messageBottom);
-        thisMesDiv.css({ 'scroll-margin': difference });
 
         //Expand new message.
         thisMesDiv.animate({ height: new_height + 'px' }, {
-            duration: 1000,
+            duration: 400,
             queue: false,
             progress: function (animation, progress, remainingMs) {
 
-                // Scroll the chat down as the message expands
-                if (is_animation_scroll) thisMesDiv[0].scrollIntoView(false);
+                if (is_animation_scroll) chatElement.scrollTop(getMessageBottomHeight(thisMesDiv));
             },
             complete: function () {
                 thisMesDiv.css('height', 'auto');
-                thisMesDiv.css('overflow', '');
-                //Correct height auto offset.
-                thisMesDiv[0].scrollIntoView(false);
-                thisMesDiv.css({ 'scroll-margin': '' });
+                // //Correct height auto offset.
+                if (is_animation_scroll) chatElement.scrollTop(getMessageBottomHeight(thisMesDiv));
             },
         });
     }
