@@ -8701,9 +8701,9 @@ export async function createOrEditCharacter(e) {
  * @returns {string} The formatted counter.
  */
 function formatSwipeCounter(current, total) {
-    // if (isNaN(current) || isNaN(total)) {
-    //     return '';
-    // }
+    if (isNaN(current) && isNaN(total)) {
+        return '';
+    }
     return `${!isNaN(current) ? current : '?'}\u200b/\u200b${!isNaN(total) ? total : '?'}`;
 }
 
@@ -8894,7 +8894,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             },
             complete: function () {
                 thisMesDiv.css('height', 'auto');
-                // //Correct height auto offset.
+                //Correct height auto offset.
                 if (is_animation_scroll) chatElement.scrollTop(getMessageBottomHeight(thisMesDiv));
             },
         });
