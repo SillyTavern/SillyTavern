@@ -7210,6 +7210,10 @@ function messageEditAuto(div) {
     saveChatDebounced();
 }
 
+/**
+ * Create the message edit UI.
+ * @param {number} edit_mes_id
+ */
 async function messageEdit(edit_mes_id) {
     hideSwipeButtons();
     let chatScrollPosition = chatElement.scrollTop();
@@ -7231,7 +7235,7 @@ async function messageEdit(edit_mes_id) {
         reasoningEdit.trigger('click');
     }
 
-    var text = chat[edit_mes_id]['mes'];
+    let text = chat[edit_mes_id]['mes'];
     if (chat[edit_mes_id]['is_user']) {
         this_edit_mes_chname = name1;
     } else if (chat[edit_mes_id]['force_avatar']) {
@@ -7309,6 +7313,9 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     await eventSource.emit(event_types.MESSAGE_UPDATED, messageId);
     if (messageId == this_edit_mes_id) {
         this_edit_mes_id = undefined;
+    }
+    else {
+        console.warn(`The message editor was closed on message #${messageId} while #${this_edit_mes_id} is being edited.`);
     }
 
     showSwipeButtons();
