@@ -7284,7 +7284,7 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
         thisMesDiv = chatElement.children().filter(`[mesid="${messageId}"]`);
     }
 
-    const thisMesBlock = thisMesDiv.find('.mes_block') ?? thisMesDiv.find('.mes_block');
+    const thisMesBlock = thisMesDiv.find('.mes_block');
     thisMesBlock.find('.mes_text').empty();
     thisMesDiv.find('.mes_edit_buttons').css('display', 'none');
     thisMesBlock.find('.mes_buttons').css('display', '');
