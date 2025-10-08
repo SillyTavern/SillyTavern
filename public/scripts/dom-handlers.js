@@ -28,8 +28,9 @@ function handleInputWheel() {
         let newValue = currentValue + (deltaY > 0 ? -step : step);
         // Ensure it's a multiple of step
         newValue = Math.round(newValue / step) * step;
-        // Ensure it's within the min and max range
-        newValue = Math.min(Math.max(newValue, min), max);
+        // Ensure it's within the min and max range (NaN-aware)
+        newValue = !isNaN(min) ? Math.max(newValue, min) : newValue;
+        newValue = !isNaN(max) ? Math.min(newValue, max) : newValue;
         // Simple fix for floating point precision issues
         newValue = Math.round(newValue * 1e10) / 1e10;
 
