@@ -8,6 +8,9 @@ export function initDomHandlers() {
  * This also makes wheel work inside Firefox.
  */
 function handleInputWheel() {
+    let lastUpdate = 0;
+    const minInterval = 25; // ms
+
     document.addEventListener('wheel', (e) => {
         // Try to carefully narrow down if we even need to fire this handler
         const input = document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
@@ -19,6 +22,13 @@ function handleInputWheel() {
             if (e.target === input || (slider && e.target === slider)) {
                 e.stopPropagation();
                 e.preventDefault();
+
+                // Throttle to prevent excessive updates
+                const now = Date.now();
+                if (now - lastUpdate < minInterval) {
+                    return;
+                }
+                lastUpdate = now;
 
                 const currentValue = parseFloat(input.value);
                 const step = parseFloat(input.step);
