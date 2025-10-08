@@ -1,5 +1,5 @@
 import { characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
-import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
+import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -8,10 +8,9 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { getPresetName, getRegexScripts, getScriptsByType, regex_placement, runRegexScript, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+import { getPresetName, getRegexScripts, getScriptsByType, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
-import { getPresetManager } from '../../preset-manager.js';
 
 const sanitizeFileName = name => name.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase();
 
@@ -374,23 +373,17 @@ class RegexPresetManager {
         await this.applyPresetList({
             presetList: preset.global,
             targetList: getScriptsByType(SCRIPT_TYPES.GLOBAL),
-            saveFunction: () => saveSettingsDebounced(),
+            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.GLOBAL),
         });
         await this.applyPresetList({
             presetList: preset.scoped,
             targetList: getScriptsByType(SCRIPT_TYPES.SCOPED),
-            saveFunction: (scripts) => writeExtensionField(this_chid, 'regex_scripts', scripts),
+            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.SCOPED),
         });
         await this.applyPresetList({
             presetList: preset.preset,
             targetList: getScriptsByType(SCRIPT_TYPES.PRESET),
-            saveFunction: async scripts => {
-                const presetManager = getPresetManager();
-                await presetManager.writePresetExtensionField({
-                    path: 'regex_scripts',
-                    value: scripts,
-                });
-            },
+            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.PRESET),
         });
 
         // Render the changes to the UI
@@ -548,7 +541,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
     }
 
     if (scriptType === SCRIPT_TYPES.SCOPED) {
-        await writeExtensionField(this_chid, 'regex_scripts', array);
+        await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
 
         // Add the character to the allowed list
         if (!extension_settings.character_allowed_regex.includes(characters[this_chid].avatar)) {
@@ -557,11 +550,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
     }
 
     if (scriptType === SCRIPT_TYPES.PRESET) {
-        const presetManager = getPresetManager();
-        await presetManager.writePresetExtensionField({
-            path: 'regex_scripts',
-            value: array,
-        });
+        await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
 
         // Add the preset to the allowed list
         const presetName = getPresetName();
@@ -602,14 +591,10 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
         array.splice(existingScriptIndex, 1);
 
         if (scriptType === SCRIPT_TYPES.SCOPED) {
-            await writeExtensionField(this_chid, 'regex_scripts', array);
+            await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
         }
         if (scriptType === SCRIPT_TYPES.PRESET) {
-            const presetManager = getPresetManager();
-            await presetManager.writePresetExtensionField({
-                path: 'regex_scripts',
-                value: array,
-            });
+            await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
         }
         if (saveSettings) {
             saveSettingsDebounced();
@@ -1262,15 +1247,9 @@ async function onRegexDebuggerOpenClick() {
 
         extension_settings.regex = newGlobalScripts;
         if (this_chid !== undefined) {
-            await writeExtensionField(this_chid, 'regex_scripts', newScopedScripts);
+            await saveScriptsByType(newScopedScripts, SCRIPT_TYPES.SCOPED);
         }
-        if (this_chid !== undefined) {
-            const presetManager = getPresetManager();
-            await presetManager.writePresetExtensionField({
-                path: 'regex_scripts',
-                value: newPresetScripts,
-            });
-        }
+        await saveScriptsByType(newPresetScripts, SCRIPT_TYPES.PRESET);
 
         saveSettingsDebounced();
         await loadRegexScripts();
@@ -1526,14 +1505,10 @@ async function onRegexImportObjectChange(regexScript, scriptType) {
         array.push(regexScript);
 
         if (scriptType === SCRIPT_TYPES.SCOPED) {
-            await writeExtensionField(this_chid, 'regex_scripts', array);
+            await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
         }
         if (scriptType === SCRIPT_TYPES.PRESET) {
-            const presetManager = getPresetManager();
-            await presetManager.writePresetExtensionField({
-                path: 'regex_scripts',
-                value: array,
-            });
+            await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
         }
 
         saveSettingsDebounced();
@@ -1894,23 +1869,17 @@ jQuery(async () => {
     let sortableDatas = [
         {
             selector: '#saved_regex_scripts',
-            setter: x => extension_settings.regex = x,
+            setter: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.GLOBAL),
             getter: () => getScriptsByType(SCRIPT_TYPES.GLOBAL),
         },
         {
             selector: '#saved_scoped_scripts',
-            setter: x => writeExtensionField(this_chid, 'regex_scripts', x),
+            setter: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.SCOPED),
             getter: () => getScriptsByType(SCRIPT_TYPES.SCOPED),
         },
         {
             selector: '#saved_preset_scripts',
-            setter: x => {
-                const presetManager = getPresetManager();
-                presetManager.writePresetExtensionField({
-                    path: 'regex_scripts',
-                    value: x,
-                });
-            },
+            setter: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.PRESET),
             getter: () => getScriptsByType(SCRIPT_TYPES.PRESET),
         },
     ];

@@ -1,5 +1,5 @@
-import { characters, main_api, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
-import { extension_settings } from '../../extensions.js';
+import { characters, main_api, saveSettingsDebounced, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { extension_settings, writeExtensionField } from '../../extensions.js';
 import { getPresetManager } from '../../preset-manager.js';
 import { regexFromString } from '../../utils.js';
 
@@ -68,6 +68,28 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
         default:
             console.warn(`getScriptsByType: Invalid script type ${scriptType}`);
             return [];
+    }
+}
+
+/**
+ * Saves an array of regex scripts for a specific type.
+ * @param {RegexScript[]} scripts An array of regex scripts to save.
+ * @param {SCRIPT_TYPES} scriptType The type of regex scripts to save.
+ * @returns {Promise<void>}
+ */
+export async function saveScriptsByType(scripts, scriptType) {
+    switch (scriptType) {
+        case SCRIPT_TYPES.GLOBAL:
+            extension_settings.regex = scripts;
+            saveSettingsDebounced();
+            break;
+        case SCRIPT_TYPES.SCOPED:
+            await writeExtensionField(this_chid, 'regex_scripts', scripts);
+            break;
+        case SCRIPT_TYPES.PRESET:
+            const presetManager = getPresetManager();
+            await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
+            break;
     }
 }
 
