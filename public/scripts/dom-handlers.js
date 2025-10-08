@@ -24,6 +24,9 @@ function handleInputWheel() {
         const min = parseFloat(input.min);
         const max = parseFloat(input.max);
 
+        // Sanity checks before trying to calculate new value
+        if (isNaN(currentValue) || isNaN(step) || step <= 0 || deltaY === 0) return;
+
         // Calculate new value based on wheel movement delta (negative = up, positive = down)
         let newValue = currentValue + (deltaY > 0 ? -step : step);
         // Ensure it's a multiple of step
