@@ -8704,8 +8704,8 @@ export function swipe_left(_event, { source, repeated } = {}) {
 
     // If the user is holding down the key and we're at the first swipe, don't do anything
     if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === 0) {
-        return;
-    }
+            return;
+        }
 
     const swipe_duration = 120;
     const swipe_range = '700px';
@@ -8733,14 +8733,14 @@ export function swipe_left(_event, { source, repeated } = {}) {
         chat[chat.length - 1]['extra'] = structuredClone(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra);
 
         if (chat[chat.length - 1].extra) {
-            // if message has memory attached - remove it to allow regen
+                // if message has memory attached - remove it to allow regen
             if (chat[chat.length - 1].extra.memory) {
                 delete chat[chat.length - 1].extra.memory;
-            }
-            // ditto for display text
+                }
+                // ditto for display text
             if (chat[chat.length - 1].extra.display_text) {
                 delete chat[chat.length - 1].extra.display_text;
-            }
+                }
         }
         $(this).parent().children('.mes_block').transition({
             x: swipe_range,
@@ -8783,8 +8783,8 @@ export function swipe_left(_event, { source, repeated } = {}) {
                 $(this).parent().children('.mes_block').transition({
                     x: '-' + swipe_range,
                     duration: 0,
-                    easing: animation_easing,
-                    queue: false,
+            easing: animation_easing,
+            queue: false,
                     complete: function () {
                         $(this).parent().children('.mes_block').transition({
                             x: '0px',
@@ -8813,7 +8813,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
                     duration: 0,
                     easing: animation_easing,
                     queue: false,
-                    complete: function () {
+            complete: function () {
                         $(this).parent().children('.avatar').transition({
                             x: '0px',
                             duration: animation_duration > 0 ? swipe_duration : 0,
@@ -8878,8 +8878,8 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     } else {
         // If the user is holding down the key and we're at the last swipe, don't do anything
         if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === chat[chat.length - 1].swipes.length - 1) {
-            return;
-        }
+        return;
+    }
         // make new slot in array
         chat[chat.length - 1]['swipe_id']++;
     }
@@ -8900,7 +8900,7 @@ export function swipe_right(_event = null, { source, repeated } = {}) {
     }
     if (!Array.isArray(chat[chat.length - 1]['swipe_info'])) {
         chat[chat.length - 1]['swipe_info'] = [];
-    }
+        }
     //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
     if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length && (chat.length !== 1 || !isPristine)) {
         delete chat[chat.length - 1].gen_started;
