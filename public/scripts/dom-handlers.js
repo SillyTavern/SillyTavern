@@ -1,9 +1,13 @@
+export function initDomHandlers() {
+    handleInputWheel();
+}
+
 /**
  * Trap mouse wheel inside of focused number inputs to prevent scrolling their containers.
  * Instead of firing wheel events, manually update both slider and input values.
  * This also makes wheel work inside Firefox.
  */
-export function handleInputWheel() {
+function handleInputWheel() {
     document.addEventListener('wheel', (e) => {
         // Try to carefully narrow down if we even need to fire this handler
         const input = document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
