@@ -107,7 +107,7 @@ jobs:
     needs: [label-on-content, label-on-labels]
     runs-on: ubuntu-latest
     # Only run this on new comments, to automatically remove the stale label
-    if: always() && (github.event_name == 'issue_comment' && github.actor != 'github-actions[bot]')
+    if: always() && (github.event_name == 'issue_comment' && github.event.sender.type != 'Bot')
 
     steps:
       - name: Mint App Token

@@ -187,7 +187,7 @@ function getSourceSettings(source, request) {
         case 'palm':
         case 'vertexai':
             return {
-                model: String(request.body.model || 'text-embedding-004'),
+                model: String(request.body.model || 'text-embedding-005'),
                 request: request, // Pass the request object to get API key and URL
             };
         case 'mistral':

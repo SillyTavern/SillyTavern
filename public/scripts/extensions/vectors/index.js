@@ -66,7 +66,7 @@ const settings = {
     ollama_keep: false,
     vllm_model: '',
     webllm_model: '',
-    google_model: 'text-embedding-004',
+    google_model: 'text-embedding-005',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',

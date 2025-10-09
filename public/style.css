@@ -133,6 +133,7 @@
 * {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     -moz-osx-font-smoothing: grayscale;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
