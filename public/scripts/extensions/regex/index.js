@@ -8,7 +8,7 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { getPresetName, getRegexScripts, getScriptsByType, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+import { getCurrentPresetName, getRegexScripts, getScriptsByType, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 
@@ -552,7 +552,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
         await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
 
         // Add the preset to the allowed list
-        const presetName = getPresetName();
+        const presetName = getCurrentPresetName();
         if (!extension_settings.preset_allowed_regex?.[main_api].includes(presetName)) {
             extension_settings.preset_allowed_regex[main_api].push(presetName);
         }
@@ -734,7 +734,7 @@ async function loadRegexScripts() {
 
     const isScopedAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isScopedAllowed);
-    const isPresetAllowed = extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName());
+    const isPresetAllowed = extension_settings?.preset_allowed_regex[main_api]?.includes(getCurrentPresetName());
     $('#regex_preset_toggle').prop('checked', isPresetAllowed);
 
     setMoveButtonsVisibility();
@@ -1591,7 +1591,7 @@ function purgeEmbeddedRegexScripts({ character }) {
     if (!avatar) {
         return;
     }
-    const checkKey = `AlertRegex_${characters[this_chid].avatar}`;
+    const checkKey = `AlertRegex_${avatar}`;
     if (accountStorage.getItem(checkKey)) {
         accountStorage.removeItem(checkKey);
     }
@@ -1603,7 +1603,7 @@ function purgeEmbeddedRegexScripts({ character }) {
 }
 
 function purgePresetEmbeddedRegexScripts({ apiId, name }) {
-    const checkKey = `AlertRegex_${main_api}_${name}`;
+    const checkKey = `AlertRegex_${apiId}_${name}`;
     if (accountStorage.getItem(checkKey)) {
         accountStorage.removeItem(checkKey);
     }
@@ -1644,7 +1644,7 @@ async function checkCharEmbeddedRegexScripts() {
 }
 
 async function checkPresetEmbeddedRegexScripts() {
-    const name = getPresetName();
+    const name = getCurrentPresetName();
     const scripts = getScriptsByType(SCRIPT_TYPES.PRESET);
 
     if (Array.isArray(scripts) && scripts.length > 0) {
@@ -1953,7 +1953,7 @@ jQuery(async () => {
 
     $('#regex_preset_toggle').on('input', function () {
         const isEnable = !!$(this).prop('checked');
-        const name = getPresetName();
+        const name = getCurrentPresetName();
 
         if (isEnable) {
             if (!extension_settings.preset_allowed_regex[main_api].includes(name)) {

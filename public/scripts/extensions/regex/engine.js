@@ -58,7 +58,7 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         case SCRIPT_TYPES.PRESET: {
-            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[main_api]?.includes(getPresetName())) {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[main_api]?.includes(getCurrentPresetName())) {
                 return [];
             }
             const presetManager = getPresetManager();
@@ -101,7 +101,7 @@ export async function saveScriptsByType(scripts, scriptType) {
  * Gets the name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
  * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
  */
-export function getPresetName() {
+export function getCurrentPresetName() {
     return getPresetManager().getSelectedPresetName();
 }
 
