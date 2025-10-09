@@ -98,6 +98,117 @@ export async function saveScriptsByType(scripts, scriptType) {
 }
 
 /**
+ * Check if character's regexes are allowed to be used; if character is undefined, returns false
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {boolean}
+ */
+export function isScopedScriptsAllowed(character) {
+    return !!extension_settings?.character_allowed_regex?.includes(character?.avatar);
+}
+
+/**
+ * Allow character's regexes to be used; if character is undefined, do nothing
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {void}
+ */
+export function allowScopedScripts(character) {
+    const avatar = character?.avatar;
+    if (!avatar) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.character_allowed_regex)) {
+        extension_settings.character_allowed_regex = [];
+    }
+    if (!extension_settings.character_allowed_regex.includes(avatar)) {
+        extension_settings.character_allowed_regex.push(avatar);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Disallow character's regexes to be used; if character is undefined, do nothing
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {void}
+ */
+export function disallowScopedScripts(character) {
+    const avatar = character?.avatar;
+    if (!avatar) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.character_allowed_regex)) {
+        return;
+    }
+    const index = extension_settings.character_allowed_regex.indexOf(avatar);
+    if (index !== -1) {
+        extension_settings.character_allowed_regex.splice(index, 1);
+        saveSettingsDebounced();
+    }
+}
+
+const API_MAP_FOR_PRESET_REGEX = Object.freeze({
+    'koboldhorde': 'kobold',
+    'kobold': 'kobold',
+    'textgenerationwebui': 'textgenerationwebui',
+    'novel': 'novel',
+    'openai': 'openai',
+});
+
+/**
+ * Check if preset's regexes are allowed to be used
+ * @param {string} apiId
+ * @param {string} presetName
+ * @returns {boolean}
+ */
+export function isPresetScriptsAllowed(apiId, presetName) {
+    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (apiId === undefined) {
+        return false;
+    }
+    return !!extension_settings?.preset_allowed_regex?.[apiId]?.includes(presetName);
+}
+
+/**
+ * Allow preset's regexes to be used
+ * @param {string} apiId
+ * @param {string} presetName
+ * @returns {void}
+ */
+export function allowPresetScripts(apiId, presetName) {
+    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (apiId === undefined) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
+        _.set(extension_settings, ['preset_allowed_regex', apiId], []);
+    }
+    if (!extension_settings.preset_allowed_regex[apiId].includes(presetName)) {
+        extension_settings.preset_allowed_regex[apiId].push(presetName);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Disallow preset's regexes to be used
+ * @param {string} apiId
+ * @param {string} presetName
+ * @returns {void}
+ */
+export function disallowPresetScripts(apiId, presetName) {
+    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (apiId === undefined) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
+        return;
+    }
+    const index = extension_settings.preset_allowed_regex[apiId].indexOf(presetName);
+    if (index !== -1) {
+        extension_settings.preset_allowed_regex[apiId].splice(index, 1);
+        saveSettingsDebounced();
+    }
+}
+
+/**
  * Gets the name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
  * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
  */
