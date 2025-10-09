@@ -380,7 +380,7 @@ class RegexPresetManager {
                 targetList: getScriptsByType(scriptType),
                 saveFunction: scripts => saveScriptsByType(scripts, scriptType),
             });
-        })
+        });
 
         // Render the changes to the UI
         await loadRegexScripts();

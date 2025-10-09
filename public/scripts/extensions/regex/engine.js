@@ -86,10 +86,11 @@ export async function saveScriptsByType(scripts, scriptType) {
         case SCRIPT_TYPES.SCOPED:
             await writeExtensionField(this_chid, 'regex_scripts', scripts);
             break;
-        case SCRIPT_TYPES.PRESET:
+        case SCRIPT_TYPES.PRESET: {
             const presetManager = getPresetManager();
             await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
             break;
+        }
         default:
             console.warn(`saveScriptsByType: Invalid script type ${scriptType}`);
             break;
