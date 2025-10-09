@@ -1621,6 +1621,7 @@ function notifyReloadCurrentChat(presetName) {
         t`Reload the chat for regex to take effect` + '<br><u>' + t`Click here to reload immediately` + '</u>',
         t`Preset` + `'${presetName}'` + t`contains enabled regex scripts`,
         {
+            timeOut: 3000,
             escapeHtml: false,
             onclick: reloadCurrentChat,
         })
