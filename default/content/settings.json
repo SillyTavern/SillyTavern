@@ -620,7 +620,7 @@
         },
         "wi_format": "{0}",
         "openai_model": "gpt-4-turbo",
-        "claude_model": "claude-3-5-sonnet-20240620",
+        "claude_model": "claude-sonnet-4-5",
         "ai21_model": "jamba-large",
         "openrouter_model": "OR_Website",
         "reverse_proxy": "",
