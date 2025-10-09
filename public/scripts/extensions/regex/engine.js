@@ -2,6 +2,7 @@ import { characters, main_api, saveSettingsDebounced, substituteParams, substitu
 import { extension_settings, writeExtensionField } from '../../extensions.js';
 import { getPresetManager } from '../../preset-manager.js';
 import { regexFromString } from '../../utils.js';
+import { lodash } from '../../../lib.js';
 
 /**
  * @enum {number} Regex scripts types
@@ -145,7 +146,7 @@ export function disallowScopedScripts(character) {
     }
 }
 
-const API_MAP_FOR_PRESET_REGEX = Object.freeze({
+export const API_MAP_FOR_PRESET_REGEX = Object.freeze({
     'koboldhorde': 'kobold',
     'kobold': 'kobold',
     'textgenerationwebui': 'textgenerationwebui',
@@ -160,7 +161,7 @@ const API_MAP_FOR_PRESET_REGEX = Object.freeze({
  * @returns {boolean}
  */
 export function isPresetScriptsAllowed(apiId, presetName) {
-    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
     if (apiId === undefined) {
         return false;
     }
@@ -174,12 +175,12 @@ export function isPresetScriptsAllowed(apiId, presetName) {
  * @returns {void}
  */
 export function allowPresetScripts(apiId, presetName) {
-    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
     if (apiId === undefined) {
         return;
     }
     if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
-        _.set(extension_settings, ['preset_allowed_regex', apiId], []);
+        lodash.set(extension_settings, ['preset_allowed_regex', apiId], []);
     }
     if (!extension_settings.preset_allowed_regex[apiId].includes(presetName)) {
         extension_settings.preset_allowed_regex[apiId].push(presetName);
@@ -194,7 +195,7 @@ export function allowPresetScripts(apiId, presetName) {
  * @returns {void}
  */
 export function disallowPresetScripts(apiId, presetName) {
-    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
     if (apiId === undefined) {
         return;
     }

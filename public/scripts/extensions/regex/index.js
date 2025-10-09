@@ -8,9 +8,11 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+import { allowPresetScripts, allowScopedScripts, API_MAP_FOR_PRESET_REGEX, disallowPresetScripts, disallowScopedScripts, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
+import { getPresetManager } from '../../preset-manager.js';
+import { lodash } from '../../../lib.js';
 
 // Re-exports for legacy extensions
 export { getRegexScripts };
@@ -1572,6 +1574,10 @@ function purgeEmbeddedRegexScripts({ character }) {
 }
 
 function purgePresetEmbeddedRegexScripts({ apiId, name }) {
+    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (!apiId) {
+        return;
+    }
     const checkKey = `AlertRegex_${apiId}_${name}`;
     if (accountStorage.getItem(checkKey)) {
         accountStorage.removeItem(checkKey);
@@ -1606,6 +1612,20 @@ async function checkCharEmbeddedRegexScripts() {
     loadRegexScripts();
 }
 
+/**
+ * Notify whether to reload current chat when preset is changed
+ * @param {string} presetName
+ */
+function notifyReloadCurrentChat(presetName) {
+    toastr.warning(
+        t`Reload the chat for regex to take effect` + '<br><u>' + t`Click here to reload immediately` + '</u>',
+        t`Preset` + `'${presetName}'` + t`contains enabled regex scripts`,
+        {
+            escapeHtml: false,
+            onclick: reloadCurrentChat,
+        })
+}
+
 async function checkPresetEmbeddedRegexScripts() {
     const name = getCurrentPresetName();
     const scripts = getScriptsByType(SCRIPT_TYPES.PRESET);
@@ -1621,21 +1641,41 @@ async function checkPresetEmbeddedRegexScripts() {
 
                 if (result) {
                     allowPresetScripts(main_api, name);
-                    await reloadCurrentChat();
+                    if (this_chid !== undefined) {
+                        await reloadCurrentChat();
+                    }
                 }
             }
+        } else if (this_chid !== undefined && scripts.filter(script => !script.disabled).length > 0) {
+            notifyReloadCurrentChat(name);
         }
     }
 
     loadRegexScripts();
 }
 
-async function onMainApiChanged() {
-    await reloadCurrentChat();
+async function onMainApiChanged({ apiId }) {
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (!apiId) {
+        return;
+    }
+    const presetManager = getPresetManager(apiId);
+    const presetName = presetManager.getSelectedPresetName();
+    const presetScripts = presetManager.readPresetExtensionField({ path: 'regex_scripts' }) ?? [];
+    if (this_chid !== undefined &&
+        isPresetScriptsAllowed(apiId, presetName) &&
+        presetScripts.filter(script => !script.disabled).length > 0) {
+        notifyReloadCurrentChat(presetName);
+    }
+
     loadRegexScripts();
 }
 
 function onPresetRenamed({ apiId, oldName, newName }) {
+    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    if (!apiId) {
+        return;
+    }
     const oldCheckKey = `AlertRegex_${apiId}_${oldName}`;
     const checkKey = `AlertRegex_${apiId}_${newName}`;
     const value = accountStorage.getItem(oldCheckKey);
