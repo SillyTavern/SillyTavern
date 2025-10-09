@@ -386,6 +386,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-lite',
             'gemini-2.0-flash-lite-001',
             'gemini-2.0-flash-lite-preview-02-05',
+            'gemini-robotics-er-1.5-preview',
         ];
         // #endregion
 

@@ -4981,7 +4981,7 @@ async function onModelChange() {
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-2.5-flash-image-preview')) {
+        } else if (value.includes('gemini-2.5-flash-image')) {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
@@ -5756,6 +5756,7 @@ export function isImageInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'learnlm',
+        'gemini-robotics'
         // MistralAI
         'mistral-small-2503',
         'mistral-small-2506',
