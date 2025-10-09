@@ -1619,7 +1619,7 @@ async function checkCharEmbeddedRegexScripts() {
 function notifyReloadCurrentChat(presetName) {
     toastr.warning(
         t`Reload the chat for regex to take effect` + '<br><u>' + t`Click here to reload immediately` + '</u>',
-        t`Preset` + `'${presetName}'` + t`contains enabled regex scripts`,
+        t`Preset '${presetName}' contains enabled regex scripts`,
         {
             timeOut: 3000,
             escapeHtml: false,
