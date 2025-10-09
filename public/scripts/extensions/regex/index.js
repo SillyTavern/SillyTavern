@@ -369,22 +369,18 @@ class RegexPresetManager {
             return;
         }
 
-        // Apply to both global and scoped lists
-        await this.applyPresetList({
-            presetList: preset.global,
-            targetList: getScriptsByType(SCRIPT_TYPES.GLOBAL),
-            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.GLOBAL),
-        });
-        await this.applyPresetList({
-            presetList: preset.scoped,
-            targetList: getScriptsByType(SCRIPT_TYPES.SCOPED),
-            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.SCOPED),
-        });
-        await this.applyPresetList({
-            presetList: preset.preset,
-            targetList: getScriptsByType(SCRIPT_TYPES.PRESET),
-            saveFunction: scripts => saveScriptsByType(scripts, SCRIPT_TYPES.PRESET),
-        });
+        // Apply preset to all lists
+        Object.values(SCRIPT_TYPES).forEach(async scriptType => {
+            await this.applyPresetList({
+                presetList: {
+                    [SCRIPT_TYPES.GLOBAL]: preset.global,
+                    [SCRIPT_TYPES.SCOPED]: preset.scoped,
+                    [SCRIPT_TYPES.PRESET]: preset.preset,
+                }[scriptType],
+                targetList: getScriptsByType(scriptType),
+                saveFunction: scripts => saveScriptsByType(scripts, scriptType),
+            });
+        })
 
         // Render the changes to the UI
         await loadRegexScripts();
@@ -496,9 +492,9 @@ function setMoveButtonsVisibility() {
     const hasGlobalScripts = $('#saved_regex_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
     const hasScopedScripts = $('#saved_scoped_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
     const hasPresetScripts = $('#saved_preset_scripts .regex-script-label:has(.regex_bulk_checkbox:checked)').length > 0;
-    $('#bulk_regex_move_to_global').toggle(hasScopedScripts);
-    $('#bulk_regex_move_to_scoped').toggle(hasGlobalScripts);
-    $('#bulk_regex_move_to_preset').toggle(hasPresetScripts);
+    $('#bulk_regex_move_to_global').toggle(hasScopedScripts || hasPresetScripts);
+    $('#bulk_regex_move_to_scoped').toggle(hasGlobalScripts || hasPresetScripts);
+    $('#bulk_regex_move_to_preset').toggle(hasGlobalScripts || hasScopedScripts);
 }
 
 /**
@@ -554,7 +550,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
 
         // Add the preset to the allowed list
         const presetName = getPresetName();
-        if (!extension_settings.preset_allowed_regex[main_api].includes(presetName)) {
+        if (!extension_settings.preset_allowed_regex?.[main_api].includes(presetName)) {
             extension_settings.preset_allowed_regex[main_api].push(presetName);
         }
     }
@@ -590,11 +586,18 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
     if (existingScriptIndex !== -1) {
         array.splice(existingScriptIndex, 1);
 
-        if (scriptType === SCRIPT_TYPES.SCOPED) {
-            await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
-        }
-        if (scriptType === SCRIPT_TYPES.PRESET) {
-            await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
+        switch (scriptType) {
+            case SCRIPT_TYPES.GLOBAL:
+                // will be handled by saveSettingsDebounced
+                break;
+            case SCRIPT_TYPES.SCOPED:
+                await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
+                break;
+            case SCRIPT_TYPES.PRESET:
+                await saveScriptsByType(array, SCRIPT_TYPES.GLOBAL);
+                break;
+            default:
+                break;
         }
         if (saveSettings) {
             saveSettingsDebounced();
@@ -1046,6 +1049,7 @@ function populateDebuggerRuleList(container) {
 
     const globalScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.GLOBAL).map(s => s.id));
     const scopedScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.SCOPED).map(s => s.id));
+    const presetScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.PRESET).map(s => s.id));
     const globalScripts = [];
     const scopedScripts = [];
     const presetScripts = [];
@@ -1060,7 +1064,7 @@ function populateDebuggerRuleList(container) {
             // @ts-ignore
             scriptCopy.type = SCRIPT_TYPES.SCOPED;
             scopedScripts.push(scriptCopy);
-        } else {
+        } else if (presetScriptIds.has(script.id)) {
             // @ts-ignore
             scriptCopy.type = SCRIPT_TYPES.PRESET;
             presetScripts.push(scriptCopy);
@@ -1504,11 +1508,18 @@ async function onRegexImportObjectChange(regexScript, scriptType) {
         const array = getScriptsByType(scriptType);
         array.push(regexScript);
 
-        if (scriptType === SCRIPT_TYPES.SCOPED) {
-            await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
-        }
-        if (scriptType === SCRIPT_TYPES.PRESET) {
-            await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
+        switch (scriptType) {
+            case SCRIPT_TYPES.GLOBAL:
+                // will be handled by saveSettingsDebounced
+                break;
+            case SCRIPT_TYPES.SCOPED:
+                await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
+                break;
+            case SCRIPT_TYPES.PRESET:
+                await saveScriptsByType(array, SCRIPT_TYPES.GLOBAL);
+                break;
+            default:
+                break;
         }
 
         saveSettingsDebounced();
@@ -1554,10 +1565,10 @@ async function onRegexImportFileChange(file, scriptType) {
  * @returns {SCRIPT_TYPES} The script type.
  */
 function getScriptType(script) {
-    for (const scriptType of Object.keys(SCRIPT_TYPES)) {
-        const scripts = getScriptsByType(SCRIPT_TYPES[scriptType]);
+    for (const scriptType of Object.values(SCRIPT_TYPES)) {
+        const scripts = getScriptsByType(scriptType);
         if (scripts.some(s => s.id === script.id)) {
-            return SCRIPT_TYPES[scriptType];
+            return scriptType;
         }
     }
     return SCRIPT_TYPES.UNKNOWN;
@@ -1614,7 +1625,7 @@ async function checkCharEmbeddedRegexScripts() {
                 if (!accountStorage.getItem(checkKey)) {
                     accountStorage.setItem(checkKey, 'true');
                     const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
-                    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
+                    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '');
 
                     if (result) {
                         extension_settings.character_allowed_regex.push(avatar);
@@ -1640,7 +1651,7 @@ async function checkPresetEmbeddedRegexScripts() {
             if (!accountStorage.getItem(checkKey)) {
                 accountStorage.setItem(checkKey, 'true');
                 const template = await renderExtensionTemplateAsync('regex', 'presetEmbeddedScripts', {});
-                const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
+                const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '');
 
                 if (result) {
                     extension_settings.preset_allowed_regex[main_api].push(name);
@@ -1664,8 +1675,8 @@ async function onMainApiChanged() {
 }
 
 function onPresetRenamed({ apiId, oldName, newName }) {
-    const oldCheckKey = `AlertRegex_${main_api}_${oldName}`;
-    const checkKey = `AlertRegex_${main_api}_${newName}`;
+    const oldCheckKey = `AlertRegex_${apiId}_${oldName}`;
+    const checkKey = `AlertRegex_${apiId}_${newName}`;
     const value = accountStorage.getItem(oldCheckKey);
     if (value) {
         accountStorage.setItem(checkKey, value);

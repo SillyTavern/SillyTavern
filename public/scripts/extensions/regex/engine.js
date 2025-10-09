@@ -58,7 +58,7 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         case SCRIPT_TYPES.PRESET: {
-            if (allowedOnly && !extension_settings?.preset_allowed_regex[main_api]?.includes(getPresetName())) {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[main_api]?.includes(getPresetName())) {
                 return [];
             }
             const presetManager = getPresetManager();
