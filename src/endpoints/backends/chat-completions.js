@@ -379,22 +379,12 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.5-flash-image-preview',
         ];
 
-        // These models do not support setting the threshold to OFF at all.
-        const blockNoneModels = [
-            'gemini-1.5-pro-001',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-flash-8b-exp-0827',
-            'gemini-1.5-flash-8b-exp-0924',
-        ];
-
         const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image-preview$/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
             'gemini-2.0-flash-lite-001',
             'gemini-2.0-flash-lite-preview-02-05',
-            'gemini-1.5-flash-8b-exp-0924',
-            'gemini-1.5-flash-8b-exp-0827',
         ];
         // #endregion
 
@@ -413,15 +403,8 @@ async function sendMakerSuiteRequest(request, response) {
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
-        if (blockNoneModels.includes(model)) {
-            safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
-        }
-
         if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            const searchTool = model.includes('1.5')
-                ? ({ google_search_retrieval: {} })
-                : ({ google_search: {} });
-            tools.push(searchTool);
+            tools.push({ google_search: {} });
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {

@@ -372,9 +372,9 @@ const default_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-1.5-pro',
-    vertexai_model: 'gemini-2.0-flash-001',
+    claude_model: 'claude-4-5',
+    google_model: 'gemini-2.5-pro',
+    vertexai_model: 'gemini-2.5-pro',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -468,9 +468,9 @@ const oai_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-1.5-pro',
-    vertexai_model: 'gemini-2.0-flash-001',
+    claude_model: 'claude-4-5',
+    google_model: 'gemini-2.5-pro',
+    vertexai_model: 'gemini-2.5-pro',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -4981,11 +4981,9 @@ async function onModelChange() {
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-1.5-pro')) {
-            $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-2.5-flash-image-preview')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (value.includes('gemini-1.5-flash') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash')) {
+        } else if (value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemma-3-27b-it')) {
             $('#openai_max_context').attr('max', max_128k);
@@ -5754,7 +5752,6 @@ export function isImageInliningSupported() {
         'c4ai-aya-vision',
         'command-a-vision',
         // Google AI Studio
-        'gemini-1.5',
         'gemini-2.0',
         'gemini-2.5',
         'gemini-exp-1206',
