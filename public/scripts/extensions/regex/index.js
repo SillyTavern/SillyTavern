@@ -1574,7 +1574,7 @@ function purgeEmbeddedRegexScripts({ character }) {
 }
 
 function purgePresetEmbeddedRegexScripts({ apiId, name }) {
-    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
     if (!apiId) {
         return;
     }
@@ -1624,7 +1624,7 @@ function notifyReloadCurrentChat(presetName) {
             timeOut: 3000,
             escapeHtml: false,
             onclick: reloadCurrentChat,
-        })
+        });
 }
 
 async function checkPresetEmbeddedRegexScripts() {
@@ -1673,7 +1673,7 @@ async function onMainApiChanged({ apiId }) {
 }
 
 function onPresetRenamed({ apiId, oldName, newName }) {
-    apiId = _.get(API_MAP_FOR_PRESET_REGEX, apiId);
+    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
     if (!apiId) {
         return;
     }
