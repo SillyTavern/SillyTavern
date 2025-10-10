@@ -589,7 +589,7 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
                 await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
                 break;
             case SCRIPT_TYPES.PRESET:
-                await saveScriptsByType(array, SCRIPT_TYPES.GLOBAL);
+                await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
                 break;
             default:
                 break;
@@ -1816,23 +1816,11 @@ jQuery(async () => {
     });
 
     $('#bulk_regex_move_to_preset').on('click', async function () {
-        const scripts = getSelectedScripts();
-        if (scripts.length === 0) {
-            toastr.warning(t`No regex scripts selected for moving.`);
+        const confirm = await callGenericPopup(t`Are you sure you want to move the selected regex scripts to preset?`, POPUP_TYPE.CONFIRM);
+        if (!confirm) {
             return;
         }
-        for (const script of scripts) {
-            await moveRegexScript(script, SCRIPT_TYPES.PRESET, getScriptType(script), false);
-        }
-
-        saveSettingsDebounced();
-        await loadRegexScripts();
-
-        // Reload the current chat to undo previous markdown
-        const currentChatId = getCurrentChatId();
-        if (currentChatId !== undefined && currentChatId !== null) {
-            await reloadCurrentChat();
-        }
+        await bulkMoveRegexScript(SCRIPT_TYPES.PRESET);
     });
 
     $('#bulk_delete_regex').on('click', async function () {
