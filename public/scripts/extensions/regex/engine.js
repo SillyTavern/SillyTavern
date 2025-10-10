@@ -9,11 +9,15 @@ import { lodash } from '../../../lib.js';
  * @readonly
  */
 export const SCRIPT_TYPES = {
-    UNKNOWN: -1,
     GLOBAL: 0,
     SCOPED: 1,
     PRESET: 2,
 };
+
+/**
+ * Special type for unknown/invalid script types.
+ */
+export const SCRIPT_TYPE_UNKNOWN = -1;
 
 /**
  * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
@@ -47,7 +51,7 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
  */
 export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
     switch (scriptType) {
-        case SCRIPT_TYPES.UNKNOWN:
+        case SCRIPT_TYPE_UNKNOWN:
             return [];
         case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
