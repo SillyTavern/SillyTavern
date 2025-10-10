@@ -410,6 +410,7 @@ export class ConnectionManagerRequestService {
                         custom_url: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
+                        custom_prompt_post_processing: profile['prompt-post-processing'],
                         ...overridePayload,
                     }, {
                         presetName: includePreset ? profile.preset : undefined,

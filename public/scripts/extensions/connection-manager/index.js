@@ -167,6 +167,7 @@ const profilesProvider = () => [
  * @property {string} [stop-strings] Custom Stopping Strings
  * @property {string} [start-reply-with] Start Reply With
  * @property {string} [reasoning-template] Reasoning Template
+ * @property {string} [prompt-post-processing] Prompt Post-Processing
  * @property {string[]} [exclude] Commands to exclude
  */
 
