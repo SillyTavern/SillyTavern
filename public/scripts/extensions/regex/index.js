@@ -374,7 +374,7 @@ class RegexPresetManager {
         }
 
         // Apply preset to all lists
-        Object.values(SCRIPT_TYPES).forEach(async scriptType => {
+        for (const scriptType of Object.values(SCRIPT_TYPES)) {
             await this.applyPresetList({
                 presetList: {
                     [SCRIPT_TYPES.GLOBAL]: preset.global,
@@ -384,7 +384,7 @@ class RegexPresetManager {
                 targetList: getScriptsByType(scriptType),
                 saveFunction: scripts => saveScriptsByType(scripts, scriptType),
             });
-        });
+        }
 
         // Render the changes to the UI
         await loadRegexScripts();
