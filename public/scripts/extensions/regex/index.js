@@ -1612,11 +1612,11 @@ async function checkCharEmbeddedRegexScripts() {
  * @param {string} presetName The name of the preset
  */
 function notifyReloadCurrentChat(presetName) {
-    toastr.warning(
+    toastr.info(
         t`Reload the chat for regex to take effect` + '<br><u>' + t`Click here to reload immediately` + '</u>',
         t`Preset '${presetName}' contains enabled regex scripts`,
         {
-            timeOut: 3000,
+            timeOut: 5000,
             escapeHtml: false,
             onclick: reloadCurrentChat,
         });
