@@ -1653,6 +1653,9 @@ async function checkPresetEmbeddedRegexScripts() {
 
 async function onMainApiChanged({ apiId }) {
     const presetManager = getPresetManager(apiId);
+    if (!presetManager) {
+        return;
+    }
     const presetName = presetManager.getSelectedPresetName();
     const presetScripts = presetManager.readPresetExtensionField({ path: 'regex_scripts' }) ?? [];
     if (getCurrentChatId() &&

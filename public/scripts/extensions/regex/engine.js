@@ -151,20 +151,15 @@ export function disallowScopedScripts(character) {
 }
 
 /**
- * Gets the current preset API ID.
- * @returns {string|null} Current preset API ID, or null if no preset manager
- */
-export function getCurrentPresetAPI() {
-    return getPresetManager()?.apiId ?? null;
-}
-
-/**
  * Check if preset's regexes are allowed to be used
  * @param {string} apiId API ID
  * @param {string} presetName Preset name
  * @returns {boolean} True if allowed, false if not
  */
 export function isPresetScriptsAllowed(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return false;
+    }
     return !!extension_settings?.preset_allowed_regex?.[apiId]?.includes(presetName);
 }
 
@@ -175,6 +170,9 @@ export function isPresetScriptsAllowed(apiId, presetName) {
  * @returns {void}
  */
 export function allowPresetScripts(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return;
+    }
     if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
         lodash.set(extension_settings, ['preset_allowed_regex', apiId], []);
     }
@@ -191,6 +189,9 @@ export function allowPresetScripts(apiId, presetName) {
  * @returns {void}
  */
 export function disallowPresetScripts(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return;
+    }
     if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
         return;
     }
@@ -202,11 +203,19 @@ export function disallowPresetScripts(apiId, presetName) {
 }
 
 /**
- * Gets the name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
- * @returns {string} The name of the currently selected preset, or the OpenAI preset settings if the main API is OpenAI.
+ * Gets the current API ID from the preset manager.
+ * @returns {string|null} Current API ID, or null if no preset manager
+ */
+export function getCurrentPresetAPI() {
+    return getPresetManager()?.apiId ?? null;
+}
+
+/**
+ * Gets the name of the currently selected preset.
+ * @returns {string|null} The name of the currently selected preset, or null if no preset manager
  */
 export function getCurrentPresetName() {
-    return getPresetManager().getSelectedPresetName();
+    return getPresetManager()?.getSelectedPresetName() ?? null;
 }
 
 /**
