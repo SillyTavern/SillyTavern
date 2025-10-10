@@ -1751,30 +1751,40 @@ jQuery(async () => {
     });
 
     $('#bulk_enable_regex').on('click', async function () {
-        const scripts = getSelectedScripts().filter(script => script.disabled);
-        if (scripts.length === 0) {
-            toastr.warning(t`No regex scripts selected for enabling.`);
-            return;
-        }
-        for (const script of scripts) {
-            script.disabled = false;
-        }
-        saveSettingsDebounced();
-        await loadRegexScripts();
+        await bulkToggleRegexScripts(true);
     });
 
     $('#bulk_disable_regex').on('click', async function () {
-        const scripts = getSelectedScripts().filter(script => !script.disabled);
+        await bulkToggleRegexScripts(false);
+    });
+
+    /**
+     * Bulk enable or disable regex scripts
+     * @param {boolean} newState New state to set (true = enable, false = disable)
+     * @returns {Promise<void>}
+     */
+    async function bulkToggleRegexScripts(newState) {
+        const scripts = getSelectedScripts().filter(script => script.disabled === newState);
         if (scripts.length === 0) {
-            toastr.warning(t`No regex scripts selected for disabling.`);
+            toastr.warning(newState
+                ? t`No regex scripts selected for enabling.`
+                : t`No regex scripts selected for disabling.`,
+            );
             return;
         }
+        const scriptTypesToSave = new Set();
         for (const script of scripts) {
-            script.disabled = true;
+            const scriptType = getScriptType(script);
+            scriptTypesToSave.add(scriptType);
+            script.disabled = !newState;
+        }
+        for (const scriptType of scriptTypesToSave) {
+            const scriptsOfType = getScriptsByType(scriptType);
+            await saveScriptsByType(scriptsOfType, scriptType);
         }
         saveSettingsDebounced();
         await loadRegexScripts();
-    });
+    }
 
     /**
      * Bulk move regex scripts to the specified type
@@ -1790,6 +1800,7 @@ jQuery(async () => {
             await moveRegexScript(script, toType, getScriptType(script), false);
         }
 
+        saveSettingsDebounced();
         await loadRegexScripts();
 
         // Reload the current chat to undo previous markdown
