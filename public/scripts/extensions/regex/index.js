@@ -1604,7 +1604,7 @@ async function checkCharEmbeddedRegexScripts() {
         }
     }
 
-    loadRegexScripts();
+    await loadRegexScripts();
 }
 
 /**
@@ -1648,7 +1648,7 @@ async function checkPresetEmbeddedRegexScripts() {
         }
     }
 
-    loadRegexScripts();
+    await loadRegexScripts();
 }
 
 async function onMainApiChanged({ apiId }) {
@@ -1662,7 +1662,7 @@ async function onMainApiChanged({ apiId }) {
         notifyReloadCurrentChat(presetName);
     }
 
-    loadRegexScripts();
+    await loadRegexScripts();
 }
 
 function onPresetRenamed({ apiId, oldName, newName }) {
