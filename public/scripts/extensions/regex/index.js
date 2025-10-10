@@ -1493,7 +1493,7 @@ async function onRegexImportObjectChange(regexScript, scriptType) {
                 await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
                 break;
             case SCRIPT_TYPES.PRESET:
-                await saveScriptsByType(array, SCRIPT_TYPES.GLOBAL);
+                await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
                 break;
             default:
                 break;
