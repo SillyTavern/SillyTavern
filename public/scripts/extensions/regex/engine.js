@@ -1,4 +1,4 @@
-import { characters, main_api, saveSettingsDebounced, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { characters, saveSettingsDebounced, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
 import { extension_settings, writeExtensionField } from '../../extensions.js';
 import { getPresetManager } from '../../preset-manager.js';
 import { regexFromString } from '../../utils.js';
@@ -59,7 +59,7 @@ export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         case SCRIPT_TYPES.PRESET: {
-            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[main_api]?.includes(getCurrentPresetName())) {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[getCurrentPresetAPI()]?.includes(getCurrentPresetName())) {
                 return [];
             }
             const presetManager = getPresetManager();
@@ -146,39 +146,31 @@ export function disallowScopedScripts(character) {
     }
 }
 
-export const API_MAP_FOR_PRESET_REGEX = Object.freeze({
-    'koboldhorde': 'kobold',
-    'kobold': 'kobold',
-    'textgenerationwebui': 'textgenerationwebui',
-    'novel': 'novel',
-    'openai': 'openai',
-});
+/**
+ * Gets the current preset API ID.
+ * @returns {string|null} Current preset API ID, or null if no preset manager
+ */
+export function getCurrentPresetAPI() {
+    return getPresetManager()?.apiId ?? null;
+}
 
 /**
  * Check if preset's regexes are allowed to be used
- * @param {string} apiId
- * @param {string} presetName
- * @returns {boolean}
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
+ * @returns {boolean} True if allowed, false if not
  */
 export function isPresetScriptsAllowed(apiId, presetName) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (apiId === undefined) {
-        return false;
-    }
     return !!extension_settings?.preset_allowed_regex?.[apiId]?.includes(presetName);
 }
 
 /**
  * Allow preset's regexes to be used
- * @param {string} apiId
- * @param {string} presetName
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
  * @returns {void}
  */
 export function allowPresetScripts(apiId, presetName) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (apiId === undefined) {
-        return;
-    }
     if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
         lodash.set(extension_settings, ['preset_allowed_regex', apiId], []);
     }
@@ -190,15 +182,11 @@ export function allowPresetScripts(apiId, presetName) {
 
 /**
  * Disallow preset's regexes to be used
- * @param {string} apiId
- * @param {string} presetName
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
  * @returns {void}
  */
 export function disallowPresetScripts(apiId, presetName) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (apiId === undefined) {
-        return;
-    }
     if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
         return;
     }

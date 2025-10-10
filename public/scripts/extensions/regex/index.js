@@ -1,4 +1,4 @@
-import { characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid, main_api } from '../../../script.js';
+import { characters, eventSource, event_types, getCurrentChatId, messageFormatting, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
@@ -8,11 +8,10 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { allowPresetScripts, allowScopedScripts, API_MAP_FOR_PRESET_REGEX, disallowPresetScripts, disallowScopedScripts, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 import { getPresetManager } from '../../preset-manager.js';
-import { lodash } from '../../../lib.js';
 
 // Re-exports for legacy extensions
 export { getRegexScripts };
@@ -548,7 +547,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
 
     if (scriptType === SCRIPT_TYPES.PRESET) {
         await saveScriptsByType(array, SCRIPT_TYPES.PRESET);
-        allowPresetScripts(main_api, getCurrentPresetName());
+        allowPresetScripts(getCurrentPresetAPI(), getCurrentPresetName());
     }
 
     if (saveSettings) {
@@ -726,7 +725,7 @@ async function loadRegexScripts() {
     getScriptsByType(SCRIPT_TYPES.PRESET).forEach((script, index) => renderScript('#saved_preset_scripts', script, SCRIPT_TYPES.PRESET, index));
 
     $('#regex_scoped_toggle').prop('checked', isScopedScriptsAllowed(characters?.[this_chid]));
-    $('#regex_preset_toggle').prop('checked', isPresetScriptsAllowed(main_api, getCurrentPresetName()));
+    $('#regex_preset_toggle').prop('checked', isPresetScriptsAllowed(getCurrentPresetAPI(), getCurrentPresetName()));
 
     setMoveButtonsVisibility();
 }
@@ -1574,10 +1573,6 @@ function purgeEmbeddedRegexScripts({ character }) {
 }
 
 function purgePresetEmbeddedRegexScripts({ apiId, name }) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (!apiId) {
-        return;
-    }
     const checkKey = `AlertRegex_${apiId}_${name}`;
     if (accountStorage.getItem(checkKey)) {
         accountStorage.removeItem(checkKey);
@@ -1614,7 +1609,7 @@ async function checkCharEmbeddedRegexScripts() {
 
 /**
  * Notify whether to reload current chat when preset is changed
- * @param {string} presetName
+ * @param {string} presetName The name of the preset
  */
 function notifyReloadCurrentChat(presetName) {
     toastr.warning(
@@ -1628,12 +1623,13 @@ function notifyReloadCurrentChat(presetName) {
 }
 
 async function checkPresetEmbeddedRegexScripts() {
+    const apiId = getCurrentPresetAPI();
     const name = getCurrentPresetName();
     const scripts = getScriptsByType(SCRIPT_TYPES.PRESET);
 
     if (Array.isArray(scripts) && scripts.length > 0) {
-        if (!isPresetScriptsAllowed(main_api, name)) {
-            const checkKey = `AlertRegex_${main_api}_${name}`;
+        if (!isPresetScriptsAllowed(apiId, name)) {
+            const checkKey = `AlertRegex_${apiId}_${name}`;
 
             if (!accountStorage.getItem(checkKey)) {
                 accountStorage.setItem(checkKey, 'true');
@@ -1641,13 +1637,13 @@ async function checkPresetEmbeddedRegexScripts() {
                 const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '');
 
                 if (result) {
-                    allowPresetScripts(main_api, name);
-                    if (this_chid !== undefined) {
+                    allowPresetScripts(apiId, name);
+                    if (getCurrentChatId()) {
                         await reloadCurrentChat();
                     }
                 }
             }
-        } else if (this_chid !== undefined && scripts.filter(script => !script.disabled).length > 0) {
+        } else if (getCurrentChatId() && scripts.filter(script => !script.disabled).length > 0) {
             notifyReloadCurrentChat(name);
         }
     }
@@ -1656,15 +1652,12 @@ async function checkPresetEmbeddedRegexScripts() {
 }
 
 async function onMainApiChanged({ apiId }) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (!apiId) {
-        return;
-    }
     const presetManager = getPresetManager(apiId);
     const presetName = presetManager.getSelectedPresetName();
     const presetScripts = presetManager.readPresetExtensionField({ path: 'regex_scripts' }) ?? [];
-    if (this_chid !== undefined &&
+    if (getCurrentChatId() &&
         isPresetScriptsAllowed(apiId, presetName) &&
+        Array.isArray(presetScripts) &&
         presetScripts.filter(script => !script.disabled).length > 0) {
         notifyReloadCurrentChat(presetName);
     }
@@ -1673,10 +1666,6 @@ async function onMainApiChanged({ apiId }) {
 }
 
 function onPresetRenamed({ apiId, oldName, newName }) {
-    apiId = lodash.get(API_MAP_FOR_PRESET_REGEX, apiId);
-    if (!apiId) {
-        return;
-    }
     const oldCheckKey = `AlertRegex_${apiId}_${oldName}`;
     const checkKey = `AlertRegex_${apiId}_${newName}`;
     const value = accountStorage.getItem(oldCheckKey);
@@ -1947,9 +1936,9 @@ jQuery(async () => {
         const name = getCurrentPresetName();
 
         if (isEnable) {
-            allowPresetScripts(main_api, name);
+            allowPresetScripts(getCurrentPresetAPI(), name);
         } else {
-            disallowPresetScripts(main_api, name);
+            disallowPresetScripts(getCurrentPresetAPI(), name);
         }
 
         saveSettingsDebounced();
