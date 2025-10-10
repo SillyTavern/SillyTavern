@@ -505,7 +505,7 @@ function setMoveButtonsVisibility() {
  * Saves a regex script to the extension settings or character data.
  * @param {import('../../char-data.js').RegexScriptData} regexScript
  * @param {number} existingScriptIndex Index of the existing script
- * @param {SCRIPT_TYPES} scriptType
+ * @param {SCRIPT_TYPES} scriptType Type of the script
  * @param {boolean} [saveSettings=true] Whether to save the settings immediately
  * @returns {Promise<void>}
  */
@@ -570,7 +570,7 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
 /**
  * Delete a regex script by ID
  * @param {string} id ID of the script to delete
- * @param {SCRIPT_TYPES} scriptType
+ * @param {SCRIPT_TYPES} scriptType Type of the script
  * @param {boolean} saveSettings Whether to save the settings immediately
  * @returns {Promise<void>}
  */
@@ -636,7 +636,7 @@ async function loadRegexScripts() {
      * Renders a script to the UI.
      * @param {string} container Container to render the script to
      * @param {import('../../char-data.js').RegexScriptData} script Script data
-     * @param {SCRIPT_TYPES} scriptType
+     * @param {SCRIPT_TYPES} scriptType Type of the script
      * @param {number} index Index of the script in the array
      */
     function renderScript(container, script, scriptType, index) {
@@ -733,7 +733,7 @@ async function loadRegexScripts() {
 /**
  * Opens the regex editor.
  * @param {string|boolean} existingId Existing ID
- * @param {SCRIPT_TYPES} scriptType
+ * @param {SCRIPT_TYPES} scriptType Type of the script
  * @returns {Promise<void>}
  */
 async function onRegexEditorOpenClick(existingId, scriptType) {
@@ -1470,8 +1470,8 @@ async function toggleRegexCallback(args, scriptName) {
 
 /**
  * Performs the import of the regex object.
- * @param {Object} regexScript Input object
- * @param {SCRIPT_TYPES} scriptType
+ * @param {RegexScript} regexScript Input object
+ * @param {SCRIPT_TYPES} scriptType The type of script to import as
  */
 async function onRegexImportObjectChange(regexScript, scriptType) {
     try {
@@ -1512,7 +1512,7 @@ async function onRegexImportObjectChange(regexScript, scriptType) {
 /**
  * Performs the import of the regex file.
  * @param {File} file Input file
- * @param {SCRIPT_TYPES} scriptType
+ * @param {SCRIPT_TYPES} scriptType The type of script to import as
  */
 async function onRegexImportFileChange(file, scriptType) {
     if (!file) {
