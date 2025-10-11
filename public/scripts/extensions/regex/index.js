@@ -649,7 +649,7 @@ async function loadRegexScripts() {
         }
 
         scriptHtml.attr('id', script.id);
-        scriptHtml.find('.regex_script_name').text(script.scriptName);
+        scriptHtml.find('.regex_script_name').text(script.scriptName).attr('title', script.scriptName);
         scriptHtml.find('.disable_regex').prop('checked', script.disabled ?? false)
             .on('input', async function () {
                 script.disabled = !!$(this).prop('checked');
