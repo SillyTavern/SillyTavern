@@ -716,6 +716,30 @@ async function loadRegexScripts() {
             const allAreChecked = checkboxes.length === checkboxes.filter(':checked').length;
             setToggleAllIcon(allAreChecked);
         });
+        scriptHtml.find('input[name="regex_expand"]').on('change', function () {
+            if (!(this instanceof HTMLInputElement)) {
+                return;
+            }
+
+            if (!this.checked) {
+                return;
+            }
+
+            const closeMenuHandler = (e) => {
+                if (e.target instanceof HTMLElement) {
+                    if (e.target.closest('.regex-script-label')) {
+                        return;
+                    }
+                    this.checked = false;
+                    document.removeEventListener('click', closeMenuHandler);
+                }
+            };
+
+            // Use setTimeout to avoid closing immediately from the same click
+            setTimeout(() => {
+                document.addEventListener('click', closeMenuHandler, { passive: true, once: false });
+            }, 0);
+        });
 
         $(container).append(scriptHtml);
     }
