@@ -1811,8 +1811,15 @@ jQuery(async () => {
             const scriptsOfType = getScriptsByType(scriptType);
             await saveScriptsByType(scriptsOfType, scriptType);
         }
+
         saveSettingsDebounced();
         await loadRegexScripts();
+
+        // Reload the current chat to undo previous markdown
+        const currentChatId = getCurrentChatId();
+        if (currentChatId) {
+            await reloadCurrentChat();
+        }
     }
 
     /**
