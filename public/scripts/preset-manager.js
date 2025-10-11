@@ -1033,8 +1033,8 @@ export async function initPresetManager() {
             return;
         }
 
+        await eventSource.emit(event_types.PRESET_RENAMED_BEFORE, { apiId: apiId, oldName: oldName, newName: newName });
         await presetManager.renamePreset(newName);
-
         await eventSource.emit(event_types.PRESET_RENAMED, { apiId: apiId, oldName: oldName, newName: newName });
 
         if (apiId === 'openai') {

@@ -2107,7 +2107,7 @@ jQuery(async () => {
     eventSource.on(event_types.MAIN_API_CHANGED, onMainApiChanged);
     eventSource.on(event_types.CHAT_CHANGED, checkCharEmbeddedRegexScripts);
     eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
-    eventSource.on(event_types.PRESET_RENAMED, onPresetRenamed);
+    eventSource.on(event_types.PRESET_RENAMED_BEFORE, onPresetRenamed);
     eventSource.on(event_types.PRESET_CHANGED, checkPresetEmbeddedRegexScripts);
     eventSource.on(event_types.PRESET_DELETED, purgePresetEmbeddedRegexScripts);
 
