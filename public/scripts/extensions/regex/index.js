@@ -1700,8 +1700,10 @@ function onPresetRenamed({ apiId, oldName, newName }) {
         accountStorage.setItem(checkKey, value);
         accountStorage.removeItem(oldCheckKey);
     }
-    disallowPresetScripts(apiId, oldName);
-    allowPresetScripts(apiId, newName);
+    if (isPresetScriptsAllowed(apiId, oldName)) {
+        disallowPresetScripts(apiId, oldName);
+        allowPresetScripts(apiId, newName);
+    }
 }
 
 // Workaround for loading in sequence with other extensions
