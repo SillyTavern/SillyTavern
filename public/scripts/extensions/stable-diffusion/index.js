@@ -51,7 +51,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, VIDEO_EXTENSIONS, REQUEST_DOMAIN_NAMES } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -83,6 +83,7 @@ const sources = {
     stability: 'stability',
     huggingface: 'huggingface',
     electronhub: 'electronhub',
+    meganovaai: 'meganovaai',
     nanogpt: 'nanogpt',
     bfl: 'bfl',
     falai: 'falai',
@@ -469,6 +470,22 @@ async function loadSettings() {
         extension_settings.sd.styles = defaultStyles;
     }
 
+    const sourceValue = extension_settings.sd.source;
+    const modelValue = extension_settings.sd.model || '';
+    if (sourceValue) {
+        switch (sourceValue.toLowerCase()) {
+            case "meganovaai":
+                console.log(modelValue.toLowerCase().includes('flux'))
+                if (modelValue.toLowerCase().includes('flux')) {
+                    $("#upload_image").show();
+                } else {
+                    $("#upload_image").hide();
+                }
+                break;
+        }
+    }
+
+    $('#model_image_name').text(extension_settings.sd.imageName || '');
     $('#sd_source').val(extension_settings.sd.source);
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
     $('#sd_steps').val(extension_settings.sd.steps).trigger('input');
@@ -951,6 +968,45 @@ const resolutionOptions = {
     sd_res_1792x1024: { width: 1792, height: 1024, name: '1792x1024 (7:4, DALL-E)' },
 };
 
+function getImageBase64(file, callback) {
+    try {
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+            const fileName = file.name ?? ''
+            const nameType = fileName.includes('.') ? fileName.split('.').pop() : '-';
+            console.error('upload image name type error', nameType);
+            return false;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            callback(e.target.result)
+        };
+        reader.readAsDataURL(file);
+    } catch (err) {
+        console.error(err)
+    }
+};
+
+function onUploadInput() {
+    const form = $('#form_model_image_upload').get(0);
+    if (!(form instanceof HTMLFormElement)) {
+        console.error('form_model_image_upload is not a form');
+        return;
+    }
+    const formData = new FormData(form);
+    const file = formData.get('avatar');
+    if (!(file instanceof File) || file.size === 0) {
+        form.reset();
+        return;
+    }
+    getImageBase64(file, (base64) => {
+        extension_settings.sd.imageUrl = base64;
+        extension_settings.sd.imageName = file.name;
+        $('#model_image_name').text(file.name);
+        saveSettingsDebounced();
+    })
+    form.reset();
+}
+
 function onResolutionChange() {
     const selectedOption = $('#sd_resolution').val();
     const selectedResolution = resolutionOptions[selectedOption];
@@ -1279,7 +1335,22 @@ async function validateComfyUrl() {
 
 async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
+    if (extension_settings.sd.source) {
+        switch (extension_settings.sd.source.toLowerCase()) {
+            case "meganovaai":
+                if (extension_settings.sd.model.toLowerCase().includes('flux')) {
+                    $("#upload_image").show();
+                } else {
+                    $("#upload_image").hide();
+                }
+                break;
+        }
+    }
     saveSettingsDebounced();
+
+    if (extension_settings.sd.source === sources.meganovaai) {
+        ensureMegaNovaAIQualitySelect();
+    }
 
     const cloudSources = [
         sources.horde,
@@ -1291,6 +1362,7 @@ async function onModelChange() {
         sources.stability,
         sources.huggingface,
         sources.electronhub,
+        sources.meganovaai,
         sources.nanogpt,
         sources.bfl,
         sources.falai,
@@ -1511,6 +1583,9 @@ async function loadSamplers() {
         case sources.electronhub:
             samplers = ['N/A'];
             break;
+        case sources.meganovaai:
+            samplers = ['N/A'];
+            break;
         case sources.nanogpt:
             samplers = ['N/A'];
             break;
@@ -1663,6 +1738,8 @@ async function loadComfySamplers() {
     }
 }
 
+let meganovaaiImageModelsCache = [];
+
 async function loadModels() {
     $('#sd_model').empty();
     let models = [];
@@ -1710,6 +1787,9 @@ async function loadModels() {
         case sources.electronhub:
             models = await loadElectronHubModels();
             break;
+        case sources.meganovaai:
+            models = await loadMegaNovaAIModels();
+            break;
         case sources.nanogpt:
             models = await loadNanoGPTModels();
             break;
@@ -1738,6 +1818,65 @@ async function loadModels() {
     if (!extension_settings.sd.model && models.length > 0) {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
+    }
+}
+
+function ensureMegaNovaAIQualitySelect() {
+    try {
+        const modelId = String(extension_settings.sd.model || '');
+        if (!modelId) return;
+
+        const model = Array.isArray(meganovaaiImageModelsCache) ? meganovaaiImageModelsCache.find(m => String(m?.id) === modelId) : undefined;
+        const qualities = Array.isArray(model?.qualities) ? model.qualities : undefined;
+
+        let $qualityRow = $('#sd_meganovaai_quality_row');
+        if (!qualities || qualities.length === 0) {
+            if ($qualityRow.length) $qualityRow.remove();
+            extension_settings.sd.meganovaai_quality = undefined;
+            saveSettingsDebounced();
+            return;
+        }
+
+        if ($qualityRow.length === 0) {
+            $qualityRow = $(
+                '<div class="flex-container" id="sd_meganovaai_quality_row">'
+                + '  <div class="flex1">'
+                + '    <label for="sd_meganovaai_quality" data-i18n="Image Quality">Image Quality</label>'
+                + '    <select id="sd_meganovaai_quality"></select>'
+                + '  </div>'
+                + '</div>',
+            );
+
+            const $modelRow = $('#sd_model').closest('.flex1').closest('.flex-container');
+            if ($modelRow.length) {
+                $qualityRow.insertAfter($modelRow);
+            } else {
+                $('[data-sd-source="meganovaai"]').last().append($qualityRow);
+            }
+
+            $('#sd_meganovaai_quality').on('change', function () {
+                extension_settings.sd.meganovaai_quality = String($(this).val());
+                saveSettingsDebounced();
+            });
+        }
+
+        const $select = $('#sd_meganovaai_quality');
+        $select.empty();
+        for (const q of qualities) {
+            const opt = document.createElement('option');
+            opt.value = String(q);
+            opt.innerText = String(q);
+            opt.selected = String(q) === String(extension_settings.sd.meganovaai_quality || '');
+            $select.append(opt);
+        }
+        if (!$select.val()) {
+            const first = String(qualities[0]);
+            extension_settings.sd.meganovaai_quality = first;
+            $select.val(first);
+            saveSettingsDebounced();
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -1771,10 +1910,41 @@ async function loadFalaiModels() {
     });
 
     if (result.ok) {
-        return await result.json();
+        // return await result.json();
+        /** @type {any[]} */
+        const data = await result.json();
+        return Array.isArray(data)
+            ? data
+                .filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/images/generations'))
+                .map(m => ({ ...m, qualities: Array.isArray(m?.qualities) ? m.qualities : undefined }))
+            : [];
     }
 
     return [];
+}
+
+function meganovaaiGroupImageModelsByVendor(array) {
+    /** @type {Map<string, any[]>} */
+    const groups = new Map();
+    for (const m of array) {
+        const vendor = String(m?.name || m?.id || 'Other').split(':')[0].trim() || 'Other';
+        if (!groups.has(vendor)) groups.set(vendor, []);
+        groups.get(vendor).push(m);
+    }
+    return groups;
+}
+
+function getMegaNovaAIImageModelText(model) {
+    const name = String(model?.name || model?.id || '');
+    const premium = model?.premium_model ? ' | Premium' : '';
+    let price = 'Unknown';
+    if (model?.pricing?.type === 'per_image') {
+        const coeff = Number(model.pricing.coefficient);
+        if (!isNaN(coeff)) {
+            price = `$${coeff}/image`;
+        }
+    }
+    return `${name} | ${price}${premium}`;
 }
 
 async function loadXAIModels() {
@@ -1812,6 +1982,33 @@ async function loadTogetherAIModels() {
     }
 
     return [];
+}
+
+async function loadMegaNovaAIModels() {
+    // if (!secret_state[SECRET_KEYS.MEGANOVAAI]) {
+    //     console.debug('MegaNova AI API key is not set.');
+    //     return [];
+    // }
+
+    try {
+        const result = await fetch(REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless/models', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
+
+        if (result.ok) {
+            const model_list = await result.json();
+            const list = model_list.data?.models
+            return list.filter(item => item.model_type === "Image").map(item => ({
+                value: item.model_name,
+                text: item.model_alias
+            }));
+        }
+
+        return [];
+    } catch {
+        return [];
+    }
 }
 
 async function loadElectronHubModels() {
@@ -2160,6 +2357,9 @@ async function loadSchedulers() {
         case sources.electronhub:
             schedulers = ['N/A'];
             break;
+        case sources.meganovaai:
+            schedulers = ['N/A'];
+            break;
         case sources.nanogpt:
             schedulers = ['N/A'];
             break;
@@ -2258,6 +2458,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.electronhub:
+            vaes = ['N/A'];
+            break;
+        case sources.meganovaai:
             vaes = ['N/A'];
             break;
         case sources.nanogpt:
@@ -2846,6 +3049,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.electronhub:
                 result = await generateElectronHubImage(prefixedPrompt, signal);
                 break;
+            case sources.meganovaai:
+                result = await generateMegaNovaAIImage(prefixedPrompt, negativePrompt, signal);
+                break;
             case sources.nanogpt:
                 result = await generateNanoGPTImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -2878,7 +3084,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         return;
     }
 
-    const filename = `${characterName}_${humanizedDateTime()}`;
+    const filename = `${characterName || extension_settings.sd.source}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback
         ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, result.format)
@@ -3650,6 +3856,41 @@ async function generateHuggingFaceImage(prompt, signal) {
 }
 
 /**
+ * Generates an image using the MegaNova AI API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateMegaNovaAIImage(prompt, negative_prompt, signal) {
+    const model = extension_settings.sd.model;
+    const image = model.toLowerCase().includes('flux') ? extension_settings.sd.imageUrl : undefined;
+    const result = await fetch('/api/sd/meganovaai/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            model,
+            prompt,
+            negative_prompt,
+            scale: parseFloat(extension_settings.sd.scale),
+            height: parseInt(extension_settings.sd.height),
+            width: parseInt(extension_settings.sd.width),
+            steps: parseInt(extension_settings.sd.steps),
+            seed: extension_settings.sd.seed,
+            image,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return data;
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the Electron Hub API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
@@ -3666,6 +3907,7 @@ async function generateElectronHubImage(prompt, signal) {
             model: extension_settings.sd.model,
             prompt: prompt,
             size: size,
+            quality: String(extension_settings.sd.electronhub_quality || '').trim() || undefined,
         }),
     });
 
@@ -4130,6 +4372,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.HUGGINGFACE];
         case sources.electronhub:
             return secret_state[SECRET_KEYS.ELECTRONHUB];
+        case sources.meganovaai:
+            return secret_state[SECRET_KEYS.MEGANOVAAI];
         case sources.nanogpt:
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:
@@ -4749,6 +4993,7 @@ jQuery(async () => {
     $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
+    $('#add_model_image_button').on('input', onUploadInput);
     $('#sd_width').on('input', onWidthInput);
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);

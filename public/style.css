@@ -5182,6 +5182,10 @@ body:not(.sd) .mes_img_swipes {
     font-size: calc(var(--mainFontSize) * 0.9);
 }
 
+.menu_button_icon .span-big {
+    font-size: calc(var(--mainFontSize) * 1);
+}
+
 /*------------ TOP SIDE SETTINGS ----------------*/
 
 #top-settings-holder {

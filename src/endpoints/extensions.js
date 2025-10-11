@@ -443,7 +443,7 @@ router.get('/discover', function (request, response) {
 
     // Combine all extensions
     const allExtensions = [...builtInExtensions, ...userExtensions, ...globalExtensions];
-    console.debug('Extensions available for', request.user.profile.handle, allExtensions);
+    //console.debug('Extensions available for', request.user.profile.handle, allExtensions);
 
     return response.send(allExtensions);
 });

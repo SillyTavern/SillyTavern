@@ -11,7 +11,7 @@ import _ from 'lodash';
 
 import { delay, getBasicAuthHeader, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { AIMLAPI_HEADERS } from '../constants.js';
+import { AIMLAPI_HEADERS, REQUEST_DOMAIN_NAMES } from '../constants.js';
 
 /**
  * Gets the comfy workflows.
@@ -698,6 +698,103 @@ together.post('/generate', async (request, response) => {
     }
 });
 
+const meganovaai = express.Router();
+
+meganovaai.post('/models', async (request, response) => {
+    try {
+        const apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
+
+        if (!apiKey) {
+            console.warn('MegaNova AI apiKey not found.');
+            return response.sendStatus(400);
+        }
+        const apiUrl = REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless';
+        const modelsUrl = new URL(urlJoin(apiUrl, '/models'));
+        const modelsResponse = await fetch(modelsUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + apiKey,
+            },
+        });
+        if (!modelsResponse.ok) {
+            console.warn('MegaNova AI returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await modelsResponse.json();
+        const models = data.data.models;
+        if (!Array.isArray(models)) {
+            console.warn('MegaNova AI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        const imageModels = models
+            .filter(x => x.model_type === 'Image')
+            .map(x => ({ value: x.model_name, text: x.model_alias }));
+
+        return response.send(imageModels);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+meganovaai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
+
+        if (!key) {
+            console.warn('MegaNova AI key not found.');
+            return response.sendStatus(400);
+        }
+
+        console.debug('MegaNova AI request:', request.body);
+
+        const result = await fetch(REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/images/generation', {
+            method: 'POST',
+            body: JSON.stringify({
+                prompt: request.body.prompt,
+                negative_prompt: String(request.body.negative_prompt),
+                height: request.body.height,
+                width: request.body.width,
+                model: request.body.model,
+                steps: request.body.steps,
+                guidance_scale: request.body.scale,
+                n: 1,
+                // Limited to 10000 on playground, works fine with more.
+                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
+                image: request.body.image,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.warn('MegaNova AI returned an error.', { body: await result.text() });
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+        // console.debug('MegaNova AI response:', data);
+
+        const choice = data?.data?.[0];
+        let b64_json = choice.b64_json;
+
+        if (!b64_json) {
+            const buffer = await (await fetch(choice.url)).arrayBuffer();
+            b64_json = Buffer.from(buffer).toString('base64');
+        }
+        //b64_json = 'data:image/png;base64,' + b64_json;
+        return response.send({ format: 'jpg', data: b64_json });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const drawthings = express.Router();
 
 drawthings.post('/ping', async (request, response) => {
@@ -1008,6 +1105,10 @@ electronhub.post('/generate', async (request, response) => {
 
         if (request.body.size) {
             bodyParams.size = request.body.size;
+        }
+
+        if (request.body.quality) {
+            bodyParams.quality = request.body.quality;
         }
 
         const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
@@ -1552,6 +1653,7 @@ router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/huggingface', huggingface);
 router.use('/electronhub', electronhub);
+router.use('/meganovaai', meganovaai);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
