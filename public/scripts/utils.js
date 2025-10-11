@@ -18,6 +18,9 @@ import { groups, selected_group } from './group-chats.js';
 import { getCurrentLocale, t } from './i18n.js';
 import { importWorldInfo } from './world-info.js';
 
+export const shiftUpByOne = (e, i, a) => a[i] = e + 1;
+export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
+
 /**
  * Pagination status string template.
  * @type {string}

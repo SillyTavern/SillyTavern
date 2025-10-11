@@ -177,6 +177,8 @@ import {
     renderPaginationDropdown,
     paginationDropdownChangeHandler,
     importFromExternalUrl,
+    shiftUpByOne,
+    shiftDownByOne,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids } from './scripts/constants.js';
 
@@ -3910,7 +3912,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 // This operation will result in the injectedIndices indexes being off by one
                 coreChat.push({ mes: jailbreak, is_user: true });
                 // Add +1 to the elements to correct for the new PHI/Jailbreak message.
-                injectedIndices.forEach((e, idx) => injectedIndices[idx] = e + 1);
+                injectedIndices.forEach(shiftUpByOne);
             }
         }
     }
@@ -4016,12 +4018,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Only add the chat in context if past the greeting message
     if (isContinue && (chat2.length > 1 || main_api === 'openai')) {
         cyclePrompt = chat2.shift();
+        // Adjust indices to account for the shift
+        injectedIndices.forEach(shiftDownByOne);
+        userMessageIndices.forEach(shiftDownByOne);
     }
 
     // Collect enough messages to fill the context
     let arrMes = new Array(chat2.length);
     let tokenCount = await getMessagesTokenCount();
-    let lastAddedIndex = -1;
+    let lastAddedIndex = Number.MAX_SAFE_INTEGER;
 
     // Pre-allocate all injections first.
     // If it doesn't fit - user shot himself in the foot
@@ -4036,7 +4041,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (tokenCount < this_max_context) {
             chatString = chatString + item;
             arrMes[index] = item;
-            lastAddedIndex = Math.max(lastAddedIndex, index);
+            const reverseIndex = chat2.length - index - 1;
+            lastAddedIndex = Math.min(lastAddedIndex, reverseIndex);
         } else {
             break;
         }
@@ -4063,7 +4069,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (tokenCount < this_max_context) {
             chatString = chatString + item;
             arrMes[i] = item;
-            lastAddedIndex = Math.max(lastAddedIndex, i);
+            const reverseIndex = chat2.length - i - 1;
+            lastAddedIndex = Math.min(lastAddedIndex, reverseIndex);
         } else {
             break;
         }
@@ -4768,7 +4775,7 @@ export function stopGeneration() {
  * @returns {Promise<number[]>} Array of indices where the extension prompts were injected
  */
 async function doChatInject(messages, isContinue) {
-    const injectedIndices = [];
+    const injectedMessages = [];
     let totalInsertedMessages = 0;
     messages.reverse();
 
@@ -4808,10 +4815,11 @@ async function doChatInject(messages, isContinue) {
             const injectIdx = Math.min(depth + totalInsertedMessages, messages.length);
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
-            injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
+            injectedMessages.push(...roleMessages);
         }
     }
 
+    const injectedIndices = injectedMessages.map(msg => messages.indexOf(msg));
     messages.reverse();
     return injectedIndices;
 }
