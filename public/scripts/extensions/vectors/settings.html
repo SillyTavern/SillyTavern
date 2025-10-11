@@ -11,6 +11,7 @@
                 </label>
                 <select id="vectors_source" class="text_pole">
                     <option value="cohere">Cohere</option>
+                    <!-- <option value="meganovaai">MegaNova AI</option> -->
                     <option value="extras">Extras (deprecated)</option>
                     <option value="palm">Google AI Studio</option>
                     <option value="vertexai">Google Vertex AI</option>
@@ -25,6 +26,15 @@
                     <option value="vllm">vLLM</option>
                     <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="meganovaai_vectorsModel">
+                <label for="vectors_meganovaai_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_meganovaai_model" class="text_pole"></select>
+                <i>
+                    Set your MegaNova AI API key in API Connections. Supports OpenAI and Google models.
+                </i>
             </div>
             <div class="flex-container flexFlowColumn" id="vector_altEndpointUrl">
                 <label class="checkbox_label" for="vector_altEndpointUrl_enabled" title="Enable secondary endpoint URL usage, instead of the main one.">

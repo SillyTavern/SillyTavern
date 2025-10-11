@@ -17,6 +17,11 @@ const SOURCES = {
         url: 'api.openai.com',
         model: 'text-embedding-ada-002',
     },
+    'meganovaai': {
+        secretKey: SECRET_KEYS.MEGANOVAAI,
+        url: 'api.meganova.ai',
+        model: 'Bytedance/seedream-3-0-t2i-250415',
+    },
 };
 
 /**

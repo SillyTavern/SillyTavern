@@ -1,3 +1,8 @@
+export const REQUEST_DOMAIN_NAMES = {
+    MEGANOVAAI: 'https://api.meganova.ai/api/v1',
+    MEGANOVAAI_CHAT: 'https://inference.meganova.ai/v1',
+}
+
 /**
  * Common debounce timeout values to use with `debounce` calls.
  * @enum {number}

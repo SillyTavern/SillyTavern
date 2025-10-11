@@ -1,3 +1,8 @@
+export const REQUEST_DOMAIN_NAMES = {
+    MEGANOVAAI: 'https://api.meganova.ai/api/v1',
+    MEGANOVAAI_CHAT: 'https://inference.meganova.ai/v1',
+}
+
 export const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
     backups: 'backups/',
@@ -174,6 +179,7 @@ export const CHAT_COMPLETION_SOURCES = {
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
     ELECTRONHUB: 'electronhub',
+    MEGANOVAAI: 'meganovaai',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',

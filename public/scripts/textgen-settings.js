@@ -120,6 +120,7 @@ const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 export let TOGETHERAI_SERVER = 'https://api.together.xyz';
+export let MEGANOVAAI_SERVER = 'https://api.meganova.ai';
 export let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 export let DREAMGEN_SERVER = 'https://dreamgen.com';
 export let OPENROUTER_SERVER = 'https://openrouter.ai/api';

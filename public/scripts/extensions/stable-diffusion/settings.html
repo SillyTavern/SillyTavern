@@ -43,6 +43,7 @@
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
                 <option value="extras">Extras API (deprecated)</option>
+                <option value="meganovaai">MegaNova AI</option>
                 <option value="falai">FAL.AI</option>
                 <option value="google">Google AI</option>
                 <option value="huggingface">HuggingFace Inference API (serverless)</option>
@@ -96,6 +97,9 @@
             </div>
             <div data-sd-source="electronhub">
                 <i>Hint: Save an API key in the Electron Hub (Chat Completion) API settings to use it here.</i>
+            </div>
+            <div data-sd-source="meganovaai">
+                <i>Hint: Save an API key in the MegaNova AI (Chat Completion) API settings to use it here.</i>
             </div>
             <div data-sd-source="nanogpt">
                 <i>Hint: Save an API key in the NanoGPT (Chat Completion) API settings to use it here.</i>
@@ -330,6 +334,22 @@
                 </div>
             </div>
 
+            <div id="upload_image" class="upload_image" style="display: none;">
+                <div style="display: flex; align-items: center;">
+                    <label for="add_model_image_button" id="add_model_image_button_top" class="menu_button menu_button_icon interactable" title="Upload an image">
+                        <i class="fa-solid fa-plus"></i>
+                        <span data-i18n="Upload an image" class="span-big">Upload an image</span>
+                    </label>
+                    <span id="model_image_name" style="margin-left: 20px;" value="{{imageUrl}}"></span>
+                    <form id="form_model_image_upload" style="display: none;">
+                        <input type="file" id="add_model_image_button" name="avatar" accept="image/png', 'image/jpeg', 'image/webp" />
+                     </form>
+                </div>
+                <div>
+                    <i>Hint: Image upload is only mandatory for the FLUX.1 [Kontext-dev] model.</i>
+                </div>
+            </div>
+
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
@@ -461,7 +481,7 @@
                 </label>
             </div>
 
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl" class="marginTop5">
+            <div data-sd-source="novel,meganovaai,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl" class="marginTop5">
                 <label for="sd_seed">
                     <span data-i18n="Seed">Seed</span>
                     <small data-i18n="(-1 for random)">(-1 for random)</small>
