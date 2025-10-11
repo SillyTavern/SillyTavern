@@ -81,6 +81,9 @@ function autoSelectPreset() {
  * @returns {PresetManager} Preset manager
  */
 export function getPresetManager(apiId = '') {
+    if (apiId === 'koboldhorde') {
+        apiId = 'kobold';
+    }
     if (!apiId) {
         apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
     }
