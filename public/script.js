@@ -3919,7 +3919,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let chat2 = [];
     let continue_mag = '';
-    const userMessageIndices = [];
+    let userMessageIndices = [];
     const lastUserMessageIndex = coreChat.findLastIndex(x => x.is_user);
 
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
@@ -4019,14 +4019,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (isContinue && (chat2.length > 1 || main_api === 'openai')) {
         cyclePrompt = chat2.shift();
         // Adjust indices to account for the shift
-        injectedIndices.forEach(shiftDownByOne);
-        userMessageIndices.forEach(shiftDownByOne);
+        injectedIndices = injectedIndices.map(shiftDownByOne).filter(x => x >= 0);
+        userMessageIndices = userMessageIndices.map(shiftDownByOne).filter(x => x >= 0);
     }
 
     // Collect enough messages to fill the context
     let arrMes = new Array(chat2.length);
     let tokenCount = await getMessagesTokenCount();
-    let lastAddedIndex = Number.MAX_SAFE_INTEGER;
+    let lastAddedIndex = 0;
 
     // Pre-allocate all injections first.
     // If it doesn't fit - user shot himself in the foot
@@ -4046,8 +4046,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (tokenCount < this_max_context) {
             chatString = chatString + item;
             arrMes[index] = item;
-            const reverseIndex = chat2.length - index - 1;
-            lastAddedIndex = Math.min(lastAddedIndex, reverseIndex);
+            lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
             break;
         }
@@ -4074,8 +4073,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (tokenCount < this_max_context) {
             chatString = chatString + item;
             arrMes[i] = item;
-            const reverseIndex = chat2.length - i - 1;
-            lastAddedIndex = Math.min(lastAddedIndex, reverseIndex);
+            lastAddedIndex = Math.max(lastAddedIndex, i);
         } else {
             break;
         }
