@@ -8217,7 +8217,7 @@ function updateEditArrowClasses() {
     chatElement.find('.mes .mes_edit_up').removeClass('disabled');
     chatElement.find('.mes .mes_edit_down').removeClass('disabled');
 
-    if (this_edit_mes_id !== undefined) {
+    if (this_edit_mes_id >= 0) {
         const down = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
         const up = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
         const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
@@ -8239,7 +8239,7 @@ function updateEditArrowClasses() {
  */
 export function closeMessageEditor(what = 'all') {
     if (what === 'message' || what === 'all') {
-        if (this_edit_mes_id) {
+        if (this_edit_mes_id >= 0) {
             chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_cancel`).trigger('click');
         }
     }
@@ -10348,7 +10348,7 @@ jQuery(async function () {
                 return;
             }*/
 
-            if (this_edit_mes_id !== undefined) {
+            if (this_edit_mes_id >= 0) {
                 let mes_edited = chatElement.find(`[mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
                 if (Number(edit_mes_id) == chat.length - 1) { //if the generating swipe (...)
                     let run_edit = true;
