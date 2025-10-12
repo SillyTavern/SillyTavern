@@ -4031,6 +4031,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Pre-allocate all injections first.
     // If it doesn't fit - user shot himself in the foot
     for (const index of injectedIndices) {
+        // not needed for OAI prompting
+        if (main_api == 'openai') {
+            break;
+        }
+
         const item = chat2[index];
 
         if (typeof item !== 'string') {
