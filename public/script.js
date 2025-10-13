@@ -409,6 +409,7 @@ let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
 export let charDragDropHandler = null;
+export let chatDragDropHandler = null;
 
 /** @type {debounce_timeout} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
 export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
@@ -8050,9 +8051,8 @@ export async function saveChatConditional() {
 /**
  * Saves the chat to the server.
  * @param {FormData} formData Form data to send to the server.
- * @param {EventTarget} eventTarget Event target to trigger the event on.
  */
-async function importCharacterChat(formData, eventTarget) {
+async function importCharacterChat(formData) {
     const fetchResult = await fetch('/api/chats/import', {
         method: 'POST',
         body: formData,
@@ -8065,10 +8065,6 @@ async function importCharacterChat(formData, eventTarget) {
         if (data.res) {
             await displayPastChats();
         }
-    }
-
-    if (eventTarget instanceof HTMLInputElement) {
-        eventTarget.value = '';
     }
 }
 
@@ -10612,41 +10608,36 @@ jQuery(async function () {
     });
 
     $('#chat_import_file').on('change', async function (e) {
-        const targetElement = /** @type {HTMLInputElement} */ (e.target);
-        if (!(targetElement instanceof HTMLInputElement)) {
-            return;
-        }
-        const file = targetElement.files[0];
-
-        if (!file) {
+        const targetElement = e.target;
+        const formElement = document.getElementById('form_import_chat');
+        if (!(targetElement instanceof HTMLInputElement) || !(formElement instanceof HTMLFormElement)) {
             return;
         }
 
-        const ext = file.name.match(/\.(\w+)$/);
-        if (
-            !ext ||
-            (ext[1].toLowerCase() != 'json' && ext[1].toLowerCase() != 'jsonl')
-        ) {
-            return;
+        for (const file of targetElement.files) {
+            const ext = file.name.match(/\.(\w+)$/);
+            const format = ext?.[1]?.toLowerCase();
+
+            if (!['json', 'jsonl'].includes(format)) {
+                toastr.warning(t`Only JSON and JSONL files are supported for chat imports.`);
+                continue;
+            }
+
+            if (selected_group && format === 'json') {
+                toastr.warning(t`Only SillyTavern's own format is supported for group chat imports. Sorry!`);
+                continue;
+            }
+
+            const formData = new FormData(formElement);
+            formData.set('file_type', format);
+            formData.set('avatar', file);
+            formData.set('user_name', name1);
+
+            const importFn = selected_group ? importGroupChat : importCharacterChat;
+            await importFn(formData);
         }
 
-        if (selected_group && file.name.endsWith('.json')) {
-            toastr.warning('Only SillyTavern\'s own format is supported for group chat imports. Sorry!');
-            return;
-        }
-
-        const format = ext[1].toLowerCase();
-        $('#chat_import_file_type').val(format);
-
-        const formData = new FormData(/** @type {HTMLFormElement} */($('#form_import_chat').get(0)));
-        formData.append('user_name', name1);
-        $('#select_chat_div').html('');
-
-        if (selected_group) {
-            await importGroupChat(formData, e.originalEvent.target);
-        } else {
-            await importCharacterChat(formData, e.originalEvent.target);
-        }
+        targetElement.value = '';
     });
 
     $('#rm_button_group_chats').on('click', function () {
@@ -11091,6 +11082,14 @@ jQuery(async function () {
         }
         await processDroppedFiles(files);
     }, { noAnimation: true });
+
+    chatDragDropHandler = new DragAndDropHandler('#select_chat_popup', async (_, event) => {
+        const importFile = document.getElementById('chat_import_file');
+        if (importFile instanceof HTMLInputElement) {
+            importFile.files = event.originalEvent.dataTransfer.files;
+            $(importFile).trigger('change');
+        }
+    });
 
     $('#charListGridToggle').on('click', async () => {
         doCharListDisplaySwitch();
