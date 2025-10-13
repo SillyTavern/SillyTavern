@@ -8051,8 +8051,10 @@ export async function saveChatConditional() {
 /**
  * Saves the chat to the server.
  * @param {FormData} formData Form data to send to the server.
+ * @param {object} [options={}] Options for the import
+ * @param {boolean} [options.refresh] Whether to refresh the group chat list after import
  */
-async function importCharacterChat(formData) {
+async function importCharacterChat(formData, { refresh = true } = {}) {
     const fetchResult = await fetch('/api/chats/import', {
         method: 'POST',
         body: formData,
@@ -8062,7 +8064,7 @@ async function importCharacterChat(formData) {
 
     if (fetchResult.ok) {
         const data = await fetchResult.json();
-        if (data.res) {
+        if (data.res && refresh) {
             await displayPastChats();
         }
     }
@@ -10634,8 +10636,10 @@ jQuery(async function () {
             formData.set('user_name', name1);
 
             const importFn = selected_group ? importGroupChat : importCharacterChat;
-            await importFn(formData);
+            await importFn(formData, { refresh: false });
         }
+
+        await displayPastChats();
 
         targetElement.value = '';
     });
