@@ -245,13 +245,13 @@ export async function deleteBranch(tree, chat, mesId, swipeId) {
     }
 }
 
-eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ mesId, swipeId, newSwipeId }) => {
+eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, newSwipeId }) => {
     if (power_user.enable_chat_tree) {
-        mesId = Number(mesId);
+        messageId = Number(messageId);
         swipeId = Number(swipeId);
         newSwipeId = Number(newSwipeId);
-        await deleteBranch(chatTree, chat, mesId, swipeId);
+        await deleteBranch(chatTree, chat, messageId, swipeId);
         let swipe_right = swipeId <= newSwipeId;
-        await swipe(null, swipe_right,  { source: 'delete', repeated: false, force_mes_id: mesId, force_swipe_id: newSwipeId });
+        await swipe(null, swipe_right,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
     }
 });

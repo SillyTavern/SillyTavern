@@ -19,7 +19,7 @@ import {
     substituteParams,
     sendTextareaMessage,
     doNavbarIconClick,
-    allow_swiping,
+    isSwipingAllowed,
 } from '../script.js';
 
 import {
@@ -1110,9 +1110,8 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
-                allow_swiping &&
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                // $('.swipe_left:last').css('display') === 'flex' && //Redundant due to allow_swiping.
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
@@ -1125,9 +1124,8 @@ export function initRossMods() {
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
-                allow_swiping &&
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                // $('.swipe_right:last').css('display') === 'flex' && //Redundant due to allow_swiping.
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
