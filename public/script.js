@@ -8753,7 +8753,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const isPristine = !chat_metadata?.tainted;
 
-    const swipeDuration = 120;
+    //Respect animation_duration if it's >= 0.
+    const swipeDuration = animation_duration >= 0 ? animation_duration : 0;
     let swipeRange = 700;
     if (direction === SWIPE_DIRECTION.RIGHT) {
         swipeRange *= -1;
@@ -8886,7 +8887,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Expand new message.
         thisMesDiv.animate({ height: new_height + 'px' }, {
-            duration: 400,
+            duration: swipeDuration,
             queue: false,
             progress: function (animation, progress, remainingMs) {
 
@@ -8907,7 +8908,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     async function animateSwipe(run_generate = false) {
 
         //Swipe out.
-        await animateSwipeTransition(mesId, swipeRange, animation_duration > 0 ? swipeDuration : 0);
+        await animateSwipeTransition(mesId, swipeRange, swipeDuration);
 
         if (run_generate) {
             //shows "..." while generating
@@ -8956,7 +8957,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
 
         //Swipe in.
-        await animateSwipeTransition(mesId, 0, animation_duration > 0 ? swipeDuration : 0);
+        await animateSwipeTransition(mesId, 0, swipeDuration);
     }
 
     if (mesId === Number(this_edit_mes_id)) {
