@@ -8014,7 +8014,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 }
 
 export function showSwipeButtons() {
-    if (chat.length === 0) {
+    if (chat.length === 0 || this_edit_mes_id >= 0) {
         return;
     }
 
