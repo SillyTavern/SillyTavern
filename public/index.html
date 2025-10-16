@@ -3779,7 +3779,7 @@
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </a>
                     </h3>
-                    <div class="flex-container">
+                    <div class="flex-container" data-cc-null>
                         <input id="af_master_import_file" type="file" hidden accept=".json" class="displayNone">
                         <div id="af_master_import" class="menu_button menu_button_icon" title="Import Advanced Formatting settings&#10;&#10;You can also provide legacy files for Instruct and Context templates." data-i18n="[title]Import Advanced Formatting settings">
                             <i class="fa-solid fa-file-import"></i>
@@ -3791,10 +3791,16 @@
                         </div>
                     </div>
                 </div>
+                <div id="advanced-formatting-cc-notice" class="info-block warning">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span data-i18n="Grayed-out options have no effect when Chat Completion API is used.">
+                        Grayed-out options have no effect when Chat Completion API is used.
+                    </span>
+                </div>
                 <div class="flex-container spaceEvenly">
                     <div id="ContextSettings" class="flex-container flexNoGap flexFlowColumn flex1">
                         <div>
-                            <h4 class="standoutHeader title_restorable">
+                            <h4 class="standoutHeader title_restorable" data-cc-null>
                                 <div>
                                     <span data-i18n="Context Template">Context Template</span>
                                 </div>
@@ -3805,7 +3811,7 @@
                                     </label>
                                 </div>
                             </h4>
-                            <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template">
+                            <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template" data-cc-null>
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                                 <div class="flex-container justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
@@ -3819,12 +3825,14 @@
                                 </div>
                             </div>
                             <div>
-                                <label for="context_story_string" class="flex-container">
-                                    <small data-i18n="Story String">Story String</small>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                <div class="flex-container flexFlowColumn">
+                                <div data-cc-null>
+                                    <label for="context_story_string" class="flex-container">
+                                        <small data-i18n="Story String">Story String</small>
+                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                    </label>
+                                    <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                </div>
+                                <div class="flex-container flexFlowColumn" data-cc-null>
                                     <div id="context_story_string_position_block">
                                         <label for="context_story_string_position">
                                             <small data-i18n="Position:">Position:</small>
@@ -3853,7 +3861,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex-container">
+                                <div class="flex-container" data-cc-null>
                                     <div class="flex1">
                                         <label for="context_example_separator">
                                             <small data-i18n="Example Separator">Example Separator</small>
@@ -3878,13 +3886,13 @@
                                         </span>
                                     </h4>
 
-                                    <label class="checkbox_label" for="always-force-name2-checkbox">
+                                    <label class="checkbox_label" for="always-force-name2-checkbox" data-cc-null>
                                         <input id="always-force-name2-checkbox" type="checkbox" />
                                         <small data-i18n="Always add character's name to prompt">
                                             Always add character's name to prompt
                                         </small>
                                     </label>
-                                    <label class="checkbox_label" for="single_line">
+                                    <label class="checkbox_label" for="single_line" data-cc-null>
                                         <input id="single_line" type="checkbox" />
                                         <small data-i18n="Generate only one line per request">
                                             Generate only one line per request
@@ -3907,11 +3915,11 @@
                                             Trim Incomplete Sentences
                                         </small>
                                     </label>
-                                    <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings." data-i18n="[title]Add Chat Start and Example Separator to a list of stopping strings.">
+                                    <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings." data-i18n="[title]Add Chat Start and Example Separator to a list of stopping strings." data-cc-null>
                                         <input id="context_use_stop_strings" type="checkbox" />
                                         <small data-i18n="Separators as Stop Strings">Separators as Stop Strings</small>
                                     </label>
-                                    <label class="checkbox_label" title="Add Character and User names to a list of stopping strings." data-i18n="[title]Add Character and User names to a list of stopping strings.">
+                                    <label class="checkbox_label" title="Add Character and User names to a list of stopping strings." data-i18n="[title]Add Character and User names to a list of stopping strings." data-cc-null>
                                         <input id="context_names_as_stop_strings" type="checkbox" />
                                         <small data-i18n="Names as Stop Strings">Names as Stop Strings</small>
                                     </label>
@@ -3919,7 +3927,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1" data-cc-null>
                         <h4 class="standoutHeader title_restorable justifySpaceBetween">
                             <div class="flex-container">
                                 <span data-i18n="Instruct Template">Instruct Template</span>
@@ -4113,7 +4121,7 @@
                         </div>
                     </div>
                     <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween" data-cc-null>
                             <div class="flex-container">
                                 <span data-i18n="System Prompt">System Prompt</span>
                             </div>
@@ -4124,7 +4132,7 @@
                                 </label>
                             </div>
                         </h4>
-                        <div id="SystemPromptBlock" class="marginBot10">
+                        <div id="SystemPromptBlock" class="marginBot10" data-cc-null>
                             <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
                                 <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
                                 <div class="flex-container margin0 justifyCenter gap3px">
@@ -4182,7 +4190,7 @@
                             </label>
                         </div>
 
-                        <div name="tokenizerSettingsBlock">
+                        <div name="tokenizerSettingsBlock" data-cc-null>
                             <div name="tokenizerSelectorBlock">
                                 <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
                                     <a href="https://docs.sillytavern.app/usage/prompts/tokenizer/" class="notes-link" target="_blank">
@@ -4295,7 +4303,7 @@
                         </div>
                         <div>
                             <h4 class="standoutHeader" data-i18n="Miscellaneous">Miscellaneous</h4>
-                            <div name="bindModelPresetBlock">
+                            <div name="bindModelPresetBlock" data-cc-null>
                                 <label for="bind_model_templates" class="checkbox_label">
                                     <input id="bind_model_templates" type="checkbox" />
                                     <small data-i18n="Bind Model to Templates">Bind Model to Templates</small>
