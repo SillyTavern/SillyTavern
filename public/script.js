@@ -7357,6 +7357,7 @@ async function messageEditDone(div) {
     await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
+    showSwipeButtons();
 }
 
 /**
@@ -10452,7 +10453,6 @@ jQuery(async function () {
             return;
         }
 
-        hideSwipeButtons();
         const targetId = Number(this_edit_mes_id) - 1;
         const target = chatElement.find(`.mes[mesid="${targetId}"]`);
         const root = $(this).closest('.mes');
@@ -10473,7 +10473,6 @@ jQuery(async function () {
         this_edit_mes_id = targetId;
         updateViewMessageIds();
         await saveChatConditional();
-        showSwipeButtons();
     });
 
     $(document).on('click', '.mes_edit_down', async function () {
@@ -10481,7 +10480,6 @@ jQuery(async function () {
             return;
         }
 
-        hideSwipeButtons();
         const targetId = Number(this_edit_mes_id) + 1;
         const target = chatElement.find(`.mes[mesid="${targetId}"]`);
         const root = $(this).closest('.mes');
@@ -10502,7 +10500,6 @@ jQuery(async function () {
         this_edit_mes_id = targetId;
         updateViewMessageIds();
         await saveChatConditional();
-        showSwipeButtons();
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
