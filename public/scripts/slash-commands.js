@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { copyText, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, flashHighlight } from './utils.js';
 
 import {
     Generate,
@@ -5543,15 +5543,6 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
-    function canUseNegativeLookbehind() {
-        try {
-            new RegExp('(?<!_)');
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
     if (!canUseNegativeLookbehind()) {
         console.warn('Cannot use negative lookbehind in this browser');
         return;

@@ -34,6 +34,15 @@ export const localizePagination = function(container) {
     container.find('[title="Last page"]').attr('title', t`Last page`);
 };
 
+export function canUseNegativeLookbehind() {
+    try {
+        new RegExp('(?<!_)');
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 /**
  * Renders a dropdown for selecting page size in pagination.
  * @param {number} pageSize Page size
