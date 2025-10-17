@@ -53,6 +53,7 @@ import {
     swipe_right,
     swipe_left,
     generateRaw,
+    deleteMessage,
     showSwipeButtons,
     hideSwipeButtons,
     deleteMessage,

@@ -1465,12 +1465,6 @@ export async function clearChat() {
     itemizedPrompts.length = 0;
 }
 
-export async function deleteLastMessage() {
-    chat.length = chat.length - 1;
-    chatElement.children('.mes').last().remove();
-    await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-}
-
 /**
  * Deletes a message from the chat by its ID, optionally asking for confirmation.
  * @param {number} id The ID of the message to delete.
@@ -1527,6 +1521,26 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     if (this_edit_mes_id === id) {
         this_edit_mes_id = undefined;
     }
+
+    refreshSwipeButtons();
+
+    await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+}
+
+/**
+ * Deletes messages from mesId message to lastMesId.
+ * @param {Number} mesId
+ * @param {Number} lastMesId
+ */
+export async function deleteMessages(mesId, lastMesId) {
+    chat.splice(mesId, 1 + (lastMesId - mesId));
+
+    this_edit_mes_id = undefined;
+    chat_metadata['tainted'] = true;
+
+    let startFromZero = Number(mesId) === 0;
+    updateViewMessageIds(startFromZero);
+    saveChatDebounced();
 
     refreshSwipeButtons();
 
@@ -10883,11 +10897,11 @@ jQuery(async function () {
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
         let canDeleteSwipe;
         //If the chatTree is enabled, then old swipes and user swipes can be deleted.
-        if (!power_user.enable_chat_tree) {
-            canDeleteSwipe = !fromSlashCommand && !message.is_user && swipesArray.length > 1 && Number(this_edit_mes_id) === chat.length - 1 && selectedSwipe !== undefined;
+        if (power_user.enable_chat_tree) {
+            canDeleteSwipe = !fromSlashCommand && swipesArray.length > 1 && selectedSwipe !== undefined;
         }
         else {
-            canDeleteSwipe = !fromSlashCommand && swipesArray.length > 1 && selectedSwipe !== undefined;
+            canDeleteSwipe = !fromSlashCommand && !message.is_user && swipesArray.length > 1 && Number(this_edit_mes_id) === chat.length - 1 && selectedSwipe !== undefined;
         }
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
