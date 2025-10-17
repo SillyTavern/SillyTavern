@@ -1501,7 +1501,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         if (!result) {
             return;
         }
-        deleteOnlySwipe = canDeleteSwipe && result === 1; // Default button, not the custom one
+        deleteOnlySwipe = canDeleteSwipe && result === POPUP_RESULT.AFFIRMATIVE; // Default button, not the custom one
     }
 
     if (deleteOnlySwipe) {
