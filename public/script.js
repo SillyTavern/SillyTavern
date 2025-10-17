@@ -1525,8 +1525,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         this_edit_mes_id = undefined;
     }
 
-    hideSwipeButtons();
-    showSwipeButtons();
+    refreshSwipeButtons();
 
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
