@@ -6275,7 +6275,7 @@ export function initOpenAI() {
 
     $('#update_oai_preset').on('click', async function () {
         const name = oai_settings.preset_settings_openai;
-        await saveOpenAIPreset(name, oai_settings);
+        await saveOpenAIPreset(name, oai_settings, false);
         toastr.success(t`Preset updated`);
     });
 
