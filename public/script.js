@@ -1485,6 +1485,11 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         }
     }
 
+    const messageElement = chatElement.find(`.mes[mesid="${id}"]`);
+    if (messageElement.length === 0) {
+        return;
+    }
+
     const canDeleteSwipe = swipeDeletionIndex !== undefined;
     let deleteOnlySwipe = canDeleteSwipe;
     if (askConfirmation) {
@@ -1499,11 +1504,6 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         deleteOnlySwipe = canDeleteSwipe && result === 1; // Default button, not the custom one
     }
 
-    const messageElement = $(`.mes[mesid="${id}"]`);
-    if (!messageElement) {
-        return;
-    }
-
     if (deleteOnlySwipe) {
         await deleteSwipe(swipeDeletionIndex, id);
         return;
@@ -1512,10 +1512,9 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     chat.splice(id, 1);
     messageElement.remove();
 
-    let startFromZero = id === 0;
-
     chat_metadata['tainted'] = true;
 
+    const startFromZero = id === 0;
     updateViewMessageIds(startFromZero);
     saveChatDebounced();
 
