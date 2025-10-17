@@ -1599,7 +1599,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 
     if (!isSystem && power_user.encode_tags) {
         mes = canUseNegativeLookbehind()
-            ? mes.replace(new RegExp('<', 'g'), '&lt;').replace(new RegExp('(?<!^|\\n\\s*)>', 'g'), '&gt;')
+            ? mes.replaceAll('<', '&lt;').replace(new RegExp('(?<!^|\\n\\s*)>', 'g'), '&gt;')
             : mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
     }
 
