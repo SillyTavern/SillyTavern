@@ -55,6 +55,7 @@ import {
     generateRaw,
     showSwipeButtons,
     hideSwipeButtons,
+    deleteMessage,
 } from '../script.js';
 import {
     extension_settings,
@@ -119,6 +120,7 @@ export function getContext() {
         eventTypes: event_types,
         addOneMessage,
         deleteLastMessage,
+        deleteMessage,
         generate: Generate,
         sendStreamingRequest,
         sendGenerationRequest,
