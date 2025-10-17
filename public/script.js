@@ -1516,7 +1516,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
 
     const startFromZero = id === 0;
     updateViewMessageIds(startFromZero);
-    saveChatDebounced();
+    await saveChatConditional();
 
     if (this_edit_mes_id === id) {
         this_edit_mes_id = undefined;
