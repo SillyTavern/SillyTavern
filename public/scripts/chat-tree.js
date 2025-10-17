@@ -114,7 +114,7 @@ export async function getStickFromTree(chatTree, chat, index) {
 
         //Follow messages's swipe_id before index, then the branch's branch_id, then the first swipe.
         let branch_id;
-        branch_id = Number((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id'] ?? 0);
+        branch_id = Number(((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0);
 
         //Debugging.
         // swipe_path.push(chat[i]?.['swipe_id'])

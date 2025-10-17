@@ -9019,6 +9019,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //When editing user messages, the length is zero.
             if (stick.length == 0) {
                 //Simply Subsequent logic.
+                //chat[mesId]'s swipe_id was changed, but not the current message.
+                syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
                 stick[0] = chat[mesId];
             }
             //Re-apply the swipe.
