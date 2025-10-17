@@ -1469,23 +1469,22 @@ export async function deleteLastMessage() {
 /**
  * Deletes a message from the chat by its ID, optionally asking for confirmation.
  * @param {number} id The ID of the message to delete.
- * @param {number|boolean} [swipeDeletion=false] If true, deletes the swipe associated with the message. If a number, deletes the swipe with that index.
+ * @param {number} [swipeDeletionIndex] Deletes the swipe with that index.
  * @param {boolean} [askConfirmation=false] Whether to ask for confirmation before deleting.
  */
-export async function deleteMessage(id, swipeDeletion = false, askConfirmation = false) {
-    if (typeof swipeDeletion === 'number') {
+export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfirmation = false) {
+    if (swipeDeletionIndex !== undefined) {
+        if (swipeDeletionIndex < 0) {
+            throw new Error('Swipe index cannot be negative');
+        }
         if (!Array.isArray(chat[id].swipes)) {
             throw new Error('Message has no swipes to delete');
         }
-        if (chat[id].swipes.length <= swipeDeletion) {
+        if (chat[id].swipes.length <= swipeDeletionIndex) {
             throw new Error('Swipe index out of bounds');
         }
     }
 
-    let swipeDeletionIndex = undefined;
-    if (swipeDeletion !== undefined && Array.isArray(chat[id].swipes) && chat[id].swipes.length) {
-        swipeDeletionIndex = typeof swipeDeletion === 'number' ? swipeDeletion : (swipeDeletion === true ? chat[id].swipe_id : undefined);
-    }
     const canDeleteSwipe = swipeDeletionIndex !== undefined;
     let deleteOnlySwipe = canDeleteSwipe;
     if (askConfirmation) {
@@ -10588,7 +10587,10 @@ jQuery(async function () {
 
     $(document).on('click', '.mes_edit_delete', async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
-        await deleteMessage(Number(this_edit_mes_id), !chat[this_edit_mes_id].is_user && this_edit_mes_id === chat.length - 1, power_user.confirm_message_delete && fromSlashCommand !== true);
+        const message = chat[this_edit_mes_id];
+        const selectedSwipe = message['swipe_id'] ?? undefined;
+        const canDeleteSwipe = !message.is_user && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
+        await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
 
     $(document).on('click', '.mes_edit_done', async function () {
