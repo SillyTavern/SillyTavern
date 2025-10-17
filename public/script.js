@@ -8887,7 +8887,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Expand new message.
         thisMesDiv.animate({ height: new_height + 'px' }, {
-            duration: swipeDuration,
+            duration: 0, //used to be 100 //Disabled on Cohee's request. https://github.com/SillyTavern/SillyTavern/pull/4610/files#r2408731744
             queue: false,
             progress: function (animation, progress, remainingMs) {
 
