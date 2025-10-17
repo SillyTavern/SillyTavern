@@ -2921,7 +2921,7 @@ class StreamingProcessor {
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
         }
-        hideSwipeButtons();
+        hideSwipeButtons({ hideCounters:true });
         scrollChatToBottom();
         return messageId;
     }
@@ -8162,11 +8162,17 @@ export function showSwipeButtons(mesId = chat.length - 1) {
     lastSwipeCounter.text(swipeCounterText).show();
 }
 
-export function hideSwipeButtons() {
+/**
+ * @param {object} [options] Options
+ * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
+ */
+export function hideSwipeButtons({ hideCounters = false } = {} ) {
     isSwipingAllowed = false;
     chatElement.find('.swipe_right').hide();
-    chatElement.find('.last_mes .swipes-counter').hide();
     chatElement.find('.swipe_left').hide();
+    if (hideCounters === true) {
+        chatElement.find('.last_mes .swipes-counter').hide();
+    }
 }
 
 /**
