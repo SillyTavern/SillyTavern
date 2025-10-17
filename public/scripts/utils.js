@@ -34,13 +34,22 @@ export const localizePagination = function(container) {
     container.find('[title="Last page"]').attr('title', t`Last page`);
 };
 
+/**
+ * Checks if the current environment supports negative lookbehind in regular expressions.
+ * @returns {boolean} True if negative lookbehind is supported, false otherwise.
+ */
 export function canUseNegativeLookbehind() {
-    try {
-        new RegExp('(?<!_)');
-        return true;
-    } catch (e) {
-        return false;
+    let result = canUseNegativeLookbehind['result'];
+    if (typeof result !== 'boolean') {
+        try {
+            new RegExp('(?<!_)');
+            result = true;
+        } catch (e) {
+            result = false;
+        }
+        canUseNegativeLookbehind['result'] = result;
     }
+    return result;
 }
 
 /**
