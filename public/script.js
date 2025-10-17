@@ -1518,6 +1518,10 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     updateViewMessageIds(startFromZero);
     saveChatDebounced();
 
+    if (this_edit_mes_id === id) {
+        this_edit_mes_id = undefined;
+    }
+
     hideSwipeButtons();
     showSwipeButtons();
 
