@@ -9,6 +9,7 @@ import { lodash } from '../../../lib.js';
  * @readonly
  */
 export const SCRIPT_TYPES = {
+    // ORDER MATTERS: defines the regex script priority
     GLOBAL: 0,
     PRESET: 2,
     SCOPED: 1,
