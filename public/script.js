@@ -2920,7 +2920,7 @@ class StreamingProcessor {
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
         }
-        hideSwipeButtons({ hideCounters:true });
+        hideSwipeButtons({ hideCounters: true });
         scrollChatToBottom();
         return messageId;
     }
@@ -8165,7 +8165,7 @@ export function showSwipeButtons(mesId = chat.length - 1) {
  * @param {object} [options] Options
  * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
  */
-export function hideSwipeButtons({ hideCounters = false } = {} ) {
+export function hideSwipeButtons({ hideCounters = false } = {}) {
     isSwipingAllowed = false;
     chatElement.find('.swipe_right').hide();
     chatElement.find('.swipe_left').hide();
@@ -8722,7 +8722,6 @@ function formatSwipeCounter(current, total) {
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  */
 export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1] } = {}) {
-
     if (chat.length === 0) {
         console.warn('Swipe was called on an empty chat.');
         return;
@@ -8735,8 +8734,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     let generation;
-
     let messageIndex;
+
     //Only set messageIndex if message exists because -1 is truthy.
     if (message) {
         messageIndex = chat.indexOf(message);
@@ -8749,7 +8748,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     const mesId = Number($(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
-
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
     const thisMesDivHeight = thisMesDiv[0].scrollHeight;
     const thisMesTextHeight = thisMesText[0].scrollHeight;
@@ -8757,13 +8755,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     let newSwipeId = Number(originalSwipeId);
 
     const isPristine = !chat_metadata?.tainted;
-
-    //Respect animation_duration if it's >= 0.
-    const swipeDuration = animation_duration >= 0 ? animation_duration : 0;
-    let swipeRange = 700;
-    if (direction === SWIPE_DIRECTION.RIGHT) {
-        swipeRange *= -1;
-    }
+    const swipeDuration = Math.round(animation_duration * 1.25);
+    const swipeRange = direction === SWIPE_DIRECTION.RIGHT ? -700 : 700;
 
     async function endSwipe() {
         //Wait for the generation to end.
