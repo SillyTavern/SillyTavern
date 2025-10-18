@@ -10,8 +10,8 @@ import { lodash } from '../../../lib.js';
  */
 export const SCRIPT_TYPES = {
     GLOBAL: 0,
-    SCOPED: 1,
     PRESET: 2,
+    SCOPED: 1,
 };
 
 /**
