@@ -410,7 +410,7 @@ class PresetManager {
         }
 
         const name = selected.text();
-        await this.savePreset(name, option);
+        await this.savePreset(name, null, option);
 
         const successToast = !this.isAdvancedFormatting() ? t`Preset updated` : t`Template updated`;
         toastr.success(successToast);
