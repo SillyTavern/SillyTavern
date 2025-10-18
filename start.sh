@@ -3,7 +3,10 @@
 # Make sure pwd is the directory of the script
 cd "$(dirname "$0")"
 
+
 PM=$(command -v bun || command -v yarn || command -v npm)
+PM="${SILLYTAVERN_PM:-$PM}"
+
 if ! command -v "$PM" &> /dev/null
 then
     read -p "npm is not installed. Do you want to install nodejs and npm? (y/n)" choice
@@ -24,6 +27,10 @@ then
         echo "Invalid option. Nodejs and npm will not be installed."
         exit;;
     esac
+fi
+
+if [[ "$PM" != *"npm"* ]]; then
+  printf "\e[31mWARNING:\e[0m \e[4;58:5:208mSillyTavern only supports NPM.\nPlease help us test \"%s\" and report bugs here: https://github.com/SillyTavern/SillyTavern/pull/4674\e[0m\n", "$(basename "$PM")"
 fi
 
 echo "Installing Node Modules..."
