@@ -9042,6 +9042,10 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         await endSwipe();
         return;
     }
+    else {
+        await endSwipe();
+        return;
+    }
 }
 
 /**
