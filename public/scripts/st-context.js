@@ -53,10 +53,11 @@ import {
     swipe_right,
     swipe_left,
     generateRaw,
-    deleteMessage,
     showSwipeButtons,
     hideSwipeButtons,
     deleteMessage,
+    refreshSwipeButtons,
+    isSwipingAllowed,
 } from '../script.js';
 import {
     extension_settings,
@@ -215,6 +216,8 @@ export function getContext() {
             right: swipe_right,
             show: showSwipeButtons,
             hide: hideSwipeButtons,
+            refresh: refreshSwipeButtons,
+            isAllowed: () => isSwipingAllowed,
         },
         variables: {
             local: {
