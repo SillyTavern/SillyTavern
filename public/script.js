@@ -8786,43 +8786,24 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    async function swipeGenerate() {
-
-        //Cancel the generation if it's a user message or the first message in a pristine chat.
-        if (chat[mesId].is_user || (mesId === 0 && isPristine)) {
-            //Cancel swipe.
-            chat[mesId]['swipe_id'] = originalSwipeId;
-            //Prepare to generate.
-        } else {
-            if (chat[mesId].extra) {
-                // if message has memory attached - remove it to allow regen
-                if (chat[mesId].extra.memory) {
-                    delete chat[mesId].extra.memory;
-                }
-                // ditto for display text
-                if (chat[mesId].extra.display_text) {
-                    delete chat[mesId].extra.display_text;
-                }
-
-                delete chat[mesId].extra.image;
-                delete chat[mesId].extra.image_swipes;
-                delete chat[mesId].extra.video;
-                delete chat[mesId].extra.inline_image;
-            }
-            delete chat[mesId].gen_started;
-            delete chat[mesId].gen_finished;
-
-            let run_generate = true;
-            await syncWithSwipeId(mesId, run_generate);
-            await animateSwipe(run_generate);
-        }
-    }
-
-
     /**
      * Syncs with swipe_id.
      */
     async function syncWithSwipeId(mesId, run_generate = false) {
+        if (chat[mesId].extra) {
+            // if message has memory attached - remove it to allow regen
+            delete chat[mesId].extra.memory;
+
+            // ditto for display text
+            delete chat[mesId].extra.display_text;
+
+            delete chat[mesId].extra.image;
+            delete chat[mesId].extra.image_swipes;
+            delete chat[mesId].extra.video;
+            delete chat[mesId].extra.inline_image;
+        }
+        delete chat[mesId].gen_started;
+        delete chat[mesId].gen_finished;
         //load from swipes.
         if (!run_generate) {
             syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
@@ -9029,9 +9010,18 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Update the swipe_id.
             chat[mesId]['swipe_id'] = newSwipeId;
 
-            await swipeGenerate();
-            await endSwipe();
-            return;
+            //Cancel the generation if it's a user message or the first message in a pristine chat.
+            if (chat[mesId].is_user || (mesId === 0 && isPristine)) {
+                //Cancel swipe.
+                chat[mesId]['swipe_id'] = originalSwipeId;
+            //Generate.
+            } else {
+                let run_generate = true;
+                await syncWithSwipeId(mesId, run_generate);
+                await animateSwipe(run_generate);
+                await endSwipe();
+                return;
+            }
         }
         else {
             // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
