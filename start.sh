@@ -3,7 +3,8 @@
 # Make sure pwd is the directory of the script
 cd "$(dirname "$0")"
 
-if ! command -v npm &> /dev/null
+PM=$(command -v bun || command -v yarn || command -v npm)
+if ! command -v "$PM" &> /dev/null
 then
     read -p "npm is not installed. Do you want to install nodejs and npm? (y/n)" choice
     case "$choice" in
@@ -14,7 +15,8 @@ then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
         source ~/.bashrc
         nvm install --lts
-        nvm use --lts;;
+        nvm use --lts
+        PM="npm";;
       n|N )
         echo "Nodejs and npm will not be installed."
         exit;;
@@ -26,7 +28,7 @@ fi
 
 echo "Installing Node Modules..."
 export NODE_ENV=production
-npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev
+$PM install --no-audit --no-fund --loglevel=error --no-progress --omit=dev
 
 echo "Entering SillyTavern..."
 node "server.js" "$@"
