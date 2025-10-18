@@ -1088,7 +1088,7 @@ function populateDebuggerRuleList(container) {
         }
     });
 
-    container.data('allScripts', [...globalScripts, ...scopedScripts, ...presetScripts]);
+    container.data('allScripts', [...globalScripts, ...presetScripts, ...scopedScripts]);
 
     const renderRule = (script) => {
         if (!script.id) script.id = uuidv4();
@@ -1147,18 +1147,18 @@ function populateDebuggerRuleList(container) {
         rulesContainer.append(globalList);
     }
 
-    if (scopedScripts.length > 0) {
-        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Scoped Rules` + '</div>');
-        const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
-        scopedScripts.forEach(script => scopedList.append(renderRule(script)));
-        rulesContainer.append(scopedList);
-    }
-
     if (presetScripts.length > 0) {
         rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Preset Rules` + '</div>');
         const presetList = $('<ul id="regex_debugger_rules_preset" class="sortable-list"></ul>');
         presetScripts.forEach(script => presetList.append(renderRule(script)));
         rulesContainer.append(presetList);
+    }
+
+    if (scopedScripts.length > 0) {
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Scoped Rules` + '</div>');
+        const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
+        scopedScripts.forEach(script => scopedList.append(renderRule(script)));
+        rulesContainer.append(scopedList);
     }
 }
 
