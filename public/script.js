@@ -180,6 +180,7 @@ import {
     shiftUpByOne,
     shiftDownByOne,
     canUseNegativeLookbehind,
+    trimSpaces,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids } from './scripts/constants.js';
 
@@ -7278,59 +7279,55 @@ function messageEditAuto(div) {
 
 /**
  * Create the message edit UI.
- * @param {number} edit_mes_id
+ * @param {number} editMessageId The ID of the message to edit
  */
-async function messageEdit(edit_mes_id) {
-    hideSwipeButtons();
-    let chatScrollPosition = chatElement.scrollTop();
+async function messageEdit(editMessageId) {
+    const editMessage = chat[editMessageId];
+    if (!editMessage) {
+        return;
+    }
 
-    this_edit_mes_id = edit_mes_id;
+    this_edit_mes_id = editMessageId;
+    this_edit_mes_chname = editMessage.name || (editMessage.is_user ? name1 : name2);
 
-    let thisMesDiv = chatElement.children().filter(`.mes[mesid="${edit_mes_id}"]`);
+    const hideCounter = editMessageId < chat.length - 1;
+    hideSwipeButtons({ hideCounter });
 
-    let thisMesBlock = thisMesDiv.find('.mes_block');
-    let thisMesText = thisMesBlock.find('.mes_text');
+    const chatScrollPosition = chatElement.scrollTop();
+    const messageElement = chatElement.find(`.mes[mesid="${editMessageId}"]`);
+    const messageBlock = messageElement.find('.mes_block');
+    const messageText = messageBlock.find('.mes_text');
 
-    thisMesText.empty();
-    thisMesBlock.find('.mes_buttons').css('display', 'none');
-    thisMesBlock.find('.mes_edit_buttons').css('display', 'inline-flex');
+    messageText.empty();
+    messageBlock.find('.mes_buttons').css('display', 'none');
+    messageBlock.find('.mes_edit_buttons').css('display', 'inline-flex');
 
     // Also edit reasoning, if it exists
-    const reasoningEdit = thisMesBlock.find('.mes_reasoning_edit:visible');
+    const reasoningEdit = messageBlock.find('.mes_reasoning_edit:visible');
     if (reasoningEdit.length > 0) {
         reasoningEdit.trigger('click');
     }
 
-    let text = chat[edit_mes_id]['mes'];
-    if (chat[edit_mes_id]['is_user']) {
-        this_edit_mes_chname = name1;
-    } else if (chat[edit_mes_id]['force_avatar']) {
-        this_edit_mes_chname = chat[edit_mes_id]['name'];
-    } else {
-        this_edit_mes_chname = name2;
-    }
-    if (power_user.trim_spaces) {
-        text = text.trim();
-    }
-    thisMesText.append(
-        '<textarea id=\'curEditTextarea\' class=\'edit_textarea mdHotkeys\'></textarea>',
-    );
+    const editTextArea = document.createElement('textarea');
+    editTextArea.id = 'curEditTextarea';
+    editTextArea.className = 'edit_textarea mdHotkeys';
+    messageText.append(editTextArea);
 
-    let edit_textarea = thisMesBlock.find('.edit_textarea');
-    edit_textarea.val(text);
+    const text = trimSpaces(editMessage.mes || '');
+    const $editTextArea = $(editTextArea);
+    $editTextArea.val(text);
 
     const cssAutofit = CSS.supports('field-sizing', 'content');
     if (!cssAutofit) {
-        edit_textarea.height(0);
-        edit_textarea.height(edit_textarea[0].scrollHeight);
+        $editTextArea.height(0);
+        $editTextArea.height(editTextArea.scrollHeight);
     }
-    edit_textarea.trigger('focus');
-    const textAreaElement = /** @type {HTMLTextAreaElement} */ (edit_textarea[0]);
+
+    $editTextArea.trigger('focus');
+
     // Sets the cursor at the end of the text
-    textAreaElement.setSelectionRange(
-        String(edit_textarea.val()).length,
-        String(edit_textarea.val()).length,
-    );
+    editTextArea.setSelectionRange(text.length,text.length);
+
     if (Number(this_edit_mes_id) === chat.length - 1) {
         chatElement.scrollTop(chatScrollPosition);
     }
@@ -8138,10 +8135,12 @@ export function showSwipeButtons() {
     lastSwipeCounter.text(swipeCounterText).show();
 }
 
-export function hideSwipeButtons() {
+export function hideSwipeButtons({ hideCounter = true } = {}) {
     chatElement.find('.swipe_right').hide();
-    chatElement.find('.last_mes .swipes-counter').hide();
     chatElement.find('.swipe_left').hide();
+    if (hideCounter) {
+        chatElement.find('.last_mes .swipes-counter').hide();
+    }
 }
 
 /**
