@@ -8749,8 +8749,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
-    const thisMesDivHeight = thisMesDiv[0].scrollHeight;
-    const thisMesTextHeight = thisMesText[0].scrollHeight;
+    const thisMesDivHeight = thisMesDiv[0]?.scrollHeight;
+    const thisMesTextHeight = thisMesText[0]?.scrollHeight;
+    if (![thisMesDiv.length, thisMesText.length, thisMesDivHeight, thisMesTextHeight].every(num => num > 0 )) {
+        console.error(`Message #${mesId}'s DOM element is not valid.`);
+        return;
+    }
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
     let newSwipeId = Number(originalSwipeId);
 
