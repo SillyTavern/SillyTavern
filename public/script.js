@@ -8732,6 +8732,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
+    isSwipingAllowed = false;
 
     let generation;
     let messageIndex;
@@ -8969,8 +8970,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     if (isHordeGenerationNotAllowed()) {
         return unblockGeneration();
     }
-
-    hideSwipeButtons();
 
     //If the swipe is not being deleted.
     if (source != 'delete') {
@@ -9776,8 +9775,8 @@ jQuery(async function () {
     ///// SWIPE BUTTON CLICKS ///////
 
     //limit swiping to only last message clicks
-    $(document).on('click', '.last_mes .swipe_right', swipe_right);
-    $(document).on('click', '.last_mes .swipe_left', swipe_left);
+    $(document).on('click', '.last_mes .swipe_right', await swipe_right);
+    $(document).on('click', '.last_mes .swipe_left', await swipe_left);
 
     initCharacterSearch();
 
