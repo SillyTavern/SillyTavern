@@ -10,7 +10,7 @@ import { PUBLIC_DIRECTORIES } from '../constants.js';
 /**
  * @type {Partial<import('simple-git').SimpleGitOptions>}
  */
-const OPTIONS = Object.freeze({ timeout: { block: 10 * 60 * 1000 } });
+const OPTIONS = Object.freeze({ timeout: { block: 5 * 60 * 1000 } });
 
 /**
  * This function extracts the extension information from the manifest file.
@@ -76,7 +76,8 @@ router.post('/install', async (request, response) => {
     }
 
     try {
-        const git = simpleGit(OPTIONS);
+        // No timeout for cloning, as it may take a while depending on the repo size
+        const git = simpleGit();
 
         // make sure the third-party directory exists
         if (!fs.existsSync(path.join(request.user.directories.extensions))) {
