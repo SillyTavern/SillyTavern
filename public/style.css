@@ -3469,7 +3469,6 @@ grammarly-extension {
     filter: brightness(75%) grayscale(1);
     opacity: 0.5;
     pointer-events: none;
-    cursor: not-allowed;
 }
 
 .alternate_greeting summary {
