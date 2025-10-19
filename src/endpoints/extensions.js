@@ -10,7 +10,7 @@ import { PUBLIC_DIRECTORIES } from '../constants.js';
 /**
  * @type {Partial<import('simple-git').SimpleGitOptions>}
  */
-const OPTIONS = Object.freeze({ timeout: { block: 10000 } });
+const OPTIONS = Object.freeze({ timeout: { block: 10 * 60 * 1000 } });
 
 /**
  * This function extracts the extension information from the manifest file.
