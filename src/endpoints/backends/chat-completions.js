@@ -1962,8 +1962,14 @@ router.post('/generate', function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
         apiUrl = API_ZAI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
-        headers = {};
-        bodyParams = {};
+        headers = {
+            'Accept-Language': 'en-US,en',
+        };
+        bodyParams = {
+            thinking: {
+                type: request.body.include_reasoning ? 'enabled' : 'disabled',
+            },
+        };
         if (request.body.json_schema) {
             setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
         }

@@ -2509,8 +2509,10 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     // https://docs.z.ai/api-reference/llm/chat-completion
     if (isZai) {
-        generate_data['top_p'] = generate_data.top_p || Number.EPSILON;
+        generate_data['top_p'] = generate_data.top_p || 0.01;
         generate_data['stop'] = getCustomStoppingStrings(1);
+        delete generate_data.presence_penalty;
+        delete generate_data.frequency_penalty;
     }
 
     const seedSupportedSources = [
