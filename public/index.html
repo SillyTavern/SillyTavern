@@ -693,7 +693,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -745,7 +745,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1965,7 +1965,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai,zai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1980,7 +1980,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1996,7 +1996,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2058,7 +2058,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt,zai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2801,6 +2801,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="xai">xAI (Grok)</option>
+                                <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
                         </select>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
@@ -3672,6 +3673,31 @@
                                 <option value="moonshot-v1-32k-vision-preview">moonshot-v1-32k-vision-preview</option>
                                 <option value="moonshot-v1-128k-vision-preview">moonshot-v1-128k-vision-preview</option>
                                 <option value="kimi-thinking-preview">kimi-thinking-preview</option>
+                            </select>
+                        </div>
+                        <div id="zai_form" data-source="zai">
+                            <h4>
+                                <a data-i18n="Z.AI API Key" href="https://z.ai/manage-apikey/apikey-list" target="_blank" rel="noopener noreferrer">
+                                    Z.AI API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_zai" name="api_key_zai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_zai"></div>
+                            </div>
+                            <div data-for="api_key_zai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
+                            <select id="model_zai_select">
+                                <option value="glm-4.6">glm-4.6</option>
+                                <option value="glm-4.5v">glm-4.5v</option>
+                                <option value="glm-4.5">glm-4.5</option>
+                                <option value="glm-4.5-air">glm-4.5-air</option>
+                                <option value="glm-4.5-x">glm-4.5-x</option>
+                                <option value="glm-4.5-airx">glm-4.5-airx</option>
+                                <option value="glm-4.5-flash">glm-4.5-flash</option>
+                                <option value="glm-4-32b-0414-128k">glm-4-32b-0414-128k</option>
                             </select>
                         </div>
                         <div id="azure_openai_settings" data-source="azure_openai">

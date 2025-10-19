@@ -189,6 +189,7 @@ export const chat_completion_sources = {
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
+    ZAI: 'zai',
 };
 
 const character_names_behavior = {
@@ -294,6 +295,7 @@ export const settingsToUpdate = {
     custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false, true],
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
+    zai_model: ['#model_zai_select', 'zai_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
@@ -391,6 +393,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    zai_model: 'glm-4.6',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -487,6 +490,7 @@ const oai_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    zai_model: 'glm-4.6',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1664,6 +1668,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.fireworks_model;
         case chat_completion_sources.AZURE_OPENAI:
             return oai_settings.azure_openai_model;
+        case chat_completion_sources.ZAI:
+            return oai_settings.zai_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -3655,6 +3661,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
+    oai_settings.zai_model = settings.zai_model ?? default_settings.zai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3760,6 +3767,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_pollinations_select option[value="${oai_settings.pollinations_model}"`).prop('selected', true);
     $('#model_moonshot_select').val(oai_settings.moonshot_model);
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
+    $('#model_zai_select').val(oai_settings.zai_model);
+    $(`#model_zai_select option[value="${oai_settings.zai_model}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#azure_base_url').val(oai_settings.azure_base_url);
@@ -3933,6 +3942,7 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
+        chat_completion_sources.ZAI,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4059,6 +4069,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
+        zai_model: settings.zai_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -4067,6 +4078,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         vertexai_model: settings.vertexai_model,
+        nanogpt_model: settings.nanogpt_model,
+        deepseek_model: settings.deepseek_model,
         azure_base_url: settings.azure_base_url,
         azure_deployment_name: settings.azure_deployment_name,
         azure_api_version: settings.azure_api_version,
