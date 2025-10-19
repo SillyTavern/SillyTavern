@@ -8783,8 +8783,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
         }
 
-        //Fallback.
         await updateSwipeCounter(mesId);
+        //Fallback.
         if (mesId != chat.length - 1) {
             await updateSwipeCounter(chat.length - 1);
         }
@@ -8909,6 +8909,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         await animateSwipeTransition(mesId, swipeRange, swipeDuration);
 
         if (run_generate) {
+            await updateSwipeCounter(mesId);
             //shows "..." while generating
             thisMesDiv.find('.mes_text').html('...');
             // resets the timer
@@ -9065,7 +9066,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 }
 
 /**
- * DEPRECATED
+ * @deprecated Use `swipe` instead.
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
@@ -9073,12 +9074,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
-export function swipe_left(_event, { source, repeated, message } = {}) {
-    swipe.call(this, _event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
+export async function swipe_left(_event, { source, repeated, message } = {}) {
+    await swipe.call(this, _event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
 }
 
 /**
- * DEPRECATED
+ * @deprecated Use `swipe` instead.
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
@@ -9087,8 +9088,8 @@ export function swipe_left(_event, { source, repeated, message } = {}) {
  * @param {object} [params.message] The chat message to swipe.
  */
 //MARK: swipe_right
-export function swipe_right(_event = null, { source, repeated, message } = {}) {
-    swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
+export async function swipe_right(_event = null, { source, repeated, message } = {}) {
+    await swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
 }
 
 /**
