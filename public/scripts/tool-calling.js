@@ -661,6 +661,7 @@ export class ToolManager {
             chat_completion_sources.COMETAPI,
             chat_completion_sources.ELECTRONHUB,
             chat_completion_sources.AZURE_OPENAI,
+            chat_completion_sources.ZAI,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
