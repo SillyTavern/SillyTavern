@@ -1,4 +1,5 @@
 import { chat, saveChatConditional, saveChatDebounced, swipe, updateViewMessageIds } from '../script.js';
+import { SWIPE_DIRECTION } from './constants.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
 
@@ -251,7 +252,7 @@ eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, n
         swipeId = Number(swipeId);
         newSwipeId = Number(newSwipeId);
         await deleteBranch(chatTree, chat, messageId, swipeId);
-        let swipe_right = swipeId <= newSwipeId;
-        await swipe(null, swipe_right,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+        let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+        await swipe(null, direction,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
     }
 });

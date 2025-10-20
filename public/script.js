@@ -10052,9 +10052,8 @@ jQuery(async function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    //limit swiping to only last message clicks
-    $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
-    $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
+    $(document).on('click', '.swipe_right', async function(_event, data) { await swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, data); });
+    $(document).on('click', '.swipe_left', async function(_event, data) { await swipe.call(this, _event, SWIPE_DIRECTION.LEFT, data); });
 
     initCharacterSearch();
 
