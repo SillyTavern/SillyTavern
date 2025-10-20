@@ -7283,6 +7283,13 @@ function messageEditAuto(div) {
 async function messageEdit(editMessageId) {
     const editMessage = chat[editMessageId];
     if (!editMessage) {
+        console.warn(`Message with id ${editMessageId} not found in chat array.`);
+        return;
+    }
+
+    const messageElement = chatElement.find(`.mes[mesid="${editMessageId}"]`);
+    if (messageElement.length === 0) {
+        console.warn(`Message element with id ${editMessageId} not found in DOM.`);
         return;
     }
 
@@ -7293,7 +7300,6 @@ async function messageEdit(editMessageId) {
     hideSwipeButtons({ hideCounters });
 
     const chatScrollPosition = chatElement.scrollTop();
-    const messageElement = chatElement.find(`.mes[mesid="${editMessageId}"]`);
     const messageBlock = messageElement.find('.mes_block');
     const messageText = messageBlock.find('.mes_text');
 
