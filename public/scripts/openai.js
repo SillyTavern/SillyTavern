@@ -4067,6 +4067,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         vertexai_model: settings.vertexai_model,
+        nanogpt_model: settings.nanogpt_model,
+        deepseek_model: settings.deepseek_model,
         azure_base_url: settings.azure_base_url,
         azure_deployment_name: settings.azure_deployment_name,
         azure_api_version: settings.azure_api_version,
@@ -6275,7 +6277,7 @@ export function initOpenAI() {
 
     $('#update_oai_preset').on('click', async function () {
         const name = oai_settings.preset_settings_openai;
-        await saveOpenAIPreset(name, oai_settings);
+        await saveOpenAIPreset(name, oai_settings, false);
         toastr.success(t`Preset updated`);
     });
 

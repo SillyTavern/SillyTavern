@@ -28,6 +28,7 @@ import {
 } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import {
+    clamp,
     debounce,
     deepMerge,
     delay,
@@ -66,8 +67,6 @@ const MODULE_NAME = 'sd';
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const CUSTOM_STOP_EVENT = 'sd_stop_generation';
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
 const sources = {
     extras: 'extras',
     horde: 'horde',

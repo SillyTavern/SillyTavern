@@ -3464,10 +3464,17 @@ grammarly-extension {
     padding: 2px;
 }
 
+.alternate_greeting:first-of-type .move_up_alternate_greeting,
+.alternate_greeting:last-of-type .move_down_alternate_greeting {
+    filter: brightness(75%) grayscale(1);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .alternate_greeting summary {
     list-style-position: outside;
     margin-left: 1em;
-    padding-left: 1em;
+    padding-left: 5px;
 }
 
 .alternate_greeting textarea {

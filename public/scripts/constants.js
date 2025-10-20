@@ -66,3 +66,11 @@ export const COMETAPI_IGNORE_PATTERNS = [
     // Utility models
     'embedding', 'search-gpts', 'files_retrieve', 'moderation',
 ];
+
+/**
+ * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
+ */
+export const SWIPE_DIRECTION = {
+    LEFT: 'left',
+    RIGHT: 'right',
+};

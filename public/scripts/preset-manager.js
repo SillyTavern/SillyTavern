@@ -19,12 +19,14 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { t } from './i18n.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { openai_settings, openai_setting_names, oai_settings } from './openai.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
+import { oai_settings, openai_setting_names, openai_settings } from './openai.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
+import { reasoning_templates } from './reasoning.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -33,13 +35,11 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import { renderTemplateAsync } from './templates.js';
 import {
+    textgenerationwebui_settings as textgen_settings,
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
-    textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
 import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
-import { t } from './i18n.js';
-import { reasoning_templates } from './reasoning.js';
 
 const presetManagers = {};
 
@@ -397,8 +397,10 @@ class PresetManager {
 
     /**
      * Updates the preset select element with the current API presets.
+     * @param {object} [options] Options for saving the preset
+     * @param {boolean} [options.skipUpdate=false] If true, skips updating the preset list after saving.
      */
-    async updatePreset() {
+    async updatePreset(option = { skipUpdate: false }) {
         const selected = $(this.select).find('option:selected');
         console.log(selected);
 
@@ -408,7 +410,7 @@ class PresetManager {
         }
 
         const name = selected.text();
-        await this.savePreset(name);
+        await this.savePreset(name, null, option);
 
         const successToast = !this.isAdvancedFormatting() ? t`Preset updated` : t`Template updated`;
         toastr.success(successToast);
@@ -1000,7 +1002,7 @@ export async function initPresetManager() {
             return;
         }
 
-        await presetManager.updatePreset();
+        await presetManager.updatePreset({ skipUpdate: true });
     });
 
     $(document).on('click', '[data-preset-manager-new]', async function () {
