@@ -9093,8 +9093,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 chat[mesId]['swipe_id'] = originalSwipeId;
                 await endSwipe();
                 return;
-                //Generate.
             } else {
+                //Generate.
                 await loadFromSwipeId(mesId, newSwipeId);
                 let run_generate = true;
                 await animateSwipe(run_generate);
