@@ -7331,7 +7331,7 @@ export async function messageEdit(editMessageId) {
     $editTextArea.trigger('focus');
 
     // Sets the cursor at the end of the text
-    editTextArea.setSelectionRange(text.length,text.length);
+    editTextArea.setSelectionRange(text.length, text.length);
 
     if (Number(this_edit_mes_id) === chat.length - 1) {
         chatElement.scrollTop(chatScrollPosition);
@@ -8802,7 +8802,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
     const thisMesDivHeight = thisMesDiv[0]?.scrollHeight;
     const thisMesTextHeight = thisMesText[0]?.scrollHeight;
-    if (![thisMesDiv.length, thisMesText.length].every(num => num > 0 )) {
+    if (![thisMesDiv.length, thisMesText.length].every(num => num > 0)) {
         console.error(`Message #${mesId}'s DOM element is not valid.`);
         return;
     }
@@ -8843,8 +8843,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     async function standardSwipe() {
         //If swipe_id has changed, or the source is being deleted.
-        if (newSwipeId !== originalSwipeId || source == 'delete')
-        {
+        if (newSwipeId !== originalSwipeId || source == 'delete') {
             //Update the chat.
             await loadFromSwipeId(mesId, newSwipeId);
             //Transition to the new chat.
@@ -9094,7 +9093,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 chat[mesId]['swipe_id'] = originalSwipeId;
                 await endSwipe();
                 return;
-            //Generate.
+                //Generate.
             } else {
                 await loadFromSwipeId(mesId, newSwipeId);
                 let run_generate = true;
