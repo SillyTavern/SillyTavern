@@ -9775,8 +9775,8 @@ jQuery(async function () {
     ///// SWIPE BUTTON CLICKS ///////
 
     //limit swiping to only last message clicks
-    $(document).on('click', '.last_mes .swipe_right', async (e) => await swipe(e, SWIPE_DIRECTION.RIGHT));
-    $(document).on('click', '.last_mes .swipe_left', async (e) => await swipe(e, SWIPE_DIRECTION.LEFT));
+    $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
+    $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
 
     initCharacterSearch();
 
