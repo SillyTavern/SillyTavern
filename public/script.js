@@ -7280,7 +7280,7 @@ function messageEditAuto(div) {
  * Create the message edit UI.
  * @param {number} editMessageId The ID of the message to edit
  */
-async function messageEdit(editMessageId) {
+export async function messageEdit(editMessageId) {
     const editMessage = chat[editMessageId];
     if (!editMessage) {
         console.warn(`Message with id ${editMessageId} not found in chat array.`);
