@@ -5264,7 +5264,7 @@ function setInContextMessages(msgInContextCount, type) {
         msgInContextCount++;
     }
 
-    const lastMessageBlock = chatElement.find('.mes:not([is_system="true"])').eq(-msgInContextCount);
+    const lastMessageBlock = chatElement.find('.mes:not([is_system="true"]), .mes.toolCall').eq(-msgInContextCount);
     lastMessageBlock.addClass('lastInContext');
 
     if (lastMessageBlock.length === 0) {
