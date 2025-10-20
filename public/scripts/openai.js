@@ -2748,7 +2748,7 @@ function parseOpenAIChatLogprobs(logprobs) {
     /** @type {(x: { token: string, logprob: number }) => [string, number]} */
     const toTuple = (x) => [x.token, x.logprob];
 
-    return content.map(({ token, logprob, top_logprobs }) => {
+    return content.map(({ token, logprob, top_logprobs = [] }) => {
         // Add the chosen token to top_logprobs if it's not already there, then
         // convert to a list of [token, logprob] pairs
         const chosenTopToken = top_logprobs.some((top) => token === top.token);
