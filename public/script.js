@@ -1465,6 +1465,12 @@ export async function clearChat() {
     itemizedPrompts.length = 0;
 }
 
+export async function deleteLastMessage() {
+    chat.length = chat.length - 1;
+    chatElement.children('.mes').last().remove();
+    await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+}
+
 /**
  * Deletes a message from the chat by its ID, optionally asking for confirmation.
  * @param {number} id The ID of the message to delete.
@@ -8894,6 +8900,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
+    isSwipingAllowed = false;
 
     let generation;
     let messageIndex;
@@ -8907,7 +8914,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    const mesId = Number(forceMesId ?? $(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number($(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
@@ -8918,7 +8925,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
-    let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
+    let newSwipeId = Number(originalSwipeId);
 
     const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
@@ -8949,8 +8956,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
         }
 
-        //Fallback.
         await updateSwipeCounter(mesId);
+        //Fallback.
         if (mesId != chat.length - 1) {
             await updateSwipeCounter(chat.length - 1);
         }
@@ -9332,7 +9339,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 }
 
 /**
- * DEPRECATED
+ * @deprecated Use `swipe` instead.
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
@@ -9340,12 +9347,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
-export function swipe_left(_event, { source, repeated, message } = {}) {
-    swipe.call(this, _event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
+export async function swipe_left(_event, { source, repeated, message } = {}) {
+    await swipe.call(this, _event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
 }
 
 /**
- * DEPRECATED
+ * @deprecated Use `swipe` instead.
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
@@ -9354,8 +9361,8 @@ export function swipe_left(_event, { source, repeated, message } = {}) {
  * @param {object} [params.message] The chat message to swipe.
  */
 //MARK: swipe_right
-export function swipe_right(_event = null, { source, repeated, message } = {}) {
-    swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
+export async function swipe_right(_event = null, { source, repeated, message } = {}) {
+    await swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
 }
 
 /**
@@ -10043,8 +10050,9 @@ jQuery(async function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', swipe_right);
-    $(document).on('click', '.swipe_left', swipe_left);
+    //limit swiping to only last message clicks
+    $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
+    $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
 
     initCharacterSearch();
 
