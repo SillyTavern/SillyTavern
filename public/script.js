@@ -8886,7 +8886,7 @@ function formatSwipeCounter(current, total) {
  * @param {string} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
- * @param {object} [params.forceMesId] The chat message id to swipe.
+ * @param {object} [params.forceMesId] The message id to swipe.
  * @param {object} [params.forceSwipeId] The target swipe_id.
  */
 export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId: forceMesId, forceSwipeId: forceSwipeId } = {}) {
