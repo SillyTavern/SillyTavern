@@ -15,8 +15,19 @@ jobs:
   update-linked-issues:
     name: 🔗 Mark Linked Issues Done on Push
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
@@ -31,7 +42,7 @@ jobs:
       - name: Label Linked Issues
         id: label_linked_issues
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
             for ISSUE in $(echo $issues | jq -r '.[]'); do
             if [ "${{ github.ref }}" == "refs/heads/staging" ]; then

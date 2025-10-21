@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { copyText, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, flashHighlight } from './utils.js';
 
 import {
     Generate,
@@ -4585,6 +4585,8 @@ export async function sendMessageAs(args, text) {
         insertAt = chat.length + insertAt;
     }
 
+    chat_metadata['tainted'] = true;
+
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
@@ -4634,6 +4636,8 @@ export async function sendNarratorMessage(args, text) {
         // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
         insertAt = chat.length + insertAt;
     }
+
+    chat_metadata['tainted'] = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4685,6 +4689,8 @@ export async function promptQuietForLoudResponse(who, text) {
         },
     };
 
+    chat_metadata['tainted'] = true;
+
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
@@ -4718,6 +4724,8 @@ async function sendCommentMessage(args, text) {
         // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
         insertAt = chat.length + insertAt;
     }
+
+    chat_metadata['tainted'] = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4850,6 +4858,7 @@ function getModelOptions(quiet) {
         { id: 'model_moonshot_select', api: 'openai', type: chat_completion_sources.MOONSHOT },
         { id: 'model_fireworks_select', api: 'openai', type: chat_completion_sources.FIREWORKS },
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
+        { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -5535,15 +5544,6 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
-    function canUseNegativeLookbehind() {
-        try {
-            new RegExp('(?<!_)');
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
     if (!canUseNegativeLookbehind()) {
         console.warn('Cannot use negative lookbehind in this browser');
         return;

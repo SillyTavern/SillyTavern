@@ -35,14 +35,15 @@
     color: inherit;
 }
 
-.assets-list-div > i {
+.assets-list-div>i {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: left;
-    padding: 5px;
+    padding: 10px 5px;
     font-style: normal;
     gap: 5px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
 }
 
 .assets-list-div i span:first-of-type {
@@ -172,4 +173,28 @@
     cursor: pointer;
     opacity: 0.9;
     margin-left: 2px;
+}
+
+.asset-name .asset-author-info {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    opacity: 0.7;
+    font-size: 0.85em;
+    overflow: hidden;
+}
+
+.asset-name .asset-author-info>span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.asset-name .asset-author-info:hover {
+    opacity: 1;
+    transition: opacity var(--animation-duration) ease-in-out;
+}
+
+.asset-name>b {
+    font-weight: 600;
 }

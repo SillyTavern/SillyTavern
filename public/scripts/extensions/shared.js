@@ -255,6 +255,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB]) {
         throw new Error('Electron Hub API key is not set.');
     }
+
+    if (multimodalApi === 'zai' && !secret_state[SECRET_KEYS.ZAI]) {
+        throw new Error('Z.AI API key is not set.');
+    }
 }
 
 /**
@@ -410,6 +414,7 @@ export class ConnectionManagerRequestService {
                         custom_url: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
+                        custom_prompt_post_processing: profile['prompt-post-processing'],
                         ...overridePayload,
                     }, {
                         presetName: includePreset ? profile.preset : undefined,

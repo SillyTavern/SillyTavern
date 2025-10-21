@@ -55,3 +55,4 @@ public/scripts/extensions/third-party
 .env
 /StartDev.bat
 yarn.lock
+*.code-workspace

@@ -88,48 +88,8 @@
         height: 30px;
     }
 
-    #bg-header-controls {
-        flex-wrap: wrap;
-        row-gap: 10px;
-    }
-
-    #bg-header-fixed>.flex-container {
-        flex-wrap: wrap;
-        row-gap: 0px;
-    }
-
-    #Backgrounds:not(.selection-mode-active) #bg-header-fixed>.flex-container::after {
-        content: '';
-        order: 1;
-        flex-basis: 100%;
-        height: 0;
-    }
-
-    /* --- Row 1 Item --- */
-    #bg-header-fixed #bg-header-title {
-        order: 1;
-        flex-grow: 1;
-    }
-
-    #bg-header-fixed #background_fitting,
-    #bg-header-fixed #auto_background {
-        order: 1;
-    }
-
-    /* --- Row 2 Item --- */
-    #bg-header-fixed #bg-filter {
-        order: 2;
-        flex-grow: 1;
-        min-width: 0;
-    }
-
-    /* --- Row 3 Item --- */
-    #bg-header-fixed #add_background_button_top {
-        order: 3;
-        width: 100%;
-        text-align: center;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
+    #background_fitting {
+        max-width: 6em;
     }
 
     #Backgrounds.drawer-content.openDrawer.bg-drawer-layout {

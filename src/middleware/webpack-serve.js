@@ -14,8 +14,9 @@ export default function getWebpackServeMiddleware() {
         const publicLibConfig = getPublicLibConfig();
         const outputPath = publicLibConfig.output?.path;
         const outputFile = publicLibConfig.output?.filename;
+        const parsedPath = path.parse(req.path);
 
-        if (req.method === 'GET' && path.parse(req.path).base === outputFile) {
+        if (req.method === 'GET' && parsedPath.dir === '/' && parsedPath.base === outputFile) {
             return res.sendFile(outputFile, { root: outputPath });
         }
 

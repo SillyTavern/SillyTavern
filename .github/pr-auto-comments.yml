@@ -41,6 +41,16 @@ labels:
           🔬 This PR needs testing!
           Any contributor can test and leave reviews, so feel free to help us out!
 
+  - name: ❗ Against Release Branch
+    labeled:
+      pr:
+        body: >
+          ❗ This PR is against the `release` branch.
+
+          Please make sure this was intended, and you did not want to target the `staging` branch. Only hotfixes, readme changes and similar should be made against `release`.
+
+          You can change the target branch **without recreating the PR** by clicking "Edit" at the top of the page.
+
   - name: 🟥 ⬤⬤⬤⬤⬤
     labeled:
       pr:
