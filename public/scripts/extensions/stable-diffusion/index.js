@@ -1874,7 +1874,7 @@ async function loadElectronHubModels() {
         return [];
     }
 
-    const result = await fetch('/api/openai/electronhub/models', {
+    const result = await fetch('/api/sd/electronhub/models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -1895,11 +1895,7 @@ async function loadElectronHubModels() {
     if (result.ok) {
         /** @type {any[]} */
         const data = await result.json();
-        return Array.isArray(data)
-            ? data
-                .filter(m => m && Array.isArray(m.endpoints) && m.endpoints.includes('/v1/images/generations'))
-                .map(m => ({ ...m, text: getModelName(m), value: m.id, qualities: Array.isArray(m.qualities) ? m.qualities : undefined }))
-            : [];
+        return Array.isArray(data) ? data.map(m => ({ ...m, text: getModelName(m) })) : [];
     }
 
     return [];
