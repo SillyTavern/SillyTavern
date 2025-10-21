@@ -442,6 +442,7 @@ jQuery(async function () {
                         'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
+                        'zai': SECRET_KEYS.ZAI,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
