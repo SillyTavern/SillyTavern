@@ -114,7 +114,6 @@ const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 const webllmProvider = new WebLlmVectorProvider();
 const cachedSummaries = new Map();
 const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
-let electronHubModels = [];
 
 /**
  * Gets the Collection ID for a file embedded in the chat.
@@ -1108,9 +1107,6 @@ function toggleSettings() {
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
-    if (settings.source === 'electronhub') {
-        loadElectronHubModels();
-    }
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
@@ -1120,8 +1116,13 @@ function toggleSettings() {
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
-    if (settings.source === 'webllm') {
-        loadWebLlmModels();
+    switch (settings.source) {
+        case 'webllm':
+            loadWebLlmModels();
+            break;
+        case 'electronhub':
+            loadElectronHubModels();
+            break;
     }
 }
 
@@ -1137,45 +1138,29 @@ async function loadElectronHubModels() {
         /** @type {Array<any>} */
         const data = await response.json();
         // filter by embeddings endpoint
-        const embModels = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
-        electronHubModels = embModels;
-        populateElectronHubModelSelect();
+        const models = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
+        populateElectronHubModelSelect(models);
     } catch (err) {
         console.warn('Electron Hub models fetch failed', err);
-        electronHubModels = [];
-        populateElectronHubModelSelect();
+        populateElectronHubModelSelect([]);
     }
 }
 
-function groupModelsByVendor(array) {
-    /** @type {Map<string, any[]>} */
-    const groups = new Map();
-    for (const m of array) {
-        const name = String(m?.name || m?.id || 'Other');
-        const vendor = name.split(':')[0].trim() || 'Other';
-        if (!groups.has(vendor)) groups.set(vendor, []);
-        groups.get(vendor).push(m);
-    }
-    return groups;
-}
-
-function populateElectronHubModelSelect() {
+/**
+ * Populates the Electron Hub model select element.
+ * @param {{ id: string, name: string }[]} models Electron Hub models
+ */
+function populateElectronHubModelSelect(models) {
     const select = $('#vectors_electronhub_model');
     select.empty();
-    const groups = groupModelsByVendor(electronHubModels);
-    for (const [vendor, models] of groups.entries()) {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = vendor;
-        for (const m of models) {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.text = m.name || m.id;
-            optgroup.appendChild(opt);
-        }
-        select.append(optgroup);
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
     }
-    if (!settings.electronhub_model && electronHubModels.length) {
-        settings.electronhub_model = electronHubModels[0].id;
+    if (!settings.electronhub_model && models.length) {
+        settings.electronhub_model = models[0].id;
     }
     $('#vectors_electronhub_model').val(settings.electronhub_model);
 }

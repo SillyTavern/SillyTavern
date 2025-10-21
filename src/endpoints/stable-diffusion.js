@@ -1014,6 +1014,8 @@ electronhub.post('/generate', async (request, response) => {
             bodyParams.quality = request.body.quality;
         }
 
+        console.debug('Electron Hub request:', bodyParams);
+
         const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
             method: 'POST',
             headers: {
