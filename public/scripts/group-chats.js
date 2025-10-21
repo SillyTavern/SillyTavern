@@ -237,7 +237,7 @@ export async function getGroupChat(groupId, reload = false) {
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
     const metadata = group.chat_metadata ?? {};
-    const freshChat = !metadata.tainted;
+    const freshChat = !metadata.tainted && (!Array.isArray(data) || !data.length);
 
     await loadItemizedPrompts(getCurrentChatId());
 
