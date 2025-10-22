@@ -22,7 +22,7 @@
     "freq_pen": 0,
     "presence_pen": 0,
     "skew": 0,
-    "do_sample": false,
+    "do_sample": true,
     "early_stopping": false,
     "dynatemp": false,
     "min_temp": 0,
