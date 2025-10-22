@@ -2846,6 +2846,9 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
             }
             $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            //Update the commentInput's placeholder.
+            const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+            setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
         });
 
         input.toggleClass('empty', !entry[entryPropName].length);
@@ -3199,8 +3202,8 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
  */
 function setCommentPlaceholder(keys, commentInput) {
     //Show keys in the placeholder.
-    keys = keys.slice(0,1000);
-    commentInput.attr('placeholder', (keys !== '' ? keys : 'Entry Title/Memo'));
+    keys = keys.slice(0,1000); //Limit placeholder text to prevent
+    commentInput.attr('placeholder', (keys || t`Entry Title/Memo`));
 }
 
 /**
@@ -3222,7 +3225,7 @@ export async function getWorldEntry(name, data, entry) {
     const commentInput = headerTemplate.find('textarea[name="comment"]');
 
     //Update the commentInput's placeholder.
-    const keys = data.entries[entry.uid]['key'].join(', ');
+    const keys = entry['key'].join(', ');
     setCommentPlaceholder(keys, commentInput);
 
     commentInput.data('uid', entry.uid);
