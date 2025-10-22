@@ -508,14 +508,6 @@
         "type": "context"
     },
     {
-        "filename": "presets/context/DreamGen Lucid V1 Role-Play.json",
-        "type": "context"
-    },
-    {
-        "filename": "presets/context/DreamGen Lucid V1 Story.json",
-        "type": "context"
-    },
-    {
         "filename": "presets/context/Libra-32B.json",
         "type": "context"
     },
