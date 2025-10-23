@@ -61,6 +61,7 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    electronhub_model: 'text-embedding-3-small',
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
@@ -771,6 +772,9 @@ function getVectorsRequestBody(args = {}) {
             body.extrasUrl = extension_settings.apiUrl;
             body.extrasKey = extension_settings.apiKey;
             break;
+        case 'electronhub':
+            body.model = extension_settings.vectors.electronhub_model;
+            break;
         case 'togetherai':
             body.model = extension_settings.vectors.togetherai_model;
             break;
@@ -889,6 +893,7 @@ async function insertVectorItems(collectionId, items) {
  */
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
@@ -1101,6 +1106,7 @@ function toggleSettings() {
     $('#vectors_world_info_settings').toggle(!!settings.enabled_world_info);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
@@ -1110,9 +1116,53 @@ function toggleSettings() {
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
-    if (settings.source === 'webllm') {
-        loadWebLlmModels();
+    switch (settings.source) {
+        case 'webllm':
+            loadWebLlmModels();
+            break;
+        case 'electronhub':
+            loadElectronHubModels();
+            break;
     }
+}
+
+async function loadElectronHubModels() {
+    try {
+        const response = await fetch('/api/openai/electronhub/models', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        // filter by embeddings endpoint
+        const models = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
+        populateElectronHubModelSelect(models);
+    } catch (err) {
+        console.warn('Electron Hub models fetch failed', err);
+        populateElectronHubModelSelect([]);
+    }
+}
+
+/**
+ * Populates the Electron Hub model select element.
+ * @param {{ id: string, name: string }[]} models Electron Hub models
+ */
+function populateElectronHubModelSelect(models) {
+    const select = $('#vectors_electronhub_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.electronhub_model && models.length) {
+        settings.electronhub_model = models[0].id;
+    }
+    $('#vectors_electronhub_model').val(settings.electronhub_model);
 }
 
 /**
@@ -1510,6 +1560,11 @@ jQuery(async () => {
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
         settings.openai_model = String($('#vectors_openai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_electronhub_model').val(settings.electronhub_model).on('change', () => {
+        settings.electronhub_model = String($('#vectors_electronhub_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

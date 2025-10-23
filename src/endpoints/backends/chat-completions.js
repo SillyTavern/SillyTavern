@@ -73,6 +73,7 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_ZAI = 'https://api.z.ai/api/paas/v4';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1958,6 +1959,20 @@ router.post('/generate', function (request, response) {
             reasoning_effort: request.body.reasoning_effort,
         };
         throw new Error('This provider is temporarily disabled.');
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
+        apiUrl = API_ZAI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+        headers = {
+            'Accept-Language': 'en-US,en',
+        };
+        bodyParams = {
+            thinking: {
+                type: request.body.include_reasoning ? 'enabled' : 'disabled',
+            },
+        };
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

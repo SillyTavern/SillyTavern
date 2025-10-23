@@ -1277,8 +1277,15 @@ async function validateComfyUrl() {
 }
 
 async function onModelChange() {
-    extension_settings.sd.model = $('#sd_model').find(':selected').val();
+    const selectedModel = $('#sd_model').find(':selected');
+    extension_settings.sd.model = selectedModel.val();
     saveSettingsDebounced();
+
+    if (extension_settings.sd.model && extension_settings.sd.source === sources.electronhub) {
+        const cachedModel = selectedModel.data('model');
+        const models = cachedModel ? [cachedModel] : await loadElectronHubModels();
+        ensureElectronHubQualitySelect(models);
+    }
 
     const cloudSources = [
         sources.horde,
@@ -1726,17 +1733,65 @@ async function loadModels() {
             break;
     }
 
+    if (extension_settings.sd.source === sources.electronhub) {
+        ensureElectronHubQualitySelect(models);
+    }
+
     for (const model of models) {
         const option = document.createElement('option');
         option.innerText = model.text;
         option.value = model.value;
         option.selected = model.value === extension_settings.sd.model;
+        $(option).data('model', model);
         $('#sd_model').append(option);
     }
 
     if (!extension_settings.sd.model && models.length > 0) {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
+    }
+}
+
+/**
+ * Ensure the Electron Hub quality select is populated based on the selected model.
+ * @param {any[]} models Array of models
+ */
+function ensureElectronHubQualitySelect(models) {
+    try {
+        const modelId = String(extension_settings.sd.model || '');
+        if (!modelId) return;
+
+        const model = Array.isArray(models) ? models.find(m => String(m?.id) === modelId) : undefined;
+        const qualities = Array.isArray(model?.qualities) ? model.qualities : undefined;
+
+        const $qualityRow = $('#sd_electronhub_quality_row');
+        const $select = $('#sd_electronhub_quality');
+
+        $qualityRow.toggle(!!qualities && qualities.length > 0);
+        $select.empty();
+
+        if (!qualities || qualities.length === 0) {
+            extension_settings.sd.electronhub_quality = undefined;
+            saveSettingsDebounced();
+            return;
+        }
+
+        for (const q of qualities) {
+            const opt = document.createElement('option');
+            opt.value = String(q);
+            opt.textContent = String(q);
+            opt.selected = String(q) === String(extension_settings.sd.electronhub_quality || '');
+            $select.append(opt);
+        }
+
+        if (!$select.val()) {
+            const first = String(qualities[0]);
+            extension_settings.sd.electronhub_quality = first;
+            $select.val(first);
+            saveSettingsDebounced();
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -1824,8 +1879,23 @@ async function loadElectronHubModels() {
         headers: getRequestHeaders(),
     });
 
+    function getModelName(model) {
+        const name = String(model?.name || model?.id || '');
+        const premium = model?.premium_model ? ' | Premium' : '';
+        let price = 'Unknown';
+        if (model?.pricing?.type === 'per_image') {
+            const coeff = Number(model.pricing.coefficient);
+            if (!isNaN(coeff)) {
+                price = `$${coeff}/image`;
+            }
+        }
+        return `${name} | ${price}${premium}`;
+    }
+
     if (result.ok) {
-        return await result.json();
+        /** @type {any[]} */
+        const data = await result.json();
+        return Array.isArray(data) ? data.map(m => ({ ...m, text: getModelName(m) })) : [];
     }
 
     return [];
@@ -3665,6 +3735,7 @@ async function generateElectronHubImage(prompt, signal) {
             model: extension_settings.sd.model,
             prompt: prompt,
             size: size,
+            quality: String(extension_settings.sd.electronhub_quality || '').trim() || undefined,
         }),
     });
 
@@ -4814,6 +4885,10 @@ jQuery(async () => {
     });
     $('#sd_google_enhance').on('input', function () {
         extension_settings.sd.google_enhance = $(this).prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#sd_electronhub_quality').on('change', function () {
+        extension_settings.sd.electronhub_quality = String($(this).val());
         saveSettingsDebounced();
     });
 

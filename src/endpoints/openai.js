@@ -85,6 +85,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
 
+        if (request.body.api === 'zai') {
+            key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+        }
+
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
         if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
@@ -175,6 +179,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'zai') {
+            apiUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
