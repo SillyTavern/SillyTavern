@@ -96,6 +96,7 @@ export const METADATA_KEY = 'world_info';
 export const DEFAULT_DEPTH = 4;
 export const DEFAULT_WEIGHT = 100;
 export const MAX_SCAN_DEPTH = 1000;
+const MAX_COMMENT_LENGTH = 1000;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
@@ -2423,7 +2424,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         let counter = 0;
         for (const entry of Object.values(data.entries)) {
             if (!entry.comment && Array.isArray(entry.key) && entry.key.length > 0) {
-                entry.comment = entry.key[0];
+                entry.comment = entry.key.join(', ').slice(0, MAX_COMMENT_LENGTH);
                 setWIOriginalDataValue(data, entry.uid, 'comment', entry.comment);
                 counter++;
             }
@@ -3198,11 +3199,11 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 /**
  * Update commentInput's placeholder.
  * @param {string} keys Text to display in commentInput's placeholder.
- * @param {JQuery<HTMLElement>} commentInput
+ * @param {JQuery<HTMLElement>} commentInput The comment input element.
  */
 function setCommentPlaceholder(keys, commentInput) {
-    //Show keys in the placeholder.
-    keys = keys.slice(0,1000); //Limit placeholder text to prevent
+    // Limit placeholder text to avoid performance issues.
+    keys = keys.slice(0, MAX_COMMENT_LENGTH);
     commentInput.attr('placeholder', (keys || t`Entry Title/Memo`));
 }
 
