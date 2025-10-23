@@ -96,7 +96,7 @@ export const METADATA_KEY = 'world_info';
 export const DEFAULT_DEPTH = 4;
 export const DEFAULT_WEIGHT = 100;
 export const MAX_SCAN_DEPTH = 1000;
-const MAX_COMMENT_LENGTH = 1000;
+const MAX_COMMENT_LENGTH = 100;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
