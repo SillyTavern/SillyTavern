@@ -240,6 +240,8 @@ export class ServerStartup {
                 passphrase: String(this.cliArgs.keyPassphrase ?? ''),
             };
             const server = https.createServer(sslOptions, this.app);
+            server.timeout = 180000;
+            server.headersTimeout = 180000;
             server.on('error', reject);
             server.on('listening', resolve);
 
