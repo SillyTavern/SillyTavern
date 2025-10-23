@@ -189,6 +189,7 @@ export const chat_completion_sources = {
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
+    ZAI: 'zai',
 };
 
 const character_names_behavior = {
@@ -294,6 +295,7 @@ export const settingsToUpdate = {
     custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false, true],
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
+    zai_model: ['#model_zai_select', 'zai_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
@@ -385,12 +387,13 @@ const default_settings = {
     electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
-    aimlapi_model: 'gpt-4o-mini-2024-07-18',
+    aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    zai_model: 'glm-4.6',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -439,101 +442,7 @@ const default_settings = {
     extensions: {},
 };
 
-const oai_settings = {
-    preset_settings_openai: 'Default',
-    temp_openai: 1.0,
-    freq_pen_openai: 0,
-    pres_pen_openai: 0,
-    top_p_openai: 1.0,
-    top_k_openai: 0,
-    min_p_openai: 0,
-    top_a_openai: 0,
-    repetition_penalty_openai: 1,
-    stream_openai: false,
-    openai_max_context: max_4k,
-    openai_max_tokens: 300,
-    wrap_in_quotes: false,
-    ...chatCompletionDefaultPrompts,
-    ...promptManagerDefaultPromptOrders,
-    send_if_empty: '',
-    impersonation_prompt: default_impersonation_prompt,
-    new_chat_prompt: default_new_chat_prompt,
-    new_group_chat_prompt: default_new_group_chat_prompt,
-    new_example_chat_prompt: default_new_example_chat_prompt,
-    continue_nudge_prompt: default_continue_nudge_prompt,
-    bias_preset_selected: default_bias,
-    bias_presets: default_bias_presets,
-    wi_format: default_wi_format,
-    group_nudge_prompt: default_group_nudge_prompt,
-    scenario_format: default_scenario_format,
-    personality_format: default_personality_format,
-    openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-sonnet-4-5',
-    google_model: 'gemini-2.5-pro',
-    vertexai_model: 'gemini-2.5-pro',
-    ai21_model: 'jamba-large',
-    mistralai_model: 'mistral-large-latest',
-    cohere_model: 'command-r-plus',
-    perplexity_model: 'sonar-pro',
-    groq_model: 'llama-3.1-70b-versatile',
-    electronhub_model: 'gpt-4o-mini',
-    electronhub_sort_models: 'alphabetically',
-    electronhub_group_models: false,
-    nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-chat',
-    aimlapi_model: 'gpt-4-turbo',
-    xai_model: 'grok-3-beta',
-    pollinations_model: 'openai',
-    cometapi_model: 'gpt-4o',
-    moonshot_model: 'kimi-latest',
-    fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
-    azure_base_url: '',
-    azure_deployment_name: '',
-    azure_api_version: '2024-02-15-preview',
-    azure_openai_model: '',
-    custom_model: '',
-    custom_url: '',
-    custom_include_body: '',
-    custom_exclude_body: '',
-    custom_include_headers: '',
-    openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: false,
-    openrouter_group_models: false,
-    openrouter_sort_models: 'alphabetically',
-    openrouter_providers: [],
-    openrouter_allow_fallbacks: true,
-    openrouter_middleout: openrouter_middleout_types.ON,
-    reverse_proxy: '',
-    chat_completion_source: chat_completion_sources.OPENAI,
-    max_context_unlocked: false,
-    show_external_models: false,
-    proxy_password: '',
-    assistant_prefill: '',
-    assistant_impersonation: '',
-    claude_use_sysprompt: false,
-    use_makersuite_sysprompt: true,
-    vertexai_auth_mode: 'express',
-    vertexai_region: 'us-central1',
-    vertexai_express_project_id: '',
-    squash_system_messages: false,
-    image_inlining: false,
-    inline_image_quality: 'low',
-    video_inlining: false,
-    bypass_status_check: false,
-    continue_prefill: false,
-    function_calling: false,
-    names_behavior: character_names_behavior.DEFAULT,
-    continue_postfix: continue_postfix_types.SPACE,
-    custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
-    show_thoughts: true,
-    reasoning_effort: reasoning_effort_types.auto,
-    enable_web_search: false,
-    request_images: false,
-    seed: -1,
-    n: 1,
-    bind_preset_to_connection: true,
-    extensions: {},
-};
+const oai_settings = structuredClone(default_settings);
 
 export let proxies = [
     {
@@ -1532,7 +1441,7 @@ export async function prepareOpenAIMessages({
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
-    openai_messages_count = chat.filter(x => !x?.tool_calls && (x?.role === 'user' || x?.role === 'assistant'))?.length || 0;
+    openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', 'tool'].includes(x?.role)).length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -1664,6 +1573,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.fireworks_model;
         case chat_completion_sources.AZURE_OPENAI:
             return oai_settings.azure_openai_model;
+        case chat_completion_sources.ZAI:
+            return oai_settings.zai_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1921,7 +1832,7 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
-    // Clear only the "Other" optgroup for dynamic models
+        // Clear only the "Other" optgroup for dynamic models
         $('#google_other_models').empty();
 
         // Get static model options that are already in the HTML
@@ -1932,7 +1843,7 @@ function saveModelList(data) {
 
         // Add dynamic models to the "Other" group
         model_list.forEach((model) => {
-        // Only add if not already in static list
+            // Only add if not already in static list
             if (!staticModels.includes(model.id)) {
                 $('#google_other_models').append(
                     $('<option>', {
@@ -2299,7 +2210,8 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
-    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
+    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
+    const isZai = oai_settings.chat_completion_source == chat_completion_sources.ZAI;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2500,6 +2412,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
     }
 
+    // https://docs.z.ai/api-reference/llm/chat-completion
+    if (isZai) {
+        generate_data['top_p'] = generate_data.top_p || 0.01;
+        generate_data['stop'] = getCustomStoppingStrings(1);
+        delete generate_data.presence_penalty;
+        delete generate_data.frequency_penalty;
+    }
+
     const seedSupportedSources = [
         chat_completion_sources.OPENAI,
         chat_completion_sources.AZURE_OPENAI,
@@ -2681,7 +2601,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3655,6 +3575,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
+    oai_settings.zai_model = settings.zai_model ?? default_settings.zai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3760,6 +3681,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_pollinations_select option[value="${oai_settings.pollinations_model}"`).prop('selected', true);
     $('#model_moonshot_select').val(oai_settings.moonshot_model);
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
+    $('#model_zai_select').val(oai_settings.zai_model);
+    $(`#model_zai_select option[value="${oai_settings.zai_model}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#azure_base_url').val(oai_settings.azure_base_url);
@@ -3933,6 +3856,7 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
+        chat_completion_sources.ZAI,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4059,6 +3983,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
+        zai_model: settings.zai_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -4713,6 +4638,29 @@ function getGroqMaxContext(model, isUnlocked) {
     return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
 }
 
+/**
+ * Get the maximum context size for the Z.AI model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked If context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getZaiMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    const contextMap = {
+        'glm-4.6': max_200k,
+        'glm-4.5': max_128k,
+        'glm-4-32b-0414-128k': max_128k,
+        'glm-4.5-air': max_128k,
+        'glm-4.5v': max_64k,
+    };
+
+    // Return context size if model found, otherwise default to 128k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
+}
+
 function getMoonshotMaxContext(model, isUnlocked) {
     if (isUnlocked) {
         return unlocked_max;
@@ -4777,7 +4725,7 @@ function getElectronHubMaxContext(model, isUnlocked) {
             return modelInfo.tokens;
         }
     }
-    return max_8k;
+    return max_128k;
 }
 
 /**
@@ -4978,6 +4926,11 @@ async function onModelChange() {
             return;
         }
         oai_settings.azure_openai_model = value;
+    }
+
+    if ($(this).is('#model_zai_select')) {
+        console.log('ZAI model changed to', value);
+        oai_settings.zai_model = value;
     }
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
@@ -5282,6 +5235,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
+        const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
     saveSettingsDebounced();
@@ -5316,273 +5278,56 @@ function onReverseProxyInput() {
 async function onConnectButtonClick(e) {
     e.stopPropagation();
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
-        const api_key_openrouter = String($('#api_key_openrouter').val()).trim();
+    /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
+    const apiSourceConfig = {
+        [chat_completion_sources.OPENROUTER]: { key: SECRET_KEYS.OPENROUTER, selector: '#api_key_openrouter', proxy: false },
+        [chat_completion_sources.MAKERSUITE]: { key: SECRET_KEYS.MAKERSUITE, selector: '#api_key_makersuite', proxy: true },
+        [chat_completion_sources.CLAUDE]: { key: SECRET_KEYS.CLAUDE, selector: '#api_key_claude', proxy: true },
+        [chat_completion_sources.OPENAI]: { key: SECRET_KEYS.OPENAI, selector: '#api_key_openai', proxy: true },
+        [chat_completion_sources.AI21]: { key: SECRET_KEYS.AI21, selector: '#api_key_ai21', proxy: false },
+        [chat_completion_sources.MISTRALAI]: { key: SECRET_KEYS.MISTRALAI, selector: '#api_key_mistralai', proxy: true },
+        [chat_completion_sources.CUSTOM]: { key: SECRET_KEYS.CUSTOM, selector: '#api_key_custom', proxy: false, keyless: true },
+        [chat_completion_sources.COHERE]: { key: SECRET_KEYS.COHERE, selector: '#api_key_cohere', proxy: false },
+        [chat_completion_sources.PERPLEXITY]: { key: SECRET_KEYS.PERPLEXITY, selector: '#api_key_perplexity', proxy: false },
+        [chat_completion_sources.GROQ]: { key: SECRET_KEYS.GROQ, selector: '#api_key_groq', proxy: false },
+        [chat_completion_sources.ELECTRONHUB]: { key: SECRET_KEYS.ELECTRONHUB, selector: '#api_key_electronhub', proxy: false },
+        [chat_completion_sources.NANOGPT]: { key: SECRET_KEYS.NANOGPT, selector: '#api_key_nanogpt', proxy: false },
+        [chat_completion_sources.DEEPSEEK]: { key: SECRET_KEYS.DEEPSEEK, selector: '#api_key_deepseek', proxy: true },
+        [chat_completion_sources.XAI]: { key: SECRET_KEYS.XAI, selector: '#api_key_xai', proxy: true },
+        [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
+        [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: false },
+        [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
+        [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
+        [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
+        [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: false },
+    };
 
-        if (api_key_openrouter.length) {
-            await writeSecret(SECRET_KEYS.OPENROUTER, api_key_openrouter);
-        }
+    // Vertex AI Express version - use API key
+    if (oai_settings.vertexai_auth_mode === 'express') {
+        apiSourceConfig[chat_completion_sources.VERTEXAI] = { key: SECRET_KEYS.VERTEXAI, selector: '#api_key_vertexai', proxy: true };
+    }
 
-        if (!secret_state[SECRET_KEYS.OPENROUTER]) {
-            console.log('No secret key saved for OpenRouter');
+    // Vertex AI Full version - use service account
+    if (oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI && oai_settings.vertexai_auth_mode === 'full') {
+        if (!secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]) {
+            toastr.error(t`Service Account JSON is required for Vertex AI full version. Please validate and save your Service Account JSON.`);
             return;
         }
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        const api_key_makersuite = String($('#api_key_makersuite').val()).trim();
-
-        if (api_key_makersuite.length) {
-            await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
+    // Other generic configs
+    const config = apiSourceConfig[oai_settings.chat_completion_source];
+    if (config) {
+        const apiKey = String($(config.selector).val()).trim();
+        if (apiKey.length) {
+            await writeSecret(config.key, apiKey);
         }
 
-        if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for Google AI Studio');
+        if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless) {
+            console.log(`No secret key saved for ${oai_settings.chat_completion_source}`);
             return;
         }
     }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
-        if (oai_settings.vertexai_auth_mode === 'express') {
-            // Express mode - use API key
-            const api_key_vertexai = String($('#api_key_vertexai').val()).trim();
-
-            if (api_key_vertexai.length) {
-                await writeSecret(SECRET_KEYS.VERTEXAI, api_key_vertexai);
-            }
-
-            if (!secret_state[SECRET_KEYS.VERTEXAI] && !oai_settings.reverse_proxy) {
-                console.log('No secret key saved for Vertex AI Express mode');
-                return;
-            }
-        } else {
-            // Full version - use service account
-            // Project ID will be extracted from the Service Account JSON
-
-            // Check if service account JSON is saved in backend
-            if (!secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]) {
-                toastr.error('Service Account JSON is required for Vertex AI full version. Please validate and save your Service Account JSON.');
-                return;
-            }
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        const api_key_claude = String($('#api_key_claude').val()).trim();
-
-        if (api_key_claude.length) {
-            await writeSecret(SECRET_KEYS.CLAUDE, api_key_claude);
-        }
-
-        if (!secret_state[SECRET_KEYS.CLAUDE] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for Claude');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        const api_key_openai = String($('#api_key_openai').val()).trim();
-
-        if (api_key_openai.length) {
-            await writeSecret(SECRET_KEYS.OPENAI, api_key_openai);
-        }
-
-        if (!secret_state[SECRET_KEYS.OPENAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for OpenAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
-        const api_key_ai21 = String($('#api_key_ai21').val()).trim();
-
-        if (api_key_ai21.length) {
-            await writeSecret(SECRET_KEYS.AI21, api_key_ai21);
-        }
-
-        if (!secret_state[SECRET_KEYS.AI21]) {
-            console.log('No secret key saved for AI21');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
-        const api_key_mistralai = String($('#api_key_mistralai').val()).trim();
-
-        if (api_key_mistralai.length) {
-            await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
-        }
-
-        if (!secret_state[SECRET_KEYS.MISTRALAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for MistralAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
-        const api_key_custom = String($('#api_key_custom').val()).trim();
-
-        if (api_key_custom.length) {
-            await writeSecret(SECRET_KEYS.CUSTOM, api_key_custom);
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
-        const api_key_cohere = String($('#api_key_cohere').val()).trim();
-
-        if (api_key_cohere.length) {
-            await writeSecret(SECRET_KEYS.COHERE, api_key_cohere);
-        }
-
-        if (!secret_state[SECRET_KEYS.COHERE]) {
-            console.log('No secret key saved for Cohere');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
-        const api_key_perplexity = String($('#api_key_perplexity').val()).trim();
-
-        if (api_key_perplexity.length) {
-            await writeSecret(SECRET_KEYS.PERPLEXITY, api_key_perplexity);
-        }
-
-        if (!secret_state[SECRET_KEYS.PERPLEXITY]) {
-            console.log('No secret key saved for Perplexity');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
-        const api_key_groq = String($('#api_key_groq').val()).trim();
-
-        if (api_key_groq.length) {
-            await writeSecret(SECRET_KEYS.GROQ, api_key_groq);
-        }
-
-        if (!secret_state[SECRET_KEYS.GROQ]) {
-            console.log('No secret key saved for Groq');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
-        const api_key_electronhub = String($('#api_key_electronhub').val()).trim();
-
-        if (api_key_electronhub.length) {
-            await writeSecret(SECRET_KEYS.ELECTRONHUB, api_key_electronhub);
-        }
-
-        if (!secret_state[SECRET_KEYS.ELECTRONHUB]) {
-            console.log('No secret key saved for Electron Hub');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
-        const api_key_nanogpt = String($('#api_key_nanogpt').val()).trim();
-
-        if (api_key_nanogpt.length) {
-            await writeSecret(SECRET_KEYS.NANOGPT, api_key_nanogpt);
-        }
-
-        if (!secret_state[SECRET_KEYS.NANOGPT]) {
-            console.log('No secret key saved for NanoGPT');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
-        const api_key_deepseek = String($('#api_key_deepseek').val()).trim();
-
-        if (api_key_deepseek.length) {
-            await writeSecret(SECRET_KEYS.DEEPSEEK, api_key_deepseek);
-        }
-
-        if (!secret_state[SECRET_KEYS.DEEPSEEK] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for DeepSeek');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
-        const api_key_xai = String($('#api_key_xai').val()).trim();
-
-        if (api_key_xai.length) {
-            await writeSecret(SECRET_KEYS.XAI, api_key_xai);
-        }
-
-        if (!secret_state[SECRET_KEYS.XAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for XAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.AIMLAPI) {
-        const api_key_aimlapi = String($('#api_key_aimlapi').val()).trim();
-
-        if (api_key_aimlapi.length) {
-            await writeSecret(SECRET_KEYS.AIMLAPI, api_key_aimlapi);
-        }
-
-        if (!secret_state[SECRET_KEYS.AIMLAPI]) {
-            console.log('No secret key saved for AI/ML API');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
-        const api_key_moonshot = String($('#api_key_moonshot').val()).trim();
-
-        if (api_key_moonshot.length) {
-            await writeSecret(SECRET_KEYS.MOONSHOT, api_key_moonshot);
-        }
-
-        if (!secret_state[SECRET_KEYS.MOONSHOT]) {
-            console.log('No secret key saved for Moonshot');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
-        const api_key_fireworks = String($('#api_key_fireworks').val()).trim();
-
-        if (api_key_fireworks.length) {
-            await writeSecret(SECRET_KEYS.FIREWORKS, api_key_fireworks);
-        }
-
-        if (!secret_state[SECRET_KEYS.FIREWORKS]) {
-            console.log('No secret key saved for Fireworks');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
-        const api_key_cometapi = String($('#api_key_cometapi').val()).trim();
-
-        if (api_key_cometapi.length) {
-            await writeSecret(SECRET_KEYS.COMETAPI, api_key_cometapi);
-        }
-
-        if (!api_key_cometapi && !secret_state[SECRET_KEYS.COMETAPI]) {
-            console.log('No secret key saved for CometAPI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
-        const api_key_azure_openai = String($('#api_key_azure_openai').val()).trim();
-
-        if (api_key_azure_openai.length) {
-            await writeSecret(SECRET_KEYS.AZURE_OPENAI, api_key_azure_openai);
-        }
-
-        if (!api_key_azure_openai && !secret_state[SECRET_KEYS.AZURE_OPENAI]) {
-            console.log('No secret key saved for Azure OpenAI');
-            return;
-        }
-    }
-
 
     startStatusLoading();
     saveSettingsDebounced();
@@ -5659,6 +5404,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         $('#azure_openai_model').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
+        $('#model_zai_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5774,6 +5522,8 @@ export function isImageInliningSupported() {
         'moonshot-v1-8k-vision-preview',
         'moonshot-v1-32k-vision-preview',
         'moonshot-v1-128k-vision-preview',
+        // Z.AI (GLM)
+        'glm-4.5v',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5816,6 +5566,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.moonshot_model.includes(model));
         case chat_completion_sources.NANOGPT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
+        case chat_completion_sources.ZAI:
+            return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         default:
             return false;
     }
@@ -6664,6 +6416,7 @@ export function initOpenAI() {
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
+    $('#model_zai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

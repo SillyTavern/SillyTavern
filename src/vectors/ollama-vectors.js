@@ -46,6 +46,7 @@ export async function getOllamaVector(text, apiUrl, model, keep, directories) {
             prompt: text,
             model: model,
             keep_alive: keep ? -1 : undefined,
+            truncate: true,
         }),
     });
 

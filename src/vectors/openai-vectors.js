@@ -17,6 +17,11 @@ const SOURCES = {
         url: 'api.openai.com',
         model: 'text-embedding-ada-002',
     },
+    'electronhub': {
+        secretKey: SECRET_KEYS.ELECTRONHUB,
+        url: 'api.electronhub.ai',
+        model: 'text-embedding-3-small',
+    },
 };
 
 /**

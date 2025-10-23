@@ -929,15 +929,9 @@ export function getCurrentOpenRouterModelTokenizer() {
 export function getCurrentDreamGenModelTokenizer() {
     const modelId = textgen_settings.dreamgen_model;
     const model = dreamGenModels.find(x => x.id === modelId);
-    if (model.id.startsWith('opus-v1-sm')) {
+    if (model.id.startsWith('lucid-v1-medium') || model.id.startsWith('lucid-v1-base')) {
         return tokenizers.MISTRAL;
-    } else if (model.id.startsWith('opus-v1-lg')) {
-        return tokenizers.YI;
-    } else if (model.id.startsWith('opus-v1-xl')) {
-        return tokenizers.LLAMA;
-    } else if (model.id.startsWith('lucid-v1-medium')) {
-        return tokenizers.NEMO;
-    } else if (model.id.startsWith('lucid-v1-extra-large')) {
+    } else if (model.id.startsWith('lucid-v1-extra-large') || model.id.startsWith('lucid-v1-max')) {
         return tokenizers.LLAMA3;
     } else {
         return tokenizers.MISTRAL;

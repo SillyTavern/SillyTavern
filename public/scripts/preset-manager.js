@@ -1002,7 +1002,7 @@ export async function initPresetManager() {
             return;
         }
 
-        await presetManager.updatePreset({ skipUpdate: true });
+        await presetManager.updatePreset();
     });
 
     $(document).on('click', '[data-preset-manager-new]', async function () {
