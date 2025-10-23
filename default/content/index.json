@@ -580,14 +580,6 @@
         "type": "instruct"
     },
     {
-        "filename": "presets/instruct/DreamGen Lucid V1 Role-Play.json",
-        "type": "instruct"
-    },
-    {
-        "filename": "presets/instruct/DreamGen Lucid V1 Story.json",
-        "type": "instruct"
-    },
-    {
         "filename": "presets/instruct/Koala.json",
         "type": "instruct"
     },
