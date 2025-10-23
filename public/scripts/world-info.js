@@ -2847,9 +2847,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
             }
             $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
-            //Update the commentInput's placeholder.
-            const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
-            setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
+            }
         });
 
         input.toggleClass('empty', !entry[entryPropName].length);
@@ -2885,9 +2887,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
                 $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
             }
-            //Update the commentInput's placeholder.
-            const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
-            setCommentPlaceholder(value, commentInput);
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(value, commentInput);
+            }
         });
         input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
     }
