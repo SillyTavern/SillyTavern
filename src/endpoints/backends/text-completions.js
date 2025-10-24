@@ -81,7 +81,7 @@ async function abortKoboldCppRequest(request, url) {
         console.info('Aborting Kobold generation...');
         let args = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {},
         };
 
         setAdditionalHeaders(request, args, url);
