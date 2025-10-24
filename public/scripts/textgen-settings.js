@@ -26,6 +26,7 @@ import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, l
 import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual } from './utils.js';
+import { localforage } from '../lib.js';
 
 export const textgen_types = {
     OOBA: 'ooba',
@@ -113,6 +114,9 @@ export const APHRODITE_DEFAULT_ORDER = [
     'xtc',
 ];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
+
+const textGenObjectStore = localforage.createInstance({ name: 'SillyTavern_TextCompletions' });
+let selectedSamplers = {};
 
 // Maybe let it be configurable in the future?
 // (7 days later) The future has come.
@@ -357,6 +361,80 @@ export function getTextGenServer(type = null) {
     }
 }
 
+async function loadPresetSelectedSamplers() {
+    try {
+        console.debug('Text Completions: loading selected samplers');
+        selectedSamplers = await textGenObjectStore.getItem('selectedSamplers') || {};
+    } catch (error) {
+        console.log('Text Completions: unable to load selected samplers, using default samplers', error);
+        selectedSamplers = {};
+    }
+}
+
+export async function savePresetSelectedSamplers() {
+    try {
+        console.debug('Text Completions: saving selected samplers');
+        await textGenObjectStore.setItem('selectedSamplers', selectedSamplers);
+    } catch (error) {
+        console.log('Text Completions: unable to save selected samplers', error);
+    }
+}
+
+export async function resetPresetSelectedSamplers(silent = false) {
+    try {
+        console.debug('Text Completions: resetting selected samplers');
+        Object.keys(selectedSamplers).forEach(key => delete selectedSamplers[key]);
+        await textGenObjectStore.removeItem('selectedSamplers');
+        // TODO: Once the feature is done, finish this message with clearer instructions on what to do to regen this setting
+        if (!silent) toastr.success('Selected samplers cleared.');
+    } catch (error) {
+        console.log('Text Completions: unable to reset selected preset samplers', error);
+    }
+}
+
+export function setPresetSamplersState(sampler_name, state, preset_name = "") {
+    if (!settings?.preset) return;
+    if (!preset_name) preset_name = settings.preset;
+    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+        
+    const presetSamplers = selectedSamplers[preset_name];
+    presetSamplers[sampler_name] = String(state) === "true";
+}
+
+export function getActivePresetSamplers(preset_name = "") {
+    if (!settings?.preset) return [];
+    if (!preset_name) preset_name = settings.preset;
+    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+
+    try {
+        const presetSamplers = Object.entries(selectedSamplers[preset_name]);
+
+        return presetSamplers
+            .filter(([key, val]) => val === true)
+            .map(([key, val]) => key);
+    } catch (error) {
+        console.log('Text Completions: unable to fetch active preset samplers', error);
+        return [];
+    }
+}
+
+export function toggleSamplerManualPriority(state = false, preset_name = "") {
+    if (!settings?.preset) return;
+    if (!preset_name) preset_name = settings.preset;
+    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+        
+    const presetSamplers = selectedSamplers[preset_name];
+    presetSamplers.st_manual_priority = String(state) === "true";
+}
+
+export function isSamplerManualPriorityEnabled(preset_name = "") {
+    if (!settings?.preset) return false;
+    if (!preset_name) preset_name = settings.preset;
+    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+
+    return selectedSamplers[preset_name]?.st_manual_priority ?? false;
+}
+
 async function selectPreset(name) {
     const preset = textgenerationwebui_presets[textgenerationwebui_preset_names.indexOf(name)];
 
@@ -370,6 +448,7 @@ async function selectPreset(name) {
         setSettingByName(name, value, true);
     }
     setGenerationParamsFromPreset(preset);
+    showManuallySelectedControls();
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(preset.logit_bias, BIAS_KEY);
     saveSettingsDebounced();
@@ -569,7 +648,9 @@ export function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
+    loadPresetSelectedSamplers();
     showTypeSpecificControls(settings.type);
+    showManuallySelectedControls();
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
 
@@ -775,6 +856,8 @@ async function getStatusTextgen() {
 }
 
 export function initTextGenSettings() {
+    loadPresetSelectedSamplers();
+
     $('#send_banned_tokens_textgenerationwebui').on('change', function () {
         const checked = !!$(this).prop('checked');
         toggleBannedStringsKillSwitch(checked,
@@ -898,6 +981,7 @@ export function initTextGenSettings() {
         }
 
         showTypeSpecificControls(type);
+        showManuallySelectedControls();
         setOnlineStatus('no_connection');
         BIAS_CACHE.delete(BIAS_KEY);
 
@@ -1061,6 +1145,25 @@ export function initTextGenSettings() {
         startStatusLoading();
         saveSettingsDebounced();
         getStatusTextgen();
+    });
+}
+
+function showManuallySelectedControls() {
+    const samplersActivatedManually = getActivePresetSamplers();
+
+    if (!samplersActivatedManually?.length || !isSamplerManualPriorityEnabled()) return;
+    
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
+        const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== "");
+
+        for (const tgSampler of tgSamplers) {
+            if (samplersActivatedManually.includes(tgSampler)) {
+                $(this).show();
+                return;
+            } else {
+                $(this).hide();
+            };
+        }
     });
 }
 

@@ -7,10 +7,9 @@ import { power_user } from './power-user.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
-import { setting_names } from './textgen-settings.js';
+import { getActivePresetSamplers, isSamplerManualPriorityEnabled, resetPresetSelectedSamplers, savePresetSelectedSamplers, setPresetSamplersState, setting_names, toggleSamplerManualPriority } from './textgen-settings.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup, POPUP_TYPE } from './popup.js';
-
 
 const TGsamplerNames = setting_names;
 
@@ -41,6 +40,7 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
+        resetPresetSelectedSamplers(true);
         await validateDisabledSamplers(true);
     });
 
@@ -53,7 +53,17 @@ async function showSamplerSelectPopup() {
         await validateDisabledSamplers();
     });
 
+    $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled())
+    $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
+        $(this).toggleClass('toggleEnabled ');
+
+        const isActive = $(this).hasClass('toggleEnabled');
+
+        toggleSamplerManualPriority(isActive);
+    });
+
     await showPromise;
+    await savePresetSelectedSamplers();
 }
 
 function setSamplerListListeners() {
@@ -179,6 +189,8 @@ function setSamplerListListeners() {
 
         const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
+        
+        await setPresetSamplersState(samplerName, shouldDisplay !== 'none');
 
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
     });
@@ -209,6 +221,8 @@ async function listSamplers(main_api, arrayOnly = false) {
         console.debug('returning full samplers array');
         return availableSamplers;
     }
+
+    const samplersActivatedManually = getActivePresetSamplers();
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
         let customColor, displayname;
@@ -283,8 +297,7 @@ async function listSamplers(main_api, arrayOnly = false) {
             displayname = 'Mirostat Block';
         }
 
-
-
+        const isManuallyActivated = samplersActivatedManually.includes(sampler);
         const isInForceHiddenArray = userDisabledSamplers.includes(sampler);
         const isInForceShownArray = userShownSamplers.includes(sampler);
         let isVisibleInDOM = isElementVisibleInDOM(targetDOMelement[0]);
@@ -295,7 +308,10 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
 
         const shouldBeChecked = () => {
-            if (isInForceHiddenArray) {
+            if (isSamplerManualPriorityEnabled()) {
+                return isManuallyActivated;
+            }
+            else if (isInForceHiddenArray) {
                 customColor = forcedOffColoring;
                 return false;
             }
@@ -327,6 +343,8 @@ export async function validateDisabledSamplers(redraw = false) {
     if (!Array.isArray(APISamplers)) {
         return;
     }
+
+    const samplersActivatedManually = getActivePresetSamplers();
 
     for (const sampler of APISamplers) {
         let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
@@ -400,7 +418,12 @@ export async function validateDisabledSamplers(redraw = false) {
             relatedDOMElement = $('#smoothingBlock');
         }
 
-        if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
+        const isManuallyActivated = samplersActivatedManually.includes(sampler);
+
+        if (isSamplerManualPriorityEnabled()) {
+            relatedDOMElement.data('selectsampler', isManuallyActivated === true ? 'shown' : 'hidden');
+            relatedDOMElement.css('display', isManuallyActivated === true ? targetDisplayType : 'none');
+        } else if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
             relatedDOMElement.data('selectsampler', 'hidden');
             relatedDOMElement.css('display', 'none');
