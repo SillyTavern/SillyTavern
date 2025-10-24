@@ -14,7 +14,7 @@ import {
     OPENAI_KEYS,
 } from '../../constants.js';
 import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
-import { getOverrideHeaders, setAdditionalHeaders } from '../../additional-headers.js';
+import { setAdditionalHeaders } from '../../additional-headers.js';
 import { createHash } from 'node:crypto';
 
 export const router = express.Router();
@@ -79,10 +79,9 @@ async function parseOllamaStream(jsonStream, request, response) {
 async function abortKoboldCppRequest(request, url) {
     try {
         console.info('Aborting Kobold generation...');
-        
         let args = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
         };
 
         setAdditionalHeaders(request, args, url);
