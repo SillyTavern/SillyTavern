@@ -323,6 +323,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
         console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
         if (displayname === undefined) { displayname = sampler; }
+        setPresetSamplersState(sampler, shouldBeChecked());
         return html + `
         <div class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
