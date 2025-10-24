@@ -61,21 +61,29 @@ export class ByafParser {
 
     /**
      * Formats alternate greetings for a character.
-     * @param {ByafExampleMessage[]} [greetings] Array of greeting objects
+     * @param {Partial<ByafScenario>[]} [scenarios] Array of greeting objects
      * @returns {string[]} Formatted alternate greetings
      * @private
      */
-    formatAlternateGreetings(greetings) {
-        if (!Array.isArray(greetings)) {
-            return [];
-        }
-
-        if (greetings.length <= 1) {
+    formatAlternateGreetings(scenarios) {
+        if (!Array.isArray(scenarios)) {
             return [];
         }
 
         // Skip one because it goes into 'first_mes'
-        return greetings.slice(1).map(g => this.replaceMacros(g?.text));
+        if(scenarios.length <= 1) {
+            return [];
+        }
+        const greetings = [];
+        for (const scenario of scenarios.slice(1).filter(s => Array.isArray(s.firstMessages) && s.firstMessages.length > 0)) {
+            // As per the BYAF spec, "firstMessages" array MUST contain AT MOST one message.
+            // So we only consider the first one if it exists.
+            const firstMessage = scenario?.firstMessages?.[0];
+            if (firstMessage?.text) {
+                greetings.push(this.replaceMacros(firstMessage.text));
+            }
+        }
+        return greetings;
     }
 
     /**
@@ -154,39 +162,39 @@ export class ByafParser {
     /**
      * Extracts a scenario object from BYAF buffer.
      * @param {ByafManifest} manifest BYAF manifest
-     * @returns {Promise<Partial<ByafScenario>>} Scenario object
+     * @returns {Promise<Partial<ByafScenario>[]>} Scenarios array
      * @private
      */
-    async getScenarioFromManifest(manifest) {
+    async getScenariosFromManifest(manifest) {
         const scenariosArray = manifest?.scenarios;
 
         if (!Array.isArray(scenariosArray) || scenariosArray.length === 0) {
             console.warn('Warning: BYAF manifest contains no scenarios');
-            return {};
+            return [{}];
         }
 
-        if (scenariosArray.length > 1) {
-            console.warn('Warning: BYAF manifest contains more than one scenario, only the first one will be imported');
+        const scenarios = [];
+
+        for (const scenarioPath of scenariosArray) {
+            const scenarioBuffer = await extractFileFromZipBuffer(this.#data, scenarioPath);
+            if (!scenarioBuffer) {
+                console.warn('Warning: failed to extract BYAF scenario JSON');
+            }
+            if (scenarioBuffer) {
+                try {
+                    scenarios.push(JSON.parse(scenarioBuffer.toString()));
+                } catch (error) {
+                    console.warn('Warning: BYAF scenario is not a valid JSON', error);
+                }
+            }
         }
 
-        const scenarioPath = scenariosArray[0];
-        if (!scenarioPath) {
-            console.warn('Warning: missing BYAF scenario path');
-            return {};
+        if (scenarios.length === 0) {
+            console.warn('Warning: BYAF manifest contains no valid scenarios');
+            return [{}];
         }
 
-        const scenarioBuffer = await extractFileFromZipBuffer(this.#data, scenarioPath);
-        if (!scenarioBuffer) {
-            console.warn('Warning: failed to extract BYAF scenario JSON');
-            return {};
-        }
-
-        try {
-            return JSON.parse(scenarioBuffer.toString());
-        } catch (error) {
-            console.warn('Warning: BYAF scenario is not a valid JSON', error);
-            return {};
-        }
+        return scenarios;
     }
 
     /**
@@ -225,11 +233,11 @@ export class ByafParser {
      * Formats BYAF data as a character card.
      * @param {ByafManifest} manifest BYAF manifest
      * @param {ByafCharacter} character Character object
-     * @param {Partial<ByafScenario>} scenario Scenario object
+     * @param {Partial<ByafScenario>[]} scenarios Scenarios array
      * @return {TavernCardV2} Character card object
      * @private
      */
-    getCharacterCard(manifest, character, scenario) {
+    getCharacterCard(manifest, character, scenarios) {
         return {
             spec: 'chara_card_v2',
             spec_version: '2.0',
@@ -237,13 +245,13 @@ export class ByafParser {
                 name: sanitize(character?.name || character?.displayName || ''),
                 description: this.replaceMacros(character?.persona),
                 personality: '',
-                scenario: this.replaceMacros(scenario?.narrative),
-                first_mes: this.replaceMacros(scenario?.firstMessages?.[0]?.text),
-                mes_example: this.formatExampleMessages(scenario?.exampleMessages),
+                scenario: this.replaceMacros(scenarios[0]?.narrative),
+                first_mes: this.replaceMacros(scenarios[0]?.firstMessages?.[0]?.text),
+                mes_example: this.formatExampleMessages(scenarios[0]?.exampleMessages),
                 creator_notes: '',
-                system_prompt: this.replaceMacros(scenario?.formattingInstructions),
+                system_prompt: this.replaceMacros(scenarios[0]?.formattingInstructions),
                 post_history_instructions: '',
-                alternate_greetings: this.formatAlternateGreetings(scenario?.firstMessages),
+                alternate_greetings: this.formatAlternateGreetings(scenarios),
                 character_book: this.convertCharacterBook(character?.loreItems),
                 tags: [],
                 creator: manifest?.author?.name || '',
@@ -276,16 +284,16 @@ export class ByafParser {
 
     /**
      * Parses the BYAF data.
-     * @return {Promise<{card: TavernCardV2, image: Buffer}>} Parsed character card and image buffer
+     * @return {Promise<{card: TavernCardV2, image: Buffer, scenarios: Partial<ByafScenario>[]}>} Parsed character card and image buffer
      */
     async parse() {
         const manifest = await this.getManifest();
         const { character, characterPath } = await this.getCharacterFromManifest(manifest);
-        const scenario = await this.getScenarioFromManifest(manifest);
+        const scenarios = await this.getScenariosFromManifest(manifest);
         const image = await this.getCharacterImage(character, characterPath);
-        const card = this.getCharacterCard(manifest, character, scenario);
+        const card = this.getCharacterCard(manifest, character, scenarios);
 
-        return { card, image };
+        return { card, image, scenarios };
     }
 }
 
