@@ -72,7 +72,7 @@ async function parseOllamaStream(jsonStream, request, response) {
 
 /**
  * Abort KoboldCpp generation request.
- * @param request the generation request
+ * @param {import('express').Request} request the generation request
  * @param {string} url Server base URL
  * @returns {Promise<void>} Promise resolving when we are done
  */
@@ -82,14 +82,10 @@ async function abortKoboldCppRequest(request, url) {
         
         let args = {
             method: 'POST',
-            headers: Object.assign(
-                { 'Content-Type': 'application/json' },
-                getOverrideHeaders((new URL(url))?.host)
-            )
+            headers: { 'Content-Type': 'application/json' }
         }
 
         setAdditionalHeaders(request, args, url);
-
         const abortResponse = await fetch(`${url}/api/extra/abort`, args);
 
         if (!abortResponse.ok) {
