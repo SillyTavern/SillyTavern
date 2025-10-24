@@ -361,6 +361,9 @@ export function getTextGenServer(type = null) {
     }
 }
 
+/**
+ * Initializes the configuration object for manually selected samplers.
+ */
 async function loadPresetSelectedSamplers() {
     try {
         console.debug('Text Completions: loading selected samplers');
@@ -371,6 +374,9 @@ async function loadPresetSelectedSamplers() {
     }
 }
 
+/**
+ * Synchronizes the local forage instance with the selected samplers configuration object.
+ */
 export async function savePresetSelectedSamplers() {
     try {
         console.debug('Text Completions: saving selected samplers');
@@ -380,6 +386,10 @@ export async function savePresetSelectedSamplers() {
     }
 }
 
+/**
+ * Clears the selected samplers configuration object from the local forage instace.
+ * @param {boolean} silent Suppresses the toastr message confirming that the data was deleted.
+ */
 export async function resetPresetSelectedSamplers(silent = false) {
     try {
         console.debug('Text Completions: resetting selected samplers');
@@ -392,6 +402,13 @@ export async function resetPresetSelectedSamplers(silent = false) {
     }
 }
 
+/**
+ * Saves the visibility state for selected samplers into the configuration object.
+ * @param {string} sampler_name Target sampler key name
+ * @param {string|boolean} state Visibility state of the target sampler
+ * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @returns void
+ */
 export function setPresetSamplersState(sampler_name, state, preset_name = '') {
     if (!settings?.preset) return;
     if (!preset_name) preset_name = settings.preset;
@@ -401,6 +418,11 @@ export function setPresetSamplersState(sampler_name, state, preset_name = '') {
     presetSamplers[sampler_name] = String(state) === 'true';
 }
 
+/**
+ * Returns the key names of all the preset samplers activated manually.
+ * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @returns {string[]} Array of sampler key names
+ */
 export function getActivePresetSamplers(preset_name = '') {
     if (!settings?.preset) return [];
     if (!preset_name) preset_name = settings.preset;
@@ -418,6 +440,11 @@ export function getActivePresetSamplers(preset_name = '') {
     }
 }
 
+/**
+ * @param {string|boolean} state Target state of the feature
+ * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @returns void
+ */
 export function toggleSamplerManualPriority(state = false, preset_name = '') {
     if (!settings?.preset) return;
     if (!preset_name) preset_name = settings.preset;
@@ -427,6 +454,10 @@ export function toggleSamplerManualPriority(state = false, preset_name = '') {
     presetSamplers.st_manual_priority = String(state) === 'true';
 }
 
+/**
+ * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @returns {boolean}
+ */
 export function isSamplerManualPriorityEnabled(preset_name = '') {
     if (!settings?.preset) return false;
     if (!preset_name) preset_name = settings.preset;
@@ -1148,6 +1179,10 @@ export function initTextGenSettings() {
     });
 }
 
+/**
+ * Hides and shows preset samplers selected manually by the user only if their prioritization is enabled for the preset.
+ * @returns void
+ */
 function showManuallySelectedControls() {
     const samplersActivatedManually = getActivePresetSamplers();
 
