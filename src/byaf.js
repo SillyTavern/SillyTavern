@@ -71,7 +71,7 @@ export class ByafParser {
         }
 
         // Skip one because it goes into 'first_mes'
-        if(scenarios.length <= 1) {
+        if (scenarios.length <= 1) {
             return [];
         }
         const greetings = [];
@@ -280,6 +280,92 @@ export class ByafParser {
         }
 
         return manifest;
+    }
+
+    /**
+     * Imports a chat from BYAF format.
+     * @param {Partial<ByafScenario>} scenario Scenario object
+     * @param {string} userName User name
+     * @param {string} characterName Character name
+     * @returns {string} Chat data
+     */
+    static getChatFromScenario(scenario, userName, characterName) {
+        const chat_start_date = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
+        /** @type {object[]} */
+        const chat = [{
+            user_name: userName,
+            character_name: characterName,
+            create_date: chat_start_date,
+        }];
+        // Add the first message IF it exists.
+        if (scenario?.firstMessages?.length && scenario?.firstMessages?.length > 0 && scenario?.firstMessages?.[0]?.text) {
+            chat.push({
+                name: characterName,
+                is_user: false,
+                send_date: chat_start_date,
+                mes: scenario?.firstMessages?.[0]?.text || '',
+            });
+        }
+
+        const sort_by_timestamp = (newest, curr) => {
+            const aTime = new Date(newest.activeTimestamp);
+            const bTime = new Date(curr.activeTimestamp);
+            return aTime >= bTime ? newest : curr;
+        };
+
+        //const aiMessage = characterMessages[i].outputs.reduce((newest, curr) => Number(newest.activeTimestamp) >= Number(curr.activeTimestamp) ? newest : curr);
+        //const aiMessage = message.outputs?.reduce((newest, curr) => Number(newest.activeTimestamp) >= Number(curr.activeTimestamp) ? newest : curr);
+        const getNewestAiMessage = (message) => {
+            return message.outputs.reduce(sort_by_timestamp);
+        };
+        const getSwipesForAiMessage = (aiMessage) => {
+            return aiMessage.outputs.map(output => output.text);
+        };
+
+        const fix_prior_bad_backyard_imports = true; // If true, reorders messages by interleaving user and character messages so that they are in correct chronological order. This is only needed to import old chats from Backyard AI that were incorrectly imported by an earlier version that completely messed up the order of messages. Backyard AI Windows frontend never supported creation of chats with which were ordered like this in the first place, so for most users this is desired functionality.
+        const userMessages = scenario?.messages?.filter(msg => msg.type === 'human');
+        const characterMessages = scenario?.messages?.filter(msg => msg.type === 'ai');
+        if (fix_prior_bad_backyard_imports && userMessages && characterMessages && userMessages.length === characterMessages.length) { // Only do the reordering if there are equal numbers of user and character messages, otherwise just import in existing order, because it's probably correct already.
+            for (let i = 0; i < userMessages.length; i++) {
+                chat.push({
+                    name: userName,
+                    is_user: true,
+                    send_date: Number(userMessages[i]?.createdAt),
+                    mes: userMessages[i]?.text,
+                });
+                const aiMessage = getNewestAiMessage(characterMessages[i]);
+                const aiSwipes = getSwipesForAiMessage(characterMessages[i]);
+                chat.push({
+                    name: characterName,
+                    is_user: false,
+                    send_date: Number(aiMessage.createdAt),
+                    mes: aiMessage.text,
+                    swipes: aiSwipes,
+                    swipe_id: aiSwipes.findIndex(s => s === aiMessage.text),
+                });
+            }
+        } else if(scenario?.messages) {
+            for (const message of scenario.messages) {
+                const isUser = message.type === 'human';
+                const aiMessage = !isUser ? getNewestAiMessage(message) : null;
+                const chatMessage = {
+                    name: isUser ? userName : characterName,
+                    is_user: isUser,
+                    send_date: Number(isUser ? message.createdAt : aiMessage.createdAt),
+                    mes: isUser ? message.text : aiMessage.text,
+                };
+                if(!isUser) {
+                    const aiSwipes = getSwipesForAiMessage(message);
+                    chatMessage.swipes = aiSwipes;
+                    chatMessage.swipe_id = aiSwipes.findIndex(s => s === aiMessage.text);
+                }
+                chat.push(chatMessage);
+            }
+        } else {
+            console.warn('Warning: BYAF scenario contained no messages property.');
+        }
+
+        return chat.map(obj => JSON.stringify(obj)).join('\n');
     }
 
     /**

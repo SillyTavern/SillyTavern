@@ -808,6 +808,25 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     const card = readFromV2(byafData.card);
     const fileName = preservedFileName || getPngName(card.name, request.user.directories);
     const result = await writeCharacterData(byafData.image, JSON.stringify(card), fileName, request);
+
+    /**
+     * @param {Partial<ByafScenario>} scenario
+    */
+    const createChatAsCurrentPersona = (scenario) => {
+        const chatName = `${scenario.title} - ${humanizedISO8601DateTime()} imported.jsonl`;
+        const filePath = path.join(request.user.directories.chats, fileName.replace('.png', ''), chatName);
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name), 'utf8');
+    };
+    // TODO: chat_metadata
+
+    if (Array.isArray(byafData.scenarios)) {
+        for (const scenario of byafData.scenarios) {
+            createChatAsCurrentPersona(scenario);
+        }
+    }
+
     return result ? fileName : '';
 }
 
