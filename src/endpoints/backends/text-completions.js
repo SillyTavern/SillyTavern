@@ -14,7 +14,7 @@ import {
     OPENAI_KEYS,
 } from '../../constants.js';
 import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
-import { setAdditionalHeaders } from '../../additional-headers.js';
+import { getOverrideHeaders, setAdditionalHeaders } from '../../additional-headers.js';
 import { createHash } from 'node:crypto';
 
 export const router = express.Router();
@@ -72,15 +72,25 @@ async function parseOllamaStream(jsonStream, request, response) {
 
 /**
  * Abort KoboldCpp generation request.
+ * @param request the generation request
  * @param {string} url Server base URL
  * @returns {Promise<void>} Promise resolving when we are done
  */
-async function abortKoboldCppRequest(url) {
+async function abortKoboldCppRequest(request, url) {
     try {
         console.info('Aborting Kobold generation...');
-        const abortResponse = await fetch(`${url}/api/extra/abort`, {
+        
+        let args = {
             method: 'POST',
-        });
+            headers: Object.assign(
+                { 'Content-Type': 'application/json' },
+                getOverrideHeaders((new URL(url))?.host)
+            )
+        }
+
+        setAdditionalHeaders(request, args, url);
+
+        const abortResponse = await fetch(`${url}/api/extra/abort`, args);
 
         if (!abortResponse.ok) {
             console.error('Error sending abort request to Kobold:', abortResponse.status, abortResponse.statusText);
@@ -275,7 +285,7 @@ router.post('/generate', async function (request, response) {
         request.socket.removeAllListeners('close');
         request.socket.on('close', async function () {
             if (request.body.api_type === TEXTGEN_TYPES.KOBOLDCPP && !response.writableEnded) {
-                await abortKoboldCppRequest(trimV1(baseUrl));
+                await abortKoboldCppRequest(request, trimV1(baseUrl));
             }
 
             controller.abort();
