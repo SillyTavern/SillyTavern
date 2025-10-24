@@ -53,7 +53,7 @@ async function showSamplerSelectPopup() {
         await validateDisabledSamplers();
     });
 
-    $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled())
+    $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled());
     $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
         $(this).toggleClass('toggleEnabled ');
 
@@ -189,7 +189,7 @@ function setSamplerListListeners() {
 
         const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
-        
+
         await setPresetSamplersState(samplerName, shouldDisplay !== 'none');
 
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
