@@ -392,16 +392,16 @@ export async function resetPresetSelectedSamplers(silent = false) {
     }
 }
 
-export function setPresetSamplersState(sampler_name, state, preset_name = "") {
+export function setPresetSamplersState(sampler_name, state, preset_name = '') {
     if (!settings?.preset) return;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
-        
+
     const presetSamplers = selectedSamplers[preset_name];
-    presetSamplers[sampler_name] = String(state) === "true";
+    presetSamplers[sampler_name] = String(state) === 'true';
 }
 
-export function getActivePresetSamplers(preset_name = "") {
+export function getActivePresetSamplers(preset_name = '') {
     if (!settings?.preset) return [];
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
@@ -418,16 +418,16 @@ export function getActivePresetSamplers(preset_name = "") {
     }
 }
 
-export function toggleSamplerManualPriority(state = false, preset_name = "") {
+export function toggleSamplerManualPriority(state = false, preset_name = '') {
     if (!settings?.preset) return;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
-        
+
     const presetSamplers = selectedSamplers[preset_name];
-    presetSamplers.st_manual_priority = String(state) === "true";
+    presetSamplers.st_manual_priority = String(state) === 'true';
 }
 
-export function isSamplerManualPriorityEnabled(preset_name = "") {
+export function isSamplerManualPriorityEnabled(preset_name = '') {
     if (!settings?.preset) return false;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
@@ -1152,9 +1152,9 @@ function showManuallySelectedControls() {
     const samplersActivatedManually = getActivePresetSamplers();
 
     if (!samplersActivatedManually?.length || !isSamplerManualPriorityEnabled()) return;
-    
+
     $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
-        const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== "");
+        const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== '');
 
         for (const tgSampler of tgSamplers) {
             if (samplersActivatedManually.includes(tgSampler)) {
@@ -1162,7 +1162,7 @@ function showManuallySelectedControls() {
                 return;
             } else {
                 $(this).hide();
-            };
+            }
         }
     });
 }
