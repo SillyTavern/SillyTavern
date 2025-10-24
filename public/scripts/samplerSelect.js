@@ -422,7 +422,6 @@ export async function validateDisabledSamplers(redraw = false) {
         const isManuallyActivated = samplersActivatedManually.includes(sampler);
 
         if (isSamplerManualPriorityEnabled()) {
-            relatedDOMElement.data('selectsampler', isManuallyActivated === true ? 'shown' : 'hidden');
             relatedDOMElement.css('display', isManuallyActivated === true ? targetDisplayType : 'none');
         } else if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
