@@ -83,7 +83,7 @@ async function abortKoboldCppRequest(request, url) {
         let args = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
-        }
+        };
 
         setAdditionalHeaders(request, args, url);
         const abortResponse = await fetch(`${url}/api/extra/abort`, args);
