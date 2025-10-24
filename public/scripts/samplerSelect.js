@@ -40,7 +40,7 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
-        resetPresetSelectedSamplers(true);
+        resetPresetSelectedSamplers(null, true);
         await validateDisabledSamplers(true);
     });
 

@@ -387,15 +387,19 @@ export async function savePresetSelectedSamplers() {
 }
 
 /**
- * Clears the selected samplers configuration object from the local forage instace.
+ * Resets the selected samplers configuration object from the local forage instace.
+ * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
  * @param {boolean} silent Suppresses the toastr message confirming that the data was deleted.
  */
-export async function resetPresetSelectedSamplers(silent = false) {
+export async function resetPresetSelectedSamplers(preset_name = '', silent = false) {
     try {
+        if (!settings?.preset) return;
+        if (!preset_name) preset_name = settings.preset;
+        if (!selectedSamplers[preset_name]) return;
+
         console.debug('Text Completions: resetting selected samplers');
-        Object.keys(selectedSamplers).forEach(key => delete selectedSamplers[key]);
-        await textGenObjectStore.removeItem('selectedSamplers');
-        // TODO: Once the feature is done, finish this message with clearer instructions on what to do to regen this setting
+        delete selectedSamplers[preset_name];
+        await savePresetSelectedSamplers();
         if (!silent) toastr.success('Selected samplers cleared.');
     } catch (error) {
         console.log('Text Completions: unable to reset selected preset samplers', error);
