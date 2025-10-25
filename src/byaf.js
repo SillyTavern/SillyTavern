@@ -28,7 +28,7 @@ export class ByafParser {
      * @returns {string} String with macros replaced
      * @private
      */
-    replaceMacros(str) {
+    static replaceMacros(str) {
         return String(str || '')
             .replace(/#{user}:/gi, '{{user}}:')
             .replace(/#{character}:/gi, '{{char}}:')
@@ -42,7 +42,7 @@ export class ByafParser {
      * @returns {string} Formatted example messages
      * @private
      */
-    formatExampleMessages(examples) {
+    static formatExampleMessages(examples) {
         if (!Array.isArray(examples)) {
             return '';
         }
@@ -53,7 +53,7 @@ export class ByafParser {
             if (!example?.text) {
                 return;
             }
-            formattedExamples += `<START>\n${this.replaceMacros(example.text)}\n`;
+            formattedExamples += `<START>\n${ByafParser.replaceMacros(example.text)}\n`;
         });
 
         return formattedExamples.trimEnd();
@@ -80,7 +80,7 @@ export class ByafParser {
             // So we only consider the first one if it exists.
             const firstMessage = scenario?.firstMessages?.[0];
             if (firstMessage?.text) {
-                greetings.push(this.replaceMacros(firstMessage.text));
+                greetings.push(ByafParser.replaceMacros(firstMessage.text));
             }
         }
         return greetings;
@@ -108,8 +108,8 @@ export class ByafParser {
                 return;
             }
             book.entries.push({
-                keys: this.replaceMacros(item?.key).split(',').map(key => key.trim()).filter(Boolean),
-                content: this.replaceMacros(item?.value),
+                keys: ByafParser.replaceMacros(item?.key).split(',').map(key => key.trim()).filter(Boolean),
+                content: ByafParser.replaceMacros(item?.value),
                 extensions: {},
                 enabled: true,
                 insertion_order: index,
@@ -243,13 +243,13 @@ export class ByafParser {
             spec_version: '2.0',
             data: {
                 name: sanitize(character?.name || character?.displayName || ''),
-                description: this.replaceMacros(character?.persona),
+                description: ByafParser.replaceMacros(character?.persona),
                 personality: '',
-                scenario: this.replaceMacros(scenarios[0]?.narrative),
-                first_mes: this.replaceMacros(scenarios[0]?.firstMessages?.[0]?.text),
-                mes_example: this.formatExampleMessages(scenarios[0]?.exampleMessages),
+                scenario: ByafParser.replaceMacros(scenarios[0]?.narrative),
+                first_mes: ByafParser.replaceMacros(scenarios[0]?.firstMessages?.[0]?.text),
+                mes_example: ByafParser.formatExampleMessages(scenarios[0]?.exampleMessages),
                 creator_notes: '',
-                system_prompt: this.replaceMacros(scenarios[0]?.formattingInstructions),
+                system_prompt: ByafParser.replaceMacros(scenarios[0]?.formattingInstructions),
                 post_history_instructions: '',
                 alternate_greetings: this.formatAlternateGreetings(scenarios),
                 character_book: this.convertCharacterBook(character?.loreItems),
@@ -296,6 +296,11 @@ export class ByafParser {
             user_name: userName,
             character_name: characterName,
             create_date: chat_start_date,
+            chat_metadata: {
+                scenario: scenario?.narrative || '',
+                mes_example: ByafParser.formatExampleMessages(scenario?.exampleMessages),
+                system_prompt: ByafParser.replaceMacros(scenario?.formattingInstructions),
+            },
         }];
         // Add the first message IF it exists.
         if (scenario?.firstMessages?.length && scenario?.firstMessages?.length > 0 && scenario?.firstMessages?.[0]?.text) {

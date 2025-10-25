@@ -819,7 +819,6 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name), 'utf8');
     };
-    // TODO: chat_metadata
 
     if (Array.isArray(byafData.scenarios)) {
         for (const scenario of byafData.scenarios) {
