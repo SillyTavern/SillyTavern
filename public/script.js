@@ -2654,11 +2654,14 @@ export function getCharacterCardFields({ chid = null } = {}) {
     }
 
     const scenarioText = chat_metadata['scenario'] || character.scenario || '';
+    const exampleDialog = chat_metadata['mes_example'] || character.mes_example || '';
+    const systemPrompt = chat_metadata['system_prompt'] || character.data?.system_prompt || '';
+
     result.description = baseChatReplace(character.description?.trim(), name1, name2);
     result.personality = baseChatReplace(character.personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-    result.mesExamples = baseChatReplace(character.mes_example?.trim(), name1, name2);
-    result.system = power_user.prefer_character_prompt ? baseChatReplace(character.data?.system_prompt?.trim(), name1, name2) : '';
+    result.mesExamples = baseChatReplace(exampleDialog.trim(), name1, name2);
+    result.system = power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), name1, name2) : '';
     result.version = character.data?.character_version ?? '';
     result.charDepthPrompt = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2);
