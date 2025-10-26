@@ -372,8 +372,6 @@ export class ByafParser {
             return aTime >= bTime ? newest : curr;
         };
 
-        //const aiMessage = characterMessages[i].outputs.reduce((newest, curr) => Number(newest.activeTimestamp) >= Number(curr.activeTimestamp) ? newest : curr);
-        //const aiMessage = message.outputs?.reduce((newest, curr) => Number(newest.activeTimestamp) >= Number(curr.activeTimestamp) ? newest : curr);
         const getNewestAiMessage = (message) => {
             return message.outputs.reduce(sort_by_timestamp);
         };
