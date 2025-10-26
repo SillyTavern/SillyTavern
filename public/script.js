@@ -1547,7 +1547,6 @@ export async function deleteMessages(mesId, lastMesId) {
     updateViewMessageIds();
     saveChatDebounced();
 
-    refreshSwipeButtons();
 
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
@@ -1579,9 +1578,12 @@ export async function reloadCurrentChat() {
  * Send the message currently typed into the chat box.
  */
 export async function sendTextareaMessage() {
+    if (!isSwipingAllowed) return; // don't proceed if mid-swipe.
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
     if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
+
+    hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -6157,6 +6159,7 @@ function getGeneratingModel(mes) {
 export function activateSendButtons() {
     is_send_press = false;
     hideStopButton();
+    hideSwipeButtons();
     delete document.body.dataset.generating;
 }
 
@@ -6165,6 +6168,7 @@ export function activateSendButtons() {
  */
 export function deactivateSendButtons() {
     showStopButton();
+    showSwipeButtons();
     document.body.dataset.generating = 'true';
 }
 
@@ -8899,6 +8903,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
 
+    if (is_group_generating || is_send_press) {
+        toastr.warning(t`Cannot swipe while generating. Stop the request and try again.`, t`Swipe aborted`);
+        return;
+    }
+
     //Only allow one concurrent swipe.
     if (!isSwipingAllowed) {
         console.info('The swipe has been ignored because another is in progress.');
@@ -8943,12 +8952,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
         }
-        //Allow for another swipe.
-        showSwipeButtons();
-
-        if (power_user.enable_chat_tree) {
-            showSwipeButtons(mesId);
-        }
 
         //Clamp Id between swipes.
         let clampedId = clamp(chat[mesId]['swipe_id'], 0, Math.max(0, chat[mesId]['swipes'].length - 1));
@@ -8973,6 +8976,9 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
+
+        //Allow for another swipe.
+        showSwipeButtons();
     }
 
     /**
@@ -8990,7 +8996,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             let mes_edited = thisMesDiv.find('.mes_edit_done');
             await messageEditDone(mes_edited);
 
-            //Update the counter to show 3/3 while the message is bbeing generated.
+            //Update the counter to show 3/3 while the message is being generated.
             await updateSwipeCounter(mesId);
 
             const lastMesId = Number(chatElement.children().last().attr('mesid'));
@@ -9170,6 +9176,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         await animateSwipeTransition(mesId, swipeRange, swipeDuration);
 
         if (run_generate) {
+            await updateSwipeCounter(mesId);
             //shows "..." while generating
             thisMesDiv.find('.mes_text').html('...');
             // resets the timer
@@ -9234,8 +9241,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     if (isHordeGenerationNotAllowed()) {
         return unblockGeneration();
     }
-
-    hideSwipeButtons();
 
     //If the swipe is not being deleted.
     if (source != 'delete') {
