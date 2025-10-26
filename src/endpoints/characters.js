@@ -507,6 +507,9 @@ function readFromV2(char) {
         return char;
     }
 
+    // If 'json_data' was already saved, don't let it propagate
+    _.unset(char, 'json_data');
+
     const fieldMappings = {
         name: 'name',
         description: 'description',
@@ -562,6 +565,9 @@ function readFromV2(char) {
 function charaFormatData(data, directories) {
     // This is supposed to save all the foreign keys that ST doesn't care about
     const char = tryParse(data.json_data) || {};
+
+    // Prevent erroneous 'json_data' recursive saving
+    _.unset(char, 'json_data');
 
     // Checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly. (expected to be an array of strings)
     const getAlternateGreetings = data => {
@@ -1092,6 +1098,11 @@ router.post('/edit-attribute', validateAvatarUrlMiddleware, async function (requ
         return response.status(400).send('Error: invalid name.');
     }
 
+    if (request.body.field === 'json_data') {
+        console.warn('Error: cannot edit json_data field.');
+        return response.status(400).send('Error: cannot edit json_data field.');
+    }
+
     try {
         const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
         const charJSON = await readCharacterData(avatarPath);
@@ -1139,6 +1150,10 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
         }
 
         let character = JSON.parse(pngStringData);
+
+        _.unset(update, 'json_data');
+        _.unset(character, 'json_data');
+
         character = deepMerge(character, update);
 
         const validator = new TavernCardValidator(character);
