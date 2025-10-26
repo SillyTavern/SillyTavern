@@ -1739,11 +1739,7 @@ async function loadModels() {
 
     for (const model of models) {
         const option = document.createElement('option');
-        if (extension_settings.sd.source === sources.falai && model.value) {
-            option.innerText = model.text + ' (' + model.value + ')';
-        } else {
-            option.innerText = model.text;
-        }
+        option.innerText = model.text;
         option.value = model.value;
         option.selected = model.value === extension_settings.sd.model;
         $(option).data('model', model);
