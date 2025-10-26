@@ -63,6 +63,7 @@ import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
+import { t } from './i18n.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -519,6 +520,20 @@ function switchSwipeNumAllMessages() {
 function switchSwipesAllMessages() {
     $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
     $('body').toggleClass('swipeAllMessages', !!power_user.enable_chat_tree);
+    reloadCurrentChat(); //This should be awaited.
+}
+
+async function askSwitchSwipesAllMessages() {
+    //Only ask when it's being enabled.
+    if (!power_user.enable_chat_tree)
+    {   let warning = $(` <h1> ${t`Are you certain?`} </h1> <div> ${ t`Swiping on all messages is an expiremental feature,<br>It can be disabled at any time.<br>Your alternate swipes will be stored in the ./chatTrees folder.<br>Chat Tree exports must be created manually.`} \n <pre> <a href="https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3346598451">Click for a Demo Video</a> </pre></div>`);
+        const result = await callGenericPopup(warning, POPUP_TYPE.CONFIRM, null, {
+            okButton: t`Yes. I have taken a backup, and I agree to report bugs.`,
+            cancelButton: 'Cancel',
+        });
+        return result;
+    }
+    return true;
 }
 
 var originalSliderValues = [];
@@ -4084,10 +4099,18 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
-    $('#show_swipes_for_all_messages').on('input', function () {
-        power_user.enable_chat_tree = !!$(this).prop('checked');
-        switchSwipesAllMessages();
-        saveSettingsDebounced();
+    $('#show_swipes_for_all_messages').on('input', async function () {
+        //Ask user if they're sure.
+        if (await askSwitchSwipesAllMessages())
+        {
+            power_user.enable_chat_tree = !!$(this).prop('checked');
+            saveSettingsDebounced();
+            switchSwipesAllMessages();
+        }
+        else {
+            //Toggle checkbox off.
+            $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
+        }
     });
 
     $('#auto-connect-checkbox').on('input', function () {
