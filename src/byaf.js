@@ -160,7 +160,7 @@ export class ByafParser {
     }
 
     /**
-     * Extracts a scenario object from BYAF buffer.
+     * Extracts all scenario objects from BYAF buffer.
      * @param {ByafManifest} manifest BYAF manifest
      * @returns {Promise<Partial<ByafScenario>[]>} Scenarios array
      * @private
@@ -212,7 +212,7 @@ export class ByafParser {
             console.warn('Warning: BYAF character has no images');
             return [{ filename: '', image: defaultAvatarBuffer }];
         }
-        // TODO: Stop discarding all but the first image.
+
         const imageBuffers = [];
         for (const image of characterImages) {
             const imagePath = image?.path;
