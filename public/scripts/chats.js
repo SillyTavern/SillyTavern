@@ -1678,7 +1678,7 @@ export function preserveNeutralChat() {
     sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
 
     if (power_user.enable_chat_tree) {
-        sessionStorage.setItem(NEUTRAL_CHAT_TREE_KEY, JSON.stringify(chatTree));
+        sessionStorage.setItem(NEUTRAL_CHAT_TREE_KEY, JSON.stringify({ chatTree, chat_metadata }));
     }
 }
 
@@ -1700,7 +1700,7 @@ export function restoreNeutralChat() {
     if (power_user.enable_chat_tree) {
         const neutralChatTree = sessionStorage.getItem(NEUTRAL_CHAT_TREE_KEY);
         if (neutralChatTree) {
-            setChatTree(JSON.parse(neutralChatTree));
+            setChatTree(JSON.parse(neutralChatTree['chatTree']));
         }
         sessionStorage.removeItem(NEUTRAL_CHAT_TREE_KEY);
     }

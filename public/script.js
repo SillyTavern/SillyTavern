@@ -6423,9 +6423,11 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                 for (const message of currentChat) {
                     rename(message);
                 }
+                //The tree may not have metadata.
+                let tree = currentChatTree?.['tree'] ?? currentChatTree;
 
                 //Recursively update the chatTree
-                await updateChatTreeMessages(currentChatTree, rename, newName);
+                await updateChatTreeMessages(tree, rename, newName);
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
@@ -6517,15 +6519,27 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
         ? chat.slice(0, Number(mesId) + 1)
         : chat.slice();
 
+    const sharedMetadata = {
+        user_name: name1,
+        character_name: name2,
+        create_date: chat_create_date,
+        chat_metadata: metadata,
+    };
+
     const chatToSave = [
-        {
-            user_name: name1,
-            character_name: name2,
-            create_date: chat_create_date,
-            chat_metadata: metadata,
-        },
+        sharedMetadata,
         ...trimmedChat,
     ];
+
+
+    let chatTreeToSave;
+    if (power_user.enable_chat_tree) {
+        await saveChatToTree(chat, chatTree);
+        chatTreeToSave = {
+            metadata: sharedMetadata,
+            tree: chatTree,
+        };
+    }
 
     try {
         const result = await fetch('/api/chats/save', {
@@ -6536,7 +6550,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
                 ch_name: characters[this_chid].name,
                 file_name: fileName,
                 chat: chatToSave,
-                chatTree: chatTree,
+                chatTree: chatTreeToSave,
                 avatar_url: characters[this_chid].avatar,
                 force: force,
             }),
@@ -6764,8 +6778,10 @@ export async function getChat() {
         await getChatResult();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
-        //load the chatTree.
-        setChatTree(chatTreeData ?? {});
+        //The tree may not have metadata.
+        let tree = chatTreeData?.['tree'] ?? chatTreeData;
+        //Load the chatTree.
+        setChatTree(tree ?? {});
 
         // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {

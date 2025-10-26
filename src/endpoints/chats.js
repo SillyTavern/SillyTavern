@@ -464,7 +464,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
         let jsonChatTree;
         //Write the chatTree
-        if (!isNaN(chatTreeData?.['branch_id'])) {
+        if (!isNaN(chatTreeData?.['tree']?.['branch_id'])) {
             //Ensure the directory exists.
             if (!fs.existsSync(treeDirectoryPath)) {
                 fs.mkdirSync(treeDirectoryPath, { recursive: true });
