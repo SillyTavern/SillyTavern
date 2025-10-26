@@ -260,7 +260,7 @@ export class ByafParser {
                 post_history_instructions: '',
                 alternate_greetings: this.formatAlternateGreetings(scenarios),
                 character_book: this.convertCharacterBook(character?.loreItems),
-                tags: [],
+                tags: character?.isNSFW ? ['nsfw'] : [], // Since there are no tags in BYAF spec, we can use this to preserve the isNSFW flag.
                 creator: manifest?.author?.name || '',
                 character_version: '',
                 extensions: {},
