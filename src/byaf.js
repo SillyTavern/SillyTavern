@@ -61,7 +61,7 @@ export class ByafParser {
 
     /**
      * Formats alternate greetings for a character.
-     * @param {Partial<ByafScenario>[]} [scenarios] Array of greeting objects
+     * @param {Partial<ByafScenario>[]} [scenarios] Array of scenario objects
      * @returns {string[]} Formatted alternate greetings
      * @private
      */
@@ -198,13 +198,13 @@ export class ByafParser {
     }
 
     /**
-     * Extracts an image from BYAF buffer.
+     * Extracts all character icon images from BYAF buffer.
      * @param {ByafCharacter} character Character object
      * @param {string} characterPath Path to the character in the BYAF manifest
      * @return {Promise<{filename: string, image: Buffer}[]>} Image buffer
      * @private
      */
-    async getCharacterImage(character, characterPath) {
+    async getCharacterImages(character, characterPath) {
         const defaultAvatarBuffer = await fsPromises.readFile(DEFAULT_AVATAR_PATH);
         const characterImages = character?.images;
 
@@ -435,7 +435,7 @@ export class ByafParser {
         const manifest = await this.getManifest();
         const { character, characterPath } = await this.getCharacterFromManifest(manifest);
         const scenarios = await this.getScenariosFromManifest(manifest);
-        const images = await this.getCharacterImage(character, characterPath);
+        const images = await this.getCharacterImages(character, characterPath);
         const card = this.getCharacterCard(manifest, character, scenarios);
         const chatBackgrounds = await this.getChatBackgrounds(character, scenarios);
         return { card, images, scenarios, chatBackgrounds, character };
