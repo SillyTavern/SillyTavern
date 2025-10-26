@@ -201,7 +201,7 @@ export class ByafParser {
      * Extracts an image from BYAF buffer.
      * @param {ByafCharacter} character Character object
      * @param {string} characterPath Path to the character in the BYAF manifest
-     * @return {Promise<Buffer>} Image buffer
+     * @return {Promise<{filename: string, image: Buffer}[]>} Image buffer
      * @private
      */
     async getCharacterImage(character, characterPath) {
@@ -210,23 +210,31 @@ export class ByafParser {
 
         if (!Array.isArray(characterImages) || characterImages.length === 0) {
             console.warn('Warning: BYAF character has no images');
-            return defaultAvatarBuffer;
+            return [{ filename: '', image: defaultAvatarBuffer }];
         }
+        // TODO: Stop discarding all but the first image.
+        const imageBuffers = [];
+        for (const image of characterImages) {
+            const imagePath = image?.path;
+            if (!imagePath) {
+                console.warn('Warning: BYAF character image path is empty');
+                continue;
+            }
 
-        const imagePath = characterImages[0]?.path;
-        if (!imagePath) {
-            console.warn('Warning: BYAF character image path is empty');
-            return defaultAvatarBuffer;
+            const fullImagePath = urlJoin(path.dirname(characterPath), imagePath);
+            const imageBuffer = await extractFileFromZipBuffer(this.#data, fullImagePath);
+            if (!imageBuffer) {
+                console.warn('Warning: failed to extract BYAF character image');
+                continue;
+            }
+
+            imageBuffers.push({ filename: path.basename(imagePath), image: imageBuffer });
         }
-
-        const fullImagePath = urlJoin(path.dirname(characterPath), imagePath);
-        const imageBuffer = await extractFileFromZipBuffer(this.#data, fullImagePath);
-        if (!imageBuffer) {
-            console.warn('Warning: failed to extract BYAF character image');
-            return defaultAvatarBuffer;
+        if (imageBuffers.length === 0) {
+            console.warn('Warning: BYAF character has no valid images');
+            return [{ filename: '', image: defaultAvatarBuffer }];
         }
-
-        return imageBuffer;
+        return imageBuffers;
     }
 
     /**
@@ -248,7 +256,7 @@ export class ByafParser {
                 scenario: ByafParser.replaceMacros(scenarios[0]?.narrative),
                 first_mes: ByafParser.replaceMacros(scenarios[0]?.firstMessages?.[0]?.text),
                 mes_example: ByafParser.formatExampleMessages(scenarios[0]?.exampleMessages),
-                creator_notes: '',
+                creator_notes: manifest?.author?.backyardURL || '', // To preserve the link to the author from BYAF manifest, this is a good place.
                 system_prompt: ByafParser.replaceMacros(scenarios[0]?.formattingInstructions),
                 post_history_instructions: '',
                 alternate_greetings: this.formatAlternateGreetings(scenarios),
@@ -261,6 +269,37 @@ export class ByafParser {
             // @ts-ignore Non-standard spec extension
             create_date: humanizedISO8601DateTime(),
         };
+    }
+    /**
+     * Gets chat backgrounds from BYAF data mapped to their respective scenarios.
+     * @param {ByafCharacter} character Character object
+     * @param {Partial<ByafScenario>[]} scenarios Scenarios array
+     * @returns {Promise<Array<{name:string, data:Buffer, prev_paths:string[]}>>} Chat backgrounds
+     * @private
+     */
+    async getChatBackgrounds(character, scenarios) {
+        // Implementation for extracting chat backgrounds from BYAF data
+        const backgrounds = [];
+        let i = 1;
+        for (const scenario of scenarios) {
+            const bgImagePath = scenario?.backgroundImage;
+            if (bgImagePath) {
+                const data = await extractFileFromZipBuffer(this.#data, bgImagePath);
+                if (data) {
+                    const existingIndex = backgrounds.findIndex(bg => bg.data.compare(data) === 0);
+                    if (existingIndex !== -1) {
+                        backgrounds[existingIndex].prev_paths.push(bgImagePath);
+                        continue; // Skip adding a new background since it already exists
+                    }
+                    backgrounds.push({
+                        name: `${character?.name} bg ${i++}` || '',
+                        data: data,
+                        prev_paths: [bgImagePath],
+                    });
+                }
+            }
+        }
+        return backgrounds;
     }
 
     /**
@@ -287,9 +326,10 @@ export class ByafParser {
      * @param {Partial<ByafScenario>} scenario Scenario object
      * @param {string} userName User name
      * @param {string} characterName Character name
+     * @param {Array<{name:string, data:Buffer, prev_paths:string[]}>} chatBackgrounds Chat backgrounds
      * @returns {string} Chat data
      */
-    static getChatFromScenario(scenario, userName, characterName) {
+    static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
         const chat_start_date = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
         /** @type {object[]} */
         const chat = [{
@@ -300,6 +340,20 @@ export class ByafParser {
                 scenario: scenario?.narrative || '',
                 mes_example: ByafParser.formatExampleMessages(scenario?.exampleMessages),
                 system_prompt: ByafParser.replaceMacros(scenario?.formattingInstructions),
+                mes_examples_optional: scenario?.canDeleteExampleMessages || false,
+                model_settings: {
+                    model: scenario?.model || '',
+                    temperature: scenario?.temperature || 1.2,
+                    top_k: scenario?.topK || 40,
+                    top_p: scenario?.topP || 0.9,
+                    min_p: scenario?.minP || 0.1,
+                    min_p_enabled: scenario?.minPEnabled || true,
+                    repeat_penalty: scenario?.repeatPenalty || 1.05,
+                    repeat_penalty_tokens: scenario?.repeatLastN || 256,
+                    by_prompt_template: scenario?.promptTemplate || 'general',
+                    grammar: scenario?.grammar || null,
+                },
+                background_img: chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '',
             },
         }];
         // Add the first message IF it exists.
@@ -349,7 +403,7 @@ export class ByafParser {
                     swipe_id: aiSwipes.findIndex(s => s === aiMessage.text),
                 });
             }
-        } else if(scenario?.messages) {
+        } else if (scenario?.messages) {
             for (const message of scenario.messages) {
                 const isUser = message.type === 'human';
                 const aiMessage = !isUser ? getNewestAiMessage(message) : null;
@@ -359,7 +413,7 @@ export class ByafParser {
                     send_date: Number(isUser ? message.createdAt : aiMessage.createdAt),
                     mes: isUser ? message.text : aiMessage.text,
                 };
-                if(!isUser) {
+                if (!isUser) {
                     const aiSwipes = getSwipesForAiMessage(message);
                     chatMessage.swipes = aiSwipes;
                     chatMessage.swipe_id = aiSwipes.findIndex(s => s === aiMessage.text);
@@ -375,16 +429,16 @@ export class ByafParser {
 
     /**
      * Parses the BYAF data.
-     * @return {Promise<{card: TavernCardV2, image: Buffer, scenarios: Partial<ByafScenario>[]}>} Parsed character card and image buffer
+     * @return {Promise<{card: TavernCardV2, images: {filename: string, image: Buffer}[], scenarios: Partial<ByafScenario>[], chatBackgrounds: Array<{name:string, data:Buffer, prev_paths:string[]}>, character: ByafCharacter}>} Parsed character card and image buffer
      */
     async parse() {
         const manifest = await this.getManifest();
         const { character, characterPath } = await this.getCharacterFromManifest(manifest);
         const scenarios = await this.getScenariosFromManifest(manifest);
-        const image = await this.getCharacterImage(character, characterPath);
+        const images = await this.getCharacterImage(character, characterPath);
         const card = this.getCharacterCard(manifest, character, scenarios);
-
-        return { card, image, scenarios };
+        const chatBackgrounds = await this.getChatBackgrounds(character, scenarios);
+        return { card, images, scenarios, chatBackgrounds, character };
     }
 }
 

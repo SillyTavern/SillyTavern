@@ -806,8 +806,8 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
 
     const byafData = await new ByafParser(data).parse();
     const card = readFromV2(byafData.card);
-    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
-    const result = await writeCharacterData(byafData.image, JSON.stringify(card), fileName, request);
+    const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName) || card.name, request.user.directories);
+    const result = await writeCharacterData(byafData.images[0].image, JSON.stringify(card), fileName, request);
 
     /**
      * @param {Partial<ByafScenario>} scenario
@@ -817,12 +817,52 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         const filePath = path.join(request.user.directories.chats, fileName.replace('.png', ''), chatName);
         const dir = path.dirname(filePath);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name), 'utf8');
+        writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name, byafData.chatBackgrounds), 'utf8');
     };
 
+    let bgIter = 1;
+    // Upload backgrounds
+    for (const bg of byafData.chatBackgrounds) {
+        console.log(`importing background ${bg.name} from BYAF import`);
+        const extension = bg.prev_paths?.[0]?.split('.').pop() || 'png';
+        const baseName = `${fileName.replace('.png', '')}_bg_`;
+        let file = baseName + bgIter;
+        while (fs.existsSync(path.join(request.user.directories.backgrounds, `${file}.${extension}`))) {
+            file = baseName + bgIter;
+            bgIter++;
+        }
+        if (Buffer.isBuffer(bg.data)) {
+            writeFileAtomicSync(path.join(request.user.directories.backgrounds, `${file}.${extension}`), bg.data);
+            bg.name = `${file}.${extension}`; // Update background name to the new file
+            console.log(`created ${file}.${extension} background from BYAF import`);
+        }
+    }
+
+    // Create chats for each scenario
     if (Array.isArray(byafData.scenarios)) {
         for (const scenario of byafData.scenarios) {
             createChatAsCurrentPersona(scenario);
+        }
+    }
+
+    let iconIter = 1;
+    // Save alternate icons for the character.
+    for (const icon of byafData.images.slice(1)) {
+        // BYAF does not support character expressions, so using the same structure will not result in conflicts,
+        // even if the expression system did not tolerate additional icons that are not mapped to expressions.
+        // This will not yet allow changing icons within the UI but at least the icons will be available for manual selection, rather than being lost.
+        const altImagesFolder = path.join(request.user.directories.characters, fileName.replace('.png', ''));
+        if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
+        const extension = icon.filename.split('.').pop() || 'png';
+        const baseName = 'alt_';
+        let file = baseName + iconIter;
+        while (fs.existsSync(path.join(altImagesFolder, `${file}.${extension}`))) {
+            file = baseName + iconIter;
+            iconIter++;
+        }
+        if (Buffer.isBuffer(icon.image)) {
+            writeFileAtomicSync(path.join(altImagesFolder, `${file}.${extension}`), icon.image);
+            console.log(`created ${file}.${extension} alternate icon from BYAF import`);
         }
     }
 
