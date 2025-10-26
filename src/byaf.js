@@ -1,4 +1,3 @@
-import sanitize from 'sanitize-filename';
 import { promises as fsPromises } from 'node:fs';
 import path from 'node:path';
 import urlJoin from 'url-join';
@@ -250,7 +249,7 @@ export class ByafParser {
             spec: 'chara_card_v2',
             spec_version: '2.0',
             data: {
-                name: sanitize(character?.name || character?.displayName || ''),
+                name: character?.name || character?.displayName || '',
                 description: ByafParser.replaceMacros(character?.persona),
                 personality: '',
                 scenario: ByafParser.replaceMacros(scenarios[0]?.narrative),
