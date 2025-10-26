@@ -200,7 +200,7 @@ export class ByafParser {
      * Extracts all character icon images from BYAF buffer.
      * @param {ByafCharacter} character Character object
      * @param {string} characterPath Path to the character in the BYAF manifest
-     * @return {Promise<{filename: string, image: Buffer}[]>} Image buffer
+     * @return {Promise<{filename: string, image: Buffer, label: string}[]>} Image buffer
      * @private
      */
     async getCharacterImages(character, characterPath) {
@@ -209,7 +209,7 @@ export class ByafParser {
 
         if (!Array.isArray(characterImages) || characterImages.length === 0) {
             console.warn('Warning: BYAF character has no images');
-            return [{ filename: '', image: defaultAvatarBuffer }];
+            return [{ filename: '', image: defaultAvatarBuffer, label: '' }];
         }
 
         const imageBuffers = [];
@@ -227,11 +227,11 @@ export class ByafParser {
                 continue;
             }
 
-            imageBuffers.push({ filename: path.basename(imagePath), image: imageBuffer });
+            imageBuffers.push({ filename: path.basename(imagePath), image: imageBuffer, label: image?.label || '' });
         }
         if (imageBuffers.length === 0) {
             console.warn('Warning: BYAF character has no valid images');
-            return [{ filename: '', image: defaultAvatarBuffer }];
+            return [{ filename: '', image: defaultAvatarBuffer, label: '' }];
         }
         return imageBuffers;
     }
@@ -426,7 +426,7 @@ export class ByafParser {
 
     /**
      * Parses the BYAF data.
-     * @return {Promise<{card: TavernCardV2, images: {filename: string, image: Buffer}[], scenarios: Partial<ByafScenario>[], chatBackgrounds: Array<{name:string, data:Buffer, prev_paths:string[]}>, character: ByafCharacter}>} Parsed character card and image buffer
+     * @return {Promise<{card: TavernCardV2, images: {filename: string, image: Buffer, label: string}[], scenarios: Partial<ByafScenario>[], chatBackgrounds: Array<{name:string, data:Buffer, prev_paths:string[]}>, character: ByafCharacter}>} Parsed character card and image buffer
      */
     async parse() {
         const manifest = await this.getManifest();

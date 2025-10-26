@@ -870,7 +870,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         const altImagesFolder = path.join(request.user.directories.characters, fileName.replace('.png', ''));
         if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
         const extension = icon.filename.split('.').pop() || 'png';
-        const baseName = 'alt_';
+        const baseName = `${sanitize(icon.label) || 'alt_'}`;
         let file = baseName + iconIter;
         while (fs.existsSync(path.join(altImagesFolder, `${file}.${extension}`))) {
             file = baseName + iconIter;
