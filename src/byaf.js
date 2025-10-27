@@ -78,7 +78,7 @@ export class ByafParser {
             // As per the BYAF spec, "firstMessages" array MUST contain AT MOST one message.
             // So we only consider the first one if it exists.
             const firstMessage = scenario?.firstMessages?.[0];
-            if (firstMessage?.text) {
+            if (firstMessage?.text && firstMessage.text !== scenarios?.[0].firstMessages?.[0].text && !greetings.includes(ByafParser.replaceMacros(firstMessage.text))) {
                 greetings.push(ByafParser.replaceMacros(firstMessage.text));
             }
         }
