@@ -365,14 +365,14 @@ export class ByafParser {
             });
         }
 
-        const sort_by_timestamp = (newest, curr) => {
+        const sortByTimestamp = (newest, curr) => {
             const aTime = new Date(newest.activeTimestamp);
             const bTime = new Date(curr.activeTimestamp);
             return aTime >= bTime ? newest : curr;
         };
 
         const getNewestAiMessage = (message) => {
-            return message.outputs.reduce(sort_by_timestamp);
+            return message.outputs.reduce(sortByTimestamp);
         };
         const getSwipesForAiMessage = (aiMessage) => {
             return aiMessage.outputs.map(output => output.text);
