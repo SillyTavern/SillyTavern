@@ -7500,7 +7500,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#char_connections_button').show();
 
     // Hide the chat scenario button if we're peeking the group member defs
-    $('#set_chat_scenario').toggle(!selected_group);
+    $('#set_chat_character_settings').toggle(!selected_group);
 
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
@@ -7577,7 +7577,7 @@ function select_rm_create({ switchMenu = true } = {}) {
 
     switchMenu && selectRightMenuWithAnimation('rm_ch_create_block');
 
-    $('#set_chat_scenario').hide();
+    $('#set_chat_character_settings').hide();
     $('#delete_button_div').css('display', 'none');
     $('#delete_button').css('display', 'none');
     $('#export_button').css('display', 'none');
@@ -7712,33 +7712,57 @@ function updateFavButtonState(state) {
     $('#favorite_button').toggleClass('fav_off', !state);
 }
 
-export async function setScenarioOverride() {
+export async function setCharacterSettingsOverrides() {
     if (!selected_group && (this_chid === undefined || !characters[this_chid])) {
         console.warn('setScenarioOverride() -- no selected group or character');
         return;
     }
 
-    const metadataValue = chat_metadata['scenario'] || '';
+    const scenarioOverrideValue = chat_metadata['scenario'] || '';
+    const exampleMessagesValue = chat_metadata['mes_example'] || '';
+    const systemPromptValue = chat_metadata['system_prompt'] || '';
     const isGroup = !!selected_group;
 
     const $template = $(await renderTemplateAsync('scenarioOverride'));
     $template.find('[data-group="true"]').toggle(isGroup);
     $template.find('[data-character="true"]').toggle(!isGroup);
-    // TODO: Why does this save on every character input? Save on popup close
-    $template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
-    $template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+    const pendingChanges = {
+        scenario: scenarioOverrideValue,
+        examples: exampleMessagesValue,
+        system_prompt: systemPromptValue,
+    };
 
-    await callGenericPopup($template, POPUP_TYPE.TEXT, '');
-}
+    // Keep edits local until the popup is closed/confirmed
+    const $scenario = $template.find('.chat_scenario');
+    $scenario.val(scenarioOverrideValue).on('input', function () {
+        pendingChanges.scenario = String($(this).val());
+    });
+    const $examples = $template.find('.chat_examples');
+    $examples.val(exampleMessagesValue).on('input', function () {
+        pendingChanges.examples = String($(this).val());
+    });
+    const $systemPrompt = $template.find('.chat_system_prompt');
+    $systemPrompt.val(systemPromptValue).on('input', function () {
+        pendingChanges.system_prompt = String($(this).val());
+    });
 
-function onScenarioOverrideInput() {
-    const value = String($(this).val());
-    chat_metadata['scenario'] = value;
-    saveMetadataDebounced();
-}
+    $template.find('.remove_scenario_override').on('click', function () {
+        $scenario.val('');
+        pendingChanges.scenario = '';
+        $examples.val('');
+        pendingChanges.examples = '';
+        $systemPrompt.val('');
+        pendingChanges.system_prompt = '';
+    });
 
-function onScenarioOverrideRemoveClick() {
-    $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
+    // Wait for popup close/confirm. callGenericPopup resolves falsy on cancel.
+    const confirmed = await callGenericPopup($template, POPUP_TYPE.TEXT, '');
+    if (confirmed) {
+        chat_metadata['scenario'] = pendingChanges.scenario;
+        chat_metadata['mes_example'] = pendingChanges.examples;
+        chat_metadata['system_prompt'] = pendingChanges.system_prompt;
+        saveMetadataDebounced();
+    }
 }
 
 /**
@@ -9854,7 +9878,7 @@ jQuery(async function () {
         if (!isMouseOverButtonOrMenu()) { hideMenu(); }
     });
 
-    /* $('#set_chat_scenario').on('click', setScenarioOverride); */
+    /* $('#set_chat_character_settings').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
     $('#options [id]').on('click', async function (event, customData) {
@@ -10799,8 +10823,8 @@ jQuery(async function () {
             case 'set_character_world':
                 await openCharacterWorldPopup();
                 break;
-            case 'set_chat_scenario':
-                await setScenarioOverride();
+            case 'set_chat_character_settings':
+                await setCharacterSettingsOverrides();
                 break;
             case 'renameCharButton':
                 await renameCharacter();

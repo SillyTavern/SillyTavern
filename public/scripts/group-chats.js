@@ -65,7 +65,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    setScenarioOverride,
+    setCharacterSettingsOverrides,
     system_avatar,
     isChatSaving,
     setExternalAbortController,
@@ -2176,7 +2176,7 @@ jQuery(() => {
     });
     $('#rm_group_filter').on('input', filterGroupMembers);
     $('#rm_group_submit').on('click', createGroup);
-    $('#rm_group_scenario').on('click', setScenarioOverride);
+    $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
         const value = $(this).prop('checked');
         is_group_automode_enabled = value;
