@@ -1610,7 +1610,8 @@ export async function sendTextareaMessage() {
         await newAssistantChat({ temporary: false });
     }
 
-    Generate(generateType);
+    await Generate(generateType);
+    showSwipeButtons();
 }
 
 /**
