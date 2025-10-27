@@ -7389,6 +7389,49 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     showSwipeButtons();
 }
 
+/**
+ * Swaps chat[sourceId] with chat[targetId]. They must be adjacent.
+ * @param {number} sourceId
+ * @param {number} targetId
+ * @returns {Promise<boolean>}
+ */
+async function messageEditMove(sourceId, targetId) {
+    if (is_send_press) {
+        console.warn(`The message #${sourceId} was not moved to #${targetId} because a generation is in progress.`);
+        return false;
+    }
+    else if (Math.abs(sourceId - targetId) != 1) {
+        console.error(`Message #${sourceId} and #${targetId} are not adjacent.`);
+        return false;
+    }
+
+    const target = chatElement.find(`.mes[mesid="${targetId}"]`);
+    const root = $(this).closest('.mes');
+
+    if (root.length === 0 || target.length === 0) {
+        console.error(`Message #${sourceId} or #${targetId} were not found.`);
+        return false;
+    }
+
+    if (sourceId <= targetId) {
+        root.insertAfter(target);
+    }
+    else {
+        root.insertBefore(target);
+    }
+
+    target.attr('mesid', sourceId);
+    root.attr('mesid', targetId);
+
+    const temp = chat[targetId];
+    chat[targetId] = chat[sourceId];
+    chat[sourceId] = temp;
+
+    updateViewMessageIds();
+    await saveChatConditional();
+    return true;
+}
+
 async function messageEditDone(div) {
     let { mesBlock, text, mes, bias } = updateMessage(div);
     if (this_edit_mes_id == 0) {
@@ -10618,57 +10661,24 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_edit_up', async function () {
-        if (is_send_press || this_edit_mes_id <= 0) {
+        if (this_edit_mes_id <= 0) {
             return;
         }
-
         const targetId = Number(this_edit_mes_id) - 1;
-        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
-        const root = $(this).closest('.mes');
-
-        if (root.length === 0 || target.length === 0) {
-            return;
+        if (await messageEditMove.call(this, this_edit_mes_id, targetId)) {
+            this_edit_mes_id = targetId;
         }
-
-        root.insertBefore(target);
-
-        target.attr('mesid', this_edit_mes_id);
-        root.attr('mesid', targetId);
-
-        const temp = chat[targetId];
-        chat[targetId] = chat[this_edit_mes_id];
-        chat[this_edit_mes_id] = temp;
-
-        this_edit_mes_id = targetId;
-        updateViewMessageIds();
-        await saveChatConditional();
     });
 
     $(document).on('click', '.mes_edit_down', async function () {
-        if (is_send_press || this_edit_mes_id >= chat.length - 1) {
+        if (this_edit_mes_id >= chat.length - 1) {
             return;
         }
 
         const targetId = Number(this_edit_mes_id) + 1;
-        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
-        const root = $(this).closest('.mes');
-
-        if (root.length === 0 || target.length === 0) {
-            return;
+        if (await messageEditMove.call(this, this_edit_mes_id, targetId)) {
+            this_edit_mes_id = targetId;
         }
-
-        root.insertAfter(target);
-
-        target.attr('mesid', this_edit_mes_id);
-        root.attr('mesid', targetId);
-
-        const temp = chat[targetId];
-        chat[targetId] = chat[this_edit_mes_id];
-        chat[this_edit_mes_id] = temp;
-
-        this_edit_mes_id = targetId;
-        updateViewMessageIds();
-        await saveChatConditional();
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
