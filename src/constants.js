@@ -29,7 +29,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     groupChats: 'group chats',
     groupChatTrees: 'chatTrees/groupChats',
     backups: 'backups',
-    chatTreeBackups: 'chatTrees/backups',
+    chatTreeBackups: 'backups/chatTrees',
     characters: 'characters',
     backgrounds: 'backgrounds',
     novelAI_Settings: 'NovelAI Settings',
