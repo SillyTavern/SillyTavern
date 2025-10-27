@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -8337,7 +8337,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     swipeId = Number(swipeId);
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
     let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
-    await swipe(null, direction,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+    await swipe(null, direction,  { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
     await saveChatConditional();
 
@@ -8913,7 +8913,7 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
@@ -8931,7 +8931,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed && source != 'delete') {
+    if (!isSwipingAllowed && source != SWIPE_SOURCE.DELETE) {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
@@ -8992,7 +8992,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
 
         // If swipe_id has not changed, give the user feedback.
-        if (chat[mesId]['swipe_id'] == originalSwipeId && source != 'delete') {
+        if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
             //Shake
             thisMesDiv.effect('shake', { direction: direction, distance: 20, times: 1 });
             //Flash red.
@@ -9049,7 +9049,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     async function standardSwipe() {
         //If swipe_id has changed, or the source is being deleted.
-        if (newSwipeId !== originalSwipeId || source == 'delete') {
+        if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE) {
             //Update the chat.
             await syncWithSwipeId(mesId);
             await loadFromSwipeId(mesId, newSwipeId);
@@ -9066,7 +9066,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     async function syncWithSwipeId(mesId){
         //Do not save deleted messages.
-        if (power_user.enable_chat_tree && source != 'delete') {
+        if (power_user.enable_chat_tree && source != SWIPE_SOURCE.DELETE) {
             //Everything after end will be pruned from the tree.
             let end = chat.length - 1;
             //Save the chat to the chatTree.
@@ -9275,7 +9275,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //If the swipe is not being deleted.
-    if (source != 'delete') {
+    if (source != SWIPE_SOURCE.DELETE) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
         syncMesToSwipe(mesId);
@@ -9294,11 +9294,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
         // If the user is holding down the key and we're at the last or first swipe, don't do anything.
         let isLastSwipe = (direction === SWIPE_DIRECTION.RIGHT) ? (chat[mesId].swipe_id === Math.max(0, chat[mesId]['swipes'].length - 1)) : chat[mesId].swipe_id === 0;
-        if (source === 'keyboard' && repeated && isLastSwipe) {
+        if (source === SWIPE_SOURCE.KEYBOARD && repeated && isLastSwipe) {
             await endSwipe();
             return;
         }
-    } else if (source == 'delete') {
+    } else if (source == SWIPE_SOURCE.DELETE) {
         //If the swipe is being deleted.
         await standardSwipe();
         return;
@@ -9383,7 +9383,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event.
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -9396,7 +9396,7 @@ export async function swipe_left(_event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event.
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */

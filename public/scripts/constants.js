@@ -74,3 +74,11 @@ export const SWIPE_DIRECTION = {
     LEFT: 'left',
     RIGHT: 'right',
 };
+
+/**
+ * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard'}}
+ */
+export const SWIPE_SOURCE = {
+    DELETE: 'delete',
+    KEYBOARD: 'keyboard',
+};
