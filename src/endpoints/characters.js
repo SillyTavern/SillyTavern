@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath } from '../util.js';
+import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -841,21 +841,14 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name, byafData.chatBackgrounds), 'utf8');
     };
 
-
-
-    let bgIter = 1;
     // Upload backgrounds
     for (const bg of byafData.chatBackgrounds) {
         console.log(`importing background ${bg.name} from BYAF import`);
         const extension = path.extname(bg.prev_paths?.[0]) || '.png';
-        const baseName = `${path.basename(fileName)}_bg_`;
+        const baseName = `${path.basename(fileName)}_bg`;
         const filePath = path.join(request.user.directories.userImages, fileName);
         if (!fs.existsSync(filePath)) fs.mkdirSync(filePath, { recursive: true });
-        let file = baseName + bgIter;
-        while (fs.existsSync(path.join(filePath, `${file}.${extension}`))) {
-            file = baseName + bgIter;
-            bgIter++;
-        }
+        const file = getUniqueName(baseName, (name) => fs.existsSync(path.join(filePath, `${name}${extension}`)));
         if (Buffer.isBuffer(bg.data)) {
             const newFile = `${file}${extension}`;
             writeFileAtomicSync(path.join(filePath, newFile), bg.data);
@@ -880,13 +873,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         const altImagesFolder = path.join(request.user.directories.characters, path.basename(fileName));
         if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
         const extension = path.extname(icon.filename) || 'png';
-        const baseName = `${sanitize(icon.label) || 'alt'}`;
-        let iconIter = 1;
-        let file = baseName;
-        while (fs.existsSync(path.join(altImagesFolder, `${file}.${extension}`))) {
-            file = `${baseName}_${iconIter}`;
-            iconIter++;
-        }
+        const file = getUniqueName(`${sanitize(icon.label) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}.${extension}`)));
         if (Buffer.isBuffer(icon.image)) {
             writeFileAtomicSync(path.join(altImagesFolder, `${file}.${extension}`), icon.image);
             console.log(`created ${file}.${extension} alternate icon from BYAF import`);
