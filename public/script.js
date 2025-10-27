@@ -7083,7 +7083,7 @@ export async function getSettings() {
         await loadPowerUserSettings(settings, data);
 
         // Apply theme toggles from power user settings
-        applyPowerUserSettings();
+        await applyPowerUserSettings();
 
         // Load character tags
         loadTagsSettings(settings);

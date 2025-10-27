@@ -517,10 +517,10 @@ function switchSwipeNumAllMessages() {
     $('body').toggleClass('swipeNumAllMessages', !!power_user.show_swipe_num_all_messages);
 }
 
-function switchSwipesAllMessages() {
+async function switchSwipesAllMessages() {
     $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
     $('body').toggleClass('swipeAllMessages', !!power_user.enable_chat_tree);
-    reloadCurrentChat(); //This should be awaited.
+    await reloadCurrentChat();
 }
 
 async function askSwitchSwipesAllMessages() {
@@ -1384,9 +1384,10 @@ function applyTheme(name) {
         },
         {
             key: '#show_swipes_for_all_messages',
-            action: () => {
+            //This will not be awaited.
+            action: async () => {
                 $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
-                switchSwipesAllMessages();
+                await switchSwipesAllMessages();
             },
         },
         {
@@ -1443,7 +1444,7 @@ async function showDebugMenu() {
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
 }
 
-export function applyPowerUserSettings() {
+export async function applyPowerUserSettings() {
     switchUiMode();
     applyFontScale('forced');
     applyThemeColor();
@@ -1463,7 +1464,7 @@ export function applyPowerUserSettings() {
     switchTokenCount();
     switchMessageActions();
     switchSwipeNumAllMessages();
-    switchSwipesAllMessages();
+    await switchSwipesAllMessages();
 }
 
 export function applyStylePins() {
@@ -4105,7 +4106,7 @@ jQuery(() => {
         {
             power_user.enable_chat_tree = !!$(this).prop('checked');
             saveSettingsDebounced();
-            switchSwipesAllMessages();
+            await switchSwipesAllMessages();
         }
         else {
             //Toggle checkbox off.
