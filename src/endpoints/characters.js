@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString } from '../util.js';
+import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -842,17 +842,20 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     // Upload backgrounds
     for (const bg of byafData.chatBackgrounds) {
         console.log(`importing background ${bg.name} from BYAF import`);
-        const extension = path.extname(bg.prev_paths?.[0]) || 'png';
+        const extension = path.extname(bg.prev_paths?.[0]) || '.png';
         const baseName = `${path.basename(fileName)}_bg_`;
+        const filePath = path.join(request.user.directories.userImages, fileName);
+        if (!fs.existsSync(filePath)) fs.mkdirSync(filePath, { recursive: true });
         let file = baseName + bgIter;
-        while (fs.existsSync(path.join(request.user.directories.backgrounds, `${file}.${extension}`))) {
+        while (fs.existsSync(path.join(filePath, `${file}.${extension}`))) {
             file = baseName + bgIter;
             bgIter++;
         }
         if (Buffer.isBuffer(bg.data)) {
-            writeFileAtomicSync(path.join(request.user.directories.backgrounds, `${file}.${extension}`), bg.data);
-            bg.name = `${file}.${extension}`; // Update background name to the new file
-            console.log(`created ${file}.${extension} background from BYAF import`);
+            const newFile = `${file}${extension}`;
+            writeFileAtomicSync(path.join(filePath, newFile), bg.data);
+            bg.name = clientRelativePath(request.user.directories.root, path.join(filePath, newFile)); // Update background name to the new file
+            console.log(`created ${newFile} background from BYAF import`);
         }
     }
 

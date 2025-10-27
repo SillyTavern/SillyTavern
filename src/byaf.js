@@ -330,6 +330,7 @@ export class ByafParser {
      */
     static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
         const chat_start_date = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
+        const chat_background = chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '';
         /** @type {object[]} */
         const chat = [{
             user_name: userName,
@@ -352,7 +353,8 @@ export class ByafParser {
                     by_prompt_template: scenario?.promptTemplate || 'general',
                     grammar: scenario?.grammar || null,
                 },
-                background_img: chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '',
+                chat_backgrounds: [chat_background],
+                custom_background: `url("${encodeURI(chat_background)}")`,
             },
         }];
         // Add the first message IF it exists.
