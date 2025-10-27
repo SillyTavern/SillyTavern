@@ -501,11 +501,11 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 
         const fileName = `${String(request.body.file_name)}.jsonl`;
         const filePath = path.join(directoryPath, sanitize(fileName));
+        const chatFileExists = fs.existsSync(filePath);
 
         const treeFileName = `${String(request.body.file_name)}.json`;
         const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
-
-        const chatFileExists = fs.existsSync(filePath);
+        const treeFileExists = fs.existsSync(treeFilePath);
 
         if (!chatFileExists) {
             return response.send({});
@@ -519,15 +519,15 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 
         //Attempt to load the chatTree
         let jsonTreeData;
-        try {
-            const treeData = fs.readFileSync(treeFilePath, 'utf8');
-            jsonTreeData = JSON.parse(treeData);
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
-            } else {
+        if (treeFileExists) {
+            try {
+                const treeData = fs.readFileSync(treeFilePath, 'utf8');
+                jsonTreeData = JSON.parse(treeData);
+            } catch (error) {
                 console.error(`Error reading file: ${error.message}`);
             }
+        } else {
+            console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
         }
 
         return response.send({ chatData:jsonData, chatTreeData:jsonTreeData });
@@ -804,7 +804,7 @@ router.post('/group/get', (request, response) => {
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
     const treeFilePath = path.join(request.user.directories.groupChatTrees, `${id}.json`);
-
+    const treeFileExists = fs.existsSync(treeFilePath);
 
     if (fs.existsSync(pathToFile)) {
         const data = fs.readFileSync(pathToFile, 'utf8');
@@ -815,17 +815,16 @@ router.post('/group/get', (request, response) => {
 
         //Attempt to load the chatTree
         let jsonTreeData;
-        try {
-            const treeData = fs.readFileSync(treeFilePath, 'utf8');
-            jsonTreeData = JSON.parse(treeData);
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
-            } else {
+        if (treeFileExists) {
+            try {
+                const treeData = fs.readFileSync(treeFilePath, 'utf8');
+                jsonTreeData = JSON.parse(treeData);
+            } catch (error) {
                 console.error(`Error reading file: ${error.message}`);
             }
+        } else {
+            console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
         }
-
         return response.send({ chatData:jsonData, chatTreeData:jsonTreeData });
 
     } else {
