@@ -73,16 +73,16 @@ export class ByafParser {
         if (scenarios.length <= 1) {
             return [];
         }
-        const greetings = [];
+        const greetings = new Set();
         for (const scenario of scenarios.slice(1).filter(s => Array.isArray(s.firstMessages) && s.firstMessages.length > 0)) {
             // As per the BYAF spec, "firstMessages" array MUST contain AT MOST one message.
             // So we only consider the first one if it exists.
             const firstMessage = scenario?.firstMessages?.[0];
-            if (firstMessage?.text && firstMessage.text !== scenarios?.[0].firstMessages?.[0].text && !greetings.includes(ByafParser.replaceMacros(firstMessage.text))) {
-                greetings.push(ByafParser.replaceMacros(firstMessage.text));
+            if (firstMessage?.text && firstMessage.text !== scenarios?.[0].firstMessages?.[0].text) {
+                greetings.add(ByafParser.replaceMacros(firstMessage.text));
             }
         }
-        return greetings;
+        return Array.from(greetings);
     }
 
     /**
