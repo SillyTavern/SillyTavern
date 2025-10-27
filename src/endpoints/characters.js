@@ -872,11 +872,11 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         // This will not yet allow changing icons within the UI but at least the icons will be available for manual selection, rather than being lost.
         const altImagesFolder = path.join(request.user.directories.characters, path.basename(fileName));
         if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
-        const extension = path.extname(icon.filename) || 'png';
-        const file = getUniqueName(`${sanitize(icon.label) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}.${extension}`)));
+        const extension = path.extname(icon.filename) || '.png';
+        const file = getUniqueName(`${sanitize(icon.label) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));
         if (Buffer.isBuffer(icon.image)) {
-            writeFileAtomicSync(path.join(altImagesFolder, `${file}.${extension}`), icon.image);
-            console.log(`created ${file}.${extension} alternate icon from BYAF import`);
+            writeFileAtomicSync(path.join(altImagesFolder, `${file}${extension}`), icon.image);
+            console.log(`created ${file}${extension} alternate icon from BYAF import`);
         }
     }
 
