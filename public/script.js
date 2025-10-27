@@ -8338,7 +8338,7 @@ async function importCharacterChat(formData, { refresh = true } = {}) {
     return [];
 }
 
-function updateViewMessageIds(startIndex = null) {
+export function updateViewMessageIds(startIndex = null) {
     const minId = startIndex ?? getFirstDisplayedMessageId();
 
     chatElement.find('.mes').each(function (index, element) {
@@ -8358,23 +8358,33 @@ export function getFirstDisplayedMessageId() {
     return minId;
 }
 
-function updateEditArrowClasses() {
-    chatElement.find('.mes .mes_edit_up').removeClass('disabled');
-    chatElement.find('.mes .mes_edit_down').removeClass('disabled');
+export function updateEditArrowClasses() {
 
     if (this_edit_mes_id >= 0) {
-        const down = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
-        const up = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
+        const message = chatElement.children().filter('.mes:has(.mes_edit_buttons:visible)');
+
+        const downButton = message.find('.mes_edit_down');
+        const upButton = message.find('.mes_edit_up');
+        const copyButton = message.find('.mes_edit_copy');
+        const deleteButton = message.find('.mes_edit_delete');
         const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
         const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
 
+        copyButton.removeClass('disabled');
+        deleteButton.removeClass('disabled');
+        //The last message cannot be moved down.
         if (lastId == Number(this_edit_mes_id)) {
-            down.addClass('disabled');
+            downButton.addClass('disabled');
+        } else {
+            downButton.removeClass('disabled');
+        }
+        //The first message cannot be moved up.
+        if (firstId == Number(this_edit_mes_id)) {
+            upButton.addClass('disabled');
+        } else {
+            upButton.removeClass('disabled');
         }
 
-        if (firstId == Number(this_edit_mes_id)) {
-            up.addClass('disabled');
-        }
     }
 }
 
