@@ -9114,7 +9114,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    //Deepseek-V3.1
     // Helper function to convert transition to promise
     const transitionPromise = (element, properties) => {
         return new Promise((resolve) => {

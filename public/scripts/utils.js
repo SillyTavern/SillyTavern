@@ -2708,7 +2708,7 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
 }
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-/** Deepseek-V3.1
+/**
  * Waits for a click event on any of the specified selectors within a target container.
  * Returns a promise that resolves with the clicked element's class name when any selector is clicked.
  *
