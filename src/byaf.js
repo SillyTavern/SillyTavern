@@ -380,10 +380,15 @@ export class ByafParser {
             return aiMessage.outputs.map(output => output.text);
         };
 
-        const fix_prior_bad_backyard_imports = true; // If true, reorders messages by interleaving user and character messages so that they are in correct chronological order. This is only needed to import old chats from Backyard AI that were incorrectly imported by an earlier version that completely messed up the order of messages. Backyard AI Windows frontend never supported creation of chats with which were ordered like this in the first place, so for most users this is desired functionality.
         const userMessages = scenario?.messages?.filter(msg => msg.type === 'human');
         const characterMessages = scenario?.messages?.filter(msg => msg.type === 'ai');
-        if (fix_prior_bad_backyard_imports && userMessages && characterMessages && userMessages.length === characterMessages.length) { // Only do the reordering if there are equal numbers of user and character messages, otherwise just import in existing order, because it's probably correct already.
+        /**
+         * Reorders messages by interleaving user and character messages so that they are in correct chronological order.
+         * This is only needed to import old chats from Backyard AI that were incorrectly imported by an earlier version
+         * that completely messed up the order of messages. Backyard AI Windows frontend never supported creation of chats
+         * with which were ordered like this in the first place, so for most users this is desired functionality.
+         */
+        if (userMessages && characterMessages && userMessages.length === characterMessages.length) { // Only do the reordering if there are equal numbers of user and character messages, otherwise just import in existing order, because it's probably correct already.
             for (let i = 0; i < userMessages.length; i++) {
                 chat.push({
                     name: userName,
