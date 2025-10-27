@@ -2707,3 +2707,42 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
     }
 }
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+/** Deepseek-V3.1
+ * Waits for a click event on any of the specified selectors within a target container.
+ * Returns a promise that resolves with the clicked element's class name when any selector is clicked.
+ *
+ * @param {string[]} selectors - Array of CSS selectors to listen for clicks
+ * @param {jQuery|string} [target=$(document)] - jQuery object or selector for the container to delegate events from
+ * @returns {Promise<string>} Resolves with the className of the clicked element
+ *
+ * @example
+ * // Wait for any edit button click in the entire document
+ * const result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete']);
+ *
+ * @example
+ * // Wait for buttons only within a specific chat container
+ * const result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], this_mes_div)
+ */
+export async function waitForClick(selectors, target = $(document)) {
+    return new Promise((resolve) => {
+        /**
+         * Event handler for selector clicks
+         * @param {Event} event - The click event object
+         */
+        const handler = (event) => {
+            // Clean up all listeners to prevent memory leaks and ensure one-time resolution
+            selectors.forEach(selector => {
+                target.off('click', selector, handler);
+            });
+
+            // Resolve with the class name of the clicked element
+            resolve(event.target.className);
+        };
+
+        // Attach delegated click event listeners to all specified selectors
+        selectors.forEach(selector => {
+            target.on('click', selector, handler);
+        });
+    });
+}

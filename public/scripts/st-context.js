@@ -216,7 +216,7 @@ export function getContext() {
         swipe: {
             left: swipe_left,
             right: swipe_right,
-            swipe: swipe,
+            to: swipe,
             show: showSwipeButtons,
             hide: hideSwipeButtons,
             refresh: refreshSwipeButtons,

@@ -84,7 +84,8 @@ export const SWIPE_SOURCE = {
 };
 
 /**
- * @type {{readonly NONE: 'none', readonly SWIPING: 'swiping', readonly EDITING: 'editing'}}
+ * @enum {string}
+ * @readonly
  */
 export const SWIPE_STATE = {
     NONE: 'none',
