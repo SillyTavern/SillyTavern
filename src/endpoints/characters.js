@@ -804,7 +804,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     await fsPromises.unlink(uploadPath);
     console.info('Importing from BYAF');
 
-    const custom_sanitize_safe_replacement = (char) => {
+    const customSanitizeSafeReplacement = (char) => {
         // ⁄˂˃։''⧵∣Ɂ∗ are valid characters in filenames on OSes that sanitize-filename targets
         const charMap = {
             '/': '⁄',
@@ -822,7 +822,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
 
     const byafData = await new ByafParser(data).parse();
     const card = readFromV2(byafData.card);
-    const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName || card.name, { replacement: custom_sanitize_safe_replacement }), request.user.directories);
+    const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName || card.name, { replacement: customSanitizeSafeReplacement }), request.user.directories);
     const result = await writeCharacterData(byafData.images[0].image, JSON.stringify(card), fileName, request);
 
     /**
