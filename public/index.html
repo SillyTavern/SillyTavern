@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-mobile-quick-layout="enhanced">
 
 <head>
     <title>SillyTavern</title>
@@ -11,6 +11,18 @@
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#333">
+    <script>
+      (function () {
+        try {
+          const storedMode = window.localStorage?.getItem('mobileQuickLayoutMode');
+          if (storedMode === 'classic') {
+            document.documentElement.setAttribute('data-mobile-quick-layout', 'classic');
+          }
+        } catch (error) {
+          document.documentElement.setAttribute('data-mobile-quick-layout', 'enhanced');
+        }
+      })();
+    </script>
     <style>
         /* Put critical CSS here. The rest should go in stylesheets. */
         body {
@@ -42,6 +54,7 @@
     <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
     <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+    <link rel="stylesheet" type="text/css" href="css/mobile-layout.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Scripts are loaded at the end of the body to improve page load speed -->
@@ -62,7 +75,11 @@
     <!-- top bar central settings buttons -->
     <div id="top-bar">
     </div>
+
     <div id="top-settings-holder">
+        <div class="mobile-quick-primary-wrap" role="presentation">
+          <div id="mobile-quick-primary" class="mobile-quick-primary" role="toolbar" aria-label="Quick actions" data-i18n="[aria-label]Quick actions"></div>
+        </div>
         <!-- background selection menu -->
         <div id="ai-config-button" class="drawer">
             <div class="drawer-toggle drawer-header">
@@ -4590,6 +4607,24 @@
                 </div>
                 <div id="user-settings-block-content" class="flex-container spaceEvenly">
                     <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p flex1">
+                      <div class="flex-container flexFlowColumn mobile-quick-layout-setting">
+                        <label class="checkbox_label" for="mobile-quick-layout-toggle">
+                          <input type="checkbox" id="mobile-quick-layout-toggle">
+                          <span data-i18n="Use classic top controls">Use classic top controls</span>
+                        </label>
+                        <small class="mobile-quick-layout-setting__hint" data-i18n="Restores the default toolbar and hides the mobile quick panel.">Restores the default toolbar and hides the mobile quick panel.</small>
+                        <details id="mobile-quick-customization" class="mobile-quick-customization" hidden>
+                          <summary class="mobile-quick-customization__summary">
+                            <span class="mobile-quick-customization__title" data-i18n="Quick toolbar layout">Quick toolbar layout</span>
+                            <span class="mobile-quick-customization__chevron" aria-hidden="true"></span>
+                          </summary>
+                          <div class="mobile-quick-customization__content">
+                            <p class="mobile-quick-customization__hint" data-i18n="Choose which drawers appear in the top toolbar. Others will show in the secondary panel.">Choose which drawers appear in the top toolbar. Others will show in the secondary panel.</p>
+                            <div id="mobile-quick-customization-list" class="mobile-quick-customization__list" role="list"></div>
+                            <button type="button" id="mobile-quick-customization-reset" class="mobile-quick-customization__reset" data-i18n="Restore defaults">Restore defaults</button>
+                          </div>
+                        </details>
+                      </div>
                         <div id="UI-presets-block" class="flex-container flexFlowColumn">
                             <h4 class="title_restorable">
                                 <span data-i18n="UI Theme">UI Theme</span>
@@ -7613,6 +7648,10 @@
                 <div id="nonQRFormItems">
                     <div id="leftSendForm" class="alignContentCenter">
                         <div id="options_button" class="fa-solid fa-bars interactable"></div>
+                          <button type="button" id="mobile-quick-toggle" class="mobile-quick-toggle interactable" aria-controls="mobile-quick-panel" aria-expanded="false">
+                            <span class="fa-solid fa-circle-plus" aria-hidden="true"></span>
+                            <span class="sr-only" data-i18n="Toggle quick panels">Toggle quick panels</span>
+                          </button>
                     </div>
                     <textarea id="send_textarea" name="text" class="mdHotkeys" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help" autocomplete="off"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
@@ -7633,6 +7672,7 @@
                         <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>
                 </div>
+                <div id="mobile-quick-panel" class="mobile-quick-panel" aria-live="polite" role="region" tabindex="-1" hidden></div>
             </div>
         </div>
     </div>
@@ -7727,6 +7767,776 @@
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
     <script type="module" src="script.js"></script>
+    <script>
+      (function () {
+          const selector = '[data-drawer-target]';
+          let syncQuickPanelState = () => { };
+          let suppressPanelClose = false;
+          let activeDrawerTarget = null;
+          const primaryButtons = new Map();
+          let layoutModeToggleInput = null;
+          const LAYOUT_MODES = {
+            ENHANCED: 'enhanced',
+            CLASSIC: 'classic',
+          };
+          const LAYOUT_STORAGE_KEY = 'mobileQuickLayoutMode';
+          const DRAWER_PREFERENCE_KEY = 'mobileQuickDrawerPreferences';
+          const CUSTOMIZATION_PANEL_STATE_KEY = 'mobileQuickCustomizationExpanded';
+
+          const loadCustomizationPanelState = () => {
+            try {
+              const raw = window.localStorage?.getItem(CUSTOMIZATION_PANEL_STATE_KEY);
+              if (raw === 'true') {
+                return true;
+              }
+              if (raw === 'false') {
+                return false;
+              }
+            } catch (error) {
+              /* no-op */
+            }
+            return null;
+          };
+
+          const persistCustomizationPanelState = (isOpen) => {
+            try {
+              if (typeof isOpen === 'boolean') {
+                window.localStorage?.setItem(CUSTOMIZATION_PANEL_STATE_KEY, isOpen ? 'true' : 'false');
+              } else {
+                window.localStorage?.removeItem(CUSTOMIZATION_PANEL_STATE_KEY);
+              }
+            } catch (error) {
+              /* no-op */
+            }
+          };
+
+          const sanitizePriority = (value) => {
+            if (value === 'primary' || value === 'secondary' || value === 'hidden') {
+              return value;
+            }
+            return undefined;
+          };
+
+          const loadDrawerPreferences = () => {
+            try {
+              const raw = window.localStorage?.getItem(DRAWER_PREFERENCE_KEY);
+              if (!raw) {
+                return {};
+              }
+              const parsed = JSON.parse(raw);
+              return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (error) {
+              return {};
+            }
+          };
+
+          let drawerPreferences = loadDrawerPreferences();
+          let customizationPanelState = loadCustomizationPanelState();
+
+          const persistDrawerPreferences = () => {
+            try {
+              window.localStorage?.setItem(DRAWER_PREFERENCE_KEY, JSON.stringify(drawerPreferences));
+            } catch (error) {
+              /* no-op */
+            }
+          };
+
+          const getDrawerPreference = (targetId) => sanitizePriority(drawerPreferences?.[targetId]);
+
+          const setDrawerPreference = (targetId, priority) => {
+            const sanitized = sanitizePriority(priority);
+            if (!sanitized) {
+              delete drawerPreferences[targetId];
+            } else {
+              drawerPreferences[targetId] = sanitized;
+            }
+            persistDrawerPreferences();
+          };
+
+          const resetDrawerPreferences = () => {
+            drawerPreferences = {};
+            persistDrawerPreferences();
+          };
+
+          const getStoredLayoutMode = () => {
+            try {
+              const stored = window.localStorage?.getItem(LAYOUT_STORAGE_KEY);
+              return stored === LAYOUT_MODES.CLASSIC ? LAYOUT_MODES.CLASSIC : LAYOUT_MODES.ENHANCED;
+            } catch (error) {
+              return LAYOUT_MODES.ENHANCED;
+            }
+          };
+
+          const persistLayoutMode = (mode) => {
+            try {
+              window.localStorage?.setItem(LAYOUT_STORAGE_KEY, mode);
+            } catch (error) {
+              /* no-op */
+            }
+          };
+
+          let currentLayoutMode = getStoredLayoutMode();
+
+          const isClassicLayout = () => currentLayoutMode === LAYOUT_MODES.CLASSIC;
+
+          const clearPrimaryButtonStates = () => {
+            primaryButtons.forEach((button) => {
+              button.classList.remove('is-active');
+              button.setAttribute('aria-pressed', 'false');
+            });
+          };
+
+          const setPrimaryButtonActive = (targetId, isActive) => {
+            const button = primaryButtons.get(targetId);
+            if (!button) {
+              return;
+            }
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+          };
+
+          const sanitizeIconClass = (iconClass = '') => {
+            if (!iconClass) {
+              return 'fa-solid fa-gear';
+            }
+            const blacklist = new Set(['drawer-icon', 'closedIcon', 'openIcon', 'drawer-toggle-icon']);
+            const filteredClasses = iconClass
+              .split(/\s+/)
+              .map((cls) => cls.trim())
+              .filter((cls) => cls && !blacklist.has(cls));
+            return filteredClasses.length ? filteredClasses.join(' ') : 'fa-solid fa-gear';
+          };
+
+          const extractLabelKey = (rawValue) => {
+            if (!rawValue) {
+              return null;
+            }
+            const segments = rawValue
+              .split(';')
+              .map((segment) => segment.trim())
+              .filter(Boolean);
+
+            for (const segment of segments) {
+              const match = segment.match(/\[[^\]]*](.+)/);
+              if (match) {
+                return match[1].trim();
+              }
+              if (!segment.startsWith('[')) {
+                return segment.trim();
+              }
+            }
+
+            return null;
+          };
+
+          function handleMobileShortcut(event) {
+            const targetElement = event.currentTarget;
+            const targetId = targetElement?.getAttribute('data-drawer-target');
+            if (!targetId) {
+              return;
+            }
+
+            const drawer = document.getElementById(targetId);
+            if (!drawer) {
+              return;
+            }
+
+            const toggle = drawer.querySelector('.drawer-toggle, .drawer-header');
+            const drawerContent = drawer.querySelector('.drawer-content');
+            if (!toggle || !drawerContent) {
+              return;
+            }
+
+            event.preventDefault();
+
+            const isCurrentlyClosed = drawerContent.classList.contains('closedDrawer');
+            const isActiveTarget = activeDrawerTarget === targetId && !isCurrentlyClosed;
+            const willOpen = !isActiveTarget;
+
+            suppressPanelClose = true;
+
+            if (willOpen) {
+              activeDrawerTarget = targetId;
+              clearPrimaryButtonStates();
+            }
+
+            if (typeof toggle.click === 'function') {
+              toggle.click();
+            } else {
+              toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            }
+
+            if (willOpen) {
+              setPrimaryButtonActive(targetId, true);
+            } else {
+              setPrimaryButtonActive(targetId, false);
+              if (activeDrawerTarget === targetId) {
+                activeDrawerTarget = null;
+              }
+            }
+
+            toggle.classList.add('mobile-drawer-highlight');
+            toggle.focus?.({ preventScroll: true });
+            window.setTimeout(() => toggle.classList.remove('mobile-drawer-highlight'), 520);
+            window.setTimeout(() => {
+              suppressPanelClose = false;
+              const isClosedNow = drawerContent.classList.contains('closedDrawer');
+              if (isClosedNow) {
+                if (activeDrawerTarget === targetId) {
+                  activeDrawerTarget = null;
+                }
+                setPrimaryButtonActive(targetId, false);
+              } else {
+                activeDrawerTarget = targetId;
+                clearPrimaryButtonStates();
+                setPrimaryButtonActive(targetId, true);
+              }
+            }, 160);
+          }
+
+          document.addEventListener('DOMContentLoaded', () => {
+            const quickToggle = document.getElementById('mobile-quick-toggle');
+            const quickPanel = document.getElementById('mobile-quick-panel');
+            const primaryContainer = document.getElementById('mobile-quick-primary');
+            const chatArea = document.getElementById('chat');
+            const topSettingsHolder = document.getElementById('top-settings-holder');
+            const toggleIcon = quickToggle?.querySelector('.fa-solid');
+            layoutModeToggleInput = document.getElementById('mobile-quick-layout-toggle');
+            const customizationSection = document.getElementById('mobile-quick-customization');
+            const customizationList = document.getElementById('mobile-quick-customization-list');
+            const customizationResetButton = document.getElementById('mobile-quick-customization-reset');
+
+            if (customizationSection instanceof HTMLDetailsElement) {
+              customizationSection.addEventListener('toggle', () => {
+                customizationPanelState = customizationSection.open;
+                persistCustomizationPanelState(customizationPanelState);
+              });
+            }
+
+            const syncLayoutModeControls = () => {
+              if (!layoutModeToggleInput) {
+                return;
+              }
+              const shouldCheck = isClassicLayout();
+              if (layoutModeToggleInput.checked !== shouldCheck) {
+                layoutModeToggleInput.checked = shouldCheck;
+              }
+            };
+            const PRIMARY_ORDER = ['rightNavHolder', 'ai-config-button', 'WI-SP-button', 'extensions-settings-button'];
+            const PRIMARY_SHORTCUT_IDS = new Set(PRIMARY_ORDER);
+
+            const computeDefaultPriority = (drawer) => {
+              const explicit = drawer.dataset.mobilePriority?.toLowerCase();
+              if (explicit === 'primary' || explicit === 'secondary' || explicit === 'hidden') {
+                return explicit;
+              }
+              return PRIMARY_SHORTCUT_IDS.has(drawer.id) ? 'primary' : 'secondary';
+            };
+
+            const resolvePriorities = (drawer) => {
+              const defaultPriority = computeDefaultPriority(drawer);
+              const preference = getDrawerPreference(drawer.id);
+              return {
+                priority: preference ?? defaultPriority,
+                defaultPriority,
+              };
+            };
+
+            const buildDrawerConfig = () => {
+              if (!topSettingsHolder) {
+                return [];
+              }
+
+              const drawers = Array.from(topSettingsHolder.querySelectorAll(':scope > .drawer'));
+              return drawers
+                .map((drawer, index) => {
+                  const targetId = drawer.id;
+                  if (!targetId) {
+                    return null;
+                  }
+
+                  const toggleElement = drawer.querySelector('.drawer-toggle, .drawer-header');
+                  const iconElement = toggleElement?.querySelector('.drawer-icon, i')
+                    || drawer.querySelector('.drawer-icon, i');
+
+                  const iconClass = drawer.dataset.mobileIcon
+                    || iconElement?.className
+                    || '';
+                  const rawI18n = drawer.dataset.mobileI18n
+                    || iconElement?.getAttribute?.('data-i18n')
+                    || toggleElement?.getAttribute?.('data-i18n')
+                    || '';
+                  const labelKey = extractLabelKey(rawI18n);
+
+                  const fallbackLabel = drawer.dataset.mobileLabel
+                    || toggleElement?.getAttribute?.('title')
+                    || iconElement?.getAttribute?.('title')
+                    || toggleElement?.textContent?.trim()
+                    || iconElement?.textContent?.trim()
+                    || labelKey
+                    || targetId;
+
+                  const { priority, defaultPriority } = resolvePriorities(drawer);
+
+                  return {
+                    targetId,
+                    iconClass,
+                    labelKey,
+                    fallbackLabel,
+                    priority,
+                    defaultPriority,
+                    order: index,
+                  };
+                })
+                .filter(Boolean);
+            };
+
+            const bindShortcut = (element) => {
+              if (!element || element.dataset.drawerShortcutBound === 'true') {
+                return;
+              }
+              element.addEventListener('click', handleMobileShortcut);
+              element.dataset.drawerShortcutBound = 'true';
+            };
+
+            const createIconSpan = (iconClass) => {
+              const iconSpan = document.createElement('span');
+              iconSpan.classList.add('mobile-quick-icon');
+              const classes = sanitizeIconClass(iconClass)
+                .split(/\s+/)
+                .map((cls) => cls.trim())
+                .filter(Boolean);
+
+              classes.forEach((cls) => iconSpan.classList.add(cls));
+
+              const hasFaClass = classes.some((cls) => cls.startsWith('fa-'));
+              if (!hasFaClass) {
+                iconSpan.classList.add('fa-solid', 'fa-gear');
+              }
+
+              return iconSpan;
+            };
+
+            const createLabelSpan = (labelKey, fallbackLabel) => {
+              const labelSpan = document.createElement('span');
+              labelSpan.classList.add('mobile-quick-label');
+              labelSpan.textContent = fallbackLabel;
+              if (labelKey) {
+                labelSpan.setAttribute('data-i18n', labelKey);
+              }
+              return labelSpan;
+            };
+
+            const createShortcutButton = (config, options = {}) => {
+              const { targetId, iconClass, labelKey, fallbackLabel } = config;
+              const drawerExists = document.getElementById(targetId);
+              if (!drawerExists) {
+                return null;
+              }
+
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = options.className ?? 'mobile-quick-panel-button';
+              button.setAttribute('data-drawer-target', targetId);
+              button.setAttribute('aria-controls', targetId);
+              button.setAttribute('aria-label', fallbackLabel);
+              button.setAttribute('aria-pressed', 'false');
+
+              button.appendChild(createIconSpan(iconClass));
+              const labelSpan = createLabelSpan(labelKey, fallbackLabel);
+              if (options.labelHidden) {
+                labelSpan.classList.add('sr-only');
+              }
+              button.appendChild(labelSpan);
+
+              bindShortcut(button);
+              options.container?.appendChild(button);
+              return button;
+            };
+
+            const createModeToggleButton = (nextMode, { variant = 'panel' } = {}) => {
+              const isNextClassic = nextMode === LAYOUT_MODES.CLASSIC;
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = variant === 'panel'
+                ? 'mobile-quick-panel-button mobile-layout-toggle-button'
+                : 'mobile-layout-toggle-button';
+              const text = isNextClassic ? '切换为原生布局' : '切换为移动布局';
+              const i18nKey = isNextClassic ? 'Switch to classic layout' : 'Switch to enhanced mobile layout';
+              button.textContent = text;
+              button.setAttribute('data-i18n', i18nKey);
+              button.addEventListener('click', (event) => {
+                event.preventDefault();
+                setLayoutMode(nextMode);
+              });
+              return button;
+            };
+
+            const updateLayoutMetrics = () => {
+              if (!document?.documentElement) {
+                return;
+              }
+              const primaryWrap = document.querySelector('.mobile-quick-primary-wrap');
+              const primaryHeight = primaryWrap?.getBoundingClientRect?.().height ?? 0;
+              document.documentElement.style.setProperty('--mobile-quick-primary-height', `${Math.round(primaryHeight)}px`);
+
+              const sendForm = document.getElementById('send_form');
+              const sendFormHeight = sendForm?.getBoundingClientRect?.().height ?? 0;
+              document.documentElement.style.setProperty('--mobile-send-form-height', `${Math.round(sendFormHeight)}px`);
+            };
+
+            const renderClassicPanel = () => {
+              if (primaryContainer) {
+                primaryContainer.innerHTML = '';
+                primaryContainer.setAttribute('hidden', '');
+              }
+
+              primaryButtons.clear();
+
+              if (!quickPanel) {
+                return;
+              }
+
+              quickPanel.innerHTML = '';
+              panelButtonsContainer = null;
+
+              const message = document.createElement('p');
+              message.className = 'mobile-quick-mode-message';
+              message.textContent = '移动快捷布局已关闭';
+              message.setAttribute('data-i18n', 'Mobile quick layout disabled');
+              quickPanel.appendChild(message);
+
+              const controls = document.createElement('div');
+              controls.className = 'mobile-quick-mode-controls';
+              controls.appendChild(createModeToggleButton(LAYOUT_MODES.ENHANCED));
+              quickPanel.appendChild(controls);
+              updateLayoutMetrics();
+            };
+
+            let panelButtonsContainer = quickPanel;
+
+            const renderCustomizationControls = (drawerConfig) => {
+              if (!customizationSection || !customizationList) {
+                return;
+              }
+
+              if (!Array.isArray(drawerConfig) || drawerConfig.length === 0) {
+                customizationSection.setAttribute('hidden', '');
+                return;
+              }
+
+              customizationSection.removeAttribute('hidden');
+
+              const hasCustomPreferences = Object.keys(drawerPreferences || {}).length > 0;
+              if (customizationSection instanceof HTMLDetailsElement) {
+                if (typeof customizationPanelState === 'boolean') {
+                  customizationSection.open = customizationPanelState;
+                } else {
+                  customizationSection.open = hasCustomPreferences;
+                }
+              }
+
+              const locale = document.documentElement?.lang || navigator?.language || 'en';
+              const sortedConfig = [...drawerConfig].sort((a, b) => {
+                const labelA = a.fallbackLabel?.toString?.() || '';
+                const labelB = b.fallbackLabel?.toString?.() || '';
+                return labelA.localeCompare(labelB, locale, { sensitivity: 'base' });
+              });
+
+              const fragment = document.createDocumentFragment();
+
+              sortedConfig.forEach((configItem) => {
+                const item = document.createElement('div');
+                item.className = 'mobile-quick-customization__item';
+                item.setAttribute('role', 'listitem');
+
+                const label = document.createElement('span');
+                label.className = 'mobile-quick-customization__label';
+                label.textContent = configItem.fallbackLabel;
+                label.setAttribute('data-drawer-id', configItem.targetId);
+
+                const select = document.createElement('select');
+                select.className = 'mobile-quick-customization__select';
+                select.dataset.drawerId = configItem.targetId;
+                select.dataset.defaultPriority = configItem.defaultPriority ?? 'secondary';
+
+                const optionPrimary = document.createElement('option');
+                optionPrimary.value = 'primary';
+                optionPrimary.textContent = '顶部工具栏';
+                optionPrimary.setAttribute('data-i18n', 'Top toolbar');
+
+                const optionSecondary = document.createElement('option');
+                optionSecondary.value = 'secondary';
+                optionSecondary.textContent = '二级面板';
+                optionSecondary.setAttribute('data-i18n', 'Secondary panel');
+
+                select.append(optionPrimary, optionSecondary);
+
+                const effectivePriority = getDrawerPreference(configItem.targetId)
+                  ?? configItem.priority
+                  ?? 'secondary';
+                if (select.querySelector(`option[value="${effectivePriority}"]`)) {
+                  select.value = effectivePriority;
+                } else {
+                  select.value = 'secondary';
+                }
+
+                select.addEventListener('change', (event) => {
+                  const desiredPriority = event.target.value;
+                  const defaultPriority = event.target.dataset.defaultPriority ?? 'secondary';
+                  if (desiredPriority === defaultPriority) {
+                    setDrawerPreference(configItem.targetId, undefined);
+                  } else {
+                    setDrawerPreference(configItem.targetId, desiredPriority);
+                  }
+                  renderShortcuts();
+                });
+
+                item.append(label, select);
+                fragment.appendChild(item);
+              });
+
+              customizationList.innerHTML = '';
+              customizationList.appendChild(fragment);
+
+              if (customizationResetButton) {
+                customizationResetButton.disabled = !Object.keys(drawerPreferences || {}).length;
+              }
+            };
+
+            const sortPrimaryConfigs = (configs) => {
+              const orderIndex = (targetId) => {
+                const index = PRIMARY_ORDER.indexOf(targetId);
+                return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+              };
+              return configs.sort((a, b) => {
+                const orderDifference = orderIndex(a.targetId) - orderIndex(b.targetId);
+                if (orderDifference !== 0) {
+                  return orderDifference;
+                }
+                return a.order - b.order;
+              });
+            };
+
+            const sortSecondaryConfigs = (configs) => configs.sort((a, b) => a.order - b.order);
+
+            const renderShortcuts = () => {
+              const drawerConfig = buildDrawerConfig();
+              renderCustomizationControls(drawerConfig);
+
+              if (isClassicLayout()) {
+                renderClassicPanel();
+                document.querySelectorAll(selector).forEach((element) => {
+                  bindShortcut(element);
+                });
+                return;
+              }
+
+              if (quickPanel) {
+                quickPanel.innerHTML = '';
+                panelButtonsContainer = document.createElement('div');
+                panelButtonsContainer.className = 'mobile-quick-panel__buttons';
+                quickPanel.appendChild(panelButtonsContainer);
+              } else {
+                panelButtonsContainer = null;
+              }
+
+              if (primaryContainer) {
+                primaryContainer.innerHTML = '';
+                primaryContainer.removeAttribute('hidden');
+              }
+
+              primaryButtons.clear();
+
+              const visibleConfig = drawerConfig.filter((configItem) => configItem.priority !== 'hidden');
+              const primaryConfigs = sortPrimaryConfigs(visibleConfig.filter((configItem) => configItem.priority === 'primary'));
+              const secondaryConfigs = sortSecondaryConfigs(visibleConfig.filter((configItem) => configItem.priority !== 'primary'));
+
+              primaryConfigs.forEach((configItem) => {
+                if (!primaryContainer) {
+                  return;
+                }
+                const button = createShortcutButton(configItem, {
+                  container: primaryContainer,
+                  className: 'mobile-quick-button',
+                  labelHidden: true,
+                });
+                if (button) {
+                  primaryButtons.set(configItem.targetId, button);
+                }
+              });
+
+              secondaryConfigs.forEach((configItem) => {
+                if (!panelButtonsContainer) {
+                  return;
+                }
+                createShortcutButton(configItem, {
+                  container: panelButtonsContainer,
+                  className: 'mobile-quick-panel-button',
+                  labelHidden: true,
+                });
+              });
+
+              if (panelButtonsContainer) {
+                panelButtonsContainer.appendChild(createModeToggleButton(LAYOUT_MODES.CLASSIC, { variant: 'panel' }));
+              }
+
+              clearPrimaryButtonStates();
+              if (activeDrawerTarget) {
+                setPrimaryButtonActive(activeDrawerTarget, true);
+              }
+
+              document.querySelectorAll(selector).forEach((element) => {
+                bindShortcut(element);
+              });
+
+              updateLayoutMetrics();
+            };
+
+            const applyLayoutModeSideEffects = () => {
+              if (document?.documentElement) {
+                document.documentElement.setAttribute('data-mobile-quick-layout', currentLayoutMode);
+              }
+              if (quickToggle) {
+                if (isClassicLayout()) {
+                  quickToggle.setAttribute('hidden', '');
+                } else {
+                  quickToggle.removeAttribute('hidden');
+                }
+              }
+              syncLayoutModeControls();
+              updateLayoutMetrics();
+            };
+
+            const setLayoutMode = (mode, { persist = true, force = false } = {}) => {
+              const targetMode = mode === LAYOUT_MODES.CLASSIC ? LAYOUT_MODES.CLASSIC : LAYOUT_MODES.ENHANCED;
+              if (!force && targetMode === currentLayoutMode) {
+                applyLayoutModeSideEffects();
+                return;
+              }
+              currentLayoutMode = targetMode;
+              if (persist) {
+                persistLayoutMode(currentLayoutMode);
+              }
+              applyLayoutModeSideEffects();
+              syncQuickPanelState(false);
+              renderShortcuts();
+            };
+
+            applyLayoutModeSideEffects();
+
+            if (layoutModeToggleInput) {
+              layoutModeToggleInput.addEventListener('change', (event) => {
+                const nextMode = event.target.checked ? LAYOUT_MODES.CLASSIC : LAYOUT_MODES.ENHANCED;
+                setLayoutMode(nextMode);
+              });
+            }
+
+            if (customizationResetButton) {
+              customizationResetButton.addEventListener('click', () => {
+                resetDrawerPreferences();
+                renderShortcuts();
+              });
+            }
+
+            renderShortcuts();
+
+            if (topSettingsHolder && 'MutationObserver' in window) {
+              const observer = new MutationObserver((mutations) => {
+                const shouldRebuild = mutations.some((mutation) => {
+                  const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+                  return nodes.some((node) => node instanceof HTMLElement && node.classList?.contains('drawer'));
+                });
+                if (shouldRebuild) {
+                  renderShortcuts();
+                }
+              });
+              observer.observe(topSettingsHolder, { childList: true });
+            }
+
+            syncQuickPanelState = (isOpen) => {
+              if (!quickPanel) {
+                return;
+              }
+              quickPanel.classList.toggle('is-open', isOpen);
+              if (isOpen) {
+                quickPanel.removeAttribute('hidden');
+              } else {
+                quickPanel.setAttribute('hidden', '');
+              }
+              quickToggle?.setAttribute('aria-expanded', String(isOpen));
+              quickToggle?.classList.toggle('is-active', isOpen);
+              if (toggleIcon) {
+                toggleIcon.classList.toggle('fa-circle-plus', !isOpen);
+                toggleIcon.classList.toggle('fa-circle-minus', isOpen);
+              }
+              updateLayoutMetrics();
+            };
+
+            if (quickToggle) {
+              syncQuickPanelState(false);
+              quickToggle.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (!quickPanel) {
+                  return;
+                }
+                const willOpen = !quickPanel.classList.contains('is-open');
+                syncQuickPanelState(willOpen);
+                if (willOpen) {
+                  const firstButton = panelButtonsContainer?.querySelector('button')
+                    ?? quickPanel?.querySelector('button');
+                  firstButton?.focus?.({ preventScroll: true });
+                }
+              });
+            }
+
+            if (quickPanel) {
+              document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && quickPanel.classList.contains('is-open')) {
+                  syncQuickPanelState(false);
+                  quickToggle?.focus?.({ preventScroll: true });
+                }
+              });
+            }
+
+            const updateDrawerMaxHeight = () => {
+              if (!chatArea) {
+                return;
+              }
+              const { height } = chatArea.getBoundingClientRect();
+              if (height > 0) {
+                document.documentElement.style.setProperty('--mobile-drawer-max-height', `${Math.round(height)}px`);
+              }
+            };
+
+            const handleWindowResize = () => {
+              updateDrawerMaxHeight();
+              updateLayoutMetrics();
+            };
+
+            handleWindowResize();
+            window.addEventListener('resize', handleWindowResize);
+            if (window.ResizeObserver && chatArea) {
+              const chatResizeObserver = new ResizeObserver(() => handleWindowResize());
+              chatResizeObserver.observe(chatArea);
+            }
+
+            if (quickPanel) {
+              document.addEventListener('click', (event) => {
+                if (suppressPanelClose) {
+                  return;
+                }
+                const isToggle = event.target.closest?.('.mobile-quick-toggle');
+                const insidePanel = event.target.closest?.('#mobile-quick-panel');
+                const insidePrimary = event.target.closest?.('#mobile-quick-primary');
+                if (!isToggle && !insidePanel && !insidePrimary && quickPanel.classList.contains('is-open')) {
+                  syncQuickPanelState(false);
+                }
+              });
+            }
+          });
+        })();
+    </script>
     <script>
         window.addEventListener('load', (event) => {
             const documentHeight = () => {
