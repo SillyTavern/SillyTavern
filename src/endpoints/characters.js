@@ -861,7 +861,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         }
     }
 
-    let iconIter = 1;
+
     // Save alternate icons for the character.
     for (const icon of byafData.images.slice(1)) {
         // BYAF does not support character expressions, so using the same structure will not result in conflicts,
@@ -870,10 +870,11 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         const altImagesFolder = path.join(request.user.directories.characters, fileName.replace('.png', ''));
         if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
         const extension = icon.filename.split('.').pop() || 'png';
-        const baseName = `${sanitize(icon.label) || 'alt_'}`;
-        let file = baseName + iconIter;
+        const baseName = `${sanitize(icon.label) || 'alt'}`;
+        let iconIter = 1;
+        let file = baseName;
         while (fs.existsSync(path.join(altImagesFolder, `${file}.${extension}`))) {
-            file = baseName + iconIter;
+            file = `${baseName}_${iconIter}`;
             iconIter++;
         }
         if (Buffer.isBuffer(icon.image)) {
