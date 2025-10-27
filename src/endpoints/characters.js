@@ -830,18 +830,20 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     */
     const createChatAsCurrentPersona = (scenario) => {
         const chatName = `${scenario.title} - ${humanizedISO8601DateTime()} imported.jsonl`;
-        const filePath = path.join(request.user.directories.chats, fileName.replace('.png', ''), chatName);
+        const filePath = path.join(request.user.directories.chats, path.basename(fileName), chatName);
         const dir = path.dirname(filePath);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name, byafData.chatBackgrounds), 'utf8');
     };
 
+
+
     let bgIter = 1;
     // Upload backgrounds
     for (const bg of byafData.chatBackgrounds) {
         console.log(`importing background ${bg.name} from BYAF import`);
-        const extension = bg.prev_paths?.[0]?.split('.').pop() || 'png';
-        const baseName = `${fileName.replace('.png', '')}_bg_`;
+        const extension = path.extname(bg.prev_paths?.[0]) || 'png';
+        const baseName = `${path.basename(fileName)}_bg_`;
         let file = baseName + bgIter;
         while (fs.existsSync(path.join(request.user.directories.backgrounds, `${file}.${extension}`))) {
             file = baseName + bgIter;
@@ -867,9 +869,9 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         // BYAF does not support character expressions, so using the same structure will not result in conflicts,
         // even if the expression system did not tolerate additional icons that are not mapped to expressions.
         // This will not yet allow changing icons within the UI but at least the icons will be available for manual selection, rather than being lost.
-        const altImagesFolder = path.join(request.user.directories.characters, fileName.replace('.png', ''));
+        const altImagesFolder = path.join(request.user.directories.characters, path.basename(fileName));
         if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
-        const extension = icon.filename.split('.').pop() || 'png';
+        const extension = path.extname(icon.filename) || 'png';
         const baseName = `${sanitize(icon.label) || 'alt'}`;
         let iconIter = 1;
         let file = baseName;
