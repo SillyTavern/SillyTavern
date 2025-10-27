@@ -82,3 +82,12 @@ export const SWIPE_SOURCE = {
     DELETE: 'delete',
     KEYBOARD: 'keyboard',
 };
+
+/**
+ * @type {{readonly NONE: 'none', readonly SWIPING: 'swiping', readonly EDITING: 'editing'}}
+ */
+export const SWIPE_STATE = {
+    NONE: 'none',
+    SWIPING: 'swiping',
+    EDITING: 'editing',
+};

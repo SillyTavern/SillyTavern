@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -368,6 +368,11 @@ export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
+
+/**
+ * @type {'none'|'swiping'|'editing'}
+ */
+export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
@@ -8935,6 +8940,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
+    swipeState = SWIPE_STATE.SWIPING;
     isSwipingAllowed = false;
 
     let generation;
@@ -9000,6 +9006,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
 
         //Allow for another swipe.
+        swipeState = SWIPE_STATE.NONE;
         showSwipeButtons();
     }
 
@@ -9009,17 +9016,19 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     async function swipeGenerate() {
 
         //Start edit.
+        swipeState = SWIPE_STATE.EDITING;
         thisMesDiv.find('.mes_edit').trigger('click');
         //Update the counter before to show 3/2 while the message is being edited.
         await updateSwipeCounter(mesId);
 
         //When editing the message, hide the subsequent swipes-counters.
         const counterClass = ', .swipeRightBlock';
-
         //Swipe out.
         await animateSwipeTransition(mesId + 1, swipeRange * 2,  animation_duration > 0 ? swipeDuration : 0, counterClass);
 
         let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], thisMesDiv);
+        swipeState = SWIPE_STATE.SWIPING;
+        //If the edit was completed.
         if (result.includes('mes_edit_done')) {
             let mes_edited = thisMesDiv.find('.mes_edit_done');
             await messageEditDone(mes_edited);
@@ -10904,7 +10913,7 @@ jQuery(async function () {
         chat[targetId] = chat[this_edit_mes_id];
         chat[this_edit_mes_id] = temp;
 
-        this_edit_mes_id = targetId;
+            this_edit_mes_id = targetId;
         updateViewMessageIds();
         await saveChatConditional();
     });
@@ -10931,7 +10940,7 @@ jQuery(async function () {
         chat[targetId] = chat[this_edit_mes_id];
         chat[this_edit_mes_id] = temp;
 
-        this_edit_mes_id = targetId;
+            this_edit_mes_id = targetId;
         updateViewMessageIds();
         await saveChatConditional();
     });
