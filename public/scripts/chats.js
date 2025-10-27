@@ -1668,18 +1668,13 @@ async function verifyAttachmentsForSource(source) {
 }
 
 const NEUTRAL_CHAT_KEY = 'neutralChat';
-const NEUTRAL_CHAT_TREE_KEY = 'neutralChatTree';
 
 export function preserveNeutralChat() {
     if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
         return;
     }
 
-    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
-
-    if (power_user.enable_chat_tree) {
-        sessionStorage.setItem(NEUTRAL_CHAT_TREE_KEY, JSON.stringify({ chatTree, chat_metadata }));
-    }
+    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chatTree, chat_metadata }));
 }
 
 export function restoreNeutralChat() {
@@ -1692,18 +1687,13 @@ export function restoreNeutralChat() {
         return;
     }
 
-    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
+    const { chat: neutralChatData, chatTree: tree, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
     chat.splice(0, chat.length, ...neutralChatData);
     updateChatMetadata(neutralChatMetadata, true);
-    sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
-
     if (power_user.enable_chat_tree) {
-        const neutralChatTree = sessionStorage.getItem(NEUTRAL_CHAT_TREE_KEY);
-        if (neutralChatTree) {
-            setChatTree(JSON.parse(neutralChatTree['chatTree']));
-        }
-        sessionStorage.removeItem(NEUTRAL_CHAT_TREE_KEY);
+        setChatTree(tree);
     }
+    sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
 }
 
 /**
