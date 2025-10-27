@@ -825,6 +825,11 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName || card.name, { replacement: customSanitizeSafeReplacement }), request.user.directories);
     const result = await writeCharacterData(byafData.images[0].image, JSON.stringify(card), fileName, request);
 
+    // Don't import chats and images if the character is being replaced or updated, instead of newly imported.
+    if (preservedFileName) {
+        return result ? fileName : '';
+    }
+
     /**
      * @param {Partial<ByafScenario>} scenario
     */
