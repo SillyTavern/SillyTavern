@@ -8325,15 +8325,16 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
 
     // Select the next swipe, or the one before if it was the last one
     const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
-    syncSwipeToMes(messageId, newSwipeId);
 
     chat_metadata['tainted'] = true;
 
+    messageId = Number(messageId);
+    swipeId = Number(swipeId);
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
+    let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+    await swipe(null, direction,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
-    await updateSwipeCounter(messageId);
     await saveChatConditional();
-    await reloadCurrentChat();
 
     return newSwipeId;
 }
@@ -8925,7 +8926,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed) {
+    if (!isSwipingAllowed && source != 'delete') {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
@@ -8943,7 +8944,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    const mesId = Number($(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number(forceMesId ?? $(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
@@ -8954,7 +8955,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
-    let newSwipeId = Number(originalSwipeId);
+    let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
     const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
@@ -9026,10 +9027,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Swipe in.
             await animateSwipeTransition(mesId, 0,  animation_duration > 0 ? swipeDuration : 0);
 
-            // If it's not the greeting, generate.
-            if (chat.length !== 1) {
-                generation = Generate('normal');
-            }
+            generation = Generate('normal');
         }
         //Cancel swipe.
         else {
@@ -9056,9 +9054,10 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {number} mesId
      */
     async function syncWithSwipeId(mesId){
-        if (power_user.enable_chat_tree) {
+        //Do not save deleted messages.
+        if (power_user.enable_chat_tree && source != 'delete') {
             //Everything after end will be pruned from the tree.
-            let end = (source != 'delete') ? chat.length - 1 : mesId;
+            let end = chat.length - 1;
             //Save the chat to the chatTree.
             await saveChatToTree(chat, chatTree, { start:0, end: end });
         }

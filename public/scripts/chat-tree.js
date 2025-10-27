@@ -1,5 +1,4 @@
-import { chat, saveChatConditional, saveChatDebounced, swipe, updateViewMessageIds } from '../script.js';
-import { SWIPE_DIRECTION } from './constants.js';
+import { chat, saveChatConditional, saveChatDebounced, updateViewMessageIds } from '../script.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
 
@@ -212,8 +211,9 @@ export async function updateChatTreeMessages(tree, updateFunction, attr = 'value
  * @param {object} tree
  * @param {number} mesId
  * @param {number} swipeId
+ * @param {number} newSwipeId sets mesId's branch_id.
  */
-export async function deleteBranch(tree, chat, mesId, swipeId) {
+export async function deleteBranch(tree, chat, mesId, swipeId, newSwipeId) {
 
     //Track current branch
     let branch = tree;
@@ -231,7 +231,8 @@ export async function deleteBranch(tree, chat, mesId, swipeId) {
             if (i == mesId) {
 
                 console.log(`Deleting branch #${swipeId} at depth ${i}`, branch['branch'][swipeId]);
-                branch['branch'].pop(swipeId);
+                branch['branch'].splice(swipeId, 1);
+                branch['branch_id'] = newSwipeId;
                 break;
             }
 
@@ -251,8 +252,6 @@ eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, n
         messageId = Number(messageId);
         swipeId = Number(swipeId);
         newSwipeId = Number(newSwipeId);
-        await deleteBranch(chatTree, chat, messageId, swipeId);
-        let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
-        await swipe(null, direction,  { source: 'delete', repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+        await deleteBranch(chatTree, chat, messageId, swipeId, newSwipeId);
     }
 });
