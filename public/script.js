@@ -7405,23 +7405,24 @@ async function messageEditMove(sourceId, targetId) {
         return false;
     }
 
-    const target = chatElement.find(`.mes[mesid="${targetId}"]`);
-    const root = $(this).closest('.mes');
+    const targetMessageDiv = chatElement.find(`.mes[mesid="${targetId}"]`);
+    const sourceMessageDiv = chatElement.find(`.mes[mesid="${sourceId}"]`);
 
-    if (root.length === 0 || target.length === 0) {
+    if (sourceMessageDiv.length === 0 || targetMessageDiv.length === 0) {
         console.error(`Message #${sourceId} or #${targetId} were not found.`);
         return false;
     }
 
     if (sourceId <= targetId) {
-        root.insertAfter(target);
+        sourceMessageDiv.insertAfter(targetMessageDiv);
     }
     else {
-        root.insertBefore(target);
+        sourceMessageDiv.insertBefore(targetMessageDiv);
     }
 
-    target.attr('mesid', sourceId);
-    root.attr('mesid', targetId);
+    //Swap Ids.
+    targetMessageDiv.attr('mesid', sourceId);
+    sourceMessageDiv.attr('mesid', targetId);
 
     const temp = chat[targetId];
     chat[targetId] = chat[sourceId];
@@ -10665,7 +10666,7 @@ jQuery(async function () {
             return;
         }
         const targetId = Number(this_edit_mes_id) - 1;
-        if (await messageEditMove.call(this, this_edit_mes_id, targetId)) {
+        if (await messageEditMove(this_edit_mes_id, targetId)) {
             this_edit_mes_id = targetId;
         }
     });
@@ -10676,7 +10677,7 @@ jQuery(async function () {
         }
 
         const targetId = Number(this_edit_mes_id) + 1;
-        if (await messageEditMove.call(this, this_edit_mes_id, targetId)) {
+        if (await messageEditMove(this_edit_mes_id, targetId)) {
             this_edit_mes_id = targetId;
         }
     });
