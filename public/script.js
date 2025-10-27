@@ -7487,6 +7487,11 @@ async function waitForClick(selectors, target = $(document)) {
 }
 
 async function messageEditDone(div) {
+    if (typeof(this_edit_mes_id) == 'undefined') {
+        console.trace('this_edit_mes_id cannot be blank when calling messageEditDone.');
+        return;
+    }
+
     let { mesBlock, text, mes, bias } = updateMessage(div);
     if (this_edit_mes_id == 0) {
         text = substituteParams(text);
@@ -9008,6 +9013,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Update the counter before to show 3/2 while the message is being edited.
         await updateSwipeCounter(mesId);
 
+        //When editing the message, hide the subsequent swipes-counters.
+        const counterClass = ', .swipeRightBlock';
+
+        //Swipe out.
+        await animateSwipeTransition(mesId + 1, swipeRange * 2,  animation_duration > 0 ? swipeDuration : 0, counterClass);
+
         let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], thisMesDiv);
         if (result.includes('mes_edit_done')) {
             let mes_edited = thisMesDiv.find('.mes_edit_done');
@@ -9018,19 +9029,19 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
             const lastMesId = Number(chatElement.children().last().attr('mesid'));
 
-            //Swipe out.
-            await animateSwipeTransition(mesId, swipeRange,  animation_duration > 0 ? swipeDuration : 0);
             await deleteMessages(mesId + 1, lastMesId); // This should happen after the swipe
             await redisplayChat(chat, mesId);
             //Jump to the opposite side.
-            await animateSwipeTransition(mesId, -swipeRange, 0);
+            await animateSwipeTransition(mesId + 1, -swipeRange, 0, counterClass);
             //Swipe in.
-            await animateSwipeTransition(mesId, 0,  animation_duration > 0 ? swipeDuration : 0);
+            await animateSwipeTransition(mesId + 1, 0,  animation_duration > 0 ? swipeDuration : 0, counterClass);
 
             generation = Generate('normal');
         }
         //Cancel swipe.
         else {
+            //Swipe in.
+            await animateSwipeTransition(mesId + 1, 0,  animation_duration > 0 ? swipeDuration : 0, counterClass);
             chat[mesId]['swipe_id'] = originalSwipeId;
             //endSwipe will update the counter to show 2/2 because the edit has been canceled.
         }
@@ -9127,22 +9138,28 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {number} mesId
      * @param {number} x
      * @param {number} duration
+     * @param {string} classes Additional CSS classes to target during the swipe.
      */
-    async function animateSwipeTransition(mesId, x, duration) {
+    async function animateSwipeTransition(mesId, x, duration, classes = '') {
         //Select messages after mesId.
         const swipedMessagesDiv  = chatElement.children().filter((index, div) => {
             const $div = $(div);
             return Number($div.attr('mesid')) >= mesId;
         });
-        const swipedElementsDiv = swipedMessagesDiv.children('.mes_block, .mesAvatarWrapper');
+        if (swipedMessagesDiv.length > 0) {
+            let swipeClasses = '.mes_block, .mesAvatarWrapper';
+            swipeClasses += classes;
 
-        //Swipe.
-        await transitionPromise(swipedElementsDiv, {
-            x: x,
-            duration: duration,
-            easing: animation_easing,
-            queue: false,
-        });
+            const swipedElementsDiv = swipedMessagesDiv.children(swipeClasses);
+
+            //Swipe.
+            await transitionPromise(swipedElementsDiv, {
+                x: x,
+                duration: duration,
+                easing: animation_easing,
+                queue: false,
+            });
+        }
     }
 
     function getMessageBottomHeight(thisMesDiv) {
