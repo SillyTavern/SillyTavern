@@ -353,7 +353,7 @@ export class ByafParser {
                     by_prompt_template: scenario?.promptTemplate ?? 'general',
                     grammar: scenario?.grammar ?? null,
                 },
-                chat_backgrounds: [chat_background],
+                chat_backgrounds: chat_background ? [chat_background] : [],
                 custom_background: chat_background ? `url("${encodeURI(chat_background)}")` : '',
             },
         }];
