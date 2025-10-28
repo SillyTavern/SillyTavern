@@ -7391,16 +7391,17 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
 
 /**
  * Swaps chat[sourceId] with chat[targetId]. They must be adjacent.
- * @param {number} sourceId
- * @param {number} targetId
- * @returns {Promise<boolean>}
+ * @param {number} sourceId Index of the message to move
+ * @param {number} targetId Index of the target message
+ * @returns {Promise<boolean>} True if the messages were moved, false otherwise
  */
 async function messageEditMove(sourceId, targetId) {
     if (is_send_press) {
         console.warn(`The message #${sourceId} was not moved to #${targetId} because a generation is in progress.`);
         return false;
     }
-    else if (Math.abs(sourceId - targetId) != 1) {
+
+    if (Math.abs(sourceId - targetId) !== 1) {
         console.error(`Message #${sourceId} and #${targetId} are not adjacent.`);
         return false;
     }
@@ -7424,9 +7425,11 @@ async function messageEditMove(sourceId, targetId) {
     targetMessageDiv.attr('mesid', sourceId);
     sourceMessageDiv.attr('mesid', targetId);
 
-    const temp = chat[targetId];
-    chat[targetId] = chat[sourceId];
-    chat[sourceId] = temp;
+    // Swap chat array entries.
+    [chat[sourceId], chat[targetId]] = [chat[targetId], chat[sourceId]];
+
+    // Update edited message id
+    this_edit_mes_id = targetId;
 
     updateViewMessageIds();
     await saveChatConditional();
@@ -8359,33 +8362,26 @@ export function getFirstDisplayedMessageId() {
 }
 
 export function updateEditArrowClasses() {
-
-    if (this_edit_mes_id >= 0) {
-        const message = chatElement.children().filter('.mes:has(.mes_edit_buttons:visible)');
-
-        const downButton = message.find('.mes_edit_down');
-        const upButton = message.find('.mes_edit_up');
-        const copyButton = message.find('.mes_edit_copy');
-        const deleteButton = message.find('.mes_edit_delete');
-        const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
-        const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
-
-        copyButton.removeClass('disabled');
-        deleteButton.removeClass('disabled');
-        //The last message cannot be moved down.
-        if (lastId == Number(this_edit_mes_id)) {
-            downButton.addClass('disabled');
-        } else {
-            downButton.removeClass('disabled');
-        }
-        //The first message cannot be moved up.
-        if (firstId == Number(this_edit_mes_id)) {
-            upButton.addClass('disabled');
-        } else {
-            upButton.removeClass('disabled');
-        }
-
+    if (!(this_edit_mes_id >= 0)) {
+        return;
     }
+
+    const message = chatElement.find(`.mes[mesid="${this_edit_mes_id}"]`);
+
+    const downButton = message.find('.mes_edit_down');
+    const upButton = message.find('.mes_edit_up');
+    const copyButton = message.find('.mes_edit_copy');
+    const deleteButton = message.find('.mes_edit_delete');
+    const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
+    const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
+
+    copyButton.removeClass('disabled');
+    deleteButton.removeClass('disabled');
+
+    // The last message cannot be moved down.
+    downButton.toggleClass('disabled', lastId === Number(this_edit_mes_id));
+    // The first message cannot be moved up.
+    upButton.toggleClass('disabled', firstId === Number(this_edit_mes_id));
 }
 
 /**
@@ -10676,9 +10672,7 @@ jQuery(async function () {
             return;
         }
         const targetId = Number(this_edit_mes_id) - 1;
-        if (await messageEditMove(this_edit_mes_id, targetId)) {
-            this_edit_mes_id = targetId;
-        }
+        await messageEditMove(this_edit_mes_id, targetId);
     });
 
     $(document).on('click', '.mes_edit_down', async function () {
@@ -10687,9 +10681,7 @@ jQuery(async function () {
         }
 
         const targetId = Number(this_edit_mes_id) + 1;
-        if (await messageEditMove(this_edit_mes_id, targetId)) {
-            this_edit_mes_id = targetId;
-        }
+        await messageEditMove(this_edit_mes_id, targetId);
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
