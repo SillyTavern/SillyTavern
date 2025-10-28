@@ -838,11 +838,11 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
          * @param {Partial<ByafScenario>} scenario
         */
         const createChatAsCurrentPersona = (scenario) => {
-            const chatName = `${scenario.title} - ${humanizedISO8601DateTime()} imported.jsonl`;
+            const chatName = sanitize(`${scenario.title || card.data.name} - ${humanizedISO8601DateTime()} imported.jsonl`);
             const filePath = path.join(request.user.directories.chats, path.basename(fileName), chatName);
             const dir = path.dirname(filePath);
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name, byafData.chatBackgrounds), 'utf8');
+            writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, card.name, byafData.chatBackgrounds), 'utf8');
             console.log(`Created ${chatName} chat from BYAF import`);
             return chatName;
         };
