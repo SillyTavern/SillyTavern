@@ -1215,63 +1215,94 @@ export function getRequestURL(request) {
 }
 
 /**
- * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
- * @param {object} schema The JSON schema to flatten.
- * @param {string} api The API source, used to determine how to handle certain properties.
- * @returns {object} The flattened schema.
+ * Flattens and simplifies a JSON schema to be compatible with the strict requirements
+ * of Google's Generative AI API.
+ * @param {object} schema The JSON schema to process.
+ * @param {string} api The API source.
+ * @returns {object} The flattened and simplified schema.
  */
 export function flattenSchema(schema, api) {
     if (!schema || typeof schema !== 'object') {
         return schema;
     }
 
-    // Deep clone to avoid modifying the original object.
     const schemaCopy = structuredClone(schema);
+    const isGoogleApi = api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI;
 
     const definitions = schemaCopy.$defs || {};
+    // Manually define __schema0 from its implicit location to fix recursion
+    if (schemaCopy.properties?.scene_frames?.items) {
+        definitions['__schema0'] = definitions['__schema0'] || schemaCopy.properties.scene_frames.items;
+    }
     delete schemaCopy.$defs;
 
-    function replaceRefs(obj) {
-        if (obj === null || typeof obj !== 'object') {
+    function resolve(obj, parents = []) {
+        if (!obj || typeof obj !== 'object') {
             return obj;
         }
-
         if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                obj[i] = replaceRefs(obj[i]);
-            }
-            return obj;
+            return obj.map(item => resolve(item, parents));
         }
 
-        if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
+        // 1. Resolve $refs first
+        if (obj.$ref?.startsWith('#/$defs/')) {
             const defName = obj.$ref.split('/').pop();
+            if (parents.includes(defName)) return {}; // Prevent infinite recursion
             if (definitions[defName]) {
-                return replaceRefs(structuredClone(definitions[defName]));
+                return resolve(structuredClone(definitions[defName]), [...parents, defName]);
             }
+            return {}; // Broken reference
         }
 
-        if (api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI) {
-            delete obj.default;
-            delete obj.additionalProperties;
-        } else if ('properties' in obj) {
-            if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
-                obj.additionalProperties = false;
+        // 2. For Google API, handle 'anyOf' unions
+        if (isGoogleApi && obj.anyOf && Array.isArray(obj.anyOf)) {
+            // This handles cases like `components.items` where the object IS the union.
+            // Merge all properties from the sub-schemas into one.
+            const mergedProperties = {};
+            for (const subSchema of obj.anyOf) {
+                if (subSchema.properties) {
+                    Object.assign(mergedProperties, subSchema.properties);
+                }
             }
+            const mergedSchema = { type: 'object', properties: mergedProperties };
+            return resolve(mergedSchema, parents); // Recurse on the new merged object
         }
 
+        // 3. Process the object's properties
+        const result = {};
         for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                obj[key] = replaceRefs(obj[key]);
+            if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+
+            // For Google, filter unsupported top-level keywords
+            if (isGoogleApi && ['default', 'additionalProperties', 'exclusiveMinimum', 'propertyNames', 'anyOf'].includes(key)) {
+                continue;
             }
+
+            const value = obj[key];
+
+            // For Google, simplify properties that use `anyOf` for type definition (e.g., `stat_updates.value`)
+            if (isGoogleApi && value?.anyOf) {
+                result[key] = {
+                    type: 'string',
+                    description: value.description || `Accepts multiple types, provide as string.`,
+                };
+                continue;
+            }
+
+            const resolvedValue = resolve(value, parents);
+
+            // After resolving, remove properties that have become invalid empty objects (e.g., `style`)
+            if (isGoogleApi && resolvedValue?.type === 'object' && !resolvedValue.properties) {
+                continue;
+            }
+
+            result[key] = resolvedValue;
         }
-        return obj;
+
+        return result;
     }
 
-    const flattenedSchema = replaceRefs(schemaCopy);
-
-    if (flattenedSchema.$schema) {
-        delete flattenedSchema.$schema;
-    }
-
+    const flattenedSchema = resolve(schemaCopy);
+    delete flattenedSchema.$schema;
     return flattenedSchema;
 }
