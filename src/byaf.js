@@ -354,7 +354,7 @@ export class ByafParser {
                     grammar: scenario?.grammar ?? null,
                 },
                 chat_backgrounds: [chat_background],
-                custom_background: `url("${encodeURI(chat_background)}")`,
+                custom_background: chat_background ? `url("${encodeURI(chat_background)}")` : '',
             },
         }];
         // Add the first message IF it exists.
