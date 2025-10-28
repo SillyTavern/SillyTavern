@@ -7429,7 +7429,9 @@ async function messageEditMove(sourceId, targetId) {
     [chat[sourceId], chat[targetId]] = [chat[targetId], chat[sourceId]];
 
     // Update edited message id
-    this_edit_mes_id = targetId;
+    if (this_edit_mes_id === sourceId) {
+        this_edit_mes_id = targetId;
+    }
 
     updateViewMessageIds();
     await saveChatConditional();
