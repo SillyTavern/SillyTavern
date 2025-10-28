@@ -526,7 +526,7 @@ async function switchSwipesAllMessages() {
 async function askSwitchSwipesAllMessages() {
     //Only ask when it's being enabled.
     if (!power_user.enable_chat_tree)
-    {   let warning = $(` <h1> ${t`Are you certain?`} </h1> <div> ${ t`Swiping on all messages is an experimental feature,<br>It can be disabled at any time.<br>Alternate swipes are saved in the <code>chatTrees</code> user data folder.<br>Chat Tree exports must be created manually.`} \n <pre> <a href="https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3346598451">Click for a Demo Video</a> </pre></div>`);
+    {   let warning = $(` <h1> ${t`Are you certain?`} </h1> <div> ${ t`Swiping on all messages is an experimental feature,<br>It can be disabled at any time.<br>Alternate swipes are saved in the <code>chatTrees</code> user data folder.<br>Chat Tree exports must be created manually.`} \n <pre> <a href="https://docs.sillytavern.app/usage/chatting/swipes">Click for documentation.</a> </pre></div>`);
         const result = await callGenericPopup(warning, POPUP_TYPE.CONFIRM, null, {
             okButton: t`Yes, I’ve made a backup and agree to report any bugs.`,
             cancelButton: 'Cancel',
