@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName } from '../util.js';
+import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -812,25 +812,9 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
     await fsPromises.unlink(uploadPath);
     console.info('Importing from BYAF');
 
-    const customSanitizeSafeReplacement = (char) => {
-        // ⁄˂˃։''⧵∣Ɂ∗ are valid characters in filenames on OSes that sanitize-filename targets
-        const charMap = {
-            '/': '⁄',
-            '<': '˂',
-            '>': '˃',
-            ':': '։',
-            '"': '\'\'',
-            '\\': '⧵',
-            '|': '∣',
-            '*': '∗',
-            '?': 'Ɂ',
-        };
-        return charMap[char] || '';
-    };
-
     const byafData = await new ByafParser(data).parse();
     const card = readFromV2(byafData.card);
-    const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName || card.name, { replacement: customSanitizeSafeReplacement }), request.user.directories);
+    const fileName = preservedFileName || getPngName(sanitize(byafData.character.displayName || card.name, { replacement: sanitizeSafeCharacterReplacements }), request.user.directories);
 
     // Don't import chats and images if the character is being replaced or updated, instead of newly imported.
     if (!preservedFileName) {

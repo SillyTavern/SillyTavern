@@ -441,6 +441,27 @@ export function getUniqueName(name, exists) {
 }
 
 /**
+ * Provides safe replacements for characters in filenames. Intended for use with sanitize() from the sanitize-filename package.
+ * @param {string} char Character to sanitize
+ * @returns {string} Safe replacement character
+ */
+export function sanitizeSafeCharacterReplacements(char) {
+    // ⁄˂˃։''⧵∣Ɂ∗ are valid characters in filenames on OSes that sanitize-filename targets
+    const charMap = {
+        '/': '⁄',
+        '<': '˂',
+        '>': '˃',
+        ':': '։',
+        '"': '\'\'',
+        '\\': '⧵',
+        '|': '∣',
+        '*': '∗',
+        '?': 'Ɂ',
+    };
+    return charMap[char] || '';
+}
+
+/**
  * Strip the last file extension from a given file name. If there are multiple extensions, only the last is removed.
  * @param {string} filename The file name to remove the extension from.
  * @returns The file name, sans extension
