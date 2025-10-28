@@ -489,7 +489,8 @@ export function getGroupCharacterCards(groupId, characterId) {
         return `${prefix}${value}${suffix}`;
     }
 
-    const scenarioOverride = chat_metadata['scenario'];
+    const scenarioOverride = String(chat_metadata['scenario'] || '');
+    const mesExamplesOverride = String(chat_metadata['mes_example'] || '');
 
     let descriptions = [];
     let personalities = [];
@@ -518,7 +519,7 @@ export function getGroupCharacterCards(groupId, characterId) {
     const description = descriptions.filter(x => x.length).join('\n');
     const personality = personalities.filter(x => x.length).join('\n');
     const scenario = scenarioOverride?.trim() || scenarios.filter(x => x.length).join('\n');
-    const mesExamples = mesExamplesArray.filter(x => x.length).join('\n');
+    const mesExamples = mesExamplesOverride?.trim() || mesExamplesArray.filter(x => x.length).join('\n');
 
     return { description, personality, scenario, mesExamples };
 }
