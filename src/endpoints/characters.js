@@ -838,7 +838,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
          * @param {Partial<ByafScenario>} scenario
         */
         const createChatAsCurrentPersona = (scenario) => {
-            const chatName = sanitize(`${scenario.title || card.data.name} - ${humanizedISO8601DateTime()} imported.jsonl`);
+            const chatName = sanitize(`${scenario.title || card.name} - ${humanizedISO8601DateTime()} imported.jsonl`);
             const filePath = path.join(request.user.directories.chats, path.basename(fileName), chatName);
             const dir = path.dirname(filePath);
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
