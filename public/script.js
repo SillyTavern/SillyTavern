@@ -8368,7 +8368,8 @@ export function updateEditArrowClasses() {
         return;
     }
 
-    const message = chatElement.find(`.mes[mesid="${this_edit_mes_id}"]`);
+    const message = chatElement.children().filter('.mes:has(.mes_edit_buttons:visible)');
+    const messageId = Number(message.attr('mesId'));
 
     const downButton = message.find('.mes_edit_down');
     const upButton = message.find('.mes_edit_up');
@@ -8381,9 +8382,9 @@ export function updateEditArrowClasses() {
     deleteButton.removeClass('disabled');
 
     // The last message cannot be moved down.
-    downButton.toggleClass('disabled', lastId === Number(this_edit_mes_id));
+    downButton.toggleClass('disabled', lastId === Number(messageId));
     // The first message cannot be moved up.
-    upButton.toggleClass('disabled', firstId === Number(this_edit_mes_id));
+    upButton.toggleClass('disabled', firstId === Number(messageId));
 }
 
 /**
@@ -10674,7 +10675,9 @@ jQuery(async function () {
             return;
         }
         const targetId = Number(this_edit_mes_id) - 1;
-        await messageEditMove(this_edit_mes_id, targetId);
+        if (await messageEditMove(this_edit_mes_id, targetId)) {
+            this_edit_mes_id = targetId;
+        }
     });
 
     $(document).on('click', '.mes_edit_down', async function () {
@@ -10683,7 +10686,9 @@ jQuery(async function () {
         }
 
         const targetId = Number(this_edit_mes_id) + 1;
-        await messageEditMove(this_edit_mes_id, targetId);
+        if (await messageEditMove(this_edit_mes_id, targetId)) {
+            this_edit_mes_id = targetId;
+        }
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
