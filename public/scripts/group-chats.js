@@ -38,6 +38,7 @@ import {
     setEditedMessageId,
     is_send_press,
     name1,
+    name2,
     resetChatState,
     setSendButtonState,
     getCharacters,
@@ -518,8 +519,8 @@ export function getGroupCharacterCards(groupId, characterId) {
 
     const description = descriptions.filter(x => x.length).join('\n');
     const personality = personalities.filter(x => x.length).join('\n');
-    const scenario = scenarioOverride?.trim() || scenarios.filter(x => x.length).join('\n');
-    const mesExamples = mesExamplesOverride?.trim() || mesExamplesArray.filter(x => x.length).join('\n');
+    const scenario = baseChatReplace(scenarioOverride?.trim(), name1, name2) || scenarios.filter(x => x.length).join('\n');
+    const mesExamples = baseChatReplace(mesExamplesOverride?.trim(), name1, name2) || mesExamplesArray.filter(x => x.length).join('\n');
 
     return { description, personality, scenario, mesExamples };
 }
