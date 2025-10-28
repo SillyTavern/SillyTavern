@@ -7747,7 +7747,12 @@ export async function setCharacterSettingsOverrides() {
         pendingChanges.system_prompt = String($(this).val());
     });
 
-    $template.find('.remove_scenario_override').on('click', function () {
+    $template.find('.remove_scenario_override').on('click', async function () {
+        const confirm = await Popup.show.confirm(t`Are you sure you want to remove all overrides?`, t`This action cannot be undone.`);
+        if (!confirm) {
+            return;
+        }
+
         $scenario.val('');
         pendingChanges.scenario = '';
         $examples.val('');
@@ -7756,18 +7761,17 @@ export async function setCharacterSettingsOverrides() {
         pendingChanges.system_prompt = '';
     });
 
-    // Wait for popup close/confirm. callGenericPopup resolves falsy on cancel.
-    const confirmed = await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
+    // Wait for popup close/confirm.
+    await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
         wide: true,
         large: true,
         allowVerticalScrolling: true,
     });
-    if (confirmed) {
-        chat_metadata['scenario'] = pendingChanges.scenario;
-        chat_metadata['mes_example'] = pendingChanges.examples;
-        chat_metadata['system_prompt'] = pendingChanges.system_prompt;
-        saveMetadataDebounced();
-    }
+
+    chat_metadata['scenario'] = pendingChanges.scenario;
+    chat_metadata['mes_example'] = pendingChanges.examples;
+    chat_metadata['system_prompt'] = pendingChanges.system_prompt;
+    saveMetadataDebounced();
 }
 
 /**
