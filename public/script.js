@@ -304,6 +304,7 @@ export {
     getSystemMessageByType,
     event_types,
     eventSource,
+    setCharacterSettingsOverrides as setScenarioOverride,
 };
 
 /**
@@ -7714,7 +7715,7 @@ function updateFavButtonState(state) {
 
 export async function setCharacterSettingsOverrides() {
     if (!selected_group && (this_chid === undefined || !characters[this_chid])) {
-        console.warn('setScenarioOverride() -- no selected group or character');
+        console.warn('setCharacterSettingsOverrides() -- no selected group or character');
         return;
     }
 
@@ -7756,7 +7757,11 @@ export async function setCharacterSettingsOverrides() {
     });
 
     // Wait for popup close/confirm. callGenericPopup resolves falsy on cancel.
-    const confirmed = await callGenericPopup($template, POPUP_TYPE.TEXT, '');
+    const confirmed = await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+    });
     if (confirmed) {
         chat_metadata['scenario'] = pendingChanges.scenario;
         chat_metadata['mes_example'] = pendingChanges.examples;
