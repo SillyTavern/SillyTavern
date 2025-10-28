@@ -273,7 +273,7 @@ export class ByafParser {
      * Gets chat backgrounds from BYAF data mapped to their respective scenarios.
      * @param {ByafCharacter} character Character object
      * @param {Partial<ByafScenario>[]} scenarios Scenarios array
-     * @returns {Promise<Array<{name:string, data:Buffer, prev_paths:string[]}>>} Chat backgrounds
+     * @returns {Promise<Array<ByafChatBackground>>} Chat backgrounds
      * @private
      */
     async getChatBackgrounds(character, scenarios) {
@@ -325,7 +325,7 @@ export class ByafParser {
      * @param {Partial<ByafScenario>} scenario Scenario object
      * @param {string} userName User name
      * @param {string} characterName Character name
-     * @param {Array<{name:string, data:Buffer, prev_paths:string[]}>} chatBackgrounds Chat backgrounds
+     * @param {Array<ByafChatBackground>} chatBackgrounds Chat backgrounds
      * @returns {string} Chat data
      */
     static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
@@ -433,7 +433,7 @@ export class ByafParser {
 
     /**
      * Parses the BYAF data.
-     * @return {Promise<{card: TavernCardV2, images: {filename: string, image: Buffer, label: string}[], scenarios: Partial<ByafScenario>[], chatBackgrounds: Array<{name:string, data:Buffer, prev_paths:string[]}>, character: ByafCharacter}>} Parsed character card and image buffer
+     * @return {Promise<ByafParseResult>} Parsed character card and image buffer
      */
     async parse() {
         const manifest = await this.getManifest();
