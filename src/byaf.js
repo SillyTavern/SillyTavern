@@ -329,13 +329,13 @@ export class ByafParser {
      * @returns {string} Chat data
      */
     static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
-        const chat_start_date = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
-        const chat_background = chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '';
+        const chatStartDate = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
+        const chatBackground = chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '';
         /** @type {object[]} */
         const chat = [{
             user_name: userName,
             character_name: characterName,
-            create_date: chat_start_date,
+            create_date: chatStartDate,
             chat_metadata: {
                 scenario: scenario?.narrative ?? '',
                 mes_example: ByafParser.formatExampleMessages(scenario?.exampleMessages),
@@ -353,8 +353,8 @@ export class ByafParser {
                     by_prompt_template: scenario?.promptTemplate ?? 'general',
                     grammar: scenario?.grammar ?? null,
                 },
-                chat_backgrounds: chat_background ? [chat_background] : [],
-                custom_background: chat_background ? `url("${encodeURI(chat_background)}")` : '',
+                chat_backgrounds: chatBackground ? [chatBackground] : [],
+                custom_background: chatBackground ? `url("${encodeURI(chatBackground)}")` : '',
             },
         }];
         // Add the first message IF it exists.
@@ -362,7 +362,7 @@ export class ByafParser {
             chat.push({
                 name: characterName,
                 is_user: false,
-                send_date: chat_start_date,
+                send_date: chatStartDate,
                 mes: scenario?.firstMessages?.[0]?.text || '',
             });
         }
