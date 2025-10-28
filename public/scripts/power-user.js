@@ -517,10 +517,9 @@ function switchSwipeNumAllMessages() {
     $('body').toggleClass('swipeNumAllMessages', !!power_user.show_swipe_num_all_messages);
 }
 
-async function switchSwipesAllMessages() {
+function switchSwipesAllMessages() {
     $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
     $('body').toggleClass('swipeAllMessages', !!power_user.enable_chat_tree);
-    await reloadCurrentChat();
 }
 
 async function askSwitchSwipesAllMessages() {
@@ -531,8 +530,10 @@ async function askSwitchSwipesAllMessages() {
             okButton: t`Yes, I’ve made a backup and agree to report any bugs.`,
             cancelButton: 'Cancel',
         });
+        await reloadCurrentChat();
         return result;
     }
+    await reloadCurrentChat();
     return true;
 }
 
@@ -1384,10 +1385,9 @@ function applyTheme(name) {
         },
         {
             key: '#show_swipes_for_all_messages',
-            //This will not be awaited.
-            action: async () => {
+            action: () => {
                 $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
-                await switchSwipesAllMessages();
+                switchSwipesAllMessages();
             },
         },
         {
@@ -1444,7 +1444,7 @@ async function showDebugMenu() {
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
 }
 
-export async function applyPowerUserSettings() {
+export function applyPowerUserSettings() {
     switchUiMode();
     applyFontScale('forced');
     applyThemeColor();
@@ -1464,7 +1464,7 @@ export async function applyPowerUserSettings() {
     switchTokenCount();
     switchMessageActions();
     switchSwipeNumAllMessages();
-    await switchSwipesAllMessages();
+    switchSwipesAllMessages();
 }
 
 export function applyStylePins() {
