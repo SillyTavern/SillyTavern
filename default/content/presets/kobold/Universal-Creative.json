@@ -1,7 +1,7 @@
 {
     "temp": 1.5,
     "rep_pen": 1,
-    "rep_pen_range": 600,
+    "rep_pen_range": 0,
     "top_p": 1,
     "min_p": 0.1,
     "top_a": 0,

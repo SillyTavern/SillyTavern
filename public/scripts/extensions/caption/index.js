@@ -1,6 +1,6 @@
 import { ensureImageFormatSupported, getBase64Async, getFileExtension, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
-import { appendMediaToMessage, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
+import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
@@ -174,6 +174,7 @@ async function sendCaptionedMessage(caption, image) {
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
+    chat_metadata['tainted'] = true;
     context.chat.push(message);
     const messageId = context.chat.length - 1;
     await eventSource.emit(event_types.MESSAGE_SENT, messageId);
@@ -441,6 +442,7 @@ jQuery(async function () {
                         'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
+                        'zai': SECRET_KEYS.ZAI,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -549,6 +551,8 @@ jQuery(async function () {
         await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
+        await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
+        await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
     }
 
     await addSettings();
@@ -624,6 +628,11 @@ jQuery(async function () {
     });
     $('#caption_ollama_custom_model').val(extension_settings.caption.ollama_custom_model || '').on('input', () => {
         extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
+        saveSettingsDebounced();
+    });
+    $('#caption_refresh_models').on('click', async () => {
+        extension_settings.caption.multimodal_model = '';
+        await switchMultimodalBlocks();
         saveSettingsDebounced();
     });
 

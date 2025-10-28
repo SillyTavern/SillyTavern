@@ -34,6 +34,7 @@ const SOURCES = [
     'webllm',
     'koboldcpp',
     'vertexai',
+    'electronhub',
 ];
 
 /**
@@ -52,6 +53,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'togetherai':
         case 'mistral':
         case 'openai':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'electronhub':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
             return getTransformersVector(text);
@@ -100,6 +103,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
             case 'togetherai':
             case 'mistral':
             case 'openai':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'electronhub':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
@@ -156,6 +162,10 @@ function getSourceSettings(source, request) {
             return {
                 model: String(request.body.model),
             };
+        case 'electronhub':
+            return {
+                model: String(request.body.model || 'text-embedding-3-small'),
+            };
         case 'cohere':
             return {
                 model: String(request.body.model),
@@ -187,7 +197,7 @@ function getSourceSettings(source, request) {
         case 'palm':
         case 'vertexai':
             return {
-                model: String(request.body.model || 'text-embedding-004'),
+                model: String(request.body.model || 'text-embedding-005'),
                 request: request, // Pass the request object to get API key and URL
             };
         case 'mistral':

@@ -765,8 +765,13 @@ async function importTags(character, { importSetting = null } = {}) {
  */
 async function handleTagImport(character, { importSetting = null } = {}) {
     /** @type {string[]} */
+    const alreadyAssignedTags = tag_map[character.avatar] ?? [];
     const importTags = character.tags.map(t => t.trim()).filter(t => t)
         .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
+        .filter(t => {
+            const existingTag = getTag(t);
+            return !existingTag || !alreadyAssignedTags.includes(existingTag.id);
+        })
         .slice(0, ANTI_TROLL_MAX_TAGS);
     const existingTags = getExistingTags(importTags);
     const newTags = importTags.filter(t => !existingTags.some(existingTag => existingTag.name.toLowerCase() === t.toLowerCase()))

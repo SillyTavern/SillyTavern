@@ -37,8 +37,8 @@ export const POPUP_RESULT = {
 
 /**
  * @typedef {object} PopupOptions
- * @property {string|boolean?} [okButton=null] - Custom text for the OK button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
- * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
+ * @property {string|boolean?} [okButton=null] - Custom text for the OK button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
+ * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {number?} [rows=1] - The number of rows for the input field
  * @property {boolean?} [wide=false] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
  * @property {boolean?} [wider=false] - Whether to display the popup in wider mode (just wider, no height scaling)
@@ -326,21 +326,31 @@ export class Popup {
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
+                //Text shows OK if not explicitly set to false, and CANCEL only if defined as true or with a caption
+                if (okButton === false) this.okButton.style.display = 'none';
                 if (!cancelButton) this.cancelButton.style.display = 'none';
                 break;
             }
             case POPUP_TYPE.CONFIRM: {
+                // Confirm shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
+                if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for confirm on OK->Yes, CANCEL->No
                 if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-yes');
                 if (!cancelButton) this.cancelButton.textContent = template.getAttribute('popup-button-no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.mainInput.style.display = 'block';
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
+                // Input shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
                 if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for input on OK->Save
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
                 break;
             }
             case POPUP_TYPE.DISPLAY: {
+                // Display hides OK and CANCEL and all main button controls
                 this.buttonControls.style.display = 'none';
                 this.closeButton.style.display = 'block';
                 break;
@@ -348,7 +358,6 @@ export class Popup {
             case POPUP_TYPE.CROP: {
                 this.cropWrap.style.display = 'block';
                 this.cropImage.src = cropImage;
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
                 $(this.cropImage).cropper({
                     aspectRatio: cropAspect ?? 2 / 3,
                     autoCropArea: 1,
@@ -359,6 +368,11 @@ export class Popup {
                         this.cropData.want_resize = !power_user.never_resize_avatars;
                     },
                 });
+                // Crop shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
+                if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for crop on OK->Crop
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
                 break;
             }
             default: {
