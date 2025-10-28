@@ -1111,7 +1111,7 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
-                isSwipingAllowed &&
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
@@ -1125,7 +1125,7 @@ export function initRossMods() {
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
-                isSwipingAllowed &&
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&

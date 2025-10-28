@@ -368,7 +368,7 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
-export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
+export let isSwipingAllowed = () => { return swipeState === SWIPE_STATE.NONE; }; //false when a swipe is in progress, or swiping is blocked.
 
 /**
  * @type {string} 'none'|'swiping'|'editing'
@@ -1584,7 +1584,7 @@ export async function reloadCurrentChat() {
  * Send the message currently typed into the chat box.
  */
 export async function sendTextareaMessage() {
-    if (!isSwipingAllowed) return; // don't proceed if mid-swipe.
+    if (!isSwipingAllowed()) return; // don't proceed if mid-swipe.
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
     if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
@@ -8172,7 +8172,8 @@ export function refreshSwipeButtons() {
 }
 
 export function showSwipeButtons(mesId = chat.length - 1) {
-    isSwipingAllowed = true;
+    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
+    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.NONE; }
 
     if (power_user.enable_chat_tree) {
         //Show all swipe buttons.
@@ -8246,7 +8247,8 @@ export function showSwipeButtons(mesId = chat.length - 1) {
  * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
  */
 export function hideSwipeButtons({ hideCounters = false } = {}) {
-    isSwipingAllowed = false;
+    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
+    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.SWIPING; }
     if (power_user.enable_chat_tree) {
         //Hide all swipe buttons.
         $('body').toggleClass('hideAllSwipeButtons', true);
@@ -8919,12 +8921,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed && source != SWIPE_SOURCE.DELETE) {
+    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE) {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
     swipeState = SWIPE_STATE.SWIPING;
-    isSwipingAllowed = false;
 
     let generation;
     let messageIndex;

@@ -220,7 +220,7 @@ export function getContext() {
             show: showSwipeButtons,
             hide: hideSwipeButtons,
             refresh: refreshSwipeButtons,
-            isAllowed: () => isSwipingAllowed,
+            isAllowed: isSwipingAllowed,
             state: () => swipeState,
         },
         variables: {
