@@ -38,6 +38,7 @@ import {
     setEditedMessageId,
     is_send_press,
     name1,
+    name2,
     resetChatState,
     setSendButtonState,
     getCharacters,
@@ -65,7 +66,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    setScenarioOverride,
+    setCharacterSettingsOverrides,
     system_avatar,
     isChatSaving,
     setExternalAbortController,
@@ -493,7 +494,8 @@ export function getGroupCharacterCards(groupId, characterId) {
         return `${prefix}${value}${suffix}`;
     }
 
-    const scenarioOverride = chat_metadata['scenario'];
+    const scenarioOverride = String(chat_metadata['scenario'] || '');
+    const mesExamplesOverride = String(chat_metadata['mes_example'] || '');
 
     let descriptions = [];
     let personalities = [];
@@ -521,8 +523,8 @@ export function getGroupCharacterCards(groupId, characterId) {
 
     const description = descriptions.filter(x => x.length).join('\n');
     const personality = personalities.filter(x => x.length).join('\n');
-    const scenario = scenarioOverride?.trim() || scenarios.filter(x => x.length).join('\n');
-    const mesExamples = mesExamplesArray.filter(x => x.length).join('\n');
+    const scenario = baseChatReplace(scenarioOverride?.trim(), name1, name2) || scenarios.filter(x => x.length).join('\n');
+    const mesExamples = baseChatReplace(mesExamplesOverride?.trim(), name1, name2) || mesExamplesArray.filter(x => x.length).join('\n');
 
     return { description, personality, scenario, mesExamples };
 }
@@ -2211,7 +2213,7 @@ jQuery(() => {
     });
     $('#rm_group_filter').on('input', filterGroupMembers);
     $('#rm_group_submit').on('click', createGroup);
-    $('#rm_group_scenario').on('click', setScenarioOverride);
+    $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
         const value = $(this).prop('checked');
         is_group_automode_enabled = value;
