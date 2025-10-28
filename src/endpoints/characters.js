@@ -849,7 +849,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
         // Upload backgrounds
         for (const bg of byafData.chatBackgrounds) {
             console.log(`importing background ${bg.name} from BYAF import`);
-            const extension = path.extname(bg.prev_paths?.[0]) || '.png';
+            const extension = path.extname(bg.paths?.[0]) || '.png';
             const baseName = `${path.basename(fileName)}_bg`;
             const filePath = path.join(request.user.directories.userImages, fileName);
             if (!fs.existsSync(filePath)) fs.mkdirSync(filePath, { recursive: true });

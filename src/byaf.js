@@ -287,13 +287,13 @@ export class ByafParser {
                 if (data) {
                     const existingIndex = backgrounds.findIndex(bg => bg.data.compare(data) === 0);
                     if (existingIndex !== -1) {
-                        backgrounds[existingIndex].prev_paths.push(bgImagePath);
+                        backgrounds[existingIndex].paths.push(bgImagePath);
                         continue; // Skip adding a new background since it already exists
                     }
                     backgrounds.push({
                         name: `${character?.name} bg ${i++}` || '',
                         data: data,
-                        prev_paths: [bgImagePath],
+                        paths: [bgImagePath],
                     });
                 }
             }
@@ -330,7 +330,7 @@ export class ByafParser {
      */
     static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
         const chatStartDate = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
-        const chatBackground = chatBackgrounds.find(bg => bg.prev_paths.includes(scenario?.backgroundImage || ''))?.name || '';
+        const chatBackground = chatBackgrounds.find(bg => bg.paths.includes(scenario?.backgroundImage || ''))?.name || '';
         /** @type {object[]} */
         const chat = [{
             user_name: userName,

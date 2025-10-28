@@ -79,7 +79,7 @@ type ByafScenario = {
 type ByafChatBackground = {
     name: string;
     data: Buffer;
-    prev_paths: string[];
+    paths: string[];
 };
 
 type ByafParseResult = {
