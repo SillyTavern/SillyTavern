@@ -843,12 +843,12 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
             const dir = path.dirname(filePath);
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
             writeFileAtomicSync(filePath, ByafParser.getChatFromScenario(scenario, request.body.user_name, byafData.card.data.name, byafData.chatBackgrounds), 'utf8');
+            console.log(`Created ${chatName} chat from BYAF import`);
             return chatName;
         };
 
         // Upload backgrounds
         for (const bg of byafData.chatBackgrounds) {
-            console.log(`importing background ${bg.name} from BYAF import`);
             const extension = path.extname(bg.paths?.[0]) || '.png';
             const baseName = `${path.basename(fileName)}_bg`;
             const filePath = path.join(request.user.directories.userImages, fileName);
@@ -858,7 +858,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
                 const newFile = `${file}${extension}`;
                 writeFileAtomicSync(path.join(filePath, newFile), bg.data);
                 bg.name = clientRelativePath(request.user.directories.root, path.join(filePath, newFile)); // Update background name to the new file
-                console.log(`created ${newFile} background from BYAF import`);
+                console.log(`Created ${newFile} background from BYAF import`);
             }
         }
 
@@ -886,7 +886,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
             const file = getUniqueName(`${sanitize(icon.label) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));
             if (Buffer.isBuffer(icon.image)) {
                 writeFileAtomicSync(path.join(altImagesFolder, `${file}${extension}`), icon.image);
-                console.log(`created ${file}${extension} alternate icon from BYAF import`);
+                console.log(`Created ${file}${extension} alternate icon from BYAF import`);
             }
         }
     }
