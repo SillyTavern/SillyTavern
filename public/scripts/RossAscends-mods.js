@@ -19,6 +19,7 @@ import {
     substituteParams,
     sendTextareaMessage,
     doNavbarIconClick,
+    isSwipingAllowed,
 } from '../script.js';
 
 import {
@@ -410,6 +411,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
+                    || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
@@ -766,44 +768,47 @@ export function initRossMods() {
         }
     });
 
-    // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
-    if (accountStorage.getItem('NavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(RPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(RightNavPanel).addClass('pinnedOpen');
-        $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
-    if (accountStorage.getItem('LNavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-    }
-    if ($(LPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(LeftNavPanel).addClass('pinnedOpen');
-        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+    if (!isMobile()) { //only read/set pin states on non-mobile devices
+        // read the state of right Nav Lock and apply to rightnav classlist
+        $(RPanelPin).prop('checked', accountStorage.getItem('NavLockOn') == 'true');
+        if (accountStorage.getItem('NavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(RPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(RightNavPanel).addClass('pinnedOpen');
+            $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
+        if (accountStorage.getItem('LNavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+        if ($(LPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(LeftNavPanel).addClass('pinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        // read the state of left Nav Lock and apply to leftnav classlist
+        $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
+        if (accountStorage.getItem('WINavLockOn') == 'true') {
+            //console.log('setting pin class via local var');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
+
+        if ($(WIPanelPin).prop('checked')) {
+            console.debug('setting pin class via checkbox state');
+            $(WorldInfo).addClass('pinnedOpen');
+            $(WIDrawerIcon).addClass('drawerPinnedOpen');
+        }
     }
 
-    // read the state of left Nav Lock and apply to leftnav classlist
-    $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
-    if (accountStorage.getItem('WINavLockOn') == 'true') {
-        //console.log('setting pin class via local var');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
-
-    if ($(WIPanelPin).prop('checked')) {
-        console.debug('setting pin class via checkbox state');
-        $(WorldInfo).addClass('pinnedOpen');
-        $(WIDrawerIcon).addClass('drawerPinnedOpen');
-    }
 
     //save state of Right nav being open or closed
     $('#rightNavDrawerIcon').on('click', function () {
@@ -1106,8 +1111,8 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_left:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
@@ -1120,8 +1125,8 @@ export function initRossMods() {
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_right:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&

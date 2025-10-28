@@ -210,7 +210,7 @@ const settings = {
     openrouter_providers: [],
     vllm_model: '',
     aphrodite_model: '',
-    dreamgen_model: 'opus-v1-xl/text',
+    dreamgen_model: 'lucid-v1-extra-large/text',
     tabby_model: '',
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],

@@ -1,8 +1,9 @@
 {
     "temp": 0,
-    "rep_pen": 1.18,
-    "rep_pen_range": 2048,
+    "rep_pen": 1,
+    "rep_pen_range": 0,
     "top_p": 0,
+    "min_p": 0,
     "top_a": 0,
     "top_k": 1,
     "typical": 1,
@@ -20,5 +21,6 @@
     "mirostat": 0,
     "mirostat_tau": 5,
     "mirostat_eta": 0.1,
+    "use_default_badwordsids": false,
     "grammar": ""
 }

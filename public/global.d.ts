@@ -2,12 +2,16 @@ import libs from './lib';
 import getContext from './scripts/st-context';
 import { power_user } from './scripts/power-user';
 import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyApi';
+import { oai_settings } from './scripts/openai';
+import { textgenerationwebui_settings } from './scripts/textgen-settings';
 
 declare global {
     // Custom types
     type InstructSettings = typeof power_user.instruct;
     type ContextSettings = typeof power_user.context;
     type ReasoningSettings = typeof power_user.reasoning;
+    type ChatCompletionSettings = typeof oai_settings;
+    type TextCompletionSettings = typeof textgenerationwebui_settings;
 
     // Global namespace modules
     interface Window {

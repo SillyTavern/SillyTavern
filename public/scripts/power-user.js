@@ -29,6 +29,7 @@ import {
     messageFormatting,
     extension_prompt_types,
     extension_prompt_roles,
+    deleteMessage,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -137,6 +138,7 @@ export const power_user = {
     streaming_fps: 30,
     smooth_streaming: false,
     smooth_streaming_speed: 50,
+    stream_fade_in: false,
 
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
@@ -1685,6 +1687,8 @@ export async function loadPowerUserSettings(settings, data) {
     $('#smooth_streaming').prop('checked', power_user.smooth_streaming);
     $('#smooth_streaming_speed').val(power_user.smooth_streaming_speed);
 
+    $('#stream_fade_in').prop('checked', power_user.stream_fade_in);
+
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
 
@@ -2763,7 +2767,6 @@ async function doMesCut(_, text) {
 
     for (let i = 0; i < totalMesToCut; i++) {
         cutText += (chat[mesIDToCut]?.mes || '') + '\n';
-        let done = false;
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
         if (!mesToCut.length) {
@@ -2775,14 +2778,10 @@ async function doMesCut(_, text) {
         }
 
         setEditedMessageId(mesIDToCut);
-        eventSource.once(event_types.MESSAGE_DELETED, () => {
-            done = true;
-        });
-        mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
-        while (!done) {
-            await delay(1);
-        }
+        await deleteMessage(mesIDToCut, null, false);
     }
+
+    await saveChatConditional();
 
     return cutText;
 }
@@ -3490,6 +3489,11 @@ jQuery(() => {
 
     $('#smooth_streaming_speed').on('input', function () {
         power_user.smooth_streaming_speed = Number($('#smooth_streaming_speed').val());
+        saveSettingsDebounced();
+    });
+
+    $('#stream_fade_in').on('input', function () {
+        power_user.stream_fade_in = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

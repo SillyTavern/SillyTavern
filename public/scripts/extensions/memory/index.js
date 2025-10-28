@@ -993,7 +993,7 @@ function doPopout(e) {
         originalElement.empty();
         originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
-        $('body').append(newElement);
+        $('#movingDivs').append(newElement);
         newElement.transition({ opacity: 1, duration: animation_duration, easing: animation_easing });
         $('#summaryExtensionDrawerContents').addClass('scrollableInnerFull');
         setMemoryContext(prevSummaryBoxContents, false); //paste prev summary box contents into popout box

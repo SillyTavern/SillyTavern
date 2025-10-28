@@ -10,12 +10,10 @@ import {
     event_types,
     getCurrentChatId,
     getRequestHeaders,
-    hideSwipeButtons,
     name1,
     name2,
     reloadCurrentChat,
     saveSettingsDebounced,
-    showSwipeButtons,
     this_chid,
     saveChatConditional,
     chat_metadata,
@@ -27,6 +25,7 @@ import {
     getSystemMessageByType,
     printMessages,
     clearChat,
+    refreshSwipeButtons,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -159,8 +158,7 @@ export async function hideChatMessageRange(start, end, unhide, nameFitler = null
     }
 
     // Reload swipes. Useful when a last message is hidden.
-    hideSwipeButtons();
-    showSwipeButtons();
+    refreshSwipeButtons();
 
     await saveChatConditional();
 }
@@ -750,10 +748,9 @@ function getStyleContentsFromMarkdown(text) {
         return '';
     }
 
-    const div = document.createElement('div');
     const html = converter.makeHtml(substituteParams(text));
-    div.innerHTML = html;
-    const styleElements = Array.from(div.querySelectorAll('style'));
+    const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
+    const styleElements = Array.from(parsedDocument.querySelectorAll('style'));
     return styleElements
         .filter(s => s.textContent.trim().length > 0)
         .map(s => s.textContent.trim())

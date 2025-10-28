@@ -374,7 +374,7 @@
     "Slack and Poe cookies will not work here, do not bother trying.": "Slack과 Poe 쿠키는 여기서 작동하지 않습니다. 시도하지 마세요.",
     "Claude Model": "Claude 모델",
     "Window AI Model": "Window AI 모델",
-    "Model Order": "OpenRouter 모델 정렬",
+    "OpenRouter Model Sorting": "OpenRouter 모델 정렬",
     "Alphabetically": "알파벳순",
     "Price": "가격(가장 저렴)",
     "Context Size": "컨텍스트 크기",

@@ -140,95 +140,15 @@
         "type": "workflow"
     },
     {
-        "filename": "presets/kobold/Ace of Spades.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Basic Coherence.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Best Guess.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Coherent Creativity.json",
-        "type": "kobold_preset"
-    },
-    {
         "filename": "presets/kobold/Deterministic.json",
         "type": "kobold_preset"
     },
     {
-        "filename": "presets/kobold/Genesis.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Godlike.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Good Winds.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Liminal Drift.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Low Rider.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Luna Moth.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Mayday.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Miro Bronze.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Miro Gold.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Miro Silver.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Ouroboros.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Pleasing Results.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Pro Writer.json",
+        "filename": "presets/kobold/Neutral.json",
         "type": "kobold_preset"
     },
     {
         "filename": "presets/kobold/RecoveredRuins.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Space Alien.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Storywriter.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/TFS-with-Top-A.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/Titanic.json",
         "type": "kobold_preset"
     },
     {
@@ -241,10 +161,6 @@
     },
     {
         "filename": "presets/kobold/Universal-Super-Creative.json",
-        "type": "kobold_preset"
-    },
-    {
-        "filename": "presets/kobold/simple-proxy-for-tavern.json",
         "type": "kobold_preset"
     },
     {
@@ -344,22 +260,6 @@
         "type": "novel_preset"
     },
     {
-        "filename": "presets/textgen/Asterism.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Beam Search.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Big O.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Contrastive Search.json",
-        "type": "textgen_preset"
-    },
-    {
         "filename": "presets/textgen/Default.json",
         "type": "textgen_preset"
     },
@@ -368,99 +268,7 @@
         "type": "textgen_preset"
     },
     {
-        "filename": "presets/textgen/Divine Intellect.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Kobold (Godlike).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Kobold (Liminal Drift).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/LLaMa-Precise.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Midnight Enigma.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Miro Bronze.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Miro Gold.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Miro Silver.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Mirostat.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Naive.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Best Guess).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Decadence).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Genesis).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Lycaenidae).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Ouroboros).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Pleasing Results).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Sphinx Moth).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/NovelAI (Storywriter).json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Shortwave.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Simple-1.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Space Alien.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/StarChat.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/TFS-with-Top-A.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Titanic.json",
+        "filename": "presets/textgen/Neutral.json",
         "type": "textgen_preset"
     },
     {
@@ -473,14 +281,6 @@
     },
     {
         "filename": "presets/textgen/Universal-Super-Creative.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/Yara.json",
-        "type": "textgen_preset"
-    },
-    {
-        "filename": "presets/textgen/simple-proxy-for-tavern.json",
         "type": "textgen_preset"
     },
     {
@@ -505,14 +305,6 @@
     },
     {
         "filename": "presets/context/Default.json",
-        "type": "context"
-    },
-    {
-        "filename": "presets/context/DreamGen Role-Play V1 ChatML.json",
-        "type": "context"
-    },
-    {
-        "filename": "presets/context/DreamGen Role-Play V1 Llama3.json",
         "type": "context"
     },
     {
@@ -585,14 +377,6 @@
     },
     {
         "filename": "presets/instruct/ChatML.json",
-        "type": "instruct"
-    },
-    {
-        "filename": "presets/instruct/DreamGen Role-Play V1 ChatML.json",
-        "type": "instruct"
-    },
-    {
-        "filename": "presets/instruct/DreamGen Role-Play V1 Llama3.json",
         "type": "instruct"
     },
     {

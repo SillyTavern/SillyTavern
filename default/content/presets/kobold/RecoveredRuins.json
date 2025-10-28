@@ -3,6 +3,7 @@
     "rep_pen": 1.1,
     "rep_pen_range": 600,
     "top_p": 0.95,
+    "min_p": 0.01,
     "top_a": 0,
     "top_k": 0,
     "typical": 1,
@@ -20,5 +21,6 @@
     "mirostat": 0,
     "mirostat_tau": 5,
     "mirostat_eta": 0.1,
+    "use_default_badwordsids": false,
     "grammar": ""
 }

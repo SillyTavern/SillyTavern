@@ -51,6 +51,7 @@ export const inject_ids = {
     DEPTH_PROMPT_INDEX: (index) => `DEPTH_PROMPT_${index}`,
     CUSTOM_WI_DEPTH: 'customDepthWI',
     CUSTOM_WI_DEPTH_ROLE: (depth, role) => `customDepthWI_${depth}_${role}`,
+    CUSTOM_WI_OUTLET: (key) => `customWIOutlet_${key}`,
 };
 
 export const COMETAPI_IGNORE_PATTERNS = [
@@ -65,3 +66,11 @@ export const COMETAPI_IGNORE_PATTERNS = [
     // Utility models
     'embedding', 'search-gpts', 'files_retrieve', 'moderation',
 ];
+
+/**
+ * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
+ */
+export const SWIPE_DIRECTION = {
+    LEFT: 'left',
+    RIGHT: 'right',
+};

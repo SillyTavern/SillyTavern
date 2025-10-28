@@ -189,6 +189,7 @@ export const chat_completion_sources = {
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
+    ZAI: 'zai',
 };
 
 const character_names_behavior = {
@@ -276,6 +277,8 @@ export const settingsToUpdate = {
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
+    electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
+    electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
@@ -292,6 +295,7 @@ export const settingsToUpdate = {
     custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false, true],
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
+    zai_model: ['#model_zai_select', 'zai_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
@@ -370,23 +374,26 @@ const default_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-1.5-pro',
-    vertexai_model: 'gemini-2.0-flash-001',
+    claude_model: 'claude-sonnet-4-5',
+    google_model: 'gemini-2.5-pro',
+    vertexai_model: 'gemini-2.5-pro',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
     electronhub_model: 'gpt-4o-mini',
+    electronhub_sort_models: 'alphabetically',
+    electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
     deepseek_model: 'deepseek-chat',
-    aimlapi_model: 'gpt-4o-mini-2024-07-18',
+    aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    zai_model: 'glm-4.6',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -435,99 +442,7 @@ const default_settings = {
     extensions: {},
 };
 
-const oai_settings = {
-    preset_settings_openai: 'Default',
-    temp_openai: 1.0,
-    freq_pen_openai: 0,
-    pres_pen_openai: 0,
-    top_p_openai: 1.0,
-    top_k_openai: 0,
-    min_p_openai: 0,
-    top_a_openai: 0,
-    repetition_penalty_openai: 1,
-    stream_openai: false,
-    openai_max_context: max_4k,
-    openai_max_tokens: 300,
-    wrap_in_quotes: false,
-    ...chatCompletionDefaultPrompts,
-    ...promptManagerDefaultPromptOrders,
-    send_if_empty: '',
-    impersonation_prompt: default_impersonation_prompt,
-    new_chat_prompt: default_new_chat_prompt,
-    new_group_chat_prompt: default_new_group_chat_prompt,
-    new_example_chat_prompt: default_new_example_chat_prompt,
-    continue_nudge_prompt: default_continue_nudge_prompt,
-    bias_preset_selected: default_bias,
-    bias_presets: default_bias_presets,
-    wi_format: default_wi_format,
-    group_nudge_prompt: default_group_nudge_prompt,
-    scenario_format: default_scenario_format,
-    personality_format: default_personality_format,
-    openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-1.5-pro',
-    vertexai_model: 'gemini-2.0-flash-001',
-    ai21_model: 'jamba-large',
-    mistralai_model: 'mistral-large-latest',
-    cohere_model: 'command-r-plus',
-    perplexity_model: 'sonar-pro',
-    groq_model: 'llama-3.1-70b-versatile',
-    electronhub_model: 'gpt-4o-mini',
-    nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-chat',
-    aimlapi_model: 'gpt-4-turbo',
-    xai_model: 'grok-3-beta',
-    pollinations_model: 'openai',
-    cometapi_model: 'gpt-4o',
-    moonshot_model: 'kimi-latest',
-    fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
-    azure_base_url: '',
-    azure_deployment_name: '',
-    azure_api_version: '2024-02-15-preview',
-    azure_openai_model: '',
-    custom_model: '',
-    custom_url: '',
-    custom_include_body: '',
-    custom_exclude_body: '',
-    custom_include_headers: '',
-    openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: false,
-    openrouter_group_models: false,
-    openrouter_sort_models: 'alphabetically',
-    openrouter_providers: [],
-    openrouter_allow_fallbacks: true,
-    openrouter_middleout: openrouter_middleout_types.ON,
-    reverse_proxy: '',
-    chat_completion_source: chat_completion_sources.OPENAI,
-    max_context_unlocked: false,
-    show_external_models: false,
-    proxy_password: '',
-    assistant_prefill: '',
-    assistant_impersonation: '',
-    claude_use_sysprompt: false,
-    use_makersuite_sysprompt: true,
-    vertexai_auth_mode: 'express',
-    vertexai_region: 'us-central1',
-    vertexai_express_project_id: '',
-    squash_system_messages: false,
-    image_inlining: false,
-    inline_image_quality: 'low',
-    video_inlining: false,
-    bypass_status_check: false,
-    continue_prefill: false,
-    function_calling: false,
-    names_behavior: character_names_behavior.DEFAULT,
-    continue_postfix: continue_postfix_types.SPACE,
-    custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
-    show_thoughts: true,
-    reasoning_effort: reasoning_effort_types.auto,
-    enable_web_search: false,
-    request_images: false,
-    seed: -1,
-    n: 1,
-    bind_preset_to_connection: true,
-    extensions: {},
-};
+const oai_settings = structuredClone(default_settings);
 
 export let proxies = [
     {
@@ -1526,7 +1441,7 @@ export async function prepareOpenAIMessages({
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
-    openai_messages_count = chat.filter(x => !x?.tool_calls && (x?.role === 'user' || x?.role === 'assistant'))?.length || 0;
+    openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', 'tool'].includes(x?.role)).length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -1658,6 +1573,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.fireworks_model;
         case chat_completion_sources.AZURE_OPENAI:
             return oai_settings.azure_openai_model;
+        case chat_completion_sources.ZAI:
+            return oai_settings.zai_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -1708,6 +1625,59 @@ function calculateOpenRouterCost() {
     }
 
     $('#openrouter_max_prompt_cost').text(cost);
+}
+
+function getElectronHubModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.pricing?.input;
+    const outputPrice = model.pricing?.output;
+    const price = inputPrice && outputPrice ? `$${inputPrice}/$${outputPrice} in/out Mtoken` : 'Unknown';
+
+    const visionIcon = model.metadata?.vision ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.metadata?.reasoning ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.metadata?.function_call ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports function tools"></i>' : '';
+    const premiumIcon = model?.premium_model ? '<i class="fa-solid fa-crown fa-sm" title="This model requires a subscription"></i>' : '';
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', premiumIcon);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.tokens} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
+}
+
+function calculateElectronHubCost() {
+    if (oai_settings.chat_completion_source !== chat_completion_sources.ELECTRONHUB) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = model_list.find(x => x.id === oai_settings.electronhub_model);
+
+    if (model?.pricing) {
+        const outputCost = Number(model.pricing.output / 1000000);
+        const inputCost = Number(model.pricing.input / 1000000);
+        const outputTokens = oai_settings.openai_max_tokens;
+        const inputTokens = (oai_settings.openai_max_context - outputTokens);
+        const totalCost = (outputCost * outputTokens) + (inputCost * inputTokens);
+        if (!isNaN(totalCost)) {
+            cost = '$' + totalCost.toFixed(4);
+        }
+    }
+
+    $('#electronhub_max_prompt_cost').text(cost);
 }
 
 function saveModelList(data) {
@@ -1775,44 +1745,29 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
-        /** @type {HTMLSelectElement} */
-        const mistralModelSelect = document.querySelector('#model_mistralai_select');
-        if (mistralModelSelect) {
-            const options = Array.from(mistralModelSelect.options);
-            options.forEach((option) => {
-                const existingModel = model_list.find(model => model.id === option.value);
-                if (!existingModel) {
-                    option.remove();
-                }
-            });
+        $('#model_mistralai_select').empty();
 
-            const otherOptionsGroup = mistralModelSelect.querySelector('#mistralai_other_models');
-            for (const model of model_list.filter(model => model?.capabilities?.completion_chat)) {
-                if (!options.some(option => option.value === model.id) && otherOptionsGroup) {
-                    otherOptionsGroup.append(new Option(model.id, model.id));
-                }
-            }
-
-            const selectedModel = model_list.find(model => model.id === oai_settings.mistralai_model);
-            if (!selectedModel) {
-                oai_settings.mistralai_model = model_list.find(model => model?.capabilities?.completion_chat)?.id;
-            }
-
-            $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
+        for (const model of model_list.filter(model => model?.capabilities?.completion_chat)) {
+            $('#model_mistralai_select').append(new Option(model.id, model.id));
         }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.mistralai_model);
+        if (!selectedModel) {
+            oai_settings.mistralai_model = model_list.find(model => model?.capabilities?.completion_chat)?.id;
+        }
+
+        $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+        model_list = model_list.filter(model => model?.endpoints?.includes('/v1/chat/completions'));
+
+        model_list = electronHubSortBy(model_list, oai_settings.electronhub_sort_models);
+
         $('#model_electronhub_select').empty();
-        model_list.forEach((model) => {
-            if (model?.endpoints?.includes('/v1/chat/completions')) {
-                $('#model_electronhub_select').append(
-                    $('<option>', {
-                        value: model.id,
-                        text: model.name,
-                    }));
-            }
-        });
+
+        const groupedList = oai_settings.electronhub_group_models ? electronHubGroupByVendor(model_list) : model_list;
+        appendElectronHubOptions(groupedList, oai_settings.electronhub_group_models);
 
         const selectedModel = model_list.find(model => model.id === oai_settings.electronhub_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.electronhub_model)) {
@@ -1984,6 +1939,24 @@ function saveModelList(data) {
             .append(new Option(modelId || 'None', modelId || '', true, true))
             .trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
+        $('#model_xai_select').empty();
+        model_list.forEach((model) => {
+            $('#model_xai_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.xai_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.xai_model)) {
+            oai_settings.xai_model = model_list[0].id;
+        }
+
+        $('#model_xai_select').val(oai_settings.xai_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -2030,6 +2003,61 @@ const openRouterSortBy = (data, property = 'alphabetically') => {
 function openRouterGroupByVendor(array) {
     return array.reduce((acc, curr) => {
         const vendor = curr.id.split('/')[0];
+
+        if (!acc.has(vendor)) {
+            acc.set(vendor, []);
+        }
+
+        acc.get(vendor).push(curr);
+
+        return acc;
+    }, new Map());
+}
+
+function appendElectronHubOptions(model_list, groupModels = false) {
+    const appendOption = (model, parent = null) => {
+        (parent || $('#model_electronhub_select')).append(
+            $('<option>', {
+                value: model.id,
+                text: model.name,
+            }));
+    };
+
+    if (groupModels) {
+        model_list.forEach((models, vendor) => {
+            const optgroup = $('<optgroup>').attr('label', vendor);
+
+            models.forEach((model) => {
+                appendOption(model, optgroup);
+            });
+
+            $('#model_electronhub_select').append(optgroup);
+        });
+    } else {
+        model_list.forEach((model) => {
+            appendOption(model);
+        });
+    }
+
+}
+
+function electronHubSortBy(data, property = 'alphabetically') {
+    return data.sort((a, b) => {
+        if (property === 'context_length') {
+            return b.tokens - a.tokens;
+        } else if (property === 'pricing.input') {
+            return parseFloat(a.pricing.input) - parseFloat(b.pricing.input);
+        } else if (property === 'pricing.output') {
+            return parseFloat(a.pricing.output) - parseFloat(b.pricing.output);
+        } else {
+            return a?.name && b?.name && a.name.localeCompare(b.name);
+        }
+    });
+}
+
+function electronHubGroupByVendor(array) {
+    return array.reduce((acc, curr) => {
+        const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
 
         if (!acc.has(vendor)) {
             acc.set(vendor, []);
@@ -2182,7 +2210,8 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
-    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
+    const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
+    const isZai = oai_settings.chat_completion_source == chat_completion_sources.ZAI;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2191,7 +2220,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2353,19 +2382,24 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     if (isXAI) {
-        if (generate_data.model.includes('grok-4')) {
+        const model = generate_data.model;
+        if (model.includes('grok-3-mini')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
             delete generate_data.stop;
+        } else {
+            // As of 2025/09/21, only grok-3-mini accepts reasoning_effort
             delete generate_data.reasoning_effort;
         }
-        if (generate_data.model.includes('grok-3-mini')) {
+
+        if (model.includes('grok-4') || model.includes('grok-code')) {
             delete generate_data.presence_penalty;
             delete generate_data.frequency_penalty;
-        }
-        if (generate_data.model.includes('grok-vision')) {
-            delete generate_data.tools;
-            delete generate_data.tool_choice;
+
+            // grok-4-fast-non-reasoning accepts stop
+            if (!model.includes('grok-4-fast-non-reasoning')) {
+                delete generate_data.stop;
+            }
         }
     }
 
@@ -2376,6 +2410,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     // https://docs.electronhub.ai/api-reference/chat/completions
     if (isElectronHub) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
+    }
+
+    // https://docs.z.ai/api-reference/llm/chat-completion
+    if (isZai) {
+        generate_data['top_p'] = generate_data.top_p || 0.01;
+        generate_data['stop'] = getCustomStoppingStrings(1);
+        delete generate_data.presence_penalty;
+        delete generate_data.frequency_penalty;
     }
 
     const seedSupportedSources = [
@@ -2474,7 +2516,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
-                if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
                     // FIXME: state.reasoning should be an array to support multi-swipe
                     swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
@@ -2559,7 +2601,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -2626,7 +2668,7 @@ function parseOpenAIChatLogprobs(logprobs) {
     /** @type {(x: { token: string, logprob: number }) => [string, number]} */
     const toTuple = (x) => [x.token, x.logprob];
 
-    return content.map(({ token, logprob, top_logprobs }) => {
+    return content.map(({ token, logprob, top_logprobs = [] }) => {
         // Add the chosen token to top_logprobs if it's not already there, then
         // convert to a list of [token, logprob] pairs
         const chosenTopToken = top_logprobs.some((top) => token === top.token);
@@ -3523,6 +3565,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.groq_model = settings.groq_model ?? default_settings.groq_model;
     oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
+    oai_settings.electronhub_sort_models = settings.electronhub_sort_models ?? default_settings.electronhub_sort_models;
+    oai_settings.electronhub_group_models = settings.electronhub_group_models ?? default_settings.electronhub_group_models;
     oai_settings.nanogpt_model = settings.nanogpt_model ?? default_settings.nanogpt_model;
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.aimlapi_model = settings.aimlapi_model ?? default_settings.aimlapi_model;
@@ -3531,6 +3575,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cometapi_model = settings.cometapi_model ?? default_settings.cometapi_model;
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
+    oai_settings.zai_model = settings.zai_model ?? default_settings.zai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3636,6 +3681,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_pollinations_select option[value="${oai_settings.pollinations_model}"`).prop('selected', true);
     $('#model_moonshot_select').val(oai_settings.moonshot_model);
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
+    $('#model_zai_select').val(oai_settings.zai_model);
+    $(`#model_zai_select option[value="${oai_settings.zai_model}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#azure_base_url').val(oai_settings.azure_base_url);
@@ -3666,6 +3713,8 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks);
     $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
     $('#openrouter_middleout').val(oai_settings.openrouter_middleout);
+    $('#electronhub_sort_models').val(oai_settings.electronhub_sort_models);
+    $('#electronhub_group_models').prop('checked', oai_settings.electronhub_group_models);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     $('#continue_prefill').prop('checked', oai_settings.continue_prefill);
     $('#openai_function_calling').prop('checked', oai_settings.function_calling);
@@ -3807,6 +3856,7 @@ async function getStatusOpen() {
         chat_completion_sources.AI21,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
+        chat_completion_sources.ZAI,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -3928,9 +3978,12 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
         electronhub_model: settings.electronhub_model,
+        electronhub_sort_models: settings.electronhub_sort_models,
+        electronhub_group_models: settings.electronhub_group_models,
         moonshot_model: settings.moonshot_model,
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
+        zai_model: settings.zai_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -3939,6 +3992,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         vertexai_model: settings.vertexai_model,
+        nanogpt_model: settings.nanogpt_model,
+        deepseek_model: settings.deepseek_model,
         azure_base_url: settings.azure_base_url,
         azure_deployment_name: settings.azure_deployment_name,
         azure_api_version: settings.azure_api_version,
@@ -4532,75 +4587,8 @@ function getMistralMaxContext(model, isUnlocked) {
         }
     }
 
-    const contextMap = {
-        'codestral-2405': 32768,
-        'codestral-2411-rc5': 262144,
-        'codestral-2412': 262144,
-        'codestral-2501': 262144,
-        'codestral-2508': 256000,
-        'codestral-latest': 256000,
-        'codestral-mamba-2407': 262144,
-        'codestral-mamba-latest': 262144,
-        'open-codestral-mamba': 262144,
-        'ministral-3b-2410': 131072,
-        'ministral-3b-latest': 131072,
-        'ministral-8b-2410': 131072,
-        'ministral-8b-latest': 131072,
-        'mistral-large-2407': 131072,
-        'mistral-large-2411': 131072,
-        'mistral-large-latest': 131072,
-        'mistral-large-pixtral-2411': 131072,
-        'mistral-tiny-2407': 131072,
-        'mistral-tiny-latest': 131072,
-        'open-mistral-nemo': 131072,
-        'open-mistral-nemo-2407': 131072,
-        'pixtral-12b': 131072,
-        'pixtral-12b-2409': 131072,
-        'pixtral-12b-latest': 131072,
-        'pixtral-large-2411': 131072,
-        'pixtral-large-latest': 131072,
-        'open-mixtral-8x22b': 65536,
-        'open-mixtral-8x22b-2404': 65536,
-        'mistral-embed': 32768,
-        'mistral-large-2402': 32768,
-        'mistral-medium': 131072,
-        'mistral-medium-2312': 32768,
-        'mistral-medium-2505': 131072,
-        'mistral-medium-2508': 262144,
-        'mistral-medium-latest': 262144,
-        'mistral-moderation-2411': 32768,
-        'mistral-moderation-latest': 32768,
-        'mistral-ocr-2503': 32768,
-        'mistral-ocr-latest': 32768,
-        'mistral-saba-2502': 32768,
-        'mistral-saba-latest': 32768,
-        'mistral-small': 32768,
-        'mistral-small-2312': 32768,
-        'mistral-small-2402': 32768,
-        'mistral-small-2409': 32768,
-        'mistral-small-2501': 32768,
-        'mistral-small-2503': 32768,
-        'mistral-small-2506': 131072,
-        'mistral-small-latest': 131072,
-        'mistral-tiny': 32768,
-        'mistral-tiny-2312': 32768,
-        'open-mistral-7b': 32768,
-        'open-mixtral-8x7b': 32768,
-        'devstral-small-2505': 131072,
-        'devstral-small-2507': 131072,
-        'devstral-small-latest': 131072,
-        'devstral-medium-latest': 131072,
-        'devstral-medium-2507': 131072,
-        'magistral-medium-latest': 40960,
-        'magistral-medium-2506': 40960,
-        'magistral-small-latest': 40960,
-        'magistral-small-2506': 40000,
-        'magistral-small-2507': 40960,
-        'magistral-medium-2507': 40960,
-    };
-
     // Return context size if model found, otherwise default to 32k
-    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || 32768;
+    return max_32k;
 }
 
 /**
@@ -4644,6 +4632,29 @@ function getGroqMaxContext(model, isUnlocked) {
         'compound-beta': max_128k,
         'compound-beta-mini': max_128k,
         'qwen/qwen3-32b': max_128k,
+    };
+
+    // Return context size if model found, otherwise default to 128k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
+}
+
+/**
+ * Get the maximum context size for the Z.AI model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked If context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getZaiMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    const contextMap = {
+        'glm-4.6': max_200k,
+        'glm-4.5': max_128k,
+        'glm-4-32b-0414-128k': max_128k,
+        'glm-4.5-air': max_128k,
+        'glm-4.5v': max_64k,
     };
 
     // Return context size if model found, otherwise default to 128k
@@ -4714,7 +4725,7 @@ function getElectronHubMaxContext(model, isUnlocked) {
             return modelInfo.tokens;
         }
     }
-    return max_8k;
+    return max_128k;
 }
 
 /**
@@ -4878,6 +4889,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_xai_select')) {
+        if (!value) {
+            console.debug('Null XAI model selected. Ignoring.');
+            return;
+        }
         console.log('XAI model changed to', value);
         oai_settings.xai_model = value;
     }
@@ -4913,20 +4928,23 @@ async function onModelChange() {
         oai_settings.azure_openai_model = value;
     }
 
+    if ($(this).is('#model_zai_select')) {
+        console.log('ZAI model changed to', value);
+        oai_settings.zai_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-1.5-pro')) {
-            $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-2.5-flash-image-preview')) {
+        } else if (value.includes('gemini-2.5-flash-image')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (value.includes('gemini-1.5-flash') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash')) {
+        } else if (value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemma-3-27b-it')) {
             $('#openai_max_context').attr('max', max_128k);
         } else if (value.includes('gemma-3n-e4b-it')) {
             $('#openai_max_context').attr('max', max_8k);
-        } else if (value.includes('gemma-3') || value.includes('learnlm-1.5-pro-experimental')) {
+        } else if (value.includes('gemma-3')) {
             $('#openai_max_context').attr('max', max_32k);
         } else {
             $('#openai_max_context').attr('max', max_32k);
@@ -4966,9 +4984,12 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', max_200k);
+            $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (value == 'claude-2.1' || value.startsWith('claude-3') || value.startsWith('claude-opus') || value.startsWith('claude-sonnet')) {
+        else if (value.startsWith('claude-sonnet-4-5')) {
+            $('#openai_max_context').attr('max', max_1mil);
+        }
+        else if (value == 'claude-2.1' || value.startsWith('claude-3') || value.startsWith('claude-opus') || value.startsWith('claude-haiku') || value.startsWith('claude-sonnet')) {
             $('#openai_max_context').attr('max', max_200k);
         }
         else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
@@ -5093,6 +5114,8 @@ async function onModelChange() {
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+
+        calculateElectronHubCost();
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.NANOGPT) {
@@ -5144,11 +5167,14 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', unlocked_max);
         } else if (oai_settings.xai_model.includes('grok-2-vision')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (oai_settings.xai_model.includes('grok-vision')) {
-            $('#openai_max_context').attr('max', max_8k);
+        } else if (oai_settings.xai_model.includes('grok-4-fast')) {
+            $('#openai_max_context').attr('max', max_2mil);
         } else if (oai_settings.xai_model.includes('grok-4')) {
             $('#openai_max_context').attr('max', max_256k);
+        } else if (oai_settings.xai_model.includes('grok-code')) {
+            $('#openai_max_context').attr('max', max_256k);
         } else {
+            // grok 2 and grok 3
             $('#openai_max_context').attr('max', max_128k);
         }
 
@@ -5209,6 +5235,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
+        const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
     saveSettingsDebounced();
@@ -5217,6 +5252,10 @@ async function onModelChange() {
 }
 
 async function onOpenrouterModelSortChange() {
+    await getStatusOpen();
+}
+
+async function onElectronHubModelSortChange() {
     await getStatusOpen();
 }
 
@@ -5239,273 +5278,56 @@ function onReverseProxyInput() {
 async function onConnectButtonClick(e) {
     e.stopPropagation();
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
-        const api_key_openrouter = String($('#api_key_openrouter').val()).trim();
+    /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
+    const apiSourceConfig = {
+        [chat_completion_sources.OPENROUTER]: { key: SECRET_KEYS.OPENROUTER, selector: '#api_key_openrouter', proxy: false },
+        [chat_completion_sources.MAKERSUITE]: { key: SECRET_KEYS.MAKERSUITE, selector: '#api_key_makersuite', proxy: true },
+        [chat_completion_sources.CLAUDE]: { key: SECRET_KEYS.CLAUDE, selector: '#api_key_claude', proxy: true },
+        [chat_completion_sources.OPENAI]: { key: SECRET_KEYS.OPENAI, selector: '#api_key_openai', proxy: true },
+        [chat_completion_sources.AI21]: { key: SECRET_KEYS.AI21, selector: '#api_key_ai21', proxy: false },
+        [chat_completion_sources.MISTRALAI]: { key: SECRET_KEYS.MISTRALAI, selector: '#api_key_mistralai', proxy: true },
+        [chat_completion_sources.CUSTOM]: { key: SECRET_KEYS.CUSTOM, selector: '#api_key_custom', proxy: false, keyless: true },
+        [chat_completion_sources.COHERE]: { key: SECRET_KEYS.COHERE, selector: '#api_key_cohere', proxy: false },
+        [chat_completion_sources.PERPLEXITY]: { key: SECRET_KEYS.PERPLEXITY, selector: '#api_key_perplexity', proxy: false },
+        [chat_completion_sources.GROQ]: { key: SECRET_KEYS.GROQ, selector: '#api_key_groq', proxy: false },
+        [chat_completion_sources.ELECTRONHUB]: { key: SECRET_KEYS.ELECTRONHUB, selector: '#api_key_electronhub', proxy: false },
+        [chat_completion_sources.NANOGPT]: { key: SECRET_KEYS.NANOGPT, selector: '#api_key_nanogpt', proxy: false },
+        [chat_completion_sources.DEEPSEEK]: { key: SECRET_KEYS.DEEPSEEK, selector: '#api_key_deepseek', proxy: true },
+        [chat_completion_sources.XAI]: { key: SECRET_KEYS.XAI, selector: '#api_key_xai', proxy: true },
+        [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
+        [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: false },
+        [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
+        [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
+        [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
+        [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: false },
+    };
 
-        if (api_key_openrouter.length) {
-            await writeSecret(SECRET_KEYS.OPENROUTER, api_key_openrouter);
-        }
+    // Vertex AI Express version - use API key
+    if (oai_settings.vertexai_auth_mode === 'express') {
+        apiSourceConfig[chat_completion_sources.VERTEXAI] = { key: SECRET_KEYS.VERTEXAI, selector: '#api_key_vertexai', proxy: true };
+    }
 
-        if (!secret_state[SECRET_KEYS.OPENROUTER]) {
-            console.log('No secret key saved for OpenRouter');
+    // Vertex AI Full version - use service account
+    if (oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI && oai_settings.vertexai_auth_mode === 'full') {
+        if (!secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]) {
+            toastr.error(t`Service Account JSON is required for Vertex AI full version. Please validate and save your Service Account JSON.`);
             return;
         }
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        const api_key_makersuite = String($('#api_key_makersuite').val()).trim();
-
-        if (api_key_makersuite.length) {
-            await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
+    // Other generic configs
+    const config = apiSourceConfig[oai_settings.chat_completion_source];
+    if (config) {
+        const apiKey = String($(config.selector).val()).trim();
+        if (apiKey.length) {
+            await writeSecret(config.key, apiKey);
         }
 
-        if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for Google AI Studio');
+        if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless) {
+            console.log(`No secret key saved for ${oai_settings.chat_completion_source}`);
             return;
         }
     }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
-        if (oai_settings.vertexai_auth_mode === 'express') {
-            // Express mode - use API key
-            const api_key_vertexai = String($('#api_key_vertexai').val()).trim();
-
-            if (api_key_vertexai.length) {
-                await writeSecret(SECRET_KEYS.VERTEXAI, api_key_vertexai);
-            }
-
-            if (!secret_state[SECRET_KEYS.VERTEXAI] && !oai_settings.reverse_proxy) {
-                console.log('No secret key saved for Vertex AI Express mode');
-                return;
-            }
-        } else {
-            // Full version - use service account
-            // Project ID will be extracted from the Service Account JSON
-
-            // Check if service account JSON is saved in backend
-            if (!secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT]) {
-                toastr.error('Service Account JSON is required for Vertex AI full version. Please validate and save your Service Account JSON.');
-                return;
-            }
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        const api_key_claude = String($('#api_key_claude').val()).trim();
-
-        if (api_key_claude.length) {
-            await writeSecret(SECRET_KEYS.CLAUDE, api_key_claude);
-        }
-
-        if (!secret_state[SECRET_KEYS.CLAUDE] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for Claude');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        const api_key_openai = String($('#api_key_openai').val()).trim();
-
-        if (api_key_openai.length) {
-            await writeSecret(SECRET_KEYS.OPENAI, api_key_openai);
-        }
-
-        if (!secret_state[SECRET_KEYS.OPENAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for OpenAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
-        const api_key_ai21 = String($('#api_key_ai21').val()).trim();
-
-        if (api_key_ai21.length) {
-            await writeSecret(SECRET_KEYS.AI21, api_key_ai21);
-        }
-
-        if (!secret_state[SECRET_KEYS.AI21]) {
-            console.log('No secret key saved for AI21');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
-        const api_key_mistralai = String($('#api_key_mistralai').val()).trim();
-
-        if (api_key_mistralai.length) {
-            await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
-        }
-
-        if (!secret_state[SECRET_KEYS.MISTRALAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for MistralAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
-        const api_key_custom = String($('#api_key_custom').val()).trim();
-
-        if (api_key_custom.length) {
-            await writeSecret(SECRET_KEYS.CUSTOM, api_key_custom);
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
-        const api_key_cohere = String($('#api_key_cohere').val()).trim();
-
-        if (api_key_cohere.length) {
-            await writeSecret(SECRET_KEYS.COHERE, api_key_cohere);
-        }
-
-        if (!secret_state[SECRET_KEYS.COHERE]) {
-            console.log('No secret key saved for Cohere');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
-        const api_key_perplexity = String($('#api_key_perplexity').val()).trim();
-
-        if (api_key_perplexity.length) {
-            await writeSecret(SECRET_KEYS.PERPLEXITY, api_key_perplexity);
-        }
-
-        if (!secret_state[SECRET_KEYS.PERPLEXITY]) {
-            console.log('No secret key saved for Perplexity');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
-        const api_key_groq = String($('#api_key_groq').val()).trim();
-
-        if (api_key_groq.length) {
-            await writeSecret(SECRET_KEYS.GROQ, api_key_groq);
-        }
-
-        if (!secret_state[SECRET_KEYS.GROQ]) {
-            console.log('No secret key saved for Groq');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
-        const api_key_electronhub = String($('#api_key_electronhub').val()).trim();
-
-        if (api_key_electronhub.length) {
-            await writeSecret(SECRET_KEYS.ELECTRONHUB, api_key_electronhub);
-        }
-
-        if (!secret_state[SECRET_KEYS.ELECTRONHUB]) {
-            console.log('No secret key saved for Electron Hub');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
-        const api_key_nanogpt = String($('#api_key_nanogpt').val()).trim();
-
-        if (api_key_nanogpt.length) {
-            await writeSecret(SECRET_KEYS.NANOGPT, api_key_nanogpt);
-        }
-
-        if (!secret_state[SECRET_KEYS.NANOGPT]) {
-            console.log('No secret key saved for NanoGPT');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
-        const api_key_deepseek = String($('#api_key_deepseek').val()).trim();
-
-        if (api_key_deepseek.length) {
-            await writeSecret(SECRET_KEYS.DEEPSEEK, api_key_deepseek);
-        }
-
-        if (!secret_state[SECRET_KEYS.DEEPSEEK] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for DeepSeek');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
-        const api_key_xai = String($('#api_key_xai').val()).trim();
-
-        if (api_key_xai.length) {
-            await writeSecret(SECRET_KEYS.XAI, api_key_xai);
-        }
-
-        if (!secret_state[SECRET_KEYS.XAI] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for XAI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source === chat_completion_sources.AIMLAPI) {
-        const api_key_aimlapi = String($('#api_key_aimlapi').val()).trim();
-
-        if (api_key_aimlapi.length) {
-            await writeSecret(SECRET_KEYS.AIMLAPI, api_key_aimlapi);
-        }
-
-        if (!secret_state[SECRET_KEYS.AIMLAPI]) {
-            console.log('No secret key saved for AI/ML API');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
-        const api_key_moonshot = String($('#api_key_moonshot').val()).trim();
-
-        if (api_key_moonshot.length) {
-            await writeSecret(SECRET_KEYS.MOONSHOT, api_key_moonshot);
-        }
-
-        if (!secret_state[SECRET_KEYS.MOONSHOT]) {
-            console.log('No secret key saved for Moonshot');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
-        const api_key_fireworks = String($('#api_key_fireworks').val()).trim();
-
-        if (api_key_fireworks.length) {
-            await writeSecret(SECRET_KEYS.FIREWORKS, api_key_fireworks);
-        }
-
-        if (!secret_state[SECRET_KEYS.FIREWORKS]) {
-            console.log('No secret key saved for Fireworks');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
-        const api_key_cometapi = String($('#api_key_cometapi').val()).trim();
-
-        if (api_key_cometapi.length) {
-            await writeSecret(SECRET_KEYS.COMETAPI, api_key_cometapi);
-        }
-
-        if (!api_key_cometapi && !secret_state[SECRET_KEYS.COMETAPI]) {
-            console.log('No secret key saved for CometAPI');
-            return;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
-        const api_key_azure_openai = String($('#api_key_azure_openai').val()).trim();
-
-        if (api_key_azure_openai.length) {
-            await writeSecret(SECRET_KEYS.AZURE_OPENAI, api_key_azure_openai);
-        }
-
-        if (!api_key_azure_openai && !secret_state[SECRET_KEYS.AZURE_OPENAI]) {
-            console.log('No secret key saved for Azure OpenAI');
-            return;
-        }
-    }
-
 
     startStatusLoading();
     saveSettingsDebounced();
@@ -5582,6 +5404,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         $('#azure_openai_model').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
+        $('#model_zai_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5677,11 +5502,11 @@ export function isImageInliningSupported() {
         'c4ai-aya-vision',
         'command-a-vision',
         // Google AI Studio
-        'gemini-1.5',
         'gemini-2.0',
         'gemini-2.5',
         'gemini-exp-1206',
         'learnlm',
+        'gemini-robotics',
         // MistralAI
         'mistral-small-2503',
         'mistral-small-2506',
@@ -5693,11 +5518,12 @@ export function isImageInliningSupported() {
         // xAI (Grok)
         'grok-4',
         'grok-2-vision',
-        'grok-vision',
         // Moonshot
         'moonshot-v1-8k-vision-preview',
         'moonshot-v1-32k-vision-preview',
         'moonshot-v1-128k-vision-preview',
+        // Z.AI (GLM)
+        'glm-4.5v',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5726,6 +5552,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.COHERE:
             return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         case chat_completion_sources.XAI:
+            // TODO: xAI's /models endpoint doesn't return modality info
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
@@ -5739,6 +5566,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.moonshot_model.includes(model));
         case chat_completion_sources.NANOGPT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
+        case chat_completion_sources.ZAI:
+            return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         default:
             return false;
     }
@@ -6117,12 +5946,14 @@ export function initOpenAI() {
         oai_settings.openai_max_context = Number($(this).val());
         $('#openai_max_context_counter').val(`${$(this).val()}`);
         calculateOpenRouterCost();
+        calculateElectronHubCost();
         saveSettingsDebounced();
     });
 
     $('#openai_max_tokens').on('input', function () {
         oai_settings.openai_max_tokens = Number($(this).val());
         calculateOpenRouterCost();
+        calculateElectronHubCost();
         saveSettingsDebounced();
     });
 
@@ -6198,7 +6029,7 @@ export function initOpenAI() {
 
     $('#update_oai_preset').on('click', async function () {
         const name = oai_settings.preset_settings_openai;
-        await saveOpenAIPreset(name, oai_settings);
+        await saveOpenAIPreset(name, oai_settings, false);
         toastr.success(t`Preset updated`);
     });
 
@@ -6323,6 +6154,16 @@ export function initOpenAI() {
 
     $('#openrouter_middleout').on('input', function () {
         oai_settings.openrouter_middleout = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#electronhub_sort_models').on('input', function () {
+        oai_settings.electronhub_sort_models = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#electronhub_group_models').on('input', function () {
+        oai_settings.electronhub_group_models = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
@@ -6503,6 +6344,14 @@ export function initOpenAI() {
             width: '100%',
             templateResult: getAimlapiModelTemplate,
         });
+        $('#model_electronhub_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getElectronHubModelTemplate,
+            matcher: textValueMatcher,
+        });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
             placeholder: t`All types (default)`,
             width: '100%',
@@ -6549,6 +6398,8 @@ export function initOpenAI() {
     $('#model_openrouter_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
+    $('#electronhub_group_models').on('change', onElectronHubModelSortChange);
+    $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
@@ -6565,6 +6416,7 @@ export function initOpenAI() {
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
+    $('#model_zai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

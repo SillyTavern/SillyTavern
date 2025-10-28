@@ -444,9 +444,9 @@ export class ToolManager {
                 }
 
                 for (const toolCallDelta of toolCallDeltas) {
-                    const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
+                    const toolCallIndex = toolCallDelta?.index >= 0 ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
 
-                    if (isNaN(toolCallIndex) || toolCallIndex < 0) {
+                    if (isNaN(toolCallIndex)) {
                         continue;
                     }
 
@@ -526,12 +526,13 @@ export class ToolManager {
             for (let choiceIndex = 0; choiceIndex < parsed.candidates.length; choiceIndex++) {
                 const candidate = parsed.candidates[choiceIndex];
                 if (Array.isArray(candidate?.content?.parts)) {
-                    for (let toolCallIndex = 0; toolCallIndex < candidate.content.parts.length; toolCallIndex++) {
-                        const part = candidate.content.parts[toolCallIndex];
+                    for (let partIndex = 0; partIndex < candidate.content.parts.length; partIndex++) {
+                        const part = candidate.content.parts[partIndex];
                         if (part.functionCall) {
                             if (!Array.isArray(toolCalls[choiceIndex])) {
                                 toolCalls[choiceIndex] = [];
                             }
+                            const toolCallIndex = toolCalls[choiceIndex].length;
                             if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
                             }
@@ -660,6 +661,7 @@ export class ToolManager {
             chat_completion_sources.COMETAPI,
             chat_completion_sources.ELECTRONHUB,
             chat_completion_sources.AZURE_OPENAI,
+            chat_completion_sources.ZAI,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

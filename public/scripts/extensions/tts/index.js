@@ -33,6 +33,7 @@ import { KokoroTtsProvider } from './kokoro.js';
 import { TtsWebuiProvider } from './tts-webui.js';
 import { PollinationsTtsProvider } from './pollinations.js';
 import { MiniMaxTtsProvider } from './minimax.js';
+import { ElectronHubTtsProvider } from './electronhub.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -123,6 +124,7 @@ const ttsProviders = {
     'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
+    'Electron Hub': ElectronHubTtsProvider,
     'Google Translate': GoogleTranslateTtsProvider,
     'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
