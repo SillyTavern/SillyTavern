@@ -134,6 +134,7 @@ function sendAssistantMessage() {
         is_user: false,
         send_date: getMessageTimeStamp(),
         extra: {
+            swipeable: false,
             type: system_message_types.ASSISTANT_MESSAGE,
         },
     };

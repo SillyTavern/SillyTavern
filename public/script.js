@@ -561,7 +561,7 @@ let chat_file_for_del = '';
 export let online_status = 'no_connection';
 
 export let is_send_press = false; //Send generation
-export const isGenerating = () => (is_send_press || (selected_group && is_group_generating));
+export const isGenerating = () => (is_send_press || is_group_generating);
 
 let this_del_mes = -1;
 
@@ -575,7 +575,8 @@ export let settings;
 export let amount_gen = 80; //default max length of AI generated responses
 export let max_context = 2048;
 
-var swipes = true;
+let swipes = true; //User preference.
+export let swipesHidden = false; //Forcefully hide swipes.
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
@@ -2034,7 +2035,7 @@ export function addCopyToCodeBlocks(messageElement) {
  * @param {boolean} [options.scroll=true] Whether to scroll to the new message
  * @param {number} [options.insertBefore=null] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
- * @param {boolean} [options.showSwipes=true] Whether to show swipe buttons
+ * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
  * @returns {void}
  */
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
@@ -2180,7 +2181,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         const messageId = forceId ?? chat.length - 1;
         chatElement.find(`[mesid="${messageId}"] .mes_text`).append(messageText);
         appendMediaToMessage(mes, newMessage);
-        showSwipes && hideSwipeButtons();
     }
 
     addCopyToCodeBlocks(newMessage);
@@ -2192,9 +2192,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
     }
 
+    //last_mes should always be updated.
+    chatElement.find('.mes').last().addClass('last_mes');
+    chatElement.find('.mes').eq(-2).removeClass('last_mes');
     if (showSwipes) {
-        chatElement.find('.mes').last().addClass('last_mes');
-        chatElement.find('.mes').eq(-2).removeClass('last_mes');
         refreshSwipeButtons();
     }
 
@@ -8218,7 +8219,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
         //The swipes setting must be enabled.
         swipes &&
         //If mid-swipe, the message cannot be swiped.
-        // swipeState != SWIPE_STATE.NONE ||
+        swipeState == SWIPE_STATE.NONE &&
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
         (messageId > (this_edit_mes_id ?? -1)) && //(swipeState != SWIPE_STATE.EDITING)) &&
         //Cannot swipe while generating.
@@ -8227,6 +8228,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
         //If the message is the last message, and it exists.
         (messageId == chat.length - 1) &&
         (message &&
+            //Some messages, like the welcome screen, are not swipeable.
+            !(message?.['extra']?.['swipeable'] === false) &&
             //User messages are not swipeable.
             !message.is_user &&
             //And It's not a greeting without swipes.
@@ -8246,6 +8249,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
  * This has been optimized for bulk updates by minimizing DOM queries.
  */
 export function refreshSwipeButtons() {
+    //Never show swipe buttons on an empty chat.
+    if (chat?.length === 0) return false;
 
     //If swipes is disabled, ignore the input and hide all swipe buttons.
     if (!swipes) {
@@ -8315,9 +8320,7 @@ export function refreshSwipeButtons() {
  * This function is misleadingly named. It allows generation then refreshes the swipe buttons and counters.
  */
 export function showSwipeButtons() {
-    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
-    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.NONE; }
-
+    swipesHidden = false;
     refreshSwipeButtons();
 }
 
@@ -8327,9 +8330,7 @@ export function showSwipeButtons() {
  * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
  */
 export function hideSwipeButtons({ hideCounters = false } = {}) {
-    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
-    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.SWIPING; }
-
+    swipesHidden = true;
     refreshSwipeButtons();
 
     if (hideCounters === true) {
@@ -9153,7 +9154,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
             //Only scroll when swiping the last message.
             const scroll = (mesId == chat.length - 1);
-            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: scroll });
+            //The swipe buttons will be refreshed in endSwipe(), refreshing them now will cause flickering.
+            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: scroll, showSwipes: false });
 
             if (power_user.message_token_count_enabled) {
                 if (!chat[mesId].extra) {
