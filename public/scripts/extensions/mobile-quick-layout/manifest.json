@@ -1,0 +1,11 @@
+{
+    "display_name": "Mobile Quick Layout (experimental)",
+    "loading_order": 1000,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "dascard",
+    "version": "0.1.0",
+    "homePage": "https://github.com/dascard/ST-MobileUIEnhanced"
+}

@@ -1,0 +1,410 @@
+/* Mobile Quick Layout extension styles (migrated from public/css/mobile-layouts.css)
+  This file contains the full styling for the mobile quick toolbar and panel.
+  Keeping it inside the extension ensures styles load only when the extension
+  is enabled and avoids polluting global stylesheet space.
+*/
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+#mobile-quick-settings .mobile-quick-layout-setting {
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+#mobile-quick-customization {
+  position: relative;
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#mobile-quick-customization .mobile-quick-customization__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+
+#mobile-quick-customization .mobile-quick-customization__summary::-webkit-details-marker {
+  display: none;
+}
+
+#mobile-quick-customization .mobile-quick-customization__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#mobile-quick-customization .mobile-quick-customization__chevron {
+  position: relative;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+#mobile-quick-customization .mobile-quick-customization__chevron::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-50%, -50%) rotate(45deg);
+  transition: transform 0.25s ease;
+}
+
+#mobile-quick-customization[open] .mobile-quick-customization__chevron::before {
+  transform: translate(-50%, -40%) rotate(-135deg);
+}
+
+#mobile-quick-customization .mobile-quick-customization__content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+#mobile-quick-customization .mobile-quick-customization__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#mobile-quick-customization .mobile-quick-customization__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#mobile-quick-customization .mobile-quick-customization__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+#mobile-quick-customization .mobile-quick-customization__label {
+  flex: 1 1 auto;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#mobile-quick-customization .mobile-quick-customization__select {
+  flex: 0 0 150px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+#mobile-quick-customization .mobile-quick-customization__reset {
+  align-self: flex-end;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#mobile-quick-customization .mobile-quick-customization__reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#mobile-quick-settings .mobile-quick-mode-message {
+  margin: 0 0 8px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+#mobile-quick-settings .mobile-quick-mode-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#mobile-quick-settings .mobile-layout-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+#mobile-quick-settings .mobile-layout-toggle-button:active {
+  transform: translateY(0);
+}
+
+html[data-mobile-quick-layout] .mobile-quick-toggle,
+html[data-mobile-quick-layout] .mobile-quick-panel,
+html[data-mobile-quick-layout] .mobile-quick-primary,
+html[data-mobile-quick-layout] .mobile-quick-primary-wrap {
+  display: none;
+}
+
+#mobile-quick-panel[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  html[data-mobile-quick-layout="enhanced"] #top-bar {
+    display: none;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    z-index: 95;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #sheld {
+    top: 0 !important;
+    padding-top: 0 !important;
+    height: 100vh !important;
+    max-height: -webkit-fill-available !important;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-primary-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 96;
+    display: flex;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) clamp(16px, 5vw, 26px) 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #send_form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #leftSendForm {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-toggle .fa-solid {
+    font-size: 20px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: clamp(8px, 4vw, 18px);
+    flex-wrap: nowrap;
+    width: 100%;
+    padding: 8px clamp(16px, 5vw, 24px);
+    margin: 0;
+    border-radius: 18px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-button {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-button .fa-solid {
+    font-size: 16px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-button .mobile-quick-label {
+    display: none;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-layout-toggle-button:active {
+    transform: translateY(0);
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #send_form {
+    position: relative;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel {
+    order: 3;
+    display: block;
+    width: 100%;
+    border-radius: 18px;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    padding: 0 clamp(16px, 5vw, 26px);
+    margin: 0;
+    transition: max-height 0.24s ease, opacity 0.22s ease, padding 0.18s ease,
+      margin 0.18s ease;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel.is-open {
+    max-height: 140px;
+    opacity: 1;
+    pointer-events: auto;
+    margin-top: 10px;
+    padding: 12px clamp(16px, 5vw, 26px);
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #mobile-quick-panel:focus {
+    outline: none;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel__buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    margin: 0;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px clamp(16px, 5vw, 22px) 6px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel-button {
+    flex: 0 0 auto;
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel-button .fa-solid {
+    font-size: 20px;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .mobile-quick-panel-button.mobile-layout-toggle-button {
+    flex: 1 1 160px;
+    min-width: 160px;
+    height: auto;
+    padding: 10px 18px;
+    gap: 8px;
+    border: 1px solid transparent;
+    font-weight: 500;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder::before,
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder::after {
+    display: none !important;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder .drawer-toggle,
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder .drawer-header {
+    display: none !important;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder .drawer {
+    width: min(100%, 520px) !important;
+    margin: 4px auto 0 !important;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] #top-settings-holder .drawer-content {
+    top: 0 !important;
+    max-height: 70vh;
+    height: 100vh !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-mobile-quick-layout="enhanced"] .chat {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 12px));
+  }
+
+  html[data-mobile-quick-layout="classic"] .mobile-quick-toggle {
+    display: none !important;
+  }
+
+  html[data-mobile-quick-layout="classic"] #mobile-quick-panel {
+    display: none !important;
+  }
+}
