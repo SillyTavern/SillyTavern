@@ -864,7 +864,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
             // BYAF does not support character expressions, so using the same structure will not result in conflicts,
             // even if the expression system did not tolerate additional icons that are not mapped to expressions.
             // This will not yet allow changing icons within the UI but at least the icons will be available for manual selection, rather than being lost.
-            const altImagesFolder = path.join(request.user.directories.characters, path.basename(fileName));
+            const altImagesFolder = path.join(request.user.directories.characters, sanitize(card.name));
             if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
             const extension = path.extname(icon.filename) || '.png';
             const file = getUniqueName(`${sanitize(icon.label,{ replacement: sanitizeSafeCharacterReplacements }) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));
