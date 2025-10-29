@@ -1563,10 +1563,14 @@ export async function reloadCurrentChat() {
  * Send the message currently typed into the chat box.
  */
 export async function sendTextareaMessage() {
+    // don't proceed during swipeGenerate()
+    if (swipeState == SWIPE_STATE.EDITING) {
+        toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
+        return;
+    }
     if (!isSwipingAllowed()) return; // don't proceed if mid-swipe.
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
-    if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
 
     hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
@@ -10499,7 +10503,10 @@ jQuery(async function () {
         }
 
         else if (id == 'option_continue') {
-            if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
+            if (swipeState == SWIPE_STATE.EDITING) {
+                toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
+                return;
+            }
 
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
