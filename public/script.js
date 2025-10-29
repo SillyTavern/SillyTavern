@@ -369,10 +369,10 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
-export let isSwipingAllowed = () => { return swipeState === SWIPE_STATE.NONE; }; //false when a swipe is in progress, or swiping is blocked.
+export let isSwipingAllowed = () => swipeState === SWIPE_STATE.NONE; //false when a swipe is in progress, or swiping is blocked.
 
 /**
- * @type {string} 'none'|'swiping'|'editing'
+ * @type {import('./scripts/constants.js').SWIPE_STATE}
  */
 export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
@@ -7094,7 +7094,7 @@ export async function getSettings() {
         await loadPowerUserSettings(settings, data);
 
         // Apply theme toggles from power user settings
-        await applyPowerUserSettings();
+        applyPowerUserSettings();
 
         // Load character tags
         loadTagsSettings(settings);
@@ -8253,7 +8253,6 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     swipeCounter.text(swipeCounterText).show();
 }
 
-
 /**
  * Returns true if the message is swipeable.
  * This does not check if the swipes exist or are valid.
@@ -8270,13 +8269,14 @@ export function isMessageSwipeable(messageId, message = undefined) {
         //If mid-swipe, the message cannot be swiped.
         // swipeState != SWIPE_STATE.NONE ||
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
-        (messageId > (this_edit_mes_id ?? -1)) && //(swipeState != SWIPE_STATE.EDITING)) &&
+        ((messageId > (this_edit_mes_id ?? -1)) && (swipeState != SWIPE_STATE.EDITING)) &&
         //Cannot swipe while generating.
         !(is_send_press || (selected_group && is_group_generating)) &&
 
-        //If the chat tree is not enabled and the message exists.
+        //If the chat tree is not enabled and
         ((power_user?.enable_chat_tree === true) ||
-        (message &&
+        //If the message is the last message, and it exists.
+        ((messageId == chat.length - 1) && message &&
             //User messages are not swipeable.
             !message.is_user &&
             //And It's not a greeting without swipes.
@@ -8357,14 +8357,14 @@ export function refreshSwipeButtons() {
     const rightArrows = $([...showRightGenerateElements]).find('.swipeRightBlock > .swipe_right');
 
     // Debugging
-    noArrows.css('scale', '.5');
-    bothArrows.css('scale', '2');
-    rightArrows.css('scale', '3');
+    // noArrows.css('scale', '.5');
+    // bothArrows.css('scale', '2');
+    // rightArrows.css('scale', '3');
 
     //The order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
-//     noArrows.hide();
-//     bothArrows.css('opacity', '0.7');
-//     rightArrows.css('display', 'flex').css('opacity', '0.3');
+    noArrows.hide();
+    bothArrows.css('opacity', '0.3').show();
+    rightArrows.css('display', 'flex').css('opacity', '0.7').show();
 }
 
 export function showSwipeButtons(mesId = chat.length - 1) {
@@ -9025,7 +9025,7 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
@@ -9497,7 +9497,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
- * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -9510,7 +9510,7 @@ export async function swipe_left(_event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
- * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
