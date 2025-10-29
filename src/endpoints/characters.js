@@ -867,7 +867,7 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
             const altImagesFolder = path.join(request.user.directories.characters, sanitize(card.name));
             if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
             const extension = path.extname(icon.filename) || '.png';
-            const file = getUniqueName(`${sanitize(icon.label,{ replacement: sanitizeSafeCharacterReplacements }) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));
+            const file = getUniqueName(`${sanitize(icon.label, { replacement: sanitizeSafeCharacterReplacements }) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));
             if (Buffer.isBuffer(icon.image)) {
                 writeFileAtomicSync(path.join(altImagesFolder, `${file}${extension}`), icon.image);
                 console.log(`Created ${file}${extension} alternate icon from BYAF import`);
