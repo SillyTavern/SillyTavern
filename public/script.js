@@ -6063,6 +6063,15 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
 
+    // Backfill swipe_info if missing.
+    if(!Array.isArray(targetMessage.swipe_info)) {
+        targetMessage.swipe_info = targetMessage.swipes.map(_ => ({
+        send_date: targetMessage.send_date,
+        gen_started: void 0,
+        gen_finished: void 0,
+        extra: {},
+    }));
+
     const targetSwipeId = targetMessage.swipe_id;
     if (typeof targetMessage.swipes[targetSwipeId] !== 'string') {
         console.warn(`[syncSwipeToMes] Invalid swipe ID: ${targetSwipeId}`);
