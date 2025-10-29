@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -367,7 +367,12 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
-export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
+export let isSwipingAllowed = () => { return swipeState === SWIPE_STATE.NONE; }; //false when a swipe is in progress, or swiping is blocked.
+
+/**
+ * @type {string} 'none'|'swiping'|'editing'
+ */
+export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
@@ -1558,9 +1563,12 @@ export async function reloadCurrentChat() {
  * Send the message currently typed into the chat box.
  */
 export async function sendTextareaMessage() {
+    if (!isSwipingAllowed()) return; // don't proceed if mid-swipe.
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
     if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
+
+    hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -1581,7 +1589,8 @@ export async function sendTextareaMessage() {
         await newAssistantChat({ temporary: false });
     }
 
-    Generate(generateType);
+    await Generate(generateType);
+    showSwipeButtons();
 }
 
 /**
@@ -6139,6 +6148,7 @@ function getGeneratingModel(mes) {
 export function activateSendButtons() {
     is_send_press = false;
     hideStopButton();
+    hideSwipeButtons();
     delete document.body.dataset.generating;
 }
 
@@ -6147,6 +6157,7 @@ export function activateSendButtons() {
  */
 export function deactivateSendButtons() {
     showStopButton();
+    showSwipeButtons();
     document.body.dataset.generating = 'true';
 }
 
@@ -8186,7 +8197,8 @@ export function refreshSwipeButtons() {
 }
 
 export function showSwipeButtons(mesId = chat.length - 1) {
-    isSwipingAllowed = true;
+    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
+    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.NONE; }
 
     if (chat.length === 0) {
         return;
@@ -8255,7 +8267,8 @@ export function showSwipeButtons(mesId = chat.length - 1) {
  * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
  */
 export function hideSwipeButtons({ hideCounters = false } = {}) {
-    isSwipingAllowed = false;
+    //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
+    if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.SWIPING; }
     chatElement.find('.swipe_right').hide();
     chatElement.find('.swipe_left').hide();
     if (hideCounters === true) {
@@ -8302,14 +8315,16 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
 
     // Select the next swipe, or the one before if it was the last one
     const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
-    syncSwipeToMes(messageId, newSwipeId);
 
     chat_metadata['tainted'] = true;
 
+    messageId = Number(messageId);
+    swipeId = Number(swipeId);
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
+    let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+    await swipe(null, direction,  { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
     await saveChatConditional();
-    await reloadCurrentChat();
 
     return newSwipeId;
 }
@@ -8404,7 +8419,7 @@ export function updateEditArrowClasses() {
         return;
     }
 
-    const message = chatElement.find(`.mes[mesid="${this_edit_mes_id}"]`);
+    const message = chatElement.children().filter(`.mes[mesid="${this_edit_mes_id}"]`);
 
     const downButton = message.find('.mes_edit_down');
     const upButton = message.find('.mes_edit_up');
@@ -8856,22 +8871,29 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event.
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
+ * @param {object} [params.forceMesId] The message id to swipe.
+ * @param {object} [params.forceSwipeId] The target swipe_id.
  */
-export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1] } = {}) {
+export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId: forceMesId, forceSwipeId: forceSwipeId } = {}) {
     if (chat.length === 0) {
         console.warn('Swipe was called on an empty chat.');
         return;
     }
 
+    if (is_group_generating || is_send_press) {
+        toastr.warning(t`Cannot swipe while generating. Stop the request and try again.`, t`Swipe aborted`);
+        return;
+    }
+
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed) {
+    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE) {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
-    isSwipingAllowed = false;
+    swipeState = SWIPE_STATE.SWIPING;
 
     let generation;
     let messageIndex;
@@ -8885,7 +8907,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    const mesId = Number($(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number(forceMesId ?? $(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
@@ -8896,7 +8918,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
-    let newSwipeId = Number(originalSwipeId);
+    let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
     const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
@@ -8910,8 +8932,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
         }
-        //Allow for another swipe.
-        showSwipeButtons();
 
         //Clamp Id between swipes.
         let clampedId = clamp(chat[mesId]['swipe_id'], 0, Math.max(0, chat[mesId]['swipes'].length - 1));
@@ -8928,11 +8948,23 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (mesId != chat.length - 1) {
             await updateSwipeCounter(chat.length - 1);
         }
+
+        // If swipe_id has not changed, give the user feedback.
+        if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
+            //Shake
+            thisMesDiv.effect('shake', { direction: direction, distance: 20, times: 1 });
+            //Flash red.
+            await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+        }
+
+        //Allow for another swipe.
+        swipeState = SWIPE_STATE.NONE;
+        showSwipeButtons();
     }
 
     async function standardSwipe() {
         //If swipe_id has changed, or the source is being deleted.
-        if (newSwipeId !== originalSwipeId || source == 'delete') {
+        if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE) {
             //Update the chat.
             await loadFromSwipeId(mesId, newSwipeId);
             //Transition to the new chat.
@@ -8968,7 +9000,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
     }
 
-    //Deepseek-V3.1
     // Helper function to convert transition to promise
     const transitionPromise = (element, properties) => {
         return new Promise((resolve) => {
@@ -9110,7 +9141,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //If the swipe is not being deleted.
-    if (source != 'delete') {
+    if (source != SWIPE_SOURCE.DELETE) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
         syncMesToSwipe(mesId);
@@ -9129,11 +9160,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
         // If the user is holding down the key and we're at the last or first swipe, don't do anything.
         let isLastSwipe = (direction === SWIPE_DIRECTION.RIGHT) ? (chat[mesId].swipe_id === Math.max(0, chat[mesId]['swipes'].length - 1)) : chat[mesId].swipe_id === 0;
-        if (source === 'keyboard' && repeated && isLastSwipe) {
+        if (source === SWIPE_SOURCE.KEYBOARD && repeated && isLastSwipe) {
             await endSwipe();
             return;
         }
-    } else if (source == 'delete') {
+    } else if (source == SWIPE_SOURCE.DELETE) {
         //If the swipe is being deleted.
         await standardSwipe();
         return;
@@ -9207,7 +9238,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event.
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -9220,7 +9251,7 @@ export async function swipe_left(_event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
- * @param {string} [params.source] The source of the swipe event.
+ * @param {'delete'|'keyboard'|null} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */

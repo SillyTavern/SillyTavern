@@ -37,7 +37,7 @@ import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, SWIPE_SOURCE } from './constants.js';
 
 import { Popup } from './popup.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -1111,7 +1111,7 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
-                isSwipingAllowed &&
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
@@ -1119,13 +1119,13 @@ export function initRossMods() {
                 !isInputElementInFocus() &&
                 !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_left:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $('.swipe_left:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
             }
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
-                isSwipingAllowed &&
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
@@ -1133,7 +1133,7 @@ export function initRossMods() {
                 !isInputElementInFocus() &&
                 !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_right:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $('.swipe_right:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
             }
         }
