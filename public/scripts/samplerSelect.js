@@ -55,7 +55,7 @@ async function showSamplerSelectPopup() {
 
     $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled());
     $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
-        $(this).toggleClass('toggleEnabled ');
+        $(this).toggleClass('toggleEnabled');
 
         const isActive = $(this).hasClass('toggleEnabled');
 
