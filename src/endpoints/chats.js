@@ -41,7 +41,7 @@ function backupChat(directory, name, chat) {
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
         const backupFile = path.join(directory, `${CHAT_BACKUPS_PREFIX}${name}_${generateTimestamp()}.jsonl`);
-        writeFileAtomicSync(backupFile, chat, 'utf-8');
+        writeFileAtomicSync(backupFile, chat, {encoding: 'utf-8', fsync: false});
 
         removeOldBackups(directory, `${CHAT_BACKUPS_PREFIX}${name}_`);
 
@@ -441,7 +441,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
                 return response.status(400).send({ error: 'integrity' });
             }
         }
-        writeFileAtomicSync(filePath, jsonlData, 'utf8');
+        writeFileAtomicSync(filePath, jsonlData, {encoding: 'utf8', fsync: false});
         getBackupFunction(request.user.profile.handle)(request.user.directories.backups, directoryName, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
@@ -664,7 +664,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
                 const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
                 const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
                 fileNames.push(fileName);
-                writeFileAtomicSync(filePath, chat, 'utf8');
+                writeFileAtomicSync(filePath, chat, {encoding: 'utf8', fsync: false});
             };
 
             const chat = importFunc(userName, characterName, jsonData);
@@ -704,7 +704,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
             const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
             fileNames.push(fileName);
             if (flattenedChat !== data) {
-                writeFileAtomicSync(filePath, flattenedChat, 'utf8');
+                writeFileAtomicSync(filePath, flattenedChat, {encoding: 'utf8', fsync: false});
             } else {
                 fs.copyFileSync(pathToUpload, filePath);
             }
@@ -767,7 +767,7 @@ router.post('/group/save', (request, response) => {
 
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
+    writeFileAtomicSync(pathToFile, jsonlData, {encoding: 'utf8', fsync: false});
     getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
     return response.send({ ok: true });
 });
