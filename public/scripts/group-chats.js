@@ -78,6 +78,7 @@ import {
     shouldAutoContinue,
     unshallowCharacter,
     chatElement,
+    ensureMessageMediaIsArray,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -267,6 +268,7 @@ export async function getGroupChat(groupId, reload = false) {
     } else if (Array.isArray(data) && data.length) {
         data[0].is_group = true;
         chat.splice(0, chat.length, ...data);
+        chat.forEach(ensureMessageMediaIsArray);
         chatElement.find('.mes').remove();
         await printMessages();
     }

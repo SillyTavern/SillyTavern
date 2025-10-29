@@ -193,56 +193,59 @@ export async function unhideChatMessage(messageId, _messageBlock) {
 export async function populateFileAttachment(message, inputId = 'file_form_input') {
     try {
         if (!message) return;
-        if (!message.extra) message.extra = {};
+        if (!message.extra || typeof message.extra !== 'object') message.extra = {};
         const fileInput = document.getElementById(inputId);
         if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        if (!file) return;
 
-        const slug = getStringHash(file.name);
-        const fileNamePrefix = `${Date.now()}_${slug}`;
-        const fileBase64 = await getBase64Async(file);
-        let base64Data = fileBase64.split(',')[1];
-        const extension = getFileExtension(file);
+        for (const file of fileInput.files) {
+            const slug = getStringHash(file.name);
+            const fileNamePrefix = `${Date.now()}_${slug}`;
+            const fileBase64 = await getBase64Async(file);
+            let base64Data = fileBase64.split(',')[1];
+            const extension = getFileExtension(file);
 
-        // If file is image
-        if (file.type.startsWith('image/')) {
-            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.image = imageUrl;
-            message.extra.inline_image = true;
-        }
-        // If file is video
-        else if (file.type.startsWith('video/')) {
-            const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.video = videoUrl;
-        } else {
-            const uniqueFileName = `${fileNamePrefix}.txt`;
+            // If file is image
+            if (file.type.startsWith('image/')) {
+                const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                message.extra.image = imageUrl;
+                message.extra.inline_image = true;
+            }
+            // If file is video
+            else if (file.type.startsWith('video/')) {
+                const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                message.extra.video = videoUrl;
+            } else {
+                const uniqueFileName = `${fileNamePrefix}.txt`;
 
-            if (isConvertible(file.type)) {
-                try {
-                    const converter = getConverter(file.type);
-                    const fileText = await converter(file);
-                    base64Data = convertTextToBase64(fileText);
-                } catch (error) {
-                    toastr.error(String(error), t`Could not convert file`);
-                    console.error('Could not convert file', error);
+                if (isConvertible(file.type)) {
+                    try {
+                        const converter = getConverter(file.type);
+                        const fileText = await converter(file);
+                        base64Data = convertTextToBase64(fileText);
+                    } catch (error) {
+                        toastr.error(String(error), t`Could not convert file`);
+                        console.error('Could not convert file', error);
+                    }
                 }
+
+                const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+
+                if (!fileUrl) {
+                    return;
+                }
+
+                if (!Array.isArray(message.extra.files)) {
+                    message.extra.files = [];
+                }
+
+                message.extra.files.push({
+                    url: fileUrl,
+                    size: file.size,
+                    name: file.name,
+                    created: Date.now(),
+                });
             }
-
-            const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
-
-            if (!fileUrl) {
-                return;
-            }
-
-            message.extra.file = {
-                url: fileUrl,
-                size: file.size,
-                name: file.name,
-                created: Date.now(),
-            };
         }
-
     } catch (error) {
         console.error('Could not upload file', error);
         toastr.error(t`Either the file is corrupted or its format is not supported.`, t`Could not upload the file`);
@@ -314,16 +317,16 @@ export async function getFileAttachment(url) {
  */
 async function validateFile(file) {
     const fileText = await file.text();
-    const isImage = file.type.startsWith('image/');
+    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/');
     const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
-    if (!isImage && file.size > fileSizeLimit) {
+    if (!isMedia && file.size > fileSizeLimit) {
         toastr.error(t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`);
         return false;
     }
 
     // If file is binary
-    if (isBinary && !isImage && !isConvertible(file.type)) {
+    if (isBinary && !isMedia && !isConvertible(file.type)) {
         toastr.error(t`Binary files are not supported. Select a text file or image.`);
         return false;
     }
@@ -340,22 +343,28 @@ export function hasPendingFileAttachment() {
 
 /**
  * Displays file information in the message sending form.
- * @param {File} file File object
+ * @param {FileList} fileList File object
  * @returns {Promise<void>}
  */
-async function onFileAttach(file) {
-    if (!file) return;
+async function onFileAttach(fileList) {
+    if (!fileList || fileList.length === 0) return;
 
-    const isValid = await validateFile(file);
+    for (const file of fileList) {
+        const isValid = await validateFile(file);
 
-    // If file is binary
-    if (!isValid) {
-        $('#file_form').trigger('reset');
-        return;
+        // If file is binary
+        if (!isValid) {
+            toastr.warning(t`File ${file.name} is not supported.`);
+            $('#file_form').trigger('reset');
+            return;
+        }
     }
 
-    $('#file_form .file_name').text(file.name);
-    $('#file_form .file_size').text(humanFileSize(file.size));
+    const name = fileList.length === 1 ? fileList[0].name : t`${fileList.length} files selected`;
+    const size = [...fileList].reduce((acc, file) => acc + file.size, 0);
+    const title = [...fileList].map(x => x.name).join('\n');
+    $('#file_form .file_name').text(name).attr('title', title);
+    $('#file_form .file_size').text(humanFileSize(size)).attr('title', size);
     $('#file_form').removeClass('displayNone');
 
     // Reset form on chat change (if not on a welcome screen)
@@ -368,10 +377,17 @@ async function onFileAttach(file) {
 }
 
 /**
- * Deletes file from message.
+ * Deletes file from a message.
+ * @param {JQuery<HTMLElement>} messageBlock Message block element
  * @param {number} messageId Message ID
+ * @param {number} fileIndex File index
  */
-async function deleteMessageFile(messageId) {
+async function deleteMessageFile(messageBlock, messageId, fileIndex) {
+    if (isNaN(messageId) || isNaN(fileIndex)) {
+        console.warn('Invalid message ID or file index');
+        return;
+    }
+
     const confirm = await callGenericPopup('Are you sure you want to delete this file?', POPUP_TYPE.CONFIRM);
 
     if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
@@ -381,26 +397,49 @@ async function deleteMessageFile(messageId) {
 
     const message = chat[messageId];
 
-    if (!message?.extra?.file) {
-        console.debug('Message has no file');
+    if (!Array.isArray(message?.extra?.files)) {
+        console.debug('Message has no files');
         return;
     }
 
-    const url = message.extra.file.url;
+    if (fileIndex < 0 || fileIndex >= message.extra.files.length) {
+        console.warn('Invalid file index for message');
+        return;
+    }
 
-    delete message.extra.file;
-    $(`.mes[mesid="${messageId}"] .mes_file_container`).remove();
+    const url = message.extra.files[fileIndex]?.url;
+    message.extra.files.splice(fileIndex, 1);
+
     await saveChatConditional();
     await deleteFileFromServer(url);
-}
 
+    appendMediaToMessage(message, messageBlock);
+}
 
 /**
  * Opens file from message in a modal.
  * @param {number} messageId Message ID
+ * @param {number} fileIndex File index
  */
-async function viewMessageFile(messageId) {
-    const messageFile = chat[messageId]?.extra?.file;
+async function viewMessageFile(messageId, fileIndex) {
+    if (isNaN(messageId) || isNaN(fileIndex)) {
+        console.warn('Invalid message ID or file index');
+        return;
+    }
+
+    const message = chat[messageId];
+
+    if (!Array.isArray(message?.extra?.files)) {
+        console.debug('Message has no files');
+        return;
+    }
+
+    if (fileIndex < 0 || fileIndex >= message.extra.files.length) {
+        console.warn('Invalid file index for message');
+        return;
+    }
+
+    const messageFile = message.extra.files[fileIndex];
 
     if (!messageFile) {
         console.debug('Message has no file or it is empty');
@@ -429,15 +468,18 @@ function embedMessageFile(messageId, messageBlock) {
         .on('change', parseAndUploadEmbed)
         .trigger('click');
 
-    async function parseAndUploadEmbed(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    async function parseAndUploadEmbed(/** @type {JQuery.EventBase} */ e) {
+        if (!(e.target instanceof HTMLInputElement)) return;
+        if (!e.target.files.length) return;
 
-        const isValid = await validateFile(file);
+        for (const file of e.target.files) {
+            const isValid = await validateFile(file);
 
-        if (!isValid) {
-            $('#file_form').trigger('reset');
-            return;
+            if (!isValid) {
+                toastr.warning(t`File ${file.name} is not supported.`);
+                $('#file_form').trigger('reset');
+                return;
+            }
         }
 
         await populateFileAttachment(message, 'embed_file_input');
@@ -454,14 +496,23 @@ function embedMessageFile(messageId, messageBlock) {
  * @returns {Promise<string>} Message text with file content appended.
  */
 export async function appendFileContent(message, messageText) {
-    if (message.extra?.file) {
-        const fileText = message.extra.file.text || (await getFileAttachment(message.extra.file.url));
-
-        if (fileText) {
-            const fileWrapped = `${fileText}\n\n`;
-            message.extra.fileLength = fileWrapped.length;
-            messageText = fileWrapped + messageText;
+    if (!message || !message.extra || typeof message.extra !== 'object') {
+        return messageText;
+    }
+    if (message.extra.fileLength >= 0) {
+        delete message.extra.fileLength;
+    }
+    if (Array.isArray(message.extra?.files) && message.extra.files.length > 0) {
+        const fileTexts = [];
+        for (const file of message.extra.files) {
+            const fileText = file.text || (await getFileAttachment(file.url));
+            if (fileText) {
+                fileTexts.push(fileText);
+            }
         }
+        const mergedFileTexts = fileTexts.join('\n\n') + '\n\n';
+        message.extra.fileLength = mergedFileTexts.length;
+        return mergedFileTexts + messageText;
     }
     return messageText;
 }
@@ -1881,13 +1932,17 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_file_delete', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await deleteMessageFile(messageId);
+        const fileBlock = $(this).closest('.mes_file_container');
+        const fileIndex = Number(fileBlock.attr('data-index'));
+        await deleteMessageFile(messageBlock, messageId, fileIndex);
     });
 
     $(document).on('click', '.mes_file_open', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await viewMessageFile(messageId);
+        const fileBlock = $(this).closest('.mes_file_container');
+        const fileIndex = Number(fileBlock.attr('data-index'));
+        await viewMessageFile(messageId, fileIndex);
     });
 
     $(document).on('click', '.assistant_note_export', async function () {
@@ -2060,8 +2115,7 @@ export function initChatUtilities() {
     $('#file_form_input').on('change', async () => {
         const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        await onFileAttach(file);
+        await onFileAttach(fileInput.files);
     });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
@@ -2085,7 +2139,7 @@ export function initChatUtilities() {
         }
 
         fileInput.files = dataTransfer.files;
-        await onFileAttach(fileInput.files[0]);
+        await onFileAttach(fileInput.files);
     });
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);

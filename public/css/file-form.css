@@ -25,6 +25,10 @@
     border-radius: 15px;
 }
 
+.mes_file_container:not(:last-child) {
+    margin-bottom: 5px;
+}
+
 .mes_file_container .right_menu_button {
     padding-right: 0;
 }

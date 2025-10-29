@@ -1885,12 +1885,100 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
 }
 
 /**
+ * Ensures that the message media properties are arrays, adding getters/setters for single media items.
+ * @param {object} mes Message object
+ */
+export function ensureMessageMediaIsArray(mes) {
+    /**
+     * Determines if a property of an object is a plain property (not a getter/setter or non-enumerable).
+     * @param {object} obj Object to check
+     * @param {string} name Property name
+     * @returns {boolean} True if the property is a plain property, false otherwise
+     */
+    function isPlainObjectProperty(obj, name) {
+        const hasProperty = Object.hasOwn(obj, name);
+        if (hasProperty) {
+            const descriptor = Object.getOwnPropertyDescriptor(obj, name);
+            return descriptor && descriptor.enumerable && descriptor.configurable && descriptor.writable;
+        }
+        return false;
+    }
+
+    /**
+     * Determines if a property of an object is a getter (not a plain property).
+     * @param {object} obj Object to check
+     * @param {string} name Property name
+     * @returns {boolean} True if the property is a getter, false otherwise
+     */
+    function isGetterObjectProperty(obj, name) {
+        const hasProperty = Object.hasOwn(obj, name);
+        if (hasProperty) {
+            const descriptor = Object.getOwnPropertyDescriptor(obj, name);
+            return descriptor && typeof descriptor.get === 'function';
+        }
+        return false;
+    }
+
+    /**
+     * Adds a plain property to an object that wraps around an array property.
+     * @param {object} obj Object to add property to
+     * @param {string} plainProperty Plain property name
+     * @param {string} arrayProperty Array property to back the plain property
+     */
+    function addArrayAutoWrapper(obj, plainProperty, arrayProperty) {
+        // If the plain property exists as a plain property, migrate its value to the array property.
+        const hasPlainProperty = isPlainObjectProperty(obj, plainProperty);
+        if (hasPlainProperty) {
+            if (!Array.isArray(obj[arrayProperty])) {
+                obj[arrayProperty] = [];
+            }
+            const plainValue = obj[plainProperty];
+            delete obj[plainProperty];
+            if (plainValue) {
+                obj[arrayProperty].push(plainValue);
+            }
+        }
+
+        // If the plain property is already a getter, do nothing.
+        const hasGetterProperty = isGetterObjectProperty(obj, plainProperty);
+        if (hasGetterProperty) {
+            return;
+        }
+
+        // Define the plain property as a getter/setter that wraps around the array property.
+        Object.defineProperty(obj, plainProperty, {
+            // Getting the plain property returns the first item in the array property, or undefined if the array is empty.
+            get: function () {
+                console.trace(`Attempting to GET an array-wrapped property '${plainProperty}'. Use the array property '${arrayProperty}' instead.`);
+                return Array.isArray(this[arrayProperty]) && this[arrayProperty].length > 0 ? this[arrayProperty][0] : void 0;
+            },
+            // Setting the plain property is not supported, as it would be ambiguous.
+            set: function () {
+                console.trace(`Attempting to SET an array-wrapped property '${plainProperty}'. Use the array property '${arrayProperty}' instead.`);
+            },
+            // Exclude the property from JSON serialization and from being listed in for...in loops.
+            enumerable: false,
+            // Make the property non-configurable to prevent deletion or redefinition.
+            configurable: false,
+        });
+    }
+
+    if (!mes || !mes.extra || typeof mes.extra !== 'object') {
+        return;
+    }
+
+    addArrayAutoWrapper(mes.extra, 'file', 'files');
+}
+
+/**
  * Appends image or file to the message element.
  * @param {object} mes Message object
  * @param {JQuery<HTMLElement>} messageElement Message element
  * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
  */
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
+    ensureMessageMediaIsArray(mes);
+
     // Add image to message
     if (mes.extra?.image) {
         const container = messageElement.find('.mes_img_container');
@@ -1969,16 +2057,17 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         messageElement.find('.mes_video_container').remove();
     }
 
-    // Add file to message
-    if (mes.extra?.file) {
+    // Add files to message
+    if (mes.extra && Array.isArray(mes.extra.files) && mes.extra.files.length > 0) {
         messageElement.find('.mes_file_container').remove();
-        const messageId = messageElement.attr('mesid');
-        const template = $('#message_file_template .mes_file_container').clone();
-        template.find('.mes_file_name').text(mes.extra.file.name);
-        template.find('.mes_file_size').text(humanFileSize(mes.extra.file.size));
-        template.find('.mes_file_download').attr('mesid', messageId);
-        template.find('.mes_file_delete').attr('mesid', messageId);
-        messageElement.find('.mes_block').append(template);
+        for (let index = 0; index < mes.extra.files.length; index++) {
+            const file = mes.extra.files[index];
+            const template = $('#message_file_template .mes_file_container').clone();
+            template.attr('data-index', index);
+            template.find('.mes_file_name').text(file.name).attr('title', file.name);
+            template.find('.mes_file_size').text(humanFileSize(file.size)).attr('title', file.size);
+            messageElement.find('.mes_block').append(template);
+        }
     } else {
         messageElement.find('.mes_file_container').remove();
     }
@@ -6721,6 +6810,7 @@ export async function getChat() {
             chat_metadata = chat[0]['chat_metadata'] ?? {};
 
             chat.shift();
+            chat.forEach(ensureMessageMediaIsArray);
         } else {
             chat_create_date = humanizedDateTime();
         }

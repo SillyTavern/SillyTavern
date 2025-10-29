@@ -66,7 +66,8 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
  * @property {string} [image] - The link to the image, if any.
  * @property {string} [video] - The link to the video, if any.
  * @property {string[]} [image_swipes] - The links to the image swipes, if any.
- * @property {DataMaidFile} [file] - The file object, if any.
+ * @property {DataMaidFile} [file] - The file object, if any - DEPRECATED, use `files` instead.
+ * @property {DataMaidFile[]} [files] - The array of file objects, if any.
  */
 
 /**
@@ -221,11 +222,18 @@ export class DataMaidService {
         const result = [];
 
         try {
-            const messages = await this.#parseAllChats(x => !!x?.extra?.file?.url);
+            const messages = await this.#parseAllChats(x => !!x?.extra?.file?.url || (Array.isArray(x?.extra?.files) && x.extra.files.length > 0));
             const knownFiles = new Set();
             for (const message of messages) {
                 if (message?.extra?.file?.url) {
                     knownFiles.add(message.extra.file.url);
+                }
+                if (Array.isArray(message?.extra?.files)) {
+                    for (const file of message.extra.files) {
+                        if (file?.url) {
+                            knownFiles.add(file.url);
+                        }
+                    }
                 }
             }
             const metadata = await this.#parseAllMetadata(x => Array.isArray(x?.attachments) && x.attachments.length > 0);
