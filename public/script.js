@@ -7366,8 +7366,7 @@ export async function messageEdit(editMessageId) {
     this_edit_mes_id = editMessageId;
     this_edit_mes_chname = editMessage.name || (editMessage.is_user ? name1 : name2);
 
-    const hideCounters = editMessageId < chat.length - 1;
-    hideSwipeButtons({ hideCounters });
+    refreshSwipeButtons();
 
     const chatScrollPosition = chatElement.scrollTop();
     const messageBlock = messageElement.find('.mes_block');
@@ -8239,92 +8238,140 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 /**
  * Update the swipe counter for mesId.
  * @param {Number} mesId
+ * @param {object} [options] Options
+ * @param {object} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
+ * @param {JQuery<HTMLElement>} [options.messageElement=undefined] Target Element. Passing in the message's element will save a DOM query.
+ * @param {number} [options.opacity=0.3] By default, the swipe counter's opacity will appear greyed out.
  */
-export async function updateSwipeCounter(mesId) {
-    const swipeCounterText = formatSwipeCounter((chat[mesId]?.['swipe_id'] + 1), chat[mesId]?.['swipes']?.length);
-    const currentMessage = chatElement.children().filter(`[mesid="${mesId}"]`);
-    const swipeCounter = currentMessage.find('.swipes-counter');
+export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined, opacity = 0.3 } = {}) {
+    message ??= chat[mesId];
+    messageElement ??= chatElement.children().filter(`[mesid="${mesId}"]`);
+
+    const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
+    const swipeCounter = messageElement.find('.swipes-counter');
+    swipeCounter.css('opacity', opacity);
     swipeCounter.text(swipeCounterText).show();
 }
 
+
 /**
- * Swipe buttons are often toggled to update their position.
- * This should be replaced with a more efficient function.
+ * Returns true if the message is swipeable.
+ * This does not check if the swipes exist or are valid.
+ * @param {number} messageId The message Id to check.
+ * @param {object} message If undefined, then the message checks will be skipped.
+ * @returns {boolean}
+ */
+export function isMessageSwipeable(messageId, message = undefined) {
+    message ??= chat[messageId];
+
+    if (
+        //The swipes setting must be enabled.
+        swipes &&
+        //If mid-swipe, the message cannot be swiped.
+        // swipeState != SWIPE_STATE.NONE ||
+        //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
+        (messageId > (this_edit_mes_id ?? -1)) && //(swipeState != SWIPE_STATE.EDITING)) &&
+        //Cannot swipe while generating.
+        !(is_send_press || (selected_group && is_group_generating)) &&
+
+        //If the chat tree is not enabled and the message exists.
+        ((power_user?.enable_chat_tree === true) ||
+        (message &&
+            //User messages are not swipeable.
+            !message.is_user &&
+            //And It's not a greeting without swipes.
+            !(messageId === 0 && !chat_metadata?.tainted &&
+                (message?.['swipes']?.length ?? 1) == 1
+            )
+        ))
+    )
+    //The message is swipeable.
+    { return true; }
+    //The message is not swipeable.
+    else { return false; }
+}
+
+/**
+ * Refreshes all swipe buttons and updates their swipe counters.
+ * This has been optimized for bulk updates by minimizing DOM queries.
  */
 export function refreshSwipeButtons() {
-    hideSwipeButtons();
-    showSwipeButtons();
+
+    //If swipes is disabled, ignore the input and hide all swipe buttons.
+    if (!swipes) {
+        $('body').toggleClass('hideAllSwipeButtons', true);
+        return;
+    //Don't hide all swipe buttons.
+    } else {
+        $('body').toggleClass('hideAllSwipeButtons', false);
+    }
+
+    //These will accumulate elements so they can be shown or hidden in one operation.
+
+    let showBothElements = new Set(); //.3 opacity.
+    // let showRightElements = new Set(); //.3 opacity.
+    let showRightGenerateElements = new Set(); //.7 opacity.
+    // let showLeft = $()
+    let hideBothElements = new Set(); //Hidden.
+
+    // const lasttDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
+    const firstDisplayedMesId = Number(chatElement.find('.mes').first().attr('mesid'));
+
+    //Group each message.
+    chatElement.children().each((index, div) => {
+        // const messageId = Number($(div).attr('mesid')); //Slower.
+        //This assumes the messages are in order and their Id's are accurate.
+        const messageId = firstDisplayedMesId + index;
+
+        const message = chat[messageId];
+        if (isMessageSwipeable(messageId, message)) {
+            let opacity;
+            //If a right swipe would trigger a generation or loop to the first swipe.
+            if ((message?.['swipes']?.length ?? 1) - 1 <= (message?.['swipe_id'] ?? 0 )) {
+                showRightGenerateElements.add(div);
+                //Chevrons which cause a generation should be more visible.
+                opacity = 0.7;
+            }
+            //If there's only one swipe, the left arrow should not be shown.
+            if (message?.['swipes']?.length > 1) {
+                showBothElements.add(div);
+                opacity = 0.3;
+            } else {
+                //The Right arrow may be shown anyway.
+                hideBothElements.add(div);
+            }
+            // if (opacity) {
+            updateSwipeCounter(messageId, { message, messageElement: $(div), opacity: opacity });
+            // }
+        } else {
+            //Hide all messages that are not swipeable.
+            hideBothElements.add(div);
+        }
+    });
+
+    // This can be optimized with sets.
+
+    //The left arrows must initially be hidden.
+    const noArrows = $([...hideBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
+    const bothArrows = $([...showBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
+    const rightArrows = $([...showRightGenerateElements]).find('.swipeRightBlock > .swipe_right');
+
+    // Debugging
+    noArrows.css('scale', '.5');
+    bothArrows.css('scale', '2');
+    rightArrows.css('scale', '3');
+
+    //The order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
+//     noArrows.hide();
+//     bothArrows.css('opacity', '0.7');
+//     rightArrows.css('display', 'flex').css('opacity', '0.3');
 }
 
 export function showSwipeButtons(mesId = chat.length - 1) {
     //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
     if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.NONE; }
 
-    if (power_user.enable_chat_tree) {
-        //Show all swipe buttons.
-        $('body').toggleClass('hideAllSwipeButtons', false);
-        return;
-    }
-    if (chat.length === 0) {
-        return;
-    }
-
-    if (
-        chat[mesId].is_system ||
-        !swipes ||
-        Number($('.mes:last').attr('mesid')) < 0 ||
-        chat[mesId].is_user ||
-        (selected_group && is_group_generating)
-    ) {
-        return;
-    }
-
-    // swipe_id should be set if alternate greetings are added
-    if (chat.length == 1 && chat[0].swipe_id === undefined) {
-        return;
-    }
-
-    //had to add this to make the swipe counter work
-    //(copied from the onclick functions for swipe buttons..
-    //don't know why the array isn't set for non-swipe messages in Generate or addOneMessage..)
-    if (chat[mesId]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-        chat[mesId]['swipe_id'] = 0;                        // set it to id 0
-        chat[mesId]['swipes'] = [];                         // empty the array
-        chat[mesId]['swipes'][0] = chat[mesId]['mes'];  //assign swipe array with last message from chat
-        chat[mesId]['swipe_info'] = [];
-        chat[mesId]['swipe_info'][0] = {
-            'send_date': chat[mesId]['send_date'],
-            'gen_started': chat[mesId]['gen_started'],
-            'gen_finished': chat[mesId]['gen_finished'],
-            'extra': structuredClone(chat[mesId]['extra']),
-        };
-    }
-
-    const currentMessage = chatElement.children().filter(`[mesid="${mesId}"]`);
-    const swipeId = chat[mesId].swipe_id;
-    const swipeCounterText = formatSwipeCounter((swipeId + 1), chat[mesId]['swipes'].length);
-    const swipeRight = currentMessage.find('.swipe_right');
-    const swipeLeft = currentMessage.find('.swipe_left');
-    const swipeCounter = currentMessage.find('.swipes-counter');
-
-    if (swipeId !== undefined && (chat[mesId].swipes.length > 1 || swipeId > 0)) {
-        swipeLeft.css('display', 'flex');
-    }
-    //only show right when generate is off, or when next right swipe would not make a generate happen
-    if (is_send_press === false || chat[mesId].swipes.length >= swipeId) {
-        swipeRight.css('display', 'flex').css('opacity', '0.3');
-        swipeCounter.css('opacity', '0.3');
-    }
-    if ((chat[mesId].swipes.length - swipeId) === 1) {
-        //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
-        //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
-        swipeRight.css('opacity', '0.7');
-        swipeCounter.css('opacity', '0.7');
-    }
-
-    //allows for writing individual swipe counters for past messages
-    const lastSwipeCounter = $('.last_mes .swipes-counter');
-    lastSwipeCounter.text(swipeCounterText).show();
+    refreshSwipeButtons();
 }
 
 /**
@@ -8334,12 +8381,9 @@ export function showSwipeButtons(mesId = chat.length - 1) {
 export function hideSwipeButtons({ hideCounters = false } = {}) {
     //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
     if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.SWIPING; }
+
+    refreshSwipeButtons();
     if (power_user.enable_chat_tree) {
-        //Hide all swipe buttons.
-        $('body').toggleClass('hideAllSwipeButtons', true);
-    } else {
-        chatElement.find('.swipe_right').hide();
-        chatElement.find('.swipe_left').hide();
         if (hideCounters === true) {
             chatElement.find('.last_mes .swipes-counter').hide();
         }

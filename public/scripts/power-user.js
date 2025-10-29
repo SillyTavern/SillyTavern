@@ -530,10 +530,8 @@ async function askSwitchSwipesAllMessages() {
             okButton: t`Yes, I’ve made a backup and agree to report any bugs.`,
             cancelButton: 'Cancel',
         });
-        await reloadCurrentChat();
         return result;
     }
-    await reloadCurrentChat();
     return true;
 }
 
@@ -4107,6 +4105,7 @@ jQuery(() => {
             power_user.enable_chat_tree = !!$(this).prop('checked');
             saveSettingsDebounced();
             await switchSwipesAllMessages();
+            await reloadCurrentChat();
         }
         else {
             //Toggle checkbox off.
