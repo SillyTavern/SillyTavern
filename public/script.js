@@ -367,7 +367,7 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
 export let chat = [];
-export let isSwipingAllowed = () => swipeState === SWIPE_STATE.NONE; //false when a swipe is in progress, or swiping is blocked.
+export const isSwipingAllowed = () => swipeState === SWIPE_STATE.NONE; //false when a swipe is in progress, or swiping is blocked.
 
 /**
  * @type {import('./scripts/constants.js').SWIPE_STATE}
@@ -561,6 +561,7 @@ let chat_file_for_del = '';
 export let online_status = 'no_connection';
 
 export let is_send_press = false; //Send generation
+export const isGenerating = () => (is_send_press || (selected_group && is_group_generating));
 
 let this_del_mes = -1;
 
@@ -7452,6 +7453,7 @@ async function messageEditMove(sourceId, targetId) {
     }
 
     updateViewMessageIds();
+    refreshSwipeButtons();
     await saveChatConditional();
     return true;
 }
@@ -8220,7 +8222,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
         (messageId > (this_edit_mes_id ?? -1)) && //(swipeState != SWIPE_STATE.EDITING)) &&
         //Cannot swipe while generating.
-        !(is_send_press || (selected_group && is_group_generating)) &&
+        !isGenerating() &&
 
         //If the message is the last message, and it exists.
         (messageId == chat.length - 1) &&
@@ -8309,8 +8311,10 @@ export function refreshSwipeButtons() {
     bothArrows.css('opacity', '0.3').show();
     rightArrows.css('display', 'flex').css('opacity', '0.7').show();
 }
-
-export function showSwipeButtons(mesId = chat.length - 1) {
+/**
+ * This function is misleadingly named. It allows generation then refreshes the swipe buttons and counters.
+ */
+export function showSwipeButtons() {
     //Overwriting SWIPE_STATE.EDITING breaks `swipeGenerate`.
     if (swipeState != SWIPE_STATE.EDITING) { swipeState = SWIPE_STATE.NONE; }
 
@@ -8318,6 +8322,7 @@ export function showSwipeButtons(mesId = chat.length - 1) {
 }
 
 /**
+ * This function is misleadingly named. It blocks generation then refreshes the swipe buttons and counters.
  * @param {object} [options] Options
  * @param {boolean} [options.hideCounters=false] Also hide the swipes counter.
  */
@@ -8939,7 +8944,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
 
-    if (is_group_generating || is_send_press) {
+    if (isGenerating()) {
         toastr.warning(t`Cannot swipe while generating. Stop the request and try again.`, t`Swipe aborted`);
         return;
     }
@@ -10481,6 +10486,10 @@ jQuery(async function () {
         }
 
         else if (id == 'option_regenerate') {
+            if (chat.length - 1 == this_edit_mes_id) {
+                toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot regenerate the message you are editing.`);
+                return;
+            }
             closeMessageEditor();
             if (is_send_press == false) {
                 //hideSwipeButtons();
@@ -10505,6 +10514,10 @@ jQuery(async function () {
         else if (id == 'option_continue') {
             if (swipeState == SWIPE_STATE.EDITING) {
                 toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
+                return;
+            }
+            if (chat.length - 1 == this_edit_mes_id) {
+                toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot continue the message you are editing.`);
                 return;
             }
 
