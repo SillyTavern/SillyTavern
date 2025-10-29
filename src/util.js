@@ -446,19 +446,7 @@ export function getUniqueName(name, exists) {
  * @returns {string} Safe replacement character
  */
 export function sanitizeSafeCharacterReplacements(char) {
-    // ⁄˂˃։''⧵∣Ɂ∗ are valid characters in filenames on OSes that sanitize-filename targets
-    const charMap = {
-        '/': '⁄',
-        '<': '˂',
-        '>': '˃',
-        ':': '։',
-        '"': '\'\'',
-        '\\': '⧵',
-        '|': '∣',
-        '*': '∗',
-        '?': 'Ɂ',
-    };
-    return charMap[char] || '';
+    return '_';
 }
 
 /**
