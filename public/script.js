@@ -313,7 +313,10 @@ export {
     getSystemMessageByType,
     event_types,
     eventSource,
+    /** @deprecated Use setCharacterSettingsOverrides instead. */
     setCharacterSettingsOverrides as setScenarioOverride,
+    /** @deprecated Use appendMediaToMessage instead. */
+    appendMediaToMessage as appendImageToMessage,
 };
 
 /**
@@ -2082,13 +2085,6 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     } else {
         messageElement.find('.mes_file_container').remove();
     }
-}
-
-/**
- * @deprecated Use appendMediaToMessage instead.
- */
-export function appendImageToMessage(mes, messageElement) {
-    appendMediaToMessage(mes, messageElement);
 }
 
 export function addCopyToCodeBlocks(messageElement) {
