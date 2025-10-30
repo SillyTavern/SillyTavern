@@ -539,10 +539,10 @@ function setOpenAIMessages(chat) {
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
-        const image = chat[j]?.extra?.image;
+        const images = chat[j]?.extra?.images;
         const video = chat[j]?.extra?.video;
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'video': video, 'invocations': invocations };
+        messages[i] = { 'role': role, 'content': content, name: name, 'images': images, 'video': video, 'invocations': invocations };
         j++;
     }
 
@@ -852,8 +852,10 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             await chatMessage.setName(messageName);
         }
 
-        if (imageInlining && chatPrompt.image) {
-            await chatMessage.addImage(chatPrompt.image);
+        if (imageInlining && Array.isArray(chatPrompt.images)) {
+            for (const image of chatPrompt.images) {
+                await chatMessage.addImage(image);
+            }
         }
 
         if (videoInlining && chatPrompt.video) {
@@ -2905,6 +2907,13 @@ class Message {
      */
     async addImage(image) {
         const textContent = this.content;
+        if (!Array.isArray(this.content)) {
+            this.content = [];
+            if (typeof textContent === 'string') {
+                this.content.push({ type: 'text', text: textContent });
+            }
+        }
+
         const isDataUrl = isDataURL(image);
         if (!isDataUrl) {
             try {
@@ -2921,10 +2930,7 @@ class Message {
         image = await this.compressImage(image);
 
         const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
-        this.content = [
-            { type: 'text', text: textContent },
-            { type: 'image_url', image_url: { 'url': image, 'detail': quality } },
-        ];
+        this.content.push({ type: 'image_url', image_url: { 'url': image, 'detail': quality } });
 
         try {
             const tokens = await this.getImageTokenCost(image, quality);

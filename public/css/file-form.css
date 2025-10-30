@@ -25,8 +25,14 @@
     border-radius: 15px;
 }
 
-.mes_file_container:not(:last-child) {
-    margin-bottom: 5px;
+.mes .mes_file_wrapper:empty {
+    display: none;
+}
+
+.mes .mes_file_wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .mes_file_container .right_menu_button {

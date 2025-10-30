@@ -1968,6 +1968,7 @@ export function ensureMessageMediaIsArray(mes) {
     }
 
     addArrayAutoWrapper(mes.extra, 'file', 'files');
+    addArrayAutoWrapper(mes.extra, 'image', 'images');
 }
 
 /**
@@ -1979,13 +1980,9 @@ export function ensureMessageMediaIsArray(mes) {
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     ensureMessageMediaIsArray(mes);
 
-    // Add image to message
-    if (mes.extra?.image) {
-        const container = messageElement.find('.mes_img_container');
-        const chatHeight = chatElement.prop('scrollHeight');
-        const image = messageElement.find('.mes_img');
-        const text = messageElement.find('.mes_text');
-        const isInline = !!mes.extra?.inline_image;
+    // Add images to message
+    if (mes.extra && Array.isArray(mes.extra.images) && mes.extra.images.length > 0) {
+        let chatHeight = chatElement.prop('scrollHeight');
         const doAdjustScroll = () => {
             if (!adjustScroll) {
                 return;
@@ -1994,45 +1991,54 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             const newChatHeight = chatElement.prop('scrollHeight');
             const diff = newChatHeight - chatHeight;
             chatElement.scrollTop(scrollPosition + diff);
+            chatHeight = newChatHeight;
         };
-        image.off('load').on('load', function () {
-            image.removeAttr('alt');
-            image.removeClass('error');
-            doAdjustScroll();
-        });
-        image.off('error').on('error', function () {
-            image.attr('alt', '');
-            image.addClass('error');
-            doAdjustScroll();
-        });
-        image.attr('src', mes.extra?.image);
-        image.attr('title', mes.extra?.title || mes.title || '');
-        container.addClass('img_extra');
-        image.toggleClass('img_inline', isInline);
-        text.toggleClass('displayNone', !isInline);
 
-        const imageSwipes = mes.extra.image_swipes;
-        if (Array.isArray(imageSwipes) && imageSwipes.length > 0) {
-            container.addClass('img_swipes');
-            const counter = container.find('.mes_img_swipe_counter');
-            const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
-            counter.text(`${currentImage}/${imageSwipes.length}`);
+        messageElement.find('.mes_text').toggleClass('displayNone', !mes.extra.inline_image);
+        messageElement.find('.mes_img_container').remove();
 
-            const swipeLeft = container.find('.mes_img_swipe_left');
-            swipeLeft.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+        for (let index = 0; index < mes.extra.images.length; index++) {
+            const template = $('#message_image_template .mes_img_container').clone();
+            template.attr('data-index', index);
+
+            const image = template.find('.mes_img');
+            image.off('load').on('load', function () {
+                image.removeAttr('alt');
+                image.removeClass('error');
+                doAdjustScroll();
             });
-
-            const swipeRight = container.find('.mes_img_swipe_right');
-            swipeRight.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+            image.off('error').on('error', function () {
+                image.attr('alt', '');
+                image.addClass('error');
+                doAdjustScroll();
             });
+            image.attr('src', mes.extra.images[index]);
+            image.attr('title', mes.extra?.title || mes.title || '');
+
+            // Only display swipe buttons if there is a single image and multiple swipes
+            const imageSwipes = mes.extra.image_swipes;
+            if (mes.extra.images.length === 1 && Array.isArray(imageSwipes) && imageSwipes.length > 0) {
+                template.addClass('img_swipes');
+                const counter = template.find('.mes_img_swipe_counter');
+                const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
+                counter.text(`${currentImage}/${imageSwipes.length}`);
+
+                const swipeLeft = template.find('.mes_img_swipe_left');
+                swipeLeft.off('click').on('click', function () {
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+                });
+
+                const swipeRight = template.find('.mes_img_swipe_right');
+                swipeRight.off('click').on('click', function () {
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+                });
+            }
+
+            messageElement.find('.mes_img_wrapper').append(template);
         }
     } else {
-        const container = messageElement.find('.mes_img_container');
-        container.removeClass('img_extra img_swipes');
-        const text = messageElement.find('.mes_text');
-        text.removeClass('displayNone');
+        messageElement.find('.mes_img_container').remove();
+        messageElement.find('.mes_text').removeClass('displayNone');
     }
 
     // Add video to message
@@ -2066,7 +2072,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             template.attr('data-index', index);
             template.find('.mes_file_name').text(file.name).attr('title', file.name);
             template.find('.mes_file_size').text(humanFileSize(file.size)).attr('title', file.size);
-            messageElement.find('.mes_block').append(template);
+            messageElement.find('.mes_file_wrapper').append(template);
         }
     } else {
         messageElement.find('.mes_file_container').remove();
@@ -6183,7 +6189,10 @@ function saveImageToMessage(img, mes) {
         if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
-        mes.extra.image = img.image;
+        if (!Array.isArray(mes.extra.images)) {
+            mes.extra.images = [];
+        }
+        mes.extra.images.push(img.image);
         mes.extra.title = img.title;
         mes.extra.inline_image = img.inline;
     }
@@ -9047,7 +9056,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             // ditto for display text
             delete chat[mesId].extra.display_text;
 
-            delete chat[mesId].extra.image;
+            delete chat[mesId].extra.images;
             delete chat[mesId].extra.image_swipes;
             delete chat[mesId].extra.video;
             delete chat[mesId].extra.inline_image;

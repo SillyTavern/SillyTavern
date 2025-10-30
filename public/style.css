@@ -4952,6 +4952,17 @@ a:hover {
 }
 
 /* Message images/video */
+.mes .mes_img_wrapper:empty {
+    display: none;
+}
+
+.mes .mes_img_wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .mes .mes_img_container,
 .mes .mes_video_container {
     max-width: 100%;
@@ -5040,7 +5051,7 @@ a:hover {
     opacity: 1;
 }
 
-.mes .mes_img_container.img_extra {
+.mes .mes_img_container {
     display: flex;
 }
 

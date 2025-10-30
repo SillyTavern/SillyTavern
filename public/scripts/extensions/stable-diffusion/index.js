@@ -54,7 +54,7 @@ import {
 } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
@@ -4072,7 +4072,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
-            image: image,
+            images: [image],
             title: prompt,
             generationType: generationType,
             negative: additionalNegativePrefix,
@@ -4082,7 +4082,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     };
     if (isVideo(format)) {
         message.extra.video = image;
-        delete message.extra.image;
+        delete message.extra.images;
         delete message.extra.image_swipes;
         delete message.extra.inline_image;
     }
@@ -4231,7 +4231,7 @@ async function sdMessageButton(e) {
         ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
         : context.characters[context.characterId]?.name;
     const messageText = message?.mes;
-    const hasSavedImage = message?.extra?.image && message?.extra?.title;
+    const hasSavedImage = Array.isArray(message?.extra?.images) && message.extra.images.length > 0 && message?.extra?.title;
     const hasSavedNegative = message?.extra?.negative;
 
     if ($icon.hasClass(busyClass)) {
@@ -4242,6 +4242,28 @@ async function sdMessageButton(e) {
 
     let dimensions = null;
     buttonAbortController = new AbortController();
+
+    const canAddSwipe = Array.isArray(message.extra.images) && message.extra.images.length === 1;
+    const targets = { images: POPUP_RESULT.CUSTOM1, swipes: POPUP_RESULT.CUSTOM2 };
+    let saveTarget = targets.images;
+
+    if (canAddSwipe) {
+        const popupResult = await Popup.show.confirm(
+            t`An image attachment already exists.`,
+            t`Do you want to add the new image to the swipe list or as a second image?`,
+            {
+                okButton: false,
+                customButtons: [
+                    { text: t`Add to Swipes`, result: targets.swipes, classes: ['popup-button-ok'] },
+                    { text: t`Add Another Image`, result: targets.images },
+                ],
+                cancelButton: t`Cancel`,
+            });
+        if (!popupResult) {
+            return;
+        }
+        saveTarget = popupResult;
+    }
 
     try {
         setBusyIcon(true);
@@ -4277,29 +4299,49 @@ async function sdMessageButton(e) {
             message.extra = {};
         }
 
-        // Add image to the swipe list if it's not already there
+        // Ensure images array exists
+        if (!Array.isArray(message.extra.images)) {
+            message.extra.images = [];
+        }
+
+        // Ensure swipes array exists
         if (!Array.isArray(message.extra.image_swipes)) {
             message.extra.image_swipes = [];
         }
 
-        const swipes = message.extra.image_swipes;
+        // If already contains an image and it's not inline - leave it as is
+        message.extra.inline_image = !(message.extra.images.length && !message.extra.inline_image);
 
-        if (message.extra.image && !swipes.includes(message.extra.image)) {
-            swipes.push(message.extra.image);
-        }
-
+        // Determine if the format is a video
         const isVideoFormat = isVideo(format);
 
-        if (isVideoFormat) {
-            message.extra.video = image;
-        } else {
-            swipes.push(image);
+        // Add image to swipe list if applicable
+        if (!isVideoFormat && canAddSwipe && saveTarget === targets.swipes) {
+            // Add the first image to the swipe list if it's not already there
+            if (!message.extra.image_swipes.includes(message.extra.images[0])) {
+                message.extra.image_swipes.push(message.extra.images[0]);
+            }
 
-            // If already contains an image and it's not inline - leave it as is
-            message.extra.inline_image = !(message.extra.image && !message.extra.inline_image);
-            message.extra.image = image;
+            // Add the new image to the swipe list and set it as the current image
+            message.extra.image_swipes.push(image);
+            message.extra.images[0] = image;
         }
 
+        // Add image to array only if it's not a video and not being added to swipes
+        if (!isVideoFormat && (!canAddSwipe || saveTarget === targets.images)) {
+            message.extra.images.push(image);
+            // If it's the first image, also add it to the swipe list so it can be swiped later
+            if (message.extra.images.length === 1) {
+                message.extra.image_swipes.push(image);
+            }
+        }
+
+        // Set video data if the format is a video
+        if (isVideoFormat) {
+            message.extra.video = image;
+        }
+
+        // Save prompt data for future use
         message.extra.title = prompt;
         message.extra.generationType = generationType;
         message.extra.negative = negative;
@@ -4353,14 +4395,25 @@ async function onImageSwiped({ message, element, direction }) {
         return;
     }
 
+    const images = message?.extra?.images;
     const swipes = message?.extra?.image_swipes;
+
+    if (!Array.isArray(images) || images.length === 0) {
+        console.warn('No images found in the message');
+        return;
+    }
+
+    if (images.length > 1) {
+        console.warn('Image swiping is not supported for messages with multiple images');
+        return;
+    }
 
     if (!Array.isArray(swipes)) {
         console.warn('No image swipes found in the message');
         return;
     }
 
-    const currentIndex = swipes.indexOf(message.extra.image);
+    const currentIndex = swipes.indexOf(images[0]);
 
     if (currentIndex === -1) {
         console.warn('Current image not found in the swipes');
@@ -4370,7 +4423,7 @@ async function onImageSwiped({ message, element, direction }) {
     // Switch to previous image or wrap around if at the beginning
     if (direction === 'left') {
         const newIndex = currentIndex === 0 ? swipes.length - 1 : currentIndex - 1;
-        message.extra.image = swipes[newIndex];
+        images[0] = swipes[newIndex];
 
         // Update the image in the message
         appendMediaToMessage(message, element, false);
@@ -4422,7 +4475,7 @@ async function onImageSwiped({ message, element, direction }) {
             swipes.push(imagePath);
         }
 
-        message.extra.image = swipes[newIndex];
+        images[0] = swipes[newIndex];
         appendMediaToMessage(message, element, false);
     }
 
