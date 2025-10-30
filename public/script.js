@@ -277,6 +277,7 @@ import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
+import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -1577,7 +1578,7 @@ export async function sendTextareaMessage() {
 
     hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
-    let generateType;
+    let generateType = 'normal';
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
@@ -1596,8 +1597,9 @@ export async function sendTextareaMessage() {
         await newAssistantChat({ temporary: false });
     }
 
-    await Generate(generateType);
+    let generation = await Generate(generateType);
     showSwipeButtons();
+    return generation;
 }
 
 /**
@@ -2206,6 +2208,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+    updateEditArrowClasses();
 }
 
 /**
@@ -6075,8 +6078,18 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
     // If swipes structure is invalid, exit out
-    if (!Array.isArray(targetMessage.swipe_info) || !Array.isArray(targetMessage.swipes)) {
+    if (!Array.isArray(targetMessage.swipes)) {
         return false;
+    }
+
+    // Backfill swipe_info if missing.
+    if (!Array.isArray(targetMessage.swipe_info)) {
+        targetMessage.swipe_info = targetMessage.swipes.map(_ => ({
+            send_date: targetMessage.send_date,
+            gen_started: void 0,
+            gen_finished: void 0,
+            extra: {},
+        }));
     }
 
     const targetSwipeId = targetMessage.swipe_id;
@@ -6085,7 +6098,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
 
-    const targetSwipeInfo = targetMessage?.swipe_info[targetSwipeId];
+    const targetSwipeInfo = targetMessage?.swipe_info?.[targetSwipeId];
     if (typeof targetSwipeInfo !== 'object') {
         console.warn(`[syncSwipeToMes] Invalid swipe info: ${targetSwipeId}`);
     }
@@ -9417,6 +9430,7 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
+    formData.append('user_name', name1);
     if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
     try {
@@ -10021,8 +10035,9 @@ jQuery(async function () {
         $('#option_continue').trigger('click');
     });
 
-    $('#send_but').on('click', function () {
-        sendTextareaMessage();
+    const userInputGenerateMutex = new SimpleMutex(sendTextareaMessage);
+    $('#send_but').on('click', async function () {
+        await userInputGenerateMutex.update();
     });
 
     //menu buttons setup

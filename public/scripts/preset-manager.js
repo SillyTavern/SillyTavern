@@ -187,6 +187,23 @@ class PresetManager {
             },
             isValid: (data) => PresetManager.isPossiblyReasoningData(data),
         },
+        'srw': {
+            name: 'Start Reply With',
+            getData: () => {
+                return {
+                    value: power_user.user_prompt_bias ?? '',
+                    show: power_user.show_user_prompt_bias ?? false,
+                };
+            },
+            setData: (data) => {
+                power_user.user_prompt_bias = data.value ?? '';
+                power_user.show_user_prompt_bias = data.show ?? false;
+                $('#start_reply_with').val(power_user.user_prompt_bias);
+                $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
+                return saveSettingsDebounced();
+            },
+            isValid: (data) => PresetManager.isPossiblyStartReplyWithData(data),
+        },
     };
 
     static isPossiblyInstructData(data) {
@@ -212,6 +229,10 @@ class PresetManager {
     static isPossiblyReasoningData(data) {
         const reasoningProps = ['name', 'prefix', 'suffix', 'separator'];
         return data && reasoningProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyStartReplyWithData(data) {
+        return data && 'value' in data && 'show' in data;
     }
 
     /**
@@ -313,7 +334,7 @@ class PresetManager {
      */
     static async performMasterExport() {
         const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
-            acc[key] = { key: key, name: section.name, checked: key !== 'preset' };
+            acc[key] = { key: key, name: section.name, checked: !['preset', 'srw'].includes(key) };
             return acc;
         }, {});
         const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
