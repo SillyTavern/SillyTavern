@@ -59,6 +59,7 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
 /**
  * @typedef {object} DataMaidChatMetadata - The chat metadata object.
  * @property {DataMaidFile[]} [attachments] - The array of attachments, if any.
+ * @property {string[]} [chat_backgrounds] - The array of chat background image links, if any.
  */
 
 /**
@@ -191,6 +192,16 @@ export class DataMaidService {
                 if (Array.isArray(message?.extra?.image_swipes)) {
                     for (const swipe of message.extra.image_swipes) {
                         knownImages.add(swipe);
+                    }
+                }
+            }
+            const metadata = await this.#parseAllMetadata(x => Array.isArray(x?.chat_backgrounds) && x.chat_backgrounds.length > 0);
+            for (const meta of metadata) {
+                if (Array.isArray(meta?.chat_backgrounds)) {
+                    for (const background of meta.chat_backgrounds) {
+                        if (background) {
+                            knownImages.add(background);
+                        }
                     }
                 }
             }
