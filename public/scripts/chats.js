@@ -241,7 +241,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
 
                 if (!fileUrl) {
-                    return;
+                    continue;
                 }
 
                 if (!Array.isArray(message.extra.files)) {
