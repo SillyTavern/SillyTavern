@@ -2028,7 +2028,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             if (mes.extra.images.length === 1 && Array.isArray(imageSwipes) && imageSwipes.length > 0) {
                 template.addClass('img_swipes');
                 const counter = template.find('.mes_img_swipe_counter');
-                const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
+                const currentImage = imageSwipes.indexOf(mes.extra.images[0]) + 1;
                 counter.text(`${currentImage}/${imageSwipes.length}`);
 
                 const swipeLeft = template.find('.mes_img_swipe_left');
