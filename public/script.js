@@ -6155,7 +6155,7 @@ function getGeneratingModel(mes) {
 export function activateSendButtons() {
     is_send_press = false;
     hideStopButton();
-    hideSwipeButtons();
+    showSwipeButtons();
     delete document.body.dataset.generating;
 }
 
@@ -6164,7 +6164,7 @@ export function activateSendButtons() {
  */
 export function deactivateSendButtons() {
     showStopButton();
-    showSwipeButtons();
+    hideSwipeButtons();
     document.body.dataset.generating = 'true';
 }
 
@@ -7461,7 +7461,7 @@ async function messageEditMove(sourceId, targetId) {
 }
 
 async function messageEditDone(div) {
-    if (typeof(this_edit_mes_id) == 'undefined') {
+    if (this_edit_mes_id < 0) {
         console.trace('this_edit_mes_id cannot be blank when calling messageEditDone.');
         return;
     }
