@@ -1188,18 +1188,19 @@ export function initTextGenSettings() {
  * @returns void
  */
 function showSamplerControls(api_type = null, is_preset_switch = false) {
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
+    
+    if (is_preset_switch && !prioritizeManualSamplerSelect) return;
+
+    $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
+        $(this).show();
+    });
+
+    showTypeSpecificControls(api_type ?? settings.type);
+
     const samplersActivatedManually = getActivePresetSamplers();
 
-    if (!samplersActivatedManually?.length || !isSamplerManualPriorityEnabled()) {
-        if (is_preset_switch) return;
-
-        $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
-            $(this).show();
-        });
-
-        showTypeSpecificControls(api_type ?? settings.type);
-        return;
-    }
+    if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
 
     $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
         const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== '');
