@@ -9061,17 +9061,19 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Update the swipe_id.
         chat[mesId]['swipe_id'] = newSwipeId;
 
-        if (chat[mesId].extra) {
-            // if message has memory attached - remove it to allow regen
+        if (chat[mesId].extra && typeof chat[mesId].extra === 'object') {
             delete chat[mesId].extra.memory;
-
-            // ditto for display text
             delete chat[mesId].extra.display_text;
-
             delete chat[mesId].extra.images;
             delete chat[mesId].extra.image_swipes;
             delete chat[mesId].extra.videos;
             delete chat[mesId].extra.inline_image;
+            delete chat[mesId].extra.files;
+            delete chat[mesId].extra.fileLength;
+            delete chat[mesId].extra.generationType;
+            delete chat[mesId].extra.negative;
+            delete chat[mesId].extra.title;
+            delete chat[mesId].extra.append_title;
         }
         delete chat[mesId].gen_started;
         delete chat[mesId].gen_finished;
@@ -9079,7 +9081,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
     }
 
-    //Deepseek-V3.1
     // Helper function to convert transition to promise
     const transitionPromise = (element, properties) => {
         return new Promise((resolve) => {
