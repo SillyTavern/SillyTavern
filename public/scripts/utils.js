@@ -408,6 +408,16 @@ export async function urlContentToDataUri(url, params) {
 }
 
 /**
+ * Fuzzily compares two files for equality. Only checks attributes, not contents.
+ * @param {File} a First file
+ * @param {File} b Second file
+ * @returns {boolean} True if the files are probably the same, false otherwise.
+ */
+export function isSameFile(a, b) {
+    return a.lastModified === b.lastModified && a.name === b.name && a.size === b.size && a.type === b.type;
+}
+
+/**
  * Returns a promise that resolves to the file's text.
  * @param {Blob} file The file to read.
  * @returns {Promise<string>} A promise that resolves to the file's text.

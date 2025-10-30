@@ -43,6 +43,7 @@ import {
     getFileText,
     getFileExtension,
     convertTextToBase64,
+    isSameFile,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -2214,6 +2215,13 @@ export function initChatUtilities() {
         const dataTransfer = new DataTransfer();
         for (let i = 0; i < event.clipboardData.files.length; i++) {
             dataTransfer.items.add(event.clipboardData.files[i]);
+        }
+
+        // Preserve existing non-duplicate files in the input
+        for (const file of fileInput.files) {
+            if (!Array.from(dataTransfer.files).some(f => isSameFile(f, file))) {
+                dataTransfer.items.add(file);
+            }
         }
 
         fileInput.files = dataTransfer.files;
