@@ -1219,6 +1219,7 @@ body .panelControlBar {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
     transition-duration: calc(var(--animation-duration) * 0.7/0.3*2);
+    @starting-style { opacity: 0 }
 }
 
 .swipe_right,
