@@ -182,6 +182,7 @@ import {
     canUseNegativeLookbehind,
     trimSpaces,
     clamp,
+    shakeElement,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
@@ -9013,8 +9014,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         // If swipe_id has not changed, give the user feedback.
         if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
-            //Shake
-            thisMesDiv.effect('shake', { direction: direction, distance: 5, times: 1 });
+            //Shake 700/140=5px
+            shakeElement(thisMesDiv, swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
