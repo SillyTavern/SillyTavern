@@ -4243,7 +4243,7 @@ async function sdMessageButton(e) {
     let dimensions = null;
     buttonAbortController = new AbortController();
 
-    const canAddSwipe = Array.isArray(message.extra.images) && message.extra.images.length === 1;
+    const canAddSwipe = Array.isArray(message?.extra?.images) && message.extra.images.length === 1;
     const targets = { images: POPUP_RESULT.CUSTOM1, swipes: POPUP_RESULT.CUSTOM2 };
     let saveTarget = targets.images;
 
