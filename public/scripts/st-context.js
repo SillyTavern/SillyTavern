@@ -58,6 +58,7 @@ import {
     deleteMessage,
     refreshSwipeButtons,
     isSwipingAllowed,
+    ensureMessageMediaIsArray,
 } from '../script.js';
 import {
     extension_settings,
@@ -209,6 +210,7 @@ export function getContext() {
         humanizedDateTime,
         updateMessageBlock,
         appendMediaToMessage,
+        ensureMessageMediaIsArray,
         swipe: {
             left: swipe_left,
             right: swipe_right,
