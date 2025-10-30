@@ -483,7 +483,7 @@ async function selectPreset(name) {
         setSettingByName(name, value, true);
     }
     setGenerationParamsFromPreset(preset);
-    showManuallySelectedControls();
+    showSamplerControls(null, true);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(preset.logit_bias, BIAS_KEY);
     saveSettingsDebounced();
@@ -684,8 +684,7 @@ export function loadTextGenSettings(data, loadedSettings) {
     $('#textgen_type').val(settings.type);
     $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
     loadPresetSelectedSamplers();
-    showTypeSpecificControls(settings.type);
-    showManuallySelectedControls();
+    showSamplerControls();
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
 
@@ -1015,8 +1014,7 @@ export function initTextGenSettings() {
             }
         }
 
-        showTypeSpecificControls(type);
-        showManuallySelectedControls();
+        showSamplerControls(type);
         setOnlineStatus('no_connection');
         BIAS_CACHE.delete(BIAS_KEY);
 
@@ -1184,13 +1182,24 @@ export function initTextGenSettings() {
 }
 
 /**
- * Hides and shows preset samplers selected manually by the user only if their prioritization is enabled for the preset.
+ * Hides and shows preset samplers from the left panel.
+ * @param {string?} api_type API Type selected in API Connections - Currently selected one by default
+ * @param {boolean?} is_preset_switch Wheter the trigger comes from a preset switch - false by default
  * @returns void
  */
-function showManuallySelectedControls() {
+function showSamplerControls(api_type = null, is_preset_switch = false) {
     const samplersActivatedManually = getActivePresetSamplers();
 
-    if (!samplersActivatedManually?.length || !isSamplerManualPriorityEnabled()) return;
+    if (!samplersActivatedManually?.length || !isSamplerManualPriorityEnabled()) {
+        if (is_preset_switch) return;
+
+        $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
+            $(this).show();
+        });
+
+        showTypeSpecificControls(api_type ?? settings.type);
+        return;
+    }
 
     $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
         const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== '');
