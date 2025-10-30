@@ -540,9 +540,9 @@ function setOpenAIMessages(chat) {
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const images = chat[j]?.extra?.images;
-        const video = chat[j]?.extra?.video;
+        const videos = chat[j]?.extra?.videos;
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'images': images, 'video': video, 'invocations': invocations };
+        messages[i] = { 'role': role, 'content': content, name: name, 'images': images, 'videos': videos, 'invocations': invocations };
         j++;
     }
 
@@ -858,8 +858,10 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             }
         }
 
-        if (videoInlining && chatPrompt.video) {
-            await chatMessage.addVideo(chatPrompt.video);
+        if (videoInlining && Array.isArray(chatPrompt.videos)) {
+            for (const video of chatPrompt.videos) {
+                await chatMessage.addVideo(video);
+            }
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
@@ -2943,6 +2945,13 @@ class Message {
 
     async addVideo(video) {
         const textContent = this.content;
+        if (!Array.isArray(this.content)) {
+            this.content = [];
+            if (typeof textContent === 'string') {
+                this.content.push({ type: 'text', text: textContent });
+            }
+        }
+
         const isDataUrl = isDataURL(video);
         if (!isDataUrl) {
             try {
@@ -2957,10 +2966,7 @@ class Message {
         }
 
         // Note: No compression for videos (unlike images)
-        this.content = [
-            { type: 'text', text: textContent },
-            { type: 'video_url', video_url: { 'url': video } },
-        ];
+        this.content.push({ type: 'video_url', video_url: { 'url': video } });
 
         try {
             // Convservative estimate for video token cost without knowing duration

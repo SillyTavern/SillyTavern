@@ -52,7 +52,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, SWIPE_DIRECTION, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -4081,7 +4081,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         },
     };
     if (isVideo(format)) {
-        message.extra.video = image;
+        message.extra.videos = [image];
         delete message.extra.images;
         delete message.extra.image_swipes;
         delete message.extra.inline_image;
@@ -4338,7 +4338,10 @@ async function sdMessageButton(e) {
 
         // Set video data if the format is a video
         if (isVideoFormat) {
-            message.extra.video = image;
+            if (!Array.isArray(message.extra.videos)) {
+                message.extra.videos = [];
+            }
+            message.extra.videos.push(image);
         }
 
         // Save prompt data for future use
@@ -4421,7 +4424,7 @@ async function onImageSwiped({ message, element, direction }) {
     }
 
     // Switch to previous image or wrap around if at the beginning
-    if (direction === 'left') {
+    if (direction === SWIPE_DIRECTION.LEFT) {
         const newIndex = currentIndex === 0 ? swipes.length - 1 : currentIndex - 1;
         images[0] = swipes[newIndex];
 
@@ -4430,7 +4433,7 @@ async function onImageSwiped({ message, element, direction }) {
     }
 
     // Switch to next image or generate a new one if at the end
-    if (direction === 'right') {
+    if (direction === SWIPE_DIRECTION.RIGHT) {
         const newIndex = currentIndex === swipes.length - 1 ? swipes.length : currentIndex + 1;
 
         if (newIndex === swipes.length) {

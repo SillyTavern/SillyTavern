@@ -218,7 +218,12 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
             // If file is video
             else if (file.type.startsWith('video/')) {
                 const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-                message.extra.video = videoUrl;
+
+                if (!Array.isArray(message.extra.videos)) {
+                    message.extra.videos = [];
+                }
+
+                message.extra.videos.push(videoUrl);
             } else {
                 const uniqueFileName = `${fileNamePrefix}.txt`;
 
@@ -1000,25 +1005,39 @@ async function deleteMessageImage(messageId, imageIndex, messageBlock) {
     appendMediaToMessage(message, messageBlock, false);
 }
 
-async function deleteMessageVideo() {
+/**
+ * Deletes video from a message.
+ * @param {number} messageId Message ID
+ * @param {number} videoIndex Video index
+ * @param {JQuery<HTMLElement>} messageBlock Message block element
+ */
+async function deleteMessageVideo(messageId, videoIndex, messageBlock) {
+    if (isNaN(messageId) || isNaN(videoIndex)) {
+        console.warn('Invalid message ID or video index');
+        return;
+    }
+
     const confirm = await Popup.show.confirm(t`Delete video from message?`, t`This action can't be undone.`);
     if (!confirm) {
         return;
     }
 
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
+    const message = chat[messageId];
 
-    if (!message?.extra?.video) {
-        console.warn('Message has no video or it is empty');
+    if (!Array.isArray(message?.extra?.videos)) {
+        console.debug('Message has no videos');
         return;
     }
 
-    delete message.extra.video;
-    mesBlock.find('.mes_video_container').remove();
+    if (videoIndex < 0 || videoIndex >= message.extra.videos.length) {
+        console.warn('Invalid video index for message');
+        return;
+    }
+
+    message.extra.videos.splice(videoIndex, 1);
 
     await saveChatConditional();
+    appendMediaToMessage(message, messageBlock, false);
 }
 
 /**
@@ -2163,7 +2182,13 @@ export function initChatUtilities() {
         const imageIndex = Number(imageBlock.attr('data-index'));
         await deleteMessageImage(messageId, imageIndex, messageBlock);
     });
-    $(document).on('click', '.mes_video_delete', deleteMessageVideo);
+    $(document).on('click', '.mes_video_delete', async function() {
+        const messageBlock = $(this).closest('.mes');
+        const messageId = Number(messageBlock.attr('mesid'));
+        const videoBlock = $(this).closest('.mes_video_container');
+        const videoIndex = Number(videoBlock.attr('data-index'));
+        await deleteMessageVideo(messageId, videoIndex, messageBlock);
+    });
 
     $('#file_form_input').on('change', async () => {
         const fileInput = document.getElementById('file_form_input');

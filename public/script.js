@@ -1969,6 +1969,7 @@ export function ensureMessageMediaIsArray(mes) {
 
     addArrayAutoWrapper(mes.extra, 'file', 'files');
     addArrayAutoWrapper(mes.extra, 'image', 'images');
+    addArrayAutoWrapper(mes.extra, 'video', 'videos');
 }
 
 /**
@@ -1980,20 +1981,24 @@ export function ensureMessageMediaIsArray(mes) {
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     ensureMessageMediaIsArray(mes);
 
-    // Add images to message
-    if (mes.extra && Array.isArray(mes.extra.images) && mes.extra.images.length > 0) {
-        let chatHeight = chatElement.prop('scrollHeight');
-        const doAdjustScroll = () => {
-            if (!adjustScroll) {
-                return;
-            }
-            const scrollPosition = chatElement.scrollTop();
-            const newChatHeight = chatElement.prop('scrollHeight');
-            const diff = newChatHeight - chatHeight;
-            chatElement.scrollTop(scrollPosition + diff);
-            chatHeight = newChatHeight;
-        };
+    const hasImages = mes.extra && Array.isArray(mes.extra.images) && mes.extra.images.length > 0;
+    const hasVideos = mes.extra && Array.isArray(mes.extra.videos) && mes.extra.videos.length > 0;
+    const hasFiles = mes.extra && Array.isArray(mes.extra.files) && mes.extra.files.length > 0;
 
+    let chatHeight = adjustScroll && (hasImages || hasVideos || hasFiles) ? chatElement.prop('scrollHeight') : 0;
+    const doAdjustScroll = () => {
+        if (!adjustScroll) {
+            return;
+        }
+        const scrollPosition = chatElement.scrollTop();
+        const newChatHeight = chatElement.prop('scrollHeight');
+        const diff = newChatHeight - chatHeight;
+        chatElement.scrollTop(scrollPosition + diff);
+        chatHeight = newChatHeight;
+    };
+
+    // Add images to message
+    if (hasImages) {
         messageElement.find('.mes_text').toggleClass('displayNone', !mes.extra.inline_image);
         messageElement.find('.mes_img_container').remove();
 
@@ -2025,12 +2030,12 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
 
                 const swipeLeft = template.find('.mes_img_swipe_left');
                 swipeLeft.off('click').on('click', function () {
-                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.LEFT });
                 });
 
                 const swipeRight = template.find('.mes_img_swipe_right');
                 swipeRight.off('click').on('click', function () {
-                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.RIGHT });
                 });
             }
 
@@ -2041,30 +2046,30 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         messageElement.find('.mes_text').removeClass('displayNone');
     }
 
-    // Add video to message
-    if (mes.extra?.video) {
-        const container = $('#message_video_template .mes_video_container').clone();
+    // Add videos to message
+    if (hasVideos) {
         messageElement.find('.mes_video_container').remove();
-        messageElement.find('.mes_block').append(container);
-        const chatHeight = chatElement.prop('scrollHeight');
-        const video = container.find('.mes_video');
-        video.off('loadedmetadata').on('loadedmetadata', function () {
-            if (!adjustScroll) {
-                return;
-            }
-            const scrollPosition = chatElement.scrollTop();
-            const newChatHeight = chatElement.prop('scrollHeight');
-            const diff = newChatHeight - chatHeight;
-            chatElement.scrollTop(scrollPosition + diff);
-        });
+        for (let index = 0; index < mes.extra.videos.length; index++) {
+            const videoUrl = mes.extra.videos[index];
+            const template = $('#message_video_template .mes_video_container').clone();
+            template.attr('data-index', index);
+            const video = template.find('.mes_video');
+            video.off('loadedmetadata').on('loadedmetadata', function () {
+                if (!adjustScroll) {
+                    return;
+                }
+                doAdjustScroll();
+            });
 
-        video.attr('src', mes.extra?.video);
+            video.attr('src', videoUrl);
+            messageElement.find('.mes_video_wrapper').append(template);
+        }
     } else {
         messageElement.find('.mes_video_container').remove();
     }
 
     // Add files to message
-    if (mes.extra && Array.isArray(mes.extra.files) && mes.extra.files.length > 0) {
+    if (hasFiles) {
         messageElement.find('.mes_file_container').remove();
         for (let index = 0; index < mes.extra.files.length; index++) {
             const file = mes.extra.files[index];
@@ -9058,7 +9063,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
             delete chat[mesId].extra.images;
             delete chat[mesId].extra.image_swipes;
-            delete chat[mesId].extra.video;
+            delete chat[mesId].extra.videos;
             delete chat[mesId].extra.inline_image;
         }
         delete chat[mesId].gen_started;
