@@ -1189,7 +1189,7 @@ export function initTextGenSettings() {
  */
 function showSamplerControls(api_type = null, is_preset_switch = false) {
     const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
-    
+
     if (is_preset_switch && !prioritizeManualSamplerSelect) return;
 
     $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
