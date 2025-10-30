@@ -154,6 +154,10 @@ export function getSystemMessageByType(type, text, extra = {}) {
         newMessage.extra = {};
     }
 
+    // By default system message should not be swipeable.
+    // This can be overridden by setting swipeable to true.
+    newMessage['extra'].swipeable ??= false;
+
     newMessage.extra = Object.assign(newMessage.extra, extra);
     newMessage.extra.type = type;
     return newMessage;

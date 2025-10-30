@@ -8287,7 +8287,7 @@ export function refreshSwipeButtons() {
             //If there's only one swipe, the left arrow should not be shown.
             if (message?.['swipes']?.length > 1) {
                 showBothElements.add(div);
-                opacity = 0.3;
+                opacity ??= 0.3;
             } else {
                 //The Right arrow may be shown anyway.
                 hideBothElements.add(div);
@@ -9014,7 +9014,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         // If swipe_id has not changed, give the user feedback.
         if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
             //Shake
-            thisMesDiv.effect('shake', { direction: direction, distance: 20, times: 1 });
+            thisMesDiv.effect('shake', { direction: direction, distance: 5, times: 1 });
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
@@ -10488,14 +10488,12 @@ jQuery(async function () {
         }
 
         else if (id == 'option_regenerate') {
-            if (chat.length - 1 == this_edit_mes_id) {
+            //Attempting to regenerate a user message will instead generate a new message.
+            if ((chat.length - 1 == this_edit_mes_id) && chat[this_edit_mes_id]?.is_user == false) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot regenerate the message you are editing.`);
                 return;
             }
-            closeMessageEditor();
             if (is_send_press == false) {
-                //hideSwipeButtons();
-
                 if (selected_group) {
                     regenerateGroup();
                 }

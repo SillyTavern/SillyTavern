@@ -1300,6 +1300,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
 .swipe_right {
     right: 5px;
     align-self: center;
+    display: flex;
 }
 
 .ui-settings {
