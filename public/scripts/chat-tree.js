@@ -6,6 +6,7 @@ export let chatTree = {};
 export function setChatTree(newChat) {
     if (power_user.enable_chat_tree) {
         chatTree = newChat;
+        return chatTree;
     }
 }
 
@@ -20,7 +21,7 @@ export function setChatTree(newChat) {
  */
 export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.length } = {}) {
 
-    chatTree ??= {};
+    chatTree ??= setChatTree({});
 
     //Track the current branch
     let branch = chatTree;
