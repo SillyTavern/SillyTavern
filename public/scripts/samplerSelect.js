@@ -223,6 +223,7 @@ async function listSamplers(main_api, arrayOnly = false) {
     }
 
     const samplersActivatedManually = getActivePresetSamplers();
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
         let customColor, displayname;
@@ -308,7 +309,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
 
         const shouldBeChecked = () => {
-            if (isSamplerManualPriorityEnabled()) {
+            if (prioritizeManualSamplerSelect) {
                 return isManuallyActivated;
             }
             else if (isInForceHiddenArray) {
@@ -346,6 +347,7 @@ export async function validateDisabledSamplers(redraw = false) {
     }
 
     const samplersActivatedManually = getActivePresetSamplers();
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
 
     for (const sampler of APISamplers) {
         let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
@@ -421,7 +423,7 @@ export async function validateDisabledSamplers(redraw = false) {
 
         const isManuallyActivated = samplersActivatedManually.includes(sampler);
 
-        if (isSamplerManualPriorityEnabled()) {
+        if (prioritizeManualSamplerSelect) {
             relatedDOMElement.css('display', isManuallyActivated === true ? targetDisplayType : 'none');
         } else if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
