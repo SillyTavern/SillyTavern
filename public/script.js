@@ -8209,7 +8209,7 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
  * Returns true if the message is swipeable.
  * This does not check if the swipes exist or are valid.
  * @param {number} messageId The message Id to check.
- * @param {object} message If undefined, then the message checks will be skipped.
+ * @param {object} [message=undefined] If undefined, then the message checks will be skipped.
  * @returns {boolean}
  */
 export function isMessageSwipeable(messageId, message = undefined) {
@@ -8262,11 +8262,8 @@ export function refreshSwipeButtons() {
     }
 
     //These will accumulate elements so they can be shown or hidden in one operation.
-
     let showBothElements = new Set(); //.3 opacity.
-    // let showRightElements = new Set(); //.3 opacity.
     let showRightGenerateElements = new Set(); //.7 opacity.
-    // let showLeft = $()
     let hideBothElements = new Set(); //Hidden.
 
     // const lasttDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
@@ -8295,26 +8292,29 @@ export function refreshSwipeButtons() {
                 //The Right arrow may be shown anyway.
                 hideBothElements.add(div);
             }
-            // if (opacity) {
             updateSwipeCounter(messageId, { message, messageElement: $(div), opacity: opacity });
-            // }
         } else {
             //Hide all messages that are not swipeable.
             hideBothElements.add(div);
         }
     });
 
-    // This can be optimized with sets.
+    // This may be optimized with sets to reduce redundant .attr and .addClass calls.
 
     //The left arrows must initially be hidden.
-    const noArrows = $([...hideBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/:has#performance_considerations
+    const noArrows = $([...hideBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
     const bothArrows = $([...showBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
     const rightArrows = $([...showRightGenerateElements]).find('.swipeRightBlock > .swipe_right');
 
-    //The order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
-    noArrows.hide();
-    bothArrows.css('opacity', '0.3').show();
-    rightArrows.css('display', 'flex').css('opacity', '0.7').show();
+    //This order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
+
+    // @ts-ignore https://stackoverflow.com/a/42930857 .attr is correct.
+    noArrows.attr('hidden', true);
+    // @ts-ignore
+    bothArrows.attr('hidden', false).removeClass('active');
+    // @ts-ignore
+    rightArrows.attr('hidden', false).addClass('active');
 }
 /**
  * This function is misleadingly named. It allows generation then refreshes the swipe buttons and counters.

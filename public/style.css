@@ -1215,6 +1215,11 @@ body .panelControlBar {
     --swipeCounterMargin: 5px;
 }
 
+.swipe_right.active {
+    opacity: 0.7;
+    transition-duration: 0.5s;
+}
+
 .swipe_right,
 .swipe_left {
     width: 25px;
@@ -1227,6 +1232,28 @@ body .panelControlBar {
     font-size: 20px;
     cursor: pointer;
     align-self: center;
+
+    /* Fade in and out: */
+    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
+    @media (prefers-reduced-motion: no-preference) {
+        transition:
+            opacity 0.3s ease-in,
+            display 0.3s ease-in;
+        transition-behavior: allow-discrete;
+    }
+    /* Both styles are required. https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease,
+    display 0.3s ease allow-discrete;
+    /* Fade in chevrons. */
+    @starting-style { opacity: 0 }
+    /* Fade out */
+    &[hidden] {
+        opacity: 0;
+        display: none;
+        transition-duration: 0.5s;
+        transition-timing-function: ease-out;
+    }
 }
 
 .swipe_left {
