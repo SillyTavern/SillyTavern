@@ -165,6 +165,7 @@ export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
     OPENROUTER: 'openrouter',
+    HELICONE: 'helicone',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',
@@ -327,6 +328,25 @@ export const OPENAI_KEYS = [
     'best_of',
 ];
 
+// Helicone is OpenAI-compatible, so uses similar parameters
+export const HELICONE_KEYS = [
+    'model',
+    'messages',
+    'stream',
+    'temperature',
+    'top_p',
+    'frequency_penalty',
+    'presence_penalty',
+    'stop',
+    'seed',
+    'logit_bias',
+    'logprobs',
+    'max_tokens',
+    'n',
+    'tools',
+    'tool_choice',
+];
+
 export const AVATAR_WIDTH = 512;
 export const AVATAR_HEIGHT = 768;
 export const DEFAULT_AVATAR_PATH = './public/img/ai4.png';
@@ -344,6 +364,12 @@ export const AIMLAPI_HEADERS = {
 export const FEATHERLESS_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
     'X-Title': 'SillyTavern',
+};
+
+export const HELICONE_HEADERS = {
+    'HTTP-Referer': 'https://sillytavern.app',
+    'X-Title': 'SillyTavern',
+    'Helicone-Property-App': 'SillyTavern',
 };
 
 export const OPENROUTER_KEYS = [

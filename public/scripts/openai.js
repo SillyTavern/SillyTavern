@@ -171,6 +171,7 @@ export const chat_completion_sources = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
     OPENROUTER: 'openrouter',
+    HELICONE: 'helicone',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',
@@ -264,6 +265,8 @@ export const settingsToUpdate = {
     openai_model: ['#model_openai_select', 'openai_model', false, true],
     claude_model: ['#model_claude_select', 'claude_model', false, true],
     openrouter_model: ['#model_openrouter_select', 'openrouter_model', false, true],
+    helicone_model: ['#model_helicone_select', 'helicone_model', false, true],
+    api_key_helicone: ['#api_key_helicone', 'api_key_helicone', false, false],
     openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true, true],
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
     openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
@@ -401,6 +404,9 @@ const default_settings = {
     custom_exclude_body: '',
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
+    helicone_model: 'gpt-4o-mini',
+    helicone_enable_web_search: false,
+    helicone_custom_properties: '{}',
     openrouter_use_fallback: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
@@ -497,6 +503,9 @@ const oai_settings = {
     custom_exclude_body: '',
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
+    helicone_model: 'gpt-4o-mini',
+    helicone_enable_web_search: false,
+    helicone_custom_properties: '{}',
     openrouter_use_fallback: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
@@ -1632,6 +1641,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.vertexai_model;
         case chat_completion_sources.OPENROUTER:
             return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
+        case chat_completion_sources.HELICONE:
+            return oai_settings.helicone_model || null;
         case chat_completion_sources.AI21:
             return oai_settings.ai21_model;
         case chat_completion_sources.MISTRALAI:
@@ -1785,6 +1796,20 @@ function saveModelList(data) {
         }
 
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.HELICONE) {
+        if (model_list.length > 0) {
+            $('#model_helicone_select').empty();
+            appendHeliconeOptions(model_list);
+        }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.helicone_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.helicone_model)) {
+            oai_settings.helicone_model = model_list[0].id;
+        }
+
+        $('#model_helicone_select').val(oai_settings.helicone_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
@@ -2074,6 +2099,16 @@ function appendOpenRouterOptions(model_list, groupModels = false, sort = false) 
             appendOption(model);
         });
     }
+}
+
+function appendHeliconeOptions(model_list) {
+    model_list.forEach((model) => {
+        $('#model_helicone_select').append(
+            $('<option>', {
+                value: model.id,
+                text: model.name || model.id,
+            }));
+    });
 }
 
 const openRouterSortBy = (data, property = 'alphabetically') => {
@@ -3634,6 +3669,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.group_nudge_prompt = settings.group_nudge_prompt ?? default_settings.group_nudge_prompt;
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
+    oai_settings.helicone_model = settings.helicone_model ?? default_settings.helicone_model;
+    oai_settings.helicone_enable_web_search = settings.helicone_enable_web_search ?? default_settings.helicone_enable_web_search;
+    oai_settings.helicone_custom_properties = settings.helicone_custom_properties ?? default_settings.helicone_custom_properties;
     oai_settings.openrouter_group_models = settings.openrouter_group_models ?? default_settings.openrouter_group_models;
     oai_settings.openrouter_sort_models = settings.openrouter_sort_models ?? default_settings.openrouter_sort_models;
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
@@ -3771,6 +3809,9 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
     $('#openrouter_sort_models').val(oai_settings.openrouter_sort_models);
+    $('#model_helicone_select').val(oai_settings.helicone_model);
+    $('#helicone_enable_web_search').prop('checked', oai_settings.helicone_enable_web_search);
+    $('#helicone_custom_properties').val(oai_settings.helicone_custom_properties);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
@@ -4039,6 +4080,9 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openai_model: settings.openai_model,
         claude_model: settings.claude_model,
         openrouter_model: settings.openrouter_model,
+        helicone_model: settings.helicone_model,
+        helicone_enable_web_search: settings.helicone_enable_web_search,
+        helicone_custom_properties: settings.helicone_custom_properties,
         openrouter_use_fallback: settings.openrouter_use_fallback,
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
@@ -5542,6 +5586,36 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.HELICONE) {
+        const api_key_helicone = String($('#api_key_helicone').val()).trim();
+
+        if (api_key_helicone.length) {
+            await writeSecret(SECRET_KEYS.HELICONE, api_key_helicone);
+        }
+
+        if (!secret_state[SECRET_KEYS.HELICONE]) {
+            console.log('No secret key saved for Helicone');
+            return;
+        }
+
+        // Fetch Helicone models from our backend
+        try {
+            const response = await fetch('/api/helicone', {
+                method: 'GET',
+                headers: getRequestHeaders(),
+            });
+
+            if (response.ok) {
+                const models = await response.json();
+                saveModelList(models);
+            } else {
+                console.error('Failed to fetch Helicone models:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching Helicone models:', error);
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
         const api_key_fireworks = String($('#api_key_fireworks').val()).trim();
 
@@ -5609,6 +5683,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.HELICONE) {
+        $('#model_helicone_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         $('#model_ai21_select').trigger('change');
@@ -6642,6 +6719,15 @@ export function initOpenAI() {
     $('#vertexai_validate_service_account').on('click', onVertexAIValidateServiceAccount);
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
     $('#model_openrouter_select').on('change', onModelChange);
+    $('#model_helicone_select').on('change', onModelChange);
+    $('#helicone_enable_web_search').on('input', function () {
+        oai_settings.helicone_enable_web_search = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#helicone_custom_properties').on('input', function () {
+        oai_settings.helicone_custom_properties = String($(this).val() || '');
+        saveSettingsDebounced();
+    });
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);

@@ -9,6 +9,7 @@ import {
     AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    HELICONE_HEADERS,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
@@ -1396,6 +1397,11 @@ router.post('/status', async function (request, statusResponse) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = { ...OPENROUTER_HEADERS };
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        apiUrl = 'https://ai-gateway.helicone.ai';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
+        // Helicone uses custom headers for tracking
+        headers = { ...HELICONE_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
@@ -1616,6 +1622,19 @@ router.post('/status', async function (request, statusResponse) {
                 });
 
                 console.info('Available OpenRouter models:', models);
+            } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE && Array.isArray(data?.models)) {
+                let models = [];
+
+                data.models.forEach(model => {
+                    const context_length = model.contextLength || 0;
+                    models[model.id] = {
+                        context_length: context_length,
+                        name: model.name,
+                        author: model.author,
+                    };
+                });
+
+                console.info('Available Helicone models:', models);
             } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
                 const models = data?.data;
                 console.info(models);
@@ -1843,6 +1862,31 @@ router.post('/generate', function (request, response) {
         const isGemini = /google\/gemini/.test(request.body.model);
         if (isGemini) {
             bodyParams['safety_settings'] = GEMINI_SAFETY;
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        apiUrl = 'https://ai-gateway.helicone.ai';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
+        headers = { ...HELICONE_HEADERS };
+        bodyParams = {
+            logprobs: request.body.logprobs,
+            top_logprobs: undefined,
+        };
+
+        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
@@ -2249,6 +2293,41 @@ multimodalModels.post('/xai', async (req, res) => {
             // The endpoint says it doesn't support images, but it does
             multimodalModels.push('grok-4-0709');
         }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/helicone', async (_req, res) => {
+    try {
+        const response = await fetch('https://api.helicone.ai/v1/public/model-registry/models', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const models = data?.models || [];
+
+        // Filter for multimodal models based on image capability
+        const multimodalModels = models
+            .filter(m => {
+                // Check if model has image capability in inputModalities or outputModalities
+                const hasImageInput = m?.inputModalities?.includes('image');
+                const hasImageOutput = m?.outputModalities?.includes('image');
+
+                return hasImageInput || hasImageOutput;
+            })
+            .map(m => m.id);
+
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);

@@ -2334,6 +2334,7 @@
                                     <option value="mancer">Mancer</option>
                                     <option value="ollama">Ollama</option>
                                     <option value="openrouter">OpenRouter</option>
+                                <option value="helicone">Helicone</option>
                                     <option value="tabby">TabbyAPI</option>
                                     <option value="ooba">Text Generation WebUI (oobabooga)</option>
                                     <option value="togetherai">TogetherAI</option>
@@ -2798,6 +2799,7 @@
                                 <option value="moonshot">Moonshot AI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
+                                <option value="helicone">Helicone</option>
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="xai">xAI (Grok)</option>
@@ -3037,6 +3039,50 @@
                                         <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                        </form>
+                        <form id="helicone_form" data-source="helicone" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="Helicone API Key">Helicone API Key</h4>
+                            <div>
+                                <span data-i18n="Get your key from">Get your key from </span> <a target="_blank" href="https://us.helicone.ai/settings/api-keys">Helicone API Keys</a>.
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_helicone" name="api_key_helicone" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_helicone"></div>
+                            </div>
+                            <div data-for="api_key_helicone" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Helicone Model">Helicone Model</h4>
+                                <select id="model_helicone_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                            <label for="helicone_enable_web_search" class="checkbox_label marginTopBot5" data-i18n="[title]Enable web search for Claude models" title="Adds :online suffix to Claude models for web search capabilities">
+                                <input id="helicone_enable_web_search" type="checkbox" />
+                                <span data-i18n="Enable web search">Enable web search</span>
+                            </label>
+                            <div class="marginTopBot5">
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="Custom Properties">Custom Properties</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content m-b-1">
+                                        <div class="marginTopBot5">
+                                            <label for="helicone_custom_properties">
+                                                <span data-i18n="Custom Properties JSON">Custom Properties JSON</span>
+                                            </label>
+                                            <textarea id="helicone_custom_properties" class="text_pole wide100p" rows="4" placeholder='{"environment": "production", "userId": "123", "feature": "chat"}'></textarea>
+                                            <div class="toggle-description justifyLeft wide100p">
+                                                <span data-i18n="JSON object for custom Helicone properties. Keys will be sent as Helicone-Property-[Key] headers">
+                                                    JSON object for custom Helicone properties. Keys will be sent as Helicone-Property-[Key] headers
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                         <form id="openrouter_form" data-source="openrouter" action="javascript:void(null);" method="post" enctype="multipart/form-data">

@@ -40,6 +40,7 @@ import { router as classifyRouter } from './endpoints/classify.js';
 import { router as captionRouter } from './endpoints/caption.js';
 import { router as searchRouter } from './endpoints/search.js';
 import { router as openRouterRouter } from './endpoints/openrouter.js';
+import { router as heliconeRouter } from './endpoints/helicone.js';
 import { router as chatCompletionsRouter } from './endpoints/backends/chat-completions.js';
 import { router as koboldRouter } from './endpoints/backends/kobold.js';
 import { router as textCompletionsRouter } from './endpoints/backends/text-completions.js';
@@ -169,6 +170,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/search', searchRouter);
     app.use('/api/backends/text-completions', textCompletionsRouter);
     app.use('/api/openrouter', openRouterRouter);
+    app.use('/api/helicone', heliconeRouter);
     app.use('/api/backends/kobold', koboldRouter);
     app.use('/api/backends/chat-completions', chatCompletionsRouter);
     app.use('/api/speech', speechRouter);
