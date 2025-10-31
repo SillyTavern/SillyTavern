@@ -8246,7 +8246,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
             !(message?.['extra']?.['swipeable'] === false) &&
             //User messages are not swipeable.
             !message.is_user &&
-            //And It's not a greeting without swipes.
+            //And it's not a greeting without swipes.
             !(messageId === 0 && !chat_metadata?.tainted &&
                 (message?.['swipes']?.length ?? 1) == 1
             )
@@ -9028,7 +9028,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         // If swipe_id has not changed, give the user feedback.
         if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
             //Shake 700/140=5px
-            shakeElement(thisMesDiv, swipeRange / 140, animation_duration, 'ease-in');
+            shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
