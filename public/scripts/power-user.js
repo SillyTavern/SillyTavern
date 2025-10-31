@@ -1383,13 +1383,6 @@ function applyTheme(name) {
             },
         },
         {
-            key: '#show_swipes_for_all_messages',
-            action: () => {
-                $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
-                switchSwipesAllMessages();
-            },
-        },
-        {
             key: 'click_to_edit',
             action: () => {
                 $('#click_to_edit').prop('checked', power_user.click_to_edit);
@@ -1463,7 +1456,6 @@ export function applyPowerUserSettings() {
     switchTokenCount();
     switchMessageActions();
     switchSwipeNumAllMessages();
-    switchSwipesAllMessages();
 }
 
 export function applyStylePins() {
@@ -1776,6 +1768,7 @@ export async function loadPowerUserSettings(settings, data) {
     loadCharListState();
     toggleMDHotkeyIconDisplay();
     applyToastrPosition();
+    switchSwipesAllMessages();
 }
 
 function toggleMDHotkeyIconDisplay() {
