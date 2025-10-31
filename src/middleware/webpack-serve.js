@@ -1,11 +1,8 @@
 import path from 'node:path';
 import webpack from 'webpack';
-import { publicLibConfig } from '../../webpack.config.js';
+import getPublicLibConfig from '../../webpack.config.js';
 
 export default function getWebpackServeMiddleware() {
-    const outputPath = publicLibConfig.output?.path;
-    const outputFile = publicLibConfig.output?.filename;
-
     /**
      * A very spartan recreation of webpack-dev-middleware.
      * @param {import('express').Request} req Request object.
@@ -14,7 +11,12 @@ export default function getWebpackServeMiddleware() {
      * @type {import('express').RequestHandler}
      */
     function devMiddleware(req, res, next) {
-        if (req.method === 'GET' && path.parse(req.path).base === outputFile) {
+        const publicLibConfig = getPublicLibConfig();
+        const outputPath = publicLibConfig.output?.path;
+        const outputFile = publicLibConfig.output?.filename;
+        const parsedPath = path.parse(req.path);
+
+        if (req.method === 'GET' && parsedPath.dir === '/' && parsedPath.base === outputFile) {
             return res.sendFile(outputFile, { root: outputPath });
         }
 
@@ -23,9 +25,12 @@ export default function getWebpackServeMiddleware() {
 
     /**
      * Wait until Webpack is done compiling.
+     * @param {object} param Parameters.
+     * @param {boolean} [param.forceDist] Whether to force the use the /dist folder.
      * @returns {Promise<void>}
      */
-    devMiddleware.runWebpackCompiler = () => {
+    devMiddleware.runWebpackCompiler = ({ forceDist = false } = {}) => {
+        const publicLibConfig = getPublicLibConfig(forceDist);
         const compiler = webpack(publicLibConfig);
 
         return new Promise((resolve) => {

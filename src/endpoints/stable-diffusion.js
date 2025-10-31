@@ -10,8 +10,8 @@ import urlJoin from 'url-join';
 import _ from 'lodash';
 
 import { delay, getBasicAuthHeader, tryParse } from '../util.js';
-import { jsonParser } from '../express-common.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { AIMLAPI_HEADERS } from '../constants.js';
 
 /**
  * Gets the comfy workflows.
@@ -27,7 +27,7 @@ function getComfyWorkflows(directories) {
 
 export const router = express.Router();
 
-router.post('/ping', jsonParser, async (request, response) => {
+router.post('/ping', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/options';
@@ -50,7 +50,7 @@ router.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/upscalers', jsonParser, async (request, response) => {
+router.post('/upscalers', async (request, response) => {
     try {
         async function getUpscalerModels() {
             const url = new URL(request.body.url);
@@ -104,7 +104,7 @@ router.post('/upscalers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/vaes', jsonParser, async (request, response) => {
+router.post('/vaes', async (request, response) => {
     try {
         const autoUrl = new URL(request.body.url);
         autoUrl.pathname = '/sdapi/v1/sd-vae';
@@ -136,7 +136,7 @@ router.post('/vaes', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/samplers', jsonParser, async (request, response) => {
+router.post('/samplers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/samplers';
@@ -163,7 +163,7 @@ router.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/schedulers', jsonParser, async (request, response) => {
+router.post('/schedulers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/schedulers';
@@ -189,7 +189,7 @@ router.post('/schedulers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/models', jsonParser, async (request, response) => {
+router.post('/models', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/sd-models';
@@ -215,7 +215,7 @@ router.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/get-model', jsonParser, async (request, response) => {
+router.post('/get-model', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/options';
@@ -235,7 +235,7 @@ router.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/set-model', jsonParser, async (request, response) => {
+router.post('/set-model', async (request, response) => {
     try {
         async function getProgress() {
             const url = new URL(request.body.url);
@@ -294,7 +294,7 @@ router.post('/set-model', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate', jsonParser, async (request, response) => {
+router.post('/generate', async (request, response) => {
     try {
         try {
             const optionsUrl = new URL(request.body.url);
@@ -349,7 +349,7 @@ router.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
+router.post('/sd-next/upscalers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/upscalers';
@@ -384,7 +384,7 @@ router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
 
 const comfy = express.Router();
 
-comfy.post('/ping', jsonParser, async (request, response) => {
+comfy.post('/ping', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/system_stats'));
 
@@ -400,7 +400,7 @@ comfy.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/samplers', jsonParser, async (request, response) => {
+comfy.post('/samplers', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -418,7 +418,7 @@ comfy.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/models', jsonParser, async (request, response) => {
+comfy.post('/models', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -440,13 +440,13 @@ comfy.post('/models', jsonParser, async (request, response) => {
         models.forEach(it => it.text = it.text.replace(/\.[^.]*$/, '').replace(/_/g, ' '));
 
         return response.send(models);
-    } catch (error)     {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
 });
 
-comfy.post('/schedulers', jsonParser, async (request, response) => {
+comfy.post('/schedulers', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -464,7 +464,7 @@ comfy.post('/schedulers', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/vaes', jsonParser, async (request, response) => {
+comfy.post('/vaes', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -482,7 +482,7 @@ comfy.post('/vaes', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/workflows', jsonParser, async (request, response) => {
+comfy.post('/workflows', async (request, response) => {
     try {
         const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
@@ -492,7 +492,7 @@ comfy.post('/workflows', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/workflow', jsonParser, async (request, response) => {
+comfy.post('/workflow', async (request, response) => {
     try {
         let filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         if (!fs.existsSync(filePath)) {
@@ -506,7 +506,7 @@ comfy.post('/workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/save-workflow', jsonParser, async (request, response) => {
+comfy.post('/save-workflow', async (request, response) => {
     try {
         const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         writeFileAtomicSync(filePath, request.body.workflow, 'utf8');
@@ -518,7 +518,7 @@ comfy.post('/save-workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/delete-workflow', jsonParser, async (request, response) => {
+comfy.post('/delete-workflow', async (request, response) => {
     try {
         const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         if (fs.existsSync(filePath)) {
@@ -531,7 +531,7 @@ comfy.post('/delete-workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/generate', jsonParser, async (request, response) => {
+comfy.post('/generate', async (request, response) => {
     try {
         let item;
         const url = new URL(urlJoin(request.body.url, '/prompt'));
@@ -581,15 +581,21 @@ comfy.post('/generate', jsonParser, async (request, response) => {
                 .join('\n') || '';
             throw new Error(`ComfyUI generation did not succeed.\n\n${errorMessages}`.trim());
         }
-        const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+        const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
+        console.debug('ComfyUI outputs:', outputs);
+        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
+        if (!imgInfo) {
+            throw new Error('ComfyUI did not return any recognizable outputs.');
+        }
         const imgUrl = new URL(urlJoin(request.body.url, '/view'));
         imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
         const imgResponse = await fetch(imgUrl);
         if (!imgResponse.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        const format = path.extname(imgInfo.filename).slice(1).toLowerCase() || 'png';
         const imgBuffer = await imgResponse.arrayBuffer();
-        return response.send(Buffer.from(imgBuffer).toString('base64'));
+        return response.send({ format: format, data: Buffer.from(imgBuffer).toString('base64') });
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);
@@ -599,7 +605,7 @@ comfy.post('/generate', jsonParser, async (request, response) => {
 
 const together = express.Router();
 
-together.post('/models', jsonParser, async (request, response) => {
+together.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
@@ -628,8 +634,8 @@ together.post('/models', jsonParser, async (request, response) => {
         }
 
         const models = data
-            .filter(x => x.display_type === 'image')
-            .map(x => ({ value: x.name, text: x.display_name }));
+            .filter(x => x.type === 'image')
+            .map(x => ({ value: x.id, text: x.display_name }));
 
         return response.send(models);
     } catch (error) {
@@ -638,7 +644,7 @@ together.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-together.post('/generate', jsonParser, async (request, response) => {
+together.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
@@ -694,7 +700,7 @@ together.post('/generate', jsonParser, async (request, response) => {
 
 const drawthings = express.Router();
 
-drawthings.post('/ping', jsonParser, async (request, response) => {
+drawthings.post('/ping', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -714,7 +720,7 @@ drawthings.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/get-model', jsonParser, async (request, response) => {
+drawthings.post('/get-model', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -733,7 +739,7 @@ drawthings.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
+drawthings.post('/get-upscaler', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -752,7 +758,7 @@ drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/generate', jsonParser, async (request, response) => {
+drawthings.post('/generate', async (request, response) => {
     try {
         console.debug('SD DrawThings API request:', request.body);
 
@@ -788,7 +794,7 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
 
 const pollinations = express.Router();
 
-pollinations.post('/models', jsonParser, async (_request, response) => {
+pollinations.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://image.pollinations.ai/models');
         const result = await fetch(modelsUrl);
@@ -813,20 +819,23 @@ pollinations.post('/models', jsonParser, async (_request, response) => {
     }
 });
 
-pollinations.post('/generate', jsonParser, async (request, response) => {
+pollinations.post('/generate', async (request, response) => {
     try {
         const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
         const params = new URLSearchParams({
             model: String(request.body.model),
             negative_prompt: String(request.body.negative_prompt),
             seed: String(request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000)),
-            enhance: String(request.body.enhance ?? false),
             width: String(request.body.width ?? 1024),
             height: String(request.body.height ?? 1024),
             nologo: String(true),
             nofeed: String(true),
-            referer: 'sillytavern',
+            private: String(true),
+            referrer: 'sillytavern',
         });
+        if (request.body.enhance) {
+            params.set('enhance', String(true));
+        }
         promptUrl.search = params.toString();
 
         console.info('Pollinations request URL:', promptUrl.toString());
@@ -834,7 +843,8 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
         const result = await fetch(promptUrl);
 
         if (!result.ok) {
-            console.warn('Pollinations returned an error.', result.status, result.statusText);
+            const text = await result.text();
+            console.warn('Pollinations returned an error.', text);
             throw new Error('Pollinations request failed.');
         }
 
@@ -850,7 +860,7 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
 
 const stability = express.Router();
 
-stability.post('/generate', jsonParser, async (request, response) => {
+stability.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.STABILITY);
 
@@ -908,92 +918,9 @@ stability.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
-const blockentropy = express.Router();
-
-blockentropy.post('/models', jsonParser, async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
-
-        if (!key) {
-            console.warn('Block Entropy key not found.');
-            return response.sendStatus(400);
-        }
-
-        const modelsResponse = await fetch('https://api.blockentropy.ai/sdapi/v1/sd-models', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-            },
-        });
-
-        if (!modelsResponse.ok) {
-            console.warn('Block Entropy returned an error.');
-            return response.sendStatus(500);
-        }
-
-        const data = await modelsResponse.json();
-
-        if (!Array.isArray(data)) {
-            console.warn('Block Entropy returned invalid data.');
-            return response.sendStatus(500);
-        }
-        const models = data.map(x => ({ value: x.name, text: x.name }));
-        return response.send(models);
-
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-blockentropy.post('/generate', jsonParser, async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
-
-        if (!key) {
-            console.warn('Block Entropy key not found.');
-            return response.sendStatus(400);
-        }
-
-        console.debug('Block Entropy request:', request.body);
-
-        const result = await fetch('https://api.blockentropy.ai/sdapi/v1/txt2img', {
-            method: 'POST',
-            body: JSON.stringify({
-                prompt: request.body.prompt,
-                negative_prompt: request.body.negative_prompt,
-                model: request.body.model,
-                steps: request.body.steps,
-                width: request.body.width,
-                height: request.body.height,
-                // Random seed if negative.
-                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
-            },
-        });
-
-        if (!result.ok) {
-            console.warn('Block Entropy returned an error.');
-            return response.sendStatus(500);
-        }
-
-        const data = await result.json();
-        console.debug('Block Entropy response:', data);
-
-        return response.send(data);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-
 const huggingface = express.Router();
 
-huggingface.post('/generate', jsonParser, async (request, response) => {
+huggingface.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.HUGGINGFACE);
 
@@ -1030,9 +957,121 @@ huggingface.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const electronhub = express.Router();
+
+electronhub.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+
+        if (!key) {
+            console.warn('Electron Hub key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelsResponse = await fetch('https://api.electronhub.ai/v1/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('Electron Hub returned an error.');
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+        const models = data.data.filter(x => x.endpoints.includes('/v1/images/generations')).map(x => ({ value: x.id, text: x.name }));
+        return response.send(models);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+electronhub.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+
+        if (!key) {
+            console.warn('Electron Hub key not found.');
+            return response.sendStatus(400);
+        }
+
+        let bodyParams = {
+            model: request.body.model,
+            prompt: request.body.prompt,
+            response_format: 'b64_json',
+        };
+
+        if (request.body.size) {
+            bodyParams.size = request.body.size;
+        }
+
+        const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...bodyParams,
+            }),
+        });
+
+        if (!result.ok) {
+            const errorText = await result.text();
+            console.warn('Electron Hub returned an error.', result.status, result.statusText, errorText);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+        const image = data?.data?.[0]?.b64_json;
+
+        if (!image) {
+            console.warn('Electron Hub returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        return response.send({ image });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+electronhub.post('/sizes', async (request, response) => {
+    const result = await fetch(`https://api.electronhub.ai/v1/models/${request.body.model}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!result.ok) {
+        console.warn('Electron Hub returned an error.');
+        return response.sendStatus(500);
+    }
+
+    /** @type {any} */
+    const data = await result.json();
+
+    const sizes = data.sizes;
+
+    if (!sizes) {
+        console.warn('Electron Hub returned invalid data.');
+        return response.sendStatus(500);
+    }
+
+    return response.send({ sizes });
+});
+
 const nanogpt = express.Router();
 
-nanogpt.post('/models', jsonParser, async (request, response) => {
+nanogpt.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
 
@@ -1072,7 +1111,7 @@ nanogpt.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-nanogpt.post('/generate', jsonParser, async (request, response) => {
+nanogpt.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
 
@@ -1116,7 +1155,7 @@ nanogpt.post('/generate', jsonParser, async (request, response) => {
 
 const bfl = express.Router();
 
-bfl.post('/generate', jsonParser, async (request, response) => {
+bfl.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.BFL);
 
@@ -1228,12 +1267,293 @@ bfl.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const falai = express.Router();
+
+falai.post('/models', async (_request, response) => {
+    try {
+        const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
+        let page = 1;
+        /** @type {any} */
+        let modelsResponse;
+        let models = [];
+
+        do {
+            modelsUrl.searchParams.set('page', page.toString());
+            const result = await fetch(modelsUrl);
+
+            if (!result.ok) {
+                console.warn('FAL.AI returned an error.', result.status, result.statusText);
+                throw new Error('FAL.AI request failed.');
+            }
+
+            modelsResponse = await result.json();
+            if (!('items' in modelsResponse) || !Array.isArray(modelsResponse.items)) {
+                console.warn('FAL.AI returned invalid data.');
+                throw new Error('FAL.AI request failed.');
+            }
+
+            models = models.concat(
+                modelsResponse.items.filter(
+                    x => (
+                        !x.title.toLowerCase().includes('inpainting') &&
+                        !x.title.toLowerCase().includes('control') &&
+                        !x.title.toLowerCase().includes('upscale') &&
+                        !x.title.toLowerCase().includes('lora')
+                    ),
+                ),
+            );
+
+            page = modelsResponse.page + 1;
+        } while (modelsResponse != null && page < modelsResponse.pages);
+
+        const modelOptions = models
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
+        return response.send(modelOptions);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+falai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.FALAI);
+
+        if (!key) {
+            console.warn('FAL.AI key not found.');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            prompt: request.body.prompt,
+            image_size: { 'width': request.body.width, 'height': request.body.height },
+            num_inference_steps: request.body.steps,
+            seed: request.body.seed ?? null,
+            guidance_scale: request.body.guidance,
+            enable_safety_checker: false, // Disable general safety checks
+            safety_tolerance: 6, // Make Flux the least strict
+        };
+
+        console.debug('FAL.AI request:', requestBody);
+
+        const result = await fetch(`https://queue.fal.run/fal-ai/${request.body.model}`, {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Key ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.warn('FAL.AI returned an error.');
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const taskData = await result.json();
+        const { status_url } = taskData;
+
+        const MAX_ATTEMPTS = 100;
+        for (let i = 0; i < MAX_ATTEMPTS; i++) {
+            await delay(2500);
+
+            const statusResult = await fetch(status_url, {
+                headers: {
+                    'Authorization': `Key ${key}`,
+                },
+            });
+
+            if (!statusResult.ok) {
+                const text = await statusResult.text();
+                console.warn('FAL.AI returned an error.', text);
+                return response.sendStatus(500);
+            }
+
+            /** @type {any} */
+            const statusData = await statusResult.json();
+
+            if (statusData?.status === 'IN_QUEUE' || statusData?.status === 'IN_PROGRESS') {
+                continue;
+            }
+
+            if (statusData?.status === 'COMPLETED') {
+                const resultFetch = await fetch(statusData?.response_url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Key ${key}`,
+                    },
+                });
+                /** @type {any} */
+                const resultData = await resultFetch.json();
+
+                if (resultData.detail !== null && resultData.detail !== undefined) {
+                    throw new Error('FAL.AI failed to generate image.', { cause: `${resultData.detail[0].loc[1]}: ${resultData.detail[0].msg}` });
+                }
+
+                const imageFetch = await fetch(resultData?.images[0].url, {
+                    headers: {
+                        'Authorization': `Key ${key}`,
+                    },
+                });
+
+                const fetchData = await imageFetch.arrayBuffer();
+                const image = Buffer.from(fetchData).toString('base64');
+                return response.send({ image: image });
+            }
+
+            throw new Error('FAL.AI failed to generate image.', { cause: statusData });
+        }
+    } catch (error) {
+        console.error(error);
+        return response.status(500).send(error.cause || error.message);
+    }
+});
+
+const xai = express.Router();
+
+xai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            console.warn('xAI key not found.');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            prompt: request.body.prompt,
+            model: request.body.model,
+            response_format: 'b64_json',
+        };
+
+        console.debug('xAI request:', requestBody);
+
+        const result = await fetch('https://api.x.ai/v1/images/generations', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('xAI returned an error.', text);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        const image = data?.data?.[0]?.b64_json;
+        if (!image) {
+            console.warn('xAI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        return response.send({ image });
+    } catch (error) {
+        console.error('Error communicating with xAI', error);
+        return response.sendStatus(500);
+    }
+});
+
+const aimlapi = express.Router();
+
+aimlapi.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
+
+        if (!key) {
+            console.warn('AI/ML API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelsResponse = await fetch('https://api.aimlapi.com/v1/models', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('AI/ML API returned an error.');
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+        const models = (data.data || [])
+            .filter(model =>
+                model.type === 'image' &&
+                model.id !== 'triposr' &&
+                model.id !== 'flux/dev/image-to-image',
+            )
+            .map(model => ({
+                value: model.id,
+                text: model.info?.name || model.id,
+            }));
+
+        return response.send({ data: models });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+aimlapi.post('/generate-image', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.AIMLAPI);
+        if (!key) return res.sendStatus(400);
+
+        console.debug('AI/ML API image request:', req.body);
+
+        const apiRes = await fetch('https://api.aimlapi.com/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, ...AIMLAPI_HEADERS },
+            body: JSON.stringify(req.body),
+        });
+        if (!apiRes.ok) {
+            const err = await apiRes.text();
+            return res.status(500).send(err);
+        }
+        /** @type {any} */
+        const data = await apiRes.json();
+
+        const imgObj = Array.isArray(data.images) ? data.images[0] : data.data?.[0];
+        if (!imgObj) return res.status(500).send('No image returned');
+
+        let base64;
+        if (imgObj.b64_json || imgObj.base64) {
+            base64 = imgObj.b64_json || imgObj.base64;
+        } else if (imgObj.url) {
+            const blobRes = await fetch(imgObj.url);
+            if (!blobRes.ok) throw new Error('Failed to fetch image URL');
+            const buffer = await blobRes.arrayBuffer();
+            base64 = Buffer.from(buffer).toString('base64');
+        } else {
+            throw new Error('Unsupported image format');
+        }
+
+        return res.json({ format: 'png', data: base64 });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send('Internal error');
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
-router.use('/blockentropy', blockentropy);
 router.use('/huggingface', huggingface);
+router.use('/electronhub', electronhub);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
+router.use('/falai', falai);
+router.use('/xai', xai);
+router.use('/aimlapi', aimlapi);

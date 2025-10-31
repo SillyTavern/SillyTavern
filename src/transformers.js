@@ -5,6 +5,7 @@ import { Buffer } from 'node:buffer';
 
 import { pipeline, env, RawImage } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
+import { serverDirectory } from './server-directory.js';
 
 configureTransformers();
 
@@ -12,7 +13,7 @@ function configureTransformers() {
     // Limit the number of threads to 1 to avoid issues on Android
     env.backends.onnx.wasm.numThreads = 1;
     // Use WASM from a local folder to avoid CDN connections
-    env.backends.onnx.wasm.wasmPaths = path.join(process.cwd(), 'dist') + path.sep;
+    env.backends.onnx.wasm.wasmPaths = path.join(serverDirectory, 'node_modules', 'sillytavern-transformers', 'dist') + path.sep;
 }
 
 const tasks = {
@@ -132,7 +133,7 @@ export async function getPipeline(task, forceModel = '') {
 
     const cacheDir = path.join(globalThis.DATA_ROOT, '_cache');
     const model = forceModel || getModelForTask(task);
-    const localOnly = !getConfigValue('extensions.models.autoDownload', true);
+    const localOnly = !getConfigValue('extensions.models.autoDownload', true, 'boolean');
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
     const instance = await pipeline(task, model, { cache_dir: cacheDir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;

@@ -1,3 +1,6 @@
+@import './css/minimax-tts.css';
+@import './css/openai-tts.css';
+
 .voice_preview {
     margin: 0.25rem 0.5rem;
     display: flex;
@@ -25,7 +28,7 @@
     outline: none;
     border: none;
     cursor: pointer;
-    transition: 0.3s;
+    transition: var(--animation-duration-2x);
     opacity: 0.7;
     align-items: center;
     justify-content: center;

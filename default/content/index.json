@@ -540,7 +540,7 @@
         "type": "context"
     },
     {
-        "filename": "presets/context/Pygmalion.json",
+        "filename": "presets/context/Metharme.json",
         "type": "context"
     },
     {
@@ -561,6 +561,10 @@
     },
     {
         "filename": "presets/context/Llama 3 Instruct.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Llama 4 Instruct.json",
         "type": "context"
     },
     {
@@ -616,10 +620,6 @@
         "type": "instruct"
     },
     {
-        "filename": "presets/instruct/Pygmalion.json",
-        "type": "instruct"
-    },
-    {
         "filename": "presets/instruct/Story.json",
         "type": "instruct"
     },
@@ -664,15 +664,15 @@
         "type": "instruct"
     },
     {
+        "filename": "presets/instruct/Llama 4 Instruct.json",
+        "type": "instruct"
+    },
+    {
         "filename": "presets/instruct/Phi.json",
         "type": "instruct"
     },
     {
         "filename": "presets/moving-ui/Default.json",
-        "type": "moving_ui"
-    },
-    {
-        "filename": "presets/moving-ui/Black Magic Time.json",
         "type": "moving_ui"
     },
     {
@@ -685,6 +685,10 @@
     },
     {
         "filename": "presets/instruct/ChatML-Names.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/KoboldAI.json",
         "type": "instruct"
     },
     {
@@ -752,6 +756,10 @@
         "type": "sysprompt"
     },
     {
+        "filename": "presets/sysprompt/Lightning 1.1.json",
+        "type": "sysprompt"
+    },
+    {
         "filename": "presets/instruct/Mistral V1.json",
         "type": "instruct"
     },
@@ -790,5 +798,61 @@
     {
         "filename": "presets/context/DeepSeek-V2.5.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/instruct/GLM-4.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/GLM-4.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/reasoning/DeepSeek.json",
+        "type": "reasoning"
+    },
+    {
+        "filename": "presets/reasoning/Blank.json",
+        "type": "reasoning"
+    },
+    {
+        "filename": "presets/instruct/Dots1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Dots1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Mistral V7-Tekken.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V7-Tekken.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Moonshot AI.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Moonshot AI.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/OpenAI Harmony.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/OpenAI Harmony.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/OpenAI Harmony (Thinking).json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/reasoning/OpenAI Harmony.json",
+        "type": "reasoning"
     }
 ]

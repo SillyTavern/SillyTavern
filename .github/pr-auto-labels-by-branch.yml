@@ -1,0 +1,83 @@
+####################################
+# Label PRs against 'release'      #
+####################################
+❗ Against Release Branch:
+- base-branch: 'release'
+
+####################################
+# Labels based on PR branch name   #
+####################################
+🦋 Bug Fix:
+- head-branch: ['^fix[/-]', '\bfixes\b']
+
+🚑 Hot Fix:
+- head-branch: ['^hotfix[/-]']
+
+✨ New Feature:
+- head-branch: ['^feat(ure)?[/-].*?\badd', '^add-']
+
+✨ Feature Changes:
+- head-branch: ['^feat(ure)?[/-](?!.*\badd\b)', '\bchanges?\b']
+
+🤖 API / Model:
+- head-branch: ['\bapi\b', '\bmodels?\b']
+
+🏭 Backend Changes:
+- head-branch: ['\bbackend\b', '\bendpoints?\b']
+
+🐋 Docker:
+- head-branch: ['\bdocker\b']
+
+➕ Extension:
+- head-branch: ['\bextension\b', '\bext\b']
+
+🦊 Firefox:
+- head-branch: ['\bfirefox\b']
+
+🧑‍🤝‍🧑 Group Chat:
+- head-branch: ['\bgroups?\b']
+
+🖼️ Image Gen:
+- head-branch: ['\bimage-gen\b']
+
+🌐 Language:
+- head-branch: ['\btranslations?\b', '\blanguages?\b']
+
+🐧 Linux:
+- head-branch: ['\blinux\b']
+
+🧩 Macros:
+- head-branch: ['\bmacros?\b']
+
+📱 Mobile:
+- head-branch: ['\bmobile\b', '\bios\b', '\bandroid\b']
+
+🚄 Performance:
+- head-branch: ['\bperformance\b']
+
+⚙️ Preset:
+- head-branch: ['\bpresets?\b']
+
+📜 Prompt:
+- head-branch: ['\bprompt\b']
+
+🧠 Reasoning:
+- head-branch: ['\breasoning\b', '\breason\b', '\bthinking\b']
+
+🚚 Refactor:
+- head-branch: ['\brefactor(s|ed)?\b']
+
+📜 STscript:
+- head-branch: ['\bstscript\b', '\bslash-commands\b']
+
+🏷️ Tags / Folders:
+- head-branch: ['\btags\b']
+
+🎙️ TTS / Voice:
+- head-branch: ['\btts\b', '\bvoice\b']
+
+🌟 UX:
+- head-branch: ['\bux\b']
+
+🗺️ World Info:
+- head-branch: ['\bworld-info\b', '\bwi\b']

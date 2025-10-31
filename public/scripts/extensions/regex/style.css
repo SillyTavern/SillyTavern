@@ -1,3 +1,5 @@
+@import "debugger.css";
+
 .regex_settings .menu_button {
     width: fit-content;
     display: flex;
@@ -15,48 +17,42 @@
 }
 
 .regex-script-container:empty::after {
-    content: "No scripts found";
+    content: attr(no-scripts-text);
     font-size: 0.95em;
     opacity: 0.7;
     display: block;
     text-align: center;
 }
 
-#scoped_scripts_block {
+#scoped_scripts_block,
+#preset_scripts_block {
     opacity: 1;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
 }
 
-#scoped_scripts_block .move_to_scoped {
+#scoped_scripts_block .move_to_scoped,
+#global_scripts_block .move_to_global,
+#preset_scripts_block .move_to_preset {
     display: none;
 }
 
-#global_scripts_block .move_to_global {
-    display: none;
-}
-
-#scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)) {
+#scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)),
+#preset_scripts_block:not(:has(#regex_preset_toggle:checked)) {
     opacity: 0.5;
 }
 
-.enable_scoped:checked ~ .regex-toggle-on {
+.enable_scoped:checked~.regex-toggle-on,
+.enable_scoped:not(:checked)~.regex-toggle-off {
     display: block;
 }
 
-.enable_scoped:checked ~ .regex-toggle-off {
+.enable_scoped:checked~.regex-toggle-off,
+.enable_scoped:not(:checked)~.regex-toggle-on {
     display: none;
-}
-
-.enable_scoped:not(:checked) ~ .regex-toggle-on {
-    display: none;
-}
-
-.enable_scoped:not(:checked) ~ .regex-toggle-off {
-    display: block;
 }
 
 .regex-script-label {
-    align-items: center;
+    align-items: baseline;
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     padding: 0 5px;
@@ -78,7 +74,7 @@ input.enable_scoped {
     cursor: pointer;
     opacity: 0.5;
     filter: grayscale(0.5);
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
 }
 
 .regex-toggle-off:hover {
@@ -90,18 +86,76 @@ input.enable_scoped {
     cursor: pointer;
 }
 
-.disable_regex:checked ~ .regex-toggle-off {
-    display: block;
-}
-
-.disable_regex:checked ~ .regex-toggle-on {
+.disable_regex:checked~.regex-toggle-on,
+.disable_regex:not(:checked)~.regex-toggle-off {
     display: none;
 }
 
-.disable_regex:not(:checked) ~ .regex-toggle-off {
+.disable_regex:not(:checked)~.regex-toggle-on,
+.disable_regex:checked~.regex-toggle-off {
+    display: block;
+}
+
+#regex_info_block_wrapper {
+    position: relative;
+}
+
+#regex_info_block {
+    margin: 10px 0;
+    padding: 5px 20px;
+    font-size: 0.9em;
+}
+
+#regex_info_block_wrapper:has(#regex_info_block:empty) {
     display: none;
 }
 
-.disable_regex:not(:checked) ~ .regex-toggle-on {
+#regex_info_block_flags_hint {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+}
+
+.regex_settings label[for="regex_bulk_edit"]:has(#regex_bulk_edit:checked) {
+    color: var(--golden);
+}
+
+.regex_settings .regex-script-container .regex-script-label .regex_bulk_checkbox {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.regex_settings .regex_bulk_operations,
+.regex_settings .regex_bulk_checkbox,
+.regex_settings .regex_bulk_operations_hr {
+    display: none;
+}
+
+.regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_operations {
+    display: flex;
+}
+
+.regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_operations_hr {
     display: block;
+}
+
+.regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_checkbox {
+    display: inline-grid;
+}
+
+@supports not selector(:has(*)) {
+    .regex-script-label label.regex_script_expand {
+        display: none;
+    }
+
+    .regex-script-label .regex_script_buttons {
+        display: flex;
+    }
+}
+
+.regex-script-label label.regex_script_expand input[name="regex_expand"],
+.regex-script-label:has(input[name="regex_expand"]:checked) label.regex_script_expand,
+.regex-script-label:not(:has(input[name="regex_expand"]:checked)) .regex_script_buttons {
+    display: none;
 }

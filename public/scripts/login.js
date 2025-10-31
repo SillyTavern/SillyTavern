@@ -1,3 +1,5 @@
+import { initAccessibility } from './a11y.js';
+
 /**
  * CRSF token for requests.
  */
@@ -180,13 +182,18 @@ function displayError(message) {
  * Preserves the query string.
  */
 function redirectToHome() {
-    // After a login theres no need to preserve the
-    // noauto (if present)
-    const urlParams = new URLSearchParams(window.location.search);
+    // Create a URL object based on the current location
+    const currentUrl = new URL(window.location.href);
 
-    urlParams.delete('noauto');
+    // After a login there's no need to preserve the
+    // noauto parameter (if present)
+    currentUrl.searchParams.delete('noauto');
 
-    window.location.href = '/' + urlParams.toString();
+    // Set the pathname to root and keep the updated query string
+    currentUrl.pathname = '/';
+
+    // Redirect to the new URL
+    window.location.href = currentUrl.toString();
 }
 
 /**
@@ -260,6 +267,8 @@ function configureDiscreetLogin() {
 }
 
 (async function () {
+    initAccessibility();
+
     csrfToken = await getCsrfToken();
     const userList = await getUserList();
 

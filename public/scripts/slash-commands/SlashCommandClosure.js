@@ -2,7 +2,6 @@ import { substituteParams } from '../../script.js';
 import { delay, escapeRegex, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
-import { SlashCommandNamedArgument } from './SlashCommandArgument.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
 import { SlashCommandBreakController } from './SlashCommandBreakController.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
@@ -14,21 +13,19 @@ import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgument
 import { SlashCommandScope } from './SlashCommandScope.js';
 
 export class SlashCommandClosure {
-    /**@type {SlashCommandScope}*/ scope;
-    /**@type {boolean}*/ executeNow = false;
-    // @ts-ignore
-    /**@type {SlashCommandNamedArgumentAssignment[]}*/ argumentList = [];
-    // @ts-ignore
-    /**@type {SlashCommandNamedArgumentAssignment[]}*/ providedArgumentList = [];
-    /**@type {SlashCommandExecutor[]}*/ executorList = [];
-    /**@type {SlashCommandAbortController}*/ abortController;
-    /**@type {SlashCommandBreakController}*/ breakController;
-    /**@type {SlashCommandDebugController}*/ debugController;
-    /**@type {(done:number, total:number)=>void}*/ onProgress;
-    /**@type {string}*/ rawText;
-    /**@type {string}*/ fullText;
-    /**@type {string}*/ parserContext;
-    /**@type {string}*/ #source = uuidv4();
+    /** @type {SlashCommandScope} */ scope;
+    /** @type {boolean} */ executeNow = false;
+    /** @type {SlashCommandNamedArgumentAssignment[]} */ argumentList = [];
+    /** @type {SlashCommandNamedArgumentAssignment[]} */ providedArgumentList = [];
+    /** @type {SlashCommandExecutor[]} */ executorList = [];
+    /** @type {SlashCommandAbortController} */ abortController;
+    /** @type {SlashCommandBreakController} */ breakController;
+    /** @type {SlashCommandDebugController} */ debugController;
+    /** @type {(done:number, total:number)=>void} */ onProgress;
+    /** @type {string} */ rawText;
+    /** @type {string} */ fullText;
+    /** @type {string} */ parserContext;
+    /** @type {string} */ #source = uuidv4();
     get source() { return this.#source; }
     set source(value) {
         this.#source = value;

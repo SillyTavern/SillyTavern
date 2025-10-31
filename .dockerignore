@@ -13,3 +13,5 @@ access.log
 /cache
 .DS_Store
 /public/scripts/extensions/third-party
+/colab
+.gemini

@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "ESNext",
         "target": "ES2023",
-        "moduleResolution": "Node",
+        "moduleResolution": "Bundler",
         "strictNullChecks": true,
         "strictFunctionTypes": true,
         "checkJs": true,

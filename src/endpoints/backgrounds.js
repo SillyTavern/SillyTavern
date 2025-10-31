@@ -4,19 +4,19 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
-import { invalidateThumbnail } from './thumbnails.js';
+import { dimensions, invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
-router.post('/all', jsonParser, function (request, response) {
-    var images = getImages(request.user.directories.backgrounds);
-    response.send(JSON.stringify(images));
+router.post('/all', function (request, response) {
+    const images = getImages(request.user.directories.backgrounds);
+    const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
+    response.json({ images, config });
 });
 
-router.post('/delete', jsonParser, getFileNameValidationFunction('bg'), function (request, response) {
+router.post('/delete', getFileNameValidationFunction('bg'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.bg !== sanitize(request.body.bg)) {
@@ -31,12 +31,12 @@ router.post('/delete', jsonParser, getFileNameValidationFunction('bg'), function
         return response.sendStatus(400);
     }
 
-    fs.rmSync(fileName);
+    fs.unlinkSync(fileName);
     invalidateThumbnail(request.user.directories, 'bg', request.body.bg);
     return response.send('ok');
 });
 
-router.post('/rename', jsonParser, function (request, response) {
+router.post('/rename', function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     const oldFileName = path.join(request.user.directories.backgrounds, sanitize(request.body.old_bg));
@@ -53,12 +53,12 @@ router.post('/rename', jsonParser, function (request, response) {
     }
 
     fs.copyFileSync(oldFileName, newFileName);
-    fs.rmSync(oldFileName);
+    fs.unlinkSync(oldFileName);
     invalidateThumbnail(request.user.directories, 'bg', request.body.old_bg);
     return response.send('ok');
 });
 
-router.post('/upload', urlencodedParser, function (request, response) {
+router.post('/upload', function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const img_path = path.join(request.file.destination, request.file.filename);
@@ -66,7 +66,7 @@ router.post('/upload', urlencodedParser, function (request, response) {
 
     try {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
-        fs.rmSync(img_path);
+        fs.unlinkSync(img_path);
         invalidateThumbnail(request.user.directories, 'bg', filename);
         response.send(filename);
     } catch (err) {

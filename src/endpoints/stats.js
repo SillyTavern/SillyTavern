@@ -8,7 +8,6 @@ import writeFileAtomic from 'write-file-atomic';
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
-import { jsonParser } from '../express-common.js';
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 
 const STATS_FILE = 'stats.json';
@@ -440,7 +439,7 @@ export const router = express.Router();
 /**
  * Handle a POST request to get the stats object
  */
-router.post('/get', jsonParser, function (request, response) {
+router.post('/get', function (request, response) {
     const stats = STATS.get(request.user.profile.handle) || {};
     response.send(stats);
 });
@@ -448,7 +447,7 @@ router.post('/get', jsonParser, function (request, response) {
 /**
  * Triggers the recreation of statistics from chat files.
  */
-router.post('/recreate', jsonParser, async function (request, response) {
+router.post('/recreate', async function (request, response) {
     try {
         await recreateStats(request.user.profile.handle, request.user.directories.chats, request.user.directories.characters);
         return response.sendStatus(200);
@@ -461,7 +460,7 @@ router.post('/recreate', jsonParser, async function (request, response) {
 /**
  * Handle a POST request to update the stats object
 */
-router.post('/update', jsonParser, function (request, response) {
+router.post('/update', function (request, response) {
     if (!request.body) return response.sendStatus(400);
     setCharStats(request.user.profile.handle, request.body);
     return response.sendStatus(200);

@@ -8,7 +8,6 @@ import sanitize from 'sanitize-filename';
 import fetch from 'node-fetch';
 
 import { UNSAFE_EXTENSIONS } from '../constants.js';
-import { jsonParser } from '../express-common.js';
 import { clientRelativePath } from '../util.js';
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
@@ -105,7 +104,7 @@ export const router = express.Router();
  *
  * @returns {void}
  */
-router.post('/get', jsonParser, async (request, response) => {
+router.post('/get', async (request, response) => {
     const folderPath = path.join(request.user.directories.assets);
     let output = {};
 
@@ -189,7 +188,7 @@ router.post('/get', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/download', jsonParser, async (request, response) => {
+router.post('/download', async (request, response) => {
     const url = request.body.url;
     const inputCategory = request.body.category;
 
@@ -236,14 +235,14 @@ router.post('/download', jsonParser, async (request, response) => {
             const contentType = mime.lookup(temp_path) || 'application/octet-stream';
             response.setHeader('Content-Type', contentType);
             response.send(fileContent);
-            fs.rmSync(temp_path);
+            fs.unlinkSync(temp_path);
             return;
         }
 
         // Move into asset place
         console.info('Download finished, moving file from', temp_path, 'to', file_path);
         fs.copyFileSync(temp_path, file_path);
-        fs.rmSync(temp_path);
+        fs.unlinkSync(temp_path);
         response.sendStatus(200);
     }
     catch (error) {
@@ -260,7 +259,7 @@ router.post('/download', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/delete', jsonParser, async (request, response) => {
+router.post('/delete', async (request, response) => {
     const inputCategory = request.body.category;
 
     // Check category
@@ -312,7 +311,7 @@ router.post('/delete', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/character', jsonParser, async (request, response) => {
+router.post('/character', async (request, response) => {
     if (request.query.name === undefined) return response.sendStatus(400);
 
     // For backwards compatibility, don't reject invalid character names, just sanitize them

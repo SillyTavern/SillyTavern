@@ -79,7 +79,7 @@
     justify-content: center;
     margin-left: 0.25em;
     cursor: pointer;
-    transition: 0.3s ease-in-out;
+    transition: var(--animation-duration-2x) ease-in-out;
     height: 20px;
     width: 20px;
     filter: drop-shadow(0px 0px 2px black);
@@ -110,6 +110,10 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.completion_prompt_manager_popup_entry_form .select2-container {
+    margin: 5px 0;
 }
 
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
@@ -239,7 +243,7 @@
     flex-direction: column;
     justify-content: center;
     margin-left: 0.25em;
-    transition: 0.3s ease-in-out;
+    transition: var(--animation-duration-2x) ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
 }
 
@@ -359,10 +363,15 @@
     content: attr(external_piece_text);
     display: block;
     width: 100%;
-    font-weight: 600;
+    font-weight: 500;
     text-align: center;
 }
 
 .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt:disabled {
     visibility: hidden;
+}
+
+#completion_prompt_manager_popup_entry_source_block {
+    display: flex;
+    justify-content: center;
 }

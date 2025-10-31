@@ -1,0 +1,229 @@
+#chat .mes[type="assistant_message"] .mes_button {
+    display: none;
+}
+
+.welcomePanel {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    width: 100%;
+}
+
+.welcomePanel:has(.showMoreChats) {
+    padding-bottom: 5px;
+}
+
+.welcomePanel.recentHidden .welcomeRecent,
+.welcomePanel.recentHidden .recentChatsTitle,
+.welcomePanel.recentHidden .hideRecentChats,
+.welcomePanel:not(.recentHidden) .showRecentChats {
+    display: none;
+}
+
+body.bubblechat .welcomePanel {
+    border-radius: 10px;
+    background-color: var(--SmartThemeBotMesBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    margin-bottom: 5px;
+}
+
+body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
+    display: none;
+}
+
+.welcomePanel .welcomeHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.welcomePanel .recentChatsTitle {
+    flex-grow: 1;
+    font-size: calc(var(--mainFontSize) * 1.15);
+    font-weight: 600;
+}
+
+.welcomePanel .welcomeHeaderTitle {
+    margin: 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.welcomePanel .welcomeHeaderVersionDisplay {
+    font-size: calc(var(--mainFontSize) * 1.3);
+    font-weight: 600;
+    flex-grow: 1;
+}
+
+.welcomePanel .welcomeHeaderLogo {
+    width: 30px;
+    height: 30px;
+}
+
+.welcomePanel .welcomeShortcuts {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.welcomePanel .welcomeShortcuts .welcomeShortcutsSeparator {
+    margin: 0 2px;
+    color: var(--SmartThemeBorderColor);
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+.welcomeRecent .recentChatList {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 2px;
+}
+
+.welcomeRecent .welcomePanelLoader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.welcomePanel .recentChatList .noRecentChat {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: baseline;
+    gap: 5px;
+    padding: 10px;
+}
+
+.welcomeRecent .recentChatList .recentChat {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    gap: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+}
+
+.welcomeRecent .recentChatList .recentChat .avatar {
+    flex: 0;
+    align-self: center;
+}
+
+.welcomeRecent .recentChatList .recentChat:hover {
+    background-color: var(--white30a);
+}
+
+.welcomeRecent .recentChatList .recentChat .recentChatInfo {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    flex-grow: 1;
+    overflow: hidden;
+    justify-content: center;
+    align-self: flex-start;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatNameContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: calc(var(--mainFontSize) * 1);
+    gap: 5px;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatNameContainer .chatName {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    flex: 1;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatActions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatActions button {
+    margin: 0;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatMessageContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    font-size: calc(var(--mainFontSize) * 0.85);
+}
+
+.welcomeRecent .recentChatList .recentChat .chatMessageContainer .chatMessage {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+body.big-avatars .welcomeRecent .recentChatList .recentChat .chatMessageContainer .chatMessage {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatStats {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: baseline;
+    align-self: flex-start;
+    gap: 5px;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatStats .counterBlock {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.welcomeRecent .recentChatList .recentChat .chatStats .counterBlock::after {
+    content: "|";
+    color: var(--SmartThemeBorderColor);
+    font-size: calc(var(--mainFontSize) * 0.95);
+}
+
+.welcomeRecent .recentChatList .recentChat.hidden {
+    display: none;
+}
+
+.welcomeRecent .recentChatList .showMoreChats {
+    align-self: center;
+}
+
+.welcomeRecent .recentChatList .showMoreChats.rotated {
+    transform: rotate(180deg);
+}
+
+@media screen and (max-width: 1000px) {
+    .welcomePanel .welcomeShortcuts a span {
+        display: none;
+    }
+}

@@ -24,10 +24,22 @@ if (typeof Array.prototype.indexOf === 'function') {
 
 
 /* Polyfill EventEmitter. */
-var EventEmitter = function () {
+/**
+ * Creates an event emitter.
+ * @param {string[]} autoFireAfterEmit Auto-fire event names
+ */
+var EventEmitter = function (autoFireAfterEmit = []) {
     this.events = {};
+    this.autoFireLastArgs = new Map();
+    this.autoFireAfterEmit = new Set(autoFireAfterEmit);
 };
 
+/**
+ * Adds a listener to an event.
+ * @param {string} event Event name
+ * @param {function} listener Event listener
+ * @returns
+ */
 EventEmitter.prototype.on = function (event, listener) {
     // Unknown event used by external libraries?
     if (event === undefined) {
@@ -40,6 +52,10 @@ EventEmitter.prototype.on = function (event, listener) {
     }
 
     this.events[event].push(listener);
+
+    if (this.autoFireAfterEmit.has(event) && this.autoFireLastArgs.has(event)) {
+        listener.apply(this, this.autoFireLastArgs.get(event));
+    }
 };
 
 /**
@@ -60,6 +76,10 @@ EventEmitter.prototype.makeLast = function (event, listener) {
     }
 
     events.push(listener);
+
+    if (this.autoFireAfterEmit.has(event) && this.autoFireLastArgs.has(event)) {
+        listener.apply(this, this.autoFireLastArgs.get(event));
+    }
 }
 
 /**
@@ -80,8 +100,17 @@ EventEmitter.prototype.makeFirst = function (event, listener) {
     }
 
     events.unshift(listener);
+
+    if (this.autoFireAfterEmit.has(event) && this.autoFireLastArgs.has(event)) {
+        listener.apply(this, this.autoFireLastArgs.get(event));
+    }
 }
 
+/**
+ * Removes a listener from an event.
+ * @param {string} event Event name
+ * @param {function} listener Event listener
+ */
 EventEmitter.prototype.removeListener = function (event, listener) {
     var idx;
 
@@ -94,6 +123,10 @@ EventEmitter.prototype.removeListener = function (event, listener) {
     }
 };
 
+/**
+ * Emits an event with optional arguments.
+ * @param {string} event Event name
+ */
 EventEmitter.prototype.emit = async function (event) {
     let args = [].slice.call(arguments, 1);
     if (localStorage.getItem('eventTracing') === 'true') {
@@ -117,6 +150,10 @@ EventEmitter.prototype.emit = async function (event) {
                 console.trace('Error in event listener');
             }
         }
+    }
+
+    if (this.autoFireAfterEmit.has(event)) {
+        this.autoFireLastArgs.set(event, args);
     }
 };
 
@@ -144,10 +181,14 @@ EventEmitter.prototype.emitAndWait = function (event) {
             }
         }
     }
+
+    if (this.autoFireAfterEmit.has(event)) {
+        this.autoFireLastArgs.set(event, args);
+    }
 };
 
 EventEmitter.prototype.once = function (event, listener) {
-    this.on(event, function g () {
+    this.on(event, function g() {
         this.removeListener(event, g);
         listener.apply(this, arguments);
     });

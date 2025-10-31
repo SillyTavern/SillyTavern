@@ -1,8 +1,10 @@
 // statsHelper.js
 import { moment } from '../lib.js';
-import { getRequestHeaders, callPopup, characters, this_chid } from '../script.js';
+import { getRequestHeaders, characters, this_chid } from '../script.js';
 import { humanizeGenTime } from './RossAscends-mods.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { registerDebugFunction } from './power-user.js';
+import { t, translate } from './i18n.js';
 
 let charStats = {};
 
@@ -105,25 +107,26 @@ function createHtml(statsType, stats) {
             .duration(stats.date_last_chat - stats.date_first_chat)
             .humanize();
     }
+    let statsTypeTranslated = translate(statsType, `stats_header_${statsType}`);
 
     // Create popup HTML with stats
-    let html = `<h3>${statsType} Stats</h3>`;
+    let html = '<h3>' + t`${statsTypeTranslated} Stats` + '</h3>';
     if (statsType === 'User') {
-        html += createStatBlock('Chatting Since', `${chatAge} ago`);
+        html += createStatBlock(t`Chatting Since`, `${chatAge} ago`);
     } else {
-        html += createStatBlock('First Interaction', `${chatAge} ago`);
+        html += createStatBlock(t`First Interaction`, `${chatAge} ago`);
     }
-    html += createStatBlock('Chat Time', timeStirng);
-    html += createStatBlock('User Messages', stats.user_msg_count);
+    html += createStatBlock(t`Chat Time`, timeStirng);
+    html += createStatBlock(t`User Messages`, stats.user_msg_count);
     html += createStatBlock(
-        'Character Messages',
+        t`Character Messages`,
         stats.non_user_msg_count - stats.total_swipe_count,
     );
-    html += createStatBlock('User Words', stats.user_word_count);
-    html += createStatBlock('Character Words', stats.non_user_word_count);
-    html += createStatBlock('Swipes', stats.total_swipe_count);
+    html += createStatBlock(t`User Words`, stats.user_word_count);
+    html += createStatBlock(t`Character Words`, stats.non_user_word_count);
+    html += createStatBlock(t`Swipes`, stats.total_swipe_count);
 
-    callPopup(html, 'text');
+    return callGenericPopup(html, POPUP_TYPE.TEXT);
 }
 
 /**
@@ -264,9 +267,9 @@ function countWords(str) {
  * @param {string} type - The type of the message processing (e.g., 'append', 'continue', 'appendFinal', 'swipe').
  * @param {Object} characters - Object containing character data.
  * @param {string} this_chid - The character id.
- * @param {string} oldMesssage - The old message that's being processed.
+ * @param {string} oldMessage - The old message that's being processed.
  */
-async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
+async function statMesProcess(line, type, characters, this_chid, oldMessage) {
     if (this_chid === undefined || characters[this_chid] === undefined) {
         return;
     }
@@ -295,7 +298,7 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
             stat.user_msg_count++;
             stat.user_word_count += countWords(line.mes);
         } else {
-            let oldLen = oldMesssage.split(' ').length;
+            let oldLen = oldMessage.split(' ').length;
             stat.user_word_count += countWords(line.mes) - oldLen;
         }
     } else {
@@ -305,7 +308,7 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
             stat.non_user_msg_count++;
             stat.non_user_word_count += countWords(line.mes);
         } else {
-            let oldLen = oldMesssage.split(' ').length;
+            let oldLen = oldMessage.split(' ').length;
             stat.non_user_word_count += countWords(line.mes) - oldLen;
         }
     }

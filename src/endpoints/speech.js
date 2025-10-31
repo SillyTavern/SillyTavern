@@ -1,8 +1,9 @@
 import { Buffer } from 'node:buffer';
 import express from 'express';
 import wavefile from 'wavefile';
-import { jsonParser } from '../express-common.js';
+import fetch from 'node-fetch';
 import { getPipeline } from '../transformers.js';
+import { forwardFetchResponse } from '../util.js';
 
 export const router = express.Router();
 
@@ -34,7 +35,7 @@ function getWaveFile(audio) {
     return audioData;
 }
 
-router.post('/recognize', jsonParser, async (req, res) => {
+router.post('/recognize', async (req, res) => {
     try {
         const TASK = 'automatic-speech-recognition';
         const { model, audio, lang } = req.body;
@@ -53,7 +54,7 @@ router.post('/recognize', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/synthesize', jsonParser, async (req, res) => {
+router.post('/synthesize', async (req, res) => {
     try {
         const TASK = 'text-to-speech';
         const { text, model, speaker } = req.body;
@@ -77,3 +78,63 @@ router.post('/synthesize', jsonParser, async (req, res) => {
         return res.sendStatus(500);
     }
 });
+
+const pollinations = express.Router();
+
+pollinations.post('/voices', async (req, res) => {
+    try {
+        const model = req.body.model || 'openai-audio';
+
+        const response = await fetch('https://text.pollinations.ai/models');
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Pollinations models');
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid data format received from Pollinations');
+        }
+
+        const audioModelData = data.find(m => m.name === model);
+        if (!audioModelData || !Array.isArray(audioModelData.voices)) {
+            throw new Error('No voices found for the specified model');
+        }
+
+        const voices = audioModelData.voices;
+        return res.json(voices);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+pollinations.post('/generate', async (req, res) => {
+    try {
+        const text = req.body.text;
+        const model = req.body.model || 'openai-audio';
+        const voice = req.body.voice || 'alloy';
+
+        const url = new URL(`https://text.pollinations.ai/generate/${encodeURIComponent(text)}`);
+        url.searchParams.append('model', model);
+        url.searchParams.append('voice', voice);
+        url.searchParams.append('referrer', 'sillytavern');
+        console.info('Pollinations request URL:', url.toString());
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to generate audio from Pollinations: ${text}`);
+        }
+
+        res.set('Content-Type', 'audio/mpeg');
+        forwardFetchResponse(response, res);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.use('/pollinations', pollinations);

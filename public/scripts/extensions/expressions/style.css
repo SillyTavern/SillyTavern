@@ -111,6 +111,10 @@ img.expression.default {
     justify-content: center;
 }
 
+.expression_list_image_container {
+    overflow: hidden;
+}
+
 .expression_list_title {
     position: absolute;
     bottom: 0;
@@ -125,6 +129,9 @@ img.expression.default {
     align-items: center;
     flex-direction: column;
     line-height: 1;
+}
+.expression_list_custom {
+    font-size: 0.66rem;
 }
 
 .expression_list_buttons {
@@ -162,11 +169,24 @@ img.expression.default {
     row-gap: 1rem;
 }
 
-#image_list .success {
+#image_list .expression_list_item[data-expression-type="success"] .expression_list_title {
     color: green;
 }
 
-#image_list .failure {
+#image_list .expression_list_item[data-expression-type="additional"] .expression_list_title {
+    color: darkolivegreen;
+}
+#image_list .expression_list_item[data-expression-type="additional"] .expression_list_title::before {
+    content: '➕';
+    position: absolute;
+    top: -7px;
+    left: -9px;
+    font-size: 14px;
+    color: transparent;
+    text-shadow: 0 0 0 darkolivegreen;
+}
+
+#image_list .expression_list_item[data-expression-type="failure"] .expression_list_title {
     color: red;
 }
 
@@ -189,3 +209,12 @@ img.expression.default {
     flex-direction: row;
 }
 
+#expressions_container:has(#expressions_allow_multiple:not(:checked)) #image_list .expression_list_item[data-expression-type="additional"],
+#expressions_container:has(#expressions_allow_multiple:not(:checked)) label[for="expressions_reroll_if_same"] {
+    opacity: 0.3;
+    transition: opacity var(--animation-duration) ease;
+}
+#expressions_container:has(#expressions_allow_multiple:not(:checked)) #image_list .expression_list_item[data-expression-type="additional"]:hover,
+#expressions_container:has(#expressions_allow_multiple:not(:checked)) #image_list .expression_list_item[data-expression-type="additional"]:focus {
+    opacity: unset;
+}

@@ -8,7 +8,6 @@ import urlJoin from 'url-join';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getConfigValue, uuidv4 } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -40,7 +39,7 @@ function decodeBuffer(buffer) {
     }
 }
 
-router.post('/libre', jsonParser, async (request, response) => {
+router.post('/libre', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
         const url = readSecret(request.user.directories, SECRET_KEYS.LIBRE_URL);
@@ -100,7 +99,7 @@ router.post('/libre', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/google', jsonParser, async (request, response) => {
+router.post('/google', async (request, response) => {
     try {
         const text = request.body.text;
         const lang = request.body.lang;
@@ -133,7 +132,7 @@ router.post('/google', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/yandex', jsonParser, async (request, response) => {
+router.post('/yandex', async (request, response) => {
     try {
         if (request.body.lang === 'pt-PT') {
             request.body.lang = 'pt';
@@ -189,7 +188,7 @@ router.post('/yandex', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/lingva', jsonParser, async (request, response) => {
+router.post('/lingva', async (request, response) => {
     try {
         const secretUrl = readSecret(request.user.directories, SECRET_KEYS.LINGVA_URL);
         const baseUrl = secretUrl || LINGVA_DEFAULT;
@@ -233,7 +232,7 @@ router.post('/lingva', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/deepl', jsonParser, async (request, response) => {
+router.post('/deepl', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.DEEPL);
 
@@ -295,7 +294,7 @@ router.post('/deepl', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/onering', jsonParser, async (request, response) => {
+router.post('/onering', async (request, response) => {
     try {
         const secretUrl = readSecret(request.user.directories, SECRET_KEYS.ONERING_URL);
         const url = secretUrl || ONERING_URL_DEFAULT;
@@ -352,7 +351,7 @@ router.post('/onering', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/deeplx', jsonParser, async (request, response) => {
+router.post('/deeplx', async (request, response) => {
     try {
         const secretUrl = readSecret(request.user.directories, SECRET_KEYS.DEEPLX_URL);
         const url = secretUrl || DEEPLX_URL_DEFAULT;
@@ -408,7 +407,7 @@ router.post('/deeplx', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/bing', jsonParser, async (request, response) => {
+router.post('/bing', async (request, response) => {
     try {
         const text = request.body.text;
         let lang = request.body.lang;

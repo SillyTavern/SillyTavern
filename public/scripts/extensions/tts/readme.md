@@ -16,6 +16,7 @@ Exported for use in extension index.js, and added to providers list in index.js
 1. previewTtsVoice()
 2. separator field
 3. processText(text)
+4. dispose()
 
 # Requirement Descriptions
 ### generateTts(text, voiceId)
@@ -74,3 +75,7 @@ Defines the string of characters used to introduce separation between between th
 ### processText(text)
 Optional.
 A function applied to the input text before passing it to the TTS generator. Can be async.
+
+### dispose()
+Optional.
+Function to handle cleanup of provider resources when the provider is switched.

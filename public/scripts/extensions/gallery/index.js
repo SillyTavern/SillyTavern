@@ -4,9 +4,11 @@ import {
     characters,
     getRequestHeaders,
     event_types,
+    animation_duration,
+    animation_easing,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
-import { loadFileToDocument, delay } from '../../utils.js';
+import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename, saveBase64AsFile, getFileExtension } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -14,11 +16,13 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { DragAndDropHandler } from '../../dragdrop.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
-import { translate } from '../../i18n.js';
+import { t, translate } from '../../i18n.js';
+import { Popup } from '../../popup.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
+let deleteModeActive = false;
 
 // Exposed defaults for future tweaking
 let thumbnailHeight = 150;
@@ -30,7 +34,15 @@ let galleryMaxRows = 3;
 $('#movingDivs').on('click', '.dragClose', function () {
     const relatedId = $(this).data('related-id');
     if (!relatedId) return;
-    $(`#movingDivs > .draggable[id="${relatedId}"]`).remove();
+    const relatedElement = $(`#movingDivs > .draggable[id="${relatedId}"]`);
+    relatedElement.transition({
+        opacity: 0,
+        duration: animation_duration,
+        easing: animation_easing,
+        complete: () => {
+            relatedElement.remove();
+        },
+    });
 });
 
 const CUSTOM_GALLERY_REMOVED_EVENT = 'galleryRemoved';
@@ -50,6 +62,48 @@ mutationObserver.observe(document.body, {
     subtree: false,
 });
 
+const SORT = Object.freeze({
+    NAME_ASC: { value: 'nameAsc', field: 'name', order: 'asc', label: t`Name (A-Z)` },
+    NAME_DESC: { value: 'nameDesc', field: 'name', order: 'desc', label: t`Name (Z-A)` },
+    DATE_DESC: { value: 'dateDesc', field: 'date', order: 'desc', label: t`Newest` },
+    DATE_ASC: { value: 'dateAsc', field: 'date', order: 'asc', label: t`Oldest` },
+});
+
+const defaultSettings = Object.freeze({
+    folders: {},
+    sort: SORT.DATE_ASC.value,
+});
+
+/**
+ * Initializes the settings for the gallery extension.
+ */
+function initSettings() {
+    let shouldSave = false;
+    const context = SillyTavern.getContext();
+    if (!context.extensionSettings.gallery) {
+        context.extensionSettings.gallery = structuredClone(defaultSettings);
+        shouldSave = true;
+    }
+    for (const key of Object.keys(defaultSettings)) {
+        if (!Object.hasOwn(context.extensionSettings.gallery, key)) {
+            context.extensionSettings.gallery[key] = structuredClone(defaultSettings[key]);
+            shouldSave = true;
+        }
+    }
+    if (shouldSave) {
+        context.saveSettingsDebounced();
+    }
+}
+
+/**
+ * Retrieves the gallery folder for a given character.
+ * @param {import('../../char-data.js').v1CharData} char Character data
+ * @returns {string} The gallery folder for the character
+ */
+function getGalleryFolder(char) {
+    return SillyTavern.getContext().extensionSettings.gallery.folders[char?.avatar] ?? char?.name;
+}
+
 /**
  * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint
  * to get the filenames and then constructs the item list.
@@ -58,10 +112,19 @@ mutationObserver.observe(document.body, {
  * @returns {Promise<Array>} - Resolves with an array of gallery item objects, rejects on error.
  */
 async function getGalleryItems(url) {
-    const response = await fetch(`/api/images/list/${url}`, {
+    const sortValue = getSortOrder();
+    const sortObj = Object.values(SORT).find(it => it.value === sortValue) ?? SORT.DATE_ASC;
+    const response = await fetch('/api/images/list', {
         method: 'POST',
         headers: getRequestHeaders(),
+        body: JSON.stringify({
+            folder: url,
+            sortField: sortObj.field,
+            sortOrder: sortObj.order,
+        }),
     });
+
+    url = await getSanitizedFilename(url);
 
     const data = await response.json();
     const items = data.map((file) => ({
@@ -71,6 +134,69 @@ async function getGalleryItems(url) {
     }));
 
     return items;
+}
+
+/**
+ * Retrieves a list of gallery folders. This function calls an API endpoint
+ * @returns {Promise<string[]>} - Resolves with an array of gallery folders.
+ */
+async function getGalleryFolders() {
+    try {
+        const response = await fetch('/api/images/folders', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error. Status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Failed to fetch gallery folders:', error);
+        return [];
+    }
+}
+
+/**
+ * Deletes a gallery item based on the provided URL.
+ * @param {string} url - The URL of the image to be deleted.
+ */
+async function deleteGalleryItem(url) {
+    try {
+        const response = await fetch('/api/images/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path: url }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error. Status: ${response.status}`);
+        }
+
+        toastr.success(t`Image deleted successfully.`);
+    } catch (error) {
+        console.error('Failed to delete the image:', error);
+        toastr.error(t`Failed to delete the image. Check the console for details.`);
+    }
+}
+
+/**
+ * Sets the sort order for the gallery.
+ * @param {string} order Sort order
+ */
+function setSortOrder(order) {
+    const context = SillyTavern.getContext();
+    context.extensionSettings.gallery.sort = order;
+    context.saveSettingsDebounced();
+}
+
+/**
+ * Retrieves the current sort order for the gallery.
+ * @returns {string} The current sort order for the gallery.
+ */
+function getSortOrder() {
+    return SillyTavern.getContext().extensionSettings.gallery.sort ?? defaultSettings.sort;
 }
 
 /**
@@ -106,11 +232,28 @@ async function initGallery(items, url) {
         },
         galleryDisplayMode: 'pagination',
         fnThumbnailOpen: viewWithDragbox,
+        fnThumbnailInit: function (/** @type {JQuery<HTMLElement>} */ $thumbnail, /** @type {{src: string}} */ item) {
+            if (!item?.src) return;
+            $thumbnail.attr('title', String(item.src).split('/').pop());
+        },
     });
 
-    const dragDropHandler = new DragAndDropHandler(`#dragGallery.${nonce}`, async (files, event) => {
-        let file = files[0];
-        uploadFile(file, url);  // Added url parameter to know where to upload
+    const dragDropHandler = new DragAndDropHandler(`#dragGallery.${nonce}`, async (files) => {
+        if (!Array.isArray(files) || files.length === 0) {
+            return;
+        }
+
+        // Upload each file
+        for (const file of files) {
+            await uploadFile(file, url);
+        }
+
+        // Refresh the gallery
+        const newItems = await getGalleryItems(url);
+        $('#dragGallery').closest('#gallery').remove();
+        await makeMovable(url);
+        await delay(100);
+        await initGallery(newItems, url);
     });
 
     const resizeHandler = function () {
@@ -152,7 +295,7 @@ async function initGallery(items, url) {
  *
  * @returns {Promise<void>} - Promise representing the completion of the gallery display process.
  */
-async function showCharGallery() {
+async function showCharGallery(deleteModeState = false) {
     // Load necessary files if it's the first time calling the function
     if (firstTime) {
         await loadFileToDocument(
@@ -168,20 +311,19 @@ async function showCharGallery() {
     }
 
     try {
+        deleteModeActive = deleteModeState;
         let url = selected_group || this_chid;
-        if (!selected_group && this_chid) {
-            const char = characters[this_chid];
-            url = char.avatar.replace('.png', '');
+        if (!selected_group && this_chid !== undefined) {
+            url = getGalleryFolder(characters[this_chid]);
         }
 
         const items = await getGalleryItems(url);
         // if there already is a gallery, destroy it and place this one in its place
         $('#dragGallery').closest('#gallery').remove();
-        makeMovable();
+        await makeMovable(url);
         await delay(100);
         await initGallery(items, url);
     } catch (err) {
-        console.trace();
         console.error(err);
     }
 }
@@ -196,92 +338,104 @@ async function showCharGallery() {
  * @returns {Promise<void>} - Promise representing the completion of the file upload and gallery refresh.
  */
 async function uploadFile(file, url) {
-    // Convert the file to a base64 string
-    const reader = new FileReader();
-    reader.onloadend = async function () {
-        const base64Data = reader.result;
+    try {
+        // Convert the file to a base64 string
+        const fileBase64 = await getBase64Async(file);
+        const base64Data = fileBase64.split(',')[1];
+        const extension = getFileExtension(file);
+        const path = await saveBase64AsFile(base64Data, url, '', extension);
 
-        // Create the payload
-        const payload = {
-            image: base64Data,
-        };
+        toastr.success(t`File uploaded successfully. Saved at: ${path}`);
+    } catch (error) {
+        console.error('There was an issue uploading the file:', error);
 
-        // Add the ch_name from the provided URL (assuming it's the character name)
-        payload.ch_name = url;
-
-        try {
-            const headers = await getRequestHeaders();
-
-            // Merge headers with content-type for JSON
-            Object.assign(headers, {
-                'Content-Type': 'application/json',
-            });
-
-            const response = await fetch('/api/images/upload', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            toastr.success('File uploaded successfully. Saved at: ' + result.path);
-
-            // Refresh the gallery
-            const newItems = await getGalleryItems(url);  // Fetch the latest items
-            $('#dragGallery').closest('#gallery').remove();  // Destroy old gallery
-            makeMovable();
-            await delay(100);
-            await initGallery(newItems, url);  // Reinitialize the gallery with new items and pass 'url'
-        } catch (error) {
-            console.error('There was an issue uploading the file:', error);
-
-            // Replacing alert with toastr error notification
-            toastr.error('Failed to upload the file.');
-        }
-    };
-    reader.readAsDataURL(file);
+        // Replacing alert with toastr error notification
+        toastr.error(t`Failed to upload the file.`);
+    }
 }
-
-$(document).ready(function () {
-    // Register an event listener
-    eventSource.on('charManagementDropdown', (selectedOptionId) => {
-        if (selectedOptionId === 'show_char_gallery') {
-            showCharGallery();
-        }
-    });
-
-    // Add an option to the dropdown
-    $('#char-management-dropdown').append(
-        $('<option>', {
-            id: 'show_char_gallery',
-            text: translate('Show Gallery'),
-        }),
-    );
-});
 
 /**
  * Creates a new draggable container based on a template.
  * This function takes a template with the ID 'generic_draggable_template' and clones it.
  * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
  * Additionally, it sets up the element to prevent dragging on its images.
+ * @param {string} url - The URL of the image source.
+ * @returns {Promise<void>} - Promise representing the completion of the draggable container creation.
  */
-function makeMovable(id = 'gallery') {
-
+async function makeMovable(url) {
     console.debug('making new container from template');
+    const id = 'gallery';
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
-    newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
+    newElement.css({ 'background-color': 'var(--SmartThemeBlurTintColor)', 'opacity': 0 });
     newElement.attr('forChar', id);
     newElement.attr('id', id);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
-    newElement.find('.dragTitle').text('Image Gallery');
-    //add a div for the gallery
-    newElement.append('<div id="dragGallery"></div>');
+    const dragTitle = newElement.find('.dragTitle');
+    dragTitle.addClass('flex-container justifySpaceBetween alignItemsBaseline');
+    const titleText = document.createElement('span');
+    titleText.textContent = t`Image Gallery`;
+    dragTitle.append(titleText);
+
+    // Create a container for the controls
+    const controlsContainer = document.createElement('div');
+    controlsContainer.classList.add('flex-container', 'alignItemsCenter');
+
+    const sortSelect = document.createElement('select');
+    sortSelect.classList.add('gallery-sort-select');
+
+    for (const sort of Object.values(SORT)) {
+        const option = document.createElement('option');
+        option.value = sort.value;
+        option.textContent = sort.label;
+        sortSelect.appendChild(option);
+    }
+
+    sortSelect.addEventListener('change', async () => {
+        const selectedOption = sortSelect.options[sortSelect.selectedIndex].value;
+        setSortOrder(selectedOption);
+        closeButton.trigger('click');
+        await showCharGallery();
+    });
+
+    sortSelect.value = getSortOrder();
+    controlsContainer.appendChild(sortSelect);
+
+    // Create the "Add Image" button
+    const addImageButton = document.createElement('div');
+    addImageButton.classList.add('menu_button', 'menu_button_icon', 'interactable');
+    addImageButton.title = 'Add Image';
+    addImageButton.innerHTML = '<i class="fa-solid fa-plus fa-fw"></i><div>Add Image</div>';
+
+    // Create a hidden file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+
+    // Trigger file input when the button is clicked
+    addImageButton.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', async () => {
+        const files = fileInput.files;
+        if (files.length > 0) {
+            for (const file of files) {
+                await uploadFile(file, url);
+            }
+            // Refresh the gallery
+            closeButton.trigger('click');
+            await showCharGallery();
+        }
+    });
+
+    controlsContainer.appendChild(addImageButton);
+    dragTitle.append(controlsContainer);
+    newElement.append(fileInput); // Append hidden file input to the main element
+
     // add no-scrollbar class to this element
     newElement.addClass('no-scrollbar');
 
@@ -290,6 +444,94 @@ function makeMovable(id = 'gallery') {
     closeButton.attr('id', `${id}close`);
     closeButton.attr('data-related-id', `${id}`);
 
+    const topBarElement = document.createElement('div');
+    topBarElement.classList.add('flex-container', 'alignItemsCenter');
+
+    const onChangeFolder = async (/** @type {Event} */ e) => {
+        if (e instanceof KeyboardEvent && e.key !== 'Enter') {
+            return;
+        }
+
+        try {
+            const newUrl = await getSanitizedFilename(galleryFolderInput.value);
+            updateGalleryFolder(newUrl);
+            closeButton.trigger('click');
+            await showCharGallery();
+            toastr.info(t`Gallery folder changed to ${newUrl}`);
+            galleryFolderInput.value = newUrl;
+        } catch (error) {
+            console.error('Failed to change gallery folder:', error);
+            toastr.error(error?.message || t`Unknown error`, t`Failed to change gallery folder`);
+        }
+    };
+
+    const onRestoreFolder = async () => {
+        try {
+            restoreGalleryFolder();
+            closeButton.trigger('click');
+            await showCharGallery();
+        } catch (error) {
+            console.error('Failed to restore gallery folder:', error);
+            toastr.error(error?.message || t`Unknown error`, t`Failed to restore gallery folder`);
+        }
+    };
+
+    const galleryFolderInput = document.createElement('input');
+    galleryFolderInput.type = 'text';
+    galleryFolderInput.placeholder = t`Folder Name`;
+    galleryFolderInput.title = t`Enter a folder name to change the gallery folder`;
+    galleryFolderInput.value = url;
+    galleryFolderInput.classList.add('text_pole', 'gallery-folder-input', 'flex1');
+    galleryFolderInput.addEventListener('keyup', onChangeFolder);
+
+    const galleryFolderAccept = document.createElement('div');
+    galleryFolderAccept.classList.add('right_menu_button', 'fa-solid', 'fa-check', 'fa-fw');
+    galleryFolderAccept.title = t`Change gallery folder`;
+    galleryFolderAccept.addEventListener('click', onChangeFolder);
+
+    const galleryDeleteMode = document.createElement('div');
+    galleryDeleteMode.classList.add('right_menu_button', 'fa-solid', 'fa-trash', 'fa-fw');
+    galleryDeleteMode.classList.toggle('warning', deleteModeActive);
+    galleryDeleteMode.title = t`Delete mode`;
+    galleryDeleteMode.addEventListener('click', () => {
+        deleteModeActive = !deleteModeActive;
+        galleryDeleteMode.classList.toggle('warning', deleteModeActive);
+        if (deleteModeActive) {
+            toastr.info(t`Delete mode is ON. Click on images you want to delete.`);
+        }
+    });
+
+    const galleryFolderRestore = document.createElement('div');
+    galleryFolderRestore.classList.add('right_menu_button', 'fa-solid', 'fa-recycle', 'fa-fw');
+    galleryFolderRestore.title = t`Restore gallery folder`;
+    galleryFolderRestore.addEventListener('click', onRestoreFolder);
+
+    topBarElement.appendChild(galleryFolderInput);
+    topBarElement.appendChild(galleryFolderAccept);
+    topBarElement.appendChild(galleryDeleteMode);
+    topBarElement.appendChild(galleryFolderRestore);
+    newElement.append(topBarElement);
+
+    // Populate the gallery folder input with a list of available folders
+    const folders = await getGalleryFolders();
+    $(galleryFolderInput)
+        .autocomplete({
+            source: (i, o) => {
+                const term = i.term.toLowerCase();
+                const filtered = folders.filter(f => f.toLowerCase().includes(term));
+                o(filtered);
+            },
+            select: (e, u) => {
+                galleryFolderInput.value = u.item.value;
+                onChangeFolder(e);
+            },
+            minLength: 0,
+        })
+        .on('focus', () => $(galleryFolderInput).autocomplete('search', ''));
+
+    //add a div for the gallery
+    newElement.append('<div id="dragGallery"></div>');
+
     $('#dragGallery').css('display', 'block');
 
     $('#movingDivs').append(newElement);
@@ -297,12 +539,70 @@ function makeMovable(id = 'gallery') {
     loadMovingUIState();
     $(`.draggable[forChar="${id}"]`).css('display', 'block');
     dragElement(newElement);
+    newElement.transition({
+        opacity: 1,
+        duration: animation_duration,
+        easing: animation_easing,
+    });
 
     $(`.draggable[forChar="${id}"] img`).on('dragstart', (e) => {
         console.log('saw drag on avatar!');
         e.preventDefault();
         return false;
     });
+}
+
+/**
+ * Sets the gallery folder to a new URL.
+ * @param {string} newUrl - The new URL to set for the gallery folder.
+ */
+function updateGalleryFolder(newUrl) {
+    if (!newUrl) {
+        throw new Error('Folder name cannot be empty');
+    }
+    const context = SillyTavern.getContext();
+    if (context.groupId) {
+        throw new Error('Cannot change gallery folder in group chat');
+    }
+    if (context.characterId === undefined) {
+        throw new Error('Character is not selected');
+    }
+    const avatar = context.characters[context.characterId]?.avatar;
+    const name = context.characters[context.characterId]?.name;
+    if (!avatar) {
+        throw new Error('Character PNG ID is not found');
+    }
+    if (newUrl === name) {
+        // Default folder name is picked, remove the override
+        delete context.extensionSettings.gallery.folders[avatar];
+    } else {
+        // Custom folder name is provided, set the override
+        context.extensionSettings.gallery.folders[avatar] = newUrl;
+    }
+    context.saveSettingsDebounced();
+}
+
+/**
+ * Restores the gallery folder to the default value.
+ */
+function restoreGalleryFolder() {
+    const context = SillyTavern.getContext();
+    if (context.groupId) {
+        throw new Error('Cannot change gallery folder in group chat');
+    }
+    if (context.characterId === undefined) {
+        throw new Error('Character is not selected');
+    }
+    const avatar = context.characters[context.characterId]?.avatar;
+    if (!avatar) {
+        throw new Error('Character PNG ID is not found');
+    }
+    const existingOverride = context.extensionSettings.gallery.folders[avatar];
+    if (!existingOverride) {
+        throw new Error('No folder override found');
+    }
+    delete context.extensionSettings.gallery.folders[avatar];
+    context.saveSettingsDebounced();
 }
 
 /**
@@ -331,7 +631,7 @@ function makeDragImg(id, url) {
     const imgElem = document.createElement('img');
     imgElem.src = url;
     let uniqueId = `draggable_${id}`;
-    const draggableElem = newElement.querySelector('.draggable');
+    const draggableElem = /** @type {HTMLElement} */ (newElement.querySelector('.draggable'));
     if (draggableElem) {
         draggableElem.appendChild(imgElem);
 
@@ -344,6 +644,9 @@ function makeDragImg(id, url) {
         }
         draggableElem.id = uniqueId;
 
+        // Add the galleryImageDraggable to have unique class
+        draggableElem.classList.add('galleryImageDraggable');
+
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
         //and has no padding unlike other non-zoomed-avatar draggables
@@ -351,7 +654,7 @@ function makeDragImg(id, url) {
 
         // Add an id to the close button
         // If the close button exists, set related-id
-        const closeButton = draggableElem.querySelector('.dragClose');
+        const closeButton = /** @type {HTMLElement} */ (draggableElem.querySelector('.dragClose'));
         if (closeButton) {
             closeButton.id = `${uniqueId}close`;
             closeButton.dataset.relatedId = uniqueId;
@@ -413,9 +716,19 @@ function sanitizeHTMLId(id) {
 function viewWithDragbox(items) {
     if (items && items.length > 0) {
         const url = items[0].responsiveURL(); // Get the URL of the clicked image/video
-        // ID should just be the last part of the URL, removing the extension
-        const id = sanitizeHTMLId(url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.')));
-        makeDragImg(id, url);
+        if (deleteModeActive) {
+            Popup.show.confirm(t`Are you sure you want to delete this image?`, url)
+                .then(async (confirmed) => {
+                    if (!confirmed) {
+                        return;
+                    }
+                    deleteGalleryItem(url).then(() => showCharGallery(deleteModeActive));
+                });
+        } else {
+            // ID should just be the last part of the URL, removing the extension
+            const id = sanitizeHTMLId(url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.')));
+            makeDragImg(id, url);
+        }
     }
 }
 
@@ -455,17 +768,49 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 async function listGalleryCommand(args) {
     try {
         let url = args.char ?? (args.group ? groups.find(it => it.name == args.group)?.id : null) ?? (selected_group || this_chid);
-        if (!args.char && !args.group && !selected_group && this_chid) {
-            const char = characters[this_chid];
-            url = char.avatar.replace('.png', '');
+        if (!args.char && !args.group && !selected_group && this_chid !== undefined) {
+            url = getGalleryFolder(characters[this_chid]);
         }
 
         const items = await getGalleryItems(url);
         return JSON.stringify(items.map(it => it.src));
 
     } catch (err) {
-        console.trace();
         console.error(err);
     }
     return JSON.stringify([]);
 }
+
+// On extension load, ensure the settings are initialized
+(function () {
+    initSettings();
+    eventSource.on(event_types.CHARACTER_RENAMED, (oldAvatar, newAvatar) => {
+        const context = SillyTavern.getContext();
+        const galleryFolder = context.extensionSettings.gallery.folders[oldAvatar];
+        if (galleryFolder) {
+            context.extensionSettings.gallery.folders[newAvatar] = galleryFolder;
+            delete context.extensionSettings.gallery.folders[oldAvatar];
+            context.saveSettingsDebounced();
+        }
+    });
+    eventSource.on(event_types.CHARACTER_DELETED, (data) => {
+        const avatar = data?.character?.avatar;
+        if (!avatar) return;
+        const context = SillyTavern.getContext();
+        delete context.extensionSettings.gallery.folders[avatar];
+        context.saveSettingsDebounced();
+    });
+    eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (selectedOptionId) => {
+        if (selectedOptionId === 'show_char_gallery') {
+            showCharGallery();
+        }
+    });
+
+    // Add an option to the dropdown
+    $('#char-management-dropdown').append(
+        $('<option>', {
+            id: 'show_char_gallery',
+            text: translate('Show Gallery'),
+        }),
+    );
+})();

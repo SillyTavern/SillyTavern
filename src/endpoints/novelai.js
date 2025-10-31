@@ -6,11 +6,15 @@ import express from 'express';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
 const API_NOVELAI = 'https://api.novelai.net';
 const TEXT_NOVELAI = 'https://text.novelai.net';
 const IMAGE_NOVELAI = 'https://image.novelai.net';
+
+// Constants for skip_cfg_above_sigma (Variety+) calculation
+const REFERENCE_PIXEL_COUNT = 1011712;   // 832 * 1216 reference image size
+const SIGMA_MAGIC_NUMBER = 19;           // Base sigma multiplier for V3 and V4 models
+const SIGMA_MAGIC_NUMBER_V4_5 = 58;      // Base sigma multiplier for V4.5 models
 
 // Ban bracket generation, plus defaults
 const badWordsList = [
@@ -113,9 +117,20 @@ function getRepPenaltyWhitelist(model) {
     return null;
 }
 
+function calculateSkipCfgAboveSigma(width, height, modelName) {
+    const magicConstant = modelName?.includes('nai-diffusion-4-5')
+        ? SIGMA_MAGIC_NUMBER_V4_5
+        : SIGMA_MAGIC_NUMBER;
+
+    const pixelCount = width * height;
+    const ratio = pixelCount / REFERENCE_PIXEL_COUNT;
+
+    return Math.pow(ratio, 0.5) * magicConstant;
+}
+
 export const router = express.Router();
 
-router.post('/status', jsonParser, async function (req, res) {
+router.post('/status', async function (req, res) {
     if (!req.body) return res.sendStatus(400);
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
 
@@ -150,7 +165,7 @@ router.post('/status', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/generate', jsonParser, async function (req, res) {
+router.post('/generate', async function (req, res) {
     if (!req.body) return res.sendStatus(400);
 
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
@@ -271,7 +286,7 @@ router.post('/generate', jsonParser, async function (req, res) {
                     // ignore
                 }
 
-                return res.status(response.status).send({ error: { message } });
+                return res.status(500).send({ error: { message } });
             }
 
             /** @type {any} */
@@ -284,7 +299,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/generate-image', jsonParser, async (request, response) => {
+router.post('/generate-image', async (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -333,6 +348,13 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     sm: request.body.sm ?? false,
                     sm_dyn: request.body.sm_dyn ?? false,
                     uncond_scale: 1,
+                    skip_cfg_above_sigma: request.body.variety_boost
+                        ? calculateSkipCfgAboveSigma(
+                            request.body.width ?? 512,
+                            request.body.height ?? 512,
+                            request.body.model ?? 'nai-diffusion',
+                        )
+                        : null,
                     use_coords: false,
                     characterPrompts: [],
                     reference_image_multiple: [],
@@ -395,7 +417,8 @@ router.post('/generate-image', jsonParser, async (request, response) => {
             });
 
             if (!upscaleResult.ok) {
-                throw new Error('NovelAI returned an error.');
+                const text = await upscaleResult.text();
+                throw new Error('NovelAI returned an error.', { cause: text });
             }
 
             const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
@@ -409,7 +432,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
             return response.send(upscaledBase64);
         } catch (error) {
-            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
+            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.', error);
             return response.send(originalBase64);
         }
     } catch (error) {
@@ -418,7 +441,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     const token = readSecret(request.user.directories, SECRET_KEYS.NOVEL);
 
     if (!token) {

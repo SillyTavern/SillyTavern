@@ -5,5 +5,8 @@ if [ ! -e "config/config.yaml" ]; then
     cp -r "default/config.yaml" "config/config.yaml"
 fi
 
+# Execute postinstall to auto-populate config.yaml with missing values
+npm run postinstall
+
 # Start the server
 exec node server.js --listen "$@"

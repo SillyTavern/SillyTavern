@@ -5,10 +5,10 @@
 import { Buffer } from 'node:buffer';
 import storage from 'node-persist';
 import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
-import { getConfig, getConfigValue, safeReadFileSync } from '../util.js';
+import { getConfigValue, safeReadFileSync } from '../util.js';
 
-const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
-const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
+const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
+const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
 
 const basicAuthMiddleware = async function (request, response, callback) {
     const unauthorizedWebpage = safeReadFileSync('./public/error/unauthorized.html') ?? '';
@@ -17,7 +17,8 @@ const basicAuthMiddleware = async function (request, response, callback) {
         return res.status(401).send(unauthorizedWebpage);
     };
 
-    const config = getConfig();
+    const basicAuthUserName = getConfigValue('basicAuthUser.username');
+    const basicAuthUserPassword = getConfigValue('basicAuthUser.password');
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
@@ -35,7 +36,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
         .toString('utf8')
         .split(':');
 
-    if (!usePerUserAuth && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
+    if (!usePerUserAuth && username === basicAuthUserName && password === basicAuthUserPassword) {
         return callback();
     } else if (usePerUserAuth) {
         const userHandles = await getAllUserHandles();

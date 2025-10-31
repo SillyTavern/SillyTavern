@@ -17,6 +17,7 @@ export let system_prompts = [];
 const $enabled = $('#sysprompt_enabled');
 const $select = $('#sysprompt_select');
 const $content = $('#sysprompt_content');
+const $postHistory = $('#sysprompt_post_history');
 const $contentBlock = $('#SystemPromptBlock');
 
 async function migrateSystemPromptFromInstructMode() {
@@ -25,6 +26,7 @@ async function migrateSystemPromptFromInstructMode() {
         delete power_user.instruct.system_prompt;
         power_user.sysprompt.enabled = power_user.instruct.enabled;
         power_user.sysprompt.content = prompt;
+        power_user.sysprompt.post_history = '';
 
         const existingPromptName = system_prompts.find(x => x.content === prompt)?.name;
 
@@ -59,7 +61,8 @@ export async function loadSystemPrompts(data) {
 
     $enabled.prop('checked', power_user.sysprompt.enabled);
     $select.val(power_user.sysprompt.name);
-    $content.val(power_user.sysprompt.content);
+    $content.val(power_user.sysprompt.content || '');
+    $postHistory.val(power_user.sysprompt.post_history || '');
     if (!CSS.supports('field-sizing', 'content')) {
         await resetScrollHeight($content);
     }
@@ -165,19 +168,28 @@ export function initSystemPrompts() {
         const name = String($(this).val());
         const prompt = system_prompts.find(p => p.name === name);
         if (prompt) {
-            $content.val(prompt.content);
+            $content.val(prompt.content || '');
+            $postHistory.val(prompt.post_history || '');
+
             if (!CSS.supports('field-sizing', 'content')) {
                 await resetScrollHeight($content);
+                await resetScrollHeight($postHistory);
             }
 
             power_user.sysprompt.name = name;
-            power_user.sysprompt.content = prompt.content;
+            power_user.sysprompt.content = prompt.content || '';
+            power_user.sysprompt.post_history = prompt.post_history || '';
         }
         saveSettingsDebounced();
     });
 
     $content.on('input', function () {
         power_user.sysprompt.content = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $postHistory.on('input', function () {
+        power_user.sysprompt.post_history = String($(this).val());
         saveSettingsDebounced();
     });
 

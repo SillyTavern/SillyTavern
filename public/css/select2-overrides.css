@@ -13,19 +13,21 @@
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     color: var(--SmartThemeBodyColor);
     z-index: 40000;
+    user-select: none;
 }
 
 .select2-container .select2-selection .select2-selection__clear {
     color: var(--SmartThemeBodyColor);
     font-size: 20px;
-    padding: 0;
     position: absolute;
     right: 5px;
-    top: 0;
+    margin-top: 0;  /* compensate for the increased font size */
+    margin-right: 0;
 }
 
-.select2-container .select2-search__field {
+.select2-container .select2-search--inline textarea.select2-search__field {
     opacity: 0.8;
+    margin-top: 7px;  /* get placeholder text to the center */
 }
 
 .select2-selection--single .select2-selection__placeholder {
@@ -38,8 +40,8 @@
 
 .select2-container .select2-selection--single .select2-selection__rendered {
     color: var(--SmartThemeBodyColor);
-    line-height: revert;
-    padding-left: unset;
+    line-height: unset;
+    padding: 3px 5px;
 }
 
 .select2-container .select2-results>.select2-results__options {
@@ -62,9 +64,10 @@
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
     font-family: var(--mainFontFamily);
     padding: 3px 5px;
+    display: unset;  /* override the ST textarea display style */
+    border-radius: 0;  /* border radius was interfering with cursor */
 }
 
 /* Customize the selected option */
@@ -92,7 +95,10 @@
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: var(--mainFontFamily);
-    padding: 3px 5px;
+}
+
+.select2-container .select2-selection--multiple.select2-selection--clearable {
+    padding-right: 20px;
 }
 
 .select2-container.select2-container--focus .select2-selection--multiple,
@@ -124,7 +130,7 @@
     background-color: unset;
     color: var(--SmartThemeBodyColor);
     opacity: 0.5;
-    transition: opacity 200ms ease-in-out;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
     position: relative;
 }
 
@@ -202,7 +208,7 @@
 /* Styling for choice remove icon */
 span.select2.select2-container .select2-selection__choice__remove {
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color var(--animation-duration-2x);
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
 }
@@ -219,7 +225,7 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 
 .select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display {
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color var(--animation-duration-2x);
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     white-space: break-spaces;
@@ -228,56 +234,4 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 
 .select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display:hover {
     background-color: var(--white30a);
-}
-
-/* Custom class to support same line multi inputs of select2 controls */
-.select2_multi_sameline+span.select2-container .select2-selection--multiple {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
-    /* Allow search placeholder to take up all space if needed */
-    flex-grow: 1;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
-    /* Fix weird styling choice or huge margin around selected options */
-    margin-block-start: 2px;
-    margin-block-end: 2px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    row-gap: 5px;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__choice {
-    margin-top: 0px;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search__field {
-    /* Min height to reserve spacing */
-    min-height: calc(var(--mainFontSize) + 13px);
-    /* Min width to be clickable */
-    min-width: 4em;
-    align-content: center;
-    /* Fix search textarea alignment issue with UL elements */
-    margin-top: 0px;
-    height: unset;
-    /* Prevent height from jumping around when input is focused */
-    line-height: 1;
-}
-
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
-    /* Min height to reserve spacing */
-    min-height: calc(var(--mainFontSize) + 13px);
-}
-
-/* Make search bar invisible unless the select2 is active, to save space */
-.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
-    height: 1px;
-}
-
-.select2_multi_sameline+span.select2-container.select2-container--focus .select2-selection--multiple .select2-search--inline {
-    height: unset;
 }

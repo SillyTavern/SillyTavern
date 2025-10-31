@@ -12,3 +12,5 @@ access.log
 .vscode
 .git
 /public/scripts/extensions/third-party
+/colab
+.gemini

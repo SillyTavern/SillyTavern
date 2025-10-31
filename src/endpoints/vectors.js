@@ -5,14 +5,14 @@ import vectra from 'vectra';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { jsonParser } from '../express-common.js';
 import { getConfigValue } from '../util.js';
 
 import { getNomicAIBatchVector, getNomicAIVector } from '../vectors/nomicai-vectors.js';
 import { getOpenAIVector, getOpenAIBatchVector } from '../vectors/openai-vectors.js';
 import { getTransformersVector, getTransformersBatchVector } from '../vectors/embedding.js';
 import { getExtrasVector, getExtrasBatchVector } from '../vectors/extras-vectors.js';
-import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/makersuite-vectors.js';
+import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/google-vectors.js';
+import { getVertexVector, getVertexBatchVector } from '../vectors/google-vectors.js';
 import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors.js';
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
@@ -31,6 +31,9 @@ const SOURCES = [
     'ollama',
     'llamacpp',
     'vllm',
+    'webllm',
+    'koboldcpp',
+    'vertexai',
 ];
 
 /**
@@ -55,7 +58,9 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'extras':
             return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return getMakerSuiteVector(text, directories);
+            return getMakerSuiteVector(text, sourceSettings.model, sourceSettings.request);
+        case 'vertexai':
+            return getVertexVector(text, sourceSettings.model, sourceSettings.request);
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
@@ -64,6 +69,10 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
             return getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
+        case 'webllm':
+            return sourceSettings.embeddings[text];
+        case 'koboldcpp':
+            return sourceSettings.embeddings[text];
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -100,7 +109,10 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await getMakerSuiteBatchVector(batch, directories));
+                results.push(...await getMakerSuiteBatchVector(batch, sourceSettings.model, sourceSettings.request));
+                break;
+            case 'vertexai':
+                results.push(...await getVertexBatchVector(batch, sourceSettings.model, sourceSettings.request));
                 break;
             case 'cohere':
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
@@ -113,6 +125,12 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'ollama':
                 results.push(...await getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
+                break;
+            case 'webllm':
+                results.push(...texts.map(x => sourceSettings.embeddings[x]));
+                break;
+            case 'koboldcpp':
+                results.push(...texts.map(x => sourceSettings.embeddings[x]));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -132,44 +150,45 @@ function getSourceSettings(source, request) {
     switch (source) {
         case 'togetherai':
             return {
-                model: String(request.headers['x-togetherai-model']),
+                model: String(request.body.model),
             };
         case 'openai':
             return {
-                model: String(request.headers['x-openai-model']),
+                model: String(request.body.model),
             };
         case 'cohere':
             return {
-                model: String(request.headers['x-cohere-model']),
+                model: String(request.body.model),
             };
         case 'llamacpp':
             return {
-                apiUrl: String(request.headers['x-llamacpp-url']),
+                apiUrl: String(request.body.apiUrl),
             };
         case 'vllm':
             return {
-                apiUrl: String(request.headers['x-vllm-url']),
-                model: String(request.headers['x-vllm-model']),
+                apiUrl: String(request.body.apiUrl),
+                model: String(request.body.model),
             };
         case 'ollama':
             return {
-                apiUrl: String(request.headers['x-ollama-url']),
-                model: String(request.headers['x-ollama-model']),
-                keep: Boolean(request.headers['x-ollama-keep']),
+                apiUrl: String(request.body.apiUrl),
+                model: String(request.body.model),
+                keep: Boolean(request.body.keep),
             };
         case 'extras':
             return {
-                extrasUrl: String(request.headers['x-extras-url']),
-                extrasKey: String(request.headers['x-extras-key']),
+                extrasUrl: String(request.body.extrasUrl),
+                extrasKey: String(request.body.extrasKey),
             };
         case 'transformers':
             return {
                 model: getConfigValue('extensions.models.embedding', ''),
             };
         case 'palm':
+        case 'vertexai':
             return {
-                // TODO: Add support for multiple models
-                model: 'text-embedding-004',
+                model: String(request.body.model || 'text-embedding-005'),
+                request: request, // Pass the request object to get API key and URL
             };
         case 'mistral':
             return {
@@ -178,6 +197,16 @@ function getSourceSettings(source, request) {
         case 'nomicai':
             return {
                 model: 'nomic-embed-text-v1.5',
+            };
+        case 'webllm':
+            return {
+                model: String(request.body.model),
+                embeddings: request.body.embeddings ?? {},
+            };
+        case 'koboldcpp':
+            return {
+                model: String(request.body.model),
+                embeddings: request.body.embeddings ?? {},
             };
         default:
             return {};
@@ -373,7 +402,7 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
 
 export const router = express.Router();
 
-router.post('/query', jsonParser, async (req, res) => {
+router.post('/query', async (req, res) => {
     try {
         if (!req.body.collectionId || !req.body.searchText) {
             return res.sendStatus(400);
@@ -393,7 +422,7 @@ router.post('/query', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/query-multi', jsonParser, async (req, res) => {
+router.post('/query-multi', async (req, res) => {
     try {
         if (!Array.isArray(req.body.collectionIds) || !req.body.searchText) {
             return res.sendStatus(400);
@@ -413,7 +442,7 @@ router.post('/query-multi', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/insert', jsonParser, async (req, res) => {
+router.post('/insert', async (req, res) => {
     try {
         if (!Array.isArray(req.body.items) || !req.body.collectionId) {
             return res.sendStatus(400);
@@ -431,7 +460,7 @@ router.post('/insert', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/list', jsonParser, async (req, res) => {
+router.post('/list', async (req, res) => {
     try {
         if (!req.body.collectionId) {
             return res.sendStatus(400);
@@ -448,7 +477,7 @@ router.post('/list', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/delete', jsonParser, async (req, res) => {
+router.post('/delete', async (req, res) => {
     try {
         if (!Array.isArray(req.body.hashes) || !req.body.collectionId) {
             return res.sendStatus(400);
@@ -466,7 +495,7 @@ router.post('/delete', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/purge-all', jsonParser, async (req, res) => {
+router.post('/purge-all', async (req, res) => {
     try {
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
@@ -484,7 +513,7 @@ router.post('/purge-all', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/purge', jsonParser, async (req, res) => {
+router.post('/purge', async (req, res) => {
     try {
         if (!req.body.collectionId) {
             return res.sendStatus(400);

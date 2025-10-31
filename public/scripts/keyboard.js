@@ -11,7 +11,7 @@ const interactableSelectors = [
     '.avatar-container', // Persona list blocks
     '.tag .tag_remove', // Remove button in removable tags
     '.bg_example', // Background elements in the background menu
-    '.bg_example .bg_button', // The inline buttons on the backgrounds
+    '.bg_example .jg-button, .bg_example .mobile-only-menu-toggle', // The inline buttons on the backgrounds
     '#options a', // Option entries in the popup options menu
     '.mes_buttons .mes_button', // Small inline buttons on the chat messages
     '.extraMesButtons>div:not(.mes_button)', // The extra/extension buttons inline on the chat messages

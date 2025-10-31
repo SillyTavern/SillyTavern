@@ -1,0 +1,16 @@
+<div class="wide100p">
+    <h3 data-i18n="Token Counter">Token Counter</h3>
+    <div class="justifyLeft flex-container flexFlowColumn">
+        <h4 data-i18n="Type / paste in the box below to see the number of tokens in the text.">Type / paste in the box below to see the number of tokens in the text.</h4>
+        <p><span data-i18n="Selected tokenizer:">Selected tokenizer:</span> {{tokenizerName}}</p>
+        <div data-i18n="Input:">Input:</div>
+        <textarea id="token_counter_textarea" class="wide100p textarea_compact" rows="1"></textarea>
+        <div><span data-i18n="Tokens:">Tokens:</span> <span id="token_counter_result">0</span></div>
+        <hr>
+        <div data-i18n="Tokenized text:">Tokenized text:</div>
+        <div id="tokenized_chunks_display" class="wide100p">—</div>
+        <hr>
+        <div data-i18n="Token IDs:">Token IDs:</div>
+        <textarea id="token_counter_ids" class="wide100p textarea_compact" readonly rows="1">—</textarea>
+    </div>
+</div>

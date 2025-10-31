@@ -1,0 +1,69 @@
+labels:
+  - name: ✖️ Invalid
+    labeled:
+      issue:
+        action: close
+        body: >
+          Hey @{{ issue.user.login }}, this issue has been marked as invalid.
+
+          Please double-check that you've followed the issue template, included all necessary details, and reviewed the docs & previous issues before submitting.
+          If provided, follow the instructions given by maintainers.
+
+  - name: 👩‍💻 Good First Issue
+    labeled:
+      issue:
+        body: >
+          🏆 This issue has been marked as a good first issue for contributors to implement!
+          This is a great way to support the project. While also improving your skills, you'll also be credited as a contributor once your PR is merged.
+
+          If you're new to SillyTavern [here is the official documentation](https://docs.sillytavern.app/). The official contribution guide can be found [here](https://github.com/SillyTavern/SillyTavern/blob/release/CONTRIBUTING.md).
+          If you need any support, feel free to reach out via [Discord](https://discord.gg/sillytavern), or let us know in this issue or via [discussions](https://github.com/SillyTavern/SillyTavern/discussions).
+
+  - name: ❌ wontfix
+    labeled:
+      issue:
+        action: close
+        body: >
+          ❌ This issue has been marked as 'wontfix', which usually means it is out-of-scope, not feasible at this time or will not be implemented for various reasons.
+          If you have any questions about this, feel free to reach out.
+
+  - name: 🛑 Out of Scope
+    labeled:
+      issue:
+        action: close
+        body: >
+          🛑 This issue has been marked as 'out of scope', as this can't or won't be implemented.
+          If you have any questions about this, feel free to reach out.
+
+  - name: ✅ Done (staging)
+    labeled:
+      issue:
+        body: >
+          ✅ It looks like all or part of this issue has now been implemented as part of the `staging` branch.
+          If you currently are on the `release` branch, you can switch to `staging` to test this right away.
+
+          Note that `staging` is considered less stable than the official releases. To switch, follow existing instructions,
+          or simply enter the following command: `git switch staging`
+
+  - name: ✅ Done
+    labeled:
+      issue:
+        body: >
+          ✅ It looks like all or part of this issue has now been implemented as part of the latest release.
+
+  - name: ‼️ High Priority
+    labeled:
+      issue:
+        body: >
+          🚨 This issue has been marked high priority, meaning it's important to the maintainers or community.
+          While we can't promise immediate changes, it is on our radar and will be addressed whenever possible. Thanks for your patience!
+
+  - name: 💀 Spam
+    labeled:
+      issue:
+        action: close
+        locking: lock
+        lock_reason: spam
+        body: >
+          💀 This issue has been flagged as spam and is now locked.
+          Please avoid posting spam - it disrupts the community and wastes everyone's time.

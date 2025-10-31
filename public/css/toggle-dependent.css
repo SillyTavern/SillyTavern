@@ -19,6 +19,7 @@ body:not(.tts) #ttsExtensionNarrateAll {
 }
 
 body.no-hotswap .hotswap,
+body.no-hotswap .hotswap~hr,
 body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
 body.no-tokenCount .tokenCounterDisplay,
@@ -26,6 +27,12 @@ body.no-mesIDDisplay .mesIDDisplay,
 body.no-modelIcons .icon-svg,
 body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
+}
+
+body.no-hotswap #CharListButtonAndHotSwaps .flex-container {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    flex-flow: row;
 }
 
 body.hideChatAvatars .last_mes:not(.smallSysMes) {
@@ -43,6 +50,11 @@ body.hideChatAvatars .swipe_left {
 body.square-avatars .avatar,
 body.square-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius) !important;
+}
+
+body.rounded-avatars .avatar,
+body.rounded-avatars .avatar img {
+    border-radius: var(--avatar-base-border-radius-rounded) !important;
 }
 
 /*char list grid mode*/
@@ -81,7 +93,8 @@ body.charListGrid #rm_print_characters_block .group_select .ch_name,
 body.charListGrid #rm_print_characters_block .group_select .group_select_counter,
 #user_avatar_block.gridView .avatar-container .ch_name,
 #user_avatar_block.gridView .avatar-container .bogus_folder_counter,
-#user_avatar_block.gridView .avatar-container .group_select_counter {
+#user_avatar_block.gridView .avatar-container .group_select_counter,
+#user_avatar_block.gridView .avatar-container .ch_additional_info {
     width: 100%;
     max-width: 100px;
     text-align: center;
@@ -94,11 +107,6 @@ body.charListGrid #rm_print_characters_block .group_select .group_name_block,
 #user_avatar_block.gridView .avatar-container .character_name_block {
     width: 100%;
     flex-direction: column;
-}
-
-#user_avatar_block.gridView .avatar-container .avatar-buttons {
-    flex-wrap: wrap;
-    justify-content: space-evenly;
 }
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_select_container,
@@ -232,8 +240,16 @@ body.big-avatars .avatars_inline {
     max-height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) + 2 * var(--avatar-base-border-radius));
 }
 
+body.big-avatars .avatars_inline.avatars_multiline {
+    max-height: fit-content;
+}
+
 body.big-avatars .avatars_inline.avatars_inline_small {
     height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor) + 2 * var(--avatar-base-border-radius));
+}
+
+body.big-avatars .avatars_inline.avatars_inline_small.avatars_multiline {
+    height: inherit;
 }
 
 body:not(.big-avatars) .avatars_inline_small .avatar_collage {
@@ -338,8 +354,13 @@ body.documentstyle #chat .last_mes .swipe_left {
 body.documentstyle #chat .mes .mesAvatarWrapper,
 body.documentstyle #chat .mes .mes_block .ch_name .name_text,
 body.documentstyle #chat .mes .mes_block .ch_name .timestamp,
+body.documentstyle #chat .mes .mes_block .ch_name .timestamp-icon,
 body.documentstyle .mes:not(.last_mes) .ch_name .mes_buttons {
     display: none !important;
+}
+
+body.documentstyle #chat .mes_block .ch_name {
+    min-height: unset;
 }
 
 /*FastUI blur removal*/
@@ -492,4 +513,34 @@ label[for="trim_spaces"]:not(:has(input:checked)) small {
 
 #mistralai_other_models:empty {
     display: none;
+}
+
+#banned_tokens_block_ooba:not(:has(#send_banned_tokens_textgenerationwebui:checked)) #banned_tokens_controls_ooba {
+    filter: brightness(0.5);
+}
+
+#bind_preset_to_connection:checked~.toggleOff {
+    display: none;
+}
+
+#bind_preset_to_connection:not(:checked)~.toggleOn {
+    display: none;
+}
+
+label[for="bind_preset_to_connection"]:has(input:checked) {
+    color: var(--active);
+}
+
+#openai_settings input[type="checkbox"]:not(:checked)~[data-cc-toggle],
+#openai_settings [data-cc-toggle="false"]>.icon-supported,
+#openai_settings [data-cc-toggle="true"]>.icon-unsupported {
+    display: none;
+}
+
+#openai_settings [data-cc-toggle="true"]>.icon-supported {
+    color: var(--active);
+}
+
+#openai_settings [data-cc-toggle="false"]>.icon-unsupported {
+    color: var(--golden);
 }

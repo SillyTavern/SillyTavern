@@ -6,11 +6,13 @@ import {
     characters,
     chat,
     chat_metadata,
+    CONNECT_API_MAP,
     create_save,
     deactivateSendButtons,
     event_types,
     eventSource,
     extension_prompts,
+    extractMessageFromData,
     Generate,
     generateQuietPrompt,
     getCharacters,
@@ -43,21 +45,32 @@ import {
     this_chid,
     updateChatMetadata,
     updateMessageBlock,
+    printMessages,
+    clearChat,
+    unshallowCharacter,
+    deleteLastMessage,
+    getCharacterCardFields,
+    swipe_right,
+    swipe_left,
+    generateRaw,
 } from '../script.js';
 import {
     extension_settings,
     ModuleWorkerWrapper,
+    openThirdPartyExtensionMenu,
     renderExtensionTemplate,
     renderExtensionTemplateAsync,
+    saveMetadataDebounced,
     writeExtensionField,
 } from './extensions.js';
-import { groups, openGroupChat, selected_group } from './group-chats.js';
-import { t, translate } from './i18n.js';
+import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
+import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { MacrosParser } from './macros.js';
-import { oai_settings } from './openai.js';
+import { getChatCompletionModel, oai_settings } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user, registerDebugFunction } from './power-user.js';
+import { getPresetManager } from './preset-manager.js';
 import { humanizedDateTime, isMobile, shouldSendOnEnter } from './RossAscends-mods.js';
 import { ScraperManager } from './scrapers.js';
 import { executeSlashCommands, executeSlashCommandsWithOptions, registerSlashCommand } from './slash-commands.js';
@@ -65,15 +78,21 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { tag_map, tags } from './tags.js';
-import { textgenerationwebui_settings } from './textgen-settings.js';
+import { getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
 import { ToolManager } from './tool-calling.js';
+import { accountStorage } from './util/AccountStorage.js';
 import { timestampToMoment, uuidv4 } from './utils.js';
 import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
-import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
+import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList } from './world-info.js';
+import { ChatCompletionService, TextCompletionService } from './custom-request.js';
+import { ConnectionManagerRequestService } from './extensions/shared.js';
+import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
+import { IGNORE_SYMBOL } from './constants.js';
 
 export function getContext() {
     return {
+        accountStorage,
         chat,
         characters,
         groups,
@@ -92,10 +111,12 @@ export function getContext() {
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
+        saveMetadataDebounced,
         streamingProcessor,
         eventSource,
         eventTypes: event_types,
         addOneMessage,
+        deleteLastMessage,
         generate: Generate,
         sendStreamingRequest,
         sendGenerationRequest,
@@ -137,6 +158,7 @@ export function getContext() {
         unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
         isToolCallingSupported: ToolManager.isToolCallingSupported.bind(ToolManager),
         canPerformToolCalls: ToolManager.canPerformToolCalls.bind(ToolManager),
+        ToolManager,
         registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate,
@@ -152,6 +174,7 @@ export function getContext() {
         ModuleWorkerWrapper,
         getTokenizerModel,
         generateQuietPrompt,
+        generateRaw,
         writeExtensionField,
         getThumbnailUrl,
         selectCharacterById,
@@ -160,6 +183,8 @@ export function getContext() {
         isMobile,
         t,
         translate,
+        getCurrentLocale,
+        addLocaleData,
         tags,
         tagMap: tag_map,
         menuType: menu_type,
@@ -173,10 +198,12 @@ export function getContext() {
         textCompletionSettings: textgenerationwebui_settings,
         powerUserSettings: power_user,
         getCharacters,
+        getCharacterCardFields,
         uuidv4,
         humanizedDateTime,
         updateMessageBlock,
         appendMediaToMessage,
+        swipe: { left: swipe_left, right: swipe_right },
         variables: {
             local: {
                 get: getLocalVariable,
@@ -189,8 +216,28 @@ export function getContext() {
         },
         loadWorldInfo,
         saveWorldInfo,
+        reloadWorldInfoEditor: reloadEditor,
         updateWorldInfoList,
         convertCharacterBook,
+        getWorldInfoPrompt,
+        CONNECT_API_MAP,
+        getTextGenServer,
+        extractMessageFromData,
+        getPresetManager,
+        getChatCompletionModel,
+        printMessages,
+        clearChat,
+        ChatCompletionService,
+        TextCompletionService,
+        ConnectionManagerRequestService,
+        updateReasoningUI,
+        parseReasoningFromString,
+        unshallowCharacter,
+        unshallowGroupMembers,
+        openThirdPartyExtensionMenu,
+        symbols: {
+            ignore: IGNORE_SYMBOL,
+        },
     };
 }
 

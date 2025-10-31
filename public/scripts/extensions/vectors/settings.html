@@ -11,8 +11,10 @@
                 </label>
                 <select id="vectors_source" class="text_pole">
                     <option value="cohere">Cohere</option>
-                    <option value="extras">Extras</option>
+                    <option value="extras">Extras (deprecated)</option>
                     <option value="palm">Google AI Studio</option>
+                    <option value="vertexai">Google Vertex AI</option>
+                    <option value="koboldcpp">KoboldCpp</option>
                     <option value="llamacpp">llama.cpp</option>
                     <option value="transformers" data-i18n="Local (Transformers)">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
@@ -21,7 +23,33 @@
                     <option value="openai">OpenAI</option>
                     <option value="togetherai">TogetherAI</option>
                     <option value="vllm">vLLM</option>
+                    <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="vector_altEndpointUrl">
+                <label class="checkbox_label" for="vector_altEndpointUrl_enabled" title="Enable secondary endpoint URL usage, instead of the main one.">
+                    <input id="vector_altEndpointUrl_enabled" type="checkbox" class="checkbox">
+                    <span data-i18n="Use secondary URL">Use secondary URL</span>
+                </label>
+                <label for="vector_altEndpoint_address" data-i18n="Secondary Embedding endpoint URL">
+                    Secondary Embedding endpoint URL
+                </label>
+                <input id="vector_altEndpoint_address" class="text_pole" type="text" placeholder="e.g. http://localhost:5001" />
+            </div>
+            <div class="flex-container flexFlowColumn" id="webllm_vectorsModel">
+                <label for="vectors_webllm_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <div class="flex-container">
+                    <select id="vectors_webllm_model" class="text_pole flex1">
+                    </select>
+                    <div id="vectors_webllm_load" class="menu_button menu_button_icon" title="Verify and load the selected model.">
+                        <i class="fa-solid fa-check-to-slot"></i>
+                    </div>
+                </div>
+                <div>
+                    Requires the WebLLM extension to be installed. Click <a href="#" id="vectors_webllm_install">here</a> to install.
+                </div>
             </div>
             <div class="flex-container flexFlowColumn" id="ollama_vectorsModel">
                 <label for="vectors_ollama_model" data-i18n="Vectorization Model">
@@ -38,6 +66,14 @@
                 <i data-i18n="Hint: Set the URL in the API connection settings.">
                     Hint: Set the URL in the API connection settings.
                 </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="koboldcpp_vectorsModel">
+                <span>
+                    Set the KoboldCpp URL in the Text Completion API connection settings.
+                </span>
+                <span>
+                    Must use version 1.87 or higher and have an embedding model loaded.
+                </span>
             </div>
             <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
                 <span data-i18n="The server MUST be started with the --embedding flag to use this feature!">
@@ -62,6 +98,7 @@
                     Vectorization Model
                 </label>
                 <select id="vectors_cohere_model" class="text_pole">
+                    <option value="embed-v4.0">embed-v4.0</option>
                     <option value="embed-english-v3.0">embed-english-v3.0</option>
                     <option value="embed-multilingual-v3.0">embed-multilingual-v3.0</option>
                     <option value="embed-english-light-v3.0">embed-english-light-v3.0</option>
@@ -95,12 +132,23 @@
                     Hint: Set the URL in the API connection settings.
                 </i>
             </div>
-
+            <div class="flex-container flexFlowColumn" id="google_vectorsModel">
+                <label for="vectors_google_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_google_model" class="text_pole">
+                    <option value="gemini-embedding-001">gemini-embedding-001</option>
+                    <option value="gemini-embedding-exp-03-07">gemini-embedding-exp-03-07</option>
+                    <option value="text-embedding-004">text-embedding-004</option>
+                    <option value="text-embedding-005">text-embedding-005</option>
+                    <option value="embedding-001">embedding-001</option>
+                </select>
+            </div>
             <div class="flex-container alignItemsCenter" id="nomicai_apiKey">
                 <label for="api_key_nomicai" class="flex1">
                     <span data-i18n="NomicAI API Key">NomicAI API Key</span>
                 </label>
-                <div id="api_key_nomicai" class="menu_button menu_button_icon">
+                <div id="api_key_nomicai" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_nomicai">
                     <i class="fa-solid fa-key"></i>
                     <span data-i18n="Click to set">Click to set</span>
                 </div>
@@ -276,7 +324,7 @@
                         <label for="vectors_file_depth_db" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_file_position_db" value="1" />
                             <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
-                            <input id="vectors_file_depth_db" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="vectors_file_depth_db" class="text_pole widthUnset" type="number" min="0" max="9999" />
                             <span>as</span>
                             <select id="vectors_file_depth_role_db"  class="text_pole widthNatural">
                                 <option value="0" data-i18n="System">System</option>
@@ -328,7 +376,7 @@
                         <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_position" value="1" />
                             <span data-i18n="In-chat @ Depth">In-chat @ Depth </span>
-                            <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="9999" />
                         </label>
                     </div>
                     <div class="flex-container">

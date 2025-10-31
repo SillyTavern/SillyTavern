@@ -1,4 +1,5 @@
 name: Bug Report 🐛
+type: Bug
 description: Report something that's not working the intended way. Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused! Please use English only.
 title: '[BUG] <title>'
 labels: ['🐛 Bug']
@@ -79,6 +80,8 @@ body:
         - label: I have checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
           required: true
         - label: I have checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
+          required: true
+        - label: I confirm that my issue is not related to third-party content, unofficial extension or patch. If in doubt, check with a new [user account](https://docs.sillytavern.app/administration/multi-user/) and with extensions disabled
           required: true
 
   - type: markdown

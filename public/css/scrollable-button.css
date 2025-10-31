@@ -1,8 +1,10 @@
 .scrollable-buttons-container {
-    max-height: 50vh;  /* Use viewport height instead of fixed pixels */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
-    margin-top: 1rem; /* m-t-1 is equivalent to margin-top: 1rem; */
+    /* Use viewport height instead of fixed pixels */
+    max-height: 50vh;
+    /* Momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* m-t-1 is equivalent to margin-top: 1rem; */
+    margin-top: 1rem;
     flex-shrink: 1;
     min-height: 0;
     scrollbar-width: thin;

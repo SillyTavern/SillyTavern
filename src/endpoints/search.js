@@ -3,7 +3,6 @@ import express from 'express';
 
 import { decode } from 'html-entities';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
 import { trimV1 } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 
@@ -91,7 +90,7 @@ async function extractTranscript(videoPageBody, lang) {
     return transcriptText;
 }
 
-router.post('/serpapi', jsonParser, async (request, response) => {
+router.post('/serpapi', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.SERPAPI);
 
@@ -112,6 +111,7 @@ router.post('/serpapi', jsonParser, async (request, response) => {
         }
 
         const data = await result.json();
+        console.debug('SerpApi response', data);
         return response.json(data);
     } catch (error) {
         console.error(error);
@@ -123,7 +123,7 @@ router.post('/serpapi', jsonParser, async (request, response) => {
  * Get the transcript of a YouTube video
  * @copyright https://github.com/Kakulukian/youtube-transcript (MIT License)
  */
-router.post('/transcript', jsonParser, async (request, response) => {
+router.post('/transcript', async (request, response) => {
     try {
         const id = request.body.id;
         const lang = request.body.lang;
@@ -160,7 +160,7 @@ router.post('/transcript', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/searxng', jsonParser, async (request, response) => {
+router.post('/searxng', async (request, response) => {
     try {
         const { baseUrl, query, preferences, categories } = request.body;
 
@@ -214,7 +214,7 @@ router.post('/searxng', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/tavily', jsonParser, async (request, response) => {
+router.post('/tavily', async (request, response) => {
     try {
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.TAVILY);
 
@@ -255,6 +255,7 @@ router.post('/tavily', jsonParser, async (request, response) => {
         }
 
         const data = await result.json();
+        console.debug('Tavily response', data);
         return response.json(data);
     } catch (error) {
         console.error(error);
@@ -262,7 +263,7 @@ router.post('/tavily', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/koboldcpp', jsonParser, async (request, response) => {
+router.post('/koboldcpp', async (request, response) => {
     try {
         const { query, url } = request.body;
 
@@ -290,6 +291,7 @@ router.post('/koboldcpp', jsonParser, async (request, response) => {
         }
 
         const data = await result.json();
+        console.debug('KoboldCpp search response', data);
         return response.json(data);
     } catch (error) {
         console.error(error);
@@ -297,7 +299,49 @@ router.post('/koboldcpp', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/visit', jsonParser, async (request, response) => {
+router.post('/serper', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.SERPER);
+
+        if (!key) {
+            console.error('No Serper key found');
+            return response.sendStatus(400);
+        }
+
+        const { query, images } = request.body;
+
+        const url = images
+            ? 'https://google.serper.dev/images'
+            : 'https://google.serper.dev/search';
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': key,
+                'Content-Type': 'application/json',
+            },
+            redirect: 'follow',
+            body: JSON.stringify({ q: query }),
+        });
+
+        console.debug('Serper query', query);
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Serper request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('Serper response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/visit', async (request, response) => {
     try {
         const url = request.body.url;
         const html = Boolean(request.body.html ?? true);

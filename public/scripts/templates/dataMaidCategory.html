@@ -1,0 +1,68 @@
+<div class="dataMaidCategory inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <div class="dataMaidCategoryHeader">
+            <div class="dataMaidCategoryDetails">
+                <div class="dataMaidCategoryName" data-i18n="{{name}}">
+                    {{name}}
+                </div>
+                <small>{{description}}</small>
+                <div class="dataMaidCategoryInfo">
+                    <small>
+                        <i class="fa-solid fa-file-alt fa-sm"></i>
+                        {{totalItems}}
+                    </small>
+                    <span>&VerticalBar;</span>
+                    <small>
+                        <i class="fa-solid fa-hdd fa-sm"></i>
+                        {{totalSize}}
+                    </small>
+                </div>
+            </div>
+            <div class="dataMaidDeleteAll right_menu_button" title="Delete all items in this category" data-i18n="[title]Delete all items in this category">
+                <i class="fa-solid fa-fw fa-broom"></i>
+            </div>
+        </div>
+        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+    </div>
+    <div class="dataMaidCategoryContent inline-drawer-content">
+        <div class="flex-container">
+            {{#each items}}
+            {{#with this}}
+            <div class="dataMaidItem" data-hash="{{hash}}">
+                <div class="dataMaidItemHeader">
+                    <div class="dataMaidItemName">
+                        {{#if parent}}
+                        <span class="dataMaidItemParent">({{parent}})</span>
+                        <span>/</span>
+                        {{/if}}
+                        <b>{{name}}</b>
+                    </div>
+                    <div class="dataMaidItemActions">
+                        <button class="dataMaidItemView menu_button menu_button_icon margin0" title="View item content" data-i18n="[title]View item content">
+                            <i class="fa-solid fa-fw fa-eye"></i>
+                        </button>
+                        <button class="dataMaidItemDownload menu_button menu_button_icon margin0" title="Download item" data-i18n="[title]Download item">
+                            <i class="fa-solid fa-fw fa-download"></i>
+                        </button>
+                        <button class="dataMaidItemDelete menu_button menu_button_icon margin0" title="Delete this item" data-i18n="[title]Delete this item">
+                            <i class="fa-solid fa-fw fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="dataMaidItemInfo">
+                    <small>
+                        <i class="fa-solid fa-file fa-sm"></i>
+                        {{size}}
+                    </small>
+                    <span>&VerticalBar;</span>
+                    <small>
+                        <i class="fa-solid fa-calendar fa-sm"></i>
+                        {{date}}
+                    </small>
+                </div>
+            </div>
+            {{/with}}
+            {{/each}}
+        </div>
+    </div>
+</div>

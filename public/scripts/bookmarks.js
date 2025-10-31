@@ -1,7 +1,6 @@
 import {
     characters,
     saveChat,
-    system_messages,
     system_message_types,
     this_chid,
     openCharacterChat,
@@ -13,10 +12,11 @@ import {
     saveChatConditional,
     saveItemizedPrompts,
 } from '../script.js';
-import { humanizedDateTime, getMessageTimeStamp } from './RossAscends-mods.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
 import {
-    getGroupPastChats,
+    DEFAULT_AUTO_MODE_DELAY,
     group_activation_strategy,
+    group_generation_mode,
     groups,
     openGroupById,
     openGroupChat,
@@ -41,22 +41,42 @@ import {
 
 const bookmarkNameToken = 'Checkpoint #';
 
+/**
+ * Gets the names of existing chats for the current character or group.
+ * @returns {Promise<string[]>} - Returns a promise that resolves to an array of existing chat names.
+ */
 async function getExistingChatNames() {
     if (selected_group) {
-        const data = await getGroupPastChats(selected_group);
-        return data.map(x => x.file_name);
-    } else {
-        const response = await fetch('/api/characters/chats', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        const group = groups.find(x => x.id == selected_group);
+        if (group && Array.isArray(group.chats)) {
+            return [...group.chats];
         }
+
+        return [];
     }
+
+    if (this_chid === undefined) {
+        return [];
+    }
+
+    const character = characters[this_chid];
+    if (!character) {
+        return [];
+    }
+
+    const response = await fetch('/api/characters/chats', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ avatar_url: character.avatar, simple: true }),
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        const chats = Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        return [...chats];
+    }
+
+    return [];
 }
 
 async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
@@ -156,7 +176,7 @@ export async function createBranch(mesId) {
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata, mesId);
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
     // append to branches list if it exists
     // otherwise create it
@@ -212,7 +232,7 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata, mesId);
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
 
     lastMes.extra['bookmark_link'] = name;
@@ -277,8 +297,6 @@ export async function convertSoloToGroupChat() {
     const chatName = humanizedDateTime();
     const chats = [chatName];
     const members = [character.avatar];
-    const activationStrategy = group_activation_strategy.NATURAL;
-    const allowSelfResponses = false;
     const favChecked = character.fav || character.fav == 'true';
     /** @type {any} */
     const metadata = Object.assign({}, chat_metadata);
@@ -291,13 +309,16 @@ export async function convertSoloToGroupChat() {
             name: name,
             members: members,
             avatar_url: avatar,
-            allow_self_responses: activationStrategy,
-            activation_strategy: allowSelfResponses,
+            allow_self_responses: false,
+            activation_strategy: group_activation_strategy.NATURAL,
             disabled_members: [],
             chat_metadata: metadata,
             fav: favChecked,
             chat_id: chatName,
             chats: chats,
+            hideMutedSprites: false,
+            generation_mode: group_generation_mode.SWAP,
+            auto_mode_delay: DEFAULT_AUTO_MODE_DELAY,
         }),
     });
 
@@ -317,16 +338,6 @@ export async function convertSoloToGroupChat() {
     // Convert chat to group format
     const groupChat = chat.slice();
     const genIdFirst = Date.now();
-
-    // Add something if the chat is empty
-    if (groupChat.length === 0) {
-        const newMessage = {
-            ...system_messages[system_message_types.GROUP],
-            send_date: getMessageTimeStamp(),
-            extra: { type: system_message_types.GROUP },
-        };
-        groupChat.push(newMessage);
-    }
 
     for (let index = 0; index < groupChat.length; index++) {
         const message = groupChat[index];
@@ -368,7 +379,7 @@ export async function convertSoloToGroupChat() {
     // Click on the freshly selected group to open it
     await openGroupById(group.id);
 
-    toastr.success('The chat has been successfully converted!');
+    toastr.success(t`The chat has been successfully converted!`);
 }
 
 /**

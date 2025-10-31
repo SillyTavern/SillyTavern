@@ -332,6 +332,10 @@
     overflow: hidden;
 }
 
+.overflowYScroll {
+    overflow-y: scroll;
+}
+
 .padding0 {
     padding: 0;
 }
@@ -466,21 +470,13 @@
     margin-left: 20px;
 }
 
-/*used to fix smallness of certain FontAwesome glyph which break button squareness*/
-/*currently used on: CharList Import*/
-
-.faSmallFontSquareFix {
-    font-size: calc(var(--mainFontSize) *1.25);
-    width: calc(var(--mainFontSize) *1.95);
-}
-
 .textarea_compact {
     font-size: calc(var(--mainFontSize) * 0.95);
     line-height: 1.2;
 }
 
 .hoverglow {
-    transition: opacity 200ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .hoverglow:hover {
@@ -554,6 +550,10 @@ textarea:disabled {
 .widthFitContent {
     width: fit-content;
     min-width: fit-content;
+}
+
+.flexGap2 {
+    gap: 2px;
 }
 
 .flexGap5 {

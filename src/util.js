@@ -5,38 +5,67 @@ import process from 'node:process';
 import { Readable } from 'node:stream';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
+import { promises as dnsPromise } from 'node:dns';
+import os from 'node:os';
+import crypto from 'node:crypto';
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
-import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 import yauzl from 'yauzl';
 import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
-import { LOG_LEVELS } from './constants.js';
+import chalk from 'chalk';
+import bytes from 'bytes';
+import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
+import { serverDirectory } from './server-directory.js';
 
 /**
  * Parsed config object.
  */
 let CACHED_CONFIG = null;
+let CONFIG_PATH = null;
+
+/**
+ * Converts a configuration key to an environment variable key.
+ * @param {string} key Configuration key
+ * @returns {string} Environment variable key
+ * @example keyToEnv('extensions.models.speechToText') // 'SILLYTAVERN_EXTENSIONS_MODELS_SPEECHTOTEXT'
+ */
+export const keyToEnv = (key) => 'SILLYTAVERN_' + String(key).toUpperCase().replace(/\./g, '_');
+
+/**
+ * Set the config file path.
+ * @param {string} configFilePath Path to the config file
+ */
+export function setConfigFilePath(configFilePath) {
+    if (CONFIG_PATH !== null) {
+        console.error(color.red('Config file path already set. Please restart the server to change the config file path.'));
+    }
+    CONFIG_PATH = path.resolve(configFilePath);
+}
 
 /**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */
 export function getConfig() {
+    if (CONFIG_PATH === null) {
+        console.trace();
+        console.error(color.red('No config file path set. Please set the config file path using setConfigFilePath().'));
+        process.exit(1);
+    }
     if (CACHED_CONFIG) {
         return CACHED_CONFIG;
     }
-
-    if (!fs.existsSync('./config.yaml')) {
+    if (!fs.existsSync(CONFIG_PATH)) {
         console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
         console.error(color.red('The program will now exit.'));
         process.exit(1);
     }
 
     try {
-        const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+        const config = yaml.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         CACHED_CONFIG = config;
         return config;
     } catch (error) {
@@ -50,24 +79,40 @@ export function getConfig() {
  * Returns the value for the given key from the config object.
  * @param {string} key - Key to get from the config object
  * @param {any} defaultValue - Default value to return if the key is not found
+ * @param {'number'|'boolean'|null} typeConverter - Type to convert the value to
  * @returns {any} Value for the given key
  */
-export function getConfigValue(key, defaultValue = null) {
-    const config = getConfig();
-    return _.get(config, key, defaultValue);
+export function getConfigValue(key, defaultValue = null, typeConverter = null) {
+    function _getValue() {
+        const envKey = keyToEnv(key);
+        if (envKey in process.env) {
+            const needsJsonParse = defaultValue && typeof defaultValue === 'object';
+            const envValue = process.env[envKey];
+            return needsJsonParse ? (tryParse(envValue) ?? defaultValue) : envValue;
+        }
+        const config = getConfig();
+        return _.get(config, key, defaultValue);
+    }
+
+    const value = _getValue();
+    switch (typeConverter) {
+        case 'number':
+            return isNaN(parseFloat(value)) ? defaultValue : parseFloat(value);
+        case 'boolean':
+            return toBoolean(value);
+        default:
+            return value;
+    }
 }
 
 /**
- * Sets a value for the given key in the config object and writes it to the config.yaml file.
- * @param {string} key Key to set
- * @param {any} value Value to set
+ * THIS FUNCTION IS DEPRECATED AND ONLY EXISTS FOR BACKWARDS COMPATIBILITY. DON'T USE IT.
+ * @param {any} _key Unused
+ * @param {any} _value Unused
+ * @deprecated Configs are read-only. Use environment variables instead.
  */
-export function setConfigValue(key, value) {
-    // Reset cache so that the next getConfig call will read the updated config file
-    CACHED_CONFIG = null;
-    const config = getConfig();
-    _.set(config, key, value);
-    writeFileAtomicSync('./config.yaml', yaml.stringify(config));
+export function setConfigValue(_key, _value) {
+    console.trace(color.yellow('setConfigValue is deprecated and should not be used.'));
 }
 
 /**
@@ -94,20 +139,19 @@ export async function getVersion() {
 
     try {
         const require = createRequire(import.meta.url);
-        const pkgJson = require(path.join(process.cwd(), './package.json'));
+        const pkgJson = require(path.join(serverDirectory, './package.json'));
         pkgVersion = pkgJson.version;
         if (commandExistsSync('git')) {
-            const git = simpleGit();
-            const cwd = process.cwd();
-            gitRevision = await git.cwd(cwd).revparse(['--short', 'HEAD']);
-            gitBranch = await git.cwd(cwd).revparse(['--abbrev-ref', 'HEAD']);
-            commitDate = await git.cwd(cwd).show(['-s', '--format=%ci', gitRevision]);
+            const git = simpleGit({ baseDir: serverDirectory });
+            gitRevision = await git.revparse(['--short', 'HEAD']);
+            gitBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
+            commitDate = await git.show(['-s', '--format=%ci', gitRevision]);
 
-            const trackingBranch = await git.cwd(cwd).revparse(['--abbrev-ref', '@{u}']);
+            const trackingBranch = await git.revparse(['--abbrev-ref', '@{u}']);
 
             // Might fail, but exception is caught. Just don't run anything relevant after in this block...
-            const localLatest = await git.cwd(cwd).revparse(['HEAD']);
-            const remoteLatest = await git.cwd(cwd).revparse([trackingBranch]);
+            const localLatest = await git.revparse(['HEAD']);
+            const remoteLatest = await git.revparse([trackingBranch]);
             isLatest = localLatest === remoteLatest;
         }
     }
@@ -164,35 +208,58 @@ export function formatBytes(bytes) {
  * @returns {Promise<Buffer|null>} Buffer containing the extracted file. Null if the file was not found.
  */
 export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
-    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-        if (err) reject(err);
+    return await new Promise((resolve) => {
+        try {
+            yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+                if (err) {
+                    console.warn(`Error opening ZIP file: ${err.message}`);
+                    return resolve(null);
+                }
 
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
-                console.info(`Extracting ${entry.fileName}`);
-                zipfile.openReadStream(entry, (err, readStream) => {
-                    if (err) {
-                        reject(err);
+                zipfile.readEntry();
+
+                zipfile.on('entry', (entry) => {
+                    if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
+                        console.info(`Extracting ${entry.fileName}`);
+                        zipfile.openReadStream(entry, (err, readStream) => {
+                            if (err) {
+                                console.warn(`Error opening read stream: ${err.message}`);
+                                return zipfile.readEntry();
+                            } else {
+                                const chunks = [];
+                                readStream.on('data', (chunk) => {
+                                    chunks.push(chunk);
+                                });
+
+                                readStream.on('end', () => {
+                                    const buffer = Buffer.concat(chunks);
+                                    resolve(buffer);
+                                    zipfile.readEntry(); // Continue to the next entry
+                                });
+
+                                readStream.on('error', (err) => {
+                                    console.warn(`Error reading stream: ${err.message}`);
+                                    zipfile.readEntry();
+                                });
+                            }
+                        });
                     } else {
-                        const chunks = [];
-                        readStream.on('data', (chunk) => {
-                            chunks.push(chunk);
-                        });
-
-                        readStream.on('end', () => {
-                            const buffer = Buffer.concat(chunks);
-                            resolve(buffer);
-                            zipfile.readEntry(); // Continue to the next entry
-                        });
+                        zipfile.readEntry();
                     }
                 });
-            } else {
-                zipfile.readEntry();
-            }
-        });
-        zipfile.on('end', () => resolve(null));
-    }));
+
+                zipfile.on('error', (err) => {
+                    console.warn('ZIP processing error', err);
+                    resolve(null);
+                });
+
+                zipfile.on('end', () => resolve(null));
+            });
+        } catch (error) {
+            console.warn('Failed to process ZIP buffer', error);
+            resolve(null);
+        }
+    });
 }
 
 /**
@@ -298,30 +365,22 @@ export function deepMerge(target, source) {
     return output;
 }
 
-export const color = {
-    byNum: (mess, fgNum) => {
-        mess = mess || '';
-        fgNum = fgNum === undefined ? 31 : fgNum;
-        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
-    },
-    black: (mess) => color.byNum(mess, 30),
-    red: (mess) => color.byNum(mess, 31),
-    green: (mess) => color.byNum(mess, 32),
-    yellow: (mess) => color.byNum(mess, 33),
-    blue: (mess) => color.byNum(mess, 34),
-    magenta: (mess) => color.byNum(mess, 35),
-    cyan: (mess) => color.byNum(mess, 36),
-    white: (mess) => color.byNum(mess, 37),
-};
+export const color = chalk;
 
 /**
  * Gets a random UUIDv4 string.
  * @returns {string} A UUIDv4 string
  */
 export function uuidv4() {
+    // Node v16.7.0+
     if ('crypto' in globalThis && 'randomUUID' in globalThis.crypto) {
         return globalThis.crypto.randomUUID();
     }
+    // Node v14.17.0+
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+    // Very insecure UUID generator, but it's better than nothing.
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -393,7 +452,7 @@ export function generateTimestamp() {
  * @param {number?} limit Maximum number of backups to keep. If null, the limit is determined by the `backups.common.numberOfBackups` config value.
  */
 export function removeOldBackups(directory, prefix, limit = null) {
-    const MAX_BACKUPS = limit ?? Number(getConfigValue('backups.common.numberOfBackups', 50));
+    const MAX_BACKUPS = limit ?? Number(getConfigValue('backups.common.numberOfBackups', 50, 'number'));
 
     let files = fs.readdirSync(directory).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {
@@ -406,7 +465,7 @@ export function removeOldBackups(directory, prefix, limit = null) {
                 break;
             }
 
-            fs.rmSync(oldest);
+            fs.unlinkSync(oldest);
         }
     }
 }
@@ -607,6 +666,15 @@ export function trimV1(str) {
 }
 
 /**
+ * Removes trailing slash from a string.
+ * @param {string} str Input string
+ * @returns {string} String with trailing slash removed
+ */
+export function trimTrailingSlash(str) {
+    return String(str ?? '').replace(/\/$/, '');
+}
+
+/**
  * Simple TTL memory cache.
  */
 export class Cache {
@@ -695,15 +763,147 @@ export function isValidUrl(url) {
 }
 
 /**
+ * removes starting `[` or ending `]` from hostname.
+ * @param {string} hostname hostname to use
+ * @returns {string} hostname plus the modifications
+ */
+export function urlHostnameToIPv6(hostname) {
+    if (hostname.startsWith('[')) {
+        hostname = hostname.slice(1);
+    }
+    if (hostname.endsWith(']')) {
+        hostname = hostname.slice(0, -1);
+    }
+    return hostname;
+}
+
+/**
+ * Test if can resolve a dns name.
+ * @param {string} name Domain name to use
+ * @param {boolean} useIPv6 If use IPv6
+ * @param {boolean} useIPv4 If use IPv4
+ * @returns Promise<boolean> If the URL is valid
+ */
+export async function canResolve(name, useIPv6 = true, useIPv4 = true) {
+    try {
+        let v6Resolved = false;
+        let v4Resolved = false;
+
+        if (useIPv6) {
+            try {
+                await dnsPromise.resolve6(name);
+                v6Resolved = true;
+            } catch (error) {
+                v6Resolved = false;
+            }
+        }
+
+        if (useIPv4) {
+            try {
+                await dnsPromise.resolve(name);
+                v4Resolved = true;
+            } catch (error) {
+                v4Resolved = false;
+            }
+        }
+
+        return v6Resolved || v4Resolved;
+
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Checks the network interfaces to determine the presence of IPv6 and IPv4 addresses.
+ *
+ * @typedef {object} IPQueryResult
+ * @property {boolean} hasIPv6Any - Whether the computer has any IPv6 address, including (`::1`).
+ * @property {boolean} hasIPv4Any - Whether the computer has any IPv4 address, including (`127.0.0.1`).
+ * @property {boolean} hasIPv6Local - Whether the computer has local IPv6 address (`::1`).
+ * @property {boolean} hasIPv4Local - Whether the computer has local IPv4 address (`127.0.0.1`).
+ * @returns {Promise<IPQueryResult>} A promise that resolves to an array containing:
+ */
+export async function getHasIP() {
+    let hasIPv6Any = false;
+    let hasIPv6Local = false;
+
+    let hasIPv4Any = false;
+    let hasIPv4Local = false;
+
+    const interfaces = os.networkInterfaces();
+
+    for (const iface of Object.values(interfaces)) {
+        if (iface === undefined) {
+            continue;
+        }
+
+        for (const info of iface) {
+            if (info.family === 'IPv6') {
+                hasIPv6Any = true;
+                if (info.address === '::1') {
+                    hasIPv6Local = true;
+                }
+            }
+
+            if (info.family === 'IPv4') {
+                hasIPv4Any = true;
+                if (info.address === '127.0.0.1') {
+                    hasIPv4Local = true;
+                }
+            }
+            if (hasIPv6Any && hasIPv4Any && hasIPv6Local && hasIPv4Local) break;
+        }
+        if (hasIPv6Any && hasIPv4Any && hasIPv6Local && hasIPv4Local) break;
+    }
+
+    return { hasIPv6Any, hasIPv4Any, hasIPv6Local, hasIPv4Local };
+}
+
+
+/**
+ * Converts various JavaScript primitives to boolean values.
+ * Handles special case for "true"/"false" strings (case-insensitive)
+ *
+ * @param {any} value - The value to convert to boolean
+ * @returns {boolean} - The boolean representation of the value
+ */
+export function toBoolean(value) {
+    // Handle string values case-insensitively
+    if (typeof value === 'string') {
+        // Trim and convert to lowercase for case-insensitive comparison
+        const trimmedLower = value.trim().toLowerCase();
+
+        // Handle explicit "true"/"false" strings
+        if (trimmedLower === 'true') return true;
+        if (trimmedLower === 'false') return false;
+    }
+
+    // Handle all other JavaScript values based on their "truthiness"
+    return Boolean(value);
+}
+
+/**
+ * converts string to boolean accepts 'true' or 'false' else it returns the string put in
+ * @param {string|null} str Input string or null
+ * @returns {boolean|string|null} boolean else original input string or null if input is
+ */
+export function stringToBool(str) {
+    if (String(str).trim().toLowerCase() === 'true') return true;
+    if (String(str).trim().toLowerCase() === 'false') return false;
+    return str;
+}
+
+/**
  * Setup the minimum log level
  */
 export function setupLogLevel() {
-    const logLevel = getConfigValue('minLogLevel', LOG_LEVELS.DEBUG);
+    const logLevel = getConfigValue('logging.minLogLevel', LOG_LEVELS.DEBUG, 'number');
 
-    globalThis.console.debug = logLevel <= LOG_LEVELS.DEBUG ? console.debug : () => {};
-    globalThis.console.info = logLevel <= LOG_LEVELS.INFO ? console.info : () => {};
-    globalThis.console.warn = logLevel <= LOG_LEVELS.WARN ? console.warn : () => {};
-    globalThis.console.error = logLevel <= LOG_LEVELS.ERROR ? console.error : () => {};
+    globalThis.console.debug = logLevel <= LOG_LEVELS.DEBUG ? console.debug : () => { };
+    globalThis.console.info = logLevel <= LOG_LEVELS.INFO ? console.info : () => { };
+    globalThis.console.warn = logLevel <= LOG_LEVELS.WARN ? console.warn : () => { };
+    globalThis.console.error = logLevel <= LOG_LEVELS.ERROR ? console.error : () => { };
 }
 
 /**
@@ -712,14 +912,10 @@ export function setupLogLevel() {
 export class MemoryLimitedMap {
     /**
      * Creates an instance of MemoryLimitedMap.
-     * @param {number} maxMemoryInBytes - The maximum allowed memory in bytes for string values.
+     * @param {string} cacheCapacity - Maximum memory usage in human-readable format (e.g., '1 GB').
      */
-    constructor(maxMemoryInBytes) {
-        if (typeof maxMemoryInBytes !== 'number' || maxMemoryInBytes <= 0 || isNaN(maxMemoryInBytes)) {
-            console.warn('Invalid maxMemoryInBytes, using a fallback value of 1 GB.');
-            maxMemoryInBytes = 1024 * 1024 * 1024; // 1 GB
-        }
-        this.maxMemory = maxMemoryInBytes;
+    constructor(cacheCapacity) {
+        this.maxMemory = bytes.parse(cacheCapacity) ?? 0;
         this.currentMemory = 0;
         this.map = new Map();
         this.queue = [];
@@ -742,6 +938,10 @@ export class MemoryLimitedMap {
      * @param {string} value
      */
     set(key, value) {
+        if (this.maxMemory <= 0) {
+            return;
+        }
+
         if (typeof key !== 'string' || typeof value !== 'string') {
             return;
         }
@@ -895,4 +1095,183 @@ export class MemoryLimitedMap {
 export function safeReadFileSync(filePath, options = { encoding: 'utf-8' }) {
     if (fs.existsSync(filePath)) return fs.readFileSync(filePath, options);
     return null;
+}
+
+/**
+ * Set the title of the terminal window
+ * @param {string} title Desired title for the window
+ */
+export function setWindowTitle(title) {
+    if (process.platform === 'win32') {
+        process.title = title;
+    }
+    else {
+        process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
+    }
+}
+
+/**
+ * Parses a JSON string and applies a mutation function to the parsed object.
+ * @param {string} jsonString JSON string to parse
+ * @param {function(any): void} mutation Mutation function to apply to the parsed JSON object
+ * @returns {string} Mutated JSON string
+ */
+export function mutateJsonString(jsonString, mutation) {
+    try {
+        const json = JSON.parse(jsonString);
+        mutation(json);
+        return JSON.stringify(json);
+    } catch (error) {
+        console.error('Error parsing or mutating JSON:', error);
+        return jsonString;
+    }
+}
+
+/**
+ * Sets the permissions of a file or directory to be writable.
+ * @param {string} targetPath Path to the file or directory
+ */
+export function setPermissionsSync(targetPath) {
+    /**
+     * Appends writable permission to the file mode.
+     * @param {string} filePath Path to the file
+     * @param {fs.Stats} stats File stats
+     */
+    function appendWritablePermission(filePath, stats) {
+        const currentMode = stats.mode;
+        const newMode = currentMode | 0o200;
+        if (newMode != currentMode) {
+            fs.chmodSync(filePath, newMode);
+        }
+    }
+
+    try {
+        const stats = fs.statSync(targetPath);
+
+        if (stats.isDirectory()) {
+            appendWritablePermission(targetPath, stats);
+            const files = fs.readdirSync(targetPath);
+
+            files.forEach((file) => {
+                setPermissionsSync(path.join(targetPath, file));
+            });
+        } else {
+            appendWritablePermission(targetPath, stats);
+        }
+    } catch (error) {
+        console.error(`Error setting write permissions for ${targetPath}:`, error);
+    }
+}
+
+/**
+ * Checks if a child path is under a parent path.
+ * @param {string} parentPath Parent path
+ * @param {string} childPath Child path
+ * @returns {boolean} Returns true if the child path is under the parent path, false otherwise
+ */
+export function isPathUnderParent(parentPath, childPath) {
+    const normalizedParent = path.normalize(parentPath);
+    const normalizedChild = path.normalize(childPath);
+
+    const relativePath = path.relative(normalizedParent, normalizedChild);
+
+    return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+}
+
+/**
+ * Checks if the given request is a file URL.
+ * @param {string | URL | Request} request The request to check
+ * @return {boolean} Returns true if the request is a file URL, false otherwise
+ */
+export function isFileURL(request) {
+    if (typeof request === 'string') {
+        return request.startsWith('file://');
+    }
+    if (request instanceof URL) {
+        return request.protocol === 'file:';
+    }
+    if (request instanceof Request) {
+        return request.url.startsWith('file://');
+    }
+    return false;
+}
+
+/**
+ * Gets the URL from the request.
+ * @param {string | URL | Request} request The request to get the URL from
+ * @return {string} The URL of the request
+ */
+export function getRequestURL(request) {
+    if (typeof request === 'string') {
+        return request;
+    }
+    if (request instanceof URL) {
+        return request.href;
+    }
+    if (request instanceof Request) {
+        return request.url;
+    }
+    throw new TypeError('Invalid request type');
+}
+
+/**
+ * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
+ * @param {object} schema The JSON schema to flatten.
+ * @param {string} api The API source, used to determine how to handle certain properties.
+ * @returns {object} The flattened schema.
+ */
+export function flattenSchema(schema, api) {
+    if (!schema || typeof schema !== 'object') {
+        return schema;
+    }
+
+    // Deep clone to avoid modifying the original object.
+    const schemaCopy = structuredClone(schema);
+
+    const definitions = schemaCopy.$defs || {};
+    delete schemaCopy.$defs;
+
+    function replaceRefs(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                obj[i] = replaceRefs(obj[i]);
+            }
+            return obj;
+        }
+
+        if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
+            const defName = obj.$ref.split('/').pop();
+            if (definitions[defName]) {
+                return replaceRefs(structuredClone(definitions[defName]));
+            }
+        }
+
+        if (api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI) {
+            delete obj.default;
+            delete obj.additionalProperties;
+        } else if ('properties' in obj) {
+            if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
+                obj.additionalProperties = false;
+            }
+        }
+
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                obj[key] = replaceRefs(obj[key]);
+            }
+        }
+        return obj;
+    }
+
+    const flattenedSchema = replaceRefs(schemaCopy);
+
+    if (flattenedSchema.$schema) {
+        delete flattenedSchema.$schema;
+    }
+
+    return flattenedSchema;
 }

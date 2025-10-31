@@ -146,3 +146,15 @@ input.extension_missing[type="checkbox"] {
 .extensions_info .extension_actions {
     flex-wrap: nowrap;
 }
+
+.extensions_toolbar {
+    top: 0;
+    position: sticky;
+    display: flex;
+    flex-direction: row;
+    background-color: var(--SmartThemeBlurTintColor);
+    gap: 5px;
+    z-index: 1;
+    margin-bottom: 10px;
+    padding: 5px;
+}

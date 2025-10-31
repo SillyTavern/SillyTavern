@@ -5,7 +5,6 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 
-import { jsonParser } from '../express-common.js';
 import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey } from '../users.js';
 import { SETTINGS_FILE } from '../constants.js';
 import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
@@ -55,7 +54,7 @@ router.get('/me', async (request, response) => {
     }
 });
 
-router.post('/change-avatar', jsonParser, async (request, response) => {
+router.post('/change-avatar', async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Change avatar failed: Missing required fields');
@@ -90,7 +89,7 @@ router.post('/change-avatar', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/change-password', jsonParser, async (request, response) => {
+router.post('/change-password', async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Change password failed: Missing required fields');
@@ -137,7 +136,7 @@ router.post('/change-password', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/backup', jsonParser, async (request, response) => {
+router.post('/backup', async (request, response) => {
     try {
         const handle = request.body.handle;
 
@@ -158,7 +157,7 @@ router.post('/backup', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/reset-settings', jsonParser, async (request, response) => {
+router.post('/reset-settings', async (request, response) => {
     try {
         const password = request.body.password;
 
@@ -178,7 +177,7 @@ router.post('/reset-settings', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/change-name', jsonParser, async (request, response) => {
+router.post('/change-name', async (request, response) => {
     try {
         if (!request.body.name || !request.body.handle) {
             console.warn('Change name failed: Missing required fields');
@@ -208,7 +207,7 @@ router.post('/change-name', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/reset-step1', jsonParser, async (request, response) => {
+router.post('/reset-step1', async (request, response) => {
     try {
         const resetCode = String(crypto.randomInt(1000, 9999));
         console.log();
@@ -222,7 +221,7 @@ router.post('/reset-step1', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/reset-step2', jsonParser, async (request, response) => {
+router.post('/reset-step2', async (request, response) => {
     try {
         if (!request.body.code) {
             console.warn('Recover step 2 failed: Missing required fields');

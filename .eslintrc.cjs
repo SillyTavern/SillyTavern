@@ -3,6 +3,9 @@ module.exports = {
     extends: [
         'eslint:recommended',
     ],
+    plugins: [
+        'jsdoc',
+    ],
     env: {
         es6: true,
     },
@@ -75,8 +78,10 @@ module.exports = {
         'plugins/**',
         '**/*.min.js',
         'public/scripts/extensions/quick-reply/lib/**',
+        'public/scripts/extensions/tts/lib/**',
     ],
     rules: {
+        'jsdoc/no-undefined-types': ['warn', { disableReporting: true, markVariablesAsUsed: true }],
         'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
         'no-constant-condition': ['error', { checkLoops: false }],

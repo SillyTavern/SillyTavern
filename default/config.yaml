@@ -1,27 +1,54 @@
 # -- DATA CONFIGURATION --
 # Root directory for user data storage
 dataRoot: ./data
-# The maximum amount of memory that parsed character cards can use in MB
-cardsCacheCapacity: 100
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
+# Listen on a specific address, supports IPv4 and IPv6
+listenAddress:
+  ipv4: 0.0.0.0
+  ipv6: '[::]'
 # Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
+# - Use option "auto" to automatically detect support
+# - Use true or false (no qoutes) to enable or disable each protocol
 protocol:
     ipv4: true
     ipv6: false
 # Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
-# The hostname that autorun opens.
-# - Use "auto" to let the server decide
-# - Use options like 'localhost', 'st.example.com'
-autorunHostname: "auto"
+# -- BROWSER LAUNCH CONFIGURATION --
+browserLaunch:
+  # Open the browser automatically on server startup.
+  enabled: true
+  # Browser to use for opening the URL.
+  # NOT SUPPORTED ON ANDROID DEVICES.
+  # - Use "default" to use the system default browser
+  # - Use "firefox", "chrome", "edge"
+  browser: 'default'
+  # Overrides the hostname that opens in the browser.
+  # - Use "auto" to let the server decide
+  # - Use options like 'localhost', 'st.example.com'
+  hostname: 'auto'
+  # Overrides the port for run in the browser.
+  # - Use -1 to use the server port.
+  # - Specify a port to override the default.
+  port: -1
+  # Avoids using 'localhost' as the hostname in auto mode.
+  # Use if you don't have 'localhost' in your hosts file
+  avoidLocalhost: false
 # Server port
 port: 8000
-# Overrides the port for autorun in browser.
-# - Use -1 to use the server port.
-# - Specify a port to override the default.
-autorunPortOverride: -1
+# -- SSL options --
+ssl:
+  # Enable SSL/TLS encryption
+  enabled: false
+  # Path to certificate (relative to server root)
+  certPath: "./certs/cert.pem"
+  # Path to private key (relative to server root)
+  keyPath: "./certs/privkey.pem"
+  # Private key passphrase (leave empty if not needed)
+  # For better security, use a CLI argument or an environment variable (SILLYTAVERN_SSL_KEYPASSPHRASE)
+  keyPassphrase: ""
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
@@ -31,6 +58,8 @@ enableForwardedWhitelist: true
 whitelist:
   - ::1
   - 127.0.0.1
+# Automatically whitelist Docker host and gateway IPs
+whitelistDockerHosts: true
 # Toggle basic authentication for endpoints
 basicAuthMode: false
 # Basic authentication credentials
@@ -53,38 +82,64 @@ requestProxy:
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
 enableDiscreetLogin: false
-# Enable's authlia based auto login. Only enable this if you
-# have setup and installed Authelia as a middle-ware on your
-# reverse proxy
-# https://www.authelia.com/
-# This will use auto login to an account with the same username
-# as that used for authlia. (Ensure the username in authlia
-# is an exact match with that in sillytavern)
-autheliaAuth: false
 # If `basicAuthMode` and this are enabled then
 # the username and passwords for basic auth are the same as those
 # for the individual accounts
 perUserBasicAuth: false
-# Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
-minLogLevel: 0
+
+# -- SSO LOGIN CONFIGURATION --
+sso:
+  # Enable's authlia based auto login. Only enable this if you
+  # have setup and installed Authelia as a middle-ware on your
+  # reverse proxy
+  # https://www.authelia.com/
+  # This will use auto login to an account with the same username
+  # as that used for authlia. (Ensure the username in authlia
+  # is an exact match in lowercase with that in sillytavern)
+  autheliaAuth: false
+  # Enable's authentik based auto login. Only enable this if you
+  # have setup and installed Authentik as a middle-ware on your
+  # reverse proxy.
+  # https://goauthentik.io/
+  # This will use auto login to an account with the same username
+  # as that used for authentik. (Ensure the username in authentik
+  # is an exact match in lowercase with that in sillytavern).
+  authentikAuth: false
+
+# Host whitelist configuration. Recommended if you're using a listen mode
+hostWhitelist:
+  # Enable or disable host whitelisting
+  enabled: false
+  # Scan incoming requests for potential host header spoofing
+  scan: true
+  # List of allowed hosts. Do not include localhost or IPs, these are safe.
+  # Use a dot to create subdomain patterns.
+  # Examples:
+  # - example.com
+  # - .trycloudflare.com
+  hosts: []
 
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed
 ## Set to a negative number to disable session expiration
 sessionTimeout: -1
-# Used to sign session cookies. Will be auto-generated if not set
-cookieSecret: ''
 # Disable CSRF protection - NOT RECOMMENDED
 disableCsrfProtection: false
 # Disable startup security checks - NOT RECOMMENDED
 securityOverride: false
-# -- ADVANCED CONFIGURATION --
-# Open the browser automatically
-autorun: true
-# Avoids using 'localhost' for autorun in auto mode.
-# use if you don't have 'localhost' in your hosts file
-avoidLocalhost: false
+# -- LOGGING CONFIGURATION --
+logging:
+  # Enable access logging to access.log file and console output
+  # Records new connections with timestamp, IP address and user agent
+  enableAccessLog: true
+  # Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
+  minLogLevel: 0
+# -- RATE LIMITING CONFIGURATION --
+rateLimiting:
+  # Use X-Real-IP header instead of socket IP for rate limiting
+  # Only enable this if you are using a properly configured reverse proxy (like Nginx/traefik/Caddy)
+  preferRealIpHeader: false
 
 ## BACKUP CONFIGURATION
 backups:
@@ -95,6 +150,8 @@ backups:
   chat:
     # Enable automatic chat backups
     enabled: true
+    # Verify integrity of chat files before saving
+    checkIntegrity: true
     # Maximum number of chat backups to keep per user (starting from the most recent). Set to -1 to keep all backups.
     maxTotalBackups: -1
     # Interval in milliseconds to throttle chat backups per user
@@ -112,7 +169,26 @@ thumbnails:
   # JPG thumbnail quality (0-100)
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
-  dimensions: { 'bg': [160, 90], 'avatar': [96, 144] }
+  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+
+# PERFORMANCE-RELATED CONFIGURATION
+performance:
+  # Enables lazy loading of character cards. Improves performances with large card libraries.
+  # May have compatibility issues with some extensions.
+  lazyLoadCharacters: false
+  # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
+  memoryCacheCapacity: '100mb'
+  # Enables disk caching for character cards. Improves performances with large card libraries.
+  useDiskCache: true
+
+# CACHE BUSTER CONFIGURATION
+# IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
+cacheBuster:
+  # Clear browser cache on first load or after uploading image files
+  enabled: false
+  # Only clear cache for the specified user agent regex pattern
+  # Example: 'firefox|safari' (case-insensitive)
+  userAgentPattern: ''
 
 # Allow secret keys exposure via API
 allowKeysExposure: false
@@ -124,6 +200,7 @@ whitelistImportDomains:
   - cdn.discordapp.com
   - files.catbox.moe
   - raw.githubusercontent.com
+  - char-archive.evulid.cc
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:
@@ -181,6 +258,10 @@ ollama:
   # * 0: Unload the model immediately after the request
   # * N (any positive number): Keep the model loaded for N seconds after the request.
   keepAlive: -1
+  # Controls the "num_batch" (batch size) parameter of the generation request
+  # * -1: Use the default value of the model
+  # * N (positive number): Use the specified value. Must be a power of 2, e.g. 128, 256, 512, etc.
+  batchSize: -1
 # -- ANTHROPIC CLAUDE API CONFIGURATION --
 claude:
   # Enables caching of the system prompt (if supported).
@@ -198,5 +279,15 @@ claude:
   # should be ideal for most use cases.
   # Any value other than a non-negative integer will be ignored and caching at depth will not be enabled.
   cachingAtDepth: -1
+  # Use 1h TTL instead of the default 5m.
+  ## 5m: base price x 1.25
+  ## 1h: base price x 2
+  extendedTTL: false
+# -- GOOGLE GEMINI API CONFIGURATION --
+gemini:
+  # API endpoint version ("v1beta" or "v1alpha")
+  apiVersion: 'v1beta'
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
+# Attempt to automatically update server plugins on startup
+enableServerPluginsAutoUpdate: true

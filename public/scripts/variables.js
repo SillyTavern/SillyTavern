@@ -9,7 +9,7 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
-import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
@@ -238,7 +238,7 @@ export function resolveVariable(name, scope = null) {
 export function getVariableMacros() {
     return [
         // Replace {{setvar::name::value}} with empty string and set the variable name to value
-        { regex: /{{setvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setvar::([^:]+)::([^}]*)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
         // Replace {{addvar::name::value}} with empty string and add value to the variable value
         { regex: /{{addvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { addLocalVariable(name.trim(), value); return ''; } },
         // Replace {{incvar::name}} with empty string and increment the variable name by 1
@@ -248,7 +248,7 @@ export function getVariableMacros() {
         // Replace {{getvar::name}} with the value of the variable name
         { regex: /{{getvar::([^}]+)}}/gi, replace: (_, name) => getLocalVariable(name.trim()) },
         // Replace {{setglobalvar::name::value}} with empty string and set the global variable name to value
-        { regex: /{{setglobalvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setglobalvar::([^:]+)::([^}]*)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
         // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
         { regex: /{{addglobalvar::([^:]+)::([^}]+)}}/gi, replace: (_, name, value) => { addGlobalVariable(name.trim(), value); return ''; } },
         // Replace {{incglobalvar::name}} with empty string and increment the global variable name by 1
@@ -321,7 +321,7 @@ async function listVariablesCallback(args) {
  */
 async function whileCallback(args, value) {
     if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
-    const isGuardOff = isFalseBoolean(args.guard);
+    const isGuardOff = isFalseBoolean(args.guard?.toString());
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
     /**@type {string|SlashCommandClosure} */
     let command;
@@ -380,7 +380,7 @@ async function timesCallback(args, value) {
         [repeats, ...command] = /**@type {string}*/(value).split(' ');
         command = command.join(' ');
     }
-    const isGuardOff = isFalseBoolean(args.guard);
+    const isGuardOff = isFalseBoolean(args.guard?.toString());
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
     let result;
     for (let i = 0; i < iterations; i++) {
@@ -469,8 +469,8 @@ export function parseBooleanOperands(args) {
             return '';
         }
 
-        // parseFloat will return NaN for spaces.
-        const operandNumber = parseFloat(operand);
+        // Number parses spaces as 0, and parseFloat is weird
+        const operandNumber = typeof operand === 'string' && operand.trim().length ? Number(operand) : NaN;
 
         if (!isNaN(operandNumber)) {
             return operandNumber;
@@ -583,7 +583,7 @@ export function evalBoolean(rule, a, b) {
  * Executes a slash command from a string (may be enclosed in quotes) and returns the result.
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @param {SlashCommandScope} [scope] The scope to use.
- * @param {{[id:PARSER_FLAG]:boolean}} [parserFlags] The parser flags to use.
+ * @param {import('./slash-commands/SlashCommandParser.js').ParserFlags} [parserFlags] The parser flags to use.
  * @param {SlashCommandAbortController} [abortController] The abort controller to use.
  * @returns {Promise<SlashCommandClosureResult>} Closure execution result
  */

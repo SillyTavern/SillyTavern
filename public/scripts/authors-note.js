@@ -1,9 +1,11 @@
 import {
+    MAX_INJECTION_DEPTH,
     animation_duration,
     chat_metadata,
     eventSource,
     event_types,
     extension_prompt_roles,
+    extension_prompt_types,
     saveSettingsDebounced,
     this_chid,
 } from '../script.js';
@@ -17,6 +19,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 import { t } from './i18n.js';
+import { MacrosParser } from './macros.js';
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 
@@ -299,7 +302,7 @@ function loadSettings() {
     $('#extension_floating_role').val(chat_metadata[metadata_keys.role]);
     $(`input[name="extension_floating_position"][value="${chat_metadata[metadata_keys.position]}"]`).prop('checked', true);
 
-    if (extension_settings.note.chara && getContext().characterId) {
+    if (extension_settings.note.chara && getContext().characterId !== undefined) {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         $('#extension_floating_chara').val(charaNote ? charaNote.prompt : '');
@@ -346,7 +349,7 @@ export function setFloatingPrompt() {
     }
 
     if (lastMessageNumber <= 0 || chat_metadata[metadata_keys.interval] <= 0) {
-        context.setExtensionPrompt(MODULE_NAME, '');
+        context.setExtensionPrompt(MODULE_NAME, '', extension_prompt_types.NONE, MAX_INJECTION_DEPTH);
         $('#extension_floating_counter').text('(disabled)');
         shouldWIAddPrompt = false;
         return;
@@ -379,7 +382,7 @@ export function setFloatingPrompt() {
     }
     context.setExtensionPrompt(
         MODULE_NAME,
-        prompt,
+        String(prompt),
         chat_metadata[metadata_keys.position],
         chat_metadata[metadata_keys.depth],
         extension_settings.note.allowWIScan,
@@ -389,49 +392,50 @@ export function setFloatingPrompt() {
 }
 
 function onANMenuItemClick() {
-    if (selected_group || this_chid) {
-        //show AN if it's hidden
-        if ($('#floatingPrompt').css('display') !== 'flex') {
-            $('#floatingPrompt').addClass('resizing');
-            $('#floatingPrompt').css('display', 'flex');
-            $('#floatingPrompt').css('opacity', 0.0);
-            $('#floatingPrompt').transition({
-                opacity: 1.0,
-                duration: animation_duration,
-            }, async function () {
-                await delay(50);
-                $('#floatingPrompt').removeClass('resizing');
-            });
-
-            //auto-open the main AN inline drawer
-            if ($('#ANBlockToggle')
-                .siblings('.inline-drawer-content')
-                .css('display') !== 'block') {
-                $('#floatingPrompt').addClass('resizing');
-                $('#ANBlockToggle').click();
-            }
-        } else {
-            //hide AN if it's already displayed
-            $('#floatingPrompt').addClass('resizing');
-            $('#floatingPrompt').transition({
-                opacity: 0.0,
-                duration: animation_duration,
-            },
-            async function () {
-                await delay(50);
-                $('#floatingPrompt').removeClass('resizing');
-            });
-            setTimeout(function () {
-                $('#floatingPrompt').hide();
-            }, animation_duration);
-
-        }
-        //duplicate options menu close handler from script.js
-        //because this listener takes priority
-        $('#options').stop().fadeOut(animation_duration);
-    } else {
+    if (!selected_group && this_chid === undefined) {
         toastr.warning(t`Select a character before trying to use Author's Note`, '', { timeOut: 2000 });
+        return;
     }
+
+    //show AN if it's hidden
+    const $ANcontainer = $('#floatingPrompt');
+    if ($ANcontainer.css('display') !== 'flex') {
+        $ANcontainer.addClass('resizing');
+        $ANcontainer.css('display', 'flex');
+        $ANcontainer.css('opacity', 0.0);
+        $ANcontainer.transition({
+            opacity: 1.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $ANcontainer.removeClass('resizing');
+        });
+
+        //auto-open the main AN inline drawer
+        if ($('#ANBlockToggle')
+            .siblings('.inline-drawer-content')
+            .css('display') !== 'block') {
+            $ANcontainer.addClass('resizing');
+            $('#ANBlockToggle').trigger('click');
+        }
+    } else {
+        //hide AN if it's already displayed
+        $ANcontainer.addClass('resizing');
+        $ANcontainer.transition({
+            opacity: 0.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $ANcontainer.removeClass('resizing');
+        });
+        setTimeout(function () {
+            $ANcontainer.hide();
+        }, animation_duration);
+    }
+
+    //duplicate options menu close handler from script.js
+    //because this listener takes priority
+    $('#options').stop().fadeOut(animation_duration);
 }
 
 async function onChatChanged() {
@@ -446,7 +450,7 @@ async function onChatChanged() {
     $('#extension_floating_prompt_token_counter').text(tokenCounter1);
 
     let tokenCounter2;
-    if (extension_settings.note.chara && context.characterId) {
+    if (extension_settings.note.chara && context.characterId !== undefined) {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         if (charaNote) {
@@ -576,4 +580,8 @@ export function initAuthorsNote() {
         `,
     }));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+
+    MacrosParser.registerMacro('authorsNote', () => chat_metadata[metadata_keys.prompt] ?? '', t`The contents of the Author's Note`);
+    MacrosParser.registerMacro('charAuthorsNote', () => this_chid !== undefined ? (extension_settings.note.chara.find((e) => e.name === getCharaFilename())?.prompt ?? '') : '', t`The contents of the Character Author's Note`);
+    MacrosParser.registerMacro('defaultAuthorsNote', () => extension_settings.note.default ?? '', t`The contents of the Default Author's Note`);
 }

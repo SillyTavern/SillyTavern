@@ -1,10 +1,14 @@
 import {
     abortStatusCheck,
+    event_types,
+    eventSource,
     getRequestHeaders,
     getStoppingStrings,
-    novelai_setting_names,
+    resultCheckStatus,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
+    setOnlineStatus,
+    startStatusLoading,
 } from '../script.js';
 import { MAX_CONTEXT_DEFAULT, MAX_RESPONSE_DEFAULT, power_user } from './power-user.js';
 import { getTextTokens, tokenizers } from './tokenizers.js';
@@ -15,6 +19,7 @@ import {
     onlyUnique,
 } from './utils.js';
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
+import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 const default_preamble = '[ Style: chat, complex, sensory, visceral ]';
 const default_order = [1, 5, 0, 2, 3, 4];
@@ -24,6 +29,9 @@ const default_presets = {
     'kayra-v1': 'Carefree-Kayra',
     'llama-3-erato-v1': 'Erato-Dragonfruit',
 };
+
+export let novelai_settings;
+export let novelai_setting_names;
 
 export const nai_settings = {
     temperature: 1.5,
@@ -50,6 +58,7 @@ export const nai_settings = {
     banned_tokens: '',
     order: default_order,
     logit_bias: [],
+    extensions: {},
 };
 
 const nai_tiers = {
@@ -134,6 +143,7 @@ export function convertNovelPreset(data) {
         math1_quad_entropy_scale: data.parameters.math1_quad_entropy_scale,
         min_p: data.parameters.min_p,
         order: Array.isArray(data.parameters.order) ? data.parameters.order.filter(s => s.enabled && Object.keys(samplers).includes(s.id)).map(s => samplers[s.id]) : default_order,
+        extensions: {},
     };
 }
 
@@ -199,10 +209,25 @@ export function loadNovelPreset(preset) {
     nai_settings.math1_temp = preset.math1_temp || 1;
     nai_settings.math1_quad = preset.math1_quad || 0;
     nai_settings.math1_quad_entropy_scale = preset.math1_quad_entropy_scale || 0;
+    nai_settings.extensions = preset.extensions || {};
     loadNovelSettingsUi(nai_settings);
 }
 
-export function loadNovelSettings(settings) {
+export function loadNovelSettings(data, settings) {
+    novelai_setting_names = data.novelai_setting_names;
+    novelai_settings = data.novelai_settings;
+    novelai_settings.forEach(function (item, i, arr) {
+        novelai_settings[i] = JSON.parse(item);
+    });
+
+    $('#settings_preset_novel').empty();
+    const presetNames = {};
+    novelai_setting_names.forEach(function (item, i, arr) {
+        presetNames[item] = i;
+        $('#settings_preset_novel').append(`<option value=${i}>${item}</option>`);
+    });
+    novelai_setting_names = presetNames;
+
     //load the rest of the Novel settings without any checks
     nai_settings.model_novel = settings.model_novel;
     $('#model_novel_select').val(nai_settings.model_novel);
@@ -238,6 +263,7 @@ export function loadNovelSettings(settings) {
     nai_settings.math1_temp = settings.math1_temp || 1;
     nai_settings.math1_quad = settings.math1_quad || 0;
     nai_settings.math1_quad_entropy_scale = settings.math1_quad_entropy_scale || 0;
+    nai_settings.extensions = settings.extensions || {};
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -282,6 +308,7 @@ function loadNovelSettingsUi(ui_settings) {
     $('#math1_quad_counter_novel').val(Number(ui_settings.math1_quad).toFixed(2));
     $('#math1_quad_entropy_scale_novel').val(ui_settings.math1_quad_entropy_scale);
     $('#math1_quad_entropy_scale_counter_novel').val(Number(ui_settings.math1_quad_entropy_scale).toFixed(2));
+    $(`#settings_preset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).prop('selected', true);
 
     $('#streaming_novel').prop('checked', ui_settings.streaming_novel);
     sortItemsByOrder(ui_settings.order);
@@ -293,85 +320,85 @@ const sliders = [
         sliderId: '#temp_novel',
         counterId: '#temp_counter_novel',
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.temperature = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.temperature = Number(val); },
     },
     {
         sliderId: '#rep_pen_novel',
         counterId: '#rep_pen_counter_novel',
         format: (val) => Number(val).toFixed(3),
-        setValue: (val) => { nai_settings.repetition_penalty = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.repetition_penalty = Number(val); },
     },
     {
         sliderId: '#rep_pen_size_novel',
         counterId: '#rep_pen_size_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_range = Number(val).toFixed(0); },
+        setValue: (val) => { nai_settings.repetition_penalty_range = Number(val); },
     },
     {
         sliderId: '#rep_pen_slope_novel',
         counterId: '#rep_pen_slope_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_slope = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.repetition_penalty_slope = Number(val); },
     },
     {
         sliderId: '#rep_pen_freq_novel',
         counterId: '#rep_pen_freq_counter_novel',
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val); },
     },
     {
         sliderId: '#rep_pen_presence_novel',
         counterId: '#rep_pen_presence_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val); },
     },
     {
         sliderId: '#tail_free_sampling_novel',
         counterId: '#tail_free_sampling_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.tail_free_sampling = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.tail_free_sampling = Number(val); },
     },
     {
         sliderId: '#top_k_novel',
         counterId: '#top_k_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.top_k = Number(val).toFixed(0); },
+        setValue: (val) => { nai_settings.top_k = Number(val); },
     },
     {
         sliderId: '#top_p_novel',
         counterId: '#top_p_counter_novel',
         format: (val) => Number(val).toFixed(3),
-        setValue: (val) => { nai_settings.top_p = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.top_p = Number(val); },
     },
     {
         sliderId: '#top_a_novel',
         counterId: '#top_a_counter_novel',
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.top_a = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.top_a = Number(val); },
     },
     {
         sliderId: '#typical_p_novel',
         counterId: '#typical_p_counter_novel',
         format: (val) => Number(val).toFixed(3),
-        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.typical_p = Number(val); },
     },
     {
         sliderId: '#mirostat_tau_novel',
         counterId: '#mirostat_tau_counter_novel',
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.mirostat_tau = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.mirostat_tau = Number(val); },
     },
     {
         sliderId: '#mirostat_lr_novel',
         counterId: '#mirostat_lr_counter_novel',
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.mirostat_lr = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.mirostat_lr = Number(val); },
     },
     {
         sliderId: '#min_length_novel',
         counterId: '#min_length_counter_novel',
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.min_length = Number(val).toFixed(0); },
+        setValue: (val) => { nai_settings.min_length = Number(val); },
     },
     {
         sliderId: '#nai_banned_tokens',
@@ -584,7 +611,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
     };
 }
 
-// Check if the prefix needs to be overriden to use instruct mode
+// Check if the prefix needs to be overridden to use instruct mode
 function selectPrefix(selected_prefix, finalPrompt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
@@ -777,7 +804,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
  * for a single token into a TokenLogprobs object used by the Token Probabilities
  * feature.
  * @param {NAITokenLogprobs} data - NAI logprobs object for one token
- * @returns {import('logprobs.js').TokenLogprobs | null} converted logprobs
+ * @returns {import('./logprobs.js').TokenLogprobs | null} converted logprobs
  */
 export function parseNovelAILogprobs(data) {
     if (!data) {
@@ -795,6 +822,7 @@ export function parseNovelAILogprobs(data) {
 
     // Add the chosen token to `merged` if it's not already there. This can
     // happen if the chosen token was not among the top 10 most likely ones.
+    // eslint-disable-next-line no-unused-vars
     const [[chosenId], [_, chosenAfter]] = data.chosen[0];
     if (!merged.some(([id]) => id === chosenId)) {
         merged.push([chosenId, chosenAfter]);
@@ -805,6 +833,7 @@ export function parseNovelAILogprobs(data) {
     // text so we will use the IDs instead and bulk decode them in
     // StreamingProcessor. JSDoc typechecking may complain about this, but it's
     // intentional.
+    // @ts-ignore
     return { token: chosenId, topLogprobs: merged };
 }
 
@@ -819,7 +848,23 @@ $('#nai_preamble_restore').on('click', function () {
     saveSettingsDebounced();
 });
 
-jQuery(function () {
+export async function getStatusNovel() {
+    try {
+        const result = await loadNovelSubscriptionData();
+
+        if (!result) {
+            throw new Error('Could not load subscription data');
+        }
+
+        setOnlineStatus(getNovelTier());
+    } catch {
+        setOnlineStatus('no_connection');
+    }
+
+    return resultCheckStatus();
+}
+
+export function initNovelAISettings() {
     sliders.forEach(slider => {
         $(document).on('input', slider.sliderId, function () {
             const value = $(this).val();
@@ -830,13 +875,38 @@ jQuery(function () {
         });
     });
 
+    $('#api_button_novel').on('click', async function (e) {
+        e.stopPropagation();
+        const api_key_novel = String($('#api_key_novel').val()).trim();
+
+        if (api_key_novel.length) {
+            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
+        }
+
+        if (!secret_state[SECRET_KEYS.NOVEL]) {
+            console.log('No secret key saved for NovelAI');
+            return;
+        }
+
+        startStatusLoading();
+        await getStatusNovel();
+    });
+
+    $('#settings_preset_novel').on('change', async function () {
+        nai_settings.preset_settings_novel = $('#settings_preset_novel').find(':selected').text();
+        const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+        loadNovelPreset(preset);
+        saveSettingsDebounced();
+        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'novel', name: nai_settings.preset_settings_novel });
+    });
+
     $('#streaming_novel').on('input', function () {
         const value = !!$(this).prop('checked');
         nai_settings.streaming_novel = value;
         saveSettingsDebounced();
     });
 
-    $('#model_novel_select').change(function () {
+    $('#model_novel_select').on('change', function () {
         nai_settings.model_novel = String($('#model_novel_select').find(':selected').val());
         saveSettingsDebounced();
 
@@ -871,4 +941,4 @@ jQuery(function () {
     });
 
     $('#novelai_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(nai_settings.logit_bias, BIAS_KEY));
-});
+}

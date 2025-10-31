@@ -23,13 +23,19 @@
                     <option value="bing">Bing</option>
                     <option value="oneringtranslator">OneRingTranslator</option>
                     <option value="yandex">Yandex</option>
-                <select>
+                </select>
                 <select id="deepl_api_endpoint" class="margin0 text_pole flex1" title="DeepL API Endpoint">
                     <option value="free">Free</option>
                     <option value="pro">Pro</option>
                 </select>
-                <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
-                <div id="translate_url_button" class="menu_button fa-solid fa-link margin0"></div>
+                <div id="translate_key_button" class="menu_button menu_button_icon margin0 manage-api-keys">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Key</span>
+                </div>
+                <div id="translate_url_button" class="menu_button menu_button_icon margin0 manage-api-keys">
+                    <i class="fa-solid fa-link"></i>
+                    <span>URL</span>
+                </div>
             </div>
             <label data-i18n="ext_translate_target_lang" for="translation_target_language">Target Language</label>
             <select id="translation_target_language" name="target_language"></select>

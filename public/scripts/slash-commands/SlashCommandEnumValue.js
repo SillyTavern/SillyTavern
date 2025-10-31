@@ -1,7 +1,3 @@
-import { SlashCommandExecutor } from './SlashCommandExecutor.js';
-import { SlashCommandScope } from './SlashCommandScope.js';
-
-
 /**
  * @typedef {'enum' | 'command' | 'namedArgument' | 'variable' | 'qr' | 'macro' | 'number' | 'name'} EnumType
  */

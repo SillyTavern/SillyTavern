@@ -10,8 +10,9 @@ import {
     updateMessageBlock,
 } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
-import { findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { updateReasoningUI } from '../../reasoning.js';
+import { secret_state } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -151,9 +152,9 @@ const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
     const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $('#translate_key_button').toggle(providerRequiresKey);
+    $('#translate_key_button').toggle(providerRequiresKey).data('key', extension_settings.translate.provider);
     $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $('#translate_url_button').toggle(providerOptionalUrl);
+    $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
     $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
 }
@@ -172,21 +173,40 @@ function loadSettings() {
     showKeysButton();
 }
 
-async function translateImpersonate(text) {
-    const translatedText = await translate(text, extension_settings.translate.target_language);
-    $('#send_textarea').val(translatedText);
+/**
+ * Check if the swipe is being generated for a message.
+ * @param {string|number} messageId Message ID
+ * @returns {boolean} Whether the swipe is being generated
+ */
+function isGeneratingSwipe(messageId) {
+    return $(`#chat .mes[mesid="${messageId}"] .mes_text`).text() === '...';
 }
 
+async function translateImpersonate() {
+    const sendTextArea = $('#send_textarea');
+    const text = sendTextArea.val().toString();
+    const translatedText = await translate(text, extension_settings.translate.target_language);
+    sendTextArea.val(translatedText);
+}
+
+/**
+ * Translates the contents of an incoming message.
+ * @param {string | number} messageId Message ID
+ * @returns {Promise<void>}
+ */
 async function translateIncomingMessage(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
+
+    if (!message) {
+        return;
+    }
 
     if (typeof message.extra !== 'object') {
         message.extra = {};
     }
 
-    // New swipe is being generated. Don't translate that
-    if ($(`#chat .mes[mesid="${messageId}"] .mes_text`).text() == '...') {
+    if (isGeneratingSwipe(messageId)) {
         return;
     }
 
@@ -194,7 +214,36 @@ async function translateIncomingMessage(messageId) {
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
-    updateMessageBlock(messageId, message);
+    updateMessageBlock(Number(messageId), message);
+}
+
+/**
+ * Translates the reasoning of an incoming message.
+ * @param {string | number} messageId
+ * @returns {Promise<boolean>} translated or not
+ */
+async function translateIncomingMessageReasoning(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (!message) {
+        return false;
+    }
+
+    if (typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    if (!message.extra.reasoning || isGeneratingSwipe(messageId)) {
+        return false;
+    }
+
+    const textToTranslate = substituteParams(message.extra.reasoning, context.name1, message.name);
+    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
+    message.extra.reasoning_display_text = translation;
+
+    updateReasoningUI(Number(messageId));
+    return true;
 }
 
 async function translateProviderOneRing(text, lang) {
@@ -535,6 +584,7 @@ async function onTranslateChatClick() {
         toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
 
         for (let i = 0; i < chat.length; i++) {
+            await translateIncomingMessageReasoning(i);
             await translateIncomingMessage(i);
         }
 
@@ -561,6 +611,7 @@ async function onTranslationsClearClick() {
     for (const mes of chat) {
         if (mes.extra) {
             delete mes.extra.display_text;
+            delete mes.extra.reasoning_display_text;
         }
     }
 
@@ -573,12 +624,47 @@ async function translateMessageEdit(messageId) {
     const chat = context.chat;
     const message = chat[messageId];
 
-    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
-        return;
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.display_text)) {
+        delete message.extra.display_text;
+        updateMessageBlock(messageId, message);
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        await translateIncomingMessage(messageId);
+        anyChange = true;
     }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
-        await translateIncomingMessage(messageId);
+    if (anyChange) {
+        await context.saveChat();
+    }
+}
+
+async function translateMessageReasoningEdit(messageId) {
+    const context = getContext();
+    const chat = context.chat;
+    const message = chat[messageId];
+
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.reasoning_display_text)) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        anyChange = await translateIncomingMessageReasoning(messageId);
+    }
+
+    if (anyChange) {
+        await context.saveChat();
+    }
+}
+
+async function removeReasoningDisplayText(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+    if (message.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        await context.saveChat();
     }
 }
 
@@ -588,24 +674,38 @@ async function onMessageTranslateClick() {
     const message = context.chat[messageId];
 
     // If the message is already translated, revert it back to the original text
+    let alreadyTranslated = false;
     if (message?.extra?.display_text) {
         delete message.extra.display_text;
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(Number(messageId), message);
+        alreadyTranslated = true;
     }
+    if (message?.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        alreadyTranslated = true;
+    }
+
     // If the message is not translated, translate it
-    else {
+    if (!alreadyTranslated) {
+        await translateIncomingMessageReasoning(messageId);
         await translateIncomingMessage(messageId);
     }
 
     await context.saveChat();
 }
 
-const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleIncomingMessage = createEventHandler(async (messageId) => {
+    await translateIncomingMessageReasoning(messageId);
+    await translateIncomingMessage(messageId);
+}, () => shouldTranslate(incomingTypes));
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
+const handleMessageReasoningEdit = createEventHandler(translateMessageReasoningEdit, () => true);
+const handleMessageReasoningDelete = createEventHandler(removeReasoningDisplayText, () => true);
 
-window['translate'] = translate;
+globalThis.translate = translate;
 
 jQuery(async () => {
     const html = await renderExtensionTemplateAsync('translate', 'index');
@@ -651,63 +751,16 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
-    $('#translate_key_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const key = await callGenericPopup(`<h3>${optionText} API Key</h3>`, POPUP_TYPE.INPUT, '', {
-            customButtons: [{
-                text: 'Remove Key',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(extension_settings.translate.provider, '');
-                    toastr.success('API Key removed');
-                    $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
-                },
-            }],
+
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach((eventType) => {
+        eventSource.on(eventType, (/** @type {string} */ key) => {
+            if (key === extension_settings.translate.provider) {
+                $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
+            }
+            if (key === `${extension_settings.translate.provider}_url`) {
+                $('#translate_url_button').toggleClass('success', !!secret_state[`${extension_settings.translate.provider}_url`]);
+            }
         });
-
-        if (!key) {
-            return;
-        }
-
-        await writeSecret(extension_settings.translate.provider, key);
-        toastr.success('API Key saved');
-        $('#translate_key_button').addClass('success');
-    });
-    $('#translate_url_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const exampleURLs = {
-            'libre': 'http://127.0.0.1:5000/translate',
-            'lingva': 'https://lingva.ml/api/v1',
-            'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate',
-        };
-        const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
-
-        const secretKey = extension_settings.translate.provider + '_url';
-        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
-
-        const url = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedUrl, {
-            customButtons: [{
-                text: 'Remove URL',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(secretKey, '');
-                    toastr.success('API URL removed');
-                    $('#translate_url_button').toggleClass('success', !!secret_state[secretKey]);
-                },
-            }],
-        });
-
-        if (!url) {
-            return;
-        }
-
-        await writeSecret(secretKey, url);
-
-        toastr.success('API URL saved');
-        $('#translate_url_button').addClass('success');
     });
 
     loadSettings();
@@ -717,6 +770,8 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_EDITED, handleMessageReasoningEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_DELETED, handleMessageReasoningDelete);
 
     document.body.classList.add('translate');
 

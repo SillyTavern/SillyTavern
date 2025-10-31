@@ -1,0 +1,302 @@
+/* Main Page Backgrounds */
+#bg1 {
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: background-image var(--animation-duration-3x) ease-in-out;
+    z-index: -1;
+}
+
+/* Fitting options */
+#background_fitting {
+    max-width: 8em;
+}
+
+/* Fill/Cover - scales to fill width while maintaining aspect ratio */
+#bg1.cover {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Fit/Contain - shows entire image maintaining aspect ratio */
+#bg1.contain {
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Stretch - stretches to fill entire space */
+#bg1.stretch {
+    background-size: 100% 100%;
+}
+
+/* Center - centers without scaling */
+#bg1.center {
+    background-size: auto;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* This is the main flex container for the entire drawer */
+.drawer-content.openDrawer.bg-drawer-layout {
+    display: flex;
+}
+
+.bg-drawer-layout {
+    flex-direction: column;
+    padding: 0;
+}
+
+#bg-header-fixed {
+    flex-shrink: 0;
+    padding: 5px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    width: 100%;
+}
+
+.bg-header-row-1,
+.bg-header-row-2 {
+    display: flex;
+    gap: 5px;
+    width: 100%;
+}
+
+/* Control buttons in header */
+.heading-container-with-controls {
+    position: relative;
+}
+
+.heading-container-with-controls .heading-text {
+    margin: 10px 0;
+}
+
+.heading-container-with-controls .heading-controls {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 5px;
+}
+
+#bg-scrollable-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 5px 15px;
+    position: relative;
+}
+
+#bg_menu_content,
+#bg_custom_content {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    grid-template-columns: repeat(var(--bg-thumb-columns, 5), 1fr);
+}
+
+#bg-filter {
+    font-size: calc(var(--mainFontSize) * 0.95);
+}
+
+/* Thumbnails */
+.bg_example:hover .BGSampleTitle {
+    opacity: 1;
+}
+
+.bg_example .mobile-only-menu-toggle {
+    display: none;
+}
+
+.bg_example {
+    cursor: pointer;
+    box-shadow: 0 0 7px var(--black50a);
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 0px solid transparent;
+    outline: 2px solid var(--SmartThemeBorderColor);
+    outline-offset: -1px;
+
+    height: auto;
+    aspect-ratio: 16 / 9;
+}
+
+.bg_example:focus-visible {
+    outline-offset: inherit;
+    outline-color: var(--interactable-outline-color);
+}
+
+.bg_example.locked-background {
+    outline: 2px solid var(--golden);
+    outline-offset: 0;
+}
+
+.bg_example.locked-background::after {
+    content: '\f023';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    z-index: 4;
+    color: var(--golden);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+    font-size: calc(var(--mainFontSize) * 0.8);
+    pointer-events: none;
+}
+
+.bg_example:not(.locked-background) .jg-unlock,
+.bg_example.locked-background .jg-lock {
+    display: none;
+}
+
+.bg_example.selected-background {
+    outline: 2px solid white;
+    outline-offset: 0;
+}
+
+.bg_example.selected-background::before {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 4;
+    color: var(--white100);
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+    font-size: calc(var(--mainFontSize) * 0.9);
+    pointer-events: none;
+}
+
+.bg_example .jg-menu {
+    display: flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    padding: 3px 3px;
+    z-index: 3;
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--SmartThemeBorderColor);
+    justify-items: center;
+    align-items: center;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9);
+    transform-origin: center;
+    transition: opacity var(--animation-duration) ease-out, visibility var(--animation-duration) ease-out, transform var(--animation-duration) ease-out;
+}
+
+.bg_example:hover .jg-menu,
+.bg_example:focus-within .jg-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+.bg_example .jg-button {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 5px;
+    font-size: 1.1em;
+    border-radius: 5px;
+    transition: background-color var(--animation-duration) ease;
+}
+
+.bg_example .jg-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Scroll-to-Top Button */
+#bg-scroll-top {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+    background: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--animation-duration) ease;
+    pointer-events: none;
+}
+
+#bg-scroll-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#bg-scroll-top:hover {
+    filter: brightness(150%);
+    outline: 1px solid var(--interactable-outline-color);
+}
+
+#bg-scroll-top .fa-solid {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.thumbnail-clipper {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    overflow: hidden;
+    border-radius: inherit;
+    background-size: cover;
+    background-position: center;
+}
+
+.bg_example:not([custom="true"]) .jg-copy,
+.bg_example[custom="true"] .jg-edit {
+    display: none;
+}
+
+/* Thumbnail Title */
+.bg_example .BGSampleTitle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    color: var(--SmartThemeBodyColor);
+    font-size: 0.9em;
+    font-weight: 600;
+    padding: 0px 6px 2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity var(--animation-duration) ease-in-out;
+    pointer-events: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.bg_example:hover .BGSampleTitle,
+.bg_example:focus-within .BGSampleTitle {
+    opacity: 1;
+}
