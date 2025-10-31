@@ -2706,7 +2706,34 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
             break;
     }
 }
+
+/**
+ * Clamps value
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+/**
+ * Shakes the targetElement.
+ * @param {HTMLElement|JQuery<HTMLElement>} targetElement
+ * @param {number} distance Distance in pixels.
+ * @param {number} duration
+ * @param {string} easing
+ */
+export function shakeElement(targetElement, distance = 10,duration = 100, easing = 'ease-in-out') {
+    // Don't call the JQuery animation.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+    if (targetElement instanceof  jQuery) targetElement = targetElement[0];
+
+    return targetElement.animate([
+        { transform: 'translateX(0)' },
+        { transform: `translateX(${distance}px)` },
+        { transform: 'translateX(0)' },
+    ], { duration, easing });
+}
 
 /**
  * Waits for a click event on any of the specified selectors within a target container.

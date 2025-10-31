@@ -1212,7 +1212,9 @@ body .panelControlBar {
 
 .swipe_right.active {
     opacity: 0.7;
-    transition-duration: 0.5s;
+    /* Doubled opacity needs a longer transition to match a non active arrow. */
+    transition-duration: calc(var(--animation-duration) * 0.7/0.3*2);
+    @starting-style { opacity: 0 }
 }
 
 .swipe_right,
@@ -1230,23 +1232,18 @@ body .panelControlBar {
 
     /* Fade in and out: */
     /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
-    @media (prefers-reduced-motion: no-preference) {
-        transition:
-            opacity 0.3s ease-in,
-            display 0.3s ease-in;
-        transition-behavior: allow-discrete;
-    }
-    /* Both styles are required. https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
-    transition: opacity 0.3s ease;
-    transition: opacity 0.3s ease,
-    display 0.3s ease allow-discrete;
+    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition:
+        opacity calc(var(--animation-duration) * 2) ease-in,
+        display calc(var(--animation-duration) * 2) ease-in;
+    transition-behavior: allow-discrete;
     /* Fade in chevrons. */
     @starting-style { opacity: 0 }
     /* Fade out */
     &[hidden] {
         opacity: 0;
         display: none;
-        transition-duration: 0.5s;
+        transition-duration: calc(var(--animation-duration) * 2);
         transition-timing-function: ease-out;
     }
 }

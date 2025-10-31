@@ -75,3 +75,17 @@ type ByafScenario = {
     messages: Array<ByafAiMessage | ByafHumanMessage>;
     backgroundImage?: string;
 };
+
+type ByafChatBackground = {
+    name: string;
+    data: Buffer;
+    paths: string[];
+};
+
+type ByafParseResult = {
+    card: TavernCardV2,
+    images: { filename: string, image: Buffer, label: string }[],
+    scenarios: Partial<ByafScenario>[],
+    chatBackgrounds: Array<ByafChatBackground>,
+    character: ByafCharacter
+};

@@ -182,6 +182,7 @@ import {
     canUseNegativeLookbehind,
     trimSpaces,
     clamp,
+    shakeElement,
     waitForClick,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
@@ -277,6 +278,7 @@ import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
+import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { chatTree, getStickFromTree, saveChatToTree, setChatTree, spliceStickToChat, updateChatTreeMessages } from './scripts/chat-tree.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -1598,7 +1600,7 @@ export async function sendTextareaMessage() {
 
     hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
-    let generateType;
+    let generateType = 'normal';
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
@@ -1617,8 +1619,9 @@ export async function sendTextareaMessage() {
         await newAssistantChat({ temporary: false });
     }
 
-    await Generate(generateType);
+    let generation = await Generate(generateType);
     showSwipeButtons();
+    return generation;
 }
 
 /**
@@ -2227,6 +2230,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+    updateEditArrowClasses();
 }
 
 /**
@@ -6096,8 +6100,18 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
     // If swipes structure is invalid, exit out
-    if (!Array.isArray(targetMessage.swipe_info) || !Array.isArray(targetMessage.swipes)) {
+    if (!Array.isArray(targetMessage.swipes)) {
         return false;
+    }
+
+    // Backfill swipe_info if missing.
+    if (!Array.isArray(targetMessage.swipe_info)) {
+        targetMessage.swipe_info = targetMessage.swipes.map(_ => ({
+            send_date: targetMessage.send_date,
+            gen_started: void 0,
+            gen_finished: void 0,
+            extra: {},
+        }));
     }
 
     const targetSwipeId = targetMessage.swipe_id;
@@ -6106,7 +6120,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
 
-    const targetSwipeInfo = targetMessage?.swipe_info[targetSwipeId];
+    const targetSwipeInfo = targetMessage?.swipe_info?.[targetSwipeId];
     if (typeof targetSwipeInfo !== 'object') {
         console.warn(`[syncSwipeToMes] Invalid swipe info: ${targetSwipeId}`);
     }
@@ -6176,7 +6190,7 @@ function getGeneratingModel(mes) {
 export function activateSendButtons() {
     is_send_press = false;
     hideStopButton();
-    hideSwipeButtons();
+    showSwipeButtons();
     delete document.body.dataset.generating;
 }
 
@@ -6185,7 +6199,7 @@ export function activateSendButtons() {
  */
 export function deactivateSendButtons() {
     showStopButton();
-    showSwipeButtons();
+    hideSwipeButtons();
     document.body.dataset.generating = 'true';
 }
 
@@ -7514,7 +7528,7 @@ async function messageEditMove(sourceId, targetId) {
 }
 
 async function messageEditDone(div) {
-    if (typeof(this_edit_mes_id) == 'undefined') {
+    if (!(this_edit_mes_id >= 0)) {
         console.trace('this_edit_mes_id cannot be blank when calling messageEditDone.');
         return;
     }
@@ -8289,7 +8303,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
             !(message?.['extra']?.['swipeable'] === false) &&
             //User messages are not swipeable.
             !message.is_user &&
-            //And It's not a greeting without swipes.
+            //And it's not a greeting without swipes.
             !(messageId === 0 && !chat_metadata?.tainted &&
                 (message?.['swipes']?.length ?? 1) == 1
             )
@@ -9111,8 +9125,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         // If swipe_id has not changed, give the user feedback.
         if (chat[mesId]['swipe_id'] == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
-            //Shake
-            thisMesDiv.effect('shake', { direction: direction, distance: 5, times: 1 });
+            //Shake 700/140=5px
+            shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
@@ -9619,6 +9633,7 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
+    formData.append('user_name', name1);
     if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
     try {
@@ -10224,8 +10239,9 @@ jQuery(async function () {
         $('#option_continue').trigger('click');
     });
 
-    $('#send_but').on('click', function () {
-        sendTextareaMessage();
+    const userInputGenerateMutex = new SimpleMutex(sendTextareaMessage);
+    $('#send_but').on('click', async function () {
+        await userInputGenerateMutex.update();
     });
 
     //menu buttons setup

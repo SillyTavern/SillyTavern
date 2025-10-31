@@ -425,6 +425,31 @@ export function clientRelativePath(root, inputPath) {
 }
 
 /**
+ * Returns a name that is unique among the names that exist.
+ * @param {string} name The name to check.
+ * @param {{ (name: string): boolean; }} exists Function to check if name exists.
+ * @returns {string} A unique name.
+ */
+export function getUniqueName(name, exists) {
+    let i = 1;
+    let baseName = name;
+    while (exists(name)) {
+        name = `${baseName} (${i})`;
+        i++;
+    }
+    return name;
+}
+
+/**
+ * Provides safe replacements for characters in filenames. Intended for use with sanitize() from the sanitize-filename package.
+ * @param {string} char Character to sanitize
+ * @returns {string} Safe replacement character
+ */
+export function sanitizeSafeCharacterReplacements(char) {
+    return '_';
+}
+
+/**
  * Strip the last file extension from a given file name. If there are multiple extensions, only the last is removed.
  * @param {string} filename The file name to remove the extension from.
  * @returns The file name, sans extension

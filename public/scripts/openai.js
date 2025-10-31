@@ -5498,6 +5498,7 @@ export function isImageInliningSupported() {
         'claude-3',
         'claude-opus-4',
         'claude-sonnet-4',
+        'claude-haiku-4',
         // Cohere
         'c4ai-aya-vision',
         'command-a-vision',
