@@ -2314,5 +2314,4 @@ export function initChatUtilities() {
     });
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
-    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 }
