@@ -4980,7 +4980,7 @@ a:hover {
 }
 
 .mes_media_wrapper:not(:empty)~.mes_file_wrapper:not(:empty) {
-    margin-top: 5px;
+    margin-top: 0.5em;
 }
 
 .mes .mes_img_container,
