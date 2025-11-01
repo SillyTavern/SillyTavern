@@ -1980,7 +1980,7 @@ export function ensureMessageMediaIsArray(mes) {
             for (const swipe of obj.image_swipes) {
                 if (swipe && typeof swipe === 'string') {
                     obj.media_display = MEDIA_DISPLAY.GALLERY;
-                    obj.media.push({ type: 'image', url: swipe });
+                    obj.media.push({ type: MEDIA_TYPE.IMAGE, url: swipe });
                 }
             }
             delete obj.image_swipes;
@@ -1993,7 +1993,7 @@ export function ensureMessageMediaIsArray(mes) {
             const imageValue = obj.image;
             delete obj.image;
             if (imageValue && typeof imageValue === 'string') {
-                obj.media.push({ type: 'image', url: imageValue });
+                obj.media.push({ type: MEDIA_TYPE.IMAGE, url: imageValue });
             }
             if (obj.media_display === MEDIA_DISPLAY.GALLERY) {
                 const selectedIndex = obj.media.findIndex(t => t.url === imageValue);
@@ -2011,7 +2011,7 @@ export function ensureMessageMediaIsArray(mes) {
             const videoValue = obj.video;
             delete obj.video;
             if (videoValue && typeof videoValue === 'string') {
-                obj.media.push({ type: 'video', url: videoValue });
+                obj.media.push({ type: MEDIA_TYPE.VIDEO, url: videoValue });
             }
         }
     }
@@ -2022,8 +2022,8 @@ export function ensureMessageMediaIsArray(mes) {
 
     migrateMediaToArray(mes.extra);
     addArrayAutoWrapper(mes.extra, 'file', 'files');
-    addArrayAutoWrapper(mes.extra, 'image', 'media', (t) => t.type === 'image', (t) => t.url);
-    addArrayAutoWrapper(mes.extra, 'video', 'media', (t) => t.type === 'video', (t) => t.url);
+    addArrayAutoWrapper(mes.extra, 'image', 'media', (t) => t.type === MEDIA_TYPE.IMAGE, (t) => t.url);
+    addArrayAutoWrapper(mes.extra, 'video', 'media', (t) => t.type === MEDIA_TYPE.VIDEO, (t) => t.url);
 }
 
 /**
