@@ -1411,17 +1411,26 @@ export async function printMessages() {
         addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
     }
 
-    // Scroll to bottom when all images are loaded
-    const images = document.querySelectorAll('#chat .mes img');
-    let imagesLoaded = 0;
+    // Scroll to bottom when all media are loaded
+    const media = document.querySelectorAll('#chat .mes img, #chat .mes video');
+    let mediaLoaded = 0;
 
-    for (let i = 0; i < images.length; i++) {
-        const image = images[i];
-        if (image instanceof HTMLImageElement) {
-            if (image.complete) {
+    for (let i = 0; i < media.length; i++) {
+        const currentElement = media[i];
+        if (currentElement instanceof HTMLImageElement) {
+            if (currentElement.complete) {
                 incrementAndCheck();
             } else {
-                image.addEventListener('load', incrementAndCheck);
+                currentElement.addEventListener('load', incrementAndCheck);
+                currentElement.addEventListener('error', incrementAndCheck);
+            }
+        }
+        if (currentElement instanceof HTMLVideoElement) {
+            if (currentElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                incrementAndCheck();
+            } else {
+                currentElement.addEventListener('loadeddata', incrementAndCheck);
+                currentElement.addEventListener('error', incrementAndCheck);
             }
         }
     }
@@ -1433,8 +1442,8 @@ export async function printMessages() {
     applyStylePins();
 
     function incrementAndCheck() {
-        imagesLoaded++;
-        if (imagesLoaded === images.length) {
+        mediaLoaded++;
+        if (mediaLoaded === media.length) {
             scrollChatToBottom();
         }
     }
@@ -2066,8 +2075,11 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     const mediaDisplay = getMediaDisplay(mes);
     const hideMessageText = hasMedia && mes?.extra?.inline_image === false;
 
-    let chatHeight = adjustScroll && (hasMedia || hasFiles) ? chatElement.prop('scrollHeight') : 0;
-    const previousScrollTop = chatElement.scrollTop();
+    const mediaBlocks = [];
+    const mediaPromises = [];
+
+    const chatHeight = adjustScroll && (hasMedia || hasFiles) ? chatElement.prop('scrollHeight') : 0;
+    const previousScrollTop = !adjustScroll ? chatElement.scrollTop() : 0;
     const doAdjustScroll = () => {
         if (!adjustScroll) {
             chatElement.scrollTop(previousScrollTop);
@@ -2077,11 +2089,8 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         const newChatHeight = chatElement.prop('scrollHeight');
         const diff = newChatHeight - chatHeight;
         chatElement.scrollTop(scrollPosition + diff);
-        chatHeight = newChatHeight;
     };
 
-    // Remove existing media containers
-    messageElement.find('.mes_media_container').remove();
     // Set media display attribute
     messageElement.attr('data-media-display', mediaDisplay);
     // Toggle text visibility
@@ -2098,20 +2107,28 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         template.attr('data-index', index);
 
         const image = template.find('.mes_img');
-        image.off('load').on('load', function () {
-            image.removeAttr('alt');
-            image.removeClass('error');
-            doAdjustScroll();
-        });
-        image.off('error').on('error', function () {
-            image.attr('alt', '');
-            image.addClass('error');
-            doAdjustScroll();
-        });
         image.attr('src', attachment.url);
         image.attr('title', attachment.title || mes.extra.title || '');
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                image.removeAttr('alt');
+                image.removeClass('error');
+                resolve();
+            }
+            function onError() {
+                image.attr('alt', '');
+                image.addClass('error');
+                resolve();
+            }
+            if (image.prop('complete')) {
+                onLoad();
+            } else {
+                image.off('load').on('load', onLoad);
+                image.off('error').on('error', onError);
+            }
+        }));
 
-        messageElement.find('.mes_media_wrapper').append(template);
+        mediaBlocks.push(template);
         return template;
     }
 
@@ -2126,20 +2143,25 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         template.attr('data-index', index);
 
         const video = template.find('.mes_video');
-        video.off('loadedmetadata').on('loadedmetadata', function () {
-            if (!adjustScroll) {
-                return;
-            }
-            doAdjustScroll();
-        });
-        video.off('error').on('error', function () {
-            video.addClass('error');
-            doAdjustScroll();
-        });
         video.attr('src', attachment.url);
         video.attr('title', attachment.title || mes.extra.title || '');
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                resolve();
+            }
+            function onError() {
+                video.addClass('error');
+                resolve();
+            }
+            if (video.prop('readyState') >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                onLoad();
+            } else {
+                video.off('loadeddata').on('loadeddata', onLoad);
+                video.off('error').on('error', onError);
+            }
+        }));
 
-        messageElement.find('.mes_media_wrapper').append(template);
+        mediaBlocks.push(template);
         return template;
     }
 
@@ -2186,6 +2208,9 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         }
     }
 
+    // Remove existing file containers
+    messageElement.find('.mes_file_wrapper').empty();
+
     // Add files to message
     if (hasFiles) {
         for (let index = 0; index < mes.extra.files.length; index++) {
@@ -2197,6 +2222,12 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             messageElement.find('.mes_file_wrapper').append(template);
         }
     }
+
+    // TODO: Consider making this awaitable
+    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.standard)]).then(() => {
+        messageElement.find('.mes_media_wrapper').empty().append(mediaBlocks);
+        doAdjustScroll();
+    });
 }
 
 export function addCopyToCodeBlocks(messageElement) {
