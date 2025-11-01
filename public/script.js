@@ -2171,16 +2171,6 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         const counter = galleryControls.find('.mes_img_swipe_counter');
         counter.text(`${mediaIndex + 1}/${mes.extra.media.length}`);
 
-        const swipeLeft = galleryControls.find('.mes_img_swipe_left');
-        swipeLeft.off('click').on('click', function () {
-            eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.LEFT });
-        });
-
-        const swipeRight = galleryControls.find('.mes_img_swipe_right');
-        swipeRight.off('click').on('click', function () {
-            eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.RIGHT });
-        });
-
         const template = appendMediaAttachment(selectedMedia, mediaIndex);
         template.addClass('img_swipes');
         template.append(galleryControls);

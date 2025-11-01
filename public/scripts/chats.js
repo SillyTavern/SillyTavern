@@ -1981,13 +1981,12 @@ export function addDOMPurifyHooks() {
 
 /**
  * Switches an image to the next or previous one in the swipe list.
- * @param {object} args Event arguments
- * @param {ChatMessage} args.message Message object
- * @param {JQuery<HTMLElement>} args.element Message element
- * @param {string} args.direction Swipe direction
+ * @param {number} messageId Message ID
+ * @param {JQuery<HTMLElement>} element Message element
+ * @param {string} direction Swipe direction
  * @returns {Promise<void>}
  */
-async function onImageSwiped({ message, element, direction }) {
+async function onImageSwiped(messageId, element, direction) {
     const animationClass = 'fa-fade';
     const messageMedia = element.find('.mes_img, .mes_video');
 
@@ -1996,9 +1995,10 @@ async function onImageSwiped({ message, element, direction }) {
         return;
     }
 
+    const message = chat[messageId];
     const media = message?.extra?.media;
 
-    if (!Array.isArray(media) || media.length === 0) {
+    if (!message || !Array.isArray(media) || media.length === 0) {
         console.warn('No media found in the message');
         return;
     }
@@ -2036,6 +2036,7 @@ async function onImageSwiped({ message, element, direction }) {
     }
 
     await saveChatConditional();
+    await eventSource.emit(event_types.IMAGE_SWIPED, { message, element, direction });
     appendMediaToMessage(message, element, false);
 }
 
@@ -2265,6 +2266,14 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_media_gallery', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
+    });
+    $(document).on('click','.mes_img_swipe_left', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.LEFT);
+    });
+    $(document).on('click','.mes_img_swipe_right', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.RIGHT);
     });
 
     $('#file_form_input').on('change', async () => {
