@@ -153,10 +153,7 @@ export async function getStickFromTree(chatTree, chat, index) {
 export async function spliceStickToChat(stick, chat, index = 0) {
     //This will break references after index.
     chat.splice(index, chat.length - index, ...stick);
-    saveChatConditional();
-
     updateViewMessageIds(false);
-    saveChatDebounced();
 
     eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
