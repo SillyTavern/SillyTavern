@@ -1890,7 +1890,7 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
 
 /**
  * Ensures that the message media properties are arrays, adding getters/setters for single media items.
- * @param {object} mes Message object
+ * @param {ChatMessage} mes Message object
  */
 export function ensureMessageMediaIsArray(mes) {
     /**
