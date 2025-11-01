@@ -8270,7 +8270,7 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     messageElement ??= chatElement.children().filter(`[mesid="${mesId}"]`);
 
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
-    const swipeCounter = messageElement.find('> .swipes-counter');
+    const swipeCounter = messageElement.find('.swipes-counter');
     swipeCounter.css('opacity', opacity);
     swipeCounter.text(swipeCounterText).show();
 }
@@ -9100,7 +9100,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
-    const swipeRange = direction === SWIPE_DIRECTION.RIGHT ? -700 : 700;
+    let swipeRange = (direction === SWIPE_DIRECTION.RIGHT) ? -700 : 700;
 
     async function endSwipe() {
         //Wait for the generation to end.
@@ -9134,7 +9134,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             // Prevent recursion.
             if (source != SWIPE_SOURCE.BACK) {
                 chat[mesId]['swipe_id'] = clampedId;
-                swipe(undefined, backDirection, { source: SWIPE_SOURCE.BACK, forceMesId: mesId, forceSwipeId: clampedId });
+
+                //Set variables for backwards swipe.
+                source = SWIPE_SOURCE.BACK;
+                direction = backDirection;
+                swipeRange = (direction === SWIPE_DIRECTION.RIGHT) ? -700 : 700;
+                await standardSwipe();
                 return;
             }
             else {
