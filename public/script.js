@@ -1468,6 +1468,7 @@ export async function clearChat() {
     if (is_delete_mode) {
         $('#dialogue_del_mes_cancel').trigger('click');
     }
+    //This will also remove '.mes' elements.
     chatElement.children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove');
@@ -7442,7 +7443,7 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     if (this?.classList?.contains('mes_edit_cancel')) {
         thisMesDiv = $(this).closest('.mes');
     } else {
-        thisMesDiv = chatElement.children().filter(`[mesid="${messageId}"]`);
+        thisMesDiv = chatElement.children('.mes').filter(`[mesid="${messageId}"]`);
     }
 
     const thisMesBlock = thisMesDiv.find('.mes_block');
@@ -8267,7 +8268,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
  */
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined, opacity = 0.3 } = {}) {
     message ??= chat[mesId];
-    messageElement ??= chatElement.children().filter(`[mesid="${mesId}"]`);
+    messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
 
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
@@ -8557,7 +8558,7 @@ export function updateEditArrowClasses() {
         return;
     }
 
-    const message = chatElement.children().filter(`.mes[mesid="${this_edit_mes_id}"]`);
+    const message = chatElement.children('.mes').filter(`.mes[mesid="${this_edit_mes_id}"]`);
 
     const downButton = message.find('.mes_edit_down');
     const upButton = message.find('.mes_edit_up');
@@ -9087,7 +9088,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
+    const thisMesDiv = chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
     const thisMesDivHeight = thisMesDiv[0]?.scrollHeight;
     const thisMesTextHeight = thisMesText[0]?.scrollHeight;
@@ -9301,7 +9302,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     async function animateSwipeTransition(mesId, x, duration, classes = '') {
         //Select messages after mesId.
-        const swipedMessagesDiv  = chatElement.children().filter((index, div) => {
+        const swipedMessagesDiv  = chatElement.children('.mes').filter((index, div) => {
             const $div = $(div);
             return Number($div.attr('mesid')) >= mesId;
         });
