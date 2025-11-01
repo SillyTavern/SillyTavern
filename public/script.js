@@ -2161,7 +2161,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         return appendImageAttachment(attachment, index);
     }
 
-    // Only display swipe buttons if there is a single image and multiple swipes
+    // Add media gallery to message
     if (hasMedia && mediaDisplay === MEDIA_DISPLAY.GALLERY) {
         const mediaIndex = getMediaIndex(mes);
         const selectedMedia = mes.extra.media[mediaIndex];
