@@ -5,8 +5,9 @@ import { getSlashCommandsHelp } from './slash-commands.js';
 import { SlashCommandBrowser } from './slash-commands/SlashCommandBrowser.js';
 import { renderTemplateAsync } from './templates.js';
 
-// Initialized in getSystemMessages()
+/** @type {Record<string, ChatMessage>} */
 export const system_messages = {};
+/** @type {ChatMessage[]} */
 export const SAFETY_CHAT = [];
 
 /**
@@ -29,6 +30,7 @@ export const system_message_types = {
 };
 
 export async function initSystemMessages() {
+    /** @type {Record<string, ChatMessage>} */
     const result = {
         help: {
             name: systemUserName,
@@ -65,14 +67,15 @@ export async function initSystemMessages() {
             is_system: true,
             mes: await renderTemplateAsync('macros'),
         },
-        welcome:
-        {
+        welcome: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            uses_system_ui: true,
             mes: await renderTemplateAsync('welcome', { displayVersion }),
+            extra: {
+                uses_system_ui: true,
+            },
         },
         empty: {
             name: systemUserName,
@@ -93,9 +96,9 @@ export async function initSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            uses_system_ui: true,
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
+                uses_system_ui: true,
                 isSmallSys: true,
             },
         },
@@ -105,8 +108,8 @@ export async function initSystemMessages() {
             is_user: false,
             is_system: true,
             mes: await renderTemplateAsync('assistantNote'),
-            uses_system_ui: true,
             extra: {
+                uses_system_ui: true,
                 isSmallSys: true,
             },
         },
@@ -114,12 +117,13 @@ export async function initSystemMessages() {
 
     Object.assign(system_messages, result);
 
+    /** @type {ChatMessage} */
     const safetyMessage = {
         name: systemUserName,
         force_avatar: system_avatar,
         is_system: true,
         is_user: false,
-        create_date: 0,
+        send_date: getMessageTimeStamp(),
         mes: t`You deleted a character/chat and arrived back here for safety reasons! Pick another character!`,
     };
     SAFETY_CHAT.splice(0, SAFETY_CHAT.length, safetyMessage);
@@ -130,8 +134,8 @@ export async function initSystemMessages() {
  * Gets a system message by type.
  * @param {string} type Type of system message
  * @param {string} [text] Text to be sent
- * @param {object} [extra] Additional data to be added to the message
- * @returns {object} System message object
+ * @param {ChatMessageExtra} [extra] Additional data to be added to the message
+ * @returns {ChatMessage} System message object
  */
 export function getSystemMessageByType(type, text, extra = {}) {
     const systemMessage = system_messages[type];
@@ -150,7 +154,7 @@ export function getSystemMessageByType(type, text, extra = {}) {
         newMessage.mes = getSlashCommandsHelp();
     }
 
-    if (!newMessage.extra) {
+    if (!newMessage.extra || typeof newMessage.extra !== 'object') {
         newMessage.extra = {};
     }
 
@@ -163,7 +167,7 @@ export function getSystemMessageByType(type, text, extra = {}) {
  * Sends a system message to the chat.
  * @param {string} type Type of system message
  * @param {string} [text] Text to be sent
- * @param {object} [extra] Additional data to be added to the message
+ * @param {ChatMessageExtra} [extra] Additional data to be added to the message
  */
 export function sendSystemMessage(type, text, extra = {}) {
     const newMessage = getSystemMessageByType(type, text, extra);

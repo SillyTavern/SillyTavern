@@ -6,7 +6,6 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
-import { MEDIA_TYPE, MEDIA_DISPLAY } from './scripts/constants';
 
 declare global {
     // Custom types
@@ -35,6 +34,8 @@ declare global {
     };
 
     interface ChatMessageExtra {
+        bias?: string;
+        uses_system_ui?: boolean;
         memory?: string;
         display_text?: string;
         reasoning_display_text?: string;
@@ -47,16 +48,20 @@ declare global {
         media_display?: string;
         media_index?: number;
         media?: MediaAttachment[],
-        /** @deprecated Use 'files' instead */
+        /** @deprecated Use `files` instead */
         file?: FileAttachment;
-        /** @deprecated Use 'media' instead */
+        /** @deprecated Use `media` instead */
         image?: string;
-        /** @deprecated Use 'media' instead */
+        /** @deprecated Use `media` instead */
         video?: string;
-        /** @deprecated Use 'media' with media_display = 'gallery' */
+        /** @deprecated Use `media` with `media_display = 'gallery'` instead */
         image_swipes?: string[];
-        /** @deprecated Use 'append_title' of the 'media' element */
+        /** @deprecated Use `MediaAttachment.append_title` instead */
         append_title?: boolean;
+        /** @deprecated Use `MediaAttachment.generation_type` instead */
+        generationType?: number;
+        /** @deprecated Use `MediaAttachment.negative` instead */
+        negative?: string;
     }
 
     type MediaAttachment = MediaAttachmentProps & ImageGenerationAttachmentProps & ImageCaptionAttachmentProps;
