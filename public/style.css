@@ -4981,7 +4981,7 @@ a:hover {
     position: relative;
     width: fit-content;
     transition: all var(--animation-duration);
-    padding: 0.5rem;
+    margin: 0.5rem;
 }
 
 .mes .mes_video_container:has(.mes_video[src]) {
@@ -5006,7 +5006,7 @@ a:hover {
 .mes_img_controls,
 .mes_video_controls {
     position: absolute;
-    top: 0.1em;
+    top: 0;
     left: 0;
     width: 100%;
     display: flex;
@@ -5014,14 +5014,18 @@ a:hover {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 1em;
+    padding: 10px;
     z-index: 1;
     transition: opacity var(--animation-duration) ease-in-out;
+    background: linear-gradient(rgba(0, 0, 0, 0.9), transparent);
+    border-radius: 5px 5px 0 0;
 }
 
 .mes_img_swipes {
     top: unset;
-    bottom: 0.1rem;
+    bottom: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    border-radius: 0 0 5px 5px;
 }
 
 .mes_img_swipes .right_menu_button,
