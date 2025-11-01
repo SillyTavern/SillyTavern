@@ -4671,6 +4671,13 @@
                                         <option value="2" data-i18n="Document">Document</option>
                                     </select>
                                 </div>
+                                <div class="flex-container alignitemscenter" title="Default display style for media attachments in chat messages. Extensions can override this setting." data-i18n="[title]Default display style for media attachments in chat messages. Extensions can override this setting.">
+                                    <span data-i18n="Media Style:">Media Style:</span>
+                                    <select id="media_display" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="list" data-i18n="List">List</option>
+                                        <option value="gallery" data-i18n="Gallery">Gallery</option>
+                                    </select>
+                                </div>
                                 <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Notifications:">Notifications:</span>
                                     <select id="toastr_position" class="widthNatural flex1 margin0 text_pole">
@@ -5117,10 +5124,6 @@
                                 <label class="checkbox_label" for="forbid_external_media" title="Disallow embedded media from other domains in chat messages." data-i18n="[title]Disallow embedded media from other domains in chat messages">
                                     <input id="forbid_external_media" type="checkbox" />
                                     <small data-i18n="Forbid External Media">Forbid External Media</small>
-                                </label>
-                                <label for="media_display" class="checkbox_label" title="Sets the default media view to gallery or list." data-i18n="[title]Sets the default media view to gallery or list.">
-                                    <input id="media_display" type="checkbox" />
-                                    <small data-i18n="Toggle Gallery">Toggle Gallery</small>
                                 </label>
                                 <label class="checkbox_label" for="allow_name2_display">
                                     <input id="allow_name2_display" type="checkbox" />

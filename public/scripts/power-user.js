@@ -1716,7 +1716,7 @@ export async function loadPowerUserSettings(settings, data) {
     $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
     $('#pin_styles').prop('checked', power_user.pin_styles);
     $('#click_to_edit').prop('checked', power_user.click_to_edit);
-    $('#media_display').prop('checked', (power_user.media_display == MEDIA_DISPLAY.GALLERY));
+    $('#media_display').val(power_user.media_display);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -4126,7 +4126,7 @@ jQuery(() => {
     });
 
     $('#media_display').on('input', function () {
-        power_user.media_display = ($(this).prop('checked')) ? MEDIA_DISPLAY.GALLERY : MEDIA_DISPLAY.LIST;
+        power_user.media_display = $(this).val().toString();
         reloadCurrentChat();
         saveSettingsDebounced();
     });
