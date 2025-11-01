@@ -882,7 +882,7 @@ function expandMessageMedia(messageId, mediaIndex) {
     }
 
     const mediaAttachment = message.extra.media[mediaIndex];
-    const title = mediaAttachment.title || message.extra.title;
+    const title = mediaAttachment.title || message.extra.title || '';
 
     if (!mediaAttachment) {
         return;
@@ -924,31 +924,34 @@ function expandMessageMedia(messageId, mediaIndex) {
     const mediaHolder = document.createElement('div');
     mediaHolder.classList.add('img_enlarged_holder');
     mediaHolder.append(mediaElement);
-    const imgContainer = $('<div><pre><code class="img_enlarged_title"></code></pre></div>');
-    imgContainer.prepend(mediaHolder);
-    imgContainer.addClass('img_enlarged_container');
-
-    const codeTitle = imgContainer.find('.img_enlarged_title');
-    codeTitle.addClass('txt').text(title);
-    const titleEmpty = !title || title.trim().length === 0;
-    imgContainer.find('pre').toggle(!titleEmpty);
-    addCopyToCodeBlocks(imgContainer);
-
-    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
-
-    popup.dlg.style.width = 'unset';
-    popup.dlg.style.height = 'unset';
+    const mediaContainer = document.createElement('div');
+    mediaContainer.classList.add('img_enlarged_container');
+    mediaContainer.append(mediaHolder);
 
     mediaElement.addEventListener('click', event => {
         const shouldZoom = !mediaElement.classList.contains('zoomed') && mediaElement.nodeName === 'IMG';
         mediaElement.classList.toggle('zoomed', shouldZoom);
         event.stopPropagation();
     });
-    codeTitle[0]?.addEventListener('click', event => {
-        event.stopPropagation();
-    });
 
-    popup.dlg.addEventListener('click', event => {
+    if (title.trim().length > 0) {
+        const mediaTitlePre = document.createElement('pre');
+        const mediaTitleCode = document.createElement('code');
+        mediaTitleCode.classList.add('img_enlarged_title', 'txt');
+        mediaTitleCode.textContent = title;
+        mediaTitlePre.append(mediaTitleCode);
+        mediaTitleCode.addEventListener('click', event => {
+            event.stopPropagation();
+        });
+        mediaContainer.append(mediaTitlePre);
+        addCopyToCodeBlocks(mediaContainer);
+    }
+
+    const popup = new Popup(mediaContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
+
+    popup.dlg.style.width = 'unset';
+    popup.dlg.style.height = 'unset';
+    popup.dlg.addEventListener('click', () => {
         popup.completeCancelled();
     });
 
