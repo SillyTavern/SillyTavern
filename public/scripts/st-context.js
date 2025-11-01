@@ -59,6 +59,8 @@ import {
     refreshSwipeButtons,
     isSwipingAllowed,
     ensureMessageMediaIsArray,
+    getMediaDisplay,
+    getMediaIndex,
 } from '../script.js';
 import {
     extension_settings,
@@ -211,6 +213,8 @@ export function getContext() {
         updateMessageBlock,
         appendMediaToMessage,
         ensureMessageMediaIsArray,
+        getMediaDisplay,
+        getMediaIndex,
         swipe: {
             left: swipe_left,
             right: swipe_right,

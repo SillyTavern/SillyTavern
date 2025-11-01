@@ -26,6 +26,7 @@ import {
     printMessages,
     clearChat,
     refreshSwipeButtons,
+    getMediaIndex,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -44,6 +45,7 @@ import {
     getFileExtension,
     convertTextToBase64,
     isSameFile,
+    clamp,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -53,6 +55,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { MEDIA_DISPLAY, MEDIA_TYPE, SWIPE_DIRECTION } from './constants.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -188,7 +191,7 @@ export async function unhideChatMessage(messageId, _messageBlock) {
 
 /**
  * Adds a file attachment to the message.
- * @param {object} message Message object
+ * @param {ChatMessage} message Message object
  * @returns {Promise<void>} A promise that resolves when file is uploaded.
  */
 export async function populateFileAttachment(message, inputId = 'file_form_input') {
@@ -205,26 +208,15 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
             let base64Data = fileBase64.split(',')[1];
             const extension = getFileExtension(file);
 
-            // If file is image
-            if (file.type.startsWith('image/')) {
+            const mediaType = MEDIA_TYPE.getFromMime(file.type);
+            if (mediaType) {
                 const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-
-                if (!Array.isArray(message.extra.images)) {
-                    message.extra.images = [];
+                if (!Array.isArray(message.extra.media)) {
+                    message.extra.media = [];
                 }
-
-                message.extra.images.push(imageUrl);
+                message.extra.media.push({ url: imageUrl, type: mediaType });
+                message.extra.media_index = message.extra.media.length - 1;
                 message.extra.inline_image = true;
-            }
-            // If file is video
-            else if (file.type.startsWith('video/')) {
-                const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-
-                if (!Array.isArray(message.extra.videos)) {
-                    message.extra.videos = [];
-                }
-
-                message.extra.videos.push(videoUrl);
             } else {
                 const uniqueFileName = `${fileNamePrefix}.txt`;
 
@@ -870,39 +862,70 @@ export function isExternalMediaAllowed() {
 }
 
 /**
- * Expands the message image.
+ * Expands the message media attachment.
  * @param {number} messageId Message ID
- * @param {number} imageIndex Image index
- * @returns {HTMLImageElement} Enlarged image element
+ * @param {number} mediaIndex Media index
+ * @returns {HTMLElement} Enlarged media element
  */
-function expandMessageImage(messageId, imageIndex) {
-    if (isNaN(messageId) || isNaN(imageIndex)) {
-        console.warn('Invalid message ID or image index');
+function expandMessageMedia(messageId, mediaIndex) {
+    if (isNaN(messageId) || isNaN(mediaIndex)) {
+        console.warn('Invalid message ID or media index');
         return;
     }
 
+    /** @type {ChatMessage} */
     const message = chat[messageId];
 
-    if (!Array.isArray(message?.extra?.images) || message.extra.images.length === 0) {
-        console.warn('Message has no images to expand');
+    if (!Array.isArray(message?.extra?.media) || message.extra.media.length === 0) {
+        console.warn('Message has no media to expand');
         return;
     }
 
-    const imgSrc = message.extra.images[imageIndex];
-    const title = message?.extra?.title;
+    const mediaAttachment = message.extra.media[mediaIndex];
+    const title = mediaAttachment.title || message.extra.title;
 
-    if (!imgSrc) {
+    if (!mediaAttachment) {
         return;
     }
 
-    const img = document.createElement('img');
-    img.classList.add('img_enlarged');
-    img.src = imgSrc;
-    const imgHolder = document.createElement('div');
-    imgHolder.classList.add('img_enlarged_holder');
-    imgHolder.append(img);
+    /**
+     * Gets the media element based on its type.
+     * @returns {HTMLElement} Media element
+     */
+    function getMediaElement() {
+        function getImageElement() {
+            const img = document.createElement('img');
+            img.src = mediaAttachment.url;
+            img.classList.add('img_enlarged');
+            return img;
+        }
+
+        function getVideoElement() {
+            const video = document.createElement('video');
+            video.src = mediaAttachment.url;
+            video.classList.add('img_enlarged');
+            video.controls = true;
+            video.autoplay = true;
+            return video;
+        }
+
+        switch (mediaAttachment.type) {
+            case MEDIA_TYPE.IMAGE:
+                return getImageElement();
+            case MEDIA_TYPE.VIDEO:
+                return getVideoElement();
+        }
+
+        console.warn('Unsupported media type for enlargement:', mediaAttachment.type);
+        return getImageElement();
+    }
+
+    const mediaElement = getMediaElement();
+    const mediaHolder = document.createElement('div');
+    mediaHolder.classList.add('img_enlarged_holder');
+    mediaHolder.append(mediaElement);
     const imgContainer = $('<div><pre><code class="img_enlarged_title"></code></pre></div>');
-    imgContainer.prepend(imgHolder);
+    imgContainer.prepend(mediaHolder);
     imgContainer.addClass('img_enlarged_container');
 
     const codeTitle = imgContainer.find('.img_enlarged_title');
@@ -916,9 +939,9 @@ function expandMessageImage(messageId, imageIndex) {
     popup.dlg.style.width = 'unset';
     popup.dlg.style.height = 'unset';
 
-    img.addEventListener('click', event => {
-        const shouldZoom = !img.classList.contains('zoomed');
-        img.classList.toggle('zoomed', shouldZoom);
+    mediaElement.addEventListener('click', event => {
+        const shouldZoom = !mediaElement.classList.contains('zoomed') && mediaElement.nodeName === 'IMG';
+        mediaElement.classList.toggle('zoomed', shouldZoom);
         event.stopPropagation();
     });
     codeTitle[0]?.addEventListener('click', event => {
@@ -930,23 +953,24 @@ function expandMessageImage(messageId, imageIndex) {
     });
 
     popup.show();
-    return img;
+    return mediaElement;
 }
 
 /**
  * Deletes an image from a message.
  * @param {number} messageId Message ID
- * @param {number} imageIndex Image index
+ * @param {number} mediaIndex Image index
  * @param {JQuery<HTMLElement>} messageBlock Message block element
  */
-async function deleteMessageImage(messageId, imageIndex, messageBlock) {
-    if (isNaN(messageId) || isNaN(imageIndex)) {
-        console.warn('Invalid message ID or image index');
+async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
+    if (isNaN(messageId) || isNaN(mediaIndex)) {
+        console.warn('Invalid message ID or media index');
         return;
     }
 
-    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.TEXT, '', {
+    const value = await Popup.show.confirm(t`Delete media from message?`, t`This action can't be undone.`, {
         okButton: t`Delete one`,
+        cancelButton: false,
         customButtons: [
             {
                 text: t`Delete all`,
@@ -965,41 +989,31 @@ async function deleteMessageImage(messageId, imageIndex, messageBlock) {
         return;
     }
 
+    /** @type {ChatMessage} */
     const message = chat[messageId];
 
-    if (!Array.isArray(message?.extra?.images)) {
-        console.debug('Message has no images');
+    if (!Array.isArray(message?.extra?.media)) {
+        console.debug('Message has no media');
         return;
     }
 
-    if (imageIndex < 0 || imageIndex >= message.extra.images.length) {
-        console.warn('Invalid image index for message');
+    if (mediaIndex < 0 || mediaIndex >= message.extra.media.length) {
+        console.warn('Invalid media index for message');
         return;
     }
 
-    if (imageIndex === 0 && Array.isArray(message.extra.image_swipes) && message.extra.image_swipes.length > 0) {
-        const indexOf = message.extra.image_swipes.indexOf(message.extra.images[imageIndex]);
-        if (indexOf > -1) {
-            message.extra.image_swipes.splice(indexOf, 1);
-            const isLastImage = message.extra.image_swipes.length === 0;
-            if (!isLastImage) {
-                const newIndex = Math.min(indexOf, message.extra.image_swipes.length - 1);
-                message.extra.images[imageIndex] = message.extra.image_swipes[newIndex];
-            } else {
-                message.extra.images.splice(imageIndex, 1);
-                delete message.extra.image_swipes;
-            }
-        }
-    } else {
-        message.extra.images.splice(imageIndex, 1);
+    message.extra.media.splice(mediaIndex, 1);
+
+    if (message.extra.media_index === mediaIndex) {
+        const newIndex = mediaIndex > 0 ? mediaIndex - 1 : 0;
+        message.extra.media_index = clamp(newIndex, 0, message.extra.media.length - 1);
     }
 
     if (value === POPUP_RESULT.CUSTOM1) {
-        delete message.extra.images;
+        delete message.extra.media;
         delete message.extra.inline_image;
         delete message.extra.title;
         delete message.extra.append_title;
-        delete message.extra.image_swipes;
     }
 
     await saveChatConditional();
@@ -1007,36 +1021,30 @@ async function deleteMessageImage(messageId, imageIndex, messageBlock) {
 }
 
 /**
- * Deletes video from a message.
+ * Switches the media display mode for a message.
  * @param {number} messageId Message ID
- * @param {number} videoIndex Video index
  * @param {JQuery<HTMLElement>} messageBlock Message block element
+ * @param {MEDIA_DISPLAY} targetDisplay Target display mode
  */
-async function deleteMessageVideo(messageId, videoIndex, messageBlock) {
-    if (isNaN(messageId) || isNaN(videoIndex)) {
-        console.warn('Invalid message ID or video index');
+async function switchMessageMediaDisplay(messageId, messageBlock, targetDisplay) {
+    if (isNaN(messageId)) {
+        console.warn('Invalid message ID');
         return;
     }
 
-    const confirm = await Popup.show.confirm(t`Delete video from message?`, t`This action can't be undone.`);
-    if (!confirm) {
-        return;
-    }
-
+    /** @type {ChatMessage} */
     const message = chat[messageId];
 
-    if (!Array.isArray(message?.extra?.videos)) {
-        console.debug('Message has no videos');
+    if (!message) {
+        console.warn('Message not found for ID', messageId);
         return;
     }
 
-    if (videoIndex < 0 || videoIndex >= message.extra.videos.length) {
-        console.warn('Invalid video index for message');
-        return;
+    if (!message.extra || typeof message.extra !== 'object') {
+        message.extra = {};
     }
 
-    message.extra.videos.splice(videoIndex, 1);
-
+    message.extra.media_display = targetDisplay;
     await saveChatConditional();
     appendMediaToMessage(message, messageBlock, false);
 }
@@ -1971,6 +1979,66 @@ export function addDOMPurifyHooks() {
     });
 }
 
+/**
+ * Switches an image to the next or previous one in the swipe list.
+ * @param {object} args Event arguments
+ * @param {ChatMessage} args.message Message object
+ * @param {JQuery<HTMLElement>} args.element Message element
+ * @param {string} args.direction Swipe direction
+ * @returns {Promise<void>}
+ */
+async function onImageSwiped({ message, element, direction }) {
+    const animationClass = 'fa-fade';
+    const messageMedia = element.find('.mes_img, .mes_video');
+
+    // Current image is already animating
+    if (messageMedia.hasClass(animationClass)) {
+        return;
+    }
+
+    const media = message?.extra?.media;
+
+    if (!Array.isArray(media) || media.length === 0) {
+        console.warn('No media found in the message');
+        return;
+    }
+
+    if (message?.extra?.media_display !== MEDIA_DISPLAY.GALLERY) {
+        console.warn('Image swiping is only supported for gallery media display');
+        return;
+    }
+
+    const currentIndex = getMediaIndex(message);
+
+    // Switch to previous image or wrap around if at the beginning
+    if (direction === SWIPE_DIRECTION.LEFT) {
+        const newIndex = currentIndex === 0 ? media.length - 1 : currentIndex - 1;
+        message.extra.media_index = newIndex;
+    }
+
+    // Switch to next image or generate a new one if at the end
+    if (direction === SWIPE_DIRECTION.RIGHT) {
+        const newIndex = currentIndex === media.length - 1 ? 0 : currentIndex + 1;
+        message.extra.media_index = newIndex >= media.length ? 0 : newIndex;
+    }
+
+    // Show a message that swipe right no longer automatically generates an image
+    if (media.length > 1 && direction === SWIPE_DIRECTION.RIGHT && message.extra.media_index === 0) {
+        const key = 'imageSwipeNoticeShown';
+        const hasSeenNotice = accountStorage.getItem(key);
+        if (!hasSeenNotice) {
+            await Popup.show.text(
+                t`Image swiping no longer automatically generates new images.`,
+                t`Use the 'Generate Image' (paintbrush) button in the message actions menu to generate more images. This message will not be shown again.`,
+            );
+            accountStorage.setItem(key, 'true');
+        }
+    }
+
+    await saveChatConditional();
+    appendMediaToMessage(message, element, false);
+}
+
 export function initChatUtilities() {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
@@ -2165,30 +2233,33 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_img', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const imageBlock = $(this).closest('.mes_img_container');
-        const imageIndex = Number(imageBlock.attr('data-index'));
-        expandMessageImage(messageId, imageIndex);
+        const mediaBlock = $(this).closest('.mes_media_container');
+        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        expandMessageMedia(messageId, mediaIndex);
     });
-    $(document).on('click', '.mes_img_enlarge', async function() {
+    $(document).on('click', '.mes_media_enlarge', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const imageBlock = $(this).closest('.mes_img_container');
-        const imageIndex = Number(imageBlock.attr('data-index'));
-        expandMessageImage(messageId, imageIndex).click();
+        const mediaBlock = $(this).closest('.mes_media_container');
+        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        expandMessageMedia(messageId, mediaIndex).click();
     });
-    $(document).on('click', '.mes_img_delete', async function () {
+    $(document).on('click', '.mes_media_delete', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const imageBlock = $(this).closest('.mes_img_container');
-        const imageIndex = Number(imageBlock.attr('data-index'));
-        await deleteMessageImage(messageId, imageIndex, messageBlock);
+        const mediaBlock = $(this).closest('.mes_media_container');
+        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        await deleteMessageMedia(messageId, mediaIndex, messageBlock);
     });
-    $(document).on('click', '.mes_video_delete', async function() {
+    $(document).on('click', '.mes_media_list', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const videoBlock = $(this).closest('.mes_video_container');
-        const videoIndex = Number(videoBlock.attr('data-index'));
-        await deleteMessageVideo(messageId, videoIndex, messageBlock);
+        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
+    });
+    $(document).on('click', '.mes_media_gallery', async function () {
+        const messageBlock = $(this).closest('.mes');
+        const messageId = Number(messageBlock.attr('mesid'));
+        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
     });
 
     $('#file_form_input').on('change', async () => {
@@ -2229,4 +2300,5 @@ export function initChatUtilities() {
     });
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
+    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 }

@@ -63,6 +63,7 @@ import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
+import { MEDIA_DISPLAY } from './constants.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -337,6 +338,7 @@ export const power_user = {
     external_media_forbidden_overrides: [],
     pin_styles: true,
     click_to_edit: false,
+    media_display: MEDIA_DISPLAY.LIST,
 };
 
 let themes = [];

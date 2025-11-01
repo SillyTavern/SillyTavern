@@ -15,6 +15,8 @@ import {
     Generate,
     getExtensionPrompt,
     getExtensionPromptMaxDepth,
+    getMediaDisplay,
+    getMediaIndex,
     getRequestHeaders,
     getStoppingStrings,
     is_send_press,
@@ -74,7 +76,7 @@ import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL } from './constants.js';
+import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 
 export {
     openai_messages_count,
@@ -539,10 +541,11 @@ function setOpenAIMessages(chat) {
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
-        const images = chat[j]?.extra?.images;
-        const videos = chat[j]?.extra?.videos;
+        const media = chat[j]?.extra?.media;
+        const mediaDisplay = getMediaDisplay(chat[j]);
+        const mediaIndex = getMediaIndex(chat[j]);
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'images': images, 'videos': videos, 'invocations': invocations };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations };
         j++;
     }
 
@@ -852,15 +855,34 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             await chatMessage.setName(messageName);
         }
 
-        if (imageInlining && Array.isArray(chatPrompt.images)) {
-            for (const image of chatPrompt.images) {
-                await chatMessage.addImage(image);
+        /**
+         * Inline a media attachment into the chat message.
+         * @param {MediaAttachment} media - The media attachment to inline.
+         */
+        async function inlineMediaAttachment(media) {
+            if (!media || !media.url) {
+                return;
+            }
+            if (!media.type) {
+                media.type = MEDIA_TYPE.IMAGE;
+            }
+            if (imageInlining && media.type === MEDIA_TYPE.IMAGE) {
+                await chatMessage.addImage(media.url);
+            }
+            if (videoInlining && media.type === MEDIA_TYPE.VIDEO) {
+                await chatMessage.addVideo(media.url);
             }
         }
 
-        if (videoInlining && Array.isArray(chatPrompt.videos)) {
-            for (const video of chatPrompt.videos) {
-                await chatMessage.addVideo(video);
+        if (Array.isArray(chatPrompt.media) && chatPrompt.media.length) {
+            if (chatPrompt.mediaDisplay === MEDIA_DISPLAY.LIST) {
+                for (const media of chatPrompt.media) {
+                    await inlineMediaAttachment(media);
+                }
+            }
+            if (chatPrompt.mediaDisplay === MEDIA_DISPLAY.GALLERY) {
+                const media = chatPrompt.media[chatPrompt.mediaIndex];
+                await inlineMediaAttachment(media);
             }
         }
 
@@ -2943,6 +2965,11 @@ class Message {
         }
     }
 
+    /**
+     * Adds a video to the message.
+     * @param {string} video Video URL or Data URL.
+     * @returns {Promise<void>}
+     */
     async addVideo(video) {
         const textContent = this.content;
         if (!Array.isArray(this.content)) {

@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_TYPE, SWIPE_DIRECTION } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -1927,21 +1927,10 @@ export function ensureMessageMediaIsArray(mes) {
      * @param {object} obj Object to add property to
      * @param {string} plainProperty Plain property name
      * @param {string} arrayProperty Array property to back the plain property
+     * @param {(value: any) => boolean} [filterFn] Optional filter function to apply when getting/setting the plain property
+     * @param {(value: any) => any} [mapFn] Optional map function to apply when getting/setting the plain property
      */
-    function addArrayAutoWrapper(obj, plainProperty, arrayProperty) {
-        // If the plain property exists as a plain property, migrate its value to the array property.
-        const hasPlainProperty = isPlainObjectProperty(obj, plainProperty);
-        if (hasPlainProperty) {
-            if (!Array.isArray(obj[arrayProperty])) {
-                obj[arrayProperty] = [];
-            }
-            const plainValue = obj[plainProperty];
-            delete obj[plainProperty];
-            if (plainValue) {
-                obj[arrayProperty].push(plainValue);
-            }
-        }
-
+    function addArrayAutoWrapper(obj, plainProperty, arrayProperty, filterFn = () => true, mapFn = (t) => t) {
         // If the plain property is already a getter, do nothing.
         const hasGetterProperty = isGetterObjectProperty(obj, plainProperty);
         if (hasGetterProperty) {
@@ -1953,7 +1942,8 @@ export function ensureMessageMediaIsArray(mes) {
             // Getting the plain property returns the first item in the array property, or undefined if the array is empty.
             get: function () {
                 console.trace(`Attempting to GET an array-wrapped property '${plainProperty}'. Use the array property '${arrayProperty}' instead.`);
-                return Array.isArray(this[arrayProperty]) && this[arrayProperty].length > 0 ? this[arrayProperty][0] : void 0;
+                const array = Array.isArray(this[arrayProperty]) ? this[arrayProperty].filter(filterFn).map(mapFn) : [];
+                return array.length > 0 ? array[0] : void 0;
             },
             // Setting the plain property is not supported, as it would be ambiguous.
             set: function () {
@@ -1966,29 +1956,116 @@ export function ensureMessageMediaIsArray(mes) {
         });
     }
 
+    /**
+     * Migrates image swipes from a single image property to an array.
+     * @param {ChatMessageExtra} obj
+     */
+    function migrateMediaToArray(obj) {
+        if (isPlainObjectProperty(obj, 'file')) {
+            if (!Array.isArray(obj.files)) {
+                obj.files = [];
+            }
+            const fileValue = obj.file;
+            delete obj.file;
+            if (fileValue) {
+                obj.files.push(fileValue);
+            }
+        }
+
+        if (Array.isArray(obj.image_swipes)) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            for (const swipe of obj.image_swipes) {
+                if (swipe && typeof swipe === 'string') {
+                    obj.media.push({ type: 'image', url: swipe });
+                }
+            }
+            delete obj.image_swipes;
+            obj.media = obj.media.filter((v, i, a) => i === a.findIndex(t => t.url === v.url));
+            obj.media_display = MEDIA_DISPLAY.GALLERY;
+        }
+
+        if (isPlainObjectProperty(obj, 'image')) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            const imageValue = obj.image;
+            delete obj.image;
+            if (imageValue && typeof imageValue === 'string') {
+                obj.media.push({ type: 'image', url: imageValue });
+            }
+            if (obj.media_display === MEDIA_DISPLAY.GALLERY) {
+                const selectedIndex = obj.media.findIndex(t => t.url === imageValue);
+                if (selectedIndex > -1) {
+                    obj.media_index = selectedIndex;
+                }
+            }
+        }
+
+        if (isPlainObjectProperty(obj, 'video')) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            const videoValue = obj.video;
+            delete obj.video;
+            if (videoValue && typeof videoValue === 'string') {
+                obj.media.push({ type: 'video', url: videoValue });
+            }
+        }
+    }
+
     if (!mes || !mes.extra || typeof mes.extra !== 'object') {
         return;
     }
 
+    migrateMediaToArray(mes.extra);
     addArrayAutoWrapper(mes.extra, 'file', 'files');
-    addArrayAutoWrapper(mes.extra, 'image', 'images');
-    addArrayAutoWrapper(mes.extra, 'video', 'videos');
+    addArrayAutoWrapper(mes.extra, 'image', 'media', (t) => t.type === 'image', (t) => t.url);
+    addArrayAutoWrapper(mes.extra, 'video', 'media', (t) => t.type === 'video', (t) => t.url);
+}
+
+/**
+ * Gets the media display setting for a message.
+ * @param {ChatMessage} mes Message object
+ * @returns {MEDIA_DISPLAY} Media display setting
+ */
+export function getMediaDisplay(mes) {
+    const value = mes?.extra?.media_display || power_user.media_display || MEDIA_DISPLAY.LIST;
+    return Object.values(MEDIA_DISPLAY).includes(value) ? value : MEDIA_DISPLAY.LIST;
+}
+
+/**
+ * Gets the media index for a message.
+ * @param {ChatMessage} mes Message object
+ * @returns {number} Media index
+ */
+export function getMediaIndex(mes) {
+    if (!Array.isArray(mes?.extra?.media)) {
+        return 0;
+    }
+    const value = mes.extra?.media_index;
+    if (isNaN(value) || value < 0 || value >= mes.extra.media.length) {
+        return 0;
+    }
+    return value;
 }
 
 /**
  * Appends image or file to the message element.
- * @param {object} mes Message object
+ * @param {ChatMessage} mes Message object
  * @param {JQuery<HTMLElement>} messageElement Message element
  * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
  */
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     ensureMessageMediaIsArray(mes);
 
-    const hasImages = mes.extra && Array.isArray(mes.extra.images) && mes.extra.images.length > 0;
-    const hasVideos = mes.extra && Array.isArray(mes.extra.videos) && mes.extra.videos.length > 0;
-    const hasFiles = mes.extra && Array.isArray(mes.extra.files) && mes.extra.files.length > 0;
+    const hasMedia = Array.isArray(mes?.extra?.media) && mes.extra.media.length > 0;
+    const hasFiles = Array.isArray(mes?.extra?.files) && mes.extra.files.length > 0;
+    const mediaDisplay = getMediaDisplay(mes);
+    const hideMessageText = hasMedia && mes?.extra?.inline_image === false;
 
-    let chatHeight = adjustScroll && (hasImages || hasVideos || hasFiles) ? chatElement.prop('scrollHeight') : 0;
+    let chatHeight = adjustScroll && (hasMedia || hasFiles) ? chatElement.prop('scrollHeight') : 0;
     const doAdjustScroll = () => {
         if (!adjustScroll) {
             return;
@@ -2000,80 +2077,124 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         chatHeight = newChatHeight;
     };
 
-    // Add images to message
-    if (hasImages) {
-        messageElement.find('.mes_text').toggleClass('displayNone', !mes.extra.inline_image);
-        messageElement.find('.mes_img_container').remove();
+    // Remove existing media containers
+    messageElement.find('.mes_media_container').remove();
+    // Set media display attribute
+    messageElement.attr('data-media-display', mediaDisplay);
+    // Toggle text visibility
+    messageElement.find('.mes_text').toggleClass('displayNone', hideMessageText);
 
-        for (let index = 0; index < mes.extra.images.length; index++) {
-            const template = $('#message_image_template .mes_img_container').clone();
-            template.attr('data-index', index);
+    /**
+     * Appends a single image attachment to the message element.
+     * @param {MediaAttachment} attachment Image attachment object
+     * @param {number} index Index of the image attachment
+     * @returns {JQuery<HTMLElement>} The appended image container element
+     */
+    function appendImageAttachment(attachment, index) {
+        const template = $('#message_image_template .mes_img_container').clone();
+        template.attr('data-index', index);
 
-            const image = template.find('.mes_img');
-            image.off('load').on('load', function () {
-                image.removeAttr('alt');
-                image.removeClass('error');
-                doAdjustScroll();
-            });
-            image.off('error').on('error', function () {
-                image.attr('alt', '');
-                image.addClass('error');
-                doAdjustScroll();
-            });
-            image.attr('src', mes.extra.images[index]);
-            image.attr('title', mes.extra?.title || mes.title || '');
+        const image = template.find('.mes_img');
+        image.off('load').on('load', function () {
+            image.removeAttr('alt');
+            image.removeClass('error');
+            doAdjustScroll();
+        });
+        image.off('error').on('error', function () {
+            image.attr('alt', '');
+            image.addClass('error');
+            doAdjustScroll();
+        });
+        image.attr('src', attachment.url);
+        image.attr('title', attachment.title || mes.extra.title || '');
 
-            // Only display swipe buttons if there is a single image and multiple swipes
-            const imageSwipes = mes.extra.image_swipes;
-            if (mes.extra.images.length === 1 && Array.isArray(imageSwipes) && imageSwipes.length > 0) {
-                template.addClass('img_swipes');
-                const counter = template.find('.mes_img_swipe_counter');
-                const currentImage = imageSwipes.indexOf(mes.extra.images[0]) + 1;
-                counter.text(`${currentImage}/${imageSwipes.length}`);
-
-                const swipeLeft = template.find('.mes_img_swipe_left');
-                swipeLeft.off('click').on('click', function () {
-                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.LEFT });
-                });
-
-                const swipeRight = template.find('.mes_img_swipe_right');
-                swipeRight.off('click').on('click', function () {
-                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.RIGHT });
-                });
-            }
-
-            messageElement.find('.mes_img_wrapper').append(template);
-        }
-    } else {
-        messageElement.find('.mes_img_container').remove();
-        messageElement.find('.mes_text').removeClass('displayNone');
+        messageElement.find('.mes_img_wrapper').append(template);
+        return template;
     }
 
-    // Add videos to message
-    if (hasVideos) {
-        messageElement.find('.mes_video_container').remove();
-        for (let index = 0; index < mes.extra.videos.length; index++) {
-            const videoUrl = mes.extra.videos[index];
-            const template = $('#message_video_template .mes_video_container').clone();
-            template.attr('data-index', index);
-            const video = template.find('.mes_video');
-            video.off('loadedmetadata').on('loadedmetadata', function () {
-                if (!adjustScroll) {
-                    return;
-                }
-                doAdjustScroll();
-            });
+    /**
+     * Appends a single video attachment to the message element.
+     * @param {MediaAttachment} attachment Video attachment object
+     * @param {number} index Index of the video attachment
+     * @returns {JQuery<HTMLElement>} The appended video container element
+     */
+    function appendVideoAttachment(attachment, index) {
+        const template = $('#message_video_template .mes_video_container').clone();
+        template.attr('data-index', index);
 
-            video.attr('src', videoUrl);
-            messageElement.find('.mes_video_wrapper').append(template);
+        const video = template.find('.mes_video');
+        video.off('loadedmetadata').on('loadedmetadata', function () {
+            if (!adjustScroll) {
+                return;
+            }
+            doAdjustScroll();
+        });
+        video.off('error').on('error', function () {
+            video.addClass('error');
+            doAdjustScroll();
+        });
+        video.attr('src', attachment.url);
+        video.attr('title', attachment.title || mes.extra.title || '');
+
+        messageElement.find('.mes_video_wrapper').append(template);
+        return template;
+    }
+
+    /**
+     * Appends a media attachment to the message element.
+     * @param {MediaAttachment} attachment Media attachment object
+     * @param {number} index Index of the media attachment
+     * @returns {JQuery<HTMLElement>} The appended media container element
+     */
+    function appendMediaAttachment(attachment, index) {
+        if (!attachment.type) {
+            attachment.type = MEDIA_TYPE.IMAGE;
         }
-    } else {
-        messageElement.find('.mes_video_container').remove();
+        switch (attachment.type) {
+            case MEDIA_TYPE.IMAGE:
+                return appendImageAttachment(attachment, index);
+            case MEDIA_TYPE.VIDEO:
+                return appendVideoAttachment(attachment, index);
+        }
+
+        console.warn(`Unknown media type: ${attachment.type}, defaulting to image.`, attachment);
+        return appendImageAttachment(attachment, index);
+    }
+
+    // Only display swipe buttons if there is a single image and multiple swipes
+    if (hasMedia && mediaDisplay === MEDIA_DISPLAY.GALLERY) {
+        const mediaIndex = getMediaIndex(mes);
+        const selectedMedia = mes.extra.media[mediaIndex];
+
+        const galleryControls = $('#message_gallery_controls .mes_img_swipes').clone();
+        const counter = galleryControls.find('.mes_img_swipe_counter');
+        counter.text(`${mediaIndex + 1}/${mes.extra.media.length}`);
+
+        const swipeLeft = galleryControls.find('.mes_img_swipe_left');
+        swipeLeft.off('click').on('click', function () {
+            eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.LEFT });
+        });
+
+        const swipeRight = galleryControls.find('.mes_img_swipe_right');
+        swipeRight.off('click').on('click', function () {
+            eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: SWIPE_DIRECTION.RIGHT });
+        });
+
+        const template = appendMediaAttachment(selectedMedia, mediaIndex);
+        template.addClass('img_swipes');
+        template.append(galleryControls);
+    }
+
+    // Add media as a list to message
+    if (hasMedia && mediaDisplay === MEDIA_DISPLAY.LIST) {
+        for (let index = 0; index < mes.extra.media.length; index++) {
+            const attachment = mes.extra.media[index];
+            appendImageAttachment(attachment, index);
+        }
     }
 
     // Add files to message
     if (hasFiles) {
-        messageElement.find('.mes_file_container').remove();
         for (let index = 0; index < mes.extra.files.length; index++) {
             const file = mes.extra.files[index];
             const template = $('#message_file_template .mes_file_container').clone();
@@ -2082,8 +2203,6 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
             template.find('.mes_file_size').text(humanFileSize(file.size)).attr('title', file.size);
             messageElement.find('.mes_file_wrapper').append(template);
         }
-    } else {
-        messageElement.find('.mes_file_container').remove();
     }
 }
 
@@ -3835,7 +3954,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         coreChat.pop();
     }
 
-    coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
+    coreChat = await Promise.all(coreChat.map(async (/** @type {ChatMessage} */ chatItem, index) => {
         let message = chatItem.mes;
         let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
         let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
@@ -3843,8 +3962,19 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
 
+        const titles = [];
         if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
-            regexedMessage = `${regexedMessage}\n\n${chatItem.extra.title}`;
+            titles.push(chatItem.extra.title);
+        }
+        if (Array.isArray(chatItem?.extra?.media)) {
+            for (const mediaItem of chatItem.extra.media) {
+                if (mediaItem?.title && mediaItem?.append_title) {
+                    titles.push(mediaItem.title);
+                }
+            }
+        }
+        if (titles.length > 0) {
+            regexedMessage = `${regexedMessage}\n\n${titles.join('\n\n')}`;
         }
 
         return {
@@ -6193,7 +6323,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
 /**
  * Saves the image to the message object.
  * @param {ParsedImage} img Image object
- * @param {object} mes Chat message object
+ * @param {ChatMessage} mes Chat message object
  * @typedef {{ image?: string, title?: string, inline?: boolean }} ParsedImage
  */
 function saveImageToMessage(img, mes) {
@@ -6201,10 +6331,10 @@ function saveImageToMessage(img, mes) {
         if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
-        if (!Array.isArray(mes.extra.images)) {
-            mes.extra.images = [];
+        if (!Array.isArray(mes.extra.media)) {
+            mes.extra.media = [];
         }
-        mes.extra.images.push(img.image);
+        mes.extra.media.push({ url: img.image, type: 'image' });
         mes.extra.title = img.title;
         mes.extra.inline_image = img.inline;
     }
@@ -9064,9 +9194,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (chat[mesId].extra && typeof chat[mesId].extra === 'object') {
             delete chat[mesId].extra.memory;
             delete chat[mesId].extra.display_text;
-            delete chat[mesId].extra.images;
-            delete chat[mesId].extra.image_swipes;
-            delete chat[mesId].extra.videos;
+            delete chat[mesId].extra.media;
             delete chat[mesId].extra.inline_image;
             delete chat[mesId].extra.files;
             delete chat[mesId].extra.fileLength;

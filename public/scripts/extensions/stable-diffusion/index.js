@@ -52,9 +52,9 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, SWIPE_DIRECTION, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, MEDIA_DISPLAY, MEDIA_TYPE, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
 import { MacrosParser } from '../../macros.js';
@@ -466,6 +466,12 @@ async function loadSettings() {
 
     if (!Array.isArray(extension_settings.sd.styles)) {
         extension_settings.sd.styles = defaultStyles;
+    }
+
+    // Preserve an original seed if exists
+    if (extension_settings.sd.original_seed >= 0) {
+        extension_settings.sd.seed = extension_settings.sd.original_seed;
+        delete extension_settings.sd.original_seed;
     }
 
     $('#sd_source').val(extension_settings.sd.source);
@@ -4065,6 +4071,16 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     const name = context.groupId ? systemUserName : context.name2;
     const template = extension_settings.sd.prompts[generationMode.MESSAGE] || '{{prompt}}';
     const messageText = substituteParamsExtended(template, { char: name, prompt: prompt, prefixedPrompt: prefixedPrompt });
+    const mediaType = isVideo(format) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE;
+    /** @type {MediaAttachment} */
+    const mediaAttachment = {
+        url: image,
+        type: mediaType,
+        title: prompt,
+        generation_type: generationType,
+        negative: additionalNegativePrefix,
+    };
+    /** @type {ChatMessage} */
     const message = {
         name: name,
         is_user: false,
@@ -4072,20 +4088,12 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
-            images: [image],
-            title: prompt,
-            generationType: generationType,
-            negative: additionalNegativePrefix,
+            media: [mediaAttachment],
+            media_display: MEDIA_DISPLAY.GALLERY,
+            media_index: 0,
             inline_image: false,
-            image_swipes: [image],
         },
     };
-    if (isVideo(format)) {
-        message.extra.videos = [image];
-        delete message.extra.images;
-        delete message.extra.image_swipes;
-        delete message.extra.inline_image;
-    }
     context.chat.push(message);
     const messageId = context.chat.length - 1;
     await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId, 'extension');
@@ -4215,143 +4223,76 @@ function isValidState() {
 
 let buttonAbortController = null;
 
+/**
+ * "Paintbrush" button handler to generate a new image for a message.
+ * @param {JQuery.ClickEvent} e The click event object.
+ * @returns {Promise<void>} A promise that resolves when the image generation process is complete.
+ */
 async function sdMessageButton(e) {
+    /**
+     * Sets the icon to indicate busy or idle state.
+     * @param {boolean} isBusy Whether the icon should indicate a busy state.
+     */
     function setBusyIcon(isBusy) {
-        $icon.toggleClass('fa-paintbrush', !isBusy);
-        $icon.toggleClass(busyClass, isBusy);
+        $icon.toggleClass(classes.idle, !isBusy);
+        $icon.toggleClass(classes.busy, isBusy);
     }
 
-    const busyClass = 'fa-hourglass';
+    const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush' };
     const context = getContext();
     const $icon = $(e.currentTarget);
-    const $mes = $icon.closest('.mes');
-    const message_id = $mes.attr('mesid');
-    const message = context.chat[message_id];
-    const characterFileName = context.groupId
-        ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
-        : context.characters[context.characterId]?.name;
-    const messageText = message?.mes;
-    const hasSavedImage = Array.isArray(message?.extra?.images) && message.extra.images.length > 0 && message?.extra?.title;
-    const hasSavedNegative = message?.extra?.negative;
 
-    if ($icon.hasClass(busyClass)) {
+    if ($icon.hasClass(classes.busy)) {
         buttonAbortController?.abort('Aborted by user');
         console.log('Previous image is still being generated...');
         return;
     }
 
-    let dimensions = null;
+    const messageElement = $icon.closest('.mes');
+    const messageId = Number(messageElement.attr('mesid'));
+
+    /** @type {ChatMessage} */
+    const message = context.chat[messageId];
+
+    if (!message) {
+        console.error('Could not find message for SD generation button');
+        return;
+    }
+
+    if (!message.extra || typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    if (!Array.isArray(message.extra.media)) {
+        message.extra.media = [];
+    }
+
+    /** @type {MediaAttachment} */
+    const selectedMedia = message.extra.media.length > 0
+        ? (message.extra.media[message.extra.media_index] ?? message.extra.media[message.extra.media.length - 1])
+        : { url: '', title: message.mes, type: MEDIA_TYPE.IMAGE, generation_type: generationMode.FREE };
+
     buttonAbortController = new AbortController();
+    const newMediaAttachment = await generateMediaSwipe(
+        selectedMedia,
+        message,
+        () => setBusyIcon(true),
+        () => setBusyIcon(false),
+        buttonAbortController,
+    );
 
-    const canAddSwipe = Array.isArray(message?.extra?.images) && message.extra.images.length === 1;
-    const targets = { images: POPUP_RESULT.CUSTOM1, swipes: POPUP_RESULT.CUSTOM2 };
-    let saveTarget = targets.images;
-
-    if (canAddSwipe) {
-        const popupResult = await Popup.show.confirm(
-            t`An image attachment already exists.`,
-            t`Do you want to add the new image to the swipe list or as a second image?`,
-            {
-                okButton: false,
-                customButtons: [
-                    { text: t`Add to Swipes`, result: targets.swipes, classes: ['popup-button-ok'] },
-                    { text: t`Add Another Image`, result: targets.images },
-                ],
-                cancelButton: t`Cancel`,
-            });
-        if (!popupResult) {
-            return;
-        }
-        saveTarget = popupResult;
+    if (!newMediaAttachment) {
+        return;
     }
 
-    try {
-        setBusyIcon(true);
-        if (hasSavedImage) {
-            const prompt = await refinePrompt(message.extra.title, false);
-            const negative = hasSavedNegative ? await refinePrompt(message.extra.negative, true) : '';
-            message.extra.title = prompt;
+    // If already contains an image and it's not inline - leave it as is
+    message.extra.inline_image = !(message.extra.media.length && !message.extra.inline_image);
+    message.extra.media.push(newMediaAttachment);
+    message.extra.media_index = message.extra.media.length - 1;
 
-            const generationType = message?.extra?.generationType ?? generationMode.FREE;
-            console.log('Regenerating an image, using existing prompt:', prompt);
-            dimensions = setTypeSpecificDimensions(generationType);
-            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage, initiators.action, buttonAbortController?.signal);
-        }
-        else {
-            console.log('doing /sd raw last');
-            await generatePicture(initiators.action, {}, 'raw_last', messageText, saveGeneratedImage);
-        }
-    }
-    catch (error) {
-        console.error('Could not generate inline image: ', error);
-    }
-    finally {
-        setBusyIcon(false);
+    appendMediaToMessage(message, messageElement, false);
 
-        if (dimensions) {
-            restoreOriginalDimensions(dimensions);
-        }
-    }
-
-    function saveGeneratedImage(prompt, image, generationType, negative, _initiator, _prefixedPrompt, format) {
-        // Some message sources may not create the extra object
-        if (typeof message.extra !== 'object' || message.extra === null) {
-            message.extra = {};
-        }
-
-        // Ensure images array exists
-        if (!Array.isArray(message.extra.images)) {
-            message.extra.images = [];
-        }
-
-        // Ensure swipes array exists
-        if (!Array.isArray(message.extra.image_swipes)) {
-            message.extra.image_swipes = [];
-        }
-
-        // If already contains an image and it's not inline - leave it as is
-        message.extra.inline_image = !(message.extra.images.length && !message.extra.inline_image);
-
-        // Determine if the format is a video
-        const isVideoFormat = isVideo(format);
-
-        // Add image to swipe list if applicable
-        if (!isVideoFormat && canAddSwipe && saveTarget === targets.swipes) {
-            // Add the first image to the swipe list if it's not already there
-            if (!message.extra.image_swipes.includes(message.extra.images[0])) {
-                message.extra.image_swipes.push(message.extra.images[0]);
-            }
-
-            // Add the new image to the swipe list and set it as the current image
-            message.extra.image_swipes.push(image);
-            message.extra.images[0] = image;
-        }
-
-        // Add image to array only if it's not a video and not being added to swipes
-        if (!isVideoFormat && (!canAddSwipe || saveTarget === targets.images)) {
-            message.extra.images.push(image);
-            // If it's the first image, also add it to the swipe list so it can be swiped later
-            if (message.extra.images.length === 1) {
-                message.extra.image_swipes.push(image);
-            }
-        }
-
-        // Set video data if the format is a video
-        if (isVideoFormat) {
-            if (!Array.isArray(message.extra.videos)) {
-                message.extra.videos = [];
-            }
-            message.extra.videos.push(image);
-        }
-
-        // Save prompt data for future use
-        message.extra.title = prompt;
-        message.extra.generationType = generationType;
-        message.extra.negative = negative;
-        appendMediaToMessage(message, $mes);
-
-        return context.saveChat();
-    }
+    await context.saveChat();
 }
 
 async function onCharacterPromptShareInput() {
@@ -4381,108 +4322,61 @@ async function writePromptFields(characterId) {
 }
 
 /**
- * Switches an image to the next or previous one in the swipe list.
- * @param {object} args Event arguments
- * @param {any} args.message Message object
- * @param {JQuery<HTMLElement>} args.element Message element
- * @param {string} args.direction Swipe direction
- * @returns {Promise<void>}
+ * Generates a new media attachment based on the provided media attachment metadata.
+ * @param {MediaAttachment} mediaAttachment - The media attachment metadata.
+ * @param {ChatMessage} message - The chat message containing the media attachment.
+ * @param {Function} onStart - Callback function to be called when generation starts.
+ * @param {Function} onComplete - Callback function to be called when generation completes.
+ * @param {AbortController} abortController - An AbortController to handle cancellation of the generation process.
+ * @returns {Promise<MediaAttachment|null>} - A promise that resolves to the newly generated media attachment, or null if generation failed or was aborted.
  */
-async function onImageSwiped({ message, element, direction }) {
-    const context = getContext();
-    const animationClass = 'fa-fade';
-    const messageImg = element.find('.mes_img');
+async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete, abortController = new AbortController()) {
+    const stopButton = document.getElementById('sd_stop_gen');
+    const stopListener = () => abortController.abort('Aborted by user');
+    const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
+    const dimensions = setTypeSpecificDimensions(generationType);
+    extension_settings.sd.original_seed = extension_settings.sd.seed;
+    extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
 
-    // Current image is already animating
-    if (messageImg.hasClass(animationClass)) {
-        return;
+    /** @type {MediaAttachment} */
+    const result = {
+        url: '',
+        type: MEDIA_TYPE.IMAGE,
+    };
+
+    try {
+        $(stopButton).show();
+        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
+        const callback = (_a, _b, _c, _d, _e, _f, format) => { result.type = isVideo(format) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE; };
+        const savedPrompt = mediaAttachment.title ?? message.extra.title ?? '';
+        const prompt = await refinePrompt(savedPrompt, false);
+        const savedNegative = mediaAttachment.negative ?? message.extra.negative ?? '';
+        const negative = savedNegative ? await refinePrompt(savedNegative, true) : '';
+
+        const context = getContext();
+        const characterName = context.groupId
+            ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
+            : context.characters[context.characterId]?.name;
+
+        onStart();
+        result.url = await sendGenerationRequest(generationType, prompt, negative, characterName, callback, initiators.swipe, abortController.signal);
+        result.generation_type = generationType;
+        result.title = prompt;
+        result.negative = negative;
+    } finally {
+        onComplete();
+        $(stopButton).hide();
+        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
+        restoreOriginalDimensions(dimensions);
+        extension_settings.sd.seed = extension_settings.sd.original_seed;
+        delete extension_settings.sd.original_seed;
     }
 
-    const images = message?.extra?.images;
-    const swipes = message?.extra?.image_swipes;
-
-    if (!Array.isArray(images) || images.length === 0) {
-        console.warn('No images found in the message');
-        return;
+    if (!result.url) {
+        return null;
     }
 
-    if (images.length > 1) {
-        console.warn('Image swiping is not supported for messages with multiple images');
-        return;
-    }
-
-    if (!Array.isArray(swipes)) {
-        console.warn('No image swipes found in the message');
-        return;
-    }
-
-    const currentIndex = swipes.indexOf(images[0]);
-
-    if (currentIndex === -1) {
-        console.warn('Current image not found in the swipes');
-        return;
-    }
-
-    // Switch to previous image or wrap around if at the beginning
-    if (direction === SWIPE_DIRECTION.LEFT) {
-        const newIndex = currentIndex === 0 ? swipes.length - 1 : currentIndex - 1;
-        images[0] = swipes[newIndex];
-
-        // Update the image in the message
-        appendMediaToMessage(message, element, false);
-    }
-
-    // Switch to next image or generate a new one if at the end
-    if (direction === SWIPE_DIRECTION.RIGHT) {
-        const newIndex = currentIndex === swipes.length - 1 ? swipes.length : currentIndex + 1;
-
-        if (newIndex === swipes.length) {
-            const abortController = new AbortController();
-            const swipeControls = element.find('.mes_img_swipes');
-            const stopButton = document.getElementById('sd_stop_gen');
-            const stopListener = () => abortController.abort('Aborted by user');
-            const generationType = message?.extra?.generationType ?? generationMode.FREE;
-            const dimensions = setTypeSpecificDimensions(generationType);
-            const originalSeed = extension_settings.sd.seed;
-            extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
-            let imagePath = '';
-
-            try {
-                $(stopButton).show();
-                eventSource.once(CUSTOM_STOP_EVENT, stopListener);
-                const callback = () => { };
-                const hasNegative = message.extra.negative;
-                const prompt = await refinePrompt(message.extra.title, false);
-                const negativePromptPrefix = hasNegative ? await refinePrompt(message.extra.negative, true) : '';
-                message.extra.title = prompt;
-                const characterName = context.groupId
-                    ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
-                    : context.characters[context.characterId]?.name;
-
-                messageImg.addClass(animationClass);
-                swipeControls.hide();
-                imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiators.swipe, abortController.signal);
-            } finally {
-                $(stopButton).hide();
-                messageImg.removeClass(animationClass);
-                swipeControls.show();
-                eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
-                restoreOriginalDimensions(dimensions);
-                extension_settings.sd.seed = originalSeed;
-            }
-
-            if (!imagePath) {
-                return;
-            }
-
-            swipes.push(imagePath);
-        }
-
-        images[0] = swipes[newIndex];
-        appendMediaToMessage(message, element, false);
-    }
-
-    await context.saveChat();
+    return result;
 }
 
 /**
@@ -4969,8 +4863,6 @@ jQuery(async () => {
             await loadSettingOptions();
         }
     });
-
-    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 

@@ -10,6 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { MEDIA_DISPLAY, MEDIA_TYPE } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -119,20 +120,26 @@ async function wrapCaptionTemplate(caption) {
 
 /**
  * Appends caption to an existing message.
- * @param {Object} message Message data
- * @param {number} imageIndex Index of the image to caption
+ * @param {ChatMessage} message Message data
+ * @param {number} mediaIndex Index of the image to caption
  * @returns {Promise<void>}
  */
-async function captionExistingMessage(message, imageIndex) {
-    if (!Array.isArray(message?.extra?.images) || message.extra.images.length === 0) {
+async function captionExistingMessage(message, mediaIndex) {
+    if (!Array.isArray(message?.extra?.media) || message.extra.media.length === 0) {
         return;
     }
 
-    if (imageIndex === undefined || isNaN(imageIndex) || imageIndex < 0 || imageIndex >= message.extra.images.length) {
-        imageIndex = 0;
+    if (mediaIndex === undefined || isNaN(mediaIndex) || mediaIndex < 0 || mediaIndex >= message.extra.media.length) {
+        mediaIndex = 0;
     }
 
-    const imageData = await fetch(message.extra.images[imageIndex]);
+    const mediaAttachment = message.extra.media[mediaIndex];
+
+    if (!mediaAttachment || !mediaAttachment.url || mediaAttachment.type === MEDIA_TYPE.VIDEO) {
+        return;
+    }
+
+    const imageData = await fetch(mediaAttachment.url);
     const blob = await imageData.blob();
     const type = imageData.headers.get('Content-Type');
     const file = new File([blob], 'image.png', { type });
@@ -150,12 +157,12 @@ async function captionExistingMessage(message, imageIndex) {
     if (!messageText) {
         message.extra.inline_image = false;
         message.mes = wrappedCaption;
-        message.extra.title = wrappedCaption;
+        mediaAttachment.title = wrappedCaption;
     }
     else {
         message.extra.inline_image = true;
-        message.extra.append_title = true;
-        message.extra.title = wrappedCaption;
+        mediaAttachment.append_title = true;
+        mediaAttachment.title = wrappedCaption;
     }
 }
 
@@ -168,14 +175,23 @@ async function sendCaptionedMessage(caption, image) {
     const messageText = await wrapCaptionTemplate(caption);
 
     const context = getContext();
+
+    /** @type {MediaAttachment} */
+    const mediaAttachment = {
+        url: image,
+        type: MEDIA_TYPE.IMAGE,
+        title: messageText,
+    };
+    /** @type {ChatMessage} */
     const message = {
         name: context.name1,
         is_user: true,
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
-            images: [image],
-            title: messageText,
+            media: [mediaAttachment],
+            media_display: MEDIA_DISPLAY.GALLERY,
+            media_index: 0,
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
@@ -374,11 +390,20 @@ async function captionCommandCallback(args, prompt) {
     const index = Number(args?.index ?? 0);
 
     if (!isNaN(Number(messageId))) {
+        /** @type {ChatMessage} */
         const message = getContext().chat[messageId];
-        if (Array.isArray(message?.extra?.images) && message.extra.images.length > 0) {
+        if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
             try {
-                const imageUrl = message.extra.images[index] || message.extra.images[0];
-                const fetchResult = await fetch(imageUrl);
+                const mediaAttachment = message.extra.media[index] || message.extra.media[0];
+                if (!mediaAttachment || !mediaAttachment.url) {
+                    toastr.error('The specified message does not contain an image.');
+                    return '';
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO) {
+                    toastr.error('The specified media is a video. Captioning videos is not supported.');
+                    return '';
+                }
+                const fetchResult = await fetch(mediaAttachment.url);
                 const blob = await fetchResult.blob();
                 const file = new File([blob], 'image.jpg', { type: blob.type });
                 return await getCaptionForFile(file, prompt, quiet);
