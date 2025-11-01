@@ -6335,8 +6335,7 @@ function saveImageToMessage(img, mes) {
         if (!Array.isArray(mes.extra.media)) {
             mes.extra.media = [];
         }
-        mes.extra.media.push({ url: img.image, type: 'image' });
-        mes.extra.title = img.title;
+        mes.extra.media.push({ url: img.image, type: MEDIA_TYPE.IMAGE, title: img.title });
         mes.extra.inline_image = img.inline;
     }
 }
