@@ -40,7 +40,7 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
-        resetPresetSelectedSamplers(null, true);
+        if (main_api === 'textgenerationwebui') resetPresetSelectedSamplers(null, true);
         await validateDisabledSamplers(true);
     });
 
@@ -53,17 +53,23 @@ async function showSamplerSelectPopup() {
         await validateDisabledSamplers();
     });
 
-    $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled());
-    $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
-        $(this).toggleClass('toggleEnabled');
+    if (main_api === 'textgenerationwebui') {
+        $('#prioritizeManuallySelectedSamplers').show();
+        $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled());
+        $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
+            $(this).toggleClass('toggleEnabled');
 
-        const isActive = $(this).hasClass('toggleEnabled');
+            const isActive = $(this).hasClass('toggleEnabled');
 
-        toggleSamplerManualPriority(isActive);
-    });
+            toggleSamplerManualPriority(isActive);
+        });
+    } else {
+        $('#prioritizeManuallySelectedSamplers').hide();
+        $('#prioritizeManuallySelectedSamplers').off('click');
+    }
 
     await showPromise;
-    await savePresetSelectedSamplers();
+    if (main_api === 'textgenerationwebui') await savePresetSelectedSamplers();
 }
 
 function setSamplerListListeners() {
@@ -190,7 +196,8 @@ function setSamplerListListeners() {
         const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
 
-        await setPresetSamplersState(samplerName, shouldDisplay !== 'none');
+        if (main_api === 'textgenerationwebui')
+            await setPresetSamplersState(samplerName, shouldDisplay !== 'none');
 
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
     });
@@ -222,8 +229,8 @@ async function listSamplers(main_api, arrayOnly = false) {
         return availableSamplers;
     }
 
-    const samplersActivatedManually = getActivePresetSamplers();
-    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActivePresetSamplers() : [];
+    const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
         let customColor, displayname;
@@ -324,7 +331,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
         console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
         if (displayname === undefined) { displayname = sampler; }
-        setPresetSamplersState(sampler, shouldBeChecked());
+        if (main_api === 'textgenerationwebui') setPresetSamplersState(sampler, shouldBeChecked());
         return html + `
         <div class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
@@ -346,8 +353,8 @@ export async function validateDisabledSamplers(redraw = false) {
         return;
     }
 
-    const samplersActivatedManually = getActivePresetSamplers();
-    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActivePresetSamplers() : [];
+    const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     for (const sampler of APISamplers) {
         let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
@@ -421,9 +428,9 @@ export async function validateDisabledSamplers(redraw = false) {
             relatedDOMElement = $('#smoothingBlock');
         }
 
-        const isManuallyActivated = samplersActivatedManually.includes(sampler);
 
         if (prioritizeManualSamplerSelect) {
+            const isManuallyActivated = samplersActivatedManually.includes(sampler);
             relatedDOMElement.css('display', isManuallyActivated === true ? targetDisplayType : 'none');
         } else if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
