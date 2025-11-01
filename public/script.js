@@ -1982,7 +1982,7 @@ export function ensureMessageMediaIsArray(mes) {
                 }
             }
             delete obj.image_swipes;
-            obj.media_display = MEDIA_DISPLAY.GALLERY;
+            obj.media_display = power_user.media_display;
         }
 
         if (isPlainObjectProperty(obj, 'image')) {

@@ -2230,36 +2230,36 @@ export function initChatUtilities() {
         openGlobalStylesPreferenceDialog();
     });
 
-    $(document).on('click', '.mes_img', async function () {
+    /**
+     * Returns information about the closest .mes_container.
+     * @returns {object}
+     */
+    function getContainerInfo(containerClass = '.mes_media_container'){
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
+        const mediaBlock = $(this).closest(containerClass);
         const mediaIndex = Number(mediaBlock.attr('data-index'));
-        expandMessageMedia(messageId, mediaIndex);
+        return { messageBlock, messageId, mediaBlock, mediaIndex };
+    }
+    $(document).on('click', '.mes_img', async function () {
+        const info = getContainerInfo.call(this);
+        expandMessageMedia(info['messageId'], info['mediaIndex']);
     });
     $(document).on('click', '.mes_media_enlarge', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
-        const mediaIndex = Number(mediaBlock.attr('data-index'));
-        expandMessageMedia(messageId, mediaIndex).click();
+        const info = getContainerInfo.call(this);
+        expandMessageMedia(info['messageId'], info['mediaIndex']).click();
     });
     $(document).on('click', '.mes_media_delete', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
-        const mediaIndex = Number(mediaBlock.attr('data-index'));
-        await deleteMessageMedia(messageId, mediaIndex, messageBlock);
+        const info = getContainerInfo.call(this);
+        await deleteMessageMedia(info['messageId'], info['mediaIndex'], info['messageBlock']);
     });
     $(document).on('click', '.mes_media_list', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
+        const info = getContainerInfo.call(this);
+        await switchMessageMediaDisplay(info['messageId'], info['messageBlock'], MEDIA_DISPLAY.GALLERY);
     });
     $(document).on('click', '.mes_media_gallery', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
+        const info = getContainerInfo.call(this);
+        await switchMessageMediaDisplay(info['messageId'], info['messageBlock'], MEDIA_DISPLAY.LIST);
     });
 
     $('#file_form_input').on('change', async () => {
