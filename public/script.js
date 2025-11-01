@@ -2109,7 +2109,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         image.attr('src', attachment.url);
         image.attr('title', attachment.title || mes.extra.title || '');
 
-        messageElement.find('.mes_img_wrapper').append(template);
+        messageElement.find('.mes_media_wrapper').append(template);
         return template;
     }
 
@@ -2137,7 +2137,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         video.attr('src', attachment.url);
         video.attr('title', attachment.title || mes.extra.title || '');
 
-        messageElement.find('.mes_video_wrapper').append(template);
+        messageElement.find('.mes_media_wrapper').append(template);
         return template;
     }
 

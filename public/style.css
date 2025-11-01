@@ -4962,13 +4962,11 @@ a:hover {
 }
 
 /* Message images/video */
-.mes .mes_img_wrapper:empty,
-.mes .mes_video_wrapper:empty {
+.mes .mes_media_wrapper:empty {
     display: none;
 }
 
-.mes .mes_img_wrapper,
-.mes .mes_video_wrapper {
+.mes .mes_media_wrapper {
     display: flex;
     flex-direction: row;
     align-items: center;
