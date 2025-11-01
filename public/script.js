@@ -2190,7 +2190,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     if (hasMedia && mediaDisplay === MEDIA_DISPLAY.LIST) {
         for (let index = 0; index < mes.extra.media.length; index++) {
             const attachment = mes.extra.media[index];
-            appendImageAttachment(attachment, index);
+            appendMediaAttachment(attachment, index);
         }
     }
 
