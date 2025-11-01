@@ -1019,7 +1019,7 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {string|number} timestamp String or number representing a date.
+ * @param {MessageTimestamp} timestamp String or number representing a date.
  * @returns {import('moment').Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
@@ -1036,11 +1036,16 @@ export function timestampToMoment(timestamp) {
 
 /**
  * Parses a timestamp and returns a moment object representing the parsed date and time.
- * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @param {MessageTimestamp} timestamp - The timestamp to parse. It can be a string or a number.
  * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
  */
 function parseTimestamp(timestamp) {
     if (!timestamp) return;
+
+    // Date object
+    if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+    }
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
