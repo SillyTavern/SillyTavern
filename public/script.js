@@ -8983,7 +8983,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesId') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
     const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
@@ -9259,7 +9259,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     //If swiping left.
     if (direction === SWIPE_DIRECTION.LEFT) {
-        if (!forceSwipeId) newSwipeId--;
+        if (forceSwipeId == null) newSwipeId--;
         //Loop to last swipe if negative.
         if (newSwipeId < 0) {
             newSwipeId = Math.max(0, chat[mesId]['swipes'].length - 1);
@@ -9277,7 +9277,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     //If swiping right.
     else if (direction === SWIPE_DIRECTION.RIGHT) {
         // make new slot in array
-        if (!forceSwipeId) newSwipeId++;
+        if (forceSwipeId == null) newSwipeId++;
 
         //Minimum of zero.
         if (newSwipeId < 0) {
