@@ -2230,35 +2230,40 @@ export function initChatUtilities() {
         openGlobalStylesPreferenceDialog();
     });
 
-    $(document).on('click', '.mes_img', async function () {
+    /**
+     * Returns information about the closest media container.
+     * @returns {MediaContainerInfo} Information about the media container
+     * @typedef {object} MediaContainerInfo
+     * @property {JQuery<HTMLElement>} messageBlock The closest message block
+     * @property {number} messageId The message ID
+     * @property {JQuery<HTMLElement>} mediaBlock The closest media container block
+     * @property {number} mediaIndex The media index within the message
+     */
+    function getMediaContainerInfo(containerClass = '.mes_media_container'){
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
+        const mediaBlock = $(this).closest(containerClass);
         const mediaIndex = Number(mediaBlock.attr('data-index'));
+        return { messageBlock, messageId, mediaBlock, mediaIndex };
+    }
+    $(document).on('click', '.mes_img', async function () {
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex);
     });
     $(document).on('click', '.mes_media_enlarge', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
-        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex).click();
     });
     $(document).on('click', '.mes_media_delete', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
-        const mediaBlock = $(this).closest('.mes_media_container');
-        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        const { messageId, mediaIndex, messageBlock } = getMediaContainerInfo.call(this);
         await deleteMessageMedia(messageId, mediaIndex, messageBlock);
     });
     $(document).on('click', '.mes_media_list', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
     });
     $(document).on('click', '.mes_media_gallery', async function () {
-        const messageBlock = $(this).closest('.mes');
-        const messageId = Number(messageBlock.attr('mesid'));
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
     });
 
