@@ -1182,14 +1182,14 @@ function applyFontScale(type) {
 }
 
 /**
- * Shows a toast notification prompting the user to reload the chat if media display settings have changed
- * and there are messages with media attachments that haven't been processed with the new display format.
+ * Checks if the chat needs to be reloaded to apply media display settings.
+ * @returns {boolean} True if the chat needs reload to apply media display settings
  */
-function showMediaDisplayReloadPrompt() {
+function isMediaDisplayReloadNeeded() {
     // A user is not currently in a chat.
     const chatId = getCurrentChatId();
     if (!chatId) {
-        return;
+        return false;
     }
 
     const firstDisplayedIndex = getFirstDisplayedMessageId();
@@ -1203,13 +1203,22 @@ function showMediaDisplayReloadPrompt() {
         return hasMediaAttachments && lacksMediaDisplay;
     });
 
-    if (hasUnprocessedMediaMessages) {
-        toastr.info(
-            t`Reload the chat to apply the changes. Click here to reload.`,
-            t`Media Style changed`,
-            { onclick: () => void reloadCurrentChat() },
-        );
+    return hasUnprocessedMediaMessages;
+}
+
+/**
+ * Shows a toast notification prompting the user to reload the chat if media display settings have changed
+ * and there are messages with media attachments that haven't been processed with the new display format.
+ */
+function showMediaDisplayReloadPrompt() {
+    if (!isMediaDisplayReloadNeeded()) {
+        return;
     }
+    toastr.info(
+        t`Reload the chat to apply the changes. Click here to reload.`,
+        t`Media Style changed`,
+        { onclick: () => void reloadCurrentChat() },
+    );
 }
 
 function applyTheme(name) {
@@ -4168,10 +4177,12 @@ jQuery(() => {
         await exportTheme();
     });
 
-    $('#media_display').on('input', function () {
+    $('#media_display').on('input', async function () {
         power_user.media_display = $(this).val().toString();
-        reloadCurrentChat();
         saveSettingsDebounced();
+        if (isMediaDisplayReloadNeeded()) {
+            await reloadCurrentChat();
+        }
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
