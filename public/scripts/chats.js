@@ -27,6 +27,7 @@ import {
     clearChat,
     refreshSwipeButtons,
     getMediaIndex,
+    getMediaDisplay,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -2006,12 +2007,13 @@ async function onImageSwiped(messageId, element, direction) {
         return;
     }
 
-    if (message?.extra?.media_display !== MEDIA_DISPLAY.GALLERY) {
+    const currentIndex = getMediaIndex(message);
+    const mediaDisplay = getMediaDisplay(message);
+
+    if (mediaDisplay !== MEDIA_DISPLAY.GALLERY) {
         console.warn('Image swiping is only supported for gallery media display');
         return;
     }
-
-    const currentIndex = getMediaIndex(message);
 
     // Switch to previous image or wrap around if at the beginning
     if (direction === SWIPE_DIRECTION.LEFT) {
@@ -2026,7 +2028,7 @@ async function onImageSwiped(messageId, element, direction) {
     }
 
     // Show a message that swipe right no longer automatically generates an image
-    if (media.length > 1 && direction === SWIPE_DIRECTION.RIGHT && message.extra.media_index === 0) {
+    if (media.length > 0 && direction === SWIPE_DIRECTION.RIGHT && message.extra.media_index === 0) {
         const key = 'imageSwipeNoticeShown';
         const hasSeenNotice = accountStorage.getItem(key);
         if (!hasSeenNotice) {
