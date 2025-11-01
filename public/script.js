@@ -8947,11 +8947,11 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'back' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
- * @param {object} [params.forceSwipeId] The target swipe_id.
+ * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  */
 export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId: forceMesId, forceSwipeId: forceSwipeId } = {}) {
     if (chat.length === 0) {
@@ -8965,7 +8965,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE) {
+    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
@@ -8977,7 +8977,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     //Only set messageIndex if message exists because -1 is truthy.
     if (message) {
         messageIndex = chat.indexOf(message);
-        if (messageIndex === -1) {
+        if (messageIndex === -1 && typeof(forceMesId) != 'number') {
             console.error(`The message must exist in chat. ${message};`);
             return;
         }
@@ -9012,13 +9012,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Clamp Id between swipes.
         let clampedId = clamp(chat[mesId]['swipe_id'], 0, Math.max(0, chat[mesId]['swipes'].length - 1));
 
-        //If the id is not within bounds, Swipe back.
-        if (chat[mesId]['swipe_id'] !== clampedId) {
-            chat[mesId]['swipe_id'] = clampedId;
-            syncSwipeToMes(mesId);
-            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
-        }
-
         await updateSwipeCounter(mesId);
         //Fallback.
         if (mesId != chat.length - 1) {
@@ -9033,14 +9026,33 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
         }
 
+        //If the id is not within bounds, Swipe back.
+        if (chat[mesId]['swipe_id'] !== clampedId) {
+            let backDirection = (clampedId <= chat[mesId]['swipe_id']) ? SWIPE_DIRECTION.LEFT : SWIPE_DIRECTION.RIGHT;
+            // Prevent recursion.
+            if (source != SWIPE_SOURCE.BACK) {
+                chat[mesId]['swipe_id'] = clampedId;
+                swipe(undefined, backDirection, { source: SWIPE_SOURCE.BACK, forceMesId: mesId, forceSwipeId: clampedId });
+                return;
+            }
+            else {
+                console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
+                toastr.error(t`Please create a bug report!`, t`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}.`,  { timeOut: 0, extendedTimeOut: 0 });
+            }
+        //Out of bounds swipes should not be saved.
+        } else if (source != SWIPE_SOURCE.BACK){
+            //Save the chat if swipe_id has changed.
+            saveChatConditional();
+        }
+
         //Allow for another swipe.
         swipeState = SWIPE_STATE.NONE;
         showSwipeButtons();
     }
 
-    async function standardSwipe() {
+    async function standardSwipe(newSwipeId) {
         //If swipe_id has changed, or the source is being deleted.
-        if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE) {
+        if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK) {
             //Update the chat.
             await loadFromSwipeId(mesId, newSwipeId);
             //Transition to the new chat.
@@ -9198,8 +9210,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (run_generate && !is_send_press) {
             is_send_press = true;
             generation = Generate('swipe');
-        } else if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
-            saveChatDebounced();
         }
 
         //Swipe in.
@@ -9218,7 +9228,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //If the swipe is not being deleted.
-    if (source != SWIPE_SOURCE.DELETE) {
+    if (source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
         syncMesToSwipe(mesId);
@@ -9241,15 +9251,15 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             await endSwipe();
             return;
         }
-    } else if (source == SWIPE_SOURCE.DELETE) {
-        //If the swipe is being deleted.
-        await standardSwipe();
+    } else if (source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK) {
+        //If the swipe is being deleted or reverted.
+        await standardSwipe(newSwipeId);
         return;
     }
 
     //If swiping left.
     if (direction === SWIPE_DIRECTION.LEFT) {
-        newSwipeId--;
+        if (!forceSwipeId) newSwipeId--;
         //Loop to last swipe if negative.
         if (newSwipeId < 0) {
             newSwipeId = Math.max(0, chat[mesId]['swipes'].length - 1);
@@ -9261,13 +9271,13 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             await endSwipe();
             return;
         }
-        await standardSwipe();
+        await standardSwipe(newSwipeId);
         return;
     }
     //If swiping right.
     else if (direction === SWIPE_DIRECTION.RIGHT) {
         // make new slot in array
-        newSwipeId++;
+        if (!forceSwipeId) newSwipeId++;
 
         //Minimum of zero.
         if (newSwipeId < 0) {
@@ -9305,7 +9315,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 newSwipeId = 0;
             }
         }
-        await standardSwipe();
+        await standardSwipe(newSwipeId);
         return;
     }
 }
