@@ -2231,7 +2231,7 @@ export function initChatUtilities() {
     });
 
     /**
-     * Returns information about the closest .mes_container.
+     * Returns information about the closest media container.
      * @returns {MediaContainerInfo} Information about the media container
      * @typedef {object} MediaContainerInfo
      * @property {JQuery<HTMLElement>} messageBlock The closest message block
@@ -2239,7 +2239,7 @@ export function initChatUtilities() {
      * @property {JQuery<HTMLElement>} mediaBlock The closest media container block
      * @property {number} mediaIndex The media index within the message
      */
-    function getContainerInfo(containerClass = '.mes_media_container'){
+    function getMediaContainerInfo(containerClass = '.mes_media_container'){
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
         const mediaBlock = $(this).closest(containerClass);
@@ -2247,23 +2247,23 @@ export function initChatUtilities() {
         return { messageBlock, messageId, mediaBlock, mediaIndex };
     }
     $(document).on('click', '.mes_img', async function () {
-        const { messageId, mediaIndex } = getContainerInfo.call(this);
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex);
     });
     $(document).on('click', '.mes_media_enlarge', async function () {
-        const { messageId, mediaIndex } = getContainerInfo.call(this);
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex).click();
     });
     $(document).on('click', '.mes_media_delete', async function () {
-        const { messageId, mediaIndex, messageBlock } = getContainerInfo.call(this);
+        const { messageId, mediaIndex, messageBlock } = getMediaContainerInfo.call(this);
         await deleteMessageMedia(messageId, mediaIndex, messageBlock);
     });
     $(document).on('click', '.mes_media_list', async function () {
-        const { messageId, messageBlock } = getContainerInfo.call(this);
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
     });
     $(document).on('click', '.mes_media_gallery', async function () {
-        const { messageId, messageBlock } = getContainerInfo.call(this);
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
     });
 
