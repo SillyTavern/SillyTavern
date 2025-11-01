@@ -388,6 +388,11 @@ input[type='checkbox']:focus-visible {
     margin-bottom: 10px;
 }
 
+.mes_text p:last-child,
+.mes_reasoning p:last-child {
+    margin-bottom: 0;
+}
+
 .mes_text li tt,
 .mes_reasoning li tt {
     display: inline-block;
@@ -4971,6 +4976,11 @@ a:hover {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
+    gap: 0.5em;
+}
+
+.mes_media_wrapper:not(:empty)~.mes_file_wrapper:not(:empty) {
+    margin-top: 5px;
 }
 
 .mes .mes_img_container,
@@ -4981,7 +4991,8 @@ a:hover {
     position: relative;
     width: fit-content;
     transition: all var(--animation-duration);
-    margin: 0.5rem;
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 .mes .mes_video_container:has(.mes_video[src]) {
@@ -4989,7 +5000,6 @@ a:hover {
 }
 
 .mes_img {
-    border-radius: 5px;
     max-width: 100%;
     max-height: 40vh;
     image-rendering: -webkit-optimize-contrast;
@@ -5017,15 +5027,13 @@ a:hover {
     padding: 10px;
     z-index: 1;
     transition: opacity var(--animation-duration) ease-in-out;
-    background: linear-gradient(rgba(0, 0, 0, 0.9), transparent);
-    border-radius: 5px 5px 0 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), transparent);
 }
 
 .mes_img_swipes {
     top: unset;
     bottom: 0;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
-    border-radius: 0 0 5px 5px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
 }
 
 .mes_img_swipes .right_menu_button,
@@ -5067,7 +5075,8 @@ a:hover {
     opacity: 1;
 }
 
-.mes_media_container:has(.error) .mes_img_swipes{
+.mes_media_container:has(.error) .mes_img_controls,
+.mes_media_container:has(.error) .mes_img_swipes {
     background: none;
 }
 
@@ -5166,7 +5175,6 @@ body:not(.caption) .mes_img_caption {
 .mes_video {
     max-width: 100%;
     max-height: 400px;
-    border-radius: 5px;
     background: #000;
 }
 
