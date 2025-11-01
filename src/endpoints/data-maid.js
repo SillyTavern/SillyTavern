@@ -174,7 +174,7 @@ export class DataMaidService {
         const result = [];
 
         try {
-            const messages = await this.#parseAllChats(x => !!x?.extra?.image || !!x?.extra?.video || Array.isArray(x?.extra?.image_swipes));
+            const messages = await this.#parseAllChats(x => !!x?.extra?.image || !!x?.extra?.video || Array.isArray(x?.extra?.image_swipes) || Array.isArray(x?.extra?.media));
             const knownImages = new Set();
             for (const message of messages) {
                 if (message?.extra?.image) {
