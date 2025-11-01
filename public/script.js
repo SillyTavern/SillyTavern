@@ -9138,7 +9138,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 toastr.error(t`Please create a bug report!`, t`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}.`,  { timeOut: 0, extendedTimeOut: 0 });
             }
         //Out of bounds swipes should not be saved.
-        } else if (source != SWIPE_SOURCE.BACK){
+        } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             saveChatConditional();
         }

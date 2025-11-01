@@ -1,4 +1,4 @@
-import { chat, saveChatConditional, saveChatDebounced, updateViewMessageIds } from '../script.js';
+import { chat, updateViewMessageIds } from '../script.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
 
