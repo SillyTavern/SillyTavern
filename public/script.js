@@ -1383,10 +1383,11 @@ export async function showMoreMessages(messagesToLoad = null) {
 
     while (messageId > 0 && count > 0) {
         let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
+        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId, showSwipes: false });
         count--;
         messageId--;
     }
+    refreshSwipeButtons();
 
     if (messageId == 0) {
         $('#show_more_messages').remove();
@@ -8214,7 +8215,7 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     messageElement ??= chatElement.children().filter(`[mesid="${mesId}"]`);
 
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
-    const swipeCounter = messageElement.find('.swipes-counter');
+    const swipeCounter = messageElement.find('> .swipes-counter');
     swipeCounter.css('opacity', opacity);
     swipeCounter.text(swipeCounterText).show();
 }
@@ -8280,11 +8281,14 @@ export function refreshSwipeButtons() {
     let showRightGenerateElements = new Set(); //.7 opacity.
     let hideBothElements = new Set(); //Hidden.
 
-    // const lastDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
-    const firstDisplayedMesId = Number(chatElement.find('.mes').first().attr('mesid'));
+    //Non-messages can appear in chat. '.mes' is required.
+    const messages = chatElement.children('.mes');
+
+    // const lastDisplayedMesId = Number(messages.last().attr('mesid'));
+    const firstDisplayedMesId = Number(messages.first().attr('mesid'));
 
     //Group each message.
-    chatElement.children().each((index, div) => {
+    messages.each((index, div) => {
         // const messageId = Number($(div).attr('mesid')); //Slower.
         //This assumes the messages are in order and their Id's are accurate.
         const messageId = firstDisplayedMesId + index;
@@ -8318,10 +8322,10 @@ export function refreshSwipeButtons() {
     //The left arrows must initially be hidden.
     // https://developer.mozilla.org/en-US/docs/Web/CSS/:has#performance_considerations
     const noArrows = $([...hideBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
-    const bothArrows = $([...showBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
-    const rightArrows = $([...showRightGenerateElements]).find('.swipeRightBlock > .swipe_right');
+    const bothArrows = $([...showBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
+    const rightArrows = $([...showRightGenerateElements]).find('> .swipeRightBlock > .swipe_right');
 
-    //This order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
+    //This order cannot be changed, rightArrows can overlap with noArrows and bothArrows.
 
     // @ts-ignore https://stackoverflow.com/a/42930857 .attr is correct.
     noArrows.attr('hidden', true);
