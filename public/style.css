@@ -5063,9 +5063,12 @@ a:hover {
 .mes_img_container:focus-within .mes_img_controls,
 .mes_video_container:hover .mes_video_controls,
 .mes_video_container:has(.mes_video.error) .mes_img_swipes,
-.mes_video_container:hover .mes_img_swipes,
-.mes_video_container:focus-within .mes_img_swipes {
+.mes_video_container:hover .mes_img_swipes {
     opacity: 1;
+}
+
+.mes_media_container:has(.error) .mes_img_swipes{
+    background: none;
 }
 
 .mes .mes_img_container {
