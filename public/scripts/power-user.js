@@ -64,6 +64,7 @@ import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
 import { MEDIA_DISPLAY } from './constants.js';
+import { t } from './i18n.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -1180,6 +1181,37 @@ function applyFontScale(type) {
     $('#font_scale').val(power_user.font_scale);
 }
 
+/**
+ * Shows a toast notification prompting the user to reload the chat if media display settings have changed
+ * and there are messages with media attachments that haven't been processed with the new display format.
+ */
+function showMediaDisplayReloadPrompt() {
+    // A user is not currently in a chat.
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        return;
+    }
+
+    const firstDisplayedIndex = getFirstDisplayedMessageId();
+    const hasUnprocessedMediaMessages = chat.some((message, index) => {
+        // Skip messages that are not currently displayed
+        if (index < firstDisplayedIndex) {
+            return false;
+        }
+        const hasMediaAttachments = Array.isArray(message?.extra?.media) && message.extra.media.length > 0;
+        const lacksMediaDisplay = !message?.extra?.media_display;
+        return hasMediaAttachments && lacksMediaDisplay;
+    });
+
+    if (hasUnprocessedMediaMessages) {
+        toastr.info(
+            t`Reload the chat to apply the changes. Click here to reload.`,
+            t`Media Style changed`,
+            { onclick: () => void reloadCurrentChat() },
+        );
+    }
+}
+
 function applyTheme(name) {
     const theme = themes.find(x => x.name == name);
 
@@ -1369,14 +1401,25 @@ function applyTheme(name) {
                 $('#click_to_edit').prop('checked', power_user.click_to_edit);
             },
         },
+        {
+            key: 'media_display',
+            action: (oldValue, newValue) => {
+                $('#media_display').val(power_user.media_display);
+                if (oldValue !== newValue) {
+                    showMediaDisplayReloadPrompt();
+                }
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
         if (theme[key] !== undefined) {
-            power_user[key] = theme[key];
-            if (selector) $(selector).attr('color', power_user[key]);
+            const oldValue = power_user[key];
+            const newValue = theme[key];
+            power_user[key] = newValue;
+            if (selector) $(selector).attr('color', newValue);
             if (type) applyThemeColor(type);
-            if (action) action();
+            if (action) action(oldValue, newValue);
         } else {
             console.debug(`Empty theme key: ${key}`);
         }
