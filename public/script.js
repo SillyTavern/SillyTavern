@@ -370,6 +370,7 @@ export const neutralCharacterName = 'Assistant';
 let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
+/** @type {ChatMessage[]} */
 export let chat = [];
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
 let chatSaveTimeout;
@@ -3874,7 +3875,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const prevStarted = chat[chat.length - 1]['gen_started'];
 
         if (prevFinished && prevStarted) {
-            const timePassed = prevFinished - prevStarted;
+            const timePassed = Number(prevFinished) - Number(prevStarted);
             generation_started = new Date(Date.now() - timePassed);
             chat[chat.length - 1]['gen_started'] = generation_started;
         }
@@ -9330,7 +9331,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (run_generate && !is_send_press) {
             is_send_press = true;
             generation = Generate('swipe');
-        } else if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
+        } else if (Number(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
             saveChatDebounced();
         }
 
@@ -10974,7 +10975,7 @@ jQuery(async function () {
         const oldScroll = chatElement[0].scrollTop;
         const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
-        clone.mes = $(this).closest('.mes').find('.edit_textarea').val();
+        clone.mes = $(this).closest('.mes').find('.edit_textarea').val().toString();
 
         if (power_user.trim_spaces) {
             clone.mes = clone.mes.trim();
