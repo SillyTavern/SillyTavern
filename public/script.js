@@ -9247,11 +9247,17 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         delete chat[mesId].gen_started;
         delete chat[mesId].gen_finished;
 
-        //If not the chatTree, load from swipes.
-        syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
+        //Load from swipes.
+        if (syncSwipeToMes(mesId, newSwipeId) == false) {
+            let errorMessage = t`When swiping ${direction} on message ${mesId}, syncSwipeToMes has returned false. Attempting to swipe back!`;
+            console.log(errorMessage);
+            toastr.error(errorMessage);
 
-        //Update the swipe_id.
-        chat[mesId]['swipe_id'] = newSwipeId;
+            chat[mesId]['swipe_id'] = originalSwipeId;
+            await endSwipe();
+            return;
+        }
+
 
         if (power_user.enable_chat_tree) {
             //Get chat after the swipe.
