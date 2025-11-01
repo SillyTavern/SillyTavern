@@ -8230,8 +8230,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
     message ??= chat[messageId];
 
     if (
-        //The swipes setting must be enabled.
-        swipes &&
+        //The swipes setting must be enabled, and swipes can't be hidden.
+        swipes && !swipesHidden &&
         //If mid-swipe, the message cannot be swiped.
         swipeState == SWIPE_STATE.NONE &&
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
@@ -8266,8 +8266,8 @@ export function refreshSwipeButtons() {
     //Never show swipe buttons on an empty chat.
     if (chat?.length === 0) return false;
 
-    //If swipes is disabled, ignore the input and hide all swipe buttons.
-    if (!swipes) {
+    //If swipes are disabled or hidden, hide all swipe buttons.
+    if (!swipes || swipesHidden) {
         $('body').toggleClass('hideAllSwipeButtons', true);
         return;
     //Don't hide all swipe buttons.
@@ -8280,7 +8280,7 @@ export function refreshSwipeButtons() {
     let showRightGenerateElements = new Set(); //.7 opacity.
     let hideBothElements = new Set(); //Hidden.
 
-    // const lasttDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
+    // const lastDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
     const firstDisplayedMesId = Number(chatElement.find('.mes').first().attr('mesid'));
 
     //Group each message.
