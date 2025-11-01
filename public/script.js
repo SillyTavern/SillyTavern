@@ -1978,11 +1978,11 @@ export function ensureMessageMediaIsArray(mes) {
             }
             for (const swipe of obj.image_swipes) {
                 if (swipe && typeof swipe === 'string') {
+                    obj.media_display = MEDIA_DISPLAY.GALLERY;
                     obj.media.push({ type: 'image', url: swipe });
                 }
             }
             delete obj.image_swipes;
-            obj.media_display = power_user.media_display;
         }
 
         if (isPlainObjectProperty(obj, 'image')) {
