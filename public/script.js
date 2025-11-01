@@ -1982,7 +1982,6 @@ export function ensureMessageMediaIsArray(mes) {
                 }
             }
             delete obj.image_swipes;
-            obj.media = obj.media.filter((v, i, a) => i === a.findIndex(t => t.url === v.url));
             obj.media_display = MEDIA_DISPLAY.GALLERY;
         }
 
@@ -2001,6 +2000,7 @@ export function ensureMessageMediaIsArray(mes) {
                     obj.media_index = selectedIndex;
                 }
             }
+            obj.media = obj.media.filter((v, i, a) => i === a.findIndex(t => t.url === v.url));
         }
 
         if (isPlainObjectProperty(obj, 'video')) {
