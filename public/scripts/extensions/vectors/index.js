@@ -426,7 +426,7 @@ function getStringHash(str) {
 
 /**
  * Retrieves files from the chat and inserts them into the vector index.
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @returns {Promise<void>}
  */
 async function processFiles(chat) {
@@ -624,7 +624,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
 /**
  * Removes the most relevant messages from the chat and displays them in the extension prompt
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @param {number} _contextSize Context size (unused)
  * @param {function} _abort Abort function (unused)
  * @param {string} type Generation type
@@ -750,7 +750,7 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 
 /**
  * Gets the text to query from the chat
- * @param {object[]} chat Chat messages
+ * @param {ChatMessage[]} chat Chat messages
  * @param {'file'|'chat'|'world-info'} initiator Initiator of the query
  * @returns {Promise<string>} Text to query
  */

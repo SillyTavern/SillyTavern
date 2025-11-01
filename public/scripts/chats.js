@@ -471,7 +471,7 @@ function embedMessageFile(messageId, messageBlock) {
         .on('change', parseAndUploadEmbed)
         .trigger('click');
 
-    async function parseAndUploadEmbed(/** @type {JQuery.EventBase} */ e) {
+    async function parseAndUploadEmbed(/** @type {JQuery.ChangeEvent} */ e) {
         if (!(e.target instanceof HTMLInputElement)) return;
         if (!e.target.files.length) return;
 
@@ -494,7 +494,7 @@ function embedMessageFile(messageId, messageBlock) {
 
 /**
  * Appends file content to the message text.
- * @param {object} message Message object
+ * @param {ChatMessage} message Message object
  * @param {string} messageText Message text
  * @returns {Promise<string>} Message text with file content appended.
  */
