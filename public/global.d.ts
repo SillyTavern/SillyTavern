@@ -4,6 +4,8 @@ import { power_user } from './scripts/power-user';
 import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyApi';
 import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
+import { FileAttachment } from './scripts/chats';
+import { ReasoningMessageExtra } from './scripts/reasoning';
 
 declare global {
     // Custom types
@@ -12,6 +14,72 @@ declare global {
     type ReasoningSettings = typeof power_user.reasoning;
     type ChatCompletionSettings = typeof oai_settings;
     type TextCompletionSettings = typeof textgenerationwebui_settings;
+    type MessageTimestamp = string | number | Date;
+
+    interface ChatMessage {
+        name?: string;
+        mes?: string;
+        title?: string;
+        gen_started?: MessageTimestamp;
+        gen_finished?: MessageTimestamp;
+        send_date?: MessageTimestamp;
+        is_user?: boolean;
+        is_system?: boolean;
+        force_avatar?: string;
+        original_avatar?: string;
+        swipes?: string[];
+        swipe_info?: Record<string, any>;
+        swipe_id?: number;
+        extra?: ChatMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+    };
+
+    interface ChatMessageExtra {
+        bias?: string;
+        uses_system_ui?: boolean;
+        memory?: string;
+        display_text?: string;
+        reasoning_display_text?: string;
+        tool_invocations?: any[];
+        title?: string;
+        isSmallSys?: boolean;
+        token_count?: number;
+        files?: FileAttachment[];
+        inline_image?: boolean;
+        media_display?: string;
+        media_index?: number;
+        media?: MediaAttachment[],
+        /** @deprecated Use `files` instead */
+        file?: FileAttachment;
+        /** @deprecated Use `media` instead */
+        image?: string;
+        /** @deprecated Use `media` instead */
+        video?: string;
+        /** @deprecated Use `media` with `media_display = 'gallery'` instead */
+        image_swipes?: string[];
+        /** @deprecated Use `MediaAttachment.append_title` instead */
+        append_title?: boolean;
+        /** @deprecated Use `MediaAttachment.generation_type` instead */
+        generationType?: number;
+        /** @deprecated Use `MediaAttachment.negative` instead */
+        negative?: string;
+    }
+
+    type MediaAttachment = MediaAttachmentProps & ImageGenerationAttachmentProps & ImageCaptionAttachmentProps;
+
+    interface MediaAttachmentProps {
+        url: string;
+        title?: string;
+        type: string;
+    }
+
+    interface ImageGenerationAttachmentProps {
+        generation_type?: number;
+        negative?: string;
+    }
+
+    interface ImageCaptionAttachmentProps {
+        append_title?: boolean;
+    }
 
     // Global namespace modules
     interface Window {

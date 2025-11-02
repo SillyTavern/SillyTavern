@@ -4671,6 +4671,13 @@
                                         <option value="2" data-i18n="Document">Document</option>
                                     </select>
                                 </div>
+                                <div class="flex-container alignitemscenter" title="Default display style for media attachments in chat messages. Extensions can override this setting." data-i18n="[title]Default display style for media attachments in chat messages. Extensions can override this setting.">
+                                    <span data-i18n="Media Style:">Media Style:</span>
+                                    <select id="media_display" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="list" data-i18n="List">List</option>
+                                        <option value="gallery" data-i18n="Gallery">Gallery</option>
+                                    </select>
+                                </div>
                                 <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Notifications:">Notifications:</span>
                                     <select id="toastr_position" class="widthNatural flex1 margin0 text_pole">
@@ -7005,6 +7012,8 @@
                                 <div title="Prompt" class="mes_button mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
                                 <div title="Exclude message from prompts" class="mes_button mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                                 <div title="Include message in prompts" class="mes_button mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
+                                <div title="Toggle media display style" class="mes_button mes_media_gallery fa-solid fa-photo-film" data-i18n="[title]Toggle media display style"></div>
+                                <div title="Toggle media display style" class="mes_button mes_media_list fa-solid fa-table-cells-large" data-i18n="[title]Toggle media display style"></div>
                                 <div title="Embed file or image" class="mes_button mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
                                 <div title="Create checkpoint" class="mes_button mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
                                 <div title="Create branch" class="mes_button mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
@@ -7043,19 +7052,8 @@
                         <div class="mes_reasoning"></div>
                     </details>
                     <div class="mes_text"></div>
-                    <div class="mes_img_container">
-                        <div class="mes_img_controls">
-                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
-                            <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
-                            <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
-                        </div>
-                        <div class="mes_img_swipes">
-                            <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
-                            <div class="mes_img_swipe_counter">1/1</div>
-                            <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
-                        </div>
-                        <img class="mes_img" src="" />
-                    </div>
+                    <div class="mes_media_wrapper"></div>
+                    <div class="mes_file_wrapper"></div>
                     <div class="mes_bias"></div>
                 </div>
                 <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
@@ -7265,9 +7263,9 @@
             </div>
         </div>
 
-        <!-- chat and input bar -->
+        <!-- Media Templates -->
         <div id="message_file_template" class="template_element">
-            <div class="mes_file_container">
+            <div class="mes_media_container mes_file_container">
                 <div class="fa-lg fa-solid fa-file-alt mes_file_icon"></div>
                 <div class="mes_file_name"></div>
                 <div class="mes_file_size"></div>
@@ -7276,13 +7274,32 @@
             </div>
         </div>
 
+        <div id="message_image_template" class="template_element">
+            <div class="mes_media_container mes_img_container">
+                <div class="mes_img_controls">
+                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_media_enlarge" data-i18n="[title]Expand and zoom"></div>
+                    <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_media_delete" data-i18n="[title]Delete"></div>
+                </div>
+                <img class="mes_img" src="" />
+            </div>
+        </div>
+
         <div id="message_video_template" class="template_element">
-            <div class="mes_video_container">
+            <div class="mes_media_container mes_video_container">
                 <div class="mes_video_controls">
-                    <div><!-- Placeholder --></div>
-                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_video_delete" data-i18n="[title]Delete"></div>
+                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_media_enlarge" data-i18n="[title]Expand and zoom"></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_media_delete" data-i18n="[title]Delete"></div>
                 </div>
                 <video class="mes_video" controls preload="metadata"></video>
+            </div>
+        </div>
+
+        <div id="message_gallery_controls" class="template_element">
+            <div class="mes_img_swipes">
+                <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                <div class="mes_img_swipe_counter">1/1</div>
+                <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
             </div>
         </div>
     </div>
@@ -7641,8 +7658,8 @@
             <div id="send_form" class="no-connection">
                 <form id="file_form" class="wide100p displayNone">
                     <div class="file_attached">
-                        <input id="file_form_input" type="file" hidden>
-                        <input id="embed_file_input" type="file" hidden>
+                        <input id="file_form_input" type="file" multiple hidden>
+                        <input id="embed_file_input" type="file" multiple hidden>
                         <i class="fa-solid fa-file-alt"></i>
                         <span class="file_name">File Name</span>
                         <span class="file_size">File Size</span>

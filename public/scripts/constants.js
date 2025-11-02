@@ -68,6 +68,32 @@ export const COMETAPI_IGNORE_PATTERNS = [
 ];
 
 /**
+ * @enum {string}
+ * @readonly
+ */
+export const MEDIA_DISPLAY = {
+    LIST: 'list',
+    GALLERY: 'gallery',
+};
+
+/**
+ * @readonly
+ */
+export const MEDIA_TYPE = {
+    getFromMime: (/** @type {string} */ mimeType) => {
+        if (mimeType.startsWith('image/')) {
+            return MEDIA_TYPE.IMAGE;
+        }
+        if (mimeType.startsWith('video/')) {
+            return MEDIA_TYPE.VIDEO;
+        }
+        return null;
+    },
+    IMAGE: 'image',
+    VIDEO: 'video',
+};
+
+/**
  * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
  */
 export const SWIPE_DIRECTION = {
