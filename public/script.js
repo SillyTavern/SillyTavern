@@ -1414,12 +1414,13 @@ export async function printMessages() {
     chatElement.find('.mes').removeClass('last_mes');
     chatElement.find('.mes').last().addClass('last_mes');
     refreshSwipeButtons();
-    scrollChatToBottom();
-    scrollOnMediaLoad();
     applyStylePins();
+    scrollChatToBottom();
+    delay(debounce_timeout.quick).then(() => scrollOnMediaLoad());
 }
 
 function scrollOnMediaLoad() {
+    const started = Date.now();
     const media = chatElement.find('.mes_block img, .mes_block video').toArray();
     let mediaLoaded = 0;
 
@@ -1443,6 +1444,10 @@ function scrollOnMediaLoad() {
     }
 
     function incrementAndCheck() {
+        const MAX_DELAY = 1000; // 1 second
+        if ((Date.now() - started) > MAX_DELAY) {
+            return;
+        }
         mediaLoaded++;
         if (mediaLoaded === media.length) {
             scrollChatToBottom();
@@ -2224,7 +2229,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     }
 
     // TODO: Consider making this awaitable
-    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.standard)]).then(() => {
+    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.quick)]).then(() => {
         messageElement.find('.mes_media_wrapper').empty().append(mediaBlocks);
         doAdjustScroll();
     });
