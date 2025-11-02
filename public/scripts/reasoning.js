@@ -409,7 +409,7 @@ export class ReasoningHandler {
         if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
             return mesChanged;
 
-        /** @type {{ mes: string, [key: string]: any}} */
+        /** @type {ChatMessage} */
         const message = chat[messageId];
         if (!message) return mesChanged;
 
@@ -1259,7 +1259,7 @@ export function parseReasoningFromString(str, { strict = true } = {}) {
 /**
  * Parse reasoning in an array of swipe strings if auto-parsing is enabled.
  * @param {string[]} swipes Array of swipe strings
- * @param {{extra: ReasoningMessageExtra}[]} swipeInfoArray Array of swipe info objects
+ * @param {{extra: Partial<ReasoningMessageExtra>}[]} swipeInfoArray Array of swipe info objects
  * @param {number?} duration Duration of the reasoning
  * @typedef {object} ReasoningMessageExtra Extra reasoning data
  * @property {string} reasoning Reasoning block

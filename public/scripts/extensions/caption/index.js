@@ -10,6 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { MEDIA_DISPLAY, MEDIA_TYPE } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -119,15 +120,26 @@ async function wrapCaptionTemplate(caption) {
 
 /**
  * Appends caption to an existing message.
- * @param {Object} data Message data
+ * @param {ChatMessage} message Message data
+ * @param {number} mediaIndex Index of the image to caption
  * @returns {Promise<void>}
  */
-async function captionExistingMessage(data) {
-    if (!(data?.extra?.image)) {
+async function captionExistingMessage(message, mediaIndex) {
+    if (!Array.isArray(message?.extra?.media) || message.extra.media.length === 0) {
         return;
     }
 
-    const imageData = await fetch(data.extra.image);
+    if (mediaIndex === undefined || isNaN(mediaIndex) || mediaIndex < 0 || mediaIndex >= message.extra.media.length) {
+        mediaIndex = 0;
+    }
+
+    const mediaAttachment = message.extra.media[mediaIndex];
+
+    if (!mediaAttachment || !mediaAttachment.url || mediaAttachment.type === MEDIA_TYPE.VIDEO) {
+        return;
+    }
+
+    const imageData = await fetch(mediaAttachment.url);
     const blob = await imageData.blob();
     const type = imageData.headers.get('Content-Type');
     const file = new File([blob], 'image.png', { type });
@@ -140,17 +152,17 @@ async function captionExistingMessage(data) {
 
     const wrappedCaption = await wrapCaptionTemplate(caption);
 
-    const messageText = String(data.mes).trim();
+    const messageText = String(message.mes).trim();
 
     if (!messageText) {
-        data.extra.inline_image = false;
-        data.mes = wrappedCaption;
-        data.extra.title = wrappedCaption;
+        message.extra.inline_image = false;
+        message.mes = wrappedCaption;
+        mediaAttachment.title = wrappedCaption;
     }
     else {
-        data.extra.inline_image = true;
-        data.extra.append_title = true;
-        data.extra.title = wrappedCaption;
+        message.extra.inline_image = true;
+        mediaAttachment.append_title = true;
+        mediaAttachment.title = wrappedCaption;
     }
 }
 
@@ -163,14 +175,23 @@ async function sendCaptionedMessage(caption, image) {
     const messageText = await wrapCaptionTemplate(caption);
 
     const context = getContext();
+
+    /** @type {MediaAttachment} */
+    const mediaAttachment = {
+        url: image,
+        type: MEDIA_TYPE.IMAGE,
+        title: messageText,
+    };
+    /** @type {ChatMessage} */
     const message = {
         name: context.name1,
         is_user: true,
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
-            image: image,
-            title: messageText,
+            media: [mediaAttachment],
+            media_display: MEDIA_DISPLAY.GALLERY,
+            media_index: 0,
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
@@ -365,13 +386,24 @@ function onRefineModeInput() {
  */
 async function captionCommandCallback(args, prompt) {
     const quiet = isTrueBoolean(args?.quiet);
-    const mesId = args?.mesId ?? args?.id;
+    const messageId = args?.mesId ?? args?.id;
+    const index = Number(args?.index ?? 0);
 
-    if (!isNaN(Number(mesId))) {
-        const message = getContext().chat[mesId];
-        if (message?.extra?.image) {
+    if (!isNaN(Number(messageId))) {
+        /** @type {ChatMessage} */
+        const message = getContext().chat[messageId];
+        if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
             try {
-                const fetchResult = await fetch(message.extra.image);
+                const mediaAttachment = message.extra.media[index] || message.extra.media[0];
+                if (!mediaAttachment || !mediaAttachment.url) {
+                    toastr.error('The specified message does not contain an image.');
+                    return '';
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO) {
+                    toastr.error('The specified media is a video. Captioning videos is not supported.');
+                    return '';
+                }
+                const fetchResult = await fetch(mediaAttachment.url);
                 const blob = await fetchResult.blob();
                 const file = new File([blob], 'image.jpg', { type: blob.type });
                 return await getCaptionForFile(file, prompt, quiet);
@@ -636,13 +668,13 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
 
-    const onMessageEvent = async (index) => {
+    const onMessageEvent = async (messageId) => {
         if (!extension_settings.caption.auto_mode) {
             return;
         }
 
-        const data = getContext().chat[index];
-        await captionExistingMessage(data);
+        const message = getContext().chat[messageId];
+        await captionExistingMessage(message, 0);
     };
 
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
@@ -651,13 +683,15 @@ jQuery(async function () {
     $(document).on('click', '.mes_img_caption', async function () {
         const animationClass = 'fa-fade';
         const messageBlock = $(this).closest('.mes');
-        const messageImg = messageBlock.find('.mes_img');
+        const imageBlock = $(this).closest('.mes_img_container');
+        const messageImg = imageBlock.find('.mes_img');
         if (messageImg.hasClass(animationClass)) return;
         messageImg.addClass(animationClass);
         try {
-            const index = Number(messageBlock.attr('mesid'));
-            const data = getContext().chat[index];
-            await captionExistingMessage(data);
+            const messageId = Number(messageBlock.attr('mesid'));
+            const imageIndex = Number(imageBlock.attr('data-index'));
+            const data = getContext().chat[messageId];
+            await captionExistingMessage(data, imageIndex);
             appendMediaToMessage(data, messageBlock, false);
             await saveChatConditional();
         } catch (e) {
@@ -680,6 +714,12 @@ jQuery(async function () {
                 description: 'get image from a message with this ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'index',
+                description: 'index of the image in the message to caption (starting from 0)',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messageMedia(),
             }),
         ],
         unnamedArgumentList: [

@@ -426,7 +426,7 @@ function getStringHash(str) {
 
 /**
  * Retrieves files from the chat and inserts them into the vector index.
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @returns {Promise<void>}
  */
 async function processFiles(chat) {
@@ -443,39 +443,49 @@ async function processFiles(chat) {
         }
 
         for (const message of chat) {
-            // Message has no file
-            if (!message?.extra?.file) {
+            // Message has no files
+            if (!Array.isArray(message?.extra?.files) || !message.extra.files.length) {
                 continue;
             }
 
             // Trim file inserted by the script
-            const fileText = String(message.mes)
-                .substring(0, message.extra.fileLength).trim();
+            const allFileText = String(message.mes || '').substring(0, message.extra.fileLength).trim();
 
             // Convert kilobytes to string length
             const thresholdLength = settings.size_threshold * 1024;
 
             // File is too small
-            if (fileText.length < thresholdLength) {
+            if (allFileText.length < thresholdLength) {
                 continue;
             }
 
             message.mes = message.mes.substring(message.extra.fileLength);
 
-            const fileName = message.extra.file.name;
-            const fileUrl = message.extra.file.url;
-            const collectionId = getFileCollectionId(fileUrl);
-            const hashesInCollection = await getSavedHashes(collectionId);
+            const allFileChunks = [];
+            const queryText = await getQueryText(chat, 'file');
 
-            // File is already in the collection
-            if (!hashesInCollection.length) {
-                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+            for (const file of message.extra.files) {
+                const fileName = file.name;
+                const fileUrl = file.url;
+                const collectionId = getFileCollectionId(fileUrl);
+                const hashesInCollection = await getSavedHashes(collectionId);
+
+                // File is not vectorized yet
+                if (!hashesInCollection.length) {
+                    const fileText = file.text || (await getFileAttachment(fileUrl));
+                    if (!fileText) {
+                        continue;
+                    }
+                    await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+                }
+
+                const fileChunks = await retrieveFileChunks(queryText, collectionId);
+                if (fileChunks) {
+                    allFileChunks.push(fileChunks);
+                }
             }
 
-            const queryText = await getQueryText(chat, 'file');
-            const fileChunks = await retrieveFileChunks(queryText, collectionId);
-
-            message.mes = `${fileChunks}\n\n${message.mes}`;
+            message.mes = `${allFileChunks.join('\n\n')}\n\n${message.mes}`;
         }
     } catch (error) {
         console.error('Vectors: Failed to retrieve files', error);
@@ -614,7 +624,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
 /**
  * Removes the most relevant messages from the chat and displays them in the extension prompt
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @param {number} _contextSize Context size (unused)
  * @param {function} _abort Abort function (unused)
  * @param {string} type Generation type
@@ -740,13 +750,18 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 
 /**
  * Gets the text to query from the chat
- * @param {object[]} chat Chat messages
+ * @param {ChatMessage[]} chat Chat messages
  * @param {'file'|'chat'|'world-info'} initiator Initiator of the query
  * @returns {Promise<string>} Text to query
  */
 async function getQueryText(chat, initiator) {
+    const getTextWithoutAttachments = (x) => {
+        const fileLength = x?.extra?.fileLength || 0;
+        return String(x?.mes || '').substring(fileLength).trim();
+    };
+
     let hashedMessages = chat
-        .map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: chat.indexOf(x) }))
+        .map(x => ({ text: substituteParams(getTextWithoutAttachments(x)), hash: getStringHash(substituteParams(getTextWithoutAttachments(x))), index: chat.indexOf(x) }))
         .filter(x => x.text)
         .reverse()
         .slice(0, settings.query);
@@ -1313,7 +1328,7 @@ async function onViewStatsClick() {
 async function onVectorizeAllFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         /**
@@ -1390,7 +1405,7 @@ async function onVectorizeAllFilesClick() {
 async function onPurgeFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         for (const file of allFiles) {
