@@ -1411,12 +1411,19 @@ export async function printMessages() {
         addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
     }
 
-    // Scroll to bottom when all media are loaded
-    const media = document.querySelectorAll('#chat .mes img, #chat .mes video');
+    chatElement.find('.mes').removeClass('last_mes');
+    chatElement.find('.mes').last().addClass('last_mes');
+    refreshSwipeButtons();
+    scrollChatToBottom();
+    scrollOnMediaLoad();
+    applyStylePins();
+}
+
+function scrollOnMediaLoad() {
+    const media = chatElement.find('.mes_block img, .mes_block video').toArray();
     let mediaLoaded = 0;
 
-    for (let i = 0; i < media.length; i++) {
-        const currentElement = media[i];
+    for (const currentElement of media) {
         if (currentElement instanceof HTMLImageElement) {
             if (currentElement.complete) {
                 incrementAndCheck();
@@ -1434,12 +1441,6 @@ export async function printMessages() {
             }
         }
     }
-
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons();
-    scrollChatToBottom();
-    applyStylePins();
 
     function incrementAndCheck() {
         mediaLoaded++;
