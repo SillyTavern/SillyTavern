@@ -28,6 +28,7 @@ import {
     refreshSwipeButtons,
     getMediaIndex,
     getMediaDisplay,
+    chatElement,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -2252,31 +2253,31 @@ export function initChatUtilities() {
         const mediaIndex = Number(mediaBlock.attr('data-index'));
         return { messageBlock, messageId, mediaBlock, mediaIndex };
     }
-    $(document).on('click', '.mes_img', async function () {
+    chatElement.on('click', '.mes_img', async function () {
         const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex);
     });
-    $(document).on('click', '.mes_media_enlarge', async function () {
+    chatElement.on('click', '.mes_media_enlarge', async function () {
         const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
         expandMessageMedia(messageId, mediaIndex).click();
     });
-    $(document).on('click', '.mes_media_delete', async function () {
+    chatElement.on('click', '.mes_media_delete', async function () {
         const { messageId, mediaIndex, messageBlock } = getMediaContainerInfo.call(this);
         await deleteMessageMedia(messageId, mediaIndex, messageBlock);
     });
-    $(document).on('click', '.mes_media_list', async function () {
+    chatElement.on('click', '.mes_media_list', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
     });
-    $(document).on('click', '.mes_media_gallery', async function () {
+    chatElement.on('click', '.mes_media_gallery', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
     });
-    $(document).on('click','.mes_img_swipe_left', async function () {
+    chatElement.on('click','.mes_img_swipe_left', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.LEFT);
     });
-    $(document).on('click','.mes_img_swipe_right', async function () {
+    chatElement.on('click','.mes_img_swipe_right', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.RIGHT);
     });
