@@ -9339,7 +9339,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 swipedElementsDiv.removeClass('slide');
 
                 document.documentElement.style.setProperty('--slide-mes-x-start', '');
-                document.documentElement.style.setProperty('--slide-mes-x-start', '');
+                document.documentElement.style.setProperty('--slide-mes-x-end', '');
                 document.documentElement.style.setProperty('--slide-mes-duration', '');
                 return true;
             };
