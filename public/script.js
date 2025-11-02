@@ -6004,7 +6004,7 @@ export function syncMesToSwipe(messageId = null) {
     }
     // If the swipe is not present yet, exit out (will likely be copied later)
     // "" is falsy. An empty string is a valid message.
-    if (typeof targetMessage.swipes[targetMessage.swipe_id] != 'string' || !targetMessage.swipe_info[targetMessage.swipe_id]) {
+    if (typeof targetMessage.swipes[targetMessage.swipe_id] !== 'string' || !targetMessage.swipe_info[targetMessage.swipe_id]) {
         return false;
     }
 
