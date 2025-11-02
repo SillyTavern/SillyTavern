@@ -6045,7 +6045,8 @@ export function syncMesToSwipe(messageId = null) {
         return false;
     }
     // If the swipe is not present yet, exit out (will likely be copied later)
-    if (!targetMessage.swipes[targetMessage.swipe_id] || !targetMessage.swipe_info[targetMessage.swipe_id]) {
+    // "" is falsy. An empty string is a valid message.
+    if (typeof targetMessage.swipes[targetMessage.swipe_id] != 'string' || !targetMessage.swipe_info[targetMessage.swipe_id]) {
         return false;
     }
 
@@ -7447,7 +7448,7 @@ async function branchChat() {
     const mesId = Number(mesElement.attr('mesid'));
     const mes = chat[mesId];
 
-    //Handle message without swipe_info.
+    //Handle message without swipe_info for `syncMesToSwipe`
     mes['swipe_id'] ??= 0;
     mes['swipe_info'] ??= [];
     mes['swipe_info'][mes['swipe_id']] ??= {};
@@ -7463,10 +7464,19 @@ async function branchChat() {
         await redisplayChat(chat, mesId);
 
         await messageEditDone(div);
-    } else {
-        toastr.error(`Failed to run 'syncMesToSwipe' on ${mesId}`);
-        console.trace(`Failed to run 'syncMesToSwipe' on ${mesId}`);
+
+        //Handle message without swipe_info for `syncMesToSwipe`
+        mes['swipe_info'] ??= [];
+        mes['swipe_info'][mes['swipe_id']] ??= {};
+
+        //Save edited reasoning to `swipe_info`
+        if (syncMesToSwipe(mesId)) {
+            return;
+        }
     }
+    const errorMessage = `Failed to run 'syncMesToSwipe' on message #${mesId}, swipe #${mes['swipe_id'] + 1}`;
+    toastr.error(errorMessage);
+    console.trace(errorMessage);
 }
 
 function addBranchButton(messageBlock) {
