@@ -7278,8 +7278,12 @@ function updateMessage(div) {
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
+
+    // editing old messages
+    mes['extra'] ??= {};
+
     let regexPlacement;
-    if (mes.is_user) {
+    if (mes?.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
     } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
@@ -7312,12 +7316,7 @@ function updateMessage(div) {
         mes['swipes'][mes['swipe_id']] = text;
     }
 
-    // editing old messages
-    if (!mes.extra) {
-        mes.extra = {};
-    }
-
-    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+    if (mes?.is_system || mes?.is_user || mes.extra?.type === system_message_types.NARRATOR) {
         mes.extra.bias = bias ?? null;
     } else {
         mes.extra.bias = null;
@@ -7429,6 +7428,53 @@ export async function messageEdit(editMessageId) {
     }
 
     updateEditArrowClasses();
+
+    //Add a fork button if chat tree is enabled.
+    if (power_user.enable_chat_tree && swipeState != SWIPE_STATE.EDITING) {
+        //Only add one.
+        if (messageBlock.find('.mes_edit_fork').length == 0) {
+            addBranchButton(messageBlock);
+        }
+    } else {
+        messageBlock.find('.mes_edit_fork').remove();
+    }
+}
+
+//Temporary implementation, this will be moved to `swipe` for access to animateSwipeTransition.
+async function branchChat() {
+    const div = $(this);
+    const mesElement = div.closest('.mes');
+    const mesId = Number(mesElement.attr('mesid'));
+    const mes = chat[mesId];
+
+    //Handle message without swipe_info.
+    mes['swipe_id'] ??= 0;
+    mes['swipe_info'] ??= [];
+    mes['swipe_info'][mes['swipe_id']] ??= {};
+
+    if (syncMesToSwipe(mesId)) {
+
+        //Assume swipes exist.
+        await saveChatToTree(chat, chatTree);
+
+        mes['swipe_id'] = mes['swipes']?.length;
+        //Delete chat after mesId
+        await spliceStickToChat([], chat, mesId + 1);
+        await redisplayChat(chat, mesId);
+
+        await messageEditDone(div);
+    } else {
+        toastr.error(`Failed to run 'syncMesToSwipe' on ${mesId}`);
+        console.trace(`Failed to run 'syncMesToSwipe' on ${mesId}`);
+    }
+}
+
+function addBranchButton(messageBlock) {
+    let doneButton = messageBlock.find('.mes_edit_done');
+    let forkButton = $('<div class="mes_edit_fork menu_button fa-code-branch fa-solid interactable" title="Branch" data-i18n="[title]Branch" tabindex="0" role="button"></div>');
+    doneButton.after(forkButton);
+    forkButton.on('click', branchChat);
+    return forkButton;
 }
 
 /**
@@ -9162,7 +9208,23 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Start edit.
         swipeState = SWIPE_STATE.EDITING;
-        thisMesDiv.find('.mes_edit').trigger('click');
+
+        await messageEdit(mesId);
+
+        const doneButton = thisMesDiv.find('.mes_edit_done');
+        function swapIcon(element, fromClass, toClass) {
+            if (element.hasClass(fromClass)) {
+                element.removeClass(fromClass);
+                element.addClass(toClass);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        //Temporarily change icon.
+        swapIcon(doneButton, 'fa-check', 'fa-code-branch');
+
         //Update the counter before to show 3/2 while the message is being edited.
         await updateSwipeCounter(mesId);
 
@@ -9172,6 +9234,9 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         await animateSwipeTransition(mesId + 1, { xEnd: `${swipeRange}px`, duration: swipeDuration, classes:counterClass, freeze:true });
 
         let result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], thisMesDiv);
+
+        swapIcon(doneButton, 'fa-code-branch', 'fa-check');
+
         swipeState = SWIPE_STATE.SWIPING;
         //If the edit was completed.
         if (result.includes('mes_edit_done')) {
