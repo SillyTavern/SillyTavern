@@ -719,6 +719,7 @@ jQuery(async function () {
                 name: 'index',
                 description: 'index of the image in the message to caption (starting from 0)',
                 typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messageMedia(),
             }),
         ],
         unnamedArgumentList: [
