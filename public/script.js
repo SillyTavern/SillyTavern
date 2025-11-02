@@ -9322,33 +9322,36 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
             //Select only the target classes.
             const swipedElementsDiv = swipedMessagesDiv.children(swipeClasses);
+            if (swipedElementsDiv.length > 0) {
+                //This is a global variable, only one swipe transition can occur concurrently.
+                document.documentElement.style.setProperty('--slide-mes-x-start', xStart);
+                document.documentElement.style.setProperty('--slide-mes-x-end', xEnd);
+                document.documentElement.style.setProperty('--slide-mes-x-duration', `${duration}ms`);
 
-            //This is a global variable, only one swipe transition can occur concurrently.
-            document.documentElement.style.setProperty('--slide-mes-x-start', xStart);
-            document.documentElement.style.setProperty('--slide-mes-x-end', xEnd);
-            document.documentElement.style.setProperty('--slide-mes-x-duration', `${duration}ms`);
-
-            //The class must be removed to unfreze previous slides.
-            swipedElementsDiv.removeClass('slide');
-            //css starts the animation.
-            void swipedElementsDiv[0].offsetWidth;
-            swipedElementsDiv.addClass('slide');
-
-            const endSlide = () => {
-                //Remove the style when done.
+                //The class must be removed to unfreze previous slides.
                 swipedElementsDiv.removeClass('slide');
+                //css starts the animation.
+                void swipedElementsDiv[0].offsetWidth;
+                swipedElementsDiv.addClass('slide');
 
-                document.documentElement.style.setProperty('--slide-mes-x-start', '');
-                document.documentElement.style.setProperty('--slide-mes-x-end', '');
-                document.documentElement.style.setProperty('--slide-mes-duration', '');
-                return true;
-            };
-            //Wait for the animation's end.
-            await transitionPromise(swipedElementsDiv[0]);
+                const endSlide = () => {
+                    //Remove the style when done.
+                    swipedElementsDiv.removeClass('slide');
 
-            //If not frozen, end the slide now.
-            return freeze ? endSlide : endSlide();
+                    document.documentElement.style.setProperty('--slide-mes-x-start', '');
+                    document.documentElement.style.setProperty('--slide-mes-x-end', '');
+                    document.documentElement.style.setProperty('--slide-mes-duration', '');
+                    return true;
+                };
+                //Wait for the animation's end.
+                await transitionPromise(swipedElementsDiv[0]);
+
+                //If not frozen, end the slide now.
+                return freeze ? endSlide : endSlide();
+            }
         }
+        console.warn(`No animatable messages were found after message #${mesId}.`);
+        return false;
     }
 
     function getMessageBottomHeight(thisMesDiv) {
