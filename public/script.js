@@ -9032,7 +9032,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     const thisMesDivWidth = thisMesDiv.width() + 30;
     let swipeRange = (direction === SWIPE_DIRECTION.RIGHT) ? -thisMesDivWidth : thisMesDivWidth;
 
-    async function endSwipe() {
+    /**
+     * Waits for the generation to end, reverts the swipe if swipe_id has not changed.
+     * @param {boolean} revert Attept to revert the swipe without saving.
+     */
+    async function endSwipe(revert = false) {
         //Wait for the generation to end.
         try {
             await generation;
@@ -9063,6 +9067,29 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+        }
+
+        //If the id is not within bounds, Swipe back.
+        if (chat[mesId]['swipe_id'] !== clampedId || revert) {
+            // Prevent recursion.
+            if (source != SWIPE_SOURCE.BACK) {
+                source = SWIPE_SOURCE.BACK;
+                chat[mesId]['swipe_id'] = clampedId;
+
+                //Update the chat.
+                await loadFromSwipeId(mesId, chat[mesId]['swipe_id']);
+                await redisplayChat(chat, mesId - 1);
+            }
+            else {
+                toastr.error(t`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}.`, t`Please create a bug report!`, { timeOut: 0, extendedTimeOut: 0 });
+                console.error(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
+                //Leave the swipe buttons hidden, don't save the chat.
+                return;
+            }
+        //Out of bounds swipes should not be saved.
+        } else if (source != SWIPE_SOURCE.BACK) {
+            //Save the chat if swipe_id has changed.
+            saveChatConditional();
         }
 
         //Allow for another swipe.
@@ -9108,12 +9135,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Load from swipes.
         if (syncSwipeToMes(mesId, newSwipeId) == false) {
             let errorMessage = t`When swiping ${direction} on message ${mesId}, syncSwipeToMes has returned false. Attempting to swipe back!`;
-            console.log(errorMessage);
             toastr.error(errorMessage);
 
             chat[mesId]['swipe_id'] = originalSwipeId;
-            await endSwipe();
-            return;
+            await endSwipe(true);
+            throw new Error(errorMessage);
         }
     }
 
@@ -9128,7 +9154,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Should this have an abortController.signal reject?
             element.addEventListener(end, () => resolve(), { once: true });
         });
-    };
+    }
 
     /**
      * Animates a swipe for all messages >= mesId.
