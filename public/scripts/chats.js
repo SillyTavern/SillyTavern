@@ -2042,7 +2042,7 @@ async function onImageSwiped(messageId, element, direction) {
 
     await saveChatConditional();
     await eventSource.emit(event_types.IMAGE_SWIPED, { message, element, direction });
-    appendMediaToMessage(message, element, false);
+    appendMediaToMessage(message, element);
 }
 
 export function initChatUtilities() {
