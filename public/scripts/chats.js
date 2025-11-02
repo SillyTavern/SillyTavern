@@ -2246,7 +2246,7 @@ export function initChatUtilities() {
      * @property {JQuery<HTMLElement>} mediaBlock The closest media container block
      * @property {number} mediaIndex The media index within the message
      */
-    function getMediaContainerInfo(containerClass = '.mes_media_container'){
+    function getMediaContainerInfo(containerClass = '.mes_media_container') {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
         const mediaBlock = $(this).closest(containerClass);
@@ -2273,11 +2273,11 @@ export function initChatUtilities() {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
     });
-    chatElement.on('click','.mes_img_swipe_left', async function () {
+    chatElement.on('click', '.mes_img_swipe_left', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.LEFT);
     });
-    chatElement.on('click','.mes_img_swipe_right', async function () {
+    chatElement.on('click', '.mes_img_swipe_right', async function () {
         const { messageId, messageBlock } = getMediaContainerInfo.call(this);
         await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.RIGHT);
     });
@@ -2299,13 +2299,26 @@ export function initChatUtilities() {
         event.preventDefault();
         event.stopPropagation();
 
+        await handleFileAttach(Array.from(event.clipboardData.files));
+    });
+
+    new DragAndDropHandler('#form_sheld', async (files) => {
+        await handleFileAttach(files);
+    });
+
+    /**
+     * Common handler for file attachments.
+     * @param {File[]} files Files to attach
+     * @returns {Promise<void>}
+     */
+    async function handleFileAttach(files) {
         const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
 
         // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
         const dataTransfer = new DataTransfer();
-        for (let i = 0; i < event.clipboardData.files.length; i++) {
-            dataTransfer.items.add(event.clipboardData.files[i]);
+        for (let i = 0; i < files.length; i++) {
+            dataTransfer.items.add(files[i]);
         }
 
         // Preserve existing non-duplicate files in the input
@@ -2317,7 +2330,7 @@ export function initChatUtilities() {
 
         fileInput.files = dataTransfer.files;
         await onFileAttach(fileInput.files);
-    });
+    }
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
 }
