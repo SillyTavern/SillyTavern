@@ -9002,7 +9002,6 @@ export async function createOrEditCharacter(e) {
     }
 }
 
-
 /**
  * Redisplay the chat after index.
  * @param {Array} chat
