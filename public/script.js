@@ -1416,7 +1416,7 @@ export async function printMessages() {
     refreshSwipeButtons();
     applyStylePins();
     scrollChatToBottom();
-    delay(debounce_timeout.quick).then(() => scrollOnMediaLoad());
+    delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
 function scrollOnMediaLoad() {
@@ -2229,7 +2229,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     }
 
     // TODO: Consider making this awaitable
-    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.quick)]).then(() => {
+    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.short)]).then(() => {
         messageElement.find('.mes_media_wrapper').empty().append(mediaBlocks);
         doAdjustScroll();
     });
