@@ -8930,6 +8930,35 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
+ * Redisplay the chat after index.
+ * @param {Array} chat
+ * @param {Number} index
+ */
+export async function redisplayChat(chat, index) {
+    //Get the last displayed message.
+    const lastMesId = Number(chatElement.children().last().attr('mesid'));
+
+    //Remove messages after index.
+    for (let i = lastMesId; index + 1 <= i; i--) {
+        const messageElement = chatElement.find(`.mes[mesid="${i}"]`);
+        messageElement.nextAll('div').remove();
+        messageElement.remove();
+
+    }
+    chatElement.scrollTop(chatElement[0].scrollHeight);
+
+    //Skip to index, then add extra messages.
+    for (let i = index + 1; i <= chat.length - 1; i++) {
+        addOneMessage(chat[i], { scroll: false, showSwipes: true, forceId: i } );
+        updateSwipeCounter(i);
+    }
+
+    //Update last_mes.
+    chatElement.children('.mes').removeClass('last_mes');
+    chatElement.children('.mes').last().addClass('last_mes');
+}
+
+/**
  * Formats a counter for a swipe view.
  * @param {number} current The current number of items.
  * @param {number} total The total number of items.
@@ -8998,7 +9027,10 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
-    const swipeRange = direction === SWIPE_DIRECTION.RIGHT ? -700 : 700;
+
+    //The offscreen messages may be visible if the user resizes the viewport during a swipe.
+    const thisMesDivWidth = thisMesDiv.width() + 30;
+    let swipeRange = (direction === SWIPE_DIRECTION.RIGHT) ? -thisMesDivWidth : thisMesDivWidth;
 
     async function endSwipe() {
         //Wait for the generation to end.
@@ -9072,41 +9104,90 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
         delete chat[mesId].gen_started;
         delete chat[mesId].gen_finished;
-        //load from swipes.
-        syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
+
+        //Load from swipes.
+        if (syncSwipeToMes(mesId, newSwipeId) == false) {
+            let errorMessage = t`When swiping ${direction} on message ${mesId}, syncSwipeToMes has returned false. Attempting to swipe back!`;
+            console.log(errorMessage);
+            toastr.error(errorMessage);
+
+            chat[mesId]['swipe_id'] = originalSwipeId;
+            await endSwipe();
+            return;
+        }
     }
 
-    // Helper function to convert transition to promise
-    const transitionPromise = (element, properties) => {
+    /**
+     *  Helper function to convert animation to promise
+     * @param {HTMLElement} element
+     * @param {string} end
+     * @returns
+     */
+    function transitionPromise(element, end = 'animationend') {
         return new Promise((resolve) => {
-            element.transition({
-                ...properties,
-                complete: resolve,
-            });
+            //Should this have an abortController.signal reject?
+            element.addEventListener(end, () => resolve(), { once: true });
         });
     };
 
     /**
      * Animates a swipe for all messages >= mesId.
      * @param {number} mesId
-     * @param {number} x
-     * @param {number} duration
+     * @param {object} params
+     * @param {string} [params.xStart='opx']
+     * @param {string} [params.xEnd='0px']
+     * @param {number} [params.duration=animation_duration]
+     * @param {string} [params.classes=''] Additional CSS classes to target during the swipe.
+     * @param {boolean} [params.freeze=true] When true, do not remove the class from the animation, leaving it stuck at xEnd.
+     * @returns {Promise<boolean|Function>} endSlide unfreezes the messages from xEnd.
      */
-    async function animateSwipeTransition(mesId, x, duration) {
-        //Selects the swiped message.
-        const swipedMessagesDiv = chatElement.children().filter((index, div) => {
-            const $div = $(div);
-            return mesId === Number($div.attr('mesid'));
-        });
-        const swipedElementsDiv = swipedMessagesDiv.children('.mes_block, .mesAvatarWrapper');
+    async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {} ) {
+        //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
+        const MAXIMUM_ANIMATED = 100;
 
-        //Swipe.
-        await transitionPromise(swipedElementsDiv, {
-            x: x,
-            duration: duration,
-            easing: animation_easing,
-            queue: false,
+        const messages = chatElement.children('.mes');
+        const firstDisplayedMesId = Number(messages.first().attr('mesid'));
+
+        const swipedMessagesDiv  = messages.filter((index, div) => {
+            // const messageId = Number($(div).attr('mesid')); //Slower.
+            //This assumes the messages are in order and their Id's are accurate.
+            const divMessageId = firstDisplayedMesId + index;
+
+            return (divMessageId < mesId + MAXIMUM_ANIMATED && divMessageId >= mesId);
         });
+        if (swipedMessagesDiv.length > 0) {
+            let swipeClasses = '.mes_block, .mesAvatarWrapper';
+            swipeClasses += classes;
+
+            //Select only the target classes.
+            const swipedElementsDiv = swipedMessagesDiv.children(swipeClasses);
+
+            //This is a global variable, only one swipe transition can occur concurrently.
+            document.documentElement.style.setProperty('--slide-mes-x-start', xStart);
+            document.documentElement.style.setProperty('--slide-mes-x-end', xEnd);
+            document.documentElement.style.setProperty('--slide-mes-x-duration', `${duration}ms`);
+
+            //The class must be removed to unfreze previous slides.
+            swipedElementsDiv.removeClass('slide');
+            //css starts the animation.
+            void swipedElementsDiv[0].offsetWidth;
+            swipedElementsDiv.addClass('slide');
+
+            const endSlide = () => {
+                //Remove the style when done.
+                swipedElementsDiv.removeClass('slide');
+
+                document.documentElement.style.setProperty('--slide-mes-x-start', '');
+                document.documentElement.style.setProperty('--slide-mes-x-start', '');
+                document.documentElement.style.setProperty('--slide-mes-duration', '');
+                return true;
+            };
+            //Wait for the animation's end.
+            await transitionPromise(swipedElementsDiv[0]);
+
+            //If not frozen, end the slide now.
+            return freeze ? endSlide : endSlide();
+        }
     }
 
     function getMessageBottomHeight(thisMesDiv) {
@@ -9148,11 +9229,14 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     /**
      * Anime a swipe, optionally running a generation.
      * @param {boolean} run_generate
+     * @param {boolean} [skipSwipeOut=false]
      */
-    async function animateSwipe(run_generate = false) {
+    async function animateSwipe(run_generate = false, skipSwipeOut = false) {
 
-        //Swipe out.
-        await animateSwipeTransition(mesId, swipeRange, swipeDuration);
+        if (!skipSwipeOut) {
+            //Swipe out.
+            await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`,  duration: swipeDuration });
+        }
 
         if (run_generate) {
             await updateSwipeCounter(mesId);
@@ -9187,10 +9271,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         thisMesDiv.css('height', thisMesDivHeight);
         expandNewMessage(thisMesDiv);
 
-
-        //Jump to the opposite side.
-        await animateSwipeTransition(mesId, -swipeRange, 0);
-
         appendMediaToMessage(chat[mesId], thisMesDiv);
 
         await eventSource.emit(event_types.MESSAGE_SWIPED, (mesId));
@@ -9202,8 +9282,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             saveChatDebounced();
         }
 
-        //Swipe in.
-        await animateSwipeTransition(mesId, 0, swipeDuration);
+        //Swipe in from the opposite side.
+        await animateSwipeTransition(mesId, { xStart:`${-swipeRange}px`, xEnd: `${0}px`,  duration: swipeDuration });
     }
 
     if (mesId === Number(this_edit_mes_id)) {

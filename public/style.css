@@ -1215,6 +1215,22 @@ body .panelControlBar {
     --swipeCounterMargin: 5px;
 }
 
+/* https://stackoverflow.com/a/31819499 */
+/* This has much better performance than .transform on large chats*/
+.slide {
+    animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    -webkit-animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    will-change: transform;
+}
+@keyframes slide {
+    0% { transform: translateX(var(--slide-mes-x-start, '0px')); }
+    100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
+}
+@-webkit-keyframes slide {
+    0% { transform: translateX(var(--slide-mes-x-start, '0px')); }
+    100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
+}
+
 .swipe_right.active {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
