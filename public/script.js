@@ -8940,23 +8940,15 @@ export async function createOrEditCharacter(e) {
  * @param {Number} index
  */
 export async function redisplayChat(chat, index) {
-    //Get the last displayed message.
-    const lastMesId = Number(chatElement.children().last().attr('mesid'));
 
     //Remove messages after index.
-    for (let i = lastMesId; index + 1 <= i; i--) {
-        const messageElement = chatElement.find(`.mes[mesid="${i}"]`);
-        messageElement.nextAll('div').remove();
-        messageElement.remove();
-
-    }
-    chatElement.scrollTop(chatElement[0].scrollHeight);
+    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').remove();
 
     //Skip to index, then add extra messages.
     for (let i = index + 1; i <= chat.length - 1; i++) {
-        addOneMessage(chat[i], { scroll: false, showSwipes: true, forceId: i } );
-        updateSwipeCounter(i);
+        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i } );
     }
+    refreshSwipeButtons();
 
     //Update last_mes.
     chatElement.children('.mes').removeClass('last_mes');
