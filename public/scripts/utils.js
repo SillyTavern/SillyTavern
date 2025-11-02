@@ -2740,7 +2740,7 @@ export function shakeElement(targetElement, distance = 10,duration = 100, easing
  * Returns a promise that resolves with the clicked element's class name when any selector is clicked.
  *
  * @param {string[]} selectors - Array of CSS selectors to listen for clicks
- * @param {jQuery|string} [target=$(document)] - jQuery object or selector for the container to delegate events from
+ * @param {JQuery<HTMLElement>|JQuery<Document>} [target=$(document)] - jQuery object or selector for the container to delegate events from
  * @returns {Promise<string>} Resolves with the className of the clicked element
  *
  * @example
@@ -2749,7 +2749,7 @@ export function shakeElement(targetElement, distance = 10,duration = 100, easing
  *
  * @example
  * // Wait for buttons only within a specific chat container
- * const result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], this_mes_div)
+ * const result = await waitForClick(['.mes_edit_done', '.mes_edit_cancel', '.mes_edit_delete'], messageElement)
  */
 export async function waitForClick(selectors, target = $(document)) {
     return new Promise((resolve) => {
