@@ -9594,15 +9594,15 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (newSwipeId >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {
             newSwipeId = chat[mesId]['swipes'].length;
 
+            //Do not load a new swipe, instead generate a new mesage.
+            await syncWithSwipeId(mesId);
+            //Update the swipe_id.
+            chat[mesId]['swipe_id'] = newSwipeId;
+
             //Cancel the generation if it's a user message or the first message in a pristine chat.
             if (chat[mesId].is_user || (mesId === 0 && isPristine)) {
                 //Allow edits to user messages before generation. Else trigger a swipe generation.
                 if (power_user.enable_chat_tree) {
-                    //Do not load a new swipe, instead generate a new mesage.
-                    await syncWithSwipeId(mesId);
-
-                    //Update the swipe_id.
-                    chat[mesId]['swipe_id'] = newSwipeId;
 
                     await swipeGenerate();
                     await endSwipe();
@@ -9614,10 +9614,10 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                     return;
                 }
             } else {
-                //Generate.
-                await syncWithSwipeId(mesId);
-                await loadFromSwipeId(mesId, newSwipeId);
+                //Delete chat after mesId
+                await spliceStickToChat([], chat, mesId + 1);
                 let run_generate = true;
+                //Generate.
                 await animateSwipe(run_generate);
                 await endSwipe();
                 return;
