@@ -1383,10 +1383,11 @@ export async function showMoreMessages(messagesToLoad = null) {
 
     while (messageId > 0 && count > 0) {
         let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
+        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId, showSwipes: false });
         count--;
         messageId--;
     }
+    refreshSwipeButtons();
 
     if (messageId == 0) {
         $('#show_more_messages').remove();
@@ -1463,6 +1464,7 @@ export async function clearChat() {
     if (is_delete_mode) {
         $('#dialogue_del_mes_cancel').trigger('click');
     }
+    //This will also remove '.mes' elements.
     chatElement.children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove');
@@ -7387,7 +7389,7 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     if (this?.classList?.contains('mes_edit_cancel')) {
         thisMesDiv = $(this).closest('.mes');
     } else {
-        thisMesDiv = chatElement.children().filter(`[mesid="${messageId}"]`);
+        thisMesDiv = chatElement.children('.mes').filter(`[mesid="${messageId}"]`);
     }
 
     const thisMesBlock = thisMesDiv.find('.mes_block');
@@ -8230,8 +8232,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
     message ??= chat[messageId];
 
     if (
-        //The swipes setting must be enabled.
-        swipes &&
+        //The swipes setting must be enabled, and swipes can't be hidden.
+        swipes && !swipesHidden &&
         //If mid-swipe, the message cannot be swiped.
         swipeState == SWIPE_STATE.NONE &&
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
@@ -8266,8 +8268,8 @@ export function refreshSwipeButtons() {
     //Never show swipe buttons on an empty chat.
     if (chat?.length === 0) return false;
 
-    //If swipes is disabled, ignore the input and hide all swipe buttons.
-    if (!swipes) {
+    //If swipes are disabled or hidden, hide all swipe buttons.
+    if (!swipes || swipesHidden) {
         $('body').toggleClass('hideAllSwipeButtons', true);
         return;
     //Don't hide all swipe buttons.
@@ -8280,11 +8282,14 @@ export function refreshSwipeButtons() {
     let showRightGenerateElements = new Set(); //.7 opacity.
     let hideBothElements = new Set(); //Hidden.
 
-    // const lasttDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
-    const firstDisplayedMesId = Number(chatElement.find('.mes').first().attr('mesid'));
+    //Non-messages can appear in chat. '.mes' is required.
+    const messages = chatElement.children('.mes');
+
+    // const lastDisplayedMesId = Number(messages.last().attr('mesid'));
+    const firstDisplayedMesId = Number(messages.first().attr('mesid'));
 
     //Group each message.
-    chatElement.children().each((index, div) => {
+    messages.each((index, div) => {
         // const messageId = Number($(div).attr('mesid')); //Slower.
         //This assumes the messages are in order and their Id's are accurate.
         const messageId = firstDisplayedMesId + index;
@@ -8318,10 +8323,10 @@ export function refreshSwipeButtons() {
     //The left arrows must initially be hidden.
     // https://developer.mozilla.org/en-US/docs/Web/CSS/:has#performance_considerations
     const noArrows = $([...hideBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
-    const bothArrows = $([...showBothElements]).find('.swipeRightBlock > .swipe_right, .swipe_left');
-    const rightArrows = $([...showRightGenerateElements]).find('.swipeRightBlock > .swipe_right');
+    const bothArrows = $([...showBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
+    const rightArrows = $([...showRightGenerateElements]).find('> .swipeRightBlock > .swipe_right');
 
-    //This order cannot be changed, rigtArrows can overlap with noArrows and bothArrows.
+    //This order cannot be changed, rightArrows can overlap with noArrows and bothArrows.
 
     // @ts-ignore https://stackoverflow.com/a/42930857 .attr is correct.
     noArrows.attr('hidden', true);
@@ -8495,7 +8500,7 @@ export function updateEditArrowClasses() {
         return;
     }
 
-    const message = chatElement.children().filter(`.mes[mesid="${this_edit_mes_id}"]`);
+    const message = chatElement.children('.mes').filter(`.mes[mesid="${this_edit_mes_id}"]`);
 
     const downButton = message.find('.mes_edit_down');
     const upButton = message.find('.mes_edit_up');
@@ -8976,11 +8981,11 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'back' or 'delete'
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
- * @param {object} [params.forceSwipeId] The target swipe_id.
+ * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  */
 export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId: forceMesId, forceSwipeId: forceSwipeId } = {}) {
     if (chat.length === 0) {
@@ -8994,7 +8999,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //Only allow one concurrent swipe.
-    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE) {
+    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
         console.info('The swipe has been ignored because another is in progress.');
         return;
     }
@@ -9006,15 +9011,15 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     //Only set messageIndex if message exists because -1 is truthy.
     if (message) {
         messageIndex = chat.indexOf(message);
-        if (messageIndex === -1) {
+        if (messageIndex === -1 && typeof(forceMesId) != 'number') {
             console.error(`The message must exist in chat. ${message};`);
             return;
         }
     }
 
-    const mesId = Number(forceMesId ?? $(this).closest('.mes').attr('mesid') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    const thisMesDiv = chatElement.children().filter(`.mes[mesid="${mesId}"]`);
+    const thisMesDiv = chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
     const thisMesDivHeight = thisMesDiv[0]?.scrollHeight;
     const thisMesTextHeight = thisMesText[0]?.scrollHeight;
@@ -9047,13 +9052,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Clamp Id between swipes.
         let clampedId = clamp(chat[mesId]['swipe_id'], 0, Math.max(0, chat[mesId]['swipes'].length - 1));
-
-        //If the id is not within bounds, Swipe back.
-        if (chat[mesId]['swipe_id'] !== clampedId) {
-            chat[mesId]['swipe_id'] = clampedId;
-            syncSwipeToMes(mesId);
-            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
-        }
 
         await updateSwipeCounter(mesId);
         //Fallback.
@@ -9097,7 +9095,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         showSwipeButtons();
     }
 
-    async function standardSwipe() {
+    async function standardSwipe(newSwipeId) {
         //If swipe_id has changed, or the source is being deleted.
         if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE) {
             //Update the chat.
@@ -9114,9 +9112,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {number} newSwipeId
      */
     async function loadFromSwipeId(mesId, newSwipeId) {
-        //Update the swipe_id.
-        chat[mesId]['swipe_id'] = newSwipeId;
-
         if (chat[mesId].extra) {
             // if message has memory attached - remove it to allow regen
             delete chat[mesId].extra.memory;
@@ -9304,8 +9299,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (run_generate && !is_send_press) {
             is_send_press = true;
             generation = Generate('swipe');
-        } else if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
-            saveChatDebounced();
         }
 
         //Swipe in from the opposite side.
@@ -9324,7 +9317,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     //If the swipe is not being deleted.
-    if (source != SWIPE_SOURCE.DELETE) {
+    if (source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
         syncMesToSwipe(mesId);
@@ -9347,15 +9340,15 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             await endSwipe();
             return;
         }
-    } else if (source == SWIPE_SOURCE.DELETE) {
-        //If the swipe is being deleted.
-        await standardSwipe();
+    } else if (source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK) {
+        //If the swipe is being deleted or reverted.
+        await standardSwipe(newSwipeId);
         return;
     }
 
     //If swiping left.
     if (direction === SWIPE_DIRECTION.LEFT) {
-        newSwipeId--;
+        if (forceSwipeId == null) newSwipeId--;
         //Loop to last swipe if negative.
         if (newSwipeId < 0) {
             newSwipeId = Math.max(0, chat[mesId]['swipes'].length - 1);
@@ -9367,13 +9360,13 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             await endSwipe();
             return;
         }
-        await standardSwipe();
+        await standardSwipe(newSwipeId);
         return;
     }
     //If swiping right.
     else if (direction === SWIPE_DIRECTION.RIGHT) {
         // make new slot in array
-        newSwipeId++;
+        if (forceSwipeId == null) newSwipeId++;
 
         //Minimum of zero.
         if (newSwipeId < 0) {
@@ -9411,7 +9404,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 newSwipeId = 0;
             }
         }
-        await standardSwipe();
+        await standardSwipe(newSwipeId);
         return;
     }
 }
