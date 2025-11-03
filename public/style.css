@@ -1221,7 +1221,7 @@ body .panelControlBar {
 /* SWIPE RELATED STYLES*/
 
 .mes {
-    --swipeCounterHeight: 5px;
+    --swipeCounterHeight: 15px;
     --swipeCounterMargin: 5px;
 }
 
@@ -1244,6 +1244,7 @@ body .panelControlBar {
 .swipe_right.active {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
+    /* (Duration * Active Opacity / Inactive Opacity * 2) */
     transition-duration: calc(var(--animation-duration) * 0.7/0.3*2);
     @starting-style { opacity: 0 }
 }
@@ -1270,13 +1271,15 @@ body .panelControlBar {
     transition-behavior: allow-discrete;
     /* Fade in chevrons. */
     @starting-style { opacity: 0 }
+}
+
+.swipe_right[hidden],
+.swipe_left[hidden] {
     /* Fade out */
-    &[hidden] {
-        opacity: 0;
-        display: none;
-        transition-duration: calc(var(--animation-duration) * 2);
-        transition-timing-function: ease-out;
-    }
+    opacity: 0;
+    display: none;
+    transition-duration: calc(var(--animation-duration) * 2);
+    transition-timing-function: ease-out;
 }
 
 .swipe_left {
@@ -1305,37 +1308,19 @@ body .panelControlBar {
     height: var(--swipeCounterHeight);
 }
 
-body:not(.swipeNumAllMessages) .mes:not(.last_mes) .swipes-counter {
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter {
     visibility: hidden;
 }
 
-body.swipeNumAllMessages .mes:not(.last_mes) .swipes-counter {
+body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
     opacity: 0.3 !important;
     display: flex !important;
 }
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_left,
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_right {
-    /* Red for Error if visible */
-    color: red !important;
-    visibility: hidden;
-}
-/* Debugging */
-/* body.swipeAllMessages .mes:not(.last_mes) .swipe_left,
-body.swipeAllMessages .mes:not(.last_mes) .swipe_right {
-    color:lime !important;
-} */
-
-body.hideAllSwipeButtons .swipe_left,
-body.hideAllSwipeButtons .swipe_right {
-    /* Red for Error if visible */
-    color: red !important;
-    visibility: hidden;
-}
 
 .swipe_left {
     right: auto;
-    left: auto;
+    left: 20px;
 }
 
 .swipe_right {

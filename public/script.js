@@ -2463,7 +2463,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     addCopyToCodeBlocks(newMessage);
 
     // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
-    if (newMessageId !== 0) {
+    if (newMessageId !== 0 && newMessageId !== chat.length - 1) {
         const swipesNum = chat[newMessageId].swipes?.length;
         const swipeId = chat[newMessageId].swipe_id + 1;
         newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
@@ -8734,10 +8734,9 @@ export function showSwipeButtons() {
 export function hideSwipeButtons({ hideCounters = false } = {}) {
     swipesHidden = true;
     refreshSwipeButtons();
-    if (power_user.enable_chat_tree) {
-        if (hideCounters === true) {
-            chatElement.find('.last_mes .swipes-counter').hide();
-        }
+
+    if (hideCounters === true) {
+        chatElement.find('.swipes-counter').hide();
     }
 }
 
@@ -9465,10 +9464,13 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 await redisplayChat(chat, mesId - 1);
             }
             else {
-                toastr.error(t`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}.`, t`Please create a bug report!`, { timeOut: 0, extendedTimeOut: 0 });
-                console.error(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
-                //Leave the swipe buttons hidden, don't save the chat.
-                return;
+                await Popup.show.confirm(
+                    t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
+                    t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
+                    { okButton: 'OK', cancelButton: false },
+                );
+                console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
+                reloadCurrentChat();
             }
         //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
@@ -9608,7 +9610,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
             chat[mesId]['swipe_id'] = originalSwipeId;
             await endSwipe(true);
-            throw new Error(errorMessage);
+            return false;
         }
 
 
@@ -9624,6 +9626,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Update chat.
             await spliceStickToChat(stick, chat, mesId);
         }
+        return true;
     }
 
     /**
