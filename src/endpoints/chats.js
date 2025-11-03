@@ -28,58 +28,58 @@ export const CHAT_TREES_BACKUPS_PREFIX = 'chatTree_';
 
 /**
  * Saves a chat to the backups directory.
- * @param {string} directory The user's backups directory.
- * @param {string} treeDirectory The user's chat tree backups directory.
  * @param {string} name The name of the chat.
- * @param {string} chat The serialized chat to save.
- * @param {string|undefined} chatTree The serialized chatTree to save.
+ * @param {object} params
+ * @param {string|undefined} [params.chatDirectory] The user's backups directory.
+ * @param {string|undefined} [params.treeDirectory] The user's chat tree backups directory.
+ * @param {string|undefined} [params.chat] The serialized chat to save.
+ * @param {string|undefined} [params.chatTree] The serialized chatTree to save.
  */
-function backupChat(directory, treeDirectory, name, chat, chatTree = undefined) {
+function backupChat(name, { chatDirectory, treeDirectory, chat = undefined, chatTree = undefined } = {}) {
     try {
-        if (!isBackupEnabled || !fs.existsSync(directory)) {
-            return;
-        }
 
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const backupFile = path.join(directory, `${CHAT_BACKUPS_PREFIX}${name}_${generateTimestamp()}.jsonl`);
-        const backupTreeFile = path.join(treeDirectory, `${CHAT_TREES_BACKUPS_PREFIX}${name}_${generateTimestamp()}.json`);
-        writeFileAtomicSync(backupFile, chat, 'utf-8');
+        function backup(data, directory, BACKUPS_PREFIX) {
+            const backupFile = path.join(directory, `${BACKUPS_PREFIX}${name}_${generateTimestamp()}.jsonl`);
 
-        removeOldBackups(directory, `${CHAT_BACKUPS_PREFIX}${name}_`);
-        if (chatTree) {
             //Ensure the directory exists, then write the backup.
-            if (!fs.existsSync(treeDirectory)) {
-                fs.mkdirSync(treeDirectory, { recursive: true });
+            if (!fs.existsSync(directory)) {
+                fs.mkdirSync(directory, { recursive: true });
             }
-            writeFileAtomicSync(backupTreeFile, chatTree, 'utf-8');
-            removeOldBackups(treeDirectory, `${CHAT_TREES_BACKUPS_PREFIX}${name}_`);
+
+            if (!isBackupEnabled || !fs.existsSync(directory)) {
+                return;
+            }
+
+            writeFileAtomicSync(backupFile, data, 'utf-8');
+            writeFileAtomicSync(backupFile, data, 'utf-8');
+
+            removeOldBackups(directory, `${BACKUPS_PREFIX}${name}_`);
+            if (isNaN(maxTotalChatBackups) || maxTotalChatBackups < 0) {
+                return;
+            }
+            removeOldBackups(directory, BACKUPS_PREFIX, maxTotalChatBackups);
         }
 
+        if (chat && chatDirectory) backup(chat, chatDirectory, CHAT_BACKUPS_PREFIX);
+        if (chatTree && treeDirectory) backup(chatTree, treeDirectory, CHAT_TREES_BACKUPS_PREFIX);
 
-        if (isNaN(maxTotalChatBackups) || maxTotalChatBackups < 0) {
-            return;
-        }
-
-        removeOldBackups(directory, CHAT_BACKUPS_PREFIX, maxTotalChatBackups);
-        if (chatTree) {
-            removeOldBackups(treeDirectory, CHAT_TREES_BACKUPS_PREFIX, maxTotalChatBackups);
-        }
     } catch (err) {
         console.error(`Could not backup chat for ${name}`, err);
     }
 }
 
 /**
- * @type {Map<string, import('lodash').DebouncedFunc<function(string, string, string, string, string|undefined): void>>}
+ * @type {Map<string, import('lodash').DebouncedFunc<typeof backupChat>>}
  */
 const backupFunctions = new Map();
 
 /**
  * Gets a backup function for a user.
  * @param {string} handle User handle
- * @returns {function(string, string, string, string, string|undefined): void} Backup function
+ * @returns {typeof backupChat} Backup function
  */
 function getBackupFunction(handle) {
     if (!backupFunctions.has(handle)) {
@@ -474,7 +474,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             jsonChatTree = JSON.stringify(chatTreeData);
             writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
         }
-        getBackupFunction(request.user.profile.handle)(request.user.directories.backups, request.user.directories.chatTreeBackups, directoryName, jsonlData, jsonChatTree);
+        getBackupFunction(request.user.profile.handle)(directoryName, { chatDirectory:request.user.directories.backups, treeDirectory:request.user.directories.chatTreeBackups, chat:jsonlData, chatTree:jsonChatTree });
         return response.send({ result: 'ok' });
     } catch (error) {
         console.error(error);
@@ -890,7 +890,7 @@ router.post('/group/save', (request, response) => {
         writeFileAtomicSync(treeFilePath, jsonChatTree, 'utf8');
     }
 
-    getBackupFunction(request.user.profile.handle)(request.user.directories.backups, request.user.directories.chatTreeBackups, String(id), jsonlData, jsonChatTree);
+    getBackupFunction(request.user.profile.handle)(String(id), { chatDirectory:request.user.directories.backups, treeDirectory:request.user.directories.chatTreeBackups, chat:jsonlData, chatTree:jsonChatTree });
     return response.send({ ok: true });
 });
 
