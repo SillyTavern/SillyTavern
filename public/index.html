@@ -7302,6 +7302,24 @@
                 <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
             </div>
         </div>
+
+        <div id="message_audio_template" class="template_element">
+            <div class="mes_media_container mes_audio_container">
+                <div class="audio-player">
+                    <div class="audio-player-title">Audio</div>
+                    <div class="audio-player-controls">
+                        <button class="audio-player-play-pause fa-solid fa-play" title="Play" data-i18n="[title]Play"></button>
+                        <span class="audio-player-current-time">0:00</span>
+                        <div class="audio-player-progress">
+                            <div class="audio-player-progress-bar"></div>
+                        </div>
+                        <span class="audio-player-total-time">0:00</span>
+                        <button class="audio-player-volume fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
+                        <input type="range" class="audio-player-volume-slider" min="0" max="1" step="0.01" value="1">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div id="movingDivs">
         <div id="floatingPrompt" class="drawer-content flexGap5">
@@ -7780,6 +7798,7 @@
     <script src="lib/pagination.js"></script>
     <script src="lib/toolcool-color-picker.js"></script>
     <script src="lib/jquery.izoomify.js"></script>
+    <script src="scripts/audio-player.js"></script>
     <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>

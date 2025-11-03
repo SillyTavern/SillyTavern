@@ -65,3 +65,120 @@
     display: flex;
     text-align: left;
 }
+
+/* Audio Player Styles */
+.mes_audio_container {
+    cursor: default;
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    background-color: var(--white20a);
+    border: 2px solid var(--SmartThemeBorderColor);
+    padding: 0.5em 1em;
+    border-radius: 15px;
+}
+
+.audio-player {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.audio-player-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.audio-player-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.audio-player-play-pause,
+.audio-player-volume {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    color: var(--SmartThemeBodyColor);
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.audio-player-play-pause:hover,
+.audio-player-volume:hover {
+    color: var(--SmartThemeEmColor);
+}
+
+.audio-player-current-time,
+.audio-player-total-time {
+    font-size: 0.9em;
+    color: var(--SmartThemeQuoteColor);
+    min-width: 40px;
+    text-align: center;
+}
+
+.audio-player-progress {
+    flex: 1;
+    height: 6px;
+    background-color: var(--black30a);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.audio-player-progress-bar {
+    height: 100%;
+    background-color: var(--SmartThemeEmColor);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+    width: 0%;
+}
+
+.audio-player-volume-slider {
+    width: 80px;
+    cursor: pointer;
+}
+
+.audio-player-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--SmartThemeEmColor);
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.audio-player-volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--SmartThemeEmColor);
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+}
+
+.audio-player-volume-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    background: var(--black30a);
+    border-radius: 2px;
+}
+
+.audio-player-volume-slider::-moz-range-track {
+    height: 4px;
+    background: var(--black30a);
+    border-radius: 2px;
+}

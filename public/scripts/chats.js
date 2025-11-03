@@ -322,7 +322,7 @@ export async function getFileAttachment(url) {
  */
 async function validateFile(file) {
     const fileText = await file.text();
-    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
     const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
     if (!isMedia && file.size > fileSizeLimit) {
@@ -887,6 +887,11 @@ function expandMessageMedia(messageId, mediaIndex) {
     const title = mediaAttachment.title || message.extra.title || '';
 
     if (!mediaAttachment) {
+        return;
+    }
+
+    if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+        console.warn('Audio media cannot be expanded');
         return;
     }
 
