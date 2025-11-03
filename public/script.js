@@ -8539,11 +8539,14 @@ export function refreshSwipeButtons() {
     let showRightGenerateElements = new Set(); //.7 opacity.
     let hideBothElements = new Set(); //Hidden.
 
-    // const lasttDisplayedMesId = Number(chatElement.find('.mes').last().attr('mesid'));
-    const firstDisplayedMesId = Number(chatElement.find('.mes').first().attr('mesid'));
+    //Non-messages can appear in chat. '.mes' is required.
+    const messageElements = chatElement.find('.mes[mesid]');
+
+    // const lastDisplayedMesId = Number(messageElements.last().attr('mesid'));
+    const firstDisplayedMesId = Number(messageElements.first().attr('mesid'));
 
     //Group each message.
-    chatElement.children().each((index, div) => {
+    messageElements.each((index, div) => {
         // const messageId = Number($(div).attr('mesid')); //Slower.
         //This assumes the messages are in order and their Id's are accurate.
         const messageId = firstDisplayedMesId + index;
