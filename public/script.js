@@ -6281,6 +6281,88 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 }
 
 /**
+ * Syncs message with it's swipes and swipe_info.
+ * Defaults to swipe_id 0;
+ * Creates swipes and swipe_info arrays if they don't exist.
+ * Overwrites all current contents of swipes and swipe_info arrays.
+ * @param {object} message
+ * @returns
+ */
+export function writeMessageToSwipe(message) {
+    if (typeof message !== 'object') {
+        console.trace(`[writeMessageToSwipe] failed. '${message}' is not an object.`);
+    }
+
+    const targetId = message?.['swipe_id'] ?? 0;
+
+    message['swipes'] ??= [];
+    message['swipe_info'] ??= [];
+    message['swipe_info'][targetId] ??= {};
+
+    message.swipes[targetId] = message.mes;
+
+    const targetSwipeInfo = message['swipe_info'][targetId];
+
+    targetSwipeInfo.send_date = message?.send_date;
+    targetSwipeInfo.gen_started = message?.gen_started;
+    targetSwipeInfo.gen_finished = message?.gen_finished;
+    targetSwipeInfo.extra = structuredClone(message?.extra);
+    return true;
+}
+
+/**
+ * Loads a message from the targetSwipeId.
+ * if swipe_info does not exist, it will be backfilled.
+ * If send_date, gen_started or gen_finished do not exist in swipe_info, the message's info will NOT be overwritten.
+ * The messages extra WILL be overwritten.
+ * @param {object} message message object.
+ * @param {number} targetSwipeId message.swipe_id will be set to targetSwipeId.
+ * @returns {boolean} false if the swipe does not exist. true on success.
+ */
+export function loadMessageFromSwipe(message, targetSwipeId = 0) {
+
+    if (typeof message?.['swipes']?.[targetSwipeId] !== 'string') {
+        console.warn(`[loadMessageFromSwipe] Message swipe #${targetSwipeId} is not a string. It's swipe_id has not been changed to #${targetSwipeId}.`);
+        return false;
+    }
+
+    message.swipe_id = targetSwipeId;
+
+    // Backfill swipe_info if missing.
+    if (!Array.isArray(message.swipe_info)) {
+        message.swipe_info = message.swipes.map(_ => ({
+            send_date: message?.send_date,
+            gen_started: void 0,
+            gen_finished: void 0,
+            extra: {},
+        }));
+    }
+
+    const targetSwipeInfo = message?.swipe_info?.[targetSwipeId];
+    if (typeof targetSwipeInfo !== 'object') {
+        console.warn(`[loadMessageFromSwipe] Message swipe_info #${targetSwipeId} is not an object. The message's info will NOT be overwritten. The message's extra WILL be overwritten.`);
+    }
+
+    message.mes = message.swipes[targetSwipeId];
+    if (typeof targetSwipeInfo?.send_date == 'number') message.send_date = targetSwipeInfo?.send_date;
+    if (typeof targetSwipeInfo?.gen_started == 'number') message.gen_started = targetSwipeInfo?.gen_started;
+    if (typeof targetSwipeInfo?.gen_finished == 'number') message.gen_finished = targetSwipeInfo?.gen_finished;
+    message.extra = structuredClone(targetSwipeInfo?.extra) ?? {};
+    return true;
+}
+
+/**
+ * Calls writeMessageToSwipe then loadMessageFromSwipe.
+ * @param {object} message
+ * @param {number} targetSwipeInfo
+ * @returns {boolean}
+ */
+export function switchMessageWithSwipe(message, targetSwipeInfo) {
+    writeMessageToSwipe(message);
+    return loadMessageFromSwipe(message, targetSwipeInfo);
+}
+
+/**
  * Syncs the current message and all its data into the swipe data at the given message ID (or the last message if no ID is given).
  *
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
@@ -7718,36 +7800,18 @@ async function branchChat() {
     const mesId = Number(mesElement.attr('mesid'));
     const mes = chat[mesId];
 
-    //Handle message without swipe_info for `syncMesToSwipe`
-    mes['swipe_id'] ??= 0;
-    mes['swipes'] ??= [];
-    mes['swipe_info'] ??= [];
-    mes['swipe_info'][mes['swipe_id']] ??= {};
+    writeMessageToSwipe(mes);
+    //Assume swipes exist.
+    await saveChatToTree(chat, chatTree);
 
-    if (syncMesToSwipe(mesId)) {
+    mes['swipe_id'] = mes['swipes']?.length;
+    //Delete chat after mesId
+    await spliceStickToChat([], chat, mesId + 1);
+    await redisplayChat(chat, mesId);
 
-        //Assume swipes exist.
-        await saveChatToTree(chat, chatTree);
+    await messageEditDone(div);
 
-        mes['swipe_id'] = mes['swipes']?.length;
-        //Delete chat after mesId
-        await spliceStickToChat([], chat, mesId + 1);
-        await redisplayChat(chat, mesId);
-
-        await messageEditDone(div);
-
-        //Handle message without swipe_info for `syncMesToSwipe`
-        mes['swipe_info'] ??= [];
-        mes['swipe_info'][mes['swipe_id']] ??= {};
-
-        //Save edited reasoning to `swipe_info`
-        if (syncMesToSwipe(mesId)) {
-            return;
-        }
-    }
-    const errorMessage = `Failed to run 'syncMesToSwipe' on message #${mesId}, swipe #${mes['swipe_id'] + 1}`;
-    toastr.error(errorMessage);
-    console.trace(errorMessage);
+    writeMessageToSwipe(mes);
 }
 
 function addBranchButton(messageBlock) {
