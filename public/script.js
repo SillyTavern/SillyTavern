@@ -10873,7 +10873,7 @@ jQuery(async function () {
     });
 
     $(document).on('keyup', function (e) {
-        if (e.key === 'Escape') {
+        if (e.key === 'Escape' && !e.isComposing) {
             const isEditVisible = $('#curEditTextarea').is(':visible') || $('.reasoning_edit_textarea').length > 0;
             if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor('all');
