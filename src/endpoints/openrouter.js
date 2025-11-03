@@ -55,3 +55,29 @@ router.post('/models/multimodal', async (_req, res) => {
         return res.sendStatus(500);
     }
 });
+
+router.post('/models/embedding', async (_req, res) => {
+    try {
+        // The endpoint is available without authentication
+        const response = await fetch(`${API_OPENROUTER}/models`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const models = data?.data || [];
+        const embeddingModels = models.filter(m => Array.isArray(m?.architecture?.output_modalities) && m.architecture.output_modalities.includes('embeddings'));
+
+        return res.json(embeddingModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
