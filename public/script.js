@@ -373,7 +373,6 @@ export let name1 = default_user_name;
 export let name2 = systemUserName;
 /** @type {ChatMessage[]} */
 export let chat = [];
-export const isSwipingAllowed = () => swipeState === SWIPE_STATE.NONE; //false when a swipe is in progress, or swiping is blocked.
 
 /**
  * @type {import('./scripts/constants.js').SWIPE_STATE}
@@ -1593,7 +1592,7 @@ export async function sendTextareaMessage() {
         toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
         return;
     }
-    if (!isSwipingAllowed()) return; // don't proceed if mid-swipe.
+    if (swipeState !== SWIPE_STATE.NONE) return; // don't proceed if mid-swipe.
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
 
@@ -8493,7 +8492,25 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 }
 
 /**
+ * Returns true if messages are generally swipeable.
+ * @returns {boolean}
+ */
+export function isSwipingAllowed() {
+    return (
+        //Swipe cannot be called on an empty chat.
+        chat.length !== 0 &&
+        //The swipes setting must be enabled, and swipes can't be hidden.
+        swipes && !swipesHidden &&
+        //Cannot swipe while generating.
+        !isGenerating() &&
+        //If mid-swipe, the message cannot be swiped.
+        swipeState === SWIPE_STATE.NONE
+    );
+}
+
+/**
  * Returns true if the message is swipeable.
+ * This does not check if messages are generally swipeable. See isSwipingAllowed().
  * This does not check if the swipes exist or are valid.
  * @param {number} messageId The message Id to check.
  * @param {object} [message=undefined] If undefined, then the message checks will be skipped.
@@ -8503,14 +8520,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
     message ??= chat[messageId];
 
     if (
-        //The swipes setting must be enabled, and swipes can't be hidden.
-        swipes && !swipesHidden &&
-        //If mid-swipe, the message cannot be swiped.
-        swipeState == SWIPE_STATE.NONE &&
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
         ((messageId > (this_edit_mes_id ?? -1)) && (swipeState != SWIPE_STATE.EDITING)) &&
-        //Cannot swipe while generating.
-        !isGenerating() &&
 
         //If the message is the last message, and it exists.
         (messageId == chat.length - 1) &&
@@ -8540,11 +8551,12 @@ export function refreshSwipeButtons() {
     if (chat?.length === 0) return false;
 
     //If swipes are disabled or hidden, hide all swipe buttons.
-    if (!swipes || swipesHidden) {
+    if (!isSwipingAllowed()) {
         $('body').toggleClass('hideAllSwipeButtons', true);
         return;
     //Don't hide all swipe buttons.
     } else {
+        //CSS will hide all messages.
         $('body').toggleClass('hideAllSwipeButtons', false);
     }
 
@@ -9253,19 +9265,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         return;
     }
 
-    if (isGenerating()) {
-        toastr.warning(t`Cannot swipe while generating. Stop the request and try again.`, t`Swipe aborted`);
-        return;
-    }
-
-    //Only allow one concurrent swipe.
-    if (!isSwipingAllowed() && source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
-        console.info('The swipe has been ignored because another is in progress.');
-        return;
-    }
-    swipeState = SWIPE_STATE.SWIPING;
-
-    let generation;
     let messageIndex;
 
     //Only set messageIndex if message exists because -1 is truthy.
@@ -9278,6 +9277,28 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
+
+    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK) {
+        console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
+    } else {
+        //Only show an error if swipes are not hidden and a message is generating.
+        if (isGenerating() && (swipes && !swipesHidden && (swipeState === SWIPE_STATE.NONE))) {
+            toastr.warning(t`Cannot swipe while generating. Stop the request and try again.`, t`Swipe aborted`);
+            return;
+        }
+        //Only allow one concurrent swipe.
+        if (!isSwipingAllowed()) {
+            console.info('The swipe has been ignored messages cannot currently be swiped.');
+            return;
+        }
+        if (!isMessageSwipeable(mesId, message)) {
+            console.info(`Message #${mesId} cannot be swiped. ${message}`);
+            return;
+        }
+    }
+
+    swipeState = SWIPE_STATE.SWIPING;
+    let generation;
 
     const thisMesDiv = chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
     const thisMesText = thisMesDiv.find('.mes_block .mes_text');
