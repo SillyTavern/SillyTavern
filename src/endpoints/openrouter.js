@@ -67,13 +67,21 @@ router.post('/models/embedding', async (_req, res) => {
         });
 
         if (!response.ok) {
+            console.warn('OpenRouter API request failed', response.statusText);
             return res.json([]);
         }
 
         /** @type {any} */
         const data = await response.json();
-        const models = data?.data || [];
-        const embeddingModels = models.filter(m => Array.isArray(m?.architecture?.output_modalities) && m.architecture.output_modalities.includes('embeddings'));
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('OpenRouter API response was not an array');
+            return res.json([]);
+        }
+
+        const embeddingModels = data.data
+            .filter(m => Array.isArray(m?.architecture?.output_modalities))
+            .filter(m => m.architecture.output_modalities.includes('embeddings'));
 
         return res.json(embeddingModels);
     } catch (error) {
