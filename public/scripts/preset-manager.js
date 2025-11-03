@@ -81,6 +81,9 @@ function autoSelectPreset() {
  * @returns {PresetManager} Preset manager
  */
 export function getPresetManager(apiId = '') {
+    if (apiId === 'koboldhorde') {
+        apiId = 'kobold';
+    }
     if (!apiId) {
         apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
     }
@@ -814,7 +817,7 @@ class PresetManager {
      * Reads a preset extension field from the preset.
      * @param {object} options
      * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
-     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'. If empty, reads the entire extensions object.
      * @return {any} The value of the preset extension field, or null if not found.
      */
     readPresetExtensionField({ name, path }) {
@@ -825,7 +828,7 @@ class PresetManager {
         // Read from settings if the selected preset is the same as the provided name
         if (settings && selectedName === presetName) {
             const settingsExtensions = ensurePlainObject(settings.extensions || {});
-            return lodash.get(settingsExtensions, path, null);
+            return path ? lodash.get(settingsExtensions, path, null) : settingsExtensions;
         }
 
         // Otherwise, read from the preset by name
@@ -835,7 +838,7 @@ class PresetManager {
         }
 
         const presetExtensions = ensurePlainObject(preset.extensions || {});
-        const value = lodash.get(presetExtensions, path, null);
+        const value = path ? lodash.get(presetExtensions, path, null) : presetExtensions;
         return value;
     }
 
@@ -843,7 +846,7 @@ class PresetManager {
      * Writes a value to a preset extension field.
      * @param {object} options
      * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
-     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'. If empty, writes to the root of the extensions object.
      * @param {any} options.value Value to write to the preset extension field.
      * @return {Promise<void>} Resolves when the preset is saved.
      */
@@ -856,7 +859,7 @@ class PresetManager {
         if (settings && selectedName === presetName) {
             // Set the value at the specified path
             settings.extensions = ensurePlainObject(settings.extensions || {});
-            lodash.set(settings.extensions, path, value);
+            path ? lodash.set(settings.extensions, path, value) : (settings.extensions = value);
             await saveSettings();
         }
 
@@ -868,7 +871,7 @@ class PresetManager {
 
         // Set the value at the specified path
         preset.extensions = ensurePlainObject(preset.extensions || {});
-        lodash.set(preset.extensions, path, value);
+        path ? lodash.set(preset.extensions, path, value) : (preset.extensions = value);
 
         // Save the updated preset
         await this.savePreset(presetName, preset, { skipUpdate: true });
@@ -1033,10 +1036,11 @@ export async function initPresetManager() {
             return;
         }
 
+        await eventSource.emit(event_types.PRESET_RENAMED_BEFORE, { apiId: apiId, oldName: oldName, newName: newName });
+        const extensions = presetManager.readPresetExtensionField({ name: oldName, path: '' });
         await presetManager.renamePreset(newName);
-
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: oldName });
-        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: apiId, name: newName });
+        await presetManager.writePresetExtensionField({ name: newName, path: '', value: extensions });
+        await eventSource.emit(event_types.PRESET_RENAMED, { apiId: apiId, oldName: oldName, newName: newName });
 
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
@@ -1116,13 +1120,13 @@ export async function initPresetManager() {
         if (result) {
             const successToast = !presetManager.isAdvancedFormatting() ? t`Preset deleted` : t`Template deleted`;
             toastr.success(successToast);
+            await eventSource.emit(event_types.PRESET_DELETED, { apiId, name });
         } else {
             const warningToast = !presetManager.isAdvancedFormatting() ? t`Preset was not deleted from server` : t`Template was not deleted from server`;
             toastr.warning(warningToast);
         }
 
         saveSettingsDebounced();
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {

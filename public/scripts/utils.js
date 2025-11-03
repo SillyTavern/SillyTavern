@@ -3,10 +3,11 @@ import {
     DOMPurify,
     Readability,
     isProbablyReaderable,
+    lodash,
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, this_chid, user_avatar } from '../script.js';
+import { characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
@@ -15,6 +16,10 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { getTagsList } from './tags.js';
 import { groups, selected_group } from './group-chats.js';
 import { getCurrentLocale, t } from './i18n.js';
+import { importWorldInfo } from './world-info.js';
+
+export const shiftUpByOne = (e, i, a) => a[i] = e + 1;
+export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
 
 /**
  * Pagination status string template.
@@ -25,6 +30,8 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= tot
 export const localizePagination = function(container) {
     container.find('[title="Next page"]').attr('title', t`Next page`);
     container.find('[title="Previous page"]').attr('title', t`Previous page`);
+    container.find('[title="First page"]').attr('title', t`First page`);
+    container.find('[title="Last page"]').attr('title', t`Last page`);
 };
 
 /**
@@ -282,6 +289,15 @@ export function removeFromArray(array, item) {
     if (index === -1) return false;
     array.splice(index, 1);
     return true;
+}
+
+/**
+ * Normalizes an array by removing duplicates, trimming strings, and filtering out empty values.
+ * @param {any[]} arr - The array to normalize.
+ * @returns {any[]} The normalized array.
+ */
+export function normalizeArray(arr) {
+    return [...new Set((arr ?? []).map(s => typeof s === 'string' ? s.trim() : s).filter(Boolean))];
 }
 
 /**
@@ -616,7 +632,7 @@ export function isElementInViewport(el) {
 /**
  * Returns a name that is unique among the names that exist.
  * @param {string} name The name to check.
- * @param {{ (y: any): boolean; }} exists Function to check if name exists.
+ * @param {{ (name: string): boolean; }} exists Function to check if name exists.
  * @returns {string} A unique name.
  */
 export function getUniqueName(name, exists) {
@@ -1633,13 +1649,18 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
  * @param {{ (): boolean; }} condition The condition to wait for.
  * @param {number} [timeout=1000] The timeout in milliseconds.
  * @param {number} [interval=100] The interval in milliseconds.
+ * @param {object} [options] Options object
+ * @param {boolean} [options.rejectOnTimeout=true] Whether to reject the promise on timeout or resolve it.
  * @returns {Promise<void>} A promise that resolves when the condition is true.
  */
-export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+export async function waitUntilCondition(condition, timeout = 1000, interval = 100, options = {}) {
+    const { rejectOnTimeout = true } = options;
+
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             clearInterval(intervalId);
-            reject(new Error('Timed out waiting for condition to be true'));
+            const timeoutFn = rejectOnTimeout ? reject : resolve;
+            timeoutFn(new Error('Timed out waiting for condition to be true'));
         }, timeout);
 
         const intervalId = setInterval(() => {
@@ -2559,4 +2580,111 @@ export function textValueMatcher(params, data) {
  */
 export function versionCompare(srcVersion, minVersion) {
     return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
+/**
+ * Sets up the scroll-to-top button functionality.
+ * @param {object} params Parameters object
+ * @param {string} params.scrollContainerId Scrollable container element ID
+ * @param {string} params.buttonId Button element ID
+ * @param {string} params.drawerId Drawer element ID
+ * @param {number} [params.visibilityThreshold] Scroll position (px) to show the button (default: 300)
+ * @returns {() => void} Cleanup function to remove event listeners
+ */
+export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibilityThreshold = 300 }) {
+    const scrollContainer = document.getElementById(scrollContainerId);
+    const btn = document.getElementById(buttonId);
+    const drawer = document.getElementById(drawerId);
+
+    if (!btn || !drawer) {
+        // Not fatal; the drawer or button may not exist in some builds. Use debug level.
+        console.debug('Scroll-to-top: button or drawer not found during setup.');
+        return () => { /* noop cleanup */ };
+    }
+
+    if (!scrollContainer) {
+        console.debug('Scroll-to-top: scroll container not found during setup.');
+        return () => { /* noop cleanup */ };
+    }
+
+    const updateButtonVisibility = () => btn.classList.toggle('visible', scrollContainer.scrollTop > visibilityThreshold);
+    const updateButtonVisibilityThrottled = lodash.throttle(updateButtonVisibility, debounce_timeout.standard, { leading: true, trailing: true });
+    const onScroll = () => updateButtonVisibilityThrottled();
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+
+    // Scroll to top on click (button semantics provide keyboard activation natively)
+    const onActivate = (/** @type {MouseEvent} */ e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const userPrefersReduced = power_user.reduced_motion;
+        scrollContainer.scrollTo({ top: 0, behavior: userPrefersReduced ? 'auto' : 'smooth' });
+    };
+    btn.addEventListener('click', onActivate);
+
+    // Initial state check
+    updateButtonVisibility();
+
+    // Return cleanup function for caller to hold and invoke when appropriate
+    return () => {
+        scrollContainer.removeEventListener('scroll', onScroll);
+        btn.removeEventListener('click', onActivate);
+    };
+}
+
+/**
+ * Imports content from an external URL.
+ * @param {string} url URL or UUID of the content to import.
+ * @param {Object} [options={}] Options object.
+ * @param {string|null} [options.preserveFileName=null] Optional file name to use for the imported content.
+ * @returns {Promise<void>} A promise that resolves when the import is complete.
+ */
+export async function importFromExternalUrl(url, { preserveFileName = null } = {}) {
+    let request;
+
+    if (isValidUrl(url)) {
+        console.debug('Custom content import started for URL: ', url);
+        request = await fetch('/api/content/importURL', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+    } else {
+        console.debug('Custom content import started for Char UUID: ', url);
+        request = await fetch('/api/content/importUUID', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+    }
+
+    if (!request.ok) {
+        toastr.info(request.statusText, 'Custom content import failed');
+        console.error('Custom content import failed', request.status, request.statusText);
+        return;
+    }
+
+    const data = await request.blob();
+    const customContentType = request.headers.get('X-Custom-Content-Type');
+    let fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+    const file = new File([data], fileName, { type: data.type });
+
+    const extraData = new Map();
+    if (preserveFileName) {
+        fileName = preserveFileName;
+        extraData.set(file, preserveFileName);
+    }
+
+    switch (customContentType) {
+        case 'character':
+            await processDroppedFiles([file], extraData);
+            break;
+        case 'lorebook':
+            await importWorldInfo(file);
+            break;
+        default:
+            toastr.warning('Unknown content type');
+            console.error('Unknown content type', customContentType);
+            break;
+    }
 }

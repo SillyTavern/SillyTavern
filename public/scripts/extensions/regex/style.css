@@ -24,37 +24,31 @@
     text-align: center;
 }
 
-#scoped_scripts_block {
+#scoped_scripts_block,
+#preset_scripts_block {
     opacity: 1;
     transition: opacity var(--animation-duration-2x) ease-in-out;
 }
 
-#scoped_scripts_block .move_to_scoped {
+#scoped_scripts_block .move_to_scoped,
+#global_scripts_block .move_to_global,
+#preset_scripts_block .move_to_preset {
     display: none;
 }
 
-#global_scripts_block .move_to_global {
-    display: none;
-}
-
-#scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)) {
+#scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)),
+#preset_scripts_block:not(:has(#regex_preset_toggle:checked)) {
     opacity: 0.5;
 }
 
-.enable_scoped:checked~.regex-toggle-on {
-    display: block;
-}
-
-.enable_scoped:checked~.regex-toggle-off {
-    display: none;
-}
-
-.enable_scoped:not(:checked)~.regex-toggle-on {
-    display: none;
-}
-
+.enable_scoped:checked~.regex-toggle-on,
 .enable_scoped:not(:checked)~.regex-toggle-off {
     display: block;
+}
+
+.enable_scoped:checked~.regex-toggle-off,
+.enable_scoped:not(:checked)~.regex-toggle-on {
+    display: none;
 }
 
 .regex-script-label {
@@ -92,19 +86,13 @@ input.enable_scoped {
     cursor: pointer;
 }
 
-.disable_regex:checked~.regex-toggle-off {
-    display: block;
-}
-
-.disable_regex:checked~.regex-toggle-on {
-    display: none;
-}
-
+.disable_regex:checked~.regex-toggle-on,
 .disable_regex:not(:checked)~.regex-toggle-off {
     display: none;
 }
 
-.disable_regex:not(:checked)~.regex-toggle-on {
+.disable_regex:not(:checked)~.regex-toggle-on,
+.disable_regex:checked~.regex-toggle-off {
     display: block;
 }
 
@@ -139,7 +127,8 @@ input.enable_scoped {
 }
 
 .regex_settings .regex_bulk_operations,
-.regex_settings .regex_bulk_checkbox {
+.regex_settings .regex_bulk_checkbox,
+.regex_settings .regex_bulk_operations_hr {
     display: none;
 }
 
@@ -147,6 +136,26 @@ input.enable_scoped {
     display: flex;
 }
 
+.regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_operations_hr {
+    display: block;
+}
+
 .regex_settings:has(#regex_bulk_edit:checked) .regex_bulk_checkbox {
     display: inline-grid;
+}
+
+@supports not selector(:has(*)) {
+    .regex-script-label label.regex_script_expand {
+        display: none;
+    }
+
+    .regex-script-label .regex_script_buttons {
+        display: flex;
+    }
+}
+
+.regex-script-label label.regex_script_expand input[name="regex_expand"],
+.regex-script-label:has(input[name="regex_expand"]:checked) label.regex_script_expand,
+.regex-script-label:not(:has(input[name="regex_expand"]:checked)) .regex_script_buttons {
+    display: none;
 }

@@ -16,6 +16,10 @@
                     <i class="fa-solid fa-address-card"></i>
                     <small data-i18n="ext_regex_new_scoped_script">+ Scoped</small>
                 </div>
+                <div id="open_preset_editor" class="menu_button menu_button_icon" data-i18n="[title]ext_regex_new_preset_script_desc" title="New preset regex script">
+                    <i class="fa-solid fa-sliders"></i>
+                    <small data-i18n="ext_regex_new_preset_script">+ Preset</small>
+                </div>
                 <div id="import_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-file-import"></i>
                     <small data-i18n="ext_regex_import_script">Import</small>
@@ -31,7 +35,8 @@
                     <small data-i18n="ext_regex_debugger">Debugger</small>
                 </div>
             </div>
-            <div class="regex_bulk_operations flex-container justifyCenter">
+            <hr class="regex_bulk_operations_hr" />
+            <div class="regex_bulk_operations flex-container">
                 <div id="bulk_select_all_toggle" class="menu_button menu_button_icon" title="Toggle Select All">
                     <i class="fa-solid fa-check-double"></i>
                 </div>
@@ -42,6 +47,18 @@
                 <div id="bulk_disable_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-toggle-off"></i>
                     <small data-i18n="Disable">Disable</small>
+                </div>
+                <div id="bulk_regex_move_to_global" class="menu_button menu_button_icon" hidden>
+                    <i class="fa-solid fa-globe"></i>
+                    <small data-i18n="ext_regex_move_to_global">Move to global scripts</small>
+                </div>
+                <div id="bulk_regex_move_to_scoped" class="menu_button menu_button_icon" hidden>
+                    <i class="fa-solid fa-address-card"></i>
+                    <small data-i18n="ext_regex_move_to_scoped">Move to scoped scripts</small>
+                </div>
+                <div id="bulk_regex_move_to_preset" class="menu_button menu_button_icon" hidden>
+                    <i class="fa-solid fa-sliders"></i>
+                    <small data-i18n="ext_regex_move_to_preset">Move to preset scripts</small>
                 </div>
                 <div id="bulk_export_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-file-export"></i>
@@ -69,7 +86,7 @@
                 </div>
             </div>
             <hr />
-            <div id="global_scripts_block" class="padding5">
+            <div id="global_scripts_block">
                 <div>
                     <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
                 </div>
@@ -79,7 +96,7 @@
                 <div id="saved_regex_scripts" no-scripts-text="No scripts found" data-i18n="[no-scripts-text]No scripts found" class="flex-container regex-script-container flexFlowColumn"></div>
             </div>
             <hr />
-            <div id="scoped_scripts_block" class="padding5">
+            <div id="scoped_scripts_block">
                 <div class="flex-container alignItemsBaseline">
                     <strong class="flex1" data-i18n="ext_regex_scoped_scripts">Scoped Scripts</strong>
                     <label id="toggle_scoped_regex" class="checkbox flex-container" for="regex_scoped_toggle">
@@ -92,6 +109,21 @@
                     Only available for this character. Saved to the card data.
                 </small>
                 <div id="saved_scoped_scripts" no-scripts-text="No scripts found" data-i18n="[no-scripts-text]No scripts found" class="flex-container regex-script-container flexFlowColumn"></div>
+            </div>
+            <hr />
+            <div id="preset_scripts_block">
+                <div class="flex-container alignItemsBaseline">
+                    <strong class="flex1" data-i18n="ext_regex_preset_scripts">Preset Scripts</strong>
+                    <label id="toggle_preset_regex" class="checkbox flex-container" for="regex_preset_toggle">
+                        <input type="checkbox" id="regex_preset_toggle" class="enable_scoped" />
+                        <span class="regex-toggle-on fa-solid fa-toggle-on fa-lg" data-i18n="[title]ext_regex_disallow_preset" title="Disallow using preset regex"></span>
+                        <span class="regex-toggle-off fa-solid fa-toggle-off fa-lg" data-i18n="[title]ext_regex_allow_preset" title="Allow using preset regex"></span>
+                    </label>
+                </div>
+                <small data-i18n="ext_regex_preset_scripts_desc">
+                    Only available for this preset. Saved to the preset data.
+                </small>
+                <div id="saved_preset_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
             </div>
         </div>
     </div>

@@ -12,7 +12,6 @@ import {
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
-    REQUEST_DOMAIN_NAMES,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -155,9 +154,9 @@ async function sendClaudeRequest(request, response) {
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model);
-        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.enable_web_search);
-        const isOpus41 = /^claude-opus-4-1/.test(request.body.model);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5)/.test(request.body.model);
+        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -227,7 +226,7 @@ async function sendClaudeRequest(request, response) {
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
-        if (isOpus41) {
+        if (isLimitedSampling) {
             if (requestBody.top_p < 1) {
                 delete requestBody.temperature;
             } else {
@@ -378,24 +377,16 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-exp-image-generation',
             'gemini-2.0-flash-preview-image-generation',
             'gemini-2.5-flash-image-preview',
+            'gemini-2.5-flash-image',
         ];
 
-        // These models do not support setting the threshold to OFF at all.
-        const blockNoneModels = [
-            'gemini-1.5-pro-001',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-flash-8b-exp-0827',
-            'gemini-1.5-flash-8b-exp-0924',
-        ];
-
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image-preview$/.test(m);
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
             'gemini-2.0-flash-lite-001',
             'gemini-2.0-flash-lite-preview-02-05',
-            'gemini-1.5-flash-8b-exp-0924',
-            'gemini-1.5-flash-8b-exp-0827',
+            'gemini-robotics-er-1.5-preview',
         ];
         // #endregion
 
@@ -414,15 +405,8 @@ async function sendMakerSuiteRequest(request, response) {
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
-        if (blockNoneModels.includes(model)) {
-            safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
-        }
-
         if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            const searchTool = model.includes('1.5')
-                ? ({ google_search_retrieval: {} })
-                : ({ google_search: {} });
-            tools.push(searchTool);
+            tools.push({ google_search: {} });
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
@@ -1013,7 +997,7 @@ async function sendXaiRequest(request, response) {
             bodyParams['stop'] = request.body.stop;
         }
 
-        if (request.body.reasoning_effort && ['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+        if (request.body.reasoning_effort) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
@@ -1300,106 +1284,6 @@ async function sendElectronHubRequest(request, response) {
 }
 
 /**
- * Sends a request to MegaNova AI.
- * @param {express.Request} request Express request
- * @param {express.Response} response Express response
- */
-async function sendMeganovaAIRequest(request, response) {
-    const apiUrl = REQUEST_DOMAIN_NAMES.MEGANOVAAI_CHAT;
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
-    console.log('sendMeganovaAIRequest apiKey', apiKey)
-    if (!apiKey) {
-        console.warn('MegaNova AI key is missing.');
-        return response.status(400).send({ error: true });
-    }
-
-    const controller = new AbortController();
-    request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
-        controller.abort();
-    });
-
-    try {
-        let bodyParams = {};
-
-        if (request.body.enable_web_search) {
-            bodyParams['web_search'] = true;
-        }
-
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams['tools'] = request.body.tools;
-            bodyParams['tool_choice'] = request.body.tool_choice;
-        }
-
-        if (request.body.reasoning_effort) {
-            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
-        }
-
-        if (request.body.json_schema) {
-            bodyParams['response_format'] = {
-                type: 'json_schema',
-                json_schema: {
-                    name: request.body.json_schema.name,
-                    description: request.body.json_schema.description,
-                    schema: request.body.json_schema.value,
-                    strict: request.body.json_schema.strict ?? true,
-                },
-            };
-        }
-
-        const requestBody = {
-            'messages': request.body.messages,
-            'model': request.body.model,
-            'temperature': request.body.temperature,
-            'max_tokens': request.body.max_tokens,
-            'stream': request.body.stream,
-            'presence_penalty': request.body.presence_penalty,
-            'frequency_penalty': request.body.frequency_penalty,
-            'top_p': request.body.top_p,
-            'logit_bias': request.body.logit_bias,
-            'seed': request.body.seed,
-            ...bodyParams,
-        };
-
-        const config = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey,
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-        };
-
-        // console.debug('MegaNova AI request:', requestBody);
-        console.log('req', apiUrl, config)
-        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
-
-        if (request.body.stream) {
-            forwardFetchResponse(generateResponse, response);
-        } else {
-            if (!generateResponse.ok) {
-                const errorText = await generateResponse.text();
-                console.warn('MegaNova AI returned error: ', errorText);
-                const errorJson = tryParse(errorText) ?? { error: true };
-                return response.status(500).send(errorJson);
-            }
-            const generateResponseJson = await generateResponse.json();
-            //   console.debug('MegaNova AI response:', generateResponseJson);
-            return response.send(generateResponseJson);
-        }
-    }
-    catch (error) {
-        console.error('Error communicating with MegaNova AI: ', error);
-        if (!response.headersSent) {
-            response.send({ error: true });
-        } else {
-            response.end();
-        }
-    }
-}
-
-/**
  * Sends a chat completion request to Azure OpenAI.
  * @param {express.Request} request Express request object (contains request.body with all generate_data)
  * @param {express.Response} response Express response object
@@ -1528,10 +1412,6 @@ router.post('/status', async function (request, statusResponse) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
         apiUrl = API_ELECTRONHUB;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
-        headers = {};
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVAAI) {
-        apiUrl = REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless';
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
         apiUrl = API_NANOGPT;
@@ -1700,7 +1580,6 @@ router.post('/status', async function (request, statusResponse) {
         Object.keys(queryParams).forEach(key => {
             modelsUrl.searchParams.append(key, queryParams[key]);
         });
-        //console.log('check status url', apiUrl, apiKey, modelsUrl)
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
@@ -1708,17 +1587,13 @@ router.post('/status', async function (request, statusResponse) {
                 ...headers,
             },
         });
+
         if (response.ok) {
             /** @type {any} */
             let data = await response.json();
-            //console.log('res json', data)
+
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && Array.isArray(data)) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
-            }
-
-            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVAAI) {
-                const models = data?.data?.models ?? [];
-                data = { data: models.map(model => ({ id: model.model_name, name: model.model_alias, ...model })), object: "list" };
             }
 
             statusResponse.send(data);
@@ -1749,14 +1624,14 @@ router.post('/status', async function (request, statusResponse) {
 
                 if (Array.isArray(models)) {
                     const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
-                    //console.info('Available models:', modelIds);
+                    console.info('Available models:', modelIds);
                 } else {
                     console.warn('Chat Completion endpoint did not return a list of models.');
                 }
             }
         }
         else {
-            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.', response);
+            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.');
             statusResponse.send({ error: true, data: { data: [] } });
         }
     } catch (e) {
@@ -1882,7 +1757,6 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return sendElectronHubRequest(request, response);
-        case CHAT_COMPLETION_SOURCES.MEGANOVAAI: return sendMeganovaAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return sendAzureOpenAIRequest(request, response);
     }
 
@@ -1960,9 +1834,9 @@ router.post('/generate', function (request, response) {
         }
 
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
-        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
-        if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
+        if (Array.isArray(request.body.messages) && Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
         }
 
@@ -2168,7 +2042,7 @@ router.post('/generate', function (request, response) {
         signal: controller.signal,
     };
 
-    console.debug('Chat Completion request:', endpointUrl, config);
+    console.debug('Chat Completion request:', requestBody);
 
     makeRequest(config, response, request);
 
@@ -2321,9 +2195,19 @@ multimodalModels.post('/electronhub', async (_req, res) => {
     }
 });
 
-multimodalModels.post('/meganovaai', async (_req, res) => {
+multimodalModels.post('/mistral', async (req, res) => {
     try {
-        const response = await fetch(REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless/models');
+        const key = readSecret(req.user.directories, SECRET_KEYS.MISTRALAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.mistral.ai/v1/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
 
         if (!response.ok) {
             return res.json([]);
@@ -2331,7 +2215,40 @@ multimodalModels.post('/meganovaai', async (_req, res) => {
 
         /** @type {any} */
         const data = await response.json();
-        const multimodalModels = data.data.models.filter(m => m.model_type === 'multimodal').map(m => m.model_name);
+        const multimodalModels = data.data.filter(m => m.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/xai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        // xAI's /models endpoint doesn't return modality info, so we must use /language-models instead
+        const response = await fetch('https://api.x.ai/v1/language-models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.input_modalities?.includes('image')).map(m => m.id);
+        if (!multimodalModels.includes('grok-4-0709')) {
+            // The endpoint says it doesn't support images, but it does
+            multimodalModels.push('grok-4-0709');
+        }
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);

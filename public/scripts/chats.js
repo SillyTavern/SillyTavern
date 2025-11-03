@@ -750,10 +750,9 @@ function getStyleContentsFromMarkdown(text) {
         return '';
     }
 
-    const div = document.createElement('div');
     const html = converter.makeHtml(substituteParams(text));
-    div.innerHTML = html;
-    const styleElements = Array.from(div.querySelectorAll('style'));
+    const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
+    const styleElements = Array.from(parsedDocument.querySelectorAll('style'));
     return styleElements
         .filter(s => s.textContent.trim().length > 0)
         .map(s => s.textContent.trim())

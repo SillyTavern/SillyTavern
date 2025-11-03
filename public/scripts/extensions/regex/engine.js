@@ -1,16 +1,228 @@
-import { characters, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
-import { extension_settings } from '../../extensions.js';
+import { characters, saveSettingsDebounced, substituteParams, substituteParamsExtended, this_chid } from '../../../script.js';
+import { extension_settings, writeExtensionField } from '../../extensions.js';
+import { getPresetManager } from '../../preset-manager.js';
 import { regexFromString } from '../../utils.js';
-export {
-    regex_placement,
-    getRegexedString,
-    runRegexScript,
+import { lodash } from '../../../lib.js';
+
+/**
+ * @enum {number} Regex scripts types
+ * @readonly
+ */
+export const SCRIPT_TYPES = {
+    GLOBAL: 0,
+    SCOPED: 1,
+    PRESET: 2,
 };
 
 /**
- * @enum {number} Where the regex script should be applied
+ * Special type for unknown/invalid script types.
  */
-const regex_placement = {
+export const SCRIPT_TYPE_UNKNOWN = -1;
+
+/**
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
+ */
+
+/**
+ * @typedef {object} GetRegexScriptsOptions
+ * @property {boolean} allowedOnly Only return allowed scripts
+ */
+
+/**
+ * @type {Readonly<GetRegexScriptsOptions>}
+ */
+const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
+
+/**
+ * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
+ *
+ * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
+ * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
+ */
+export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+}
+
+/**
+ * Retrieves the regex scripts for a specific type.
+ * @param {SCRIPT_TYPES} scriptType The type of regex scripts to retrieve.
+ * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
+ * @returns {RegexScript[]} An array of regex scripts for the specified type.
+ */
+export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    switch (scriptType) {
+        case SCRIPT_TYPE_UNKNOWN:
+            return [];
+        case SCRIPT_TYPES.GLOBAL:
+            return extension_settings.regex ?? [];
+        case SCRIPT_TYPES.SCOPED: {
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
+                return [];
+            }
+            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+            return Array.isArray(scopedScripts) ? scopedScripts : [];
+        }
+        case SCRIPT_TYPES.PRESET: {
+            if (allowedOnly && !extension_settings?.preset_allowed_regex?.[getCurrentPresetAPI()]?.includes(getCurrentPresetName())) {
+                return [];
+            }
+            const presetManager = getPresetManager();
+            const presetScripts = presetManager?.readPresetExtensionField({ path: 'regex_scripts' });
+            return Array.isArray(presetScripts) ? presetScripts : [];
+        }
+        default:
+            console.warn(`getScriptsByType: Invalid script type ${scriptType}`);
+            return [];
+    }
+}
+
+/**
+ * Saves an array of regex scripts for a specific type.
+ * @param {RegexScript[]} scripts An array of regex scripts to save.
+ * @param {SCRIPT_TYPES} scriptType The type of regex scripts to save.
+ * @returns {Promise<void>}
+ */
+export async function saveScriptsByType(scripts, scriptType) {
+    switch (scriptType) {
+        case SCRIPT_TYPES.GLOBAL:
+            extension_settings.regex = scripts;
+            saveSettingsDebounced();
+            break;
+        case SCRIPT_TYPES.SCOPED:
+            await writeExtensionField(this_chid, 'regex_scripts', scripts);
+            break;
+        case SCRIPT_TYPES.PRESET: {
+            const presetManager = getPresetManager();
+            await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
+            break;
+        }
+        default:
+            console.warn(`saveScriptsByType: Invalid script type ${scriptType}`);
+            break;
+    }
+}
+
+/**
+ * Check if character's regexes are allowed to be used; if character is undefined, returns false
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {boolean}
+ */
+export function isScopedScriptsAllowed(character) {
+    return !!extension_settings?.character_allowed_regex?.includes(character?.avatar);
+}
+
+/**
+ * Allow character's regexes to be used; if character is undefined, do nothing
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {void}
+ */
+export function allowScopedScripts(character) {
+    const avatar = character?.avatar;
+    if (!avatar) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.character_allowed_regex)) {
+        extension_settings.character_allowed_regex = [];
+    }
+    if (!extension_settings.character_allowed_regex.includes(avatar)) {
+        extension_settings.character_allowed_regex.push(avatar);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Disallow character's regexes to be used; if character is undefined, do nothing
+ * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @returns {void}
+ */
+export function disallowScopedScripts(character) {
+    const avatar = character?.avatar;
+    if (!avatar) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.character_allowed_regex)) {
+        return;
+    }
+    const index = extension_settings.character_allowed_regex.indexOf(avatar);
+    if (index !== -1) {
+        extension_settings.character_allowed_regex.splice(index, 1);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Check if preset's regexes are allowed to be used
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
+ * @returns {boolean} True if allowed, false if not
+ */
+export function isPresetScriptsAllowed(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return false;
+    }
+    return !!extension_settings?.preset_allowed_regex?.[apiId]?.includes(presetName);
+}
+
+/**
+ * Allow preset's regexes to be used
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
+ * @returns {void}
+ */
+export function allowPresetScripts(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
+        lodash.set(extension_settings, ['preset_allowed_regex', apiId], []);
+    }
+    if (!extension_settings.preset_allowed_regex[apiId].includes(presetName)) {
+        extension_settings.preset_allowed_regex[apiId].push(presetName);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Disallow preset's regexes to be used
+ * @param {string} apiId API ID
+ * @param {string} presetName Preset name
+ * @returns {void}
+ */
+export function disallowPresetScripts(apiId, presetName) {
+    if (!apiId || !presetName) {
+        return;
+    }
+    if (!Array.isArray(extension_settings?.preset_allowed_regex?.[apiId])) {
+        return;
+    }
+    const index = extension_settings.preset_allowed_regex[apiId].indexOf(presetName);
+    if (index !== -1) {
+        extension_settings.preset_allowed_regex[apiId].splice(index, 1);
+        saveSettingsDebounced();
+    }
+}
+
+/**
+ * Gets the current API ID from the preset manager.
+ * @returns {string|null} Current API ID, or null if no preset manager
+ */
+export function getCurrentPresetAPI() {
+    return getPresetManager()?.apiId ?? null;
+}
+
+/**
+ * Gets the name of the currently selected preset.
+ * @returns {string|null} The name of the currently selected preset, or null if no preset manager
+ */
+export function getCurrentPresetName() {
+    return getPresetManager()?.getSelectedPresetName() ?? null;
+}
+
+/**
+ * @enum {number} Where the regex script should be applied
+ * @readonly
+ */
+export const regex_placement = {
     /**
      * @deprecated MD Display is deprecated. Do not use.
      */
@@ -23,6 +235,10 @@ const regex_placement = {
     REASONING: 6,
 };
 
+/**
+ * @enum {number} How to substitute parameters in the find regex
+ * @readonly
+ */
 export const substitute_find_regex = {
     NONE: 0,
     RAW: 1,
@@ -51,22 +267,6 @@ function sanitizeRegexMacro(x) {
         }) : x;
 }
 
-function getScopedRegex() {
-    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
-
-    if (!isAllowed) {
-        return [];
-    }
-
-    const scripts = characters[this_chid]?.data?.extensions?.regex_scripts;
-
-    if (!Array.isArray(scripts)) {
-        return [];
-    }
-
-    return scripts;
-}
-
 /**
  * Parent function to fetch a regexed version of a raw string
  * @param {string} rawString The raw string to be regexed
@@ -75,7 +275,7 @@ function getScopedRegex() {
  * @returns {string} The regexed string
  * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, isEdit?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
  */
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
+export function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -87,7 +287,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? [])];
+    const allRegex = getRegexScripts({ allowedOnly: true });
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
@@ -126,13 +326,13 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
 
 /**
  * Runs the provided regex script on the given string
- * @param {import('./index.js').RegexScript} regexScript The regex script to run
+ * @param {RegexScript} regexScript The regex script to run
  * @param {string} rawString The string to run the regex script on
  * @param {RegexScriptParams} params The parameters to use for the regex script
  * @returns {string} The new string
  * @typedef {{characterOverride?: string}} RegexScriptParams The parameters to use for the regex script
  */
-function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
+export function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     let newString = rawString;
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
         return newString;
