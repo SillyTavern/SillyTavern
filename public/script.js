@@ -8523,7 +8523,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
             !(messageId === 0 && !chat_metadata?.tainted &&
                 (message?.['swipes']?.length ?? 1) == 1
             )
-        ))
+        )
     )
     //The message is swipeable.
     { return true; }
@@ -9660,8 +9660,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 await endSwipe();
                 return;
             } else {
-                //Generate.
-                await loadFromSwipeId(mesId, newSwipeId);
                 let run_generate = true;
                 //Generate.
                 await animateSwipe(run_generate);
