@@ -94,6 +94,17 @@ export const MEDIA_TYPE = {
 };
 
 /**
+ * Scroll behavior options when appending media to messages.
+ * @enum {string}
+ * @readonly
+ */
+export const SCROLL_BEHAVIOR = {
+    NONE: 'none',
+    KEEP: 'keep',
+    ADJUST: 'adjust',
+};
+
+/**
  * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
  */
 export const SWIPE_DIRECTION = {

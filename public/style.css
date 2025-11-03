@@ -5032,6 +5032,7 @@ a:hover {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5em;
+    padding-right: var(--mes-right-spacing);
 }
 
 .mes_media_wrapper:not(:empty)~.mes_file_wrapper:not(:empty) {

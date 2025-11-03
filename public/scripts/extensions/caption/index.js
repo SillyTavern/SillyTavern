@@ -10,7 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
-import { MEDIA_DISPLAY, MEDIA_TYPE } from '../../constants.js';
+import { MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -692,7 +692,7 @@ jQuery(async function () {
             const imageIndex = Number(imageBlock.attr('data-index'));
             const data = getContext().chat[messageId];
             await captionExistingMessage(data, imageIndex);
-            appendMediaToMessage(data, messageBlock, false);
+            appendMediaToMessage(data, messageBlock, SCROLL_BEHAVIOR.KEEP);
             await saveChatConditional();
         } catch (e) {
             console.error('Message image recaption failed', e);
