@@ -57,7 +57,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { MEDIA_DISPLAY, MEDIA_TYPE, SWIPE_DIRECTION } from './constants.js';
+import { MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -418,7 +418,7 @@ async function deleteMessageFile(messageBlock, messageId, fileIndex) {
     await saveChatConditional();
     await deleteFileFromServer(url);
 
-    appendMediaToMessage(message, messageBlock, false);
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
 }
 
 /**
@@ -489,7 +489,7 @@ function embedMessageFile(messageId, messageBlock) {
 
         await populateFileAttachment(message, 'embed_file_input');
         await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
-        appendMediaToMessage(message, messageBlock, false);
+        appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
         await saveChatConditional();
     }
 }
@@ -1022,7 +1022,7 @@ async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
     }
 
     await saveChatConditional();
-    appendMediaToMessage(message, messageBlock, false);
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
 }
 
 /**
@@ -1051,7 +1051,7 @@ async function switchMessageMediaDisplay(messageId, messageBlock, targetDisplay)
 
     message.extra.media_display = targetDisplay;
     await saveChatConditional();
-    appendMediaToMessage(message, messageBlock, false);
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
 }
 
 /**

@@ -52,7 +52,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, MEDIA_DISPLAY, MEDIA_TYPE, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -4290,7 +4290,7 @@ async function sdMessageButton(e) {
     message.extra.media.push(newMediaAttachment);
     message.extra.media_index = message.extra.media.length - 1;
 
-    appendMediaToMessage(message, messageElement, false);
+    appendMediaToMessage(message, messageElement, SCROLL_BEHAVIOR.KEEP);
 
     await context.saveChat();
 }

@@ -2533,7 +2533,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', image: '' };
+            const state = { reasoning: '', images: [] };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2598,9 +2598,9 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         }
         return data?.delta?.text || '';
     } else if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(chat_completion_source)) {
-        const inlineData = data?.candidates?.[0]?.content?.parts?.find(x => x.inlineData)?.inlineData;
-        if (inlineData) {
-            state.image = `data:${inlineData.mimeType};base64,${inlineData.data}`;
+        const inlineData = data?.candidates?.[0]?.content?.parts?.filter(x => x.inlineData)?.map(x => x.inlineData) || [];
+        if (Array.isArray(inlineData) && inlineData.length > 0) {
+            state.images.push(...inlineData.map(x => `data:${x.mimeType};base64,${x.data}`).filter(isDataURL));
         }
         if (show_thoughts) {
             state.reasoning += (data?.candidates?.[0]?.content?.parts?.filter(x => x.thought)?.map(x => x.text)?.[0] || '');
@@ -2619,9 +2619,9 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         }
         return data.choices?.[0]?.delta?.content || '';
     } else if (chat_completion_source === chat_completion_sources.OPENROUTER) {
-        const imageUrl = data?.choices?.[0]?.delta?.images?.find(x => x.type === 'image_url')?.image_url?.url;
-        if (imageUrl) {
-            state.image = imageUrl;
+        const imageUrls = data?.choices?.[0]?.delta?.images?.filter(x => x.type === 'image_url')?.map(x => x?.image_url?.url) || [];
+        if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+            state.images.push(...imageUrls.filter(isDataURL));
         }
         if (show_thoughts) {
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
