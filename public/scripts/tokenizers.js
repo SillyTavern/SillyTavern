@@ -699,6 +699,42 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MEGANOVAAI && oai_settings.meganovaai_model) {
+        if (oai_settings.meganovaai_model.includes('gpt-4o') || oai_settings.meganovaai_model.includes('gpt-5')) {
+            return gpt4oTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('gpt-4.1') || oai_settings.meganovaai_model.includes('gpt-4.5')) {
+            return gpt4oTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('gpt-4')) {
+            return gpt4Tokenizer;
+        } else if (oai_settings.meganovaai_model.includes('gpt-3.5-turbo')) {
+            return turboTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('claude')) {
+            return claudeTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('jamba')) {
+            return jambaTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('deepseek') || oai_settings.meganovaai_model.includes('sonar-reasoning') || oai_settings.meganovaai_model.includes('r1')) {
+            return deepseekTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('qwen')) {
+            return qwen2Tokenizer;
+        } else if (oai_settings.meganovaai_model.includes('gemma')) {
+            return gemmaTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('mistral')) {
+            return mistralTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('yi')) {
+            return yiTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('llama3') || oai_settings.meganovaai_model.includes('llama-3') || oai_settings.meganovaai_model.startsWith('l3')) {
+            return llama3Tokenizer;
+        } else if (oai_settings.meganovaai_model.includes('llama')) {
+            return llamaTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('command-a')) {
+            return commandATokenizer;
+        } else if (oai_settings.meganovaai_model.includes('command-r')) {
+            return commandRTokenizer;
+        } else if (oai_settings.meganovaai_model.includes('nemo')) {
+            return nemoTokenizer;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         if (oai_settings.cohere_model.includes('command-a')) {
             return commandATokenizer;

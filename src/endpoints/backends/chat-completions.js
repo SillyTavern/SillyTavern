@@ -12,6 +12,7 @@ import {
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
+    REQUEST_DOMAIN_NAMES,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -1284,6 +1285,106 @@ async function sendElectronHubRequest(request, response) {
 }
 
 /**
+ * Sends a request to MegaNova AI.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMeganovaAIRequest(request, response) {
+    const apiUrl = REQUEST_DOMAIN_NAMES.MEGANOVAAI_CHAT;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
+    console.log('sendMeganovaAIRequest apiKey', apiKey)
+    if (!apiKey) {
+        console.warn('MegaNova AI key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (request.body.enable_web_search) {
+            bodyParams['web_search'] = true;
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.reasoning_effort) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'logit_bias': request.body.logit_bias,
+            'seed': request.body.seed,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        // console.debug('MegaNova AI request:', requestBody);
+        console.log('req', apiUrl, config)
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('MegaNova AI returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            //   console.debug('MegaNova AI response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    }
+    catch (error) {
+        console.error('Error communicating with MegaNova AI: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * Sends a chat completion request to Azure OpenAI.
  * @param {express.Request} request Express request object (contains request.body with all generate_data)
  * @param {express.Response} response Express response object
@@ -1412,6 +1513,10 @@ router.post('/status', async function (request, statusResponse) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
         apiUrl = API_ELECTRONHUB;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+        headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVAAI) {
+        apiUrl = REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVAAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
         apiUrl = API_NANOGPT;
@@ -1596,6 +1701,11 @@ router.post('/status', async function (request, statusResponse) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
             }
 
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVAAI) {
+                const models = data?.data?.models ?? [];
+                data = { data: models.map(model => ({ id: model.model_name, name: model.model_alias, ...model })), object: "list" };
+            }
+
             statusResponse.send(data);
 
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE && Array.isArray(data?.models)) {
@@ -1757,6 +1867,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return sendElectronHubRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.MEGANOVAAI: return sendMeganovaAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return sendAzureOpenAIRequest(request, response);
     }
 
@@ -2249,6 +2360,24 @@ multimodalModels.post('/xai', async (req, res) => {
             // The endpoint says it doesn't support images, but it does
             multimodalModels.push('grok-4-0709');
         }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/meganovaai', async (_req, res) => {
+    try {
+        const response = await fetch(REQUEST_DOMAIN_NAMES.MEGANOVAAI + '/serverless/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.data.models.filter(m => m.model_type === 'multimodal').map(m => m.model_name);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
