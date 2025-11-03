@@ -2052,6 +2052,8 @@ async function loadOpenAiModels() {
         { value: 'gpt-image-1', text: 'gpt-image-1' },
         { value: 'dall-e-3', text: 'dall-e-3' },
         { value: 'dall-e-2', text: 'dall-e-2' },
+        { value: 'sora-2', text: 'sora-2' },
+        { value: 'sora-2-pro', text: 'sora-2-pro' },
     ];
 }
 
@@ -3500,6 +3502,7 @@ async function generateOpenAiImage(prompt, signal) {
     const isDalle2 = extension_settings.sd.model === 'dall-e-2';
     const isDalle3 = extension_settings.sd.model === 'dall-e-3';
     const isGptImg = extension_settings.sd.model === 'gpt-image-1';
+    const isSora2 = /sora-2/.test(extension_settings.sd.model);
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
         prompt = prompt.substring(0, dalle2PromptLimit);
@@ -3536,6 +3539,29 @@ async function generateOpenAiImage(prompt, signal) {
     if (isDalle2 && (extension_settings.sd.width <= 512 && extension_settings.sd.height <= 512)) {
         width = 512;
         height = 512;
+    }
+
+    if (isSora2) {
+        width = aspectRatio >= 1 ? 1280 : 720;
+        height = aspectRatio >= 1 ? 720 : 1280;
+
+        const videoResult = await fetch('/api/openai/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                size: `${width}x${height}`,
+            }),
+        });
+
+        if (!videoResult.ok) {
+            throw new Error(await videoResult.text());
+        }
+
+        const { format, data } = await videoResult.json();
+        return { format, data };
     }
 
     const result = await fetch('/api/openai/generate-image', {
