@@ -30,72 +30,52 @@ export const system_message_types = {
 };
 
 export async function initSystemMessages() {
+    const defaultMessage = {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        swipeable: false,
+    };
     /** @type {Record<string, ChatMessage>} */
     const result = {
         help: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('help'),
         },
         slash_commands: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: '',
         },
         hotkeys: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('hotkeys'),
         },
         formatting: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('formatting'),
         },
         macros: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('macros'),
         },
         welcome: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('welcome', { displayVersion }),
             extra: {
                 uses_system_ui: true,
             },
         },
         empty: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
         },
         generic: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: 'Generic system message. User `text` parameter to override the contents',
         },
         welcome_prompt: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
                 uses_system_ui: true,
@@ -103,10 +83,7 @@ export async function initSystemMessages() {
             },
         },
         assistant_note: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+            ...defaultMessage,
             mes: await renderTemplateAsync('assistantNote'),
             extra: {
                 uses_system_ui: true,
@@ -132,6 +109,8 @@ export async function initSystemMessages() {
 
 /**
  * Gets a system message by type.
+ * By default system messages are not swipeable.
+ * This can be overridden by setting extra.swipeable to true.
  * @param {string} type Type of system message
  * @param {string} [text] Text to be sent
  * @param {ChatMessageExtra} [extra] Additional data to be added to the message
@@ -157,10 +136,6 @@ export function getSystemMessageByType(type, text, extra = {}) {
     if (!newMessage.extra || typeof newMessage.extra !== 'object') {
         newMessage.extra = {};
     }
-
-    // By default system message should not be swipeable.
-    // This can be overridden by setting swipeable to true.
-    newMessage['extra'].swipeable ??= false;
 
     newMessage.extra = Object.assign(newMessage.extra, extra);
     newMessage.extra.type = type;
