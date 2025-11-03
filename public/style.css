@@ -1242,17 +1242,6 @@ body .panelControlBar {
 }
 
 
-.fade {
-    /* Fade in and out: */
-    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
-    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
-    transition:
-        opacity calc(var(--animation-duration) * 2) ease-in,
-        display calc(var(--animation-duration) * 2) ease-in;
-    transition-behavior: allow-discrete;
-    /* Fade in. */
-    @starting-style { opacity: 0 }
-}
 
 
 .swipe_right.active {
@@ -1322,6 +1311,21 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     display: flex;
 }
 
+.fade {
+    /* Fade in and out: */
+    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
+    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition:
+        opacity calc(var(--animation-duration) * 2) ease-in,
+        display calc(var(--animation-duration) * 2) ease-in,
+        visibility calc(var(--animation-duration) * 2) ease-in;
+        /* Fade in. */
+    @starting-style { opacity: 0 !important }
+    @supports (transition-behavior: allow-discrete) {
+        transition-behavior: allow-discrete;
+    }
+}
+
 body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter,
 body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_left,
 body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_right,
@@ -1331,14 +1335,9 @@ body.hideAllSwipeButtons .swipe_right,
 .swipe_right[hidden],
 .swipe_left[hidden] {
     /* Fade out */
-    opacity: 0;
-    display: none;
-    transition-duration: calc(var(--animation-duration) * 2);
-    transition-timing-function: ease-out;
-    transition:
-        opacity calc(var(--animation-duration) * 2) ease-in,
-        display calc(var(--animation-duration) * 2) ease-in;
-    transition-behavior: allow-discrete;
+    opacity: 0 !important;
+    /* with display:none, the swipes-counter div wil collapse, shifting the chevron. */
+    visibility: hidden;
 }
 
 .ui-settings {
@@ -5421,7 +5420,9 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     transition-property: height, display;
     transition-duration: var(--animation-duration-2x);
     transition-timing-function: ease-in-out;
-    transition-behavior: allow-discrete;
+      @supports (transition-behavior: allow-discrete) {
+        transition-behavior: allow-discrete;
+    }
 }
 
 #movingDivs>.drawer-content {
