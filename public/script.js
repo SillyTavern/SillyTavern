@@ -7720,6 +7720,7 @@ async function branchChat() {
 
     //Handle message without swipe_info for `syncMesToSwipe`
     mes['swipe_id'] ??= 0;
+    mes['swipes'] ??= [];
     mes['swipe_info'] ??= [];
     mes['swipe_info'][mes['swipe_id']] ??= {};
 
