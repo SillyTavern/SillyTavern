@@ -8664,7 +8664,6 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
     swipeCounter.css('opacity', opacity);
-    // @ts-ignore
     swipeCounter.text(swipeCounterText).attr('hidden', false);
 }
 
@@ -8777,11 +8776,8 @@ export function refreshSwipeButtons() {
 
     //This order cannot be changed, rightArrows can overlap with noArrows and bothArrows.
 
-    // @ts-ignore https://stackoverflow.com/a/42930857 .attr is correct.
     noArrows.attr('hidden', true);
-    // @ts-ignore
     bothArrows.attr('hidden', false).removeClass('active');
-    // @ts-ignore
     rightArrows.attr('hidden', false).addClass('active');
 }
 /**
@@ -8802,7 +8798,6 @@ export function hideSwipeButtons({ hideCounters = false } = {}) {
     refreshSwipeButtons();
 
     if (hideCounters === true) {
-        // @ts-ignore
         chatElement.find('.last_mes .swipes-counter').attr('hidden', true);
     }
 }
