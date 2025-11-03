@@ -113,11 +113,12 @@ export const SWIPE_DIRECTION = {
 };
 
 /**
- * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard'}}
+ * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back'}}
  */
 export const SWIPE_SOURCE = {
     DELETE: 'delete',
     KEYBOARD: 'keyboard',
+    BACK: 'back',
 };
 
 /**
