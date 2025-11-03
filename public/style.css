@@ -1229,10 +1229,10 @@ body .panelControlBar {
     --swipeCounterHeight: 15px;
     --swipeCounterMargin: 5px;
 }
-
 .swipe_right.active {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
+    /* (Duration * Active Opacity / Inactive Opacity * 2) */
     transition-duration: calc(var(--animation-duration) * 0.7/0.3*2);
     @starting-style { opacity: 0 }
 }
@@ -1259,13 +1259,15 @@ body .panelControlBar {
     transition-behavior: allow-discrete;
     /* Fade in chevrons. */
     @starting-style { opacity: 0 }
+}
+
+.swipe_right[hidden],
+.swipe_left[hidden] {
     /* Fade out */
-    &[hidden] {
-        opacity: 0;
-        display: none;
-        transition-duration: calc(var(--animation-duration) * 2);
-        transition-timing-function: ease-out;
-    }
+    opacity: 0;
+    display: none;
+    transition-duration: calc(var(--animation-duration) * 2);
+    transition-timing-function: ease-out;
 }
 
 .swipe_left {
