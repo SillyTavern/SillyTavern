@@ -16,7 +16,7 @@ function formatTime(seconds) {
 export class AudioPlayer {
     /**
      * Creates an audio player instance
-     * @param {HTMLAudioElement} audioElement - The audio element to control
+     * @param {HTMLElement} audioElement - The audio element to control
      * @param {HTMLElement} containerElement - The container element with player controls
      * @param {Object} options - Configuration options
      */
@@ -81,6 +81,11 @@ export class AudioPlayer {
 
         if (this.options.title) {
             this.setTitle(this.options.title);
+        } else if (this.audio.title) {
+            this.setTitle(this.audio.title);
+        } else if (this.audio.src) {
+            const srcParts = this.audio.src.split('/');
+            this.setTitle(decodeURIComponent(srcParts[srcParts.length - 1]));
         }
 
         if (this.options.autoplay) {
@@ -106,11 +111,10 @@ export class AudioPlayer {
             progress: this.container.querySelector('.audio-player-progress'),
             progressBar: this.container.querySelector('.audio-player-progress-bar'),
             volumeBtn: this.container.querySelector('.audio-player-volume'),
-            volumeSlider: this.container.querySelector('.audio-player-volume-slider'),
         };
 
         // Validate required elements
-        const requiredElements = ['playPauseBtn', 'currentTime', 'totalTime', 'progress', 'progressBar', 'volumeBtn', 'volumeSlider'];
+        const requiredElements = ['playPauseBtn', 'currentTime', 'totalTime', 'progress', 'progressBar', 'volumeBtn'];
         for (const key of requiredElements) {
             if (!this.elements[key]) {
                 console.warn(`AudioPlayer: Required element .audio-player-${key.replace(/([A-Z])/g, '-$1').toLowerCase()} not found`);
@@ -168,9 +172,6 @@ export class AudioPlayer {
         if (this.elements.volumeBtn) {
             this.elements.volumeBtn.addEventListener('click', this.boundHandlers.volumeClick);
         }
-        if (this.elements.volumeSlider) {
-            this.elements.volumeSlider.addEventListener('input', this.boundHandlers.volumeInput);
-        }
         if (this.elements.progress) {
             this.elements.progress.addEventListener('mousedown', this.boundHandlers.progressMouseDown);
             this.elements.progress.addEventListener('click', this.boundHandlers.progressClick);
@@ -196,9 +197,6 @@ export class AudioPlayer {
         }
         if (this.elements.volumeBtn) {
             this.elements.volumeBtn.removeEventListener('click', this.boundHandlers.volumeClick);
-        }
-        if (this.elements.volumeSlider) {
-            this.elements.volumeSlider.removeEventListener('input', this.boundHandlers.volumeInput);
         }
         if (this.elements.progress) {
             this.elements.progress.removeEventListener('mousedown', this.boundHandlers.progressMouseDown);
@@ -302,9 +300,6 @@ export class AudioPlayer {
         if (this.isDestroyed) return;
 
         this.updateVolumeIcon();
-        if (this.elements.volumeSlider) {
-            /** @type {HTMLInputElement} */ (this.elements.volumeSlider).value = String(this.audio.volume);
-        }
 
         if (typeof this.options.onVolumeChange === 'function') {
             this.options.onVolumeChange.call(this, this.audio.volume, this.audio.muted);
@@ -510,9 +505,6 @@ export class AudioPlayer {
         if (this.isDestroyed) return;
         volume = Math.max(0, Math.min(1, volume));
         this.audio.volume = volume;
-        if (this.elements.volumeSlider) {
-            /** @type {HTMLInputElement} */ (this.elements.volumeSlider).value = String(volume);
-        }
 
         if (volume > 0 && this.audio.muted) {
             this.audio.muted = false;

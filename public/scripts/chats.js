@@ -216,7 +216,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 if (!Array.isArray(message.extra.media)) {
                     message.extra.media = [];
                 }
-                message.extra.media.push({ url: imageUrl, type: mediaType });
+                message.extra.media.push({ url: imageUrl, type: mediaType, title: file.name });
                 message.extra.media_index = message.extra.media.length - 1;
                 message.extra.inline_image = true;
             } else {

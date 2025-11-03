@@ -277,6 +277,7 @@ import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
+import { AudioPlayer } from './scripts/audio-player.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -2177,6 +2178,41 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
     }
 
     /**
+     * Appends a single audio attachment to the message element.
+     * @param {MediaAttachment} attachment Audio attachment object
+     * @param {number} index Index of the audio attachment
+     * @returns {JQuery<HTMLElement>} The appended audio container element
+     */
+    function appendAudioAttachment(attachment, index) {
+        const template = $('#message_audio_template .mes_audio_container').clone();
+        template.attr('data-index', index);
+        const audio = template.find('.mes_audio');
+        audio.attr('src', attachment.url);
+        audio.attr('title', attachment.title || mes.extra.title || '');
+
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                resolve();
+            }
+            function onError() {
+                audio.addClass('error');
+                resolve();
+            }
+            if (audio.prop('readyState') >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                onLoad();
+            } else {
+                audio.off('loadeddata').on('loadeddata', onLoad);
+                audio.off('error').on('error', onError);
+            }
+        }));
+
+        new AudioPlayer(audio.get(0), template.get(0));
+
+        mediaBlocks.push(template);
+        return template;
+    }
+
+    /**
      * Appends a media attachment to the message element.
      * @param {MediaAttachment} attachment Media attachment object
      * @param {number} index Index of the media attachment
@@ -2191,6 +2227,8 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
                 return appendImageAttachment(attachment, index);
             case MEDIA_TYPE.VIDEO:
                 return appendVideoAttachment(attachment, index);
+            case MEDIA_TYPE.AUDIO:
+                return appendAudioAttachment(attachment, index);
         }
 
         console.warn(`Unknown media type: ${attachment.type}, defaulting to image.`, attachment);
