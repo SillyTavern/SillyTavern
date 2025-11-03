@@ -1241,6 +1241,20 @@ body .panelControlBar {
     100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
 }
 
+
+.fade {
+    /* Fade in and out: */
+    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
+    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition:
+        opacity calc(var(--animation-duration) * 2) ease-in,
+        display calc(var(--animation-duration) * 2) ease-in;
+    transition-behavior: allow-discrete;
+    /* Fade in. */
+    @starting-style { opacity: 0 }
+}
+
+
 .swipe_right.active {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
@@ -1262,24 +1276,6 @@ body .panelControlBar {
     cursor: pointer;
     align-self: center;
 
-    /* Fade in and out: */
-    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
-    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
-    transition:
-        opacity calc(var(--animation-duration) * 2) ease-in,
-        display calc(var(--animation-duration) * 2) ease-in;
-    transition-behavior: allow-discrete;
-    /* Fade in chevrons. */
-    @starting-style { opacity: 0 }
-}
-
-.swipe_right[hidden],
-.swipe_left[hidden] {
-    /* Fade out */
-    opacity: 0;
-    display: none;
-    transition-duration: calc(var(--animation-duration) * 2);
-    transition-timing-function: ease-out;
 }
 
 .swipe_left {
@@ -1308,14 +1304,11 @@ body .panelControlBar {
     height: var(--swipeCounterHeight);
 }
 
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter {
-    visibility: hidden;
-}
 
 body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
-    opacity: 0.3 !important;
-    display: flex !important;
+    opacity: 0.3;
+    display: flex;
 }
 
 .swipe_left {
@@ -1327,6 +1320,25 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     right: 5px;
     align-self: center;
     display: flex;
+}
+
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter,
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_left,
+body:not(.swipeAllMessages) .mes:not(.last_mes) .swipe_right,
+body.hideAllSwipeButtons .swipe_left,
+body.hideAllSwipeButtons .swipe_right,
+.swipes-counter[hidden],
+.swipe_right[hidden],
+.swipe_left[hidden] {
+    /* Fade out */
+    opacity: 0;
+    display: none;
+    transition-duration: calc(var(--animation-duration) * 2);
+    transition-timing-function: ease-out;
+    transition:
+        opacity calc(var(--animation-duration) * 2) ease-in,
+        display calc(var(--animation-duration) * 2) ease-in;
+    transition-behavior: allow-discrete;
 }
 
 .ui-settings {
