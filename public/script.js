@@ -1486,7 +1486,7 @@ export async function clearChat() {
     if (is_delete_mode) {
         $('#dialogue_del_mes_cancel').trigger('click');
     }
-    //This will also remove '.mes' elements.
+    //This will also remove non '.mes' elements, e.g. '<div id="show_more_messages">Show more messages</div>'.
     chatElement.children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove');
