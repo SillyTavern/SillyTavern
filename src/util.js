@@ -1227,13 +1227,9 @@ export function flattenSchema(schema, api) {
     }
 
     const schemaCopy = structuredClone(schema);
-    const isGoogleApi = api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI;
+    const isGoogleApi = [CHAT_COMPLETION_SOURCES.VERTEXAI, CHAT_COMPLETION_SOURCES.MAKERSUITE].includes(api);
 
     const definitions = schemaCopy.$defs || {};
-    // Manually define __schema0 from its implicit location to fix recursion
-    if (schemaCopy.properties?.scene_frames?.items) {
-        definitions['__schema0'] = definitions['__schema0'] || schemaCopy.properties.scene_frames.items;
-    }
     delete schemaCopy.$defs;
 
     function resolve(obj, parents = []) {
@@ -1254,49 +1250,17 @@ export function flattenSchema(schema, api) {
             return {}; // Broken reference
         }
 
-        // 2. For Google API, handle 'anyOf' unions
-        if (isGoogleApi && obj.anyOf && Array.isArray(obj.anyOf)) {
-            // This handles cases like `components.items` where the object IS the union.
-            // Merge all properties from the sub-schemas into one.
-            const mergedProperties = {};
-            for (const subSchema of obj.anyOf) {
-                if (subSchema.properties) {
-                    Object.assign(mergedProperties, subSchema.properties);
-                }
-            }
-            const mergedSchema = { type: 'object', properties: mergedProperties };
-            return resolve(mergedSchema, parents); // Recurse on the new merged object
-        }
-
-        // 3. Process the object's properties
+        // 2. Process the object's properties
         const result = {};
         for (const key in obj) {
             if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
 
             // For Google, filter unsupported top-level keywords
-            if (isGoogleApi && ['default', 'additionalProperties', 'exclusiveMinimum', 'propertyNames', 'anyOf'].includes(key)) {
+            if (isGoogleApi && ['default', 'additionalProperties', 'exclusiveMinimum', 'propertyNames'].includes(key)) {
                 continue;
             }
 
-            const value = obj[key];
-
-            // For Google, simplify properties that use `anyOf` for type definition (e.g., `stat_updates.value`)
-            if (isGoogleApi && value?.anyOf) {
-                result[key] = {
-                    type: 'string',
-                    description: value.description || `Accepts multiple types, provide as string.`,
-                };
-                continue;
-            }
-
-            const resolvedValue = resolve(value, parents);
-
-            // After resolving, remove properties that have become invalid empty objects (e.g., `style`)
-            if (isGoogleApi && resolvedValue?.type === 'object' && !resolvedValue.properties) {
-                continue;
-            }
-
-            result[key] = resolvedValue;
+            result[key] = resolve(obj[key], parents);
         }
 
         return result;
