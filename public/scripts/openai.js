@@ -50,11 +50,13 @@ import {
     createThumbnail,
     delay,
     download,
+    getAudioDurationFromDataURL,
     getBase64Async,
     getFileText,
     getImageSizeFromDataURL,
     getSortableDelay,
     getStringHash,
+    getVideoDurationFromDataURL,
     isDataURL,
     isUuid,
     isValidUrl,
@@ -3003,12 +3005,13 @@ class Message {
         this.content.push({ type: 'video_url', video_url: { 'url': video } });
 
         try {
-            // Convservative estimate for video token cost without knowing duration
             // Using Gemini calculation (263 tokens per second)
-            const tokens = 10000; // ~40 second video (60 seconds max)
+            const duration = await getVideoDurationFromDataURL(video);
+            const tokens = 263 * duration;
             this.tokens += tokens;
         } catch (error) {
-            this.tokens += 10000;
+            // Convservative estimate for video token cost without knowing duration
+            this.tokens += 263 * 40; // ~40 second video (60 seconds max)
             console.error('Failed to get video token cost', error);
         }
     }
@@ -3035,9 +3038,16 @@ class Message {
 
         this.content.push({ type: 'audio_url', audio_url: { 'url': audio } });
 
-        // Estimate for audio token cost without knowing duration (32 tokens per second)
-        const tokens = 32 * 300; // ~5 minute audio
-        this.tokens += tokens;
+        try {
+            // Using Gemini calculation (32 tokens per second)
+            const duration = await getAudioDurationFromDataURL(audio);
+            this.tokens += 32 * duration; // 32 tokens per second
+        } catch (error) {
+            // Estimate for audio token cost without knowing duration (32 tokens per second)
+            const tokens = 32 * 300; // ~5 minute audio
+            this.tokens += tokens;
+            console.error('Failed to get audio token cost', error);
+        }
     }
 
     /**

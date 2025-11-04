@@ -1164,6 +1164,42 @@ export function getImageSizeFromDataURL(dataUrl) {
 }
 
 /**
+ * Gets the duration of a video from a data URL.
+ * @param {string} dataUrl Video data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getVideoDurationFromDataURL(dataUrl) {
+    const video = document.createElement('video');
+    video.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadedmetadata = function () {
+            resolve(video.duration);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Gets the duration of an audio from a data URL.
+ * @param {string} dataUrl Audio data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getAudioDurationFromDataURL(dataUrl) {
+    const audio = document.createElement('audio');
+    audio.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        audio.onloadedmetadata = function () {
+            resolve(audio.duration);
+        };
+        audio.onerror = function () {
+            reject(new Error('Failed to load audio'));
+        };
+    });
+}
+
+/**
  * Gets the filename of the character avatar without extension
  * @param {string|number?} [chid=null] - Character ID. If not provided, uses the current character ID
  * @param {object} [options={}] - Options arguments
