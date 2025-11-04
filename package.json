@@ -126,12 +126,11 @@
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",
-        "plugins:install": "node plugins install",
-        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
-      },
-      "bin": {
+        "plugins:install": "node plugins install"
+    },
+    "bin": {
         "sillytavern": "./src/server-global.js"
-      },
+    },
     "rules": {
         "no-path-concat": "off",
         "no-var": "off"
@@ -165,7 +164,6 @@
         "@types/yargs": "^17.0.33",
         "@types/yauzl": "^2.10.3",
         "eslint": "^8.57.1",
-        "eslint-plugin-jsdoc": "^48.10.0",
-        "jest": "^30.2.0"
+        "eslint-plugin-jsdoc": "^48.10.0"
     }
 }

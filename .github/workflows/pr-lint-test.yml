@@ -21,4 +21,7 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run lint
-    - run: npm test
+    - name: Install test dependencies
+      run: npm ci --prefix tests
+    - name: Run unit tests
+      run: npm run test:unit --prefix tests

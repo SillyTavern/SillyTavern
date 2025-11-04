@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import { CHAT_COMPLETION_SOURCES } from '../constants';
-import { flattenSchema } from '../util';
+import { CHAT_COMPLETION_SOURCES } from '../src/constants';
+import { flattenSchema } from '../src/util';
 
 describe('flattenSchema', () => {
     it('should return the schema if it is not an object', () => {
