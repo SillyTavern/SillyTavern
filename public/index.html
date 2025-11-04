@@ -2028,6 +2028,23 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite,vertexai">
+                                        <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_audio_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline audio">Send inline audio</span>
+                                            <div id="openai_audio_inlining_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
+                                        </label>
+                                        <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
+                                            <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it. Use the</span>
+                                            <code><i class="fa-solid fa-paperclip"></i></code>
+                                            <span data-i18n="audio_inlining_hint_2">action on any message or the</span>
+                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
+                                            <span data-i18n="audio_inlining_hint_3">menu to attach a audio file to the chat.</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite,vertexai">
                                         <label for="openai_request_images" class="checkbox_label widthFreeExpand">
                                             <input id="openai_request_images" type="checkbox" />
                                             <span>
