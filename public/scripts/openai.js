@@ -3042,7 +3042,7 @@ class Message {
             const duration = await getAudioDurationFromDataURL(audio);
             this.tokens += 32 * Math.ceil(duration);
         } catch (error) {
-            // Estimate for audio token cost without knowing duration (32 tokens per second)
+            // Estimate for audio token cost without knowing duration
             const tokens = 32 * 300; // ~5 minute audio
             this.tokens += tokens;
             console.error('Failed to get audio token cost', error);
