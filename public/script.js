@@ -1422,7 +1422,7 @@ export async function printMessages() {
 
 function scrollOnMediaLoad() {
     const started = Date.now();
-    const media = chatElement.find('.mes_block img, .mes_block video').toArray();
+    const media = chatElement.find('.mes_block img, .mes_block video, .mes_block audio').toArray();
     let mediaLoaded = 0;
 
     for (const currentElement of media) {
@@ -1434,7 +1434,7 @@ function scrollOnMediaLoad() {
                 currentElement.addEventListener('error', incrementAndCheck);
             }
         }
-        if (currentElement instanceof HTMLVideoElement) {
+        if (currentElement instanceof HTMLMediaElement) {
             if (currentElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
                 incrementAndCheck();
             } else {
