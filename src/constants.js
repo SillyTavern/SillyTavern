@@ -483,5 +483,5 @@ export const MEDIA_EXTENSIONS = [
     'flac',
     'aac',
     'm4a',
-    'opus',
+    'aiff',
 ];
