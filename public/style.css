@@ -1317,14 +1317,15 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Fade in and out: */
     /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
     /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
-    transition:
+    transition: opacity calc(var(--animation-duration) * 2) ease-in;
+    /* Fade in. */
+    @starting-style { opacity: 0 !important }
+    @supports (transition-behavior: allow-discrete) {
+        transition:
         opacity calc(var(--animation-duration) * 2) ease-in,
         display calc(var(--animation-duration) * 2) ease-in,
         visibility calc(var(--animation-duration) * 2) ease-in;
-        /* Fade in. */
-    @starting-style { opacity: 0 !important }
-    @supports (transition-behavior: allow-discrete) {
-        transition-behavior: allow-discrete;
+    transition-behavior: allow-discrete;
     }
 }
 
