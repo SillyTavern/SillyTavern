@@ -8481,13 +8481,13 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
  * @param {object} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
  * @param {JQuery<HTMLElement>} [options.messageElement=undefined] Target Element. Passing in the message's element will save a DOM query.
  */
-export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined, opacity = 0.3 } = {}) {
+export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined } = {}) {
     message ??= chat[mesId];
     messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
 
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
-    swipeCounter.text(swipeCounterText).attr('hidden', false);
+    swipeCounter.text(swipeCounterText).prop('hidden', false);
 }
 
 /**
@@ -8611,7 +8611,7 @@ export function hideSwipeButtons({ hideCounters = false } = {}) {
     refreshSwipeButtons();
 
     if (hideCounters === true) {
-        chatElement.find('.last_mes .swipes-counter').attr('hidden', true);
+        chatElement.find('.last_mes .swipes-counter').prop('hidden', true);
     }
 }
 
