@@ -142,14 +142,10 @@ export class AudioPlayer {
         });
 
         // Observe the parent nodes
-        const audioParent = this.audio.parentNode;
-        const containerParent = this.container.parentNode;
+        const chatParent = this.audio.closest('#chat') ?? document.body;
 
-        if (audioParent) {
-            this.observer.observe(audioParent, { childList: true, subtree: true });
-        }
-        if (containerParent && containerParent !== audioParent) {
-            this.observer.observe(containerParent, { childList: true, subtree: true });
+        if (chatParent) {
+            this.observer.observe(chatParent, { childList: true, subtree: true });
         }
     }
 
