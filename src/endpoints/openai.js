@@ -486,7 +486,7 @@ router.post('/generate-video', async (request, response) => {
                 prompt: request.body.prompt,
                 model: request.body.model || 'sora-2',
                 size: request.body.size || '720x1280',
-                seconds: request.body.seconds || '12',
+                seconds: request.body.seconds || '8',
             }),
         });
 

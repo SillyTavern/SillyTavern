@@ -311,6 +311,7 @@ const defaultSettings = {
     // OpenAI settings
     openai_style: 'vivid',
     openai_quality: 'standard',
+    openai_duration: '8',
 
     style: 'Default',
     styles: defaultStyles,
@@ -509,6 +510,7 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
@@ -1023,6 +1025,11 @@ async function onOpenAiQualitySelect() {
     saveSettingsDebounced();
 }
 
+async function onOpenAiDurationSelect() {
+    extension_settings.sd.openai_duration = String($('#sd_openai_duration').find(':selected').val());
+    saveSettingsDebounced();
+}
+
 async function onViewAnlasClick() {
     const result = await loadNovelSubscriptionData();
 
@@ -1291,6 +1298,10 @@ async function onModelChange() {
         const cachedModel = selectedModel.data('model');
         const models = cachedModel ? [cachedModel] : await loadElectronHubModels();
         ensureElectronHubQualitySelect(models);
+    }
+
+    if ([sources.openai, sources.aimlapi].includes(extension_settings.sd.source)) {
+        switchOpenAIModelControls(extension_settings.sd.model, extension_settings.sd.source);
     }
 
     const cloudSources = [
@@ -1743,6 +1754,10 @@ async function loadModels() {
         ensureElectronHubQualitySelect(models);
     }
 
+    if ([sources.openai, sources.aimlapi].includes(extension_settings.sd.source)) {
+        switchOpenAIModelControls(extension_settings.sd.model, extension_settings.sd.source);
+    }
+
     for (const model of models) {
         const option = document.createElement('option');
         option.innerText = model.text;
@@ -1756,6 +1771,25 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+/**
+ * Show or hide OpenAI model-specific controls based on the selected model.
+ * @param {string} modelId Model ID
+ * @param {string} source Source
+ */
+function switchOpenAIModelControls(modelId, source) {
+    const modelControls = $('.sd_settings [data-sd-openai-model]');
+    modelControls.show();
+
+    if (source !== sources.openai || !modelId) {
+        return;
+    }
+
+    modelControls.each(function () {
+        const models = String($(this).attr('data-sd-openai-model') || '').split(',').map(m => m.trim());
+        $(this).toggle(models.includes(modelId));
+    });
 }
 
 /**
@@ -3553,6 +3587,7 @@ async function generateOpenAiImage(prompt, signal) {
                 prompt: prompt,
                 model: extension_settings.sd.model,
                 size: `${width}x${height}`,
+                seconds: extension_settings.sd.openai_duration,
             }),
         });
 
@@ -4839,6 +4874,7 @@ jQuery(async () => {
     $('#sd_interactive_mode').on('input', onInteractiveModeInput);
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
+    $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
