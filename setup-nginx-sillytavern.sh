@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOMAIN="9.0x1.games"
+DOMAIN="9tokyo.0x1.games"
 EMAIL="wizcas@gmail.com"
 TARGET_PORT="8000"
 
@@ -175,10 +175,36 @@ if ! nc -z localhost ${TARGET_PORT}; then
 fi
 
 # Configure firewall
-echo -e "${GREEN}Configuring UFW firewall...${NC}"
-ufw --force enable
-ufw allow 'Nginx Full'
-ufw allow ssh
+echo -e "${GREEN}Configuring firewall...${NC}"
+
+# Check if UFW is installed
+if command -v ufw >/dev/null 2>&1; then
+    echo -e "${GREEN}UFW firewall detected, configuring...${NC}"
+    ufw --force enable
+    ufw allow 'Nginx Full'
+    ufw allow ssh
+    echo -e "${GREEN}✅ UFW firewall configured successfully${NC}"
+    FIREWALL_CONFIGURED=true
+else
+    echo -e "${YELLOW}⚠️  UFW firewall is not installed on this system${NC}"
+    echo -e "${YELLOW}Skipping local firewall configuration...${NC}"
+    echo ""
+    echo -e "${BLUE}🔥 IMPORTANT - Manual Firewall Configuration Required:${NC}"
+    echo -e "${YELLOW}Please configure your VPS provider's firewall to allow:${NC}"
+    echo -e "  • Port 80 (HTTP) - for initial SSL certificate verification"
+    echo -e "  • Port 443 (HTTPS) - for secure SillyTavern access"
+    echo -e "  • Port 22 (SSH) - for server management"
+    echo ""
+    echo -e "${BLUE}Common VPS Provider Firewall Management:${NC}"
+    echo -e "  • DigitalOcean: Networking → Firewalls"
+    echo -e "  • Vultr: Settings → Firewall"
+    echo -e "  • Linode: Cloud Manager → Firewalls"
+    echo -e "  • AWS: EC2 → Security Groups"
+    echo -e "  • Google Cloud: VPC Network → Firewall"
+    echo -e "  • Azure: Virtual Machines → Networking → Network Security Group"
+    echo ""
+    FIREWALL_CONFIGURED=false
+fi
 
 # Obtain SSL certificate
 echo -e "${GREEN}Obtaining SSL certificate from Let's Encrypt...${NC}"
@@ -201,6 +227,11 @@ echo -e "  ✅ WebSocket support for streaming responses"
 echo -e "  ✅ Optimized for long AI conversations"
 echo -e "  ✅ Large file upload support (100MB)"
 echo -e "  ✅ Auto-renewal of SSL certificates"
+if [ "$FIREWALL_CONFIGURED" = true ]; then
+    echo -e "  ✅ UFW firewall configured and enabled"
+else
+    echo -e "  ⚠️  Local firewall not configured - manual setup required"
+fi
 echo ""
 echo -e "${BLUE}SillyTavern Configuration Requirements:${NC}"
 echo -e "${YELLOW}Make sure your SillyTavern config.yaml has:${NC}"
@@ -215,3 +246,9 @@ echo -e "  • Check SillyTavern logs: docker logs <container> or check console"
 echo -e "  • Check nginx logs: sudo tail -f /var/log/nginx/error.log"
 echo -e "  • Test connection: curl -I http://localhost:${TARGET_PORT}"
 echo -e "  • Verify SSL: curl -I https://${DOMAIN}"
+if [ "$FIREWALL_CONFIGURED" = false ]; then
+    echo ""
+    echo -e "${RED}🚨 CRITICAL REMINDER:${NC}"
+    echo -e "${YELLOW}Your VPS firewall must allow ports 80 and 443 for SillyTavern to work!${NC}"
+    echo -e "${YELLOW}Please configure this in your VPS provider's control panel.${NC}"
+fi
