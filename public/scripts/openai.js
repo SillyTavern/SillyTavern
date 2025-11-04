@@ -3007,8 +3007,7 @@ class Message {
         try {
             // Using Gemini calculation (263 tokens per second)
             const duration = await getVideoDurationFromDataURL(video);
-            const tokens = 263 * duration;
-            this.tokens += tokens;
+            this.tokens += Math.ceil(263 * duration);
         } catch (error) {
             // Convservative estimate for video token cost without knowing duration
             this.tokens += 263 * 40; // ~40 second video (60 seconds max)
@@ -3041,7 +3040,7 @@ class Message {
         try {
             // Using Gemini calculation (32 tokens per second)
             const duration = await getAudioDurationFromDataURL(audio);
-            this.tokens += 32 * duration; // 32 tokens per second
+            this.tokens += Math.ceil(32 * duration);
         } catch (error) {
             // Estimate for audio token cost without knowing duration (32 tokens per second)
             const tokens = 32 * 300; // ~5 minute audio
