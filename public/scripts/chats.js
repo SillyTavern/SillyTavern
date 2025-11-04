@@ -1122,7 +1122,7 @@ export async function deleteMediaFromServer(url, silent = false) {
  * @param {boolean} [silent=false] If true, do not show error messages
  * @returns {Promise<boolean>} True if file was deleted, false otherwise.
  */
-async function deleteFileFromServer(url, silent = false) {
+export async function deleteFileFromServer(url, silent = false) {
     try {
         const result = await fetch('/api/files/delete', {
             method: 'POST',
