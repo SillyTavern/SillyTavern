@@ -57,6 +57,7 @@ import {
 import {
     extension_settings,
     ModuleWorkerWrapper,
+    openThirdPartyExtensionMenu,
     renderExtensionTemplate,
     renderExtensionTemplateAsync,
     saveMetadataDebounced,
@@ -233,6 +234,7 @@ export function getContext() {
         parseReasoningFromString,
         unshallowCharacter,
         unshallowGroupMembers,
+        openThirdPartyExtensionMenu,
         symbols: {
             ignore: IGNORE_SYMBOL,
         },

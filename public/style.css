@@ -133,6 +133,7 @@
 * {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     -moz-osx-font-smoothing: grayscale;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
@@ -597,6 +598,14 @@ input[type='checkbox']:focus-visible {
 .mes_reasoning img:not(.mes_img) {
     max-width: 100%;
     max-height: var(--doc-height);
+}
+
+.mes_reasoning_details[data-state="thinking"] .mes_reasoning .text_segment,
+.mes_text .text_segment {
+    animation-name: fade-in;
+    animation-timing-function: ease-in-out;
+    /* Not using variables for duration as they are zeroed when reduced motion is enabled */
+    animation-duration: 300ms;
 }
 
 .mes .mes_timer,
@@ -2923,6 +2932,10 @@ select option:not(:checked) {
     color: var(--white70a);
 }
 
+select option[disabled]:not(:checked) {
+    color: var(--white30a);
+}
+
 /*#######################################################################*/
 
 #rm_api_block {
@@ -2940,6 +2953,7 @@ select option:not(:checked) {
     text-align: center;
 }
 
+.menu_button[disabled],
 .menu_button.disabled {
     filter: brightness(75%) grayscale(1);
     opacity: 0.5;
@@ -2999,6 +3013,11 @@ select option:not(:checked) {
 
 #api_url_text {
     display: block;
+}
+
+/* Fix font size difference in API Connections dropdowns - Issue #4599 */
+#custom_model_id {
+    font-size: calc(var(--mainFontSize) * 0.95);
 }
 
 .menu_button.api_button:hover {
@@ -3284,6 +3303,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding-right: 54px;
     margin-top: 3px;
     position: relative;
+}
+
+#rm_group_top_bar:not(:has(#rm_group_activation_strategy option[value="0"]:checked)) label:has(#rm_group_allow_self_responses) {
+    display: none;
 }
 
 .group_member .queue_position:not(:empty)::before {
@@ -3675,8 +3698,8 @@ grammarly-extension {
     min-width: calc(1.25em + 12px);
 }
 
-.menu_button:not(.disabled):hover,
-.menu_button:not(.disabled).active {
+.menu_button:not(.disabled):not([disabled]):hover,
+.menu_button:not(.disabled):not([disabled]).active {
     background-color: var(--white30a);
 }
 
@@ -5744,7 +5767,8 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .paginationjs-pages ul li a {
-    padding: 0.05em 0.5em;
+    padding: 0.25em;
+    font-family: 'Font Awesome 6 Free';
     text-decoration: none;
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);

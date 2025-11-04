@@ -155,9 +155,9 @@ async function sendClaudeRequest(request, response) {
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model);
-        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.enable_web_search);
-        const isOpus41 = /^claude-opus-4-1/.test(request.body.model);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5)/.test(request.body.model);
+        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -227,7 +227,7 @@ async function sendClaudeRequest(request, response) {
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
-        if (isOpus41) {
+        if (isLimitedSampling) {
             if (requestBody.top_p < 1) {
                 delete requestBody.temperature;
             } else {
@@ -378,24 +378,16 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-exp-image-generation',
             'gemini-2.0-flash-preview-image-generation',
             'gemini-2.5-flash-image-preview',
+            'gemini-2.5-flash-image',
         ];
 
-        // These models do not support setting the threshold to OFF at all.
-        const blockNoneModels = [
-            'gemini-1.5-pro-001',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-flash-8b-exp-0827',
-            'gemini-1.5-flash-8b-exp-0924',
-        ];
-
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image-preview$/.test(m);
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
             'gemini-2.0-flash-lite-001',
             'gemini-2.0-flash-lite-preview-02-05',
-            'gemini-1.5-flash-8b-exp-0924',
-            'gemini-1.5-flash-8b-exp-0827',
+            'gemini-robotics-er-1.5-preview',
         ];
         // #endregion
 
@@ -414,15 +406,8 @@ async function sendMakerSuiteRequest(request, response) {
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
-        if (blockNoneModels.includes(model)) {
-            safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
-        }
-
         if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            const searchTool = model.includes('1.5')
-                ? ({ google_search_retrieval: {} })
-                : ({ google_search: {} });
-            tools.push(searchTool);
+            tools.push({ google_search: {} });
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
@@ -1013,7 +998,7 @@ async function sendXaiRequest(request, response) {
             bodyParams['stop'] = request.body.stop;
         }
 
-        if (request.body.reasoning_effort && ['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+        if (request.body.reasoning_effort) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
@@ -1700,7 +1685,6 @@ router.post('/status', async function (request, statusResponse) {
         Object.keys(queryParams).forEach(key => {
             modelsUrl.searchParams.append(key, queryParams[key]);
         });
-        //console.log('check status url', apiUrl, apiKey, modelsUrl)
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
@@ -1708,10 +1692,11 @@ router.post('/status', async function (request, statusResponse) {
                 ...headers,
             },
         });
+
         if (response.ok) {
             /** @type {any} */
             let data = await response.json();
-            //console.log('res json', data)
+
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && Array.isArray(data)) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
             }
@@ -1749,14 +1734,14 @@ router.post('/status', async function (request, statusResponse) {
 
                 if (Array.isArray(models)) {
                     const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
-                    //console.info('Available models:', modelIds);
+                    console.info('Available models:', modelIds);
                 } else {
                     console.warn('Chat Completion endpoint did not return a list of models.');
                 }
             }
         }
         else {
-            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.', response);
+            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.');
             statusResponse.send({ error: true, data: { data: [] } });
         }
     } catch (e) {
@@ -1960,9 +1945,9 @@ router.post('/generate', function (request, response) {
         }
 
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
-        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
-        if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
+        if (Array.isArray(request.body.messages) && Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
         }
 
@@ -2168,7 +2153,7 @@ router.post('/generate', function (request, response) {
         signal: controller.signal,
     };
 
-    console.debug('Chat Completion request:', endpointUrl, config);
+    console.debug('Chat Completion request:', requestBody);
 
     makeRequest(config, response, request);
 
@@ -2314,6 +2299,67 @@ multimodalModels.post('/electronhub', async (_req, res) => {
         /** @type {any} */
         const data = await response.json();
         const multimodalModels = data.data.filter(m => m.metadata?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/mistral', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.MISTRALAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.mistral.ai/v1/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.data.filter(m => m.capabilities?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/xai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        // xAI's /models endpoint doesn't return modality info, so we must use /language-models instead
+        const response = await fetch('https://api.x.ai/v1/language-models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.input_modalities?.includes('image')).map(m => m.id);
+        if (!multimodalModels.includes('grok-4-0709')) {
+            // The endpoint says it doesn't support images, but it does
+            multimodalModels.push('grok-4-0709');
+        }
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);

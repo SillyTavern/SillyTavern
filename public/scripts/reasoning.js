@@ -15,6 +15,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
+import { applyStreamFadeIn } from './util/stream-fadein.js';
 import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
 
 /**
@@ -124,6 +125,8 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.MOONSHOT:
                 case chat_completion_sources.COMETAPI:
+                case chat_completion_sources.ELECTRONHUB:
+                case chat_completion_sources.NANOGPT:
                 case chat_completion_sources.CUSTOM: {
                     return data?.choices?.[0]?.message?.reasoning_content
                         ?? data?.choices?.[0]?.message?.reasoning
@@ -495,7 +498,12 @@ export class ReasoningHandler {
         // Update the reasoning message
         const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
-        this.messageReasoningContentDom.innerHTML = displayReasoning;
+
+        if (power_user.stream_fade_in) {
+            applyStreamFadeIn(this.messageReasoningContentDom, displayReasoning);
+        } else {
+            this.messageReasoningContentDom.innerHTML = displayReasoning;
+        }
 
         // Update tooltip for hidden reasoning edit
         /** @type {HTMLElement} */

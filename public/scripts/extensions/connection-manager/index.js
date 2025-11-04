@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
+import { event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -11,7 +11,7 @@ import { SlashCommandDebugController } from '../../slash-commands/SlashCommandDe
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
-import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
+import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
 import { t } from '../../i18n.js';
 import { getSecretLabelById } from '../../secrets.js';
 
@@ -167,6 +167,12 @@ const profilesProvider = () => [
  * @property {string} [stop-strings] Custom Stopping Strings
  * @property {string} [start-reply-with] Start Reply With
  * @property {string} [reasoning-template] Reasoning Template
+ * @property {string} [prompt-post-processing] Prompt Post-Processing
+ * @property {string} [sysprompt] System Prompt Name
+ * @property {string} [sysprompt-state] Use System Prompt
+ * @property {string} [api-url] Server URL
+ * @property {string} [secret-id] Secret ID
+ * @property {string} [regex-preset] Regex Preset ID
  * @property {string[]} [exclude] Commands to exclude
  */
 
@@ -684,6 +690,13 @@ async function renderDetailsContent(detailsContent) {
                 defaultValue: 'true',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'timeout',
+                description: 'Maximum time to wait for the API connection to be established, in milliseconds. Set to 0 to disable. Only applies when await=true.',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '2000',
+            }),
         ],
         callback: async (args, value) => {
             if (!value || typeof value !== 'string') {
@@ -715,6 +728,13 @@ async function renderDetailsContent(detailsContent) {
 
             if (shouldAwait) {
                 await awaitPromise;
+
+                // We should also await the connection to be established
+                const parsedTimeout = parseInt(args?.timeout?.toString());
+                const timeout = !isNaN(parsedTimeout) ? Math.max(0, parsedTimeout) : 2000;
+                if (timeout > 0) {
+                    await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100, { rejectOnTimeout: false });
+                }
             }
 
             return profile.name;
