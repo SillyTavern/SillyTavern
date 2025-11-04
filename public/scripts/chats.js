@@ -216,7 +216,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 if (!Array.isArray(message.extra.media)) {
                     message.extra.media = [];
                 }
-                message.extra.media.push({ url: imageUrl, type: mediaType });
+                message.extra.media.push({ url: imageUrl, type: mediaType, title: file.name });
                 message.extra.media_index = message.extra.media.length - 1;
                 message.extra.inline_image = true;
             } else {
@@ -322,7 +322,7 @@ export async function getFileAttachment(url) {
  */
 async function validateFile(file) {
     const fileText = await file.text();
-    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/');
+    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
     const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
     if (!isMedia && file.size > fileSizeLimit) {
@@ -890,6 +890,11 @@ function expandMessageMedia(messageId, mediaIndex) {
         return;
     }
 
+    if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+        console.warn('Audio media cannot be expanded');
+        return;
+    }
+
     /**
      * Gets the media element based on its type.
      * @returns {HTMLElement} Media element
@@ -973,6 +978,10 @@ async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
         return;
     }
 
+    const deleteUrls = [];
+    const deleteFromServerId = 'delete_media_files_checkbox';
+    let deleteFromServer = true;
+
     const value = await Popup.show.confirm(t`Delete media from message?`, t`This action can't be undone.`, {
         okButton: t`Delete one`,
         cancelButton: false,
@@ -988,6 +997,17 @@ async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
                 result: POPUP_RESULT.CANCELLED,
             },
         ],
+        customInputs: [
+            {
+                type: 'checkbox',
+                label: t`Also delete files from server`,
+                id: deleteFromServerId,
+                defaultState: true,
+            },
+        ],
+        onClose: (popup) => {
+            deleteFromServer = Boolean(popup.inputResults.get(deleteFromServerId) ?? false);
+        },
     });
 
     if (!value) {
@@ -1007,6 +1027,7 @@ async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
         return;
     }
 
+    deleteUrls.push(message.extra.media[mediaIndex].url);
     message.extra.media.splice(mediaIndex, 1);
 
     if (message.extra.media_index === mediaIndex) {
@@ -1015,10 +1036,20 @@ async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
     }
 
     if (value === POPUP_RESULT.CUSTOM1) {
+        for (const media of message.extra.media) {
+            deleteUrls.push(media.url);
+        }
         delete message.extra.media;
         delete message.extra.inline_image;
         delete message.extra.title;
         delete message.extra.append_title;
+    }
+
+    if (deleteFromServer) {
+        for (const url of deleteUrls) {
+            if (!url) continue;
+            await deleteMediaFromServer(url, true);
+        }
     }
 
     await saveChatConditional();
@@ -1055,12 +1086,43 @@ async function switchMessageMediaDisplay(messageId, messageBlock, targetDisplay)
 }
 
 /**
+ * Deletes media file from the server.
+ * @param {string} url Path to the media file on the server
+ * @param {boolean} [silent=false] If true, do not show error messages
+ * @returns {Promise<boolean>} True if media file was deleted, false otherwise.
+ */
+export async function deleteMediaFromServer(url, silent = false) {
+    try {
+        const result = await fetch('/api/images/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path: url }),
+        });
+
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
+        }
+
+        await eventSource.emit(event_types.MEDIA_ATTACHMENT_DELETED, url);
+        return true;
+    } catch (error) {
+        toastr.error(String(error), t`Could not delete image`);
+        console.error('Could not delete image', error);
+        return false;
+    }
+}
+
+/**
  * Deletes file from the server.
  * @param {string} url Path to the file on the server
  * @param {boolean} [silent=false] If true, do not show error messages
  * @returns {Promise<boolean>} True if file was deleted, false otherwise.
  */
-async function deleteFileFromServer(url, silent = false) {
+export async function deleteFileFromServer(url, silent = false) {
     try {
         const result = await fetch('/api/files/delete', {
             method: 'POST',
@@ -1068,9 +1130,12 @@ async function deleteFileFromServer(url, silent = false) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok && !silent) {
-            const error = await result.text();
-            throw new Error(error);
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
         }
 
         await eventSource.emit(event_types.FILE_ATTACHMENT_DELETED, url);
@@ -2005,6 +2070,11 @@ async function onImageSwiped(messageId, element, direction) {
 
     if (!message || !Array.isArray(media) || media.length === 0) {
         console.warn('No media found in the message');
+        return;
+    }
+
+    if (media.length === 1) {
+        console.warn('Only one media item in the message, swiping is not applicable');
         return;
     }
 

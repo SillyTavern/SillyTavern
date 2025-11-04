@@ -1990,11 +1990,7 @@
                                             </div>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it. Use the</span>
-                                            <code><i class="fa-solid fa-paperclip"></i></code>
-                                            <span data-i18n="image_inlining_hint_2">action on any message or the</span>
-                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
-                                            <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it.</span>
                                         </div>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai">
                                             <div class="flex-container oneline-dropdown">
@@ -2019,12 +2015,22 @@
                                             </div>
                                         </label>
                                         <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it. Use the</span>
-                                            <code><i class="fa-solid fa-paperclip"></i></code>
-                                            <span data-i18n="video_inlining_hint_2">action on any message or the</span>
-                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
-                                            <span data-i18n="video_inlining_hint_3">menu to attach a video file to the chat.</span>
+                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it.</span>
                                             <strong data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite,vertexai">
+                                        <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_audio_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline audio">Send inline audio</span>
+                                            <div id="openai_audio_inlining_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
+                                        </label>
+                                        <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
+                                            <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it.</span>
+                                            <strong data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite,vertexai">
@@ -7300,6 +7306,30 @@
                 <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
                 <div class="mes_img_swipe_counter">1/1</div>
                 <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
+            </div>
+        </div>
+
+        <div id="message_audio_template" class="template_element">
+            <div class="mes_media_container mes_audio_container audio-player">
+                <audio class="mes_audio" preload="auto" hidden></audio>
+                <div class="audio-player-header">
+                    <div class="audio-player-title">Audio</div>
+                    <div class="right_menu_button mes_media_delete fa-fw fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                </div>
+                <div class="audio-player-controls">
+                    <button class="audio-player-play-pause right_menu_button fa-fw fa-solid fa-play" title="Play" data-i18n="[title]Play"></button>
+                    <div class="audio-player-time">
+                        <span class="audio-player-current-time">0:00</span>
+                        <span class="audio-player-time-separator">/</span>
+                        <span class="audio-player-total-time">0:00</span>
+                    </div>
+                    <div class="audio-player-progress">
+                        <div class="audio-player-progress-bar"></div>
+                    </div>
+                    <div class="audio-player-volume-control">
+                        <button class="audio-player-volume right_menu_button fa-fw fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -50,11 +50,13 @@ import {
     createThumbnail,
     delay,
     download,
+    getAudioDurationFromDataURL,
     getBase64Async,
     getFileText,
     getImageSizeFromDataURL,
     getSortableDelay,
     getStringHash,
+    getVideoDurationFromDataURL,
     isDataURL,
     isUuid,
     isValidUrl,
@@ -330,6 +332,7 @@ export const settingsToUpdate = {
     image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
     video_inlining: ['#openai_video_inlining', 'video_inlining', true, false],
+    audio_inlining: ['#openai_audio_inlining', 'audio_inlining', true, false],
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
@@ -425,9 +428,10 @@ const default_settings = {
     vertexai_region: 'us-central1',
     vertexai_express_project_id: '',
     squash_system_messages: false,
-    image_inlining: false,
-    inline_image_quality: 'low',
-    video_inlining: false,
+    image_inlining: true,
+    inline_image_quality: 'auto',
+    video_inlining: true,
+    audio_inlining: true,
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
@@ -838,6 +842,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     const imageInlining = isImageInliningSupported();
     const videoInlining = isVideoInliningSupported();
+    const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
 
     // Insert chat messages as long as there is budget available
@@ -871,6 +876,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             }
             if (videoInlining && media.type === MEDIA_TYPE.VIDEO) {
                 await chatMessage.addVideo(media.url);
+            }
+            if (audioInlining && media.type === MEDIA_TYPE.AUDIO) {
+                await chatMessage.addAudio(media.url);
             }
         }
 
@@ -2925,11 +2933,10 @@ class Message {
     }
 
     /**
-     * Adds an image to the message.
-     * @param {string} image Image URL or Data URL.
-     * @returns {Promise<void>}
+     * Ensures the content is an array. If it's a string, converts it to an array with a single text object.
+     * @returns {any[]} Content as an array
      */
-    async addImage(image) {
+    ensureContentIsArray() {
         const textContent = this.content;
         if (!Array.isArray(this.content)) {
             this.content = [];
@@ -2937,7 +2944,16 @@ class Message {
                 this.content.push({ type: 'text', text: textContent });
             }
         }
+        return this.content;
+    }
 
+    /**
+     * Adds an image to the message.
+     * @param {string} image Image URL or Data URL.
+     * @returns {Promise<void>}
+     */
+    async addImage(image) {
+        this.content = this.ensureContentIsArray();
         const isDataUrl = isDataURL(image);
         if (!isDataUrl) {
             try {
@@ -2971,14 +2987,7 @@ class Message {
      * @returns {Promise<void>}
      */
     async addVideo(video) {
-        const textContent = this.content;
-        if (!Array.isArray(this.content)) {
-            this.content = [];
-            if (typeof textContent === 'string') {
-                this.content.push({ type: 'text', text: textContent });
-            }
-        }
-
+        this.content = this.ensureContentIsArray();
         const isDataUrl = isDataURL(video);
         if (!isDataUrl) {
             try {
@@ -2996,13 +3005,47 @@ class Message {
         this.content.push({ type: 'video_url', video_url: { 'url': video } });
 
         try {
-            // Convservative estimate for video token cost without knowing duration
             // Using Gemini calculation (263 tokens per second)
-            const tokens = 10000; // ~40 second video (60 seconds max)
-            this.tokens += tokens;
+            const duration = await getVideoDurationFromDataURL(video);
+            this.tokens += 263 * Math.ceil(duration);
         } catch (error) {
-            this.tokens += 10000;
+            // Convservative estimate for video token cost without knowing duration
+            this.tokens += 263 * 40; // ~40 second video (60 seconds max)
             console.error('Failed to get video token cost', error);
+        }
+    }
+
+    /**
+     * Adds a audio to the message.
+     * @param {string} audio Audio URL or Data URL.
+     * @returns {Promise<void>}
+     */
+    async addAudio(audio) {
+        this.content = this.ensureContentIsArray();
+        const isDataUrl = isDataURL(audio);
+        if (!isDataUrl) {
+            try {
+                const response = await fetch(audio, { method: 'GET', cache: 'force-cache' });
+                if (!response.ok) throw new Error('Failed to fetch audio');
+                const blob = await response.blob();
+                audio = await getBase64Async(blob);
+            } catch (error) {
+                console.error('Audio adding skipped', error);
+                return;
+            }
+        }
+
+        this.content.push({ type: 'audio_url', audio_url: { 'url': audio } });
+
+        try {
+            // Using Gemini calculation (32 tokens per second)
+            const duration = await getAudioDurationFromDataURL(audio);
+            this.tokens += 32 * Math.ceil(duration);
+        } catch (error) {
+            // Estimate for audio token cost without knowing duration
+            const tokens = 32 * 300; // ~5 minute audio
+            this.tokens += tokens;
+            console.error('Failed to get audio token cost', error);
         }
     }
 
@@ -3635,6 +3678,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
     oai_settings.inline_image_quality = settings.inline_image_quality ?? default_settings.inline_image_quality;
     oai_settings.video_inlining = settings.video_inlining ?? default_settings.video_inlining;
+    oai_settings.audio_inlining = settings.audio_inlining ?? default_settings.audio_inlining;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.vertexai_express_project_id = settings.vertexai_express_project_id ?? default_settings.vertexai_express_project_id;
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
@@ -3687,6 +3731,7 @@ function loadOpenAISettings(data, settings) {
     $(`#openai_inline_image_quality option[value="${oai_settings.inline_image_quality}"]`).prop('selected', true);
 
     $('#openai_video_inlining').prop('checked', oai_settings.video_inlining);
+    $('#openai_audio_inlining').prop('checked', oai_settings.audio_inlining);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).prop('selected', true);
@@ -4079,6 +4124,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         image_inlining: settings.image_inlining,
         inline_image_quality: settings.inline_image_quality,
         video_inlining: settings.video_inlining,
+        audio_inlining: settings.audio_inlining,
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         continue_postfix: settings.continue_postfix,
@@ -5644,6 +5690,36 @@ export function isVideoInliningSupported() {
 }
 
 /**
+ * Check if the model supports video inlining
+ * @returns {boolean} True if the model supports audio inlining
+ */
+export function isAudioInliningSupported() {
+    if (main_api !== 'openai') {
+        return false;
+    }
+
+    if (!oai_settings.audio_inlining) {
+        return false;
+    }
+
+    // Only Gemini models support audio for now
+    const audioSupportedModels = [
+        'gemini-2.0',
+        'gemini-2.5',
+        'gemini-exp-1206',
+    ];
+
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.MAKERSUITE:
+            return audioSupportedModels.some(model => oai_settings.google_model.includes(model));
+        case chat_completion_sources.VERTEXAI:
+            return audioSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
+        default:
+            return false;
+    }
+}
+
+/**
  * Proxy stuff
  */
 export function loadProxyPresets(settings) {
@@ -5905,6 +5981,7 @@ function updateFeatureSupportFlags() {
         openai_function_calling_supported: ToolManager.isToolCallingSupported(),
         openai_image_inlining_supported: isImageInliningSupported(),
         openai_video_inlining_supported: isVideoInliningSupported(),
+        openai_audio_inlining_supported: isAudioInliningSupported(),
     };
 
     for (const [key, value] of Object.entries(featureFlags)) {
@@ -6225,6 +6302,12 @@ export function initOpenAI() {
 
     $('#openai_video_inlining').on('input', function () {
         oai_settings.video_inlining = !!$(this).prop('checked');
+        updateFeatureSupportFlags();
+        saveSettingsDebounced();
+    });
+
+    $('#openai_audio_inlining').on('input', function () {
+        oai_settings.audio_inlining = !!$(this).prop('checked');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
