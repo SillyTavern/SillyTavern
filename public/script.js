@@ -8475,11 +8475,11 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 
 /**
  * Update the swipe counter for mesId.
+ *  By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
  * @param {Number} mesId
  * @param {object} [options] Options
  * @param {object} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
  * @param {JQuery<HTMLElement>} [options.messageElement=undefined] Target Element. Passing in the message's element will save a DOM query.
- * @param {number} [options.opacity=0.3] By default, the swipe counter's opacity will appear greyed out.
  */
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined, opacity = 0.3 } = {}) {
     message ??= chat[mesId];
@@ -8487,7 +8487,6 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 
     const swipeCounterText = formatSwipeCounter((message?.['swipe_id'] + 1), message?.['swipes']?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
-    swipeCounter.css('opacity', opacity);
     swipeCounter.text(swipeCounterText).attr('hidden', false);
 }
 
@@ -8559,14 +8558,8 @@ export function refreshSwipeButtons() {
         //CSS will hide all messages.
         $('body').toggleClass('hideAllSwipeButtons', false);
     }
-
-    //These will accumulate elements so they can be shown or hidden in one operation.
-    let showBothElements = new Set(); //.3 opacity.
-    let showRightGenerateElements = new Set(); //.7 opacity.
-    let hideBothElements = new Set(); //Hidden.
-
     //Non-messages can appear in chat. '.mes' is required.
-    const messageElements = chatElement.find('.mes[mesid]');
+    const messageElements = chatElement.children('.mes[mesid]');
 
     // const lastDisplayedMesId = Number(messageElements.last().attr('mesid'));
     const firstDisplayedMesId = Number(messageElements.first().attr('mesid'));
@@ -8579,41 +8572,26 @@ export function refreshSwipeButtons() {
 
         const message = chat[messageId];
         if (isMessageSwipeable(messageId, message)) {
-            let opacity;
             //If a right swipe would trigger a generation or loop to the first swipe.
             if ((message?.['swipes']?.length ?? 1) - 1 <= (message?.['swipe_id'] ?? 0 )) {
-                showRightGenerateElements.add(div);
                 //Chevrons which cause a generation should be more visible.
-                opacity = 0.7;
+                div.classList.add('last_swipe');
+            } else {
+                div.classList.remove('last_swipe');
             }
+
             //If there's only one swipe, the left arrow should not be shown.
             if (message?.['swipes']?.length > 1) {
-                showBothElements.add(div);
-                opacity ??= 0.3;
+                div.classList.add('swipes_visible');
             } else {
-                //The Right arrow may be shown anyway.
-                hideBothElements.add(div);
+                div.classList.remove('swipes_visible');
             }
-            updateSwipeCounter(messageId, { message, messageElement: $(div), opacity: opacity });
+            updateSwipeCounter(messageId, { message, messageElement: $(div) });
         } else {
             //Hide all messages that are not swipeable.
-            hideBothElements.add(div);
+            div.classList.remove('swipes_visible', 'last_swipe');
         }
     });
-
-    // This may be optimized with sets to reduce redundant .attr and .addClass calls.
-
-    //The left arrows must initially be hidden.
-    // https://developer.mozilla.org/en-US/docs/Web/CSS/:has#performance_considerations
-    const noArrows = $([...hideBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
-    const bothArrows = $([...showBothElements]).find('> .swipeRightBlock > .swipe_right,> .swipe_left');
-    const rightArrows = $([...showRightGenerateElements]).find('> .swipeRightBlock > .swipe_right');
-
-    //This order cannot be changed, rightArrows can overlap with noArrows and bothArrows.
-
-    noArrows.attr('hidden', true);
-    bothArrows.attr('hidden', false).removeClass('active');
-    rightArrows.attr('hidden', false).addClass('active');
 }
 /**
  * This function is misleadingly named. It allows generation then refreshes the swipe buttons and counters.
