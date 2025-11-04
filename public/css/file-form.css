@@ -126,18 +126,6 @@
 .audio-player-volume {
     background: none;
     border: none;
-    cursor: pointer;
-    color: var(--SmartThemeBodyColor);
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s ease;
-}
-
-.audio-player-play-pause:hover,
-.audio-player-volume:hover {
-    color: var(--SmartThemeEmColor);
 }
 
 .audio-player-time-separator {
