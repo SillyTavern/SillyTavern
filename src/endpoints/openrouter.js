@@ -55,3 +55,37 @@ router.post('/models/multimodal', async (_req, res) => {
         return res.sendStatus(500);
     }
 });
+
+router.post('/models/embedding', async (_req, res) => {
+    try {
+        // The endpoint is available without authentication
+        const response = await fetch(`${API_OPENROUTER}/models`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            console.warn('OpenRouter API request failed', response.statusText);
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('OpenRouter API response was not an array');
+            return res.json([]);
+        }
+
+        const embeddingModels = data.data
+            .filter(m => Array.isArray(m?.architecture?.output_modalities))
+            .filter(m => m.architecture.output_modalities.includes('embeddings'));
+
+        return res.json(embeddingModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});

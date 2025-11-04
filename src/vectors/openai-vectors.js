@@ -1,26 +1,37 @@
 import fetch from 'node-fetch';
 import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
+import { OPENROUTER_HEADERS } from '../constants.js';
 
 const SOURCES = {
     'togetherai': {
         secretKey: SECRET_KEYS.TOGETHERAI,
-        url: 'api.together.xyz',
+        url: 'https://api.together.xyz/v1',
         model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+        headers: {},
     },
     'mistral': {
         secretKey: SECRET_KEYS.MISTRALAI,
-        url: 'api.mistral.ai',
+        url: 'https://api.mistral.ai/v1',
         model: 'mistral-embed',
+        headers: {},
     },
     'openai': {
         secretKey: SECRET_KEYS.OPENAI,
-        url: 'api.openai.com',
+        url: 'https://api.openai.com/v1',
         model: 'text-embedding-ada-002',
+        headers: {},
     },
     'electronhub': {
         secretKey: SECRET_KEYS.ELECTRONHUB,
-        url: 'api.electronhub.ai',
+        url: 'https://api.electronhub.ai/v1',
         model: 'text-embedding-3-small',
+        headers: {},
+    },
+    'openrouter': {
+        secretKey: SECRET_KEYS.OPENROUTER,
+        url: 'https://openrouter.ai/api/v1',
+        model: 'openai/text-embedding-3-large',
+        headers: { ...OPENROUTER_HEADERS },
     },
 };
 
@@ -48,11 +59,12 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
     }
 
     const url = config.url;
-    const response = await fetch(`https://${url}/v1/embeddings`, {
+    const response = await fetch(`${url}/embeddings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${key}`,
+            'Authorization': `Bearer ${key}`,
+            ...config.headers,
         },
         body: JSON.stringify({
             input: texts,

@@ -929,6 +929,21 @@ export function humanFileSize(bytes, si = false, dp = 1) {
 }
 
 /**
+ * Formats time in seconds to MM:SS format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+export function formatTime(seconds) {
+    if (!isFinite(seconds) || isNaN(seconds)) {
+        return '0:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
  * Counts the number of occurrences of a character in a string.
  * @param {string} string The string to count occurrences in.
  * @param {string} character The character to count occurrences of.
@@ -1159,6 +1174,42 @@ export function getImageSizeFromDataURL(dataUrl) {
         };
         image.onerror = function () {
             reject(new Error('Failed to load image'));
+        };
+    });
+}
+
+/**
+ * Gets the duration of a video from a data URL.
+ * @param {string} dataUrl Video data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getVideoDurationFromDataURL(dataUrl) {
+    const video = document.createElement('video');
+    video.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadedmetadata = function () {
+            resolve(video.duration);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Gets the duration of an audio from a data URL.
+ * @param {string} dataUrl Audio data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getAudioDurationFromDataURL(dataUrl) {
+    const audio = document.createElement('audio');
+    audio.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        audio.onloadedmetadata = function () {
+            resolve(audio.duration);
+        };
+        audio.onerror = function () {
+            reject(new Error('Failed to load audio'));
         };
     });
 }
