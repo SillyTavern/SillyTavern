@@ -480,4 +480,11 @@ export const MEDIA_EXTENSIONS = [
     '3gp',
     'mkv',
     'mpg',
+    'mp3',
+    'wav',
+    'ogg',
+    'flac',
+    'aac',
+    'm4a',
+    'aiff',
 ];

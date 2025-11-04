@@ -91,6 +91,7 @@ export const event_types = {
     PRESET_RENAMED_BEFORE: 'preset_renamed_before',
     MAIN_API_CHANGED: 'main_api_changed',
     WORLDINFO_ENTRIES_LOADED: 'worldinfo_entries_loaded',
+    MEDIA_ATTACHMENT_DELETED: 'media_attachment_deleted',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);

@@ -87,10 +87,14 @@ export const MEDIA_TYPE = {
         if (mimeType.startsWith('video/')) {
             return MEDIA_TYPE.VIDEO;
         }
+        if (mimeType.startsWith('audio/')) {
+            return MEDIA_TYPE.AUDIO;
+        }
         return null;
     },
     IMAGE: 'image',
     VIDEO: 'video',
+    AUDIO: 'audio',
 };
 
 /**
