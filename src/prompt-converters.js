@@ -501,6 +501,20 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
         //create the prompt parts
         const parts = [];
         message.content.forEach((part) => {
+            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType) => {
+                if (url && url.startsWith('data:')) {
+                    const [header, base64Data] = url.split(',');
+                    const mimeType = header.match(/data:([^;]+)/)?.[1] || defaultMimeType;
+
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data,
+                        },
+                    });
+                }
+            };
+
             if (part.type === 'text') {
                 parts.push({ text: part.text });
             } else if (part.type === 'tool_call_id') {
@@ -523,27 +537,14 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
                     toolNameMap[toolCall.id] = toolCall.function.name;
                 });
             } else if (part.type === 'image_url') {
-                const mimeType = part.image_url.url.split(';')[0].split(':')[1];
-                const base64Data = part.image_url.url.split(',')[1];
-                parts.push({
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Data,
-                    },
-                });
+                const imageUrl = part.image_url?.url;
+                addDataUrlPart(imageUrl, 'image/png');
             } else if (part.type === 'video_url') {
                 const videoUrl = part.video_url?.url;
-                if (videoUrl && videoUrl.startsWith('data:')) {
-                    const [header, data] = videoUrl.split(',');
-                    const mimeType = header.match(/data:([^;]+)/)?.[1] || 'video/mp4';
-
-                    parts.push({
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: data,
-                        },
-                    });
-                }
+                addDataUrlPart(videoUrl, 'video/mp4');
+            } else if (part.type === 'audio_url') {
+                const audioUrl = part.audio_url?.url;
+                addDataUrlPart(audioUrl, 'audio/mpeg');
             }
         });
 
