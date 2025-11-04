@@ -104,7 +104,8 @@ declare global {
         pagination(method: string, options?: any): JQuery;
         pagination(options?: any): JQuery;
         izoomify(options?: any): JQuery;
-        attr(attributeName: string, value_function: boolean): JQuery;
+        // https://api.jquery.com/attr/#attr-attributeName-value
+        // attr(attributeName: string, value_function: boolean): JQuery;
     }
 
     // NPM package doesn't have the 'queue' property in the type definition
