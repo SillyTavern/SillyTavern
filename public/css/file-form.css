@@ -71,7 +71,7 @@
     cursor: default;
     display: flex;
     width: fit-content;
-    min-width: 300px;
+    min-width: min(350px, 100%);
     max-width: 100%;
     background-color: var(--white20a);
     border: 2px solid var(--SmartThemeBorderColor);
