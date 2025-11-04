@@ -60,6 +60,7 @@ export class AudioPlayer {
             volumeInput: this.onVolumeInput.bind(this),
             progressMouseDown: this.onProgressMouseDown.bind(this),
             progressClick: this.onProgressClick.bind(this),
+            progressMouseMove: this.onProgressMouseMove.bind(this),
             documentMouseMove: this.onDocumentMouseMove.bind(this),
             documentMouseUp: this.onDocumentMouseUp.bind(this),
         };
@@ -132,7 +133,7 @@ export class AudioPlayer {
             for (const mutation of mutations) {
                 for (const node of mutation.removedNodes) {
                     if (node === this.audio || node === this.container ||
-                            node.contains?.(this.audio) || node.contains?.(this.container)) {
+                        node.contains?.(this.audio) || node.contains?.(this.container)) {
                         this.destroy();
                         return;
                     }
@@ -175,6 +176,7 @@ export class AudioPlayer {
         if (this.elements.progress) {
             this.elements.progress.addEventListener('mousedown', this.boundHandlers.progressMouseDown);
             this.elements.progress.addEventListener('click', this.boundHandlers.progressClick);
+            this.elements.progress.addEventListener('mousemove', this.boundHandlers.progressMouseMove);
         }
     }
 
@@ -201,6 +203,7 @@ export class AudioPlayer {
         if (this.elements.progress) {
             this.elements.progress.removeEventListener('mousedown', this.boundHandlers.progressMouseDown);
             this.elements.progress.removeEventListener('click', this.boundHandlers.progressClick);
+            this.elements.progress.removeEventListener('mousemove', this.boundHandlers.progressMouseMove);
         }
 
         // Document events
@@ -362,6 +365,17 @@ export class AudioPlayer {
     }
 
     /**
+     * Handles mousemove on the progress bar (no-op if dragging)
+     * @param {MouseEvent} e - The mousemove event
+     * @returns {void}
+     */
+    onProgressMouseMove(e) {
+        if (!this.isDragging) {
+            this.updateProgressTitle(e);
+        }
+    }
+
+    /**
      * Handles document mousemove events during progress bar dragging
      * @param {MouseEvent} e - The mousemove event
      * @returns {void}
@@ -442,6 +456,22 @@ export class AudioPlayer {
         if (this.elements.totalTime) {
             this.elements.totalTime.textContent = formatTime(this.audio.duration || 0);
         }
+    }
+
+    /**
+     * Updates the mouseover title on the progress bar to show time at cursor position
+     * @param {MouseEvent} e - The mouse event
+     * @returns {void}
+     */
+    updateProgressTitle(e) {
+        if (!this.elements.progress) return;
+
+        const rect = this.elements.progress.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const width = rect.width;
+        const percent = Math.max(0, Math.min(100, (offsetX / width) * 100));
+
+        this.elements.progress.setAttribute('title', formatTime((percent / 100) * this.audio.duration));
     }
 
     // Public methods
