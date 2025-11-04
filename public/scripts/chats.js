@@ -1099,9 +1099,12 @@ export async function deleteMediaFromServer(url, silent = false) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok && !silent) {
-            const error = await result.text();
-            throw new Error(error);
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
         }
 
         await eventSource.emit(event_types.MEDIA_ATTACHMENT_DELETED, url);
@@ -1127,9 +1130,12 @@ async function deleteFileFromServer(url, silent = false) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok && !silent) {
-            const error = await result.text();
-            throw new Error(error);
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
         }
 
         await eventSource.emit(event_types.FILE_ATTACHMENT_DELETED, url);
