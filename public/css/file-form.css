@@ -71,6 +71,7 @@
     cursor: default;
     display: flex;
     width: fit-content;
+    min-width: 300px;
     max-width: 100%;
     background-color: var(--white20a);
     border: 2px solid var(--SmartThemeBorderColor);
@@ -78,12 +79,27 @@
     border-radius: 15px;
 }
 
+.mes_audio_container .mes_img_swipes {
+    position: unset;
+    opacity: unset;
+    background: none;
+    padding: 0;
+}
+
+.mes_audio_container .mes_img_swipes .right_menu_button {
+    filter: brightness(75%);
+    text-shadow: none;
+}
+
+.mes_audio_container .mes_img_swipes .mes_img_swipe_counter {
+    filter: none;
+    text-shadow: none;
+}
+
 .audio-player {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    width: 100%;
-    min-width: 300px;
 }
 
 .audio-player-header {

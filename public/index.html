@@ -7310,26 +7310,24 @@
         </div>
 
         <div id="message_audio_template" class="template_element">
-            <div class="mes_media_container mes_audio_container">
+            <div class="mes_media_container mes_audio_container audio-player">
                 <audio class="mes_audio" preload="auto" hidden></audio>
-                <div class="audio-player">
-                    <div class="audio-player-header">
-                        <div class="audio-player-title">Audio</div>
-                        <div class="right_menu_button mes_media_delete fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                <div class="audio-player-header">
+                    <div class="audio-player-title">Audio</div>
+                    <div class="right_menu_button mes_media_delete fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                </div>
+                <div class="audio-player-controls">
+                    <button class="audio-player-play-pause right_menu_button fa-fw fa-solid fa-play" title="Play" data-i18n="[title]Play"></button>
+                    <div class="audio-player-time">
+                        <span class="audio-player-current-time">0:00</span>
+                        <span class="audio-player-time-separator">/</span>
+                        <span class="audio-player-total-time">0:00</span>
                     </div>
-                    <div class="audio-player-controls">
-                        <button class="audio-player-play-pause right_menu_button fa-fw fa-solid fa-play" title="Play" data-i18n="[title]Play"></button>
-                        <div class="audio-player-time">
-                            <span class="audio-player-current-time">0:00</span>
-                            <span class="audio-player-time-separator">/</span>
-                            <span class="audio-player-total-time">0:00</span>
-                        </div>
-                        <div class="audio-player-progress">
-                            <div class="audio-player-progress-bar"></div>
-                        </div>
-                        <div class="audio-player-volume-control">
-                            <button class="audio-player-volume right_menu_button fa-fw fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
-                        </div>
+                    <div class="audio-player-progress">
+                        <div class="audio-player-progress-bar"></div>
+                    </div>
+                    <div class="audio-player-volume-control">
+                        <button class="audio-player-volume right_menu_button fa-fw fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
                     </div>
                 </div>
             </div>
