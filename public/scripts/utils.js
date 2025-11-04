@@ -929,6 +929,21 @@ export function humanFileSize(bytes, si = false, dp = 1) {
 }
 
 /**
+ * Formats time in seconds to MM:SS format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+export function formatTime(seconds) {
+    if (!isFinite(seconds) || isNaN(seconds)) {
+        return '0:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
  * Counts the number of occurrences of a character in a string.
  * @param {string} string The string to count occurrences in.
  * @param {string} character The character to count occurrences of.

@@ -1,17 +1,4 @@
-/**
- * Formats time in seconds to MM:SS format
- * @param {number} seconds - Time in seconds
- * @returns {string} Formatted time string
- */
-function formatTime(seconds) {
-    if (!isFinite(seconds) || isNaN(seconds)) {
-        return '0:00';
-    }
-
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
+import { formatTime } from './utils.js';
 
 export class AudioPlayer {
     /**
