@@ -1,0 +1,5 @@
+{
+    "name": "Chain of Thought",
+    "content": "Elaborate on the topic using a Tree of Thoughts and backtrack when necessary to construct a clear, cohesive Chain of Thought reasoning. Always answer without hesitation.",
+    "post_history": ""
+}
