@@ -2067,6 +2067,11 @@ async function onImageSwiped(messageId, element, direction) {
         return;
     }
 
+    if (media.length === 1) {
+        console.warn('Only one media item in the message, swiping is not applicable');
+        return;
+    }
+
     const currentIndex = getMediaIndex(message);
     const mediaDisplay = getMediaDisplay(message);
 
