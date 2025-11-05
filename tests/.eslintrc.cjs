@@ -34,4 +34,9 @@ module.exports = {
         'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
         'no-cond-assign': 'error',
     },
+    settings: {
+        jest: {
+            version: '29.7.0',
+        },
+    },
 };
