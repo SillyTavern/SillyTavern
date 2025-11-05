@@ -2451,8 +2451,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     });
 
     if (type === 'swipe') {
-        const messageId = forceId ?? chat.length - 1;
-        const swipeMessage = chatElement.find(`[mesid="${messageId}"]`);
+        const swipeMessage = chatElement.find(`[mesid="${newMessageId}"]`);
         swipeMessage.attr('swipeid', params.swipeId);
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
@@ -2470,15 +2469,14 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             swipeMessage.find('.tokenCounterDisplay').empty();
         }
     } else {
-        const messageId = forceId ?? chat.length - 1;
-        chatElement.find(`[mesid="${messageId}"] .mes_text`).append(messageText);
+        chatElement.find(`[mesid="${newMessageId}"] .mes_text`).append(messageText);
         appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
     }
 
     addCopyToCodeBlocks(newMessage);
 
-    // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
-    if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
+    // Set the swipes counter for all non-user messages.
+    if (!params.isUser) {
         const swipesNum = chat[newMessageId].swipes?.length;
         const swipeId = chat[newMessageId].swipe_id + 1;
         newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
@@ -8582,8 +8580,10 @@ export function isMessageSwipeable(messageId, message = undefined) {
 /**
  * Refreshes all swipe buttons and updates their swipe counters.
  * This has been optimized for bulk updates by minimizing DOM queries.
+ * @param {boolean} updateCounters When true, the swipe counters will also be updated. Typically redundant because addOneMessage updates the counters.
+ * @returns
  */
-export function refreshSwipeButtons() {
+export function refreshSwipeButtons(updateCounters = false) {
     //Never show swipe buttons on an empty chat.
     if (chat?.length === 0) return false;
 
@@ -8617,7 +8617,8 @@ export function refreshSwipeButtons() {
             const hasSwipes = (message?.swipes?.length > 1);
             div.classList.toggle('swipes_visible', hasSwipes);
 
-            updateSwipeCounter(messageId, { message, messageElement: $(div) });
+            //updateSwipeCounter does not need to be awaited, It can run a bit later.
+            if (updateCounters) updateSwipeCounter(messageId, { message, messageElement: $(div) });
         } else {
             //Hide all messages that are not swipeable.
             div.classList.remove('swipes_visible', 'last_swipe');
@@ -8692,6 +8693,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     swipeId = Number(swipeId);
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
     let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+    //Animate swipe and swap dispayed message.
     await swipe(null, direction,  { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
     await saveChatConditional();
