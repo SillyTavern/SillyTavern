@@ -1371,7 +1371,7 @@ export async function getFirstFileRegexMatch(filePath, regex, maxChunks = 4, chu
 
             // Check for match in accumulated buffer (handles boundary cases)
             const match = buffer.matchAll(regex);
-            if (match || chunksRead >= maxChunks) {
+            if (!match?.next()?.done || chunksRead >= maxChunks) {
                 stream.destroy(); // Immediately stop reading to save resources
                 resolve(match || undefined);
             }
