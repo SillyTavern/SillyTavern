@@ -3,7 +3,7 @@
     "type": "module",
     "license": "AGPL-3.0",
     "scripts": {
-        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json",
+        "test": "npm run test:unit && npm run test:e2e",
         "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json",
         "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest-e2e.config.json"
     },
