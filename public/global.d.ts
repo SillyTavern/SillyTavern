@@ -16,6 +16,16 @@ declare global {
     type TextCompletionSettings = typeof textgenerationwebui_settings;
     type MessageTimestamp = string | number | Date;
 
+    interface ChatTree {
+        branch_id?: number;
+        branch?: ChatTreeMessage[]
+    }
+
+    interface ChatTreeMessage extends Omit<ChatMessage, 'swipe_id' | 'swipes' | 'swipe_info'>{
+        branch_id?: number;
+        branch?: ChatTreeMessage[];
+    }
+
     interface ChatMessage {
         name?: string;
         mes?: string;

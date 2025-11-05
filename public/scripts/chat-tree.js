@@ -1,11 +1,17 @@
 import { chat } from '../script.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
-
+/** @type {ChatTree} */
 export let chatTree = {};
-export function setChatTree(newChat) {
+
+/**
+ * Sets the chatTree if (power_user.enable_chat_tree == true).
+ * @param {ChatTree} newTree
+ * @returns {ChatTree}
+ */
+export function setChatTree(newTree) {
     if (power_user.enable_chat_tree) {
-        chatTree = newChat;
+        chatTree = newTree;
         return chatTree;
     }
 }
@@ -13,8 +19,8 @@ export function setChatTree(newChat) {
 
 /**
  * Save the Chat to the chatTree.
- * @param {Array} chat
- * @param {object} chatTree
+ * @param {ChatMessage[]} chat
+ * @param {ChatTree} chatTree
  * @param {Object} [params={}] - Optional parameters.
  * @param {number} [params.start=0] The first message to save. Modifying start may cause an invalid tree.
  * @param {object} [params.end=chat.length] The last message to save, Everything below will be deleted.
@@ -84,8 +90,8 @@ export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.len
 
 /**
  * Returns the chat after a given index, following swipe_id.
- * @param {object} chatTree
- * @param {Array} chat
+ * @param {ChatTree} chatTree
+ * @param {ChatMessage[]} chat
  * @param {number} index - The starting index in the chat array
  * @returns {Promise<Array>} - A stick is a stripped branch. The flattened chat array after the index.
  */
@@ -159,7 +165,7 @@ export async function spliceStickToChat(stick, chat, index = 0) {
 
 /**
  * Update each message in the chatTree. Used for renaming characters.
- * @param {object} tree chatTree.
+ * @param {ChatTree} tree chatTree.
  * @param {function} updateFunction The function to run on each message.
  * @param {string} attr The attribute for logging.
  */
@@ -189,7 +195,7 @@ export async function updateChatTreeMessages(tree, updateFunction, attr = 'value
 
 /**
  * Deletes a branch if it exists.
- * @param {object} tree
+ * @param {ChatTree} tree
  * @param {number} mesId
  * @param {number} swipeId
  * @param {number} newSwipeId sets mesId's branch_id.

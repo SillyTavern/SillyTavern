@@ -6320,7 +6320,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
  * Defaults to swipe_id 0;
  * Creates swipes and swipe_info arrays if they don't exist.
  * Overwrites all current contents of swipes and swipe_info arrays.
- * @param {object} message
+ * @param {ChatMessage} message
  * @returns
  */
 export function writeMessageToSwipe(message) {
@@ -6350,7 +6350,7 @@ export function writeMessageToSwipe(message) {
  * if swipe_info does not exist, it will be backfilled.
  * If send_date, gen_started or gen_finished do not exist in swipe_info, the message's info will NOT be overwritten.
  * The messages extra WILL be overwritten.
- * @param {object} message message object.
+ * @param {ChatMessage} message message object.
  * @param {number} targetSwipeId message.swipe_id will be set to targetSwipeId.
  * @returns {boolean} false if the swipe does not exist. true on success.
  */
