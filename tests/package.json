@@ -10,7 +10,6 @@
     "dependencies": {
         "@types/jest": "^29.5.12",
         "eslint": "^8.57.0",
-        "eslint-plugin-jest": "^28.6.0",
         "jest": "^29.7.0",
         "jest-puppeteer": "^10.0.1"
     }
