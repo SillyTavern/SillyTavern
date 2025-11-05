@@ -1305,7 +1305,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
     /* (Duration * Active Opacity / Inactive Opacity * 2) */
-    transition-duration: calc(var(--animation-duration-2x) * 7/0.3);
+    transition-duration: calc(var(--animation-duration-2x) * 0.7/0.3);
     @starting-style { opacity: 0 }
 }
 
