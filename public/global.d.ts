@@ -43,6 +43,7 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        swipeable?: boolean; //When false, the message cannot be swiped.
         files?: FileAttachment[];
         inline_image?: boolean;
         media_display?: string;

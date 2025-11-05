@@ -30,35 +30,42 @@ export const system_message_types = {
 };
 
 export async function initSystemMessages() {
+    /** @type {ChatMessage} */
     const defaultMessage = {
         name: systemUserName,
         force_avatar: system_avatar,
         is_user: false,
         is_system: true,
-        swipeable: false,
+        extra: { swipeable: true },
     };
     /** @type {Record<string, ChatMessage>} */
     const result = {
+        /** @type {ChatMessage} */
         help: {
             ...defaultMessage,
             mes: await renderTemplateAsync('help'),
         },
+        /** @type {ChatMessage} */
         slash_commands: {
             ...defaultMessage,
             mes: '',
         },
+        /** @type {ChatMessage} */
         hotkeys: {
             ...defaultMessage,
             mes: await renderTemplateAsync('hotkeys'),
         },
+        /** @type {ChatMessage} */
         formatting: {
             ...defaultMessage,
             mes: await renderTemplateAsync('formatting'),
         },
+        /** @type {ChatMessage} */
         macros: {
             ...defaultMessage,
             mes: await renderTemplateAsync('macros'),
         },
+        /** @type {ChatMessage} */
         welcome: {
             ...defaultMessage,
             mes: await renderTemplateAsync('welcome', { displayVersion }),
@@ -66,14 +73,17 @@ export async function initSystemMessages() {
                 uses_system_ui: true,
             },
         },
+        /** @type {ChatMessage} */
         empty: {
             ...defaultMessage,
             mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
         },
+        /** @type {ChatMessage} */
         generic: {
             ...defaultMessage,
             mes: 'Generic system message. User `text` parameter to override the contents',
         },
+        /** @type {ChatMessage} */
         welcome_prompt: {
             ...defaultMessage,
             mes: await renderTemplateAsync('welcomePrompt'),
@@ -82,6 +92,7 @@ export async function initSystemMessages() {
                 isSmallSys: true,
             },
         },
+        /** @type {ChatMessage} */
         assistant_note: {
             ...defaultMessage,
             mes: await renderTemplateAsync('assistantNote'),
@@ -131,10 +142,6 @@ export function getSystemMessageByType(type, text, extra = {}) {
 
     if (type === system_message_types.SLASH_COMMANDS) {
         newMessage.mes = getSlashCommandsHelp();
-    }
-
-    if (!newMessage.extra || typeof newMessage.extra !== 'object') {
-        newMessage.extra = {};
     }
 
     newMessage.extra = Object.assign(newMessage.extra, extra);

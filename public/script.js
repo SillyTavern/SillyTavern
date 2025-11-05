@@ -8516,7 +8516,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
  *  By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
  * @param {Number} mesId
  * @param {object} [options] Options
- * @param {object} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
+ * @param {ChatMessage} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
  * @param {JQuery<HTMLElement>} [options.messageElement=undefined] Target Element. Passing in the message's element will save a DOM query.
  */
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined } = {}) {
@@ -8550,7 +8550,7 @@ export function isSwipingAllowed() {
  * This does not check if messages are generally swipeable. See isSwipingAllowed().
  * This does not check if the swipes exist or are valid.
  * @param {number} messageId The message Id to check.
- * @param {object} [message=undefined] If undefined, then the message checks will be skipped.
+ * @param {ChatMessage} [message=undefined] If undefined, then the message checks will be skipped.
  * @returns {boolean}
  */
 export function isMessageSwipeable(messageId, message = undefined) {
