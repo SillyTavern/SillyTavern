@@ -4,7 +4,7 @@ import { flattenSchema } from '../src/util';
 
 describe('flattenSchema', () => {
     it('should return the schema if it is not an object', () => {
-        const schema = 'not an object';
+        const schema = 'it is not an object';
         expect(flattenSchema(schema, CHAT_COMPLETION_SOURCES.MAKERSUITE)).toBe(schema);
     });
 
