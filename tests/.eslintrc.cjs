@@ -10,9 +10,11 @@ module.exports = {
     env: {
         es6: true,
         node: true,
+        'jest/globals': true,
     },
     parserOptions: {
         ecmaVersion: 'latest',
+        sourceType: 'module',
     },
     overrides: [
     ],
