@@ -1,4 +1,4 @@
-import { chat, updateViewMessageIds } from '../script.js';
+import { chat } from '../script.js';
 import { eventSource, event_types } from './events.js';
 import { power_user } from './power-user.js';
 
@@ -19,7 +19,7 @@ export function setChatTree(newChat) {
  * @param {number} [params.start=0] The first message to save. Modifying start may cause an invalid tree.
  * @param {object} [params.end=chat.length] The last message to save, Everything below will be deleted.
  */
-export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.length } = {}) {
+export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.length - 1 } = {}) {
 
     chatTree ??= setChatTree({});
 
@@ -153,7 +153,6 @@ export async function getStickFromTree(chatTree, chat, index) {
 export async function spliceStickToChat(stick, chat, index = 0) {
     //This will break references after index.
     chat.splice(index, chat.length - index, ...stick);
-    updateViewMessageIds(false);
 
     eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
