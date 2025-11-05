@@ -1241,10 +1241,6 @@ body .panelControlBar {
     100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
 }
 
-
-
-
-
 .swipe_right,
 .swipe_left {
     width: 25px;
@@ -1309,7 +1305,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     opacity: 0.7;
     /* Doubled opacity needs a longer transition to match a non active arrow. */
     /* (Duration * Active Opacity / Inactive Opacity * 2) */
-    transition-duration: calc(var(--animation-duration) * 0.7/0.3*2);
+    transition-duration: calc(var(--animation-duration-2x) * 7/0.3);
     @starting-style { opacity: 0 }
 }
 
@@ -1322,9 +1318,9 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     @starting-style { opacity: 0 !important }
     @supports (transition-behavior: allow-discrete) {
         transition:
-        opacity calc(var(--animation-duration) * 2) ease-in,
-        display calc(var(--animation-duration) * 2) ease-in,
-        visibility calc(var(--animation-duration) * 2) ease-in;
+        opacity var(--animation-duration-2x) ease-in,
+        display var(--animation-duration-2x) ease-in,
+        visibility var(--animation-duration-2x) ease-in;
     transition-behavior: allow-discrete;
     }
 }
@@ -5427,9 +5423,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     transition-property: height, display;
     transition-duration: var(--animation-duration-2x);
     transition-timing-function: ease-in-out;
-      @supports (transition-behavior: allow-discrete) {
-        transition-behavior: allow-discrete;
-    }
+    transition-behavior: allow-discrete;
 }
 
 #movingDivs>.drawer-content {

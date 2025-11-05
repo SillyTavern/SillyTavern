@@ -2485,8 +2485,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     //last_mes should always be updated.
+    chatElement.find('.mes').removeClass('last_mes');
     chatElement.find('.mes').last().addClass('last_mes');
-    chatElement.find('.mes').eq(-2).removeClass('last_mes');
     if (showSwipes) {
         refreshSwipeButtons();
     }
@@ -8589,24 +8589,23 @@ export function refreshSwipeButtons() {
 
     //If swipes are disabled or hidden, hide all swipe buttons.
     if (!isSwipingAllowed()) {
-        $('body').toggleClass('hideAllSwipeButtons', true);
+        $('body').addClass('hideAllSwipeButtons');
         return;
     //Don't hide all swipe buttons.
     } else {
         //CSS will hide all messages.
-        $('body').toggleClass('hideAllSwipeButtons', false);
+        $('body').removeClass('hideAllSwipeButtons');
     }
     //Non-messages can appear in chat. '.mes' is required.
     const messageElements = chatElement.children('.mes[mesid]');
 
-    // const lastDisplayedMesId = Number(messageElements.last().attr('mesid'));
     const firstDisplayedMesId = Number(messageElements.first().attr('mesid'));
 
     //Group each message.
     messageElements.each((index, div) => {
-        // const messageId = Number($(div).attr('mesid')); //Slower.
         //This assumes the messages are in order and their Id's are accurate.
         const messageId = firstDisplayedMesId + index;
+        //Number($(div).attr('mesid')); Would not misscount due to a missing div, but much slower.
 
         const message = chat[messageId];
         if (isMessageSwipeable(messageId, message)) {
@@ -9382,12 +9381,12 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                     { okButton: 'OK', cancelButton: false },
                 );
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
-                reloadCurrentChat();
+                await reloadCurrentChat();
             }
         //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
-            saveChatConditional();
+            await saveChatConditional();
         }
 
         //Allow for another swipe.
