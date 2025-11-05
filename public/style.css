@@ -1306,7 +1306,6 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Doubled opacity needs a longer transition to match a non active arrow. */
     /* (Duration * Active Opacity / Inactive Opacity * 2) */
     transition-duration: calc(var(--animation-duration-2x) * 0.7/0.3);
-    @starting-style { opacity: 0 }
 }
 
 .fade {
@@ -1315,7 +1314,6 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
     transition: opacity calc(var(--animation-duration) * 2) ease-in;
     /* Fade in. */
-    @starting-style { opacity: 0 !important }
     @supports (transition-behavior: allow-discrete) {
         transition:
         opacity var(--animation-duration-2x) ease-in,
