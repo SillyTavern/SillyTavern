@@ -19,6 +19,7 @@ import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
 import { serverDirectory } from './server-directory.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 /**
  * Parsed config object.
@@ -1300,3 +1301,85 @@ export function flattenSchema(schema, api) {
 
     return flattenedSchema;
 }
+/**
+ * Writes to a file, creating it's parent directories if needed.
+ * @param {string} filePath
+ * @param {string} data
+ */
+export function tryWriteFileSync(filePath, data) {
+    const directory = path.dirname(filePath);
+    //Ensure the directory exists.
+    if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+    }
+    writeFileAtomicSync(filePath, data, 'utf8');
+}
+
+/**
+ * Attempts to read a file as utf8.
+ * @param {string} filePath
+ * @returns {string|void}
+ */
+export function tryReadFileSync(filePath) {
+    try {
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (error) {
+        console.error(`Error reading ${filePath}: ${error.message}`);
+    }
+}
+
+/**
+ * Attempts to delete a file.
+ * @param {string} filePath Target file.
+ * @returns {boolean} Returns true if the file was found and deleted.
+ */
+export function tryDeleteFile(filePath) {
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.info(`Deleted file: ${filePath}`);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Reads a file until a regex matches or the maxChunks limit.
+ * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
+ * This is only optimized to check the beginning of files.
+ * @param {string} filePath - Path to the file to read
+ * @param {RegExp} regex - Regular expression to search for
+ * @param {number} maxChunks - Maximum number of chunks to read (default: 4)
+ * @param {number} chunkSize - Size of each chunk in bytes (default: 16KB)
+ * @returns {Promise<RegExpStringIterator|undefined>} - The regex match or undefined
+ */
+export async function getFirstFileRegexMatch(filePath, regex, maxChunks = 4, chunkSize = 16 * 1024) {
+    return new Promise((resolve, reject) => {
+        let chunksRead = 0;
+        let buffer = ''; // Accumulates chunks to handle matches spanning boundaries
+
+        const stream = fs.createReadStream(filePath, {
+            encoding: 'utf8',
+            highWaterMark: chunkSize,
+        });
+
+        const handleData = (chunk) => {
+            chunksRead++;
+            buffer += chunk;
+
+            // Check for match in accumulated buffer (handles boundary cases)
+            const match = buffer.matchAll(regex);
+            if (match || chunksRead >= maxChunks) {
+                stream.destroy(); // Immediately stop reading to save resources
+                resolve(match || undefined);
+            }
+        };
+
+        stream.on('data', handleData);
+        stream.on('error', reject);
+        stream.on('end', () => resolve(undefined)); // No match found in entire file
+    });
+}
+
