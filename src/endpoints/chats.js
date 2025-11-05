@@ -354,7 +354,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
     else if (path.extname(filePath) == '.json') {
         //The metadata should be at the start of the file.
         //If the user has a "user_name" or "charater_name" that's over 64KB long, this will not find the integrity slug.
-        const match = await getFirstFileRegexMatch(filePath, /\{"integrity":"([\d|\w|-]+)","/g);
+        const match = await getFirstFileRegexMatch(filePath, /"integrity":"([\d|\w|-]+)"/g);
 
         // If there's no match, assume the file is corrupt.
         if (match !== undefined) {
