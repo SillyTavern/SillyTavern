@@ -1,3 +1,4 @@
+import { lodash } from '../lib.js';
 import { addOneMessage, chat, displayVersion, setSendButtonState, system_avatar, systemUserName } from '../script.js';
 import { t } from './i18n.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
@@ -36,71 +37,61 @@ export async function initSystemMessages() {
         force_avatar: system_avatar,
         is_user: false,
         is_system: true,
-        extra: { swipeable: true },
+        extra: { swipeable: false },
     };
     /** @type {Record<string, ChatMessage>} */
     const result = {
         /** @type {ChatMessage} */
-        help: {
-            ...defaultMessage,
+        help: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('help'),
-        },
+        }),
         /** @type {ChatMessage} */
-        slash_commands: {
-            ...defaultMessage,
+        slash_commands: lodash.merge( structuredClone(defaultMessage), {
             mes: '',
-        },
+        }),
         /** @type {ChatMessage} */
-        hotkeys: {
-            ...defaultMessage,
+        hotkeys: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('hotkeys'),
-        },
+        }),
         /** @type {ChatMessage} */
-        formatting: {
-            ...defaultMessage,
+        formatting: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('formatting'),
-        },
+        }),
         /** @type {ChatMessage} */
-        macros: {
-            ...defaultMessage,
+        macros: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('macros'),
-        },
+        }),
         /** @type {ChatMessage} */
-        welcome: {
-            ...defaultMessage,
+        welcome: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcome', { displayVersion }),
             extra: {
                 uses_system_ui: true,
             },
-        },
+        }),
         /** @type {ChatMessage} */
-        empty: {
-            ...defaultMessage,
+        empty: lodash.merge( structuredClone(defaultMessage), {
             mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
-        },
+        }),
         /** @type {ChatMessage} */
-        generic: {
-            ...defaultMessage,
+        generic: lodash.merge( structuredClone(defaultMessage), {
             mes: 'Generic system message. User `text` parameter to override the contents',
-        },
+        }),
         /** @type {ChatMessage} */
-        welcome_prompt: {
-            ...defaultMessage,
+        welcome_prompt: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
                 uses_system_ui: true,
                 isSmallSys: true,
             },
-        },
+        }),
         /** @type {ChatMessage} */
-        assistant_note: {
-            ...defaultMessage,
+        assistant_note: lodash.merge( structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('assistantNote'),
             extra: {
                 uses_system_ui: true,
                 isSmallSys: true,
             },
-        },
+        }),
     };
 
     Object.assign(system_messages, result);
