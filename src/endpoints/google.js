@@ -538,9 +538,10 @@ router.post('/generate-video', async (request, response) => {
 
         console.debug(`${apiName} video job name:`, videoJobName);
 
-        if (useVertexAi) {
-            for (let attempt = 0; attempt < 30; attempt++) {
-                await delay(5000 + attempt * 1000);
+        for (let attempt = 0; attempt < 30; attempt++) {
+            await delay(5000 + attempt * 1000);
+
+            if (useVertexAi) {
                 const { url: pollUrl, headers: pollHeaders } = await getGoogleApiConfig(request, model, 'fetchPredictOperation');
 
                 const pollResponse = await fetch(pollUrl, {
@@ -569,11 +570,7 @@ router.post('/generate-video', async (request, response) => {
 
                     return response.send({ video: videoData });
                 }
-            }
-        } else {
-            for (let attempt = 0; attempt < 30; attempt++) {
-                await delay(5000 + attempt * 1000);
-
+            } else {
                 const pollUrl = urlJoin(baseUrl, videoJobName);
                 const pollResponse = await fetch(pollUrl, {
                     method: 'GET',
