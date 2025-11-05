@@ -20,6 +20,9 @@ module.exports = {
     ],
     ignorePatterns: [
     ],
+    globals: {
+        page: 'readonly',
+    },
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
