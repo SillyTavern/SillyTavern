@@ -851,11 +851,16 @@ export function initTextGenSettings() {
     $('#tabby_json_schema').on('input', function () {
         const json_schema_string = String($(this).val());
 
-        try {
-            settings.json_schema = JSON.parse(json_schema_string || '{}');
-        } catch {
-            // Ignore errors from here
+        if (json_schema_string) {
+            try {
+                settings.json_schema = JSON.parse(json_schema_string);
+            } catch {
+                settings.json_schema = null;
+            }
+        } else {
+            settings.json_schema = null;
         }
+
         saveSettingsDebounced();
     });
 
@@ -1152,8 +1157,8 @@ function setSettingByName(setting, value, trigger) {
     }
 
     if ('json_schema' === setting) {
-        settings.json_schema = value ?? {};
-        $('#tabby_json_schema').val(JSON.stringify(settings.json_schema, null, 2));
+        settings.json_schema = value ?? null;
+        $('#tabby_json_schema').val(value ? JSON.stringify(settings.json_schema, null, 2) : '');
         return;
     }
 
@@ -1556,7 +1561,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
-        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? settings.json_schema : undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(settings.type) && settings.json_schema ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'repeat_last_n': settings.rep_pen_range,
