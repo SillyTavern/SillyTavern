@@ -494,6 +494,12 @@ router.post('/generate-image', async (request, response) => {
 
 router.post('/generate-video', async (request, response) => {
     try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
         const model = request.body.model || 'veo-3.1-generate-preview';
         const { url, headers, apiName, baseUrl } = await getGoogleApiConfig(request, model, 'predictLongRunning');
         const useVertexAi = request.body.api === 'vertexai';
@@ -540,6 +546,11 @@ router.post('/generate-video', async (request, response) => {
         console.debug(`${apiName} video job name:`, videoJobName);
 
         for (let attempt = 0; attempt < 30; attempt++) {
+            if (controller.signal.aborted) {
+                console.info(`${apiName} video generation aborted by client`);
+                return response.status(500).send('Video generation aborted by client');
+            }
+
             await delay(5000 + attempt * 1000);
 
             if (useVertexAi) {
