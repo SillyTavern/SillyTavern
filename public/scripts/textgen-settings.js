@@ -25,7 +25,7 @@ import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels } from './textgen-models.js';
 import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
-import { getSortableDelay, onlyUnique, arraysEqual } from './utils.js';
+import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
 
 export const textgen_types = {
     OOBA: 'ooba',
@@ -1700,7 +1700,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
 
     // Grammar conflicts with with json_schema
     if (settings.type === LLAMACPP) {
-        if (params.json_schema && Object.keys(params.json_schema).length > 0) {
+        if (params.json_schema && isObject(params.json_schema)) {
             delete params.grammar_string;
             delete params.grammar;
         } else {
