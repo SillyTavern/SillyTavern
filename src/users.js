@@ -16,11 +16,10 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
-import { isFirefox } from './express-common.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
@@ -954,15 +953,7 @@ function createRouteHandler(directoryFn) {
                 return res.sendStatus(404);
             }
 
-            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control
-            // Without this, firefox ignores updated images even on refresh.
-            if (isFirefox(req)) {
-                const mimeType = mime.lookup(filePath);
-                if (mimeType && mimeType.startsWith('image/')) {
-                    res.setHeader('Cache-Control', 'must-understand, no-store');
-                }
-            }
-
+            invalidateFirefoxCache(filePath, req, res);
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
             return res.sendStatus(500);
