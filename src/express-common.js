@@ -43,7 +43,7 @@ export function getRealIpFromHeader(req) {
 
 /**
  * Checks if the request is coming from a Firefox browser.
- * @param {import('express').Request} req
+ * @param {import('express').Request} req Request object
  * @returns {boolean} True if the request is from Firefox, false otherwise.
  */
 export function isFirefox(req) {

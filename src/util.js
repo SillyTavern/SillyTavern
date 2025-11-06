@@ -1301,9 +1301,9 @@ export function flattenSchema(schema, api) {
  * If the file is an image, and the request's user agent matches Firefox, then the response's headers are set to invalidate the cache.
  * Without this, Firefox ignores updated images even after a refresh.
  * https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control
- * @param {string} file
- * @param {import('express').Request} request
- * @param {import('express').Response} response
+ * @param {string} file File path
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
  */
 export function invalidateFirefoxCache(file, request, response) {
     const mimeType = isFirefox(request) && mime.lookup(file);
