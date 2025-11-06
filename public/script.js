@@ -8604,8 +8604,8 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     else if (message?.extra?.isSmallSys) return OVERSWIPE_BEHAVIOR.NONE;
     //The first message in a priistine chat will loop.
     else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.LOOP;
-    //Non-user messages will regenerate.
-    else if (!message?.is_user) return OVERSWIPE_BEHAVIOR.REGENERATE;
+    //Non-user and non-prompt hidden messages will regenerate.
+    else if (!message?.is_user && !message?.is_system) return OVERSWIPE_BEHAVIOR.REGENERATE;
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
     else { return OVERSWIPE_BEHAVIOR.LOOP; }
 }
