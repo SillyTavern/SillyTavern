@@ -4621,6 +4621,7 @@ export async function sendNarratorMessage(args, text) {
             isSmallSys: compact,
             api: 'manual',
             model: 'slash command',
+            swipeable: false,
         },
     };
 
@@ -4709,6 +4710,7 @@ async function sendCommentMessage(args, text) {
             isSmallSys: compact,
             api: 'manual',
             model: 'slash command',
+            swipeable: false,
         },
     };
 

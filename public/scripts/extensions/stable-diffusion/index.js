@@ -4092,6 +4092,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
             media_display: MEDIA_DISPLAY.GALLERY,
             media_index: 0,
             inline_image: false,
+            swipeable: false,
         },
     };
     context.chat.push(message);

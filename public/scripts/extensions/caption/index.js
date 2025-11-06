@@ -193,6 +193,7 @@ async function sendCaptionedMessage(caption, image) {
             media_display: MEDIA_DISPLAY.GALLERY,
             media_index: 0,
             inline_image: !!extension_settings.caption.show_in_chat,
+            swipeable: false,
         },
     };
     chat_metadata['tainted'] = true;
