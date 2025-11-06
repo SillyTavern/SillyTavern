@@ -8624,7 +8624,7 @@ export function refreshSwipeButtons(updateCounters = false) {
     if (!isSwipingAllowed()) {
         $('body').addClass('hideAllSwipeButtons');
         return;
-    //Don't hide all swipe buttons.
+        //Don't hide all swipe buttons.
     } else {
         //CSS will hide all messages.
         $('body').removeClass('hideAllSwipeButtons');
@@ -8643,7 +8643,7 @@ export function refreshSwipeButtons(updateCounters = false) {
         const message = chat[messageId];
         if (isMessageSwipeable(messageId, message)) {
             //If a right swipe would trigger a generation or loop to the first swipe.
-            const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0 );
+            const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0);
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
 
@@ -8734,7 +8734,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
     let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
     //Animate swipe and swap dispayed message.
-    await swipe(null, direction,  { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+    await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
     await saveChatConditional();
 
@@ -9277,7 +9277,7 @@ export async function redisplayChat(chat, index) {
 
     //Skip to index, then add extra messages.
     for (let i = index + 1; i <= chat.length - 1; i++) {
-        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i } );
+        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
     }
     refreshSwipeButtons();
 
@@ -9321,7 +9321,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     //Only set messageIndex if message exists because -1 is truthy.
     if (message) {
         messageIndex = chat.indexOf(message);
-        if (messageIndex === -1 && typeof(forceMesId) != 'number') {
+        if (messageIndex === -1 && typeof (forceMesId) != 'number') {
             console.error(`The message must exist in chat. ${message};`);
             return;
         }
@@ -9418,7 +9418,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
                 await reloadCurrentChat();
             }
-        //Out of bounds swipes should not be saved.
+            //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             await saveChatConditional();
@@ -9499,14 +9499,14 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {boolean} [params.freeze=true] When true, do not remove the class from the animation, leaving it stuck at xEnd.
      * @returns {Promise<boolean|Function>} endSlide unfreezes the messages from xEnd.
      */
-    async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {} ) {
+    async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
 
         const messages = chatElement.children('.mes');
         const firstDisplayedMesId = Number(messages.first().attr('mesid'));
 
-        const swipedMessagesDiv  = messages.filter((index, div) => {
+        const swipedMessagesDiv = messages.filter((index, div) => {
             // const messageId = Number($(div).attr('mesid')); //Slower.
             //This assumes the messages are in order and their Id's are accurate.
             const divMessageId = firstDisplayedMesId + index;
@@ -9596,7 +9596,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         if (!skipSwipeOut) {
             //Swipe out.
-            await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`,  duration: swipeDuration });
+            await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`, duration: swipeDuration });
         }
 
 
@@ -9643,7 +9643,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
 
         //Swipe in from the opposite side.
-        await animateSwipeTransition(mesId, { xStart:`${-swipeRange}px`, xEnd: `${0}px`,  duration: swipeDuration });
+        await animateSwipeTransition(mesId, { xStart: `${-swipeRange}px`, xEnd: `${0}px`, duration: swipeDuration });
     }
 
     if (mesId === Number(this_edit_mes_id)) {
