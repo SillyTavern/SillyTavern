@@ -1,0 +1,11 @@
+{
+    "verbose": true,
+    "transform": {},
+    "preset": "jest-puppeteer",
+    "setupFilesAfterEnv": [
+        "<rootDir>/jest.setup.js"
+    ],
+    "testMatch": [
+        "**/?(*.)+(e2e).js"
+    ]
+}
