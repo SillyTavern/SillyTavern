@@ -10946,7 +10946,7 @@ jQuery(async function () {
 
         else if (id == 'option_regenerate') {
             //Attempting to regenerate a user message will instead generate a new message.
-            if ((chat.length - 1 == this_edit_mes_id) && chat[this_edit_mes_id]?.is_user == false) {
+            if (chat.length && chat.length - 1 === this_edit_mes_id && chat[this_edit_mes_id]?.is_user == false) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot regenerate the message you are editing.`);
                 return;
             }
@@ -10973,7 +10973,7 @@ jQuery(async function () {
                 toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
                 return;
             }
-            if (chat.length - 1 == this_edit_mes_id) {
+            if (chat.length && chat.length - 1 === this_edit_mes_id) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot continue the message you are editing.`);
                 return;
             }
