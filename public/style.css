@@ -1232,14 +1232,6 @@ body .panelControlBar {
     -webkit-animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
     will-change: transform;
 }
-@keyframes slide {
-    0% { transform: translateX(var(--slide-mes-x-start, '0px')); }
-    100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
-}
-@-webkit-keyframes slide {
-    0% { transform: translateX(var(--slide-mes-x-start, '0px')); }
-    100% { transform: translateX(var(--slide-mes-x-end, '0px')); }
-}
 
 .swipe_right,
 .swipe_left {
@@ -1313,13 +1305,14 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
     /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
     transition: opacity calc(var(--animation-duration) * 2) ease-in;
+
     /* Fade in. */
     @supports (transition-behavior: allow-discrete) {
         transition:
-        opacity var(--animation-duration-2x) ease-in,
-        display var(--animation-duration-2x) ease-in,
-        visibility var(--animation-duration-2x) ease-in;
-    transition-behavior: allow-discrete;
+            opacity var(--animation-duration-2x) ease-in,
+            display var(--animation-duration-2x) ease-in,
+            visibility var(--animation-duration-2x) ease-in;
+        transition-behavior: allow-discrete;
     }
 }
 
