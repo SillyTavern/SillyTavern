@@ -2787,13 +2787,13 @@ export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
  * Shakes the targetElement.
  * @param {HTMLElement|JQuery<HTMLElement>} targetElement
  * @param {number} distance Distance in pixels.
- * @param {number} duration
- * @param {string} easing
+ * @param {number} duration Duration in milliseconds.
+ * @param {string} easing CSS easing function.
  */
-export function shakeElement(targetElement, distance = 10,duration = 100, easing = 'ease-in-out') {
+export function shakeElement(targetElement, distance = 10, duration = 100, easing = 'ease-in-out') {
     // Don't call the JQuery animation.
     // https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-    if (targetElement instanceof  jQuery) targetElement = targetElement[0];
+    if (targetElement instanceof jQuery) targetElement = targetElement[0];
 
     return targetElement.animate([
         { transform: 'translateX(0)' },

@@ -44,7 +44,8 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
-        swipeable?: boolean; //When false, the message cannot be swiped.
+        /** When false, the message cannot be swiped. */
+        swipeable?: boolean;
         overswipe_behavior?: OVERSWIPE_BEHAVIOR;
         files?: FileAttachment[];
         inline_image?: boolean;

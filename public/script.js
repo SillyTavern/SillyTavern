@@ -581,8 +581,10 @@ export let settings;
 export let amount_gen = 80; //default max length of AI generated responses
 export let max_context = 2048;
 
-let swipes = true; //User preference.
-export let swipesHidden = false; //Forcefully hide swipes.
+/** User preference for swipeable messages */
+let swipes = true;
+/** Forcefully hide swipes. */
+export let swipesHidden = false;
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
