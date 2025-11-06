@@ -185,7 +185,7 @@ import {
     shakeElement,
     waitForClick,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -8738,6 +8738,8 @@ export function isMessageSwipeable(messageId, message = undefined) {
         //If the message is the last message, and it exists.
         (messageId == chat.length - 1) &&
         (message &&
+            //Small system messages cannot be swiped.
+            !(message?.extra?.isSmallSys) &&
             //Some messages, like the welcome screen, are not swipeable.
             !(message?.extra?.swipeable === false) &&
             //User messages are not swipeable.
@@ -8752,6 +8754,40 @@ export function isMessageSwipeable(messageId, message = undefined) {
     { return true; }
     //The message is not swipeable.
     else { return false; }
+}
+
+/**
+ * Returns the message's behavior when swiped past it's last branch.
+ * This does not check if the message can currently be swiped. See isMessageSwipeable().
+ * This does not check if messages are generally swipeable. See isSwipingAllowed().
+ * This does not check if the swipes exist or are valid.
+ * @param {number} messageId The message Id to check.
+ * @param {ChatMessage} [message=undefined] If defined, this will be used instead of chat[messageId].
+ * @returns {OVERSWIPE_BEHAVIOR}
+ */
+export function overswipeBehavior(messageId, message = undefined) {
+    message ??= chat[messageId];
+
+    const isPristine = !chat_metadata?.tainted;
+    const isGreeting = messageId === 0;
+
+    //Do not override explicitly set overswipe_behavior.
+    if (typeof message?.extra?.overswipe_behavior == 'string') return message.extra.overswipe_behavior;
+    //Some messages, like the welcome screen, are not swipeable.
+    else if (message?.extra?.swipeable === false) return OVERSWIPE_BEHAVIOR.NONE;
+    //Small System messages can't be swiped.
+    else if (message?.extra?.isSmallSys) return OVERSWIPE_BEHAVIOR.NONE;
+    //The first message in a priistine chat will loop.
+    else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.LOOP;
+    //Non-user messages will regenerate.
+    else if (!message?.is_user) return OVERSWIPE_BEHAVIOR.REGENERATE;
+    //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
+    //If the chat_tree is enabled, more messages can be swiped.
+    else if (power_user?.enable_chat_tree == true) {
+        //User messages allow for an edit before triggering a new generation.
+        if (message?.is_user) return OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
+    }
+    else { return OVERSWIPE_BEHAVIOR.LOOP; }
 }
 
 /**
@@ -8788,10 +8824,17 @@ export function refreshSwipeButtons(updateCounters = false) {
         if (isMessageSwipeable(messageId, message)) {
             //If a right swipe would trigger a generation or loop to the first swipe.
             const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0 );
-            div.classList.toggle('last_swipe', isLastSwipe);
+            const hasSwipes = (message?.swipes?.length > 1);
+            const overswipe = overswipeBehavior(messageId, message);
+
+            //The swipe button will be shown if an overswipe would trigger a LOOP, REGENERATE or EDIT_GENERATE.
+            const isOverswipeable = (hasSwipes && overswipe == OVERSWIPE_BEHAVIOR.LOOP) ||
+                (isLastSwipe && overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) ||
+                (isLastSwipe && overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE);
+
+            div.classList.toggle('last_swipe', isOverswipeable);
 
             //If there's only one swipe, the left arrow should not be shown.
-            const hasSwipes = (message?.swipes?.length > 1);
             div.classList.toggle('swipes_visible', hasSwipes);
 
             //updateSwipeCounter does not need to be awaited, It can run a bit later.
@@ -9509,7 +9552,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
-    const isPristine = !chat_metadata?.tainted;
     const swipeDuration = Math.round(animation_duration * 1.25);
 
     //The offscreen messages may be visible if the user resizes the viewport during a swipe.
@@ -9970,8 +10012,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             return;
         }
 
-        //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting, or chatTree is enabled.
-        if (newSwipeId >= chat[mesId]['swipes'].length && ((chat.length !== 1 || !isPristine) || power_user.enable_chat_tree)) {
+        //If overswiping.
+        if (newSwipeId >= chat[mesId]['swipes'].length) {
             newSwipeId = chat[mesId]['swipes'].length;
 
             //Do not load a new swipe, instead generate a new mesage.
@@ -9979,21 +10021,23 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Update the swipe_id.
             chat[mesId]['swipe_id'] = newSwipeId;
 
-            //Cancel the generation if it's a user message or the first message in a pristine chat.
-            if (chat[mesId].is_user || (mesId === 0 && isPristine)) {
-                //Allow edits to user messages before generation. Else trigger a swipe generation.
-                if (power_user.enable_chat_tree) {
+            const overswipe = overswipeBehavior(mesId);
 
-                    await swipeGenerate();
-                    await endSwipe();
-                    return;
-                } else {
-                    //Cancel swipe.
-                    chat[mesId]['swipe_id'] = originalSwipeId;
-                    await endSwipe();
-                    return;
-                }
-            } else {
+            //Cancel the generation.
+            if (overswipe == OVERSWIPE_BEHAVIOR.NONE) {
+                //Cancel swipe.
+                chat[mesId]['swipe_id'] = originalSwipeId;
+                await endSwipe();
+                return;
+            }
+            //Allow edits to user messages before generation. Else trigger a swipe generation.
+            else if (overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE && power_user.enable_chat_tree) {
+                await swipeGenerate();
+                await endSwipe();
+                return;
+            }
+            //Regenerate the message
+            else if (overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) {
                 //Delete chat after mesId
                 await spliceStickToChat([], chat, mesId + 1);
                 let run_generate = true;
@@ -10002,10 +10046,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 await endSwipe();
                 return;
             }
-        }
-        else {
-            // if swipe_right is called on the last alternate greeting in pristine chats, loop back around
-            if (chat.length === 1 && newSwipeId !== undefined && newSwipeId === chat[0]['swipes'].length && isPristine) {
+            // Loop to the first swipe.
+            else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP) {
                 newSwipeId = 0;
             }
         }

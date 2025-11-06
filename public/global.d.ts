@@ -6,6 +6,7 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
+import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
 
 declare global {
     // Custom types
@@ -54,6 +55,7 @@ declare global {
         isSmallSys?: boolean;
         token_count?: number;
         swipeable?: boolean; //When false, the message cannot be swiped.
+        overswipe_behavior?: OVERSWIPE_BEHAVIOR;
         files?: FileAttachment[];
         inline_image?: boolean;
         media_display?: string;
