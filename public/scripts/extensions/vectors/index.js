@@ -61,6 +61,7 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    siliconflow_model: 'Qwen/Qwen3-Embedding-8B',
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
@@ -777,6 +778,9 @@ function getVectorsRequestBody(args = {}) {
         case 'openai':
             body.model = extension_settings.vectors.openai_model;
             break;
+        case 'siliconflow':
+            body.model = extension_settings.vectors.siliconflow_model;
+            break;
         case 'cohere':
             body.model = extension_settings.vectors.cohere_model;
             break;
@@ -889,6 +893,7 @@ async function insertVectorItems(collectionId, items) {
  */
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
@@ -1101,6 +1106,7 @@ function toggleSettings() {
     $('#vectors_world_info_settings').toggle(!!settings.enabled_world_info);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#siliconflow_vectorsModel').toggle(settings.source === 'siliconflow');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
@@ -1510,6 +1516,11 @@ jQuery(async () => {
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
         settings.openai_model = String($('#vectors_openai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_siliconflow_model').val(settings.siliconflow_model).on('change', () => {
+        settings.siliconflow_model = String($('#vectors_siliconflow_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

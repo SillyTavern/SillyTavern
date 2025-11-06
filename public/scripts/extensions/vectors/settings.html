@@ -21,6 +21,7 @@
                     <option value="nomicai">NomicAI</option>
                     <option value="ollama">Ollama</option>
                     <option value="openai">OpenAI</option>
+                    <option value="siliconflow">SiliconFlow</option>
                     <option value="togetherai">TogetherAI</option>
                     <option value="vllm">vLLM</option>
                     <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
@@ -91,6 +92,16 @@
                     <option value="text-embedding-ada-002">text-embedding-ada-002</option>
                     <option value="text-embedding-3-small">text-embedding-3-small</option>
                     <option value="text-embedding-3-large">text-embedding-3-large</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="siliconflow_vectorsModel">
+                <label for="vectors_siliconflow_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_siliconflow_model" class="text_pole">
+                    <option value="Qwen/Qwen3-Embedding-8B">Qwen/Qwen3-Embedding-8B</option>
+                    <option value="Qwen/Qwen3-Embedding-4B">Qwen/Qwen3-Embedding-4B</option>
+                    <option value="Qwen/Qwen3-Embedding-0.6B">Qwen/Qwen3-Embedding-0.6B</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="cohere_vectorsModel">

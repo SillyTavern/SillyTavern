@@ -169,6 +169,7 @@ export const CHAT_COMPLETION_SOURCES = {
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',
     MISTRALAI: 'mistralai',
+    SILICONFLOW: 'siliconflow',
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',

@@ -437,6 +437,7 @@ jQuery(async function () {
                     const chatCompletionApis = {
                         'openrouter': SECRET_KEYS.OPENROUTER,
                         'groq': SECRET_KEYS.GROQ,
+                        'siliconflow': SECRET_KEYS.SILICONFLOW,
                         'cohere': SECRET_KEYS.COHERE,
                         'aimlapi': SECRET_KEYS.AIMLAPI,
                         'moonshot': SECRET_KEYS.MOONSHOT,

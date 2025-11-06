@@ -12,6 +12,11 @@ const SOURCES = {
         url: 'api.mistral.ai',
         model: 'mistral-embed',
     },
+    'siliconflow': {
+        secretKey: SECRET_KEYS.SILICONFLOW,
+        url: 'api.siliconflow.cn',
+        model: 'Qwen/Qwen3-Embedding-8B',
+    },
     'openai': {
         secretKey: SECRET_KEYS.OPENAI,
         url: 'api.openai.com',

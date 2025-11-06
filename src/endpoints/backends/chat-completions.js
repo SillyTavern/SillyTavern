@@ -73,6 +73,7 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_SILICONFLOW = 'https://api.siliconflow.cn/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1400,6 +1401,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = new URL(request.body.reverse_proxy || API_SILICONFLOW).toString();
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
@@ -1784,6 +1789,23 @@ router.post('/generate', function (request, response) {
         if (getConfigValue('openai.randomizeUserId', false, 'boolean')) {
             bodyParams['user'] = uuidv4();
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = new URL(request.body.reverse_proxy || API_SILICONFLOW).toString();
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
+        bodyParams = {
+            logprobs: request.body.logprobs,
+            top_logprobs: undefined,
+        };
+
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true;
+        }
+
+        if (request.body.reasoning_effort) {
+            bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
+        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
@@ -1964,7 +1986,7 @@ router.post('/generate', function (request, response) {
     }
 
     // A few of OpenAIs reasoning models support reasoning effort
-    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI, CHAT_COMPLETION_SOURCES.SILICONFLOW].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }

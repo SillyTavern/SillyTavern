@@ -73,6 +73,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         }
 
+        if (request.body.api === 'siliconflow') {
+            key = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        }
+
         if (request.body.api === 'moonshot') {
             key = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
         }
@@ -175,6 +179,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'siliconflow') {
+            apiUrl = 'https://api.siliconflow.cn/v1/chat/completions';
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {

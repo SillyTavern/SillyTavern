@@ -175,6 +175,7 @@ export const chat_completion_sources = {
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',
     MISTRALAI: 'mistralai',
+    SILICONFLOW: 'siliconflow',
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
@@ -272,6 +273,7 @@ export const settingsToUpdate = {
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
+    siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
@@ -377,6 +379,7 @@ const default_settings = {
     vertexai_model: 'gemini-2.5-pro',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
+    siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
@@ -473,6 +476,7 @@ const oai_settings = {
     vertexai_model: 'gemini-2.5-pro',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
+    siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.1-70b-versatile',
@@ -1636,6 +1640,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.ai21_model;
         case chat_completion_sources.MISTRALAI:
             return oai_settings.mistralai_model;
+        case chat_completion_sources.SILICONFLOW:
+            return oai_settings.siliconflow_model;
         case chat_completion_sources.CUSTOM:
             return oai_settings.custom_model;
         case chat_completion_sources.COHERE:
@@ -1846,6 +1852,24 @@ function saveModelList(data) {
         }
 
         $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
+        $('#model_siliconflow_select').empty();
+        model_list.forEach((model) => {
+            $('#model_siliconflow_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.siliconflow_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.siliconflow_model)) {
+            oai_settings.siliconflow_model = model_list[0].id;
+        }
+
+        $('#model_siliconflow_select').val(oai_settings.siliconflow_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
@@ -2212,6 +2236,7 @@ function getReasoningEffort() {
     // These sources expect the effort as string.
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.SILICONFLOW,
         chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.XAI,
@@ -2288,6 +2313,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isVertexAI = oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isSiliconFlow = oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW;
     const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
     const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
     const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
@@ -2300,15 +2326,16 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
     const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
+    const isOpenAICompatible = isOAI || isAzureOpenAI || isSiliconFlow;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
+    const stream = oai_settings.stream_openai && !isQuiet && !((isOpenAICompatible) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOpenAICompatible || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2365,15 +2392,15 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, and Vertex AI
+    // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, Vertex AI, DeepSeek, and xAI
     if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
     }
 
-    // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    // Add logprobs request (max 5 on OpenAI-compatible backends)
+    if (useLogprobs && (isOAI || isAzureOpenAI || isSiliconFlow || isCustom || isDeepSeek || isXAI || isAimlapi)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -2502,6 +2529,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const seedSupportedSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.SILICONFLOW,
         chat_completion_sources.AZURE_OPENAI,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.MISTRALAI,
@@ -3641,6 +3669,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_middleout = settings.openrouter_middleout ?? default_settings.openrouter_middleout;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
+    oai_settings.siliconflow_model = settings.siliconflow_model ?? default_settings.siliconflow_model;
     oai_settings.cohere_model = settings.cohere_model ?? default_settings.cohere_model;
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.groq_model = settings.groq_model ?? default_settings.groq_model;
@@ -3740,6 +3769,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).prop('selected', true);
     $('#model_mistralai_select').val(oai_settings.mistralai_model);
     $(`#model_mistralai_select option[value="${oai_settings.mistralai_model}"`).prop('selected', true);
+    $('#model_siliconflow_select').val(oai_settings.siliconflow_model);
+    $(`#model_siliconflow_select option[value="${oai_settings.siliconflow_model}"`).prop('selected', true);
     $('#model_cohere_select').val(oai_settings.cohere_model);
     $(`#model_cohere_select option[value="${oai_settings.cohere_model}"`).prop('selected', true);
     $('#model_perplexity_select').val(oai_settings.perplexity_model);
@@ -3984,7 +4015,9 @@ async function getStatusOpen() {
         data.azure_api_version = oai_settings.azure_api_version;
     }
 
-    const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    const canBypass = (
+        [chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source) && oai_settings.bypass_status_check
+    ) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
         setOnlineStatus(t`Status check bypassed`);
     }
@@ -4047,6 +4080,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_middleout: settings.openrouter_middleout,
         ai21_model: settings.ai21_model,
         mistralai_model: settings.mistralai_model,
+        siliconflow_model: settings.siliconflow_model,
         cohere_model: settings.cohere_model,
         perplexity_model: settings.perplexity_model,
         groq_model: settings.groq_model,
@@ -4870,6 +4904,16 @@ async function onModelChange() {
         $('#model_mistralai_select').val(oai_settings.mistralai_model);
     }
 
+    if ($(this).is('#model_siliconflow_select')) {
+        if (!value) {
+            console.debug('Null SiliconFlow model selected. Ignoring.');
+            return;
+        }
+        console.log('SiliconFlow model changed to', value);
+        oai_settings.siliconflow_model = value;
+        $('#model_siliconflow_select').val(oai_settings.siliconflow_model);
+    }
+
     if ($(this).is('#model_cohere_select')) {
         console.log('Cohere model changed to', value);
         oai_settings.cohere_model = value;
@@ -5126,6 +5170,15 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         const maxContext = getGroqMaxContext(oai_settings.groq_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
+        const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_200k;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -5417,6 +5470,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
+        const api_key_siliconflow = String($('#api_key_siliconflow').val()).trim();
+
+        if (api_key_siliconflow.length) {
+            await writeSecret(SECRET_KEYS.SILICONFLOW, api_key_siliconflow);
+        }
+
+        if (!secret_state[SECRET_KEYS.SILICONFLOW] && !oai_settings.reverse_proxy) {
+            console.log('No secret key saved for SiliconFlow');
+            return;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         const api_key_custom = String($('#api_key_custom').val()).trim();
 
@@ -5615,6 +5681,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
         $('#model_mistralai_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
+        $('#model_siliconflow_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         $('#model_cohere_select').trigger('change');
@@ -6648,6 +6717,7 @@ export function initOpenAI() {
     $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
+    $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);

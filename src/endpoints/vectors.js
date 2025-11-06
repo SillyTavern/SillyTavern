@@ -23,6 +23,7 @@ const SOURCES = [
     'transformers',
     'mistral',
     'openai',
+    'siliconflow',
     'extras',
     'palm',
     'togetherai',
@@ -52,6 +53,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'togetherai':
         case 'mistral':
         case 'openai':
+        case 'siliconflow':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
             return getTransformersVector(text);
@@ -100,6 +102,7 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
             case 'togetherai':
             case 'mistral':
             case 'openai':
+            case 'siliconflow':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
@@ -153,6 +156,7 @@ function getSourceSettings(source, request) {
                 model: String(request.body.model),
             };
         case 'openai':
+        case 'siliconflow':
             return {
                 model: String(request.body.model),
             };

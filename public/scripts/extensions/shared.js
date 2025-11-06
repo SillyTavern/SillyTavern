@@ -168,6 +168,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Groq API key is not set.');
     }
 
+    if (multimodalApi === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW]) {
+        throw new Error('SiliconFlow API key is not set.');
+    }
+
     if (multimodalApi === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
         throw new Error('Google AI Studio API key is not set.');
     }
