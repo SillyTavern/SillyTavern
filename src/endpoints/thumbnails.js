@@ -9,6 +9,7 @@ import { Jimp, JimpMime } from '../jimp.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getConfigValue } from '../util.js';
+import { isFirefox } from '../express-common.js';
 
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
@@ -238,6 +239,11 @@ router.get('/', async function (request, response) {
         const contentType = mime.lookup(pathToCachedFile) || 'image/jpeg';
         const cachedFile = await fsPromises.readFile(pathToCachedFile);
         response.setHeader('Content-Type', contentType);
+
+        if (isFirefox(request) && contentType.startsWith('image/')) {
+            response.setHeader('Cache-Control', 'must-understand, no-store');
+        }
+
         return response.send(cachedFile);
     } catch (error) {
         console.error('Failed getting thumbnail', error);

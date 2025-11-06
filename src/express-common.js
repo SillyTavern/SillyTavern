@@ -40,3 +40,13 @@ export function getRealIpFromHeader(req) {
 
     return getIpFromRequest(req);
 }
+
+/**
+ * Checks if the request is coming from a Firefox browser.
+ * @param {import('express').Request} req
+ * @returns {boolean} True if the request is from Firefox, false otherwise.
+ */
+export function isFirefox(req) {
+    const userAgent = req.headers['user-agent'] || '';
+    return /firefox/i.test(userAgent);
+}

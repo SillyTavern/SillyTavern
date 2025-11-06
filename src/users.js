@@ -20,6 +20,7 @@ import { getConfigValue, color, delay, generateTimestamp } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
+import { isFirefox } from './express-common.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
@@ -955,9 +956,11 @@ function createRouteHandler(directoryFn) {
 
             // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control
             // Without this, firefox ignores updated images even on refresh.
-            const mimeType = mime.lookup(filePath);
-            if (mimeType && mimeType.startsWith('image/')) {
-                res.setHeader('Cache-Control', 'must-understand, no-store');
+            if (isFirefox(req)) {
+                const mimeType = mime.lookup(filePath);
+                if (mimeType && mimeType.startsWith('image/')) {
+                    res.setHeader('Cache-Control', 'must-understand, no-store');
+                }
             }
 
             return res.sendFile(filePath, { root: directory });
