@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import express from 'express';
 import { speak, languages } from 'google-translate-api-x';
 import crypto from 'node:crypto';
+import util from 'node:util';
 import urlJoin from 'url-join';
 import lodash from 'lodash';
 
@@ -469,7 +470,7 @@ router.post('/generate-image', async (request, response) => {
         if (!result.ok) {
             const errorText = await result.text();
             console.warn(`${apiName} image generation error: ${result.status} ${result.statusText}`, errorText);
-            return response.sendStatus(500);
+            return response.status(500).send('Image generation request failed');
         }
 
         /** @type {any} */
@@ -478,7 +479,7 @@ router.post('/generate-image', async (request, response) => {
 
         if (!imagePart) {
             console.warn(`${apiName} image generation error: No image data found in response`);
-            return response.sendStatus(500);
+            return response.status(500).send('No image data found in response');
         }
 
         return response.send({ image: imagePart });
@@ -524,7 +525,7 @@ router.post('/generate-video', async (request, response) => {
         if (!videoJobResponse.ok) {
             const errorText = await videoJobResponse.text();
             console.warn(`${apiName} video generation error: ${videoJobResponse.status} ${videoJobResponse.statusText}`, errorText);
-            return response.sendStatus(500);
+            return response.status(500).send('Video generation request failed');
         }
 
         /** @type {any} */
@@ -533,7 +534,7 @@ router.post('/generate-video', async (request, response) => {
 
         if (!videoJobName) {
             console.warn(`${apiName} video generation error: No job name found in response`);
-            return response.sendStatus(500);
+            return response.status(500).send('No video job name found in response');
         }
 
         console.debug(`${apiName} video job name:`, videoJobName);
@@ -553,7 +554,7 @@ router.post('/generate-video', async (request, response) => {
                 if (!pollResponse.ok) {
                     const errorText = await pollResponse.text();
                     console.warn(`${apiName} video job status error: ${pollResponse.status} ${pollResponse.statusText}`, errorText);
-                    return response.sendStatus(500);
+                    return response.status(500).send('Video job status request failed');
                 }
 
                 /** @type {any} */
@@ -564,8 +565,9 @@ router.post('/generate-video', async (request, response) => {
                 if (jobDone) {
                     const videoData = pollData?.response?.videos?.[0]?.bytesBase64Encoded;
                     if (!videoData) {
-                        console.warn(`${apiName} video generation error: No video data found in response`);
-                        return response.sendStatus(500);
+                        const pollDataLog = util.inspect(pollData, { depth: 5, colors: true, maxStringLength: 500 });
+                        console.warn(`${apiName} video generation error: No video data found in response`, pollDataLog);
+                        return response.status(500).send('No video data found in response');
                     }
 
                     return response.send({ video: videoData });
@@ -580,7 +582,7 @@ router.post('/generate-video', async (request, response) => {
                 if (!pollResponse.ok) {
                     const errorText = await pollResponse.text();
                     console.warn(`${apiName} video job status error: ${pollResponse.status} ${pollResponse.statusText}`, errorText);
-                    return response.sendStatus(500);
+                    return response.status(500).send('Video job status request failed');
                 }
 
                 /** @type {any} */
@@ -593,8 +595,9 @@ router.post('/generate-video', async (request, response) => {
                     console.debug(`${apiName} video URI:`, videoUri);
 
                     if (!videoUri) {
-                        console.warn(`${apiName} video generation error: No video URI found in response`);
-                        return response.sendStatus(500);
+                        const pollDataLog = util.inspect(pollData, { depth: 5, colors: true, maxStringLength: 500 });
+                        console.warn(`${apiName} video generation error: No video URI found in response`, pollDataLog);
+                        return response.status(500).send('No video URI found in response');
                     }
 
                     const videoResponse = await fetch(videoUri, {
@@ -604,7 +607,7 @@ router.post('/generate-video', async (request, response) => {
 
                     if (!videoResponse.ok) {
                         console.warn(`${apiName} video fetch error: ${videoResponse.status} ${videoResponse.statusText}`);
-                        return response.sendStatus(500);
+                        return response.status(500).send('Video fetch request failed');
                     }
 
                     const videoData = await videoResponse.arrayBuffer();
@@ -616,7 +619,7 @@ router.post('/generate-video', async (request, response) => {
         }
 
         console.warn(`${apiName} video generation error: Job timed out after multiple attempts`);
-        return response.sendStatus(500);
+        return response.status(500).send('Video generation timed out');
     } catch (error) {
         console.error('Google Video generation failed:', error);
         return response.sendStatus(500);
