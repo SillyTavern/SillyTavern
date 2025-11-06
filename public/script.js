@@ -8604,11 +8604,6 @@ export function overswipeBehavior(messageId, message = undefined) {
     else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.LOOP;
     //Non-user messages will regenerate.
     else if (!message?.is_user) return OVERSWIPE_BEHAVIOR.REGENERATE;
-    //If the chat_tree is enabled, more messages can be swiped.
-    else if (power_user?.enable_chat_tree == true) {
-        //User messages allow for an edit before triggering a new generation.
-        if (message?.is_user) return OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
-    }
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
     else { return OVERSWIPE_BEHAVIOR.LOOP; }
 }
