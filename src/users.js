@@ -952,6 +952,14 @@ function createRouteHandler(directoryFn) {
             if (!exists) {
                 return res.sendStatus(404);
             }
+
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control
+            // Without this, firefox ignores updated images even on refresh.
+            const mimeType = mime.lookup(filePath);
+            if (mimeType && mimeType.startsWith('image/')) {
+                res.setHeader('Cache-Control', 'must-understand, no-store');
+            }
+
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
             return res.sendStatus(500);
