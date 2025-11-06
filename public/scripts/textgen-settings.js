@@ -1696,17 +1696,19 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         }
     }
 
-    await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
-
     // Grammar conflicts with with json_schema
-    if (settings.type === LLAMACPP) {
-        if (params.json_schema && isObject(params.json_schema)) {
+    if ([LLAMACPP, APHRODITE].includes(settings.type)) {
+        if (settings.json_schema && isObject(settings.json_schema)) {
             delete params.grammar_string;
             delete params.grammar;
+            delete params.guided_grammar;
         } else {
             delete params.json_schema;
+            delete params.guided_json;
         }
     }
+
+    await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
 
     return params;
 }
