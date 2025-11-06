@@ -8590,7 +8590,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
  * @param {ChatMessage} [message=undefined] If defined, this will be used instead of chat[messageId].
  * @returns {OVERSWIPE_BEHAVIOR}
  */
-export function overswipeBehavior(messageId, message = undefined) {
+export function getOverswipeBehavior(messageId, message = undefined) {
     message ??= chat[messageId];
 
     const isPristine = !chat_metadata?.tainted;
@@ -8645,7 +8645,7 @@ export function refreshSwipeButtons(updateCounters = false) {
             //If a right swipe would trigger a generation or loop to the first swipe.
             const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0 );
             const hasSwipes = (message?.swipes?.length > 1);
-            const overswipe = overswipeBehavior(messageId, message);
+            const overswipe = getOverswipeBehavior(messageId, message);
 
             //The swipe button will be shown if an overswipe would trigger a LOOP, REGENERATE or EDIT_GENERATE.
             const isOverswipeable = (hasSwipes && overswipe == OVERSWIPE_BEHAVIOR.LOOP) ||
@@ -9724,7 +9724,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Update the swipe_id.
             chat[mesId]['swipe_id'] = newSwipeId;
 
-            const overswipe = overswipeBehavior(mesId);
+            const overswipe = getOverswipeBehavior(mesId);
 
             //Cancel the generation.
             if (overswipe == OVERSWIPE_BEHAVIOR.NONE) {
