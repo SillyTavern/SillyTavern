@@ -1306,8 +1306,8 @@ export function flattenSchema(schema, api) {
  * @param {import('express').Response} response
  */
 export function invalidateFirefoxCache(file, request, response) {
-    const mimeType = mime.lookup(file);
-    if (mimeType && isFirefox(request) && mimeType.startsWith('image/')) {
+    const mimeType = isFirefox(request) && mime.lookup(file);
+    if (mimeType && mimeType.startsWith('image/')) {
         response.setHeader('Cache-Control', 'must-understand, no-store');
     }
 }
