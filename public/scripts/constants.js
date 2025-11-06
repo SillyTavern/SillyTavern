@@ -109,6 +109,21 @@ export const SCROLL_BEHAVIOR = {
 };
 
 /**
+ * @enum {string}
+ * @readonly
+ */
+export const OVERSWIPE_BEHAVIOR = {
+    // The overswipe right chevron will not be displayed.
+    NONE: 'none',
+    //An overswipe will loop to the first swipe.
+    LOOP: 'loop',
+    //If chat tree is enabled, then an overswipe will allow the user to edit the message before starting a new generation.
+    EDIT_GENERATE: 'edit_generate',
+    //This is the default behavior on character messages.
+    REGENERATE: 'regenerate',
+};
+
+/**
  * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
  */
 export const SWIPE_DIRECTION = {

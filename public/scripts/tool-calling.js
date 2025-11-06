@@ -860,7 +860,6 @@ export class ToolManager {
             extra: {
                 isSmallSys: true,
                 tool_invocations: invocations,
-                swipeable: false,
             },
         };
         chat.push(message);
