@@ -3385,7 +3385,7 @@ class StreamingProcessor {
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
-            return swipe_right();
+            return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
 
         playMessageSound();
@@ -5109,7 +5109,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const isAborted = abortController && abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(getMessage)) {
             is_send_press = false;
-            return swipe_right();
+            return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
+
         }
 
         console.debug('/api/chats/save called by /Generate');
@@ -9301,7 +9302,7 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'back' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
@@ -9326,7 +9327,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK) {
+    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK || source === SWIPE_SOURCE.AUTO_SWIPE) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.
@@ -9497,6 +9498,9 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @returns {Promise<boolean|Function>} endSlide unfreezes the messages from xEnd.
      */
     async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
+        // If the animation_duration is zero, the 'animationend' promise will never resolve. Skip the animation.
+        if (animation_duration <= 0) return;
+
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
 
@@ -9753,7 +9757,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -9766,7 +9770,7 @@ export async function swipe_left(_event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
