@@ -7845,7 +7845,7 @@ async function branchChat() {
     mes['swipe_id'] = mes['swipes']?.length;
     //Delete chat after mesId
     await spliceStickToChat([], chat, mesId + 1);
-    await redisplayChat(chat, mesId);
+    await redisplayChat(chat, mesId + 1);
 
     await messageEditDone(div);
 
@@ -9459,7 +9459,7 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages including andd after index by removing them, then adding them.
+ * Visually updates all chat messages including and after index by removing them, then adding them.
  * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
  * @param {Number} index The last unchanged messageId.
  */
@@ -9597,11 +9597,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId );
+                await redisplayChat(chat, mesId);
             }
             else {
                 await Popup.show.confirm(
-                    t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
+                    t`ERROR: <code>loadMessageFromSwipe</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
                     t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
                     { okButton: 'OK', cancelButton: false },
                 );
@@ -9668,7 +9668,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             const lastMesId = Number(chatElement.children().last().attr('mesid'));
 
             await deleteMessages(mesId + 1, lastMesId); // This should happen after the swipe
-            await redisplayChat(chat, mesId);
+            await redisplayChat(chat, mesId + 1);
             //Swipe in starting from the opposite side.
             await animateSwipeTransition(mesId + 1, { xStart: `${-swipeRange}px`, xEnd: `${0}px`, duration: swipeDuration, classes:counterClass });
 
@@ -9740,8 +9740,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         delete chat[mesId].gen_finished;
 
         //Load from swipes.
-        if (syncSwipeToMes(mesId, newSwipeId) == false) {
-            let errorMessage = t`When swiping ${direction} on message ${mesId}, syncSwipeToMes has returned false. Attempting to swipe back!`;
+        if (loadMessageFromSwipe(chat[mesId], newSwipeId) == false) {
+            let errorMessage = t`When swiping ${direction} on message ${mesId}, loadMessageFromSwipe has returned false. Attempting to swipe back!`;
             toastr.error(errorMessage);
 
             chat[mesId].swipe_id = originalSwipeId;
@@ -9924,7 +9924,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         //Swap in updated messages.
         if (power_user.enable_chat_tree) {
-            await redisplayChat(chat, mesId);
+            await redisplayChat(chat, mesId + 1);
         }
 
         //Animate expanding to the new message height.
@@ -9959,7 +9959,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     if (source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
-        syncMesToSwipe(mesId);
+        writeMessageToSwipe(chat[mesId]);
 
         if (chat[mesId]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
             chat[mesId]['swipe_id'] = 0;                        // set it to id 0
