@@ -10,7 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
-import { MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
+import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -189,6 +189,7 @@ async function sendCaptionedMessage(caption, image, mimeType) {
         type: MEDIA_TYPE.getFromMime(mimeType) || MEDIA_TYPE.IMAGE,
         title: messageText,
         captioned: true,
+        source: MEDIA_SOURCE.CAPTIONED,
     };
     /** @type {ChatMessage} */
     const message = {
@@ -715,8 +716,8 @@ jQuery(async function () {
                 if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
                     continue;
                 }
-                // Skip already captioned images
-                if (mediaAttachment.captioned) {
+                // Skip already captioned images and non-uploaded (generated, etc.) images
+                if (mediaAttachment.source !== MEDIA_SOURCE.UPLOAD || mediaAttachment.captioned) {
                     continue;
                 }
                 await captionExistingMessage(message, mediaIndex);

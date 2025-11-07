@@ -70,6 +70,7 @@ declare global {
         url: string;
         title?: string;
         type: string;
+        source?: string;
     }
 
     interface ImageGenerationAttachmentProps {

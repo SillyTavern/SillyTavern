@@ -52,7 +52,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -4123,6 +4123,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         title: prompt,
         generation_type: generationType,
         negative: additionalNegativePrefix,
+        source: MEDIA_SOURCE.GENERATED,
     };
     /** @type {ChatMessage} */
     const message = {
@@ -4386,6 +4387,7 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const result = {
         url: '',
         type: MEDIA_TYPE.IMAGE,
+        source: MEDIA_SOURCE.GENERATED,
     };
 
     try {
