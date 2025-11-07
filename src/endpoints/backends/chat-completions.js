@@ -2278,4 +2278,43 @@ multimodalModels.post('/xai', async (req, res) => {
     }
 });
 
+multimodalModels.post('/siliconflow', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.SILICONFLOW);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch(`${API_SILICONFLOW}/models`, {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const list = Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data?.models)
+                ? data.models
+                : Array.isArray(data)
+                    ? data
+                    : [];
+
+        const models = list
+            .map(model => model?.id || model?.name || model?.model)
+            .filter(Boolean);
+
+        return res.json(models);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.use('/multimodal-models', multimodalModels);
