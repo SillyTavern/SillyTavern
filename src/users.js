@@ -16,7 +16,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -952,6 +952,8 @@ function createRouteHandler(directoryFn) {
             if (!exists) {
                 return res.sendStatus(404);
             }
+
+            invalidateFirefoxCache(filePath, req, res);
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
             return res.sendStatus(500);

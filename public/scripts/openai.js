@@ -1991,6 +1991,20 @@ function saveModelList(data) {
 
         $('#model_xai_select').val(oai_settings.xai_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
+        $('#model_moonshot_select').empty();
+        model_list.forEach((model) => {
+            $('#model_moonshot_select').append(new Option(model.id, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.moonshot_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.moonshot_model)) {
+            oai_settings.moonshot_model = model_list[0].id;
+        }
+
+        $('#model_moonshot_select').val(oai_settings.moonshot_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -4746,9 +4760,22 @@ function getZaiMaxContext(model, isUnlocked) {
     return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
 }
 
+/**
+ * Get the maximum context size for the Moonshot model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked If context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
 function getMoonshotMaxContext(model, isUnlocked) {
     if (isUnlocked) {
         return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const modelInfo = model_list.find((record) => record.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
     }
 
     const contextMap = {
@@ -4983,6 +5010,10 @@ async function onModelChange() {
     }
 
     if (value && $(this).is('#model_moonshot_select')) {
+        if (!value) {
+            console.debug('Null Moonshot model selected. Ignoring.');
+            return;
+        }
         console.log('Moonshot model changed to', value);
         oai_settings.moonshot_model = value;
     }
