@@ -42,42 +42,42 @@ export async function initSystemMessages() {
     /** @type {Record<string, ChatMessage>} */
     const result = {
         /** @type {ChatMessage} */
-        help: lodash.merge( structuredClone(defaultMessage), {
+        help: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('help'),
         }),
         /** @type {ChatMessage} */
-        slash_commands: lodash.merge( structuredClone(defaultMessage), {
+        slash_commands: lodash.merge(structuredClone(defaultMessage), {
             mes: '',
         }),
         /** @type {ChatMessage} */
-        hotkeys: lodash.merge( structuredClone(defaultMessage), {
+        hotkeys: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('hotkeys'),
         }),
         /** @type {ChatMessage} */
-        formatting: lodash.merge( structuredClone(defaultMessage), {
+        formatting: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('formatting'),
         }),
         /** @type {ChatMessage} */
-        macros: lodash.merge( structuredClone(defaultMessage), {
+        macros: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('macros'),
         }),
         /** @type {ChatMessage} */
-        welcome: lodash.merge( structuredClone(defaultMessage), {
+        welcome: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcome', { displayVersion }),
             extra: {
                 uses_system_ui: true,
             },
         }),
         /** @type {ChatMessage} */
-        empty: lodash.merge( structuredClone(defaultMessage), {
+        empty: lodash.merge(structuredClone(defaultMessage), {
             mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
         }),
         /** @type {ChatMessage} */
-        generic: lodash.merge( structuredClone(defaultMessage), {
+        generic: lodash.merge(structuredClone(defaultMessage), {
             mes: 'Generic system message. User `text` parameter to override the contents',
         }),
         /** @type {ChatMessage} */
-        welcome_prompt: lodash.merge( structuredClone(defaultMessage), {
+        welcome_prompt: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
                 uses_system_ui: true,
@@ -85,7 +85,7 @@ export async function initSystemMessages() {
             },
         }),
         /** @type {ChatMessage} */
-        assistant_note: lodash.merge( structuredClone(defaultMessage), {
+        assistant_note: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('assistantNote'),
             extra: {
                 uses_system_ui: true,

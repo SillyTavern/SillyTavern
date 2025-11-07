@@ -583,8 +583,10 @@ export let settings;
 export let amount_gen = 80; //default max length of AI generated responses
 export let max_context = 2048;
 
-let swipes = true; //User preference.
-export let swipesHidden = false; //Forcefully hide swipes.
+/** User preference for swipeable messages */
+let swipes = true;
+/** Forcefully hide swipes. */
+export let swipesHidden = false;
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
@@ -3405,7 +3407,7 @@ class StreamingProcessor {
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
-            return swipe_right();
+            return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
 
         playMessageSound();
@@ -5129,7 +5131,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const isAborted = abortController && abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(getMessage)) {
             is_send_press = false;
-            return swipe_right();
+            return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
+
         }
 
         console.debug('/api/chats/save called by /Generate');
@@ -8765,7 +8768,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
  * @param {ChatMessage} [message=undefined] If defined, this will be used instead of chat[messageId].
  * @returns {OVERSWIPE_BEHAVIOR}
  */
-export function overswipeBehavior(messageId, message = undefined) {
+export function getOverswipeBehavior(messageId, message = undefined) {
     message ??= chat[messageId];
 
     const isPristine = !chat_metadata?.tainted;
@@ -8779,8 +8782,8 @@ export function overswipeBehavior(messageId, message = undefined) {
     else if (message?.extra?.isSmallSys) return OVERSWIPE_BEHAVIOR.NONE;
     //The first message in a priistine chat will loop.
     else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.LOOP;
-    //Non-user messages will regenerate.
-    else if (!message?.is_user) return OVERSWIPE_BEHAVIOR.REGENERATE;
+    //Non-user and non-prompt hidden messages will regenerate.
+    else if (!message?.is_user && !message?.is_system) return OVERSWIPE_BEHAVIOR.REGENERATE;
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
     //If the chat_tree is enabled, more messages can be swiped.
     else if (power_user?.enable_chat_tree == true) {
@@ -8804,7 +8807,7 @@ export function refreshSwipeButtons(updateCounters = false) {
     if (!isSwipingAllowed()) {
         $('body').addClass('hideAllSwipeButtons');
         return;
-    //Don't hide all swipe buttons.
+        //Don't hide all swipe buttons.
     } else {
         //CSS will hide all messages.
         $('body').removeClass('hideAllSwipeButtons');
@@ -8823,9 +8826,9 @@ export function refreshSwipeButtons(updateCounters = false) {
         const message = chat[messageId];
         if (isMessageSwipeable(messageId, message)) {
             //If a right swipe would trigger a generation or loop to the first swipe.
-            const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0 );
+            const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0);
             const hasSwipes = (message?.swipes?.length > 1);
-            const overswipe = overswipeBehavior(messageId, message);
+            const overswipe = getOverswipeBehavior(messageId, message);
 
             //The swipe button will be shown if an overswipe would trigger a LOOP, REGENERATE or EDIT_GENERATE.
             const isOverswipeable = (hasSwipes && overswipe == OVERSWIPE_BEHAVIOR.LOOP) ||
@@ -8914,7 +8917,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
     let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
     //Animate swipe and swap dispayed message.
-    await swipe(null, direction,  { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+    await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
 
     await saveChatConditional();
 
@@ -9456,24 +9459,21 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages after index by removing them, then adding them.
- * @param {ChatMessage[]} chat All messages in chat after the index will be updated.
+ * Visually updates all chat messages including andd after index by removing them, then adding them.
+ * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
  * @param {Number} index The last unchanged messageId.
  */
 export async function redisplayChat(chat, index) {
 
     //Remove messages after index.
-    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').remove();
+    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').addBack().remove();
 
     //Skip to index, then add extra messages.
     for (let i = index + 1; i <= chat.length - 1; i++) {
-        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i } );
+        //addOneMessage will update last_mes.
+        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
     }
     refreshSwipeButtons();
-
-    //Update last_mes.
-    chatElement.children('.mes').removeClass('last_mes');
-    chatElement.children('.mes').last().addClass('last_mes');
 }
 
 /**
@@ -9494,7 +9494,7 @@ function formatSwipeCounter(current, total) {
  * @param {JQuery.Event} _event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'back' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
@@ -9511,7 +9511,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     //Only set messageIndex if message exists because -1 is truthy.
     if (message) {
         messageIndex = chat.indexOf(message);
-        if (messageIndex === -1 && typeof(forceMesId) != 'number') {
+        if (messageIndex === -1 && typeof (forceMesId) != 'number') {
             console.error(`The message must exist in chat. ${message};`);
             return;
         }
@@ -9519,7 +9519,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
     const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK) {
+    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK || source === SWIPE_SOURCE.AUTO_SWIPE) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.
@@ -9597,7 +9597,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId - 1);
+                await redisplayChat(chat, mesId );
             }
             else {
                 await Popup.show.confirm(
@@ -9608,7 +9608,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
                 await reloadCurrentChat();
             }
-        //Out of bounds swipes should not be saved.
+            //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             await saveChatConditional();
@@ -9789,14 +9789,17 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @param {boolean} [params.freeze=true] When true, do not remove the class from the animation, leaving it stuck at xEnd.
      * @returns {Promise<boolean|Function>} endSlide unfreezes the messages from xEnd.
      */
-    async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {} ) {
+    async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
+        // If the animation_duration is zero, the 'animationend' promise will never resolve. Skip the animation.
+        if (animation_duration <= 0) return;
+
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
 
         const messages = chatElement.children('.mes');
         const firstDisplayedMesId = Number(messages.first().attr('mesid'));
 
-        const swipedMessagesDiv  = messages.filter((index, div) => {
+        const swipedMessagesDiv = messages.filter((index, div) => {
             // const messageId = Number($(div).attr('mesid')); //Slower.
             //This assumes the messages are in order and their Id's are accurate.
             const divMessageId = firstDisplayedMesId + index;
@@ -9886,7 +9889,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
         if (!skipSwipeOut) {
             //Swipe out.
-            await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`,  duration: swipeDuration });
+            await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`, duration: swipeDuration });
         }
 
 
@@ -9938,7 +9941,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
 
         //Swipe in from the opposite side.
-        await animateSwipeTransition(mesId, { xStart:`${-swipeRange}px`, xEnd: `${0}px`,  duration: swipeDuration });
+        await animateSwipeTransition(mesId, { xStart: `${-swipeRange}px`, xEnd: `${0}px`, duration: swipeDuration });
     }
 
     if (mesId === Number(this_edit_mes_id)) {
@@ -10021,7 +10024,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Update the swipe_id.
             chat[mesId]['swipe_id'] = newSwipeId;
 
-            const overswipe = overswipeBehavior(mesId);
+            const overswipe = getOverswipeBehavior(mesId);
 
             //Cancel the generation.
             if (overswipe == OVERSWIPE_BEHAVIOR.NONE) {
@@ -10061,7 +10064,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
  * Handles the swipe to the left event.
  * @param {JQuery.Event} _event Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -10074,7 +10077,7 @@ export async function swipe_left(_event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {JQuery.Event} [_event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard' or 'delete'
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -11252,7 +11255,7 @@ jQuery(async function () {
 
         else if (id == 'option_regenerate') {
             //Attempting to regenerate a user message will instead generate a new message.
-            if ((chat.length - 1 == this_edit_mes_id) && chat[this_edit_mes_id]?.is_user == false) {
+            if (chat.length && chat.length - 1 === this_edit_mes_id && chat[this_edit_mes_id]?.is_user == false) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot regenerate the message you are editing.`);
                 return;
             }
@@ -11279,7 +11282,7 @@ jQuery(async function () {
                 toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
                 return;
             }
-            if (chat.length - 1 == this_edit_mes_id) {
+            if (chat.length && chat.length - 1 === this_edit_mes_id) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot continue the message you are editing.`);
                 return;
             }

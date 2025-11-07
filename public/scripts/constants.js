@@ -113,13 +113,13 @@ export const SCROLL_BEHAVIOR = {
  * @readonly
  */
 export const OVERSWIPE_BEHAVIOR = {
-    // The overswipe right chevron will not be displayed.
+    /** The overswipe right chevron will not be displayed. */
     NONE: 'none',
-    //An overswipe will loop to the first swipe.
+    /** An overswipe will loop to the first swipe. */
     LOOP: 'loop',
-    //If chat tree is enabled, then an overswipe will allow the user to edit the message before starting a new generation.
+    /** If chat tree is enabled, then an overswipe will allow the user to edit the message before starting a new generation. */
     EDIT_GENERATE: 'edit_generate',
-    //This is the default behavior on character messages.
+    /** This is the default behavior on character messages. */
     REGENERATE: 'regenerate',
 };
 
@@ -132,12 +132,13 @@ export const SWIPE_DIRECTION = {
 };
 
 /**
- * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back'}}
+ * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back', readonly AUTO_SWIPE: 'auto_swipe'}}
  */
 export const SWIPE_SOURCE = {
     DELETE: 'delete',
     KEYBOARD: 'keyboard',
     BACK: 'back',
+    AUTO_SWIPE: 'auto_swipe',
 };
 
 /**
