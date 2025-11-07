@@ -9469,7 +9469,7 @@ export async function redisplayChat(chat, index) {
     chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').addBack().remove();
 
     //Skip to index, then add extra messages.
-    for (let i = index + 1; i <= chat.length - 1; i++) {
+    for (let i = index; i <= chat.length - 1; i++) {
         //addOneMessage will update last_mes.
         addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
     }
