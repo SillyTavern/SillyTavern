@@ -135,8 +135,12 @@ async function captionExistingMessage(message, mediaIndex) {
 
     const mediaAttachment = message.extra.media[mediaIndex];
 
-    if (!mediaAttachment || !mediaAttachment.url || mediaAttachment.type === MEDIA_TYPE.VIDEO) {
+    if (!mediaAttachment || !mediaAttachment.url || mediaAttachment.type === MEDIA_TYPE.AUDIO) {
         return;
+    }
+
+    if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+        throw new Error('Captioning videos is not supported for the current source.');
     }
 
     const imageData = await fetch(mediaAttachment.url);
@@ -158,11 +162,12 @@ async function captionExistingMessage(message, mediaIndex) {
         message.extra.inline_image = false;
         message.mes = wrappedCaption;
         mediaAttachment.title = wrappedCaption;
-    }
-    else {
+        mediaAttachment.captioned = true;
+    } else {
         message.extra.inline_image = true;
         mediaAttachment.append_title = true;
         mediaAttachment.title = wrappedCaption;
+        mediaAttachment.captioned = true;
     }
 }
 
@@ -170,8 +175,10 @@ async function captionExistingMessage(message, mediaIndex) {
  * Sends a captioned message to the chat.
  * @param {string} caption Caption text
  * @param {string} image Image URL
+ * @param {string} mimeType Image MIME type
+ * @returns {Promise<void>}
  */
-async function sendCaptionedMessage(caption, image) {
+async function sendCaptionedMessage(caption, image, mimeType) {
     const messageText = await wrapCaptionTemplate(caption);
 
     const context = getContext();
@@ -179,8 +186,9 @@ async function sendCaptionedMessage(caption, image) {
     /** @type {MediaAttachment} */
     const mediaAttachment = {
         url: image,
-        type: MEDIA_TYPE.IMAGE,
+        type: MEDIA_TYPE.getFromMime(mimeType) || MEDIA_TYPE.IMAGE,
         title: messageText,
+        captioned: true,
     };
     /** @type {ChatMessage} */
     const message = {
@@ -351,6 +359,10 @@ async function onSelectImage(e, prompt, quiet) {
  */
 async function getCaptionForFile(file, prompt, quiet) {
     try {
+        if (file.type.startsWith('video/') && !isVideoCaptioningAvailable()) {
+            throw new Error('Video captioning is not available for the current source.');
+        }
+
         setSpinnerIcon();
         const context = getContext();
         const fileData = await getBase64Async(await ensureImageFormatSupported(file));
@@ -359,7 +371,7 @@ async function getCaptionForFile(file, prompt, quiet) {
         const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
         if (!quiet) {
             const imagePath = await saveBase64AsFile(base64Data, context.name2, '', extension);
-            await sendCaptionedMessage(caption, imagePath);
+            await sendCaptionedMessage(caption, imagePath, file.type);
         }
         return caption;
     }
@@ -399,8 +411,12 @@ async function captionCommandCallback(args, prompt) {
                     toastr.error('The specified message does not contain an image.');
                     return '';
                 }
-                if (mediaAttachment.type === MEDIA_TYPE.VIDEO) {
-                    toastr.error('The specified media is a video. Captioning videos is not supported.');
+                if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+                    toastr.error('The specified media is an audio file. Captioning audio files is not supported.');
+                    return '';
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+                    toastr.error('The specified media is a video. Captioning videos is not supported for the current source.');
                     return '';
                 }
                 const fetchResult = await fetch(mediaAttachment.url);
@@ -417,7 +433,7 @@ async function captionCommandCallback(args, prompt) {
     return new Promise(resolve => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
+        input.accept = 'image/*,video/*';
         input.onchange = async (e) => {
             const caption = await onSelectImage(e, prompt, quiet);
             resolve(caption);
@@ -425,6 +441,18 @@ async function captionCommandCallback(args, prompt) {
         input.oncancel = () => resolve('');
         input.click();
     });
+}
+
+/**
+ * Checks if video captioning is available for the current source.
+ * @returns {boolean} True if video captioning is supported for the current source.
+ */
+function isVideoCaptioningAvailable() {
+    if (extension_settings.caption.source !== 'multimodal') {
+        return false;
+    }
+
+    return ['google', 'vertexai'].includes(extension_settings.caption.multimodal_api);
 }
 
 jQuery(async function () {
@@ -515,13 +543,17 @@ jQuery(async function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = '<input id="img_file" type="file" hidden accept="image/*">';
+        const imgInput = document.createElement('input');
+        imgInput.type = 'file';
+        imgInput.id = 'img_file';
+        imgInput.accept = 'image/*,video/*';
+        imgInput.hidden = true;
+        imgInput.addEventListener('change', (e) => onSelectImage(e, '', false));
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
-        $(imgForm).append(inputHtml);
-        $(imgForm).hide();
+        imgForm.appendChild(imgInput);
+        imgForm.hidden = true;
         $('#form_sheld').append(imgForm);
-        $('#img_file').on('change', (e) => onSelectImage(e.originalEvent, '', false));
     }
     async function switchMultimodalBlocks() {
         await addRemoteEndpointModels();
@@ -668,13 +700,28 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
 
-    const onMessageEvent = async (messageId) => {
+    const onMessageEvent = async (/** @type {number} */ messageId) => {
         if (!extension_settings.caption.auto_mode) {
             return;
         }
 
         const message = getContext().chat[messageId];
-        await captionExistingMessage(message, 0);
+        if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
+            for (let mediaIndex = 0; mediaIndex < message.extra.media.length; mediaIndex++) {
+                const mediaAttachment = message.extra.media[mediaIndex];
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+                    continue;
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+                    continue;
+                }
+                // Skip already captioned images
+                if (mediaAttachment.captioned) {
+                    continue;
+                }
+                await captionExistingMessage(message, mediaIndex);
+            }
+        }
     };
 
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
@@ -683,21 +730,22 @@ jQuery(async function () {
     $(document).on('click', '.mes_img_caption', async function () {
         const animationClass = 'fa-fade';
         const messageBlock = $(this).closest('.mes');
-        const imageBlock = $(this).closest('.mes_img_container');
-        const messageImg = imageBlock.find('.mes_img');
-        if (messageImg.hasClass(animationClass)) return;
-        messageImg.addClass(animationClass);
+        const mediaContainer = $(this).closest('.mes_media_container');
+        const messageMedia = mediaContainer.find('.mes_img, .mes_video');
+        if (messageMedia.hasClass(animationClass)) return;
+        messageMedia.addClass(animationClass);
         try {
             const messageId = Number(messageBlock.attr('mesid'));
-            const imageIndex = Number(imageBlock.attr('data-index'));
+            const mediaIndex = Number(mediaContainer.attr('data-index'));
             const data = getContext().chat[messageId];
-            await captionExistingMessage(data, imageIndex);
+            await captionExistingMessage(data, mediaIndex);
             appendMediaToMessage(data, messageBlock, SCROLL_BEHAVIOR.KEEP);
             await saveChatConditional();
         } catch (e) {
             console.error('Message image recaption failed', e);
+            toastr.error(e.message || 'Unknown error', 'Failed to caption');
         } finally {
-            messageImg.removeClass(animationClass);
+            messageMedia.removeClass(animationClass);
         }
     });
 
