@@ -337,6 +337,7 @@ const defaultSettings = {
     // Google settings
     google_api: 'makersuite',
     google_enhance: true,
+    google_duration: 6,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -526,6 +527,7 @@ async function loadSettings() {
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
+    $('#sd_google_duration').val(extension_settings.sd.google_duration);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -2149,6 +2151,9 @@ async function loadNovelModels() {
 
 async function loadGoogleModels() {
     return [
+        'imagen-4.0-generate-001',
+        'imagen-4.0-ultra-generate-001',
+        'imagen-4.0-fast-generate-001',
         'imagen-4.0-generate-preview-06-06',
         'imagen-4.0-fast-generate-preview-06-06',
         'imagen-4.0-ultra-generate-preview-06-06',
@@ -2159,6 +2164,13 @@ async function loadGoogleModels() {
         'imagegeneration@006',
         'imagegeneration@005',
         'imagegeneration@002',
+        'veo-3.1-generate-preview',
+        'veo-3.1-fast-generate-preview',
+        'veo-3.0-generate-001',
+        'veo-3.0-fast-generate-001',
+        'veo-2.0-generate-001',
+        'veo-2.0-generate-exp',
+        'veo-2.0-generate-preview',
     ].map(name => ({ value: name, text: name }));
 }
 
@@ -3889,6 +3901,38 @@ async function generateFalaiImage(prompt, negativePrompt, signal) {
  * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
  */
 async function generateGoogleImage(prompt, negativePrompt, signal) {
+    const isVeo = /^veo-/.test(extension_settings.sd.model);
+
+    if (isVeo) {
+        const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
+        const maxPromptLength = 3000; // 1024 tokens approx.
+        const videoResult = await fetch('/api/google/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt.slice(0, maxPromptLength),
+                aspect_ratio: aspectRatio >= 1 ? '16:9' : '9:16',
+                seconds: extension_settings.sd.google_duration,
+                negative_prompt: negativePrompt,
+                model: extension_settings.sd.model,
+                api: extension_settings.sd.google_api || 'makersuite',
+                seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+                vertexai_auth_mode: oai_settings.vertexai_auth_mode,
+                vertexai_region: oai_settings.vertexai_region,
+                vertexai_express_project_id: oai_settings.vertexai_express_project_id,
+            }),
+        });
+
+        if (!videoResult.ok) {
+            const text = await videoResult.text();
+            throw new Error(text);
+        }
+
+        const data = await videoResult.json();
+        return { format: 'mp4', data: data.video };
+    }
+
     const result = await fetch('/api/google/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -4835,6 +4879,10 @@ jQuery(async () => {
     });
     $('#sd_google_enhance').on('input', function () {
         extension_settings.sd.google_enhance = $(this).prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#sd_google_duration').on('input', function () {
+        extension_settings.sd.google_duration = Number($(this).val());
         saveSettingsDebounced();
     });
     $('#sd_electronhub_quality').on('change', function () {
