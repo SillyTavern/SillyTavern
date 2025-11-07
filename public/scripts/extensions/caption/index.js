@@ -145,8 +145,8 @@ async function captionExistingMessage(message, mediaIndex) {
 
     const imageData = await fetch(mediaAttachment.url);
     const blob = await imageData.blob();
-    const type = imageData.headers.get('Content-Type');
-    const file = new File([blob], 'image.png', { type });
+    const fileName = mediaAttachment.url.split('/').pop().split('?')[0] || 'image.jpg';
+    const file = new File([blob], fileName, { type: blob.type });
     const caption = await getCaptionForFile(file, null, true);
 
     if (!caption) {
@@ -422,7 +422,8 @@ async function captionCommandCallback(args, prompt) {
                 }
                 const fetchResult = await fetch(mediaAttachment.url);
                 const blob = await fetchResult.blob();
-                const file = new File([blob], 'image.jpg', { type: blob.type });
+                const fileName = mediaAttachment.url.split('/').pop().split('?')[0] || 'image.jpg';
+                const file = new File([blob], fileName, { type: blob.type });
                 return await getCaptionForFile(file, prompt, quiet);
             } catch (error) {
                 toastr.error('Failed to get image from the message. Make sure the image is accessible.');
