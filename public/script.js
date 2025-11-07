@@ -9266,24 +9266,21 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages after index by removing them, then adding them.
- * @param {ChatMessage[]} chat All messages in chat after the index will be updated.
+ * Visually updates all chat messages including andd after index by removing them, then adding them.
+ * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
  * @param {Number} index The last unchanged messageId.
  */
 export async function redisplayChat(chat, index) {
 
     //Remove messages after index.
-    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').remove();
+    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').addBack().remove();
 
     //Skip to index, then add extra messages.
     for (let i = index + 1; i <= chat.length - 1; i++) {
+        //addOneMessage will update last_mes.
         addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
     }
     refreshSwipeButtons();
-
-    //Update last_mes.
-    chatElement.children('.mes').removeClass('last_mes');
-    chatElement.children('.mes').last().addClass('last_mes');
 }
 
 /**
@@ -9407,7 +9404,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId - 1);
+                await redisplayChat(chat, mesId );
             }
             else {
                 await Popup.show.confirm(
