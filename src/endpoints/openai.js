@@ -467,6 +467,12 @@ router.post('/generate-image', async (request, response) => {
 
 router.post('/generate-video', async (request, response) => {
     try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
         if (!key) {
@@ -505,8 +511,13 @@ router.post('/generate-video', async (request, response) => {
         }
 
         // Poll for video generation completion
-        for (let attempt = 0; attempt < 20; attempt++) {
-            await delay(5000 + attempt * 1000); // Exponential backoff
+        for (let attempt = 0; attempt < 30; attempt++) {
+            if (controller.signal.aborted) {
+                console.info('OpenAI video generation aborted by client');
+                return response.status(500).send('Video generation aborted by client');
+            }
+
+            await delay(5000 + attempt * 1000);
             console.debug(`Polling OpenAI video job ${videoJob.id}, attempt ${attempt + 1}`);
 
             const pollResponse = await fetch(`https://api.openai.com/v1/videos/${videoJob.id}`, {
