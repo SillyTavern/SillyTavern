@@ -191,7 +191,7 @@ const settings = {
     guidance_scale: 1,
     negative_prompt: '',
     grammar_string: '',
-    json_schema: {},
+    json_schema: null,
     banned_tokens: '',
     global_banned_tokens: '',
     send_banned_tokens: true,
@@ -1560,7 +1560,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'seed': settings.seed >= 0 ? settings.seed : undefined,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
-        'grammar_string': settings.grammar_string,
+        'grammar_string': settings.grammar_string || undefined,
         'json_schema': [TABBY, LLAMACPP].includes(settings.type) && settings.json_schema ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
@@ -1602,8 +1602,8 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'min_tokens': settings.min_length,
         'skip_special_tokens': settings.skip_special_tokens,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
-        'guided_grammar': settings.grammar_string,
-        'guided_json': settings.json_schema ? settings.json_schema : undefined,
+        'guided_grammar': settings.grammar_string || undefined,
+        'guided_json': settings.json_schema || undefined,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
         'dynatemp_min': dynatemp ? settings.min_temp : undefined,
@@ -1627,7 +1627,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
     }
 
     if (settings.type === KOBOLDCPP) {
-        params.grammar = settings.grammar_string;
+        params.grammar = settings.grammar_string || undefined;
         params.trim_stop = true;
     }
 
