@@ -2840,3 +2840,17 @@ export async function waitForClick(selectors, target = $(document)) {
         });
     });
 }
+
+/**
+ * Creates a promise that rejects after a specified delay.
+ * Used for Promise.race fallbacks.
+ * @param {number} ms The delay in milliseconds.
+ * @param {string?} [errorMessage='']
+ * @returns {Promise<never>} A promise that rejects.
+ */
+export function createTimeout(ms, errorMessage = '') {
+    errorMessage ??= `Operation timed out after ${ms}ms.`;
+    return new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), ms);
+    });
+}

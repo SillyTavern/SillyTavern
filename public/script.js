@@ -184,6 +184,7 @@ import {
     clamp,
     shakeElement,
     waitForClick,
+    createTimeout,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
@@ -9563,7 +9564,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     function getSwipeDuration(animation_duration) {
         let now = performance.now();
-        let resetTime = 2000;
+        let resetTime = 1000;
 
         //Reset the counter if the last swipe was more than two seconds ago.
         if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
@@ -9790,19 +9791,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     }
 
     /**
-     *  Helper function to convert animation to promise
-     * @param {HTMLElement} element
-     * @param {string} end
-     * @returns
-     */
-    function transitionPromise(element, end = 'animationend') {
-        return new Promise((resolve) => {
-            //Should this have an abortController.signal reject?
-            element.addEventListener(end, () => resolve(), { once: true });
-        });
-    }
-
-    /**
      * Animates a swipe for all messages >= mesId.
      * @param {number} mesId
      * @param {object} params
@@ -9815,8 +9803,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
         // If the animation_duration is zero, the 'animationend' promise will never resolve.
-        //Skip the animation if it's faster than 50ms.
-        if (animation_duration <= 50) return;
+        //Skip the animation if it's faster than 10ms.
+        if (duration <= 10) return;
 
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
@@ -9845,7 +9833,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
                 //The class must be removed to unfreze previous slides.
                 swipedElementsDiv.removeClass('slide');
-                //css starts the animation.
+                //CSS starts the animation.
                 void swipedElementsDiv[0].offsetWidth;
                 swipedElementsDiv.addClass('slide');
 
@@ -9858,8 +9846,13 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                     document.documentElement.style.setProperty('--slide-mes-duration', '');
                     return true;
                 };
-                //Wait for the animation's end.
-                await transitionPromise(swipedElementsDiv[0]);
+                //Wait for the animation's end. https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
+                const animation = swipedElementsDiv[0].getAnimations().filter((a) => a['animationName'] == 'slide')[0];
+                try {
+                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
+                } catch (error) {
+                    console.warn(error);
+                }
 
                 //If not frozen, end the slide now.
                 return freeze ? endSlide : endSlide();
