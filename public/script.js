@@ -9511,8 +9511,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
         // If the animation_duration is zero, the 'animationend' promise will never resolve.
-        //Skip the animation if it's faster than 10ms.
-        if (duration <= 10) return;
+        //Skip the animation if it's faster than 50ms.
+        if (duration <= 50) return;
 
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
