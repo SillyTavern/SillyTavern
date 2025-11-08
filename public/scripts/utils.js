@@ -100,7 +100,7 @@ export const navigation_option = {
  * @param {any} item The item to check.
  * @returns {boolean} True if the item is an object, false otherwise.
  */
-function isObject(item) {
+export function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
 

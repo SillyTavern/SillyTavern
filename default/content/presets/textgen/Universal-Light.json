@@ -44,7 +44,7 @@
     "guidance_scale": 1,
     "negative_prompt": "",
     "grammar_string": "",
-    "json_schema": {},
+    "json_schema": null,
     "banned_tokens": "",
     "sampler_priority": [
         "repetition_penalty",

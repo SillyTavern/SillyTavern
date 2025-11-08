@@ -58,7 +58,7 @@ import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { chatTree, setChatTree } from './chat-tree.js';
-import { MEDIA_DISPLAY, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
+import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -217,7 +217,14 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 if (!Array.isArray(message.extra.media)) {
                     message.extra.media = [];
                 }
-                message.extra.media.push({ url: imageUrl, type: mediaType, title: file.name });
+                /** @type {MediaAttachment} */
+                const mediaAttachment = {
+                    url: imageUrl,
+                    type: mediaType,
+                    title: file.name,
+                    source: MEDIA_SOURCE.UPLOAD,
+                };
+                message.extra.media.push(mediaAttachment);
                 message.extra.media_index = message.extra.media.length - 1;
                 message.extra.inline_image = true;
             } else {

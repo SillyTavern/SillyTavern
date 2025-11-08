@@ -84,6 +84,7 @@ declare global {
         url: string;
         title?: string;
         type: string;
+        source?: string;
     }
 
     interface ImageGenerationAttachmentProps {
@@ -92,7 +93,10 @@ declare global {
     }
 
     interface ImageCaptionAttachmentProps {
+        /** Append title to the message text in case of non-inline captions. */
         append_title?: boolean;
+        /** Marker for captioned images to prevent auto-caption from firing again. */
+        captioned?: boolean;
     }
 
     // Global namespace modules
