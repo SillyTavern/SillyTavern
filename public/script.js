@@ -9374,7 +9374,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         let now = performance.now();
         let resetTime = 1000;
 
-        //Reset the counter if the last swipe was more than two seconds ago.
+        //Reset the counter if the last swipe was more than a second ago.
         if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
         heldSwipes++;
         lastSwipeTime = now;
