@@ -794,7 +794,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                     return content.text;
                 }
                 // Could be extended with other non-text types
-                if (['image_url', 'video_url'].includes(content.type)) {
+                if (['image_url', 'video_url', 'audio_url'].includes(content.type)) {
                     const token = crypto.randomBytes(32).toString('base64');
                     contentTokens.set(token, content);
                     return token;
