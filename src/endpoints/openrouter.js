@@ -46,8 +46,19 @@ router.post('/models/multimodal', async (_req, res) => {
 
         /** @type {any} */
         const data = await response.json();
-        const models = data?.data || [];
-        const multimodalModels = models.filter(m =>  ['text+image->text+image', 'text+image->text'].includes(m?.architecture?.modality)).map(m => m.id);
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('OpenRouter API response was not an array');
+            return res.json([]);
+        }
+
+        const multimodalModels = data.data
+            .filter(m => Array.isArray(m?.architecture?.input_modalities))
+            .filter(m => m.architecture.input_modalities.includes('image'))
+            .filter(m => Array.isArray(m?.architecture?.output_modalities))
+            .filter(m => m.architecture.output_modalities.includes('text'))
+            .sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id))
+            .map(m => m.id);
 
         return res.json(multimodalModels);
     } catch (error) {
@@ -80,8 +91,11 @@ router.post('/models/embedding', async (_req, res) => {
         }
 
         const embeddingModels = data.data
+            .filter(m => Array.isArray(m?.architecture?.input_modalities))
+            .filter(m => m.architecture.input_modalities.includes('text'))
             .filter(m => Array.isArray(m?.architecture?.output_modalities))
-            .filter(m => m.architecture.output_modalities.includes('embeddings'));
+            .filter(m => m.architecture.output_modalities.includes('embeddings'))
+            .sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
         return res.json(embeddingModels);
     } catch (error) {
