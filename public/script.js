@@ -9444,7 +9444,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
-            await saveChatConditional();
+            saveChatDebounced();
         }
 
         //Allow for another swipe.
@@ -9557,7 +9557,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 //Wait for the animation's end. https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
                 const animation = swipedElementsDiv[0].getAnimations().filter((a) => a['animationName'] == 'slide')[0];
                 try {
-                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
+                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The ${duration}ms swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
                 } catch (error) {
                     console.warn(error);
                 }
