@@ -724,7 +724,7 @@ jQuery(async function () {
                 try {
                     await captionExistingMessage(message, mediaIndex);
                 } catch (e) {
-                    console.error('Auto-captioning failed for message ID', messageId, 'media index', mediaIndex, e);
+                    console.error(`Auto-captioning failed for message ID ${messageId}, media index ${mediaIndex}`, e);
                     continue;
                 }
             }
