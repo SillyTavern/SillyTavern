@@ -721,7 +721,12 @@ jQuery(async function () {
                 if (mediaAttachment.source !== MEDIA_SOURCE.UPLOAD || mediaAttachment.captioned) {
                     continue;
                 }
-                await captionExistingMessage(message, mediaIndex);
+                try {
+                    await captionExistingMessage(message, mediaIndex);
+                } catch (e) {
+                    console.error('Auto-captioning failed for message ID', messageId, 'media index', mediaIndex, e);
+                    continue;
+                }
             }
         }
     };
