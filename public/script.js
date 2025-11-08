@@ -9636,7 +9636,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
             //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
-            await saveChatConditional();
+            saveChatDebounced();
         }
 
         //Allow for another swipe.
@@ -9803,8 +9803,8 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      */
     async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
         // If the animation_duration is zero, the 'animationend' promise will never resolve.
-        //Skip the animation if it's faster than 10ms.
-        if (duration <= 10) return;
+        //Skip the animation if it's faster than 50ms.
+        if (duration <= 50) return;
 
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
@@ -9849,7 +9849,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                 //Wait for the animation's end. https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
                 const animation = swipedElementsDiv[0].getAnimations().filter((a) => a['animationName'] == 'slide')[0];
                 try {
-                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
+                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The ${duration}ms swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
                 } catch (error) {
                     console.warn(error);
                 }
