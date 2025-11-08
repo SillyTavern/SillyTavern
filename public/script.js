@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, SWIPE_DIRECTION } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -276,6 +276,8 @@ import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
+import { SimpleMutex } from './scripts/util/SimpleMutex.js';
+import { AudioPlayer } from './scripts/audio-player.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -313,6 +315,10 @@ export {
     getSystemMessageByType,
     event_types,
     eventSource,
+    /** @deprecated Use setCharacterSettingsOverrides instead. */
+    setCharacterSettingsOverrides as setScenarioOverride,
+    /** @deprecated Use appendMediaToMessage instead. */
+    appendMediaToMessage as appendImageToMessage,
 };
 
 /**
@@ -365,6 +371,7 @@ export const neutralCharacterName = 'Assistant';
 let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
+/** @type {ChatMessage[]} */
 export let chat = [];
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
 let chatSaveTimeout;
@@ -1405,30 +1412,45 @@ export async function printMessages() {
         addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
     }
 
-    // Scroll to bottom when all images are loaded
-    const images = document.querySelectorAll('#chat .mes img');
-    let imagesLoaded = 0;
+    chatElement.find('.mes').removeClass('last_mes');
+    chatElement.find('.mes').last().addClass('last_mes');
+    refreshSwipeButtons();
+    applyStylePins();
+    scrollChatToBottom();
+    delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
+}
 
-    for (let i = 0; i < images.length; i++) {
-        const image = images[i];
-        if (image instanceof HTMLImageElement) {
-            if (image.complete) {
+function scrollOnMediaLoad() {
+    const started = Date.now();
+    const media = chatElement.find('.mes_block img, .mes_block video, .mes_block audio').toArray();
+    let mediaLoaded = 0;
+
+    for (const currentElement of media) {
+        if (currentElement instanceof HTMLImageElement) {
+            if (currentElement.complete) {
                 incrementAndCheck();
             } else {
-                image.addEventListener('load', incrementAndCheck);
+                currentElement.addEventListener('load', incrementAndCheck);
+                currentElement.addEventListener('error', incrementAndCheck);
+            }
+        }
+        if (currentElement instanceof HTMLMediaElement) {
+            if (currentElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                incrementAndCheck();
+            } else {
+                currentElement.addEventListener('loadeddata', incrementAndCheck);
+                currentElement.addEventListener('error', incrementAndCheck);
             }
         }
     }
 
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons();
-    scrollChatToBottom();
-    applyStylePins();
-
     function incrementAndCheck() {
-        imagesLoaded++;
-        if (imagesLoaded === images.length) {
+        const MAX_DELAY = 1000; // 1 second
+        if ((Date.now() - started) > MAX_DELAY) {
+            return;
+        }
+        mediaLoaded++;
+        if (mediaLoaded === media.length) {
             scrollChatToBottom();
         }
     }
@@ -1559,9 +1581,8 @@ export async function reloadCurrentChat() {
 export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
-    if (this_edit_mes_id >= 0) return; // don't proceed if editing a message
 
-    let generateType;
+    let generateType = 'normal';
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
@@ -1580,7 +1601,7 @@ export async function sendTextareaMessage() {
         await newAssistantChat({ temporary: false });
     }
 
-    Generate(generateType);
+    return await Generate(generateType);
 }
 
 /**
@@ -1884,110 +1905,378 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
 }
 
 /**
- * Appends image or file to the message element.
- * @param {object} mes Message object
- * @param {JQuery<HTMLElement>} messageElement Message element
- * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
+ * Ensures that the message media properties are arrays, adding getters/setters for single media items.
+ * @param {ChatMessage} mes Message object
  */
-export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
-    // Add image to message
-    if (mes.extra?.image) {
-        const container = messageElement.find('.mes_img_container');
-        const chatHeight = chatElement.prop('scrollHeight');
-        const image = messageElement.find('.mes_img');
-        const text = messageElement.find('.mes_text');
-        const isInline = !!mes.extra?.inline_image;
-        const doAdjustScroll = () => {
-            if (!adjustScroll) {
-                return;
-            }
-            const scrollPosition = chatElement.scrollTop();
-            const newChatHeight = chatElement.prop('scrollHeight');
-            const diff = newChatHeight - chatHeight;
-            chatElement.scrollTop(scrollPosition + diff);
-        };
-        image.off('load').on('load', function () {
-            image.removeAttr('alt');
-            image.removeClass('error');
-            doAdjustScroll();
-        });
-        image.off('error').on('error', function () {
-            image.attr('alt', '');
-            image.addClass('error');
-            doAdjustScroll();
-        });
-        image.attr('src', mes.extra?.image);
-        image.attr('title', mes.extra?.title || mes.title || '');
-        container.addClass('img_extra');
-        image.toggleClass('img_inline', isInline);
-        text.toggleClass('displayNone', !isInline);
-
-        const imageSwipes = mes.extra.image_swipes;
-        if (Array.isArray(imageSwipes) && imageSwipes.length > 0) {
-            container.addClass('img_swipes');
-            const counter = container.find('.mes_img_swipe_counter');
-            const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
-            counter.text(`${currentImage}/${imageSwipes.length}`);
-
-            const swipeLeft = container.find('.mes_img_swipe_left');
-            swipeLeft.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
-            });
-
-            const swipeRight = container.find('.mes_img_swipe_right');
-            swipeRight.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
-            });
+export function ensureMessageMediaIsArray(mes) {
+    /**
+     * Determines if a property of an object is a plain property (not a getter/setter or non-enumerable).
+     * @param {object} obj Object to check
+     * @param {string} name Property name
+     * @returns {boolean} True if the property is a plain property, false otherwise
+     */
+    function isPlainObjectProperty(obj, name) {
+        const hasProperty = Object.hasOwn(obj, name);
+        if (hasProperty) {
+            const descriptor = Object.getOwnPropertyDescriptor(obj, name);
+            return descriptor && descriptor.enumerable && descriptor.configurable && descriptor.writable;
         }
-    } else {
-        const container = messageElement.find('.mes_img_container');
-        container.removeClass('img_extra img_swipes');
-        const text = messageElement.find('.mes_text');
-        text.removeClass('displayNone');
+        return false;
     }
 
-    // Add video to message
-    if (mes.extra?.video) {
-        const container = $('#message_video_template .mes_video_container').clone();
-        messageElement.find('.mes_video_container').remove();
-        messageElement.find('.mes_block').append(container);
-        const chatHeight = chatElement.prop('scrollHeight');
-        const video = container.find('.mes_video');
-        video.off('loadedmetadata').on('loadedmetadata', function () {
-            if (!adjustScroll) {
-                return;
-            }
-            const scrollPosition = chatElement.scrollTop();
-            const newChatHeight = chatElement.prop('scrollHeight');
-            const diff = newChatHeight - chatHeight;
-            chatElement.scrollTop(scrollPosition + diff);
+    /**
+     * Determines if a property of an object is a getter (not a plain property).
+     * @param {object} obj Object to check
+     * @param {string} name Property name
+     * @returns {boolean} True if the property is a getter, false otherwise
+     */
+    function isGetterObjectProperty(obj, name) {
+        const hasProperty = Object.hasOwn(obj, name);
+        if (hasProperty) {
+            const descriptor = Object.getOwnPropertyDescriptor(obj, name);
+            return descriptor && typeof descriptor.get === 'function';
+        }
+        return false;
+    }
+
+    /**
+     * Adds a plain property to an object that wraps around an array property.
+     * @param {object} obj Object to add property to
+     * @param {string} plainProperty Plain property name
+     * @param {string} arrayProperty Array property to back the plain property
+     * @param {(value: any) => boolean} [filterFn] Optional filter function to apply when getting/setting the plain property
+     * @param {(value: any) => any} [mapFn] Optional map function to apply when getting/setting the plain property
+     */
+    function addArrayAutoWrapper(obj, plainProperty, arrayProperty, filterFn = () => true, mapFn = (t) => t) {
+        // If the plain property is already a getter, do nothing.
+        const hasGetterProperty = isGetterObjectProperty(obj, plainProperty);
+        if (hasGetterProperty) {
+            return;
+        }
+
+        // Define the plain property as a getter/setter that wraps around the array property.
+        Object.defineProperty(obj, plainProperty, {
+            // Getting the plain property returns the first item in the array property, or undefined if the array is empty.
+            get: function () {
+                console.trace(`Attempting to GET an array-wrapped property '${plainProperty}'. Use the array property '${arrayProperty}' instead.`);
+                const array = Array.isArray(this[arrayProperty]) ? this[arrayProperty].filter(filterFn).map(mapFn) : [];
+                return array.length > 0 ? array[0] : void 0;
+            },
+            // Setting the plain property is not supported, as it would be ambiguous.
+            set: function () {
+                console.trace(`Attempting to SET an array-wrapped property '${plainProperty}'. Use the array property '${arrayProperty}' instead.`);
+            },
+            // Exclude the property from JSON serialization and from being listed in for...in loops.
+            enumerable: false,
+            // Make the property non-configurable to prevent deletion or redefinition.
+            configurable: false,
         });
-
-        video.attr('src', mes.extra?.video);
-    } else {
-        messageElement.find('.mes_video_container').remove();
     }
 
-    // Add file to message
-    if (mes.extra?.file) {
-        messageElement.find('.mes_file_container').remove();
-        const messageId = messageElement.attr('mesid');
-        const template = $('#message_file_template .mes_file_container').clone();
-        template.find('.mes_file_name').text(mes.extra.file.name);
-        template.find('.mes_file_size').text(humanFileSize(mes.extra.file.size));
-        template.find('.mes_file_download').attr('mesid', messageId);
-        template.find('.mes_file_delete').attr('mesid', messageId);
-        messageElement.find('.mes_block').append(template);
-    } else {
-        messageElement.find('.mes_file_container').remove();
+    /**
+     * Migrates image swipes from a single image property to an array.
+     * @param {ChatMessageExtra} obj
+     */
+    function migrateMediaToArray(obj) {
+        if (isPlainObjectProperty(obj, 'file')) {
+            if (!Array.isArray(obj.files)) {
+                obj.files = [];
+            }
+            const fileValue = obj.file;
+            delete obj.file;
+            if (fileValue) {
+                obj.files.push(fileValue);
+            }
+        }
+
+        if (Array.isArray(obj.image_swipes)) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            for (const swipe of obj.image_swipes) {
+                if (swipe && typeof swipe === 'string') {
+                    obj.media_display = MEDIA_DISPLAY.GALLERY;
+                    obj.media.push({ type: MEDIA_TYPE.IMAGE, url: swipe });
+                }
+            }
+            delete obj.image_swipes;
+        }
+
+        if (isPlainObjectProperty(obj, 'image')) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            const imageValue = obj.image;
+            delete obj.image;
+            if (imageValue && typeof imageValue === 'string') {
+                obj.media.push({ type: MEDIA_TYPE.IMAGE, url: imageValue });
+            }
+            if (obj.media_display === MEDIA_DISPLAY.GALLERY) {
+                const selectedIndex = obj.media.findIndex(t => t.url === imageValue);
+                if (selectedIndex > -1) {
+                    obj.media_index = selectedIndex;
+                }
+            }
+            obj.media = obj.media.filter((v, i, a) => i === a.findIndex(t => t.url === v.url));
+        }
+
+        if (isPlainObjectProperty(obj, 'video')) {
+            if (!Array.isArray(obj.media)) {
+                obj.media = [];
+            }
+            const videoValue = obj.video;
+            delete obj.video;
+            if (videoValue && typeof videoValue === 'string') {
+                obj.media.push({ type: MEDIA_TYPE.VIDEO, url: videoValue });
+            }
+        }
     }
+
+    if (!mes || !mes.extra || typeof mes.extra !== 'object') {
+        return;
+    }
+
+    migrateMediaToArray(mes.extra);
+    addArrayAutoWrapper(mes.extra, 'file', 'files');
+    addArrayAutoWrapper(mes.extra, 'image', 'media', (t) => t.type === MEDIA_TYPE.IMAGE, (t) => t.url);
+    addArrayAutoWrapper(mes.extra, 'video', 'media', (t) => t.type === MEDIA_TYPE.VIDEO, (t) => t.url);
 }
 
 /**
- * @deprecated Use appendMediaToMessage instead.
+ * Gets the media display setting for a message.
+ * @param {ChatMessage} mes Message object
+ * @returns {MEDIA_DISPLAY} Media display setting
  */
-export function appendImageToMessage(mes, messageElement) {
-    appendMediaToMessage(mes, messageElement);
+export function getMediaDisplay(mes) {
+    const value = mes?.extra?.media_display || power_user.media_display || MEDIA_DISPLAY.LIST;
+    return Object.values(MEDIA_DISPLAY).includes(value) ? value : MEDIA_DISPLAY.LIST;
+}
+
+/**
+ * Gets the media index for a message.
+ * @param {ChatMessage} mes Message object
+ * @returns {number} Media index
+ */
+export function getMediaIndex(mes) {
+    if (!Array.isArray(mes?.extra?.media)) {
+        return 0;
+    }
+    const value = mes.extra?.media_index;
+    if (isNaN(value) || value < 0 || value >= mes.extra.media.length) {
+        return 0;
+    }
+    return value;
+}
+
+/**
+ * Appends image or file to the message element.
+ * @param {ChatMessage} mes Message object
+ * @param {JQuery<HTMLElement>} messageElement Message element
+ * @param {string} [scrollBehavior] Scroll behavior when adjusting scroll position
+ */
+export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROLL_BEHAVIOR.ADJUST) {
+    ensureMessageMediaIsArray(mes);
+
+    const hasMedia = Array.isArray(mes?.extra?.media) && mes.extra.media.length > 0;
+    const hasFiles = Array.isArray(mes?.extra?.files) && mes.extra.files.length > 0;
+    const mediaDisplay = getMediaDisplay(mes);
+    const hideMessageText = hasMedia && mes?.extra?.inline_image === false;
+
+    const mediaBlocks = [];
+    const mediaPromises = [];
+
+    const chatHeight = (hasMedia || hasFiles) ? chatElement.prop('scrollHeight') : 0;
+    const scrollPosition = (hasMedia || hasFiles) ? chatElement.scrollTop() : 0;
+    const doAdjustScroll = () => {
+        if (!hasMedia && !hasFiles) {
+            return;
+        }
+        if (scrollBehavior === SCROLL_BEHAVIOR.NONE) {
+            return;
+        }
+        if (scrollBehavior === SCROLL_BEHAVIOR.KEEP) {
+            chatElement.scrollTop(scrollPosition);
+            return;
+        }
+        const newChatHeight = chatElement.prop('scrollHeight');
+        const diff = newChatHeight - chatHeight;
+        chatElement.scrollTop(scrollPosition + diff);
+    };
+
+    // Set media display attribute
+    messageElement.attr('data-media-display', mediaDisplay);
+    // Toggle text visibility
+    messageElement.find('.mes_text').toggleClass('displayNone', hideMessageText);
+
+    /**
+     * Appends a single image attachment to the message element.
+     * @param {MediaAttachment} attachment Image attachment object
+     * @param {number} index Index of the image attachment
+     * @returns {JQuery<HTMLElement>} The appended image container element
+     */
+    function appendImageAttachment(attachment, index) {
+        const template = $('#message_image_template .mes_img_container').clone();
+        template.attr('data-index', index);
+
+        const image = template.find('.mes_img');
+        image.attr('src', attachment.url);
+        image.attr('title', attachment.title || mes.extra.title || '');
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                image.removeAttr('alt');
+                image.removeClass('error');
+                resolve();
+            }
+            function onError() {
+                image.attr('alt', '');
+                image.addClass('error');
+                resolve();
+            }
+            if (image.prop('complete')) {
+                onLoad();
+            } else {
+                image.off('load').on('load', onLoad);
+                image.off('error').on('error', onError);
+            }
+        }));
+
+        mediaBlocks.push(template);
+        return template;
+    }
+
+    /**
+     * Appends a single video attachment to the message element.
+     * @param {MediaAttachment} attachment Video attachment object
+     * @param {number} index Index of the video attachment
+     * @returns {JQuery<HTMLElement>} The appended video container element
+     */
+    function appendVideoAttachment(attachment, index) {
+        const template = $('#message_video_template .mes_video_container').clone();
+        template.attr('data-index', index);
+
+        const video = template.find('.mes_video');
+        video.attr('src', attachment.url);
+        video.attr('title', attachment.title || mes.extra.title || '');
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                resolve();
+            }
+            function onError() {
+                video.addClass('error');
+                resolve();
+            }
+            if (video.prop('readyState') >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                onLoad();
+            } else {
+                video.off('loadeddata').on('loadeddata', onLoad);
+                video.off('error').on('error', onError);
+            }
+        }));
+
+        mediaBlocks.push(template);
+        return template;
+    }
+
+    /**
+     * Appends a single audio attachment to the message element.
+     * @param {MediaAttachment} attachment Audio attachment object
+     * @param {number} index Index of the audio attachment
+     * @returns {JQuery<HTMLElement>} The appended audio container element
+     */
+    function appendAudioAttachment(attachment, index) {
+        const template = $('#message_audio_template .mes_audio_container').clone();
+        template.attr('data-index', index);
+        const audio = template.find('.mes_audio');
+        audio.attr('src', attachment.url);
+        audio.attr('title', attachment.title || mes.extra.title || '');
+
+        mediaPromises.push(new Promise((resolve) => {
+            function onLoad() {
+                resolve();
+            }
+            function onError() {
+                audio.addClass('error');
+                resolve();
+            }
+            if (audio.prop('readyState') >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                onLoad();
+            } else {
+                audio.off('loadeddata').on('loadeddata', onLoad);
+                audio.off('error').on('error', onError);
+            }
+        }));
+
+        new AudioPlayer(audio.get(0), template.get(0));
+
+        mediaBlocks.push(template);
+        return template;
+    }
+
+    /**
+     * Appends a media attachment to the message element.
+     * @param {MediaAttachment} attachment Media attachment object
+     * @param {number} index Index of the media attachment
+     * @returns {JQuery<HTMLElement>} The appended media container element
+     */
+    function appendMediaAttachment(attachment, index) {
+        if (!attachment.type) {
+            attachment.type = MEDIA_TYPE.IMAGE;
+        }
+        switch (attachment.type) {
+            case MEDIA_TYPE.IMAGE:
+                return appendImageAttachment(attachment, index);
+            case MEDIA_TYPE.VIDEO:
+                return appendVideoAttachment(attachment, index);
+            case MEDIA_TYPE.AUDIO:
+                return appendAudioAttachment(attachment, index);
+        }
+
+        console.warn(`Unknown media type: ${attachment.type}, defaulting to image.`, attachment);
+        return appendImageAttachment(attachment, index);
+    }
+
+    // Add media gallery to message
+    if (hasMedia && mediaDisplay === MEDIA_DISPLAY.GALLERY) {
+        const mediaIndex = getMediaIndex(mes);
+        const selectedMedia = mes.extra.media[mediaIndex];
+
+        const galleryControls = $('#message_gallery_controls .mes_img_swipes').clone();
+        const counter = galleryControls.find('.mes_img_swipe_counter');
+        counter.text(`${mediaIndex + 1}/${mes.extra.media.length}`);
+
+        const template = appendMediaAttachment(selectedMedia, mediaIndex);
+        template.addClass('img_swipes');
+        template.append(galleryControls);
+    }
+
+    // Add media as a list to message
+    if (hasMedia && mediaDisplay === MEDIA_DISPLAY.LIST) {
+        for (let index = 0; index < mes.extra.media.length; index++) {
+            const attachment = mes.extra.media[index];
+            appendMediaAttachment(attachment, index);
+        }
+    }
+
+    // Remove existing file containers
+    messageElement.find('.mes_file_wrapper').empty();
+
+    // Add files to message
+    if (hasFiles) {
+        for (let index = 0; index < mes.extra.files.length; index++) {
+            const file = mes.extra.files[index];
+            const template = $('#message_file_template .mes_file_container').clone();
+            template.attr('data-index', index);
+            template.find('.mes_file_name').text(file.name).attr('title', file.name);
+            template.find('.mes_file_size').text(humanFileSize(file.size)).attr('title', file.size);
+            messageElement.find('.mes_file_wrapper').append(template);
+        }
+    }
+
+    // TODO: Consider making this awaitable
+    Promise.race([Promise.all(mediaPromises), delay(debounce_timeout.short)]).then(() => {
+        messageElement.find('.mes_media_wrapper').empty().append(mediaBlocks);
+        doAdjustScroll();
+    });
 }
 
 export function addCopyToCodeBlocks(messageElement) {
@@ -2012,7 +2301,7 @@ export function addCopyToCodeBlocks(messageElement) {
 
 /**
  * Adds a single message to the chat.
- * @param {object} mes Message object
+ * @param {ChatMessage} mes Message object
  * @param {object} [options] Options
  * @param {string} [options.type='normal'] Message type
  * @param {number} [options.insertAfter=null] Message ID to insert the new message after
@@ -2064,8 +2353,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         avatarImg = mes['force_avatar'];
     }
 
-    // if mes.uses_system_ui is true, set an override on the sanitizer options
-    const sanitizerOverrides = mes.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
+    const sanitizerOverrides = mes.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
 
     messageText = messageFormatting(
         messageText,
@@ -2149,7 +2438,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         updateReasoningUI(swipeMessage);
-        appendMediaToMessage(mes, swipeMessage);
+        appendMediaToMessage(mes, swipeMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
         if (power_user.timestamp_model_icon && params.extra?.api) {
             insertSVGIcon(swipeMessage, params.extra);
         }
@@ -2164,7 +2453,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     } else {
         const messageId = forceId ?? chat.length - 1;
         chatElement.find(`[mesid="${messageId}"] .mes_text`).append(messageText);
-        appendMediaToMessage(mes, newMessage);
+        appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
         showSwipes && hideSwipeButtons();
     }
 
@@ -2189,6 +2478,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+    updateEditArrowClasses();
 }
 
 /**
@@ -2213,8 +2503,8 @@ export function formatCharacterAvatar(characterAvatar) {
 
 /**
  * Formats the title for the generation timer.
- * @param {Date} gen_started Date when generation was started
- * @param {Date} gen_finished Date when generation was finished
+ * @param {MessageTimestamp} gen_started Date when generation was started
+ * @param {MessageTimestamp} gen_finished Date when generation was finished
  * @param {number} tokenCount Number of tokens generated (0 if not available)
  * @param {number?} [reasoningDuration=null] Reasoning duration (null if no reasoning was done)
  * @param {number?} [timeToFirstToken=null] Time to first token
@@ -2757,11 +3047,14 @@ export function getCharacterCardFields({ chid = null } = {}) {
     }
 
     const scenarioText = chat_metadata['scenario'] || character.scenario || '';
+    const exampleDialog = chat_metadata['mes_example'] || character.mes_example || '';
+    const systemPrompt = chat_metadata['system_prompt'] || character.data?.system_prompt || '';
+
     result.description = baseChatReplace(character.description?.trim(), name1, name2);
     result.personality = baseChatReplace(character.personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-    result.mesExamples = baseChatReplace(character.mes_example?.trim(), name1, name2);
-    result.system = power_user.prefer_character_prompt ? baseChatReplace(character.data?.system_prompt?.trim(), name1, name2) : '';
+    result.mesExamples = baseChatReplace(exampleDialog.trim(), name1, name2);
+    result.system = power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), name1, name2) : '';
     result.version = character.data?.character_version ?? '';
     result.charDepthPrompt = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2);
@@ -2867,8 +3160,8 @@ class StreamingProcessor {
         this.reasoningHandler = new ReasoningHandler(timeStarted);
         /** @type {PromptReasoning} */
         this.promptReasoning = promptReasoning;
-        /** @type {string} */
-        this.image = '';
+        /** @type {string[]} */
+        this.images = [];
     }
 
     /**
@@ -3054,8 +3347,8 @@ class StreamingProcessor {
             chat[messageId].swipe_info.push(...swipeInfoArray);
         }
 
-        if (this.image) {
-            await processImageAttachment(chat[messageId], { imageUrl: this.image });
+        if (Array.isArray(this.images) && this.images.length > 0) {
+            await processImageAttachment(chat[messageId], { imageUrls: this.images });
             appendMediaToMessage(chat[messageId], $(this.messageDom));
         }
 
@@ -3153,7 +3446,7 @@ class StreamingProcessor {
                 }
                 // Get the updated reasoning string into the handler
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
-                this.image = state?.image ?? '';
+                this.images = state?.images ?? [];
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
@@ -3654,7 +3947,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const prevStarted = chat[chat.length - 1]['gen_started'];
 
         if (prevFinished && prevStarted) {
-            const timePassed = prevFinished - prevStarted;
+            const timePassed = Number(prevFinished) - Number(prevStarted);
             generation_started = new Date(Date.now() - timePassed);
             chat[chat.length - 1]['gen_started'] = generation_started;
         }
@@ -3734,7 +4027,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         coreChat.pop();
     }
 
-    coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
+    coreChat = await Promise.all(coreChat.map(async (/** @type {ChatMessage} */ chatItem, index) => {
         let message = chatItem.mes;
         let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
         let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
@@ -3742,8 +4035,19 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
 
+        const titles = [];
         if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
-            regexedMessage = `${regexedMessage}\n\n${chatItem.extra.title}`;
+            titles.push(chatItem.extra.title);
+        }
+        if (Array.isArray(chatItem?.extra?.media)) {
+            for (const mediaItem of chatItem.extra.media) {
+                if (mediaItem?.title && mediaItem?.append_title) {
+                    titles.push(mediaItem.title);
+                }
+            }
+        }
+        if (titles.length > 0) {
+            regexedMessage = `${regexedMessage}\n\n${titles.join('\n\n')}`;
         }
 
         return {
@@ -4704,7 +5008,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let getMessage = extractMessageFromData(data);
         let title = extractTitleFromData(data);
         let reasoning = extractReasoningFromData(data);
-        let imageUrl = extractImageFromData(data);
+        let imageUrls = extractImagesFromData(data);
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
@@ -4748,10 +5052,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrl }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls }));
             }
             else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrl }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -5375,23 +5679,23 @@ function extractTitleFromData(data) {
  * @param {object} [options] Extraction options
  * @param {string} [options.mainApi] Main API to use
  * @param {string} [options.chatCompletionSource] Chat completion source
- * @returns {string} Extracted image
+ * @returns {string[]} Extracted images or empty array
  */
-function extractImageFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+function extractImagesFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
     switch (mainApi ?? main_api) {
         case 'openai': {
             switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE: {
-                    const inlineData = data?.responseContent?.parts?.find(x => x.inlineData)?.inlineData;
-                    if (inlineData) {
-                        return `data:${inlineData.mimeType};base64,${inlineData.data}`;
+                    const inlineData = data?.responseContent?.parts?.filter(x => x.inlineData)?.map(x => x.inlineData);
+                    if (Array.isArray(inlineData) && inlineData.length > 0) {
+                        return inlineData.map(x => `data:${x.mimeType};base64,${x.data}`).filter(isDataURL);
                     }
                 } break;
                 case chat_completion_sources.OPENROUTER: {
-                    const imageUrl = data?.choices[0]?.message?.images?.find(x => x.type === 'image_url')?.image_url?.url;
-                    if (isDataURL(imageUrl)) {
-                        return imageUrl;
+                    const imageUrl = data?.choices[0]?.message?.images?.filter(x => x.type === 'image_url')?.map(x => x?.image_url?.url);
+                    if (Array.isArray(imageUrl) && imageUrl.length > 0) {
+                        return imageUrl.filter(isDataURL);
                     }
                     // TODO: Handle remote URLs
                 }
@@ -5399,7 +5703,7 @@ function extractImageFromData(data, { mainApi = null, chatCompletionSource = nul
         } break;
     }
 
-    return undefined;
+    return [];
 }
 
 /**
@@ -5746,22 +6050,28 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
  * Adds an image to the message.
  * @param {object} message Message object
  * @param {object} sources Image sources
- * @param {string} [sources.imageUrl] Image URL
+ * @param {string[]} [sources.imageUrls] Image URLs
  *
  * @returns {Promise<void>}
  */
-async function processImageAttachment(message, { imageUrl }) {
-    if (!imageUrl) {
+async function processImageAttachment(message, { imageUrls }) {
+    if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
         return;
     }
 
-    let url = imageUrl;
-    if (isDataURL(url)) {
-        const fileName = `inline_image_${Date.now().toString()}`;
-        const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(imageUrl).slice(1);
-        url = await saveBase64AsFile(base64, message.name, fileName, mime.split('/')[1]);
+    for (const [index, imageUrl] of imageUrls.entries()) {
+        if (!imageUrl) {
+            continue;
+        }
+
+        let url = imageUrl;
+        if (isDataURL(url)) {
+            const fileName = `inline_image_${Date.now().toString()}_${index}`;
+            const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(imageUrl).slice(1);
+            url = await saveBase64AsFile(base64, message.name, fileName, mime.split('/')[1]);
+        }
+        saveImageToMessage({ image: url, inline: true }, message);
     }
-    saveImageToMessage({ image: url, inline: true }, message);
 }
 
 /**
@@ -5776,17 +6086,17 @@ async function processImageAttachment(message, { imageUrl }) {
  * @property {string} [title] Message tooltip
  * @property {string[]} [swipes] Extra swipes
  * @property {string} [reasoning] Message reasoning
- * @property {string} [imageUrl] Link to an image
+ * @property {string[]} [imageUrls] Links to images
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrl = '' }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [] }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
-        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl] = arguments;
+        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls] = arguments;
     }
 
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
@@ -5822,7 +6132,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-            await processImageAttachment(chat[chat.length - 1], { imageUrl });
+            await processImageAttachment(chat[chat.length - 1], { imageUrls });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
                 chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -5846,7 +6156,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-        await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        await processImageAttachment(chat[chat.length - 1], { imageUrls });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -5866,7 +6176,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
-        await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        await processImageAttachment(chat[chat.length - 1], { imageUrls });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -5912,7 +6222,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['gen_id'] = group_generation_id;
         }
 
-        await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        await processImageAttachment(chat[chat.length - 1], { imageUrls });
         const chat_id = (chat.length - 1);
 
         !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
@@ -5998,7 +6308,8 @@ export function syncMesToSwipe(messageId = null) {
         return false;
     }
     // If the swipe is not present yet, exit out (will likely be copied later)
-    if (!targetMessage.swipes[targetMessage.swipe_id] || !targetMessage.swipe_info[targetMessage.swipe_id]) {
+    // "" is falsy. An empty string is a valid message.
+    if (typeof targetMessage.swipes[targetMessage.swipe_id] !== 'string' || !targetMessage.swipe_info[targetMessage.swipe_id]) {
         return false;
     }
 
@@ -6055,8 +6366,18 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
     // If swipes structure is invalid, exit out
-    if (!Array.isArray(targetMessage.swipe_info) || !Array.isArray(targetMessage.swipes)) {
+    if (!Array.isArray(targetMessage.swipes)) {
         return false;
+    }
+
+    // Backfill swipe_info if missing.
+    if (!Array.isArray(targetMessage.swipe_info)) {
+        targetMessage.swipe_info = targetMessage.swipes.map(_ => ({
+            send_date: targetMessage.send_date,
+            gen_started: void 0,
+            gen_finished: void 0,
+            extra: {},
+        }));
     }
 
     const targetSwipeId = targetMessage.swipe_id;
@@ -6065,7 +6386,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
         return false;
     }
 
-    const targetSwipeInfo = targetMessage?.swipe_info[targetSwipeId];
+    const targetSwipeInfo = targetMessage?.swipe_info?.[targetSwipeId];
     if (typeof targetSwipeInfo !== 'object') {
         console.warn(`[syncSwipeToMes] Invalid swipe info: ${targetSwipeId}`);
     }
@@ -6082,7 +6403,7 @@ export function syncSwipeToMes(messageId = null, swipeId = null) {
 /**
  * Saves the image to the message object.
  * @param {ParsedImage} img Image object
- * @param {object} mes Chat message object
+ * @param {ChatMessage} mes Chat message object
  * @typedef {{ image?: string, title?: string, inline?: boolean }} ParsedImage
  */
 function saveImageToMessage(img, mes) {
@@ -6090,8 +6411,10 @@ function saveImageToMessage(img, mes) {
         if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
-        mes.extra.image = img.image;
-        mes.extra.title = img.title;
+        if (!Array.isArray(mes.extra.media)) {
+            mes.extra.media = [];
+        }
+        mes.extra.media.push({ url: img.image, type: MEDIA_TYPE.IMAGE, title: img.title, source: MEDIA_SOURCE.API });
         mes.extra.inline_image = img.inline;
     }
 }
@@ -6717,6 +7040,7 @@ export async function getChat() {
             chat_metadata = chat[0]['chat_metadata'] ?? {};
 
             chat.shift();
+            chat.forEach(ensureMessageMediaIsArray);
         } else {
             chat_create_date = humanizedDateTime();
         }
@@ -7389,6 +7713,55 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     showSwipeButtons();
 }
 
+/**
+ * Swaps chat[sourceId] with chat[targetId]. They must be adjacent.
+ * @param {number} sourceId Index of the message to move
+ * @param {number} targetId Index of the target message
+ * @returns {Promise<boolean>} True if the messages were moved, false otherwise
+ */
+async function messageEditMove(sourceId, targetId) {
+    if (is_send_press) {
+        console.warn(`The message #${sourceId} was not moved to #${targetId} because a generation is in progress.`);
+        return false;
+    }
+
+    if (Math.abs(sourceId - targetId) !== 1) {
+        console.error(`Message #${sourceId} and #${targetId} are not adjacent.`);
+        return false;
+    }
+
+    const targetMessageDiv = chatElement.find(`.mes[mesid="${targetId}"]`);
+    const sourceMessageDiv = chatElement.find(`.mes[mesid="${sourceId}"]`);
+
+    if (sourceMessageDiv.length === 0 || targetMessageDiv.length === 0) {
+        console.error(`Message #${sourceId} or #${targetId} were not found.`);
+        return false;
+    }
+
+    if (sourceId <= targetId) {
+        sourceMessageDiv.insertAfter(targetMessageDiv);
+    }
+    else {
+        sourceMessageDiv.insertBefore(targetMessageDiv);
+    }
+
+    //Swap Ids.
+    targetMessageDiv.attr('mesid', sourceId);
+    sourceMessageDiv.attr('mesid', targetId);
+
+    // Swap chat array entries.
+    [chat[sourceId], chat[targetId]] = [chat[targetId], chat[sourceId]];
+
+    // Update edited message id
+    if (this_edit_mes_id === sourceId) {
+        this_edit_mes_id = targetId;
+    }
+
+    updateViewMessageIds();
+    await saveChatConditional();
+    return true;
+}
+
 async function messageEditDone(div) {
     let { mesBlock, text, mes, bias } = updateMessage(div);
     if (this_edit_mes_id == 0) {
@@ -7770,7 +8143,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#char_connections_button').show();
 
     // Hide the chat scenario button if we're peeking the group member defs
-    $('#set_chat_scenario').toggle(!selected_group);
+    $('#set_chat_character_settings').toggle(!selected_group);
 
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
@@ -7852,7 +8225,7 @@ function select_rm_create({ switchMenu = true } = {}) {
 
     switchMenu && selectRightMenuWithAnimation('rm_ch_create_block');
 
-    $('#set_chat_scenario').hide();
+    $('#set_chat_character_settings').hide();
     $('#delete_button_div').css('display', 'none');
     $('#delete_button').css('display', 'none');
     $('#export_button').css('display', 'none');
@@ -7987,33 +8360,65 @@ function updateFavButtonState(state) {
     $('#favorite_button').toggleClass('fav_off', !state);
 }
 
-export async function setScenarioOverride() {
+export async function setCharacterSettingsOverrides() {
     if (!selected_group && (this_chid === undefined || !characters[this_chid])) {
-        console.warn('setScenarioOverride() -- no selected group or character');
+        console.warn('setCharacterSettingsOverrides() -- no selected group or character');
         return;
     }
 
-    const metadataValue = chat_metadata['scenario'] || '';
+    const scenarioOverrideValue = chat_metadata['scenario'] || '';
+    const exampleMessagesValue = chat_metadata['mes_example'] || '';
+    const systemPromptValue = chat_metadata['system_prompt'] || '';
     const isGroup = !!selected_group;
 
     const $template = $(await renderTemplateAsync('scenarioOverride'));
     $template.find('[data-group="true"]').toggle(isGroup);
     $template.find('[data-character="true"]').toggle(!isGroup);
-    // TODO: Why does this save on every character input? Save on popup close
-    $template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
-    $template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+    const pendingChanges = {
+        scenario: scenarioOverrideValue,
+        examples: exampleMessagesValue,
+        system_prompt: systemPromptValue,
+    };
 
-    await callGenericPopup($template, POPUP_TYPE.TEXT, '');
-}
+    // Keep edits local until the popup is closed/confirmed
+    const $scenario = $template.find('.chat_scenario');
+    $scenario.val(scenarioOverrideValue).on('input', function () {
+        pendingChanges.scenario = String($(this).val());
+    });
+    const $examples = $template.find('.chat_examples');
+    $examples.val(exampleMessagesValue).on('input', function () {
+        pendingChanges.examples = String($(this).val());
+    });
+    const $systemPrompt = $template.find('.chat_system_prompt');
+    $systemPrompt.val(systemPromptValue).on('input', function () {
+        pendingChanges.system_prompt = String($(this).val());
+    });
 
-function onScenarioOverrideInput() {
-    const value = String($(this).val());
-    chat_metadata['scenario'] = value;
+    $template.find('.remove_scenario_override').on('click', async function () {
+        const confirm = await Popup.show.confirm(t`Are you sure you want to remove all overrides?`, t`This action cannot be undone.`);
+        if (!confirm) {
+            return;
+        }
+
+        $scenario.val('');
+        pendingChanges.scenario = '';
+        $examples.val('');
+        pendingChanges.examples = '';
+        $systemPrompt.val('');
+        pendingChanges.system_prompt = '';
+    });
+
+    // Wait for popup close/confirm.
+    await callGenericPopup($template, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+    });
+
+    chat_metadata['scenario'] = pendingChanges.scenario;
+    chat_metadata['mes_example'] = pendingChanges.examples;
+    chat_metadata['system_prompt'] = pendingChanges.system_prompt;
     saveMetadataDebounced();
-}
-
-function onScenarioOverrideRemoveClick() {
-    $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
 /**
@@ -8294,7 +8699,7 @@ async function importCharacterChat(formData, { refresh = true } = {}) {
     return [];
 }
 
-function updateViewMessageIds(startIndex = null) {
+export function updateViewMessageIds(startIndex = null) {
     const minId = startIndex ?? getFirstDisplayedMessageId();
 
     chatElement.find('.mes').each(function (index, element) {
@@ -8314,24 +8719,27 @@ export function getFirstDisplayedMessageId() {
     return minId;
 }
 
-function updateEditArrowClasses() {
-    chatElement.find('.mes .mes_edit_up').removeClass('disabled');
-    chatElement.find('.mes .mes_edit_down').removeClass('disabled');
-
-    if (this_edit_mes_id >= 0) {
-        const down = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
-        const up = chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
-        const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
-        const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
-
-        if (lastId == Number(this_edit_mes_id)) {
-            down.addClass('disabled');
-        }
-
-        if (firstId == Number(this_edit_mes_id)) {
-            up.addClass('disabled');
-        }
+export function updateEditArrowClasses() {
+    if (!(this_edit_mes_id >= 0)) {
+        return;
     }
+
+    const message = chatElement.find(`.mes[mesid="${this_edit_mes_id}"]`);
+
+    const downButton = message.find('.mes_edit_down');
+    const upButton = message.find('.mes_edit_up');
+    const copyButton = message.find('.mes_edit_copy');
+    const deleteButton = message.find('.mes_edit_delete');
+    const lastId = Number(chatElement.find('.mes').last().attr('mesid'));
+    const firstId = Number(chatElement.find('.mes').first().attr('mesid'));
+
+    copyButton.removeClass('disabled');
+    deleteButton.removeClass('disabled');
+
+    // The last message cannot be moved down.
+    downButton.toggleClass('disabled', lastId === Number(this_edit_mes_id));
+    // The first message cannot be moved up.
+    upButton.toggleClass('disabled', firstId === Number(this_edit_mes_id));
 }
 
 /**
@@ -8862,17 +9270,17 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         //Update the swipe_id.
         chat[mesId]['swipe_id'] = newSwipeId;
 
-        if (chat[mesId].extra) {
-            // if message has memory attached - remove it to allow regen
+        if (chat[mesId].extra && typeof chat[mesId].extra === 'object') {
             delete chat[mesId].extra.memory;
-
-            // ditto for display text
             delete chat[mesId].extra.display_text;
-
-            delete chat[mesId].extra.image;
-            delete chat[mesId].extra.image_swipes;
-            delete chat[mesId].extra.video;
+            delete chat[mesId].extra.media;
             delete chat[mesId].extra.inline_image;
+            delete chat[mesId].extra.files;
+            delete chat[mesId].extra.fileLength;
+            delete chat[mesId].extra.generationType;
+            delete chat[mesId].extra.negative;
+            delete chat[mesId].extra.title;
+            delete chat[mesId].extra.append_title;
         }
         delete chat[mesId].gen_started;
         delete chat[mesId].gen_finished;
@@ -8880,7 +9288,6 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         syncSwipeToMes(mesId, chat[mesId]['swipe_id']);
     }
 
-    //Deepseek-V3.1
     // Helper function to convert transition to promise
     const transitionPromise = (element, properties) => {
         return new Promise((resolve) => {
@@ -9002,7 +9409,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (run_generate && !is_send_press) {
             is_send_press = true;
             generation = Generate('swipe');
-        } else if (parseInt(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
+        } else if (Number(chat[mesId]['swipe_id']) !== chat[mesId]['swipes'].length) {
             saveChatDebounced();
         }
 
@@ -9234,6 +9641,7 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
+    formData.append('user_name', name1);
     if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
     try {
@@ -9838,8 +10246,9 @@ jQuery(async function () {
         $('#option_continue').trigger('click');
     });
 
-    $('#send_but').on('click', function () {
-        sendTextareaMessage();
+    const userInputGenerateMutex = new SimpleMutex(sendTextareaMessage);
+    $('#send_but').on('click', async function () {
+        await userInputGenerateMutex.update();
     });
 
     //menu buttons setup
@@ -10252,7 +10661,7 @@ jQuery(async function () {
         if (!isMouseOverButtonOrMenu()) { hideMenu(); }
     });
 
-    /* $('#set_chat_scenario').on('click', setScenarioOverride); */
+    /* $('#set_chat_character_settings').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
     $('#options [id]').on('click', async function (event, customData) {
@@ -10618,57 +11027,20 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_edit_up', async function () {
-        if (is_send_press || this_edit_mes_id <= 0) {
+        if (this_edit_mes_id <= 0) {
             return;
         }
-
         const targetId = Number(this_edit_mes_id) - 1;
-        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
-        const root = $(this).closest('.mes');
-
-        if (root.length === 0 || target.length === 0) {
-            return;
-        }
-
-        root.insertBefore(target);
-
-        target.attr('mesid', this_edit_mes_id);
-        root.attr('mesid', targetId);
-
-        const temp = chat[targetId];
-        chat[targetId] = chat[this_edit_mes_id];
-        chat[this_edit_mes_id] = temp;
-
-        this_edit_mes_id = targetId;
-        updateViewMessageIds();
-        await saveChatConditional();
+        await messageEditMove(this_edit_mes_id, targetId);
     });
 
     $(document).on('click', '.mes_edit_down', async function () {
-        if (is_send_press || this_edit_mes_id >= chat.length - 1) {
+        if (this_edit_mes_id >= chat.length - 1) {
             return;
         }
 
         const targetId = Number(this_edit_mes_id) + 1;
-        const target = chatElement.find(`.mes[mesid="${targetId}"]`);
-        const root = $(this).closest('.mes');
-
-        if (root.length === 0 || target.length === 0) {
-            return;
-        }
-
-        root.insertAfter(target);
-
-        target.attr('mesid', this_edit_mes_id);
-        root.attr('mesid', targetId);
-
-        const temp = chat[targetId];
-        chat[targetId] = chat[this_edit_mes_id];
-        chat[this_edit_mes_id] = temp;
-
-        this_edit_mes_id = targetId;
-        updateViewMessageIds();
-        await saveChatConditional();
+        await messageEditMove(this_edit_mes_id, targetId);
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
@@ -10681,7 +11053,7 @@ jQuery(async function () {
         const oldScroll = chatElement[0].scrollTop;
         const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
-        clone.mes = $(this).closest('.mes').find('.edit_textarea').val();
+        clone.mes = $(this).closest('.mes').find('.edit_textarea').val().toString();
 
         if (power_user.trim_spaces) {
             clone.mes = clone.mes.trim();
@@ -11040,8 +11412,8 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('keyup', function (e) {
-        if (e.key === 'Escape') {
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && !e.originalEvent.isComposing) {
             const isEditVisible = $('#curEditTextarea').is(':visible') || $('.reasoning_edit_textarea').length > 0;
             if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor('all');
@@ -11070,8 +11442,8 @@ jQuery(async function () {
             case 'set_character_world':
                 await openCharacterWorldPopup();
                 break;
-            case 'set_chat_scenario':
-                await setScenarioOverride();
+            case 'set_chat_character_settings':
+                await setCharacterSettingsOverrides();
                 break;
             case 'renameCharButton':
                 await renameCharacter();

@@ -28,7 +28,9 @@
   - Updating README.
   - Updating GitHub Actions.
   - Hotfixing a critical bug.
-4. Project maintainers will test and can change your code before merging.
+4. Project maintainers will test and can change your code before merging. To keep our workflow smooth, please ensure the following:
+  - The "Allow edits from maintainers" option is checked.
+  - Avoid force-pushing your branch once the PR is out of draft state.
 5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first.
 6. Write at least somewhat meaningful PR descriptions and commit messages. There's no "right" way to do it, but the following may help with outlining a general structure:
   - What is the reason for a change?

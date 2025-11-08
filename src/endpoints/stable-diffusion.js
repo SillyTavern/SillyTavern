@@ -1322,7 +1322,8 @@ falai.post('/models', async (_request, response) => {
 
         const modelOptions = models
             .sort((a, b) => a.title.localeCompare(b.title))
-            .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
+            .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }))
+            .map(x => ({ ...x, text: `${x.text} (${x.value})` }));
         return response.send(modelOptions);
     } catch (error) {
         console.error(error);

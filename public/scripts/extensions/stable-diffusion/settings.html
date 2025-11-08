@@ -302,13 +302,21 @@
                         </select>
                     </div>
                 </div>
-                <div class="flex-container">
+                <div class="flex-container alignItemsCenter">
                     <label class="flex1 checkbox_label" for="sd_google_enhance" data-i18n="[title]Enables prompt enhancing (passes prompts through an LLM to add detail)." title="Enables prompt enhancing (passes prompts through an LLM to add detail).">
                         <input id="sd_google_enhance" type="checkbox" />
                         <span data-i18n="Enhance">
                             Enhance
                         </span>
                     </label>
+                    <div class="flex1">
+                        <label for="sd_google_duration" data-i18n="Duration (Veo)">Duration (Veo)</label>
+                        <select id="sd_google_duration">
+                            <option value="4">Short (4 seconds)</option>
+                            <option value="6">Medium (6 seconds)</option>
+                            <option value="8">Long (8 seconds)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

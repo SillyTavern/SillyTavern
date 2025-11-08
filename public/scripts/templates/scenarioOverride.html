@@ -1,17 +1,45 @@
-<div class="scenario_override range-block flexFlowColumn flex-container">
-    <div class="range-block-title title_restorable">
-        <h3><span data-i18n="Chat Scenario Override" class="margin0">Chat Scenario Override</span></h3>
-        <div title="Remove" data-i18n="[title]Remove"
-            class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
+<div class="scenario_override flexFlowColumn flex-container justifyLeft">
+    <div class="title_restorable alignItemsBaseline">
+        <h3><span data-i18n="Chat Character Settings Override" class="margin0">Chat Character Settings Override</span></h3>
+        <div class="menu_button menu_button_icon remove_scenario_override">
+            <i class="fa-solid fa-trash-can "></i>
+            <span data-i18n="Remove">Remove</span>
+        </div>
     </div>
-    <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
+    <div>
         <strong data-i18n="Unique to this chat.">Unique to this chat.</strong>
-        <span data-group="true" data-i18n="All group members will use the following scenario text instead of what is specified in their character cards.">All group members will use the following scenario text instead of what is specified in their character cards.</span>
-        <span data-character="true" data-i18n="The following scenario text will be used instead of the value set in the character card.">The following scenario text will be used instead of the value set in the character card.</span>
-        <span data-i18n="Checkpoints inherit the scenario override from their parent, and can be changed individually after that.">Checkpoints inherit the scenario override from their parent, and can be changed individually after that.</span>
+        <span data-group="true" data-i18n="All group members will use the following values instead of what is specified in their character cards.">All group members will use the following values instead of what is specified in their character cards.</span>
+        <span data-character="true" data-i18n="The following values will be used instead of the value set in the character card.">The following values will be used instead of the value set in the character card.</span>
+        <span data-i18n="Checkpoints inherit the overrides from their parent, and can be changed individually after that.">Checkpoints inherit the overrides from their parent, and can be changed individually after that.</span>
     </div>
-    <div class="range-block-range wide100p">
-        <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..."
-            placeholder="Type here..."></textarea>
+    <hr>
+    <div class="wide100p flex-container flexFlowColumn">
+        <h4 class="flex-container alignItemsBaseline">
+            <span data-i18n="Scenario">Scenario</span>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="chat_scenario_override" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+        </h4>
+        <div>
+            <textarea id="chat_scenario_override" class="chat_scenario text_pole" rows="6" data-i18n="[placeholder]Type Scenario here..." placeholder="Type Scenario here..."></textarea>
+        </div>
+        <h4 class="flex-container alignItemsBaseline">
+            <span data-i18n="Examples of dialogue">Examples of dialogue</span>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="chat_examples_override" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+        </h4>
+        <div>
+            <textarea id="chat_examples_override" class="chat_examples text_pole" rows="6" data-i18n="[placeholder]Type Example Messages here..." placeholder="Type Example Messages here..."></textarea>
+        </div>
+        <h4 class="flex-container alignItemsBaseline">
+            <span data-i18n="Main Prompt">Main Prompt</span>
+            <small>
+                <small>&mdash;</small>
+                <i class="fa-solid fa-user-cog"></i>
+                <b data-i18n="Prefer Char. Prompt">Prefer Char. Prompt</b>
+                <span data-i18n="MUST be enabled!">MUST be enabled!</span>
+            </small>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="chat_system_prompt_override" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+        </h4>
+        <div>
+            <textarea id="chat_system_prompt_override" class="chat_system_prompt text_pole" rows="6" data-i18n="[placeholder]Type System Prompt here..." placeholder="Type System Prompt here..."></textarea>
+        </div>
     </div>
 </div>

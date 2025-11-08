@@ -3866,11 +3866,6 @@ async function addSwipeCallback(args, value) {
         return '';
     }
 
-    if (lastMessage.extra?.image) {
-        toastr.warning(t`Can't add swipes to message containing an image.`);
-        return '';
-    }
-
     if (!Array.isArray(lastMessage.swipes)) {
         lastMessage.swipes = [lastMessage.mes];
         lastMessage.swipe_info = [{}];
@@ -4564,7 +4559,7 @@ export async function sendMessageAs(args, text) {
 
     message.swipe_id = 0;
     message.swipes = [message.mes];
-    message.swipes_info = [{
+    message.swipe_info = [{
         send_date: message.send_date,
         gen_started: null,
         gen_finished: null,
