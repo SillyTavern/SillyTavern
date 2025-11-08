@@ -587,6 +587,9 @@ export let max_context = 2048;
 let swipes = true;
 /** Forcefully hide swipes. */
 export let swipesHidden = false;
+export let lastSwipeTime = performance.now();
+export let heldSwipes = 0;
+
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
@@ -9499,8 +9502,9 @@ function formatSwipeCounter(current, total) {
  * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
  * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
+ * @param {number} [params.forceDuration] Overwrites the default swipe duration.
  */
-export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId: forceMesId, forceSwipeId: forceSwipeId } = {}) {
+export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
     if (chat.length === 0) {
         console.warn('Swipe was called on an empty chat.');
         return;
@@ -9552,7 +9556,27 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
-    const swipeDuration = Math.round(animation_duration * 1.25);
+    /**
+     * Calculates the next swipe duration with how many swipes have been repeated.
+     * @param {number} animation_duration
+     * @returns
+     */
+    function getSwipeDuration(animation_duration) {
+        let now = performance.now();
+        let resetTime = 2000;
+
+        //Reset the counter if the last swipe was more than two seconds ago.
+        if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
+        heldSwipes++;
+        lastSwipeTime = now;
+
+        //At 4 swipes, animation_duration will be halved.
+        let sigmoid = 1 / (1 + Math.exp(heldSwipes - 4 ));
+
+        return animation_duration * sigmoid;
+    }
+
+    const swipeDuration = forceDuration ?? getSwipeDuration(animation_duration);
 
     //The offscreen messages may be visible if the user resizes the viewport during a swipe.
     const thisMesDivWidth = thisMesDiv.width() + 30;
@@ -9790,8 +9814,9 @@ export async function swipe(_event, direction, { source, repeated, message = cha
      * @returns {Promise<boolean|Function>} endSlide unfreezes the messages from xEnd.
      */
     async function animateSwipeTransition(mesId, { xStart = '0px', xEnd = '0px', duration = animation_duration, classes = '', freeze = false } = {}) {
-        // If the animation_duration is zero, the 'animationend' promise will never resolve. Skip the animation.
-        if (animation_duration <= 0) return;
+        // If the animation_duration is zero, the 'animationend' promise will never resolve.
+        //Skip the animation if it's faster than 50ms.
+        if (animation_duration <= 50) return;
 
         //Select MAXIMUM_ANIMATED messages after mesId. Ideally, only visible messages would be animated.
         const MAXIMUM_ANIMATED = 100;
