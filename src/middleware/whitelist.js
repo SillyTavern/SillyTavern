@@ -91,9 +91,30 @@ export default async function getWhitelistMiddleware() {
         const forwardedIp = getForwardedIp(req);
         const userAgent = req.headers['user-agent'];
 
+        /**
+         * @param {string[]} whitelist
+         * @param {string} ip
+         * @returns {boolean}
+         */
+        function isIPInWhitelist(whitelist, ip) {
+            try {
+                return whitelist.some(x => {
+                    try {
+                        return ipMatching.matches(ip, ipMatching.getMatch(x) ?? '');
+                    } catch (e) {
+                        console.warn(`Failed to check if IP ${ip} matches whitelist entry ${x}: ${e.message}`);
+                        return false;
+                    }
+                });
+            } catch (e) {
+                console.warn(`Failed to check if IP ${ip} is in the whitelist: ${e.message}`);
+                return false;
+            }
+        }
+
         //clientIp = req.connection.remoteAddress.split(':').pop();
-        if (!whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))
-            || forwardedIp && !whitelist.some(x => ipMatching.matches(forwardedIp, ipMatching.getMatch(x)))
+        if (!isIPInWhitelist(whitelist, clientIp)
+            || forwardedIp && !isIPInWhitelist(whitelist, forwardedIp)
         ) {
             // Log the connection attempt with real IP address
             const ipDetails = forwardedIp
