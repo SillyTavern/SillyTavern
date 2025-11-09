@@ -40,7 +40,7 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
-        if (main_api === 'textgenerationwebui') resetPresetSelectedSamplers(null, true);
+        if (main_api === 'textgenerationwebui') await resetPresetSelectedSamplers(null, true);
         await validateDisabledSamplers(true);
     });
 
