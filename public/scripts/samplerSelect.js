@@ -7,7 +7,7 @@ import { power_user } from './power-user.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
-import { getActivePresetSamplers, isSamplerManualPriorityEnabled, resetPresetSelectedSamplers, savePresetSelectedSamplers, setPresetSamplersState, setting_names, toggleSamplerManualPriority } from './textgen-settings.js';
+import { getManualActivePresetSamplers, isSamplerManualPriorityEnabled, resetPresetSelectedSamplers, savePresetSelectedSamplers, setPresetSamplersState, setting_names, toggleSamplerManualPriority } from './textgen-settings.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup, POPUP_TYPE } from './popup.js';
 
@@ -229,7 +229,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         return availableSamplers;
     }
 
-    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActivePresetSamplers() : [];
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
@@ -353,7 +353,7 @@ export async function validateDisabledSamplers(redraw = false) {
         return;
     }
 
-    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActivePresetSamplers() : [];
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     for (const sampler of APISamplers) {

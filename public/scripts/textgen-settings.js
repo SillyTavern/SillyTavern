@@ -427,7 +427,7 @@ export function setPresetSamplersState(sampler_name, state, preset_name = '') {
  * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
  * @returns {string[]} Array of sampler key names
  */
-export function getActivePresetSamplers(preset_name = '') {
+export function getManualActivePresetSamplers(preset_name = '') {
     if (!settings?.preset) return [];
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
@@ -1203,7 +1203,7 @@ function showSamplerControls(api_type = null, is_preset_switch = false) {
 
     showTypeSpecificControls(api_type ?? settings.type);
 
-    const samplersActivatedManually = getActivePresetSamplers();
+    const samplersActivatedManually = getManualActivePresetSamplers();
 
     if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
 
