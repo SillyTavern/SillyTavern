@@ -457,7 +457,7 @@ export async function validateDisabledSamplers(redraw = false) {
             relatedDOMElement.css('display', isManuallyActivated ? targetDisplayType : 'none');
         }
     }
-    
+
     if (redraw) {
         if (main_api === 'textgenerationwebui') showTGSamplerControls();
 
