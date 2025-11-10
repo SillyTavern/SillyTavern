@@ -1855,6 +1855,10 @@ jQuery(async () => {
     });
 
     $('#bulk_regex_move_to_scoped').on('click', async () => {
+        if (this_chid === undefined) {
+            toastr.error(t`No character selected.`);
+            return;
+        }
         const confirm = await callGenericPopup(t`Are you sure you want to move the selected regex scripts to scoped?`, POPUP_TYPE.CONFIRM);
         if (!confirm) {
             return;
