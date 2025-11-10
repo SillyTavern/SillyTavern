@@ -1400,7 +1400,7 @@
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth_Sampling_desc" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
                                         </h4>
-                                        <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" data-tg-samplers="smoothing_factor" class="flex-container flexFlowRow gap10px flexShrink">
+                                        <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" class="flex-container flexFlowRow gap10px flexShrink">
                                             <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                                 <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
@@ -1427,7 +1427,7 @@
                                                 <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="0.5" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="0.5" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui">
                                             </div>
-                                            <div data-tg-samplers="xtc_probability" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Probability">Probability</small>
                                                 <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui">
@@ -1443,7 +1443,7 @@
                                             </a>
                                         </h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
-                                            <div data-tg-samplers="dry_multiplier" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" title="Set to value > 0 to enable DRY. Controls the magnitude of the penalty for the shortest penalized sequences." data-i18n="[title]DRY_Multiplier_desc">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" title="Set to value > 0 to enable DRY. Controls the magnitude of the penalty for the shortest penalized sequences." data-i18n="[title]DRY_Multiplier_desc">
                                                 <small data-i18n="Multiplier">Multiplier</small>
                                                 <input class="neo-range-slider" type="range" id="dry_multiplier_textgenerationwebui" min="0" max="5" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="dry_multiplier_textgenerationwebui" id="dry_multiplier_counter_textgenerationwebui">
@@ -1474,7 +1474,7 @@
                                     <div data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" data-tg-samplers="dynatemp" id="dynatemp_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <div class="flex-container alignitemscenter justifyCenter">
-                                                <div data-tg-samplers="dynatemp" class="checkbox_label" for="dynatemp_textgenerationwebui">
+                                                <div class="checkbox_label" for="dynatemp_textgenerationwebui">
                                                     <input type="checkbox" id="dynatemp_textgenerationwebui" />
                                                 </div>
                                                 <span class="textAlignCenter" data-i18n="Dynamic Temperature">Dynamic Temperature</span>
@@ -1505,7 +1505,7 @@
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0.&#13;Tau = Variability parameter for Mirostat outputs.&#13;Eta = Learning rate of Mirostat."></div>
                                         </h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
-                                            <div data-tg-samplers="mirostat_mode" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Mirostat Mode">Mode</small>
                                                 <input class="neo-range-slider" type="range" id="mirostat_mode_textgenerationwebui" name="volume" min="0" max="2" step="1" />
                                                 <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
@@ -1530,7 +1530,7 @@
                                             </label>
                                         </h4>
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
-                                            <div data-tg-samplers="num_beams" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <label>
                                                     <small data-i18n="# of Beams"># of Beams</small>
                                                     <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of sequences generated at each step with Beam Search." title="The number of sequences generated at each step with Beam Search."></div>
@@ -1560,7 +1560,7 @@
                                             <span data-i18n="Contrastive search">Contrastive Search</span>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="Contrastive_search_txt" title="A sampler that encourages diversity while maintaining coherence, by exploiting the isotropicity of the representation space of most LLMs. For details, see the paper A Contrastive Framework for Neural Text Generation by Su et al. (2022)."></div>
                                         </h4>
-                                        <div data-tg-samplers="penalty_alpha" class="alignitemscenter flex-container flexFlowColumn wide100p gap0">
+                                        <div class="alignitemscenter flex-container flexFlowColumn wide100p gap0">
                                             <label>
                                                 <small data-i18n="Penalty Alpha">Penalty Alpha</small>
                                                 <div class="fa-solid fa-circle-info opacity50p " title="Strength of the Contrastive Search regularization term. Set to 0 to disable CS." data-i18n="[title]Strength of the Contrastive Search regularization term. Set to 0 to disable CS"></div>
@@ -1643,7 +1643,7 @@
                                             <div class="textAlignCenter">
                                                 <small data-i18n="Preset-specific list">Preset-specific list</small>
                                             </div>
-                                            <div data-tg-samplers="banned_tokens" class="wide100p">
+                                            <div class="wide100p">
                                                 <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder='some text as tokens&#10;[420, 69, 1337]&#10;"Some verbatim string"'></textarea>
                                             </div>
                                         </div>
@@ -1671,7 +1671,7 @@
                                             <span data-i18n="CFG">CFG</span>
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Classifier Free Guidance. More helpful tip coming soon" title="Classifier Free Guidance. More helpful tip coming soon."></div>
                                         </h4>
-                                        <div data-tg-samplers="guidance_scale" class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
                                             <small data-i18n="Scale">Scale</small>
                                             <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                             <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">

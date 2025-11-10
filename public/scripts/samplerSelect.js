@@ -40,7 +40,12 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
-        if (main_api === 'textgenerationwebui') await resetPresetSelectedSamplers(null, true);
+
+        if (main_api === 'textgenerationwebui') {
+            $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', false);
+            await resetPresetSelectedSamplers(null, true);
+        }
+
         await validateDisabledSamplers(true);
     });
 
@@ -429,10 +434,7 @@ export async function validateDisabledSamplers(redraw = false) {
         }
 
 
-        if (prioritizeManualSamplerSelect) {
-            const isManuallyActivated = samplersActivatedManually.includes(sampler);
-            relatedDOMElement.css('display', isManuallyActivated === true ? targetDisplayType : 'none');
-        } else if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
+        if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
             relatedDOMElement.data('selectsampler', 'hidden');
             relatedDOMElement.css('display', 'none');
@@ -448,6 +450,11 @@ export async function validateDisabledSamplers(redraw = false) {
                 relatedDOMElement.removeAttr('selectsampler');
                 relatedDOMElement.css('display', 'none');
             }
+        }
+
+        if (prioritizeManualSamplerSelect) {
+            const isManuallyActivated = samplersActivatedManually.includes(sampler);
+            relatedDOMElement.css('display', isManuallyActivated ? targetDisplayType : 'none');
         }
         if (redraw) {
             let samplersHTML = await listSamplers(main_api);

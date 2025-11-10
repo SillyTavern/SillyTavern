@@ -444,7 +444,7 @@ export function getManualActivePresetSamplers(preset_name = '') {
         const presetSamplers = Object.entries(selectedSamplers[preset_name]);
 
         return presetSamplers
-            .filter(([key, val]) => val === true)
+            .filter(([key, val]) => val === true && key !== 'st_manual_priority')
             .map(([key, val]) => key);
     } catch (error) {
         console.log('Text Completions: unable to fetch active preset samplers', error);
