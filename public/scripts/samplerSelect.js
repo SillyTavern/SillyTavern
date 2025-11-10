@@ -7,7 +7,7 @@ import { power_user } from './power-user.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
-import { getManualActivePresetSamplers, isSamplerManualPriorityEnabled, resetPresetSelectedSamplers, savePresetSelectedSamplers, setPresetSamplersState, setting_names, toggleSamplerManualPriority } from './textgen-settings.js';
+import { getManualActivePresetSamplers, isSamplerManualPriorityEnabled, resetPresetSelectedSamplers, savePresetSelectedSamplers, setPresetSamplersState, setting_names, showTGSamplerControls, toggleSamplerManualPriority } from './textgen-settings.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup, POPUP_TYPE } from './popup.js';
 
@@ -456,15 +456,17 @@ export async function validateDisabledSamplers(redraw = false) {
             const isManuallyActivated = samplersActivatedManually.includes(sampler);
             relatedDOMElement.css('display', isManuallyActivated ? targetDisplayType : 'none');
         }
-        if (redraw) {
-            let samplersHTML = await listSamplers(main_api);
-            $('#apiSamplersList').empty().append(samplersHTML.toString());
-            setSamplerListListeners();
-        }
-
-        await saveSettingsDebounced();
-
     }
+    
+    if (redraw) {
+        if (main_api === 'textgenerationwebui') showTGSamplerControls();
+
+        let samplersHTML = await listSamplers(main_api);
+        $('#apiSamplersList').empty().append(samplersHTML.toString());
+        setSamplerListListeners();
+    }
+
+    await saveSettingsDebounced();
 }
 
 

@@ -234,6 +234,7 @@ const settings = {
 
 export {
     settings as textgenerationwebui_settings,
+    showSamplerControls as showTGSamplerControls
 };
 
 export let textgenerationwebui_banned_in_macros = [];
