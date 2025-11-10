@@ -14,7 +14,7 @@ const SOURCES = {
     },
     'siliconflow': {
         secretKey: SECRET_KEYS.SILICONFLOW,
-        url: 'api.siliconflow.cn',
+        url: 'api.siliconflow.com',
         model: 'Qwen/Qwen3-Embedding-8B',
     },
     'openai': {

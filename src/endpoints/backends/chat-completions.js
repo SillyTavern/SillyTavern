@@ -73,7 +73,7 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
-const API_SILICONFLOW = 'https://api.siliconflow.cn/v1';
+const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.

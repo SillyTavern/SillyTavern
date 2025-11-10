@@ -182,7 +182,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'siliconflow') {
-            apiUrl = 'https://api.siliconflow.cn/v1/chat/completions';
+            apiUrl = 'https://api.siliconflow.com/v1/chat/completions';
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
