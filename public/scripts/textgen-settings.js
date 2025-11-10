@@ -422,6 +422,14 @@ export function setPresetSamplersState(sampler_name, state, preset_name = '') {
     presetSamplers[sampler_name] = String(state) === 'true';
 }
 
+export function getManualPresetSamplers(preset_name = '') {
+    if (!settings?.preset) return {};
+    if (!preset_name) preset_name = settings.preset;
+    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+
+    return selectedSamplers[preset_name];
+}
+
 /**
  * Returns the key names of all the preset samplers activated manually.
  * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default

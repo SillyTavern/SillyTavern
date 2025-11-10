@@ -35,6 +35,9 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import { renderTemplateAsync } from './templates.js';
 import {
+    getManualPresetSamplers,
+    resetPresetSelectedSamplers,
+    setPresetSamplersState,
     textgenerationwebui_settings as textgen_settings,
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -1069,6 +1072,16 @@ export async function initPresetManager() {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
             $('#update_oai_preset').trigger('click');
             return;
+        }
+
+        if (apiId === 'textgenerationwebui') {
+            const manualSamplersIterable = Object.entries(getManualPresetSamplers(oldName));
+
+            for (const [sampler, value] of manualSamplersIterable) {
+                setPresetSamplersState(sampler, value, newName);
+            }
+
+            await resetPresetSelectedSamplers(oldName, true);
         }
 
         const successToast = !presetManager.isAdvancedFormatting() ? t`Preset renamed` : t`Template renamed`;
