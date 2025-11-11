@@ -60,7 +60,7 @@ export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.len
             console.assert(branch_id <= (chatMessage['swipes']?.length ?? 0), 'There must be at least as many messages as branch_id');
 
             //For each swipe, update a branch. This may run zero times.
-            chatMessage['swipes']?.forEach((swipe, i) => {
+            chatMessage?.['swipes']?.forEach((swipe, i) => {
 
                 // There must be at least a message for every swipe_info.
                 console.assert((chatMessage['swipe_info']?.length ?? 0) <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
