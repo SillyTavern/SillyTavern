@@ -394,7 +394,7 @@ export async function savePresetSelectedSamplers() {
  */
 export async function resetPresetSelectedSamplers(preset_name = '', silent = false) {
     try {
-        if (!settings?.preset) return;
+        if (!settings?.preset && !preset_name) return;
         if (!preset_name) preset_name = settings.preset;
         if (!selectedSamplers[preset_name]) return;
 
@@ -415,7 +415,7 @@ export async function resetPresetSelectedSamplers(preset_name = '', silent = fal
  * @returns void
  */
 export function setPresetSamplersState(sampler_name, state, preset_name = '') {
-    if (!settings?.preset) return;
+    if (!settings?.preset && !preset_name) return;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
 
@@ -424,7 +424,7 @@ export function setPresetSamplersState(sampler_name, state, preset_name = '') {
 }
 
 export function getManualPresetSamplers(preset_name = '') {
-    if (!settings?.preset) return {};
+    if (!settings?.preset && !preset_name) return {};
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
 
@@ -437,7 +437,7 @@ export function getManualPresetSamplers(preset_name = '') {
  * @returns {string[]} Array of sampler key names
  */
 export function getManualActivePresetSamplers(preset_name = '') {
-    if (!settings?.preset) return [];
+    if (!settings?.preset && !preset_name) return [];
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
 
@@ -459,7 +459,7 @@ export function getManualActivePresetSamplers(preset_name = '') {
  * @returns void
  */
 export function toggleSamplerManualPriority(state = false, preset_name = '') {
-    if (!settings?.preset) return;
+    if (!settings?.preset && !preset_name) return;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
 
@@ -472,7 +472,7 @@ export function toggleSamplerManualPriority(state = false, preset_name = '') {
  * @returns {boolean}
  */
 export function isSamplerManualPriorityEnabled(preset_name = '') {
-    if (!settings?.preset) return false;
+    if (!settings?.preset && !preset_name) return false;
     if (!preset_name) preset_name = settings.preset;
     if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
 
