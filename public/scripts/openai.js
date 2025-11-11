@@ -2326,14 +2326,13 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
     const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI; // Add this line
-    const isOpenAICompatible = isOAI || isAzureOpenAI || isSiliconFlow;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !((isOpenAICompatible) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
+    const stream = oai_settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI || isSiliconFlow) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOpenAICompatible || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isSiliconFlow || isCustom || isXAI || isAimlapi || isMoonshot);
 
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
