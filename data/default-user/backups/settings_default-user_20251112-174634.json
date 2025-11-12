@@ -3,6 +3,8 @@
     "accountStorage": {
         "__migrated": "1",
         "NavOpened": "true",
+        "AlertWI_季忱朗.png": "true",
+        "AlertRegex_季忱朗.png": "true",
         "SelectedNavTab": "rm_button_characters",
         "LNavOpened": "true",
         "WINavOpened": "true",
@@ -262,7 +264,7 @@
         "timer_enabled": false,
         "timestamps_enabled": true,
         "timestamp_model_icon": true,
-        "mesIDDisplay_enabled": true,
+        "mesIDDisplay_enabled": false,
         "hideChatAvatars_enabled": false,
         "max_context_unlocked": false,
         "message_token_count_enabled": false,
@@ -1082,8 +1084,7 @@
         "regex_presets": [],
         "character_allowed_regex": [
             "许时雨.png",
-            "方亦楷2.0.png",
-            "尘渊【全民穿越之仙侠世界】.png"
+            "方亦楷2.0.png"
         ],
         "preset_allowed_regex": {},
         "tts": {
@@ -1276,8 +1277,8 @@
         "vectors": {},
         "variables": {
             "global": {
-                "LAST_RECEIVE_TOKENS": 2824,
-                "LAST_RECEIVE_CHARS": 10441
+                "LAST_RECEIVE_TOKENS": 11175,
+                "LAST_RECEIVE_CHARS": 32762
             }
         },
         "attachments": [],
@@ -1338,9 +1339,10 @@
         }
     ],
     "tag_map": {
-        "许时雨.png": [],
+        "末日列车100天.png": [],
+        "季忱朗.png": [],
         "尘渊【全民穿越之仙侠世界】.png": [],
-        "季忱朗.png": []
+        "许时雨.png": []
     },
     "nai_settings": {
         "temperature": 1.5,
@@ -1417,7 +1419,7 @@
         "top_a_openai": 1,
         "repetition_penalty_openai": 1,
         "stream_openai": true,
-        "openai_max_context": 120000,
+        "openai_max_context": 200000,
         "openai_max_tokens": 20000,
         "wrap_in_quotes": false,
         "prompts": [
