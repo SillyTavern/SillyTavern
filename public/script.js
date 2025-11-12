@@ -9559,6 +9559,23 @@ jQuery(async function () {
     $('#send_but').on('click', function () {
         sendTextareaMessage();
     });
+    $('#confirm_btn').on('click', async function () {
+        const inputText = $('#select_hidden_floor_search').val();
+        const interruptedByCommand = await processCommands(String(`/hide ${inputText}`));
+        console.log(interruptedByCommand,"inputText");
+
+        if(interruptedByCommand){
+            $('#shadow_select__hidden_floor_popup').transition({
+                opacity: 0,
+                duration: animation_duration,
+                easing: animation_easing,
+            });
+            setTimeout(function () { $('#shadow_select__hidden_floor_popup').css('display', 'none'); }, animation_duration);
+            $('#send_textarea').val(`/hide ${inputText}`)
+            $('#select_hidden_floor_search').val('');
+            sendTextareaMessage();
+        }
+    });
 
     //menu buttons setup
 
@@ -9983,7 +10000,16 @@ jQuery(async function () {
             ...args,
             ...(additionalPrompt !== undefined && { quiet_prompt: additionalPrompt, quietToLoud: true }),
         });
-
+        if(id == 'option_Hidden_Floor'){
+            $('#shadow_select__hidden_floor_popup').css('display', 'block');
+            $('#shadow_select__hidden_floor_popup').css('opacity', 0.0);
+            $('#shadow_select__hidden_floor_popup').transition({
+                opacity: 1.0,
+                duration: animation_duration,
+                easing: animation_easing,
+            });
+            $('#select_hidden_floor_search').val('');
+        }
         if (id == 'option_select_chat') {
             if (this_chid === undefined && !is_send_press && !selected_group) {
                 await openPermanentAssistantCard();
@@ -10207,6 +10233,15 @@ jQuery(async function () {
             easing: animation_easing,
         });
         setTimeout(function () { $('#shadow_select_chat_popup').css('display', 'none'); }, animation_duration);
+    });
+    $('#select_hidden_floor_cross').on('click', function () {
+        $('#shadow_select__hidden_floor_popup').transition({
+            opacity: 0,
+            duration: animation_duration,
+            easing: animation_easing,
+        });
+        setTimeout(function () { $('#shadow_select__hidden_floor_popup').css('display', 'none'); }, animation_duration);
+        $('#select_hidden_floor_search').val('');
     });
 
     $(document).on('pointerup', '.mes_copy', async function () {

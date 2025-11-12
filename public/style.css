@@ -4574,7 +4574,45 @@ h5 {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
+#shadow_select__hidden_floor_popup {
+    display: none;
+    opacity: 1.0;
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 4100;
+    top: 0;
+    background-color: var(--black70a);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+}
 
+#select_hidden_floor_popup {
+    display: flex;
+    flex-direction: column;
+    max-width: var(--sheldWidth);
+    height: min-content;
+    max-height: calc(100vh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
+    min-height: 100px;
+    position: absolute;
+    z-index: 2066;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0px 0px 20px black;
+    padding: 10px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-radius: 10px;
+    overflow-y: hidden;
+    border: 1px solid var(--SmartThemeBorderColor);
+}
 #select_chat_popup {
     display: flex;
     flex-direction: column;
@@ -6149,4 +6187,20 @@ body:not(.movingUI) .drawer-content.maximized {
 .info-block.error {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
+}
+.confirm_wrapper{
+    width: 5em;
+}
+.confirm_btn{
+    background-color: rgba(0,0,0,0.5) ;
+    color: rgba(255, 255, 255, 0.5);
+    border: 0;
+    border-radius: 14px;
+    padding: .5rem;
+    width: 100%;
+    cursor: pointer;
+}
+.confirm_btn:hover{
+    background-color:rgba(0,0,0,0.8) ;
+    color:rgba(255, 255, 255, 0.8);
 }
