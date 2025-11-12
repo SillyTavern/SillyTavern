@@ -7,12 +7,10 @@ import { power_user } from './power-user.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
-import { setting_names, showTGSamplerControls, textgenerationwebui_settings } from './textgen-settings.js';
+import { setting_names as TGsamplerNames, showTGSamplerControls, textgenerationwebui_settings } from './textgen-settings.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup, POPUP_TYPE } from './popup.js';
 import { localforage } from '../lib.js';
-
-const TGsamplerNames = setting_names;
 
 const forcedOnColoring = 'color: #89db35;';
 const forcedOffColoring = 'color: #e84f62;';
