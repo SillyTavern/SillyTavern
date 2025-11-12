@@ -27,6 +27,7 @@ import { oai_settings, openai_setting_names, openai_settings } from './openai.js
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { reasoning_templates } from './reasoning.js';
+import { getManualPresetSamplers, resetPresetSelectedSamplers, setPresetSamplersState } from './samplerSelect.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -35,9 +36,6 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import { renderTemplateAsync } from './templates.js';
 import {
-    getManualPresetSamplers,
-    resetPresetSelectedSamplers,
-    setPresetSamplersState,
     textgenerationwebui_settings as textgen_settings,
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
