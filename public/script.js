@@ -9555,9 +9555,9 @@ export async function swipe(_event, direction, { source, repeated, message = cha
                     return true;
                 };
                 //Wait for the animation's end. https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
-                const animation = swipedElementsDiv[0].getAnimations().filter((a) => a['animationName'] == 'slide')[0];
+                const animation = swipedElementsDiv[0]?.getAnimations().filter((a) => a['animationName'] == 'slide')[0];
                 try {
-                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The ${duration}ms swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)]);
+                    await Promise.race([animation?.finished, createTimeout(duration * 2, `The ${duration}ms swipe animation has not ended after ${duration * 2}ms. It has been skipped.`)].filter(Boolean));
                 } catch (error) {
                     console.warn(error);
                 }
