@@ -255,6 +255,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB]) {
         throw new Error('Electron Hub API key is not set.');
     }
+
+    if (multimodalApi === 'chutes' && !secret_state[SECRET_KEYS.CHUTES]) {
+        throw new Error('Chutes API key is not set.');
+    }
 }
 
 /**

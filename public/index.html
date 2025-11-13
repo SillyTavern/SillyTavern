@@ -678,6 +678,9 @@
                                 <div data-source="electronhub">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="electronhub_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
+                                <div data-source="chutes">
+                                    <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="chutes_max_prompt_cost" data-i18n="Unknown">Unknown</span>
+                                </div>
                                 <hr>
                                 <div class="range-block">
                                     <label for="stream_toggle" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
@@ -693,7 +696,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -732,7 +735,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub">
+                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,chutes">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -745,7 +748,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -982,7 +985,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,chutes,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1951,7 +1954,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,electronhub,nanogpt">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,electronhub,chutes,nanogpt">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -1965,7 +1968,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2058,7 +2061,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,chutes,azure_openai,nanogpt">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2072,7 +2075,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,chutes,azure_openai">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2785,6 +2788,7 @@
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="azure_openai">Azure OpenAI</option>
                                 <option value="claude">Claude</option>
+                                <option value="chutes">Chutes</option>
                                 <option value="cohere">Cohere</option>
                                 <!-- Temporarily disabled. -->
                                 <!-- <option value="cometapi">CometAPI</option> -->
@@ -3424,6 +3428,45 @@
                                                     Put OpenAI models in one group, Anthropic models in other group, etc. Can be combined with sorting.
                                                 </span>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="chutes_form" data-source="chutes">
+                            <h4 data-i18n="Chutes API Key">Chutes API Key</h4>
+                            <div id="chutes_credits_display">
+                                <a href="https://chutes.ai/app/api/billing-balance" target="_blank" data-i18n="View Billing/Balance">View Billing/Balance</a>
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_chutes" name="api_key_chutes" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_chutes"></div>
+                            </div>
+                            <div data-for="api_key_chutes" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Chutes Model">Chutes Model</h4>
+                                <select id="model_chutes_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                            <div class="marginTopBot5">
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="Chutes Model Sorting">Chutes Model Sorting</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content m-b-1">
+                                        <div class="marginTopBot5">
+                                            <label for="chutes_sort_models" class="checkbox_label">
+                                                <select id="chutes_sort_models">
+                                                    <option data-i18n="Alphabetically" value="alphabetically">Alphabetically</option>
+                                                    <option data-i18n="Input Price" value="pricing.input">Input Price (cheapest)</option>
+                                                    <option data-i18n="Output Price" value="pricing.output">Output Price (cheapest)</option>
+                                                    <option data-i18n="Context Size" value="context_length">Context Size</option>
+                                                </select>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>

@@ -81,6 +81,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         }
 
+        if (request.body.api === 'chutes') {
+            key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+        }
+
         if (request.body.api === 'electronhub') {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
@@ -173,6 +177,10 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://nano-gpt.com/api/v1/chat/completions';
         }
 
+        if (request.body.api === 'chutes') {
+            apiUrl = 'https://llm.chutes.ai/v1/chat/completions';
+        }
+        
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
         }
@@ -419,6 +427,221 @@ router.post('/electronhub/models', async (request, response) => {
         return response.json(models);
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.post('/chutes/generate-voice', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            text: request.body.input,
+            voice: request.body.voice || 'af_heart',
+        };
+
+        const result = await fetch('https://chutes-kokoro.chutes.ai/speak', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes TTS request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || 'audio/mpeg';
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', contentType);
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('Chutes TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.post('/chutes/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const modelsResult = await fetch('https://llm.chutes.ai/v1/models', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResult.ok) {
+            const text = await modelsResult.text();
+            console.warn('Chutes models request failed', modelsResult.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const modelsData = await modelsResult.json();
+        const models = /** @type {{object: string, data: Array<{id: string, chute_id: string, object: string, created: number, owned_by: string, pricing?: any, input_modalities?: string[], output_modalities?: string[], context_length?: number}>}} */ (modelsData);
+
+        const pricingResult = await fetch('https://api.chutes.ai/chutes/?limit=999', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        let pricingMap = new Map();
+        if (pricingResult.ok) {
+            const pricingData = await pricingResult.json();
+            const chutesData = /** @type {{items: Array<{chute_id: string, name: string, current_estimated_price?: {per_million_tokens?: {input?: {usd: number}, output?: {usd: number}}}}>}} */ (pricingData);
+            
+            chutesData.items.forEach(item => {
+                if (item.chute_id && item.current_estimated_price?.per_million_tokens) {
+                    pricingMap.set(item.chute_id, item.current_estimated_price.per_million_tokens);
+                }
+            });
+        }
+
+        const enrichedModels = models.data
+            .filter(model => !model.id.toLowerCase().includes('affine'))
+            .map(model => {
+                const pricing = model.chute_id ? pricingMap.get(model.chute_id) : null;
+                
+                if (pricing) {
+                    return {
+                        ...model,
+                        pricing: {
+                            input: pricing.input?.usd,
+                            output: pricing.output?.usd,
+                        }
+                    };
+                }
+                return model;
+            });
+
+        return response.json(enrichedModels);
+    } catch (error) {
+        console.error('Chutes models fetch failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+// Chutes user balance
+router.post('/chutes/user/balance', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch('https://api.chutes.ai/users/me', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes user balance request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        return response.json(data);
+    } catch (error) {
+        console.error('Chutes user balance fetch failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+// Chutes user quotas
+router.post('/chutes/user/quotas', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const chute_id = request.body.chute_id || '';
+        console.log('Fetching quota for chute_id:', chute_id);
+
+        const [quotaResult, usageResult] = await Promise.all([
+            fetch('https://api.chutes.ai/users/me/quotas', {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${key}`,
+                },
+            }),
+            fetch(`https://api.chutes.ai/users/me/quota_usage/${chute_id}`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${key}`,
+                },
+            })
+        ]);
+
+        if (!quotaResult.ok || !usageResult.ok) {
+            const text = quotaResult.ok ? await usageResult.text() : await quotaResult.text();
+            console.warn('Chutes user quota/usage request failed', text);
+            return response.status(500).send(text);
+        }
+
+        const quotaDataResponse = await quotaResult.json();
+        const usageData = await usageResult.json();
+        
+        console.log('Quota data:', quotaDataResponse);
+        console.log('Usage data:', usageData);
+        
+        const quotaData = {};
+        if (Array.isArray(quotaDataResponse)) {
+            quotaDataResponse.forEach(quota => {
+                if (quota.chute_id && quota.quota !== undefined) {
+                    quotaData[quota.chute_id] = quota.quota;
+                }
+            });
+        } else {
+            Object.assign(quotaData, quotaDataResponse);
+        }
+        
+        /** @type {{quota?: number, used?: number, [key: string]: any}} */
+        const typedUsageData = /** @type {{quota?: number, used?: number, [key: string]: any}} */ (usageData);
+        
+        /** @type {{quotas: any, usage: any, remaining: {[key: string]: number}}} */
+        const combinedData = {
+            quotas: quotaData,
+            usage: {},
+            remaining: {}
+        };
+        
+        if (quotaData && typedUsageData) {
+            combinedData.usage = typedUsageData;
+            Object.keys(quotaData).forEach(key => {
+                const limit = quotaData[key];
+                const used = typedUsageData.used || 0;
+                combinedData.remaining[key] = Math.max(0, limit - used);
+            });
+        }
+        
+        return response.json(combinedData);
+    } catch (error) {
+        console.error('Chutes user quotas fetch failed', error);
         response.status(500).send('Internal server error');
     }
 });

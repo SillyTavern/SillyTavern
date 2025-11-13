@@ -441,6 +441,7 @@ jQuery(async function () {
                         'aimlapi': SECRET_KEYS.AIMLAPI,
                         'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
+                        'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
                     };
 
@@ -549,6 +550,7 @@ jQuery(async function () {
         await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
         await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
+        await processEndpoint('chutes', '/api/backends/chat-completions/multimodal-models/chutes');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');

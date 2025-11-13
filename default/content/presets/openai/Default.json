@@ -8,6 +8,8 @@
     "openrouter_sort_models": "alphabetically",
     "ai21_model": "jamba-large",
     "mistralai_model": "mistral-large-latest",
+    "chutes_model": "deepseek-ai/DeepSeek-V3-0324",
+    "chutes_sort_models": "alphabetically",
     "electronhub_model": "gpt-4o-mini",
     "electronhub_sort_models": "alphabetically",
     "electronhub_group_models": false,
