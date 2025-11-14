@@ -108,10 +108,6 @@ const CORS = cors({
 
 app.use(CORS);
 
-if (cliArgs.listen && cliArgs.basicAuthMode) {
-    app.use(basicAuthMiddleware);
-}
-
 if (cliArgs.whitelistMode) {
     const whitelistMiddleware = await getWhitelistMiddleware();
     app.use(whitelistMiddleware);
@@ -219,6 +215,11 @@ app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
 // Public API
 app.use('/api/users', usersPublicRouter);
+
+// Load manifest.json and other frontend assets before basic auth
+if (cliArgs.listen && cliArgs.basicAuthMode) {
+    app.use(basicAuthMiddleware);
+}
 
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);

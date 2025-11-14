@@ -17,8 +17,3 @@ body.safari #select_chat_div {
 body.safari #select_chat_popup {
     height: max-content;
 }
-
-/* Compatible with non-rectangular screens */
-body.safari #form_sheld {
-    margin-bottom: env(safe-area-inset-bottom);
-}
