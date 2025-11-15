@@ -140,6 +140,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [folder_type] - The bogus folder type of this tag (based on `TAG_FOLDER_TYPES`)
  * @property {string} [filter_state] - The saved state of the filter chosen of this tag (based on `FILTER_STATES`)
  * @property {number} [sort_order] - A custom integer representing the sort order if tags are sorted
+ * @property {number} [count] - The Number of entities that have this tag assigned
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
@@ -1336,6 +1337,26 @@ async function onViewTagsListClick() {
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
+    const $sortModeSelect = html.find('#tag_sort_mode_select');
+
+    // initialize sort mode select value based on existing settings
+    if (!power_user.tag_sort_mode) {
+        power_user.tag_sort_mode = power_user.auto_sort_tags ? 'alphabetical' : 'manual';
+    }
+    $sortModeSelect.val(power_user.tag_sort_mode);
+
+    $sortModeSelect.on('change', function() {
+        const newMode = $(this).val();
+        power_user.tag_sort_mode = newMode;
+
+        // update new setting for auto_sort_tags for backward compatibility
+        power_user.auto_sort_tags = (newMode === 'alphabetical');
+
+        saveSettingsDebounced();
+
+        printViewTagList(tagContainer);
+    });
+
     printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
@@ -1380,10 +1401,11 @@ function makeTagListDraggable(tagContainer) {
         });
 
         // If tags were dragged manually, we have to disable auto sorting
-        if (power_user.auto_sort_tags) {
+        if (power_user.tag_sort_mode !== 'manual') {
+            power_user.tag_sort_mode = 'manual';
             power_user.auto_sort_tags = false;
-            $('#tag_view_list input[name="auto_sort_tags"]').prop('checked', false);
-            toastr.info('Automatic sorting of tags deactivated.');
+            $('#tag_sort_mode_select').val('manual');
+            toastr.info('Switched to Manual sorting mode.');
         }
 
         // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
@@ -1417,8 +1439,21 @@ function sortTags(tags) {
  * @returns {number} The compare result
  */
 function compareTagsForSort(a, b) {
+    // default sort: alphabetical, case insensitive
     const defaultSort = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-    if (power_user.auto_sort_tags) {
+
+    // sort on number of entries
+    if (power_user.tag_sort_mode === 'by_entries') {
+
+        const countA = a.count !== undefined ? a.count : -1;
+        const countB = b.count !== undefined ? b.count : -1;
+
+        if (countA !== countB) {
+            return countB - countA;
+        }
+        return defaultSort;
+    }
+    if (power_user.tag_sort_mode === 'alphabetical' || (power_user.tag_sort_mode !== 'manual' && power_user.auto_sort_tags)) {
         return defaultSort;
     }
 
@@ -1620,8 +1655,8 @@ function onTagCreateClick() {
     toastr.success('Tag created', 'Create Tag');
 }
 
-function appendViewTagToList(list, tag, everything) {
-    const count = everything.filter(x => x == tag.id).length;
+function appendViewTagToList(list, tag, count) {
+    // const count = everything.filter(x => x == tag.id).length;
     const template = VIEW_TAG_TEMPLATE.clone();
     template.attr('id', tag.id);
     template.find('.tag_view_counter_value').text(count);
@@ -1872,9 +1907,13 @@ function copyTags(data) {
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
-    const sortedTags = sortTags(tags);
+    const tagsWithCounts = tags.map(tag => {
+        const nums = everything.filter(x => x === tag.id).length;
+        return { ...tag, count: nums };
+    });
+    const sortedTags = sortTags(tagsWithCounts);
     for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, everything);
+        appendViewTagToList(tagContainer, tag, tag.count);
     }
 }
 

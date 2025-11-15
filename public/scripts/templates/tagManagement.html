@@ -24,14 +24,10 @@
         <small>
             <span data-i18n="Drag handle to reorder. Click name to rename. Click color to change display.">Drag handle to reorder. Click name to rename. Click color to change display.</span><br>
             {{#if bogus_folders}}<span data-i18n="Click on the folder icon to use this tag as a folder.">Click on the folder icon to use this tag as a folder.</span><br>{{/if}}
-            <label class="checkbox_label flex-container alignItemsCenter m-t-1" for="auto_sort_tags">
-                <input type="checkbox" id="auto_sort_tags" name="auto_sort_tags" {{#if auto_sort_tags}} checked{{/if}} />
-                <span data-i18n="Use alphabetical sorting">
-                    Use alphabetical sorting
-                </span>
-                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]tags_sorting_desc"
-                    title="If enabled, tags will automatically be sorted alphabetically on creation or rename.&#10;If disabled, new tags will be appended at the end.&#10;&#10;If a tag is manually reordered by dragging, automatic sorting will be disabled.">
-                </div>
-            </label>
+            <span data-i18n="Sort mode">Sort mode</span>:
+            <select id="tag_sort_mode_select" class="flex-1" style="margin-left: 8px;">
+            <option value="manual" data-i18n="Manual (Drag & Drop)">Manual (Drag & Drop)</option>
+            <option value="alphabetical" data-i18n="Alphabetical (A-Z)">Alphabetical (A-Z)</option>
+            <option value="by_entries" data-i18n="Most Used (By Count)">Most Used (By Count)</option>
         </small>
     </div>
