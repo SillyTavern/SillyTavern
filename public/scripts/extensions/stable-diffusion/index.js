@@ -1781,7 +1781,7 @@ async function loadModels() {
  * @param {string} source Source
  */
 function switchOpenAIModelControls(modelId, source) {
-    const modelControls = $('.sd_settings [data-sd-openai-model]');
+    const modelControls = $('.sd_settings [data-sd-model]');
     modelControls.show();
 
     if (source !== sources.openai || !modelId) {
@@ -1789,7 +1789,7 @@ function switchOpenAIModelControls(modelId, source) {
     }
 
     modelControls.each(function () {
-        const models = String($(this).attr('data-sd-openai-model') || '').split(',').map(m => m.trim());
+        const models = String($(this).attr('data-sd-model') || '').split(',').map(m => m.trim());
         $(this).toggle(models.includes(modelId));
     });
 }
