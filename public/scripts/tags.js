@@ -1634,7 +1634,6 @@ function onTagCreateClick() {
 }
 
 function appendViewTagToList(list, tag, count) {
-    // const count = everything.filter(x => x == tag.id).length;
     const template = VIEW_TAG_TEMPLATE.clone();
     template.attr('id', tag.id);
     template.find('.tag_view_counter_value').text(count);
