@@ -161,8 +161,7 @@
                 </div>
             </div>
             <div data-sd-source="openai,aimlapi">
-                <small data-i18n="These settings only apply to DALL-E 3">These settings only apply to DALL-E 3</small>
-                <div class="flex-container">
+                <div data-sd-model="dall-e-3" class="flex-container">
                     <div class="flex1">
                         <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
                         <select id="sd_openai_style">
@@ -175,6 +174,16 @@
                         <select id="sd_openai_quality">
                             <option value="standard" data-i18n="Standard">Standard</option>
                             <option value="hd" data-i18n="HD">HD</option>
+                        </select>
+                    </div>
+                </div>
+                <div data-sd-model="sora-2,sora-2-pro" class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_openai_duration" data-i18n="Duration">Duration</label>
+                        <select id="sd_openai_duration">
+                            <option value="4" data-i18n="Short (4 seconds)">Short (4 seconds)</option>
+                            <option value="8" data-i18n="Medium (8 seconds)">Medium (8 seconds)</option>
+                            <option value="12" data-i18n="Long (16 seconds)">Long (12 seconds)</option>
                         </select>
                     </div>
                 </div>

@@ -140,8 +140,18 @@ export function ensurePlainObject(obj) {
     return obj;
 }
 
+/**
+ * Escapes text for safe HTML rendering.
+ * @param {string?} str
+ * @returns {string}
+ */
 export function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**

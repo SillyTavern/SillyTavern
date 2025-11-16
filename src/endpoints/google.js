@@ -8,7 +8,7 @@ import urlJoin from 'url-join';
 import lodash from 'lodash';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { GEMINI_SAFETY } from '../constants.js';
+import { GEMINI_SAFETY, VERTEX_SAFETY } from '../constants.js';
 import { delay, getConfigValue, trimTrailingSlash } from '../util.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
@@ -159,12 +159,13 @@ export function getProjectIdFromServiceAccount(serviceAccount) {
  * @param {express.Request} request Express request object
  * @param {string} model Model name to use
  * @param {string} endpoint API endpoint (default: 'generateContent')
- * @returns {Promise<{url: string, headers: object, apiName: string, baseUrl: string}>} URL, headers, and API name
+ * @returns {Promise<{url: string, headers: object, apiName: string, baseUrl: string, safetySettings: object[]}>} URL, headers, and API name
  */
 export async function getGoogleApiConfig(request, model, endpoint = 'generateContent') {
     const useVertexAi = request.body.api === 'vertexai';
     const region = request.body.vertexai_region || 'us-central1';
     const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
+    const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
     let url;
     let baseUrl;
@@ -225,7 +226,7 @@ export async function getGoogleApiConfig(request, model, endpoint = 'generateCon
         headers['x-goog-api-key'] = apiKey;
     }
 
-    return { url, headers, apiName, baseUrl };
+    return { url, headers, apiName, baseUrl, safetySettings };
 }
 
 export const router = express.Router();
@@ -235,7 +236,7 @@ router.post('/caption-image', async (request, response) => {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
         const model = request.body.model || 'gemini-2.0-flash';
-        const { url, headers, apiName } = await getGoogleApiConfig(request, model);
+        const { url, headers, apiName, safetySettings } = await getGoogleApiConfig(request, model);
 
         const body = {
             contents: [{
@@ -249,7 +250,7 @@ router.post('/caption-image', async (request, response) => {
                         },
                     }],
             }],
-            safetySettings: GEMINI_SAFETY,
+            safetySettings: safetySettings,
         };
 
         console.debug(`${apiName} captioning request`, model, body);
@@ -355,7 +356,7 @@ router.post('/list-native-voices', async (_, response) => {
 router.post('/generate-native-tts', async (request, response) => {
     try {
         const { text, voice, model } = request.body;
-        const { url, headers, apiName } = await getGoogleApiConfig(request, model);
+        const { url, headers, apiName, safetySettings } = await getGoogleApiConfig(request, model);
 
         console.debug(`${apiName} TTS request`, { model, text, voice });
 
@@ -374,7 +375,7 @@ router.post('/generate-native-tts', async (request, response) => {
                     },
                 },
             },
-            safetySettings: GEMINI_SAFETY,
+            safetySettings: safetySettings,
         };
 
         const result = await fetch(url, {

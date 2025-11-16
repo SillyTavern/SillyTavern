@@ -311,6 +311,7 @@ const defaultSettings = {
     // OpenAI settings
     openai_style: 'vivid',
     openai_quality: 'standard',
+    openai_duration: '8',
 
     style: 'Default',
     styles: defaultStyles,
@@ -510,6 +511,7 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
@@ -1025,6 +1027,11 @@ async function onOpenAiQualitySelect() {
     saveSettingsDebounced();
 }
 
+async function onOpenAiDurationSelect() {
+    extension_settings.sd.openai_duration = String($('#sd_openai_duration').find(':selected').val());
+    saveSettingsDebounced();
+}
+
 async function onViewAnlasClick() {
     const result = await loadNovelSubscriptionData();
 
@@ -1294,6 +1301,8 @@ async function onModelChange() {
         const models = cachedModel ? [cachedModel] : await loadElectronHubModels();
         ensureElectronHubQualitySelect(models);
     }
+
+    switchModelSpecificControls(extension_settings.sd.model);
 
     const cloudSources = [
         sources.horde,
@@ -1745,6 +1754,8 @@ async function loadModels() {
         ensureElectronHubQualitySelect(models);
     }
 
+    switchModelSpecificControls(extension_settings.sd.model);
+
     for (const model of models) {
         const option = document.createElement('option');
         option.innerText = model.text;
@@ -1758,6 +1769,24 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+/**
+ * Show or hide model-specific controls based on the selected model.
+ * @param {string} modelId Model ID
+ */
+function switchModelSpecificControls(modelId) {
+    const modelControls = $('.sd_settings [data-sd-model]');
+    modelControls.hide();
+
+    if (!modelId) {
+        return;
+    }
+
+    modelControls.each(function () {
+        const models = String($(this).attr('data-sd-model') || '').split(',').map(m => m.trim());
+        $(this).toggle(models.includes(modelId));
+    });
 }
 
 /**
@@ -2054,6 +2083,8 @@ async function loadOpenAiModels() {
         { value: 'gpt-image-1', text: 'gpt-image-1' },
         { value: 'dall-e-3', text: 'dall-e-3' },
         { value: 'dall-e-2', text: 'dall-e-2' },
+        { value: 'sora-2', text: 'sora-2' },
+        { value: 'sora-2-pro', text: 'sora-2-pro' },
     ];
 }
 
@@ -3512,6 +3543,7 @@ async function generateOpenAiImage(prompt, signal) {
     const isDalle2 = extension_settings.sd.model === 'dall-e-2';
     const isDalle3 = extension_settings.sd.model === 'dall-e-3';
     const isGptImg = extension_settings.sd.model === 'gpt-image-1';
+    const isSora2 = /sora-2/.test(extension_settings.sd.model);
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
         prompt = prompt.substring(0, dalle2PromptLimit);
@@ -3548,6 +3580,30 @@ async function generateOpenAiImage(prompt, signal) {
     if (isDalle2 && (extension_settings.sd.width <= 512 && extension_settings.sd.height <= 512)) {
         width = 512;
         height = 512;
+    }
+
+    if (isSora2) {
+        width = aspectRatio >= 1 ? 1280 : 720;
+        height = aspectRatio >= 1 ? 720 : 1280;
+
+        const videoResult = await fetch('/api/openai/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                size: `${width}x${height}`,
+                seconds: extension_settings.sd.openai_duration,
+            }),
+        });
+
+        if (!videoResult.ok) {
+            throw new Error(await videoResult.text());
+        }
+
+        const { format, data } = await videoResult.json();
+        return { format, data };
     }
 
     const result = await fetch('/api/openai/generate-image', {
@@ -4859,6 +4915,7 @@ jQuery(async () => {
     $('#sd_interactive_mode').on('input', onInteractiveModeInput);
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
+    $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
