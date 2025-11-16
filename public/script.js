@@ -2246,15 +2246,15 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
      * @property {boolean} paused Whether the media is paused
      */
     function saveMediaStates() {
-        const times = new Map();
+        const states = new Map();
         const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
             if (element instanceof HTMLMediaElement) {
                 const state = { currentTime: element.currentTime, paused: element.paused };
-                times.set(element.currentSrc, state);
+                states.set(element.currentSrc, state);
             }
         });
-        return times;
+        return states;
     }
 
     /**
