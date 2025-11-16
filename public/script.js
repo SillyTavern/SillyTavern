@@ -2247,7 +2247,7 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
      */
     function saveMediaStates() {
         const times = new Map();
-        const media = messageElement.find('.mes_media_container video, .mes_media_container audio');
+        const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
             if (element instanceof HTMLMediaElement) {
                 const state = { currentTime: element.currentTime, paused: element.paused };
@@ -2262,7 +2262,7 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
      * @param {Map<string, MediaState>} states Media playback times by source URL
      */
     function restoreMediaStates(states) {
-        const media = messageElement.find('.mes_media_container video, .mes_media_container audio');
+        const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
             if (element instanceof HTMLMediaElement && states.has(element.currentSrc)) {
                 const state = states.get(element.currentSrc);
