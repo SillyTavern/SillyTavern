@@ -1422,19 +1422,15 @@ function compareTagsForSort(a, b) {
 
     // sort on number of entries
     if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
-
-        const countA = a.count !== undefined ? a.count : -1;
-        const countB = b.count !== undefined ? b.count : -1;
-
-        if (countA !== countB) {
-            return countB - countA;
-        }
-        return defaultSort;
+        return ((b.count || 0) - (a.count || 0)) || defaultSort;
     }
+
+    // alphabetical sort
     if (power_user.tag_sort_mode === tag_sort_mode.ALPHABETICAL) {
         return defaultSort;
     }
 
+    // manual sort
     if (a.sort_order !== undefined && b.sort_order !== undefined) {
         return a.sort_order - b.sort_order;
     } else if (a.sort_order !== undefined) {
