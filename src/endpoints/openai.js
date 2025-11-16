@@ -535,7 +535,7 @@ router.post('/generate-video', async (request, response) => {
 
             /** @type {any} */
             const pollResult = await pollResponse.json();
-            console.debug('OpenAI video job status', pollResult);
+            console.debug(`OpenAI video job status: ${pollResult.status}, progress: ${pollResult.progress}`);
 
             if (pollResult.status === 'failed') {
                 console.warn('OpenAI video generation failed', pollResult);
