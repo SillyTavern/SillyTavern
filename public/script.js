@@ -9426,11 +9426,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     /**
      * Calculates the next swipe duration with how many swipes have been repeated.
      * @param {number} animation_duration
-     * @returns
+     * @returns {number} The adjusted swipe duration.
      */
     function getSwipeDuration(animation_duration) {
-        let now = performance.now();
-        let resetTime = 1000;
+        const now = performance.now();
+        const resetTime = 500;
 
         //Reset the counter if the last swipe was more than a second ago.
         if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
@@ -9438,7 +9438,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         lastSwipeTime = now;
 
         //At 4 swipes, animation_duration will be halved.
-        let sigmoid = 1 / (1 + Math.exp(heldSwipes - 4 ));
+        const sigmoid = 1 / (1 + Math.exp(heldSwipes - 4));
 
         return animation_duration * sigmoid;
     }
@@ -9488,7 +9488,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId );
+                await redisplayChat(chat, mesId);
             }
             else {
                 await Popup.show.confirm(
