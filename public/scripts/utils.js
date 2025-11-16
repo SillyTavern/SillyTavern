@@ -100,7 +100,7 @@ export const navigation_option = {
  * @param {any} item The item to check.
  * @returns {boolean} True if the item is an object, false otherwise.
  */
-function isObject(item) {
+export function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
 
@@ -140,8 +140,18 @@ export function ensurePlainObject(obj) {
     return obj;
 }
 
+/**
+ * Escapes text for safe HTML rendering.
+ * @param {string?} str
+ * @returns {string}
+ */
 export function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**

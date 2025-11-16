@@ -25,6 +25,29 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 /**
+ * Validates and filters the whitelist, removing any invalid entries.
+ * @param {string[]} entries - The whitelist entries to validate
+ * @returns {string[]} The filtered list of valid whitelist entries
+ */
+function validateWhitelist(entries) {
+    const validEntries = [];
+
+    for (const entry of entries) {
+        try {
+            // This will throw if the entry is not a valid IP or CIDR
+            ipMatching.getMatch(entry);
+            validEntries.push(entry);
+        } catch (e) {
+            console.warn(`Whitelist ${color.red('Warning')}: Ignoring invalid entry ${color.yellow(entry)} - ${e.message}`);
+        }
+    }
+
+    return validEntries;
+}
+
+whitelist = validateWhitelist(whitelist);
+
+/**
  * Get the client IP address from the request headers.
  * @param {import('express').Request} req Express request object
  * @returns {string|undefined} The client IP address
@@ -91,9 +114,19 @@ export default async function getWhitelistMiddleware() {
         const forwardedIp = getForwardedIp(req);
         const userAgent = req.headers['user-agent'];
 
+        /**
+         * Checks if an IP address matches any entry in the whitelist.
+         * @param {string[]} whitelist - The list of whitelisted IPs/CIDRs
+         * @param {string} ip - The IP address to check
+         * @returns {boolean} True if the IP matches any whitelist entry
+         */
+        function isIPInWhitelist(whitelist, ip) {
+            return whitelist.some(x => ipMatching.matches(ip, ipMatching.getMatch(x)));
+        }
+
         //clientIp = req.connection.remoteAddress.split(':').pop();
-        if (!whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))
-            || forwardedIp && !whitelist.some(x => ipMatching.matches(forwardedIp, ipMatching.getMatch(x)))
+        if (!isIPInWhitelist(whitelist, clientIp)
+            || forwardedIp && !isIPInWhitelist(whitelist, forwardedIp)
         ) {
             // Log the connection attempt with real IP address
             const ipDetails = forwardedIp

@@ -725,7 +725,7 @@ function getExistingTags(newTags) {
 }
 
 const IMPORT_EXLCUDED_TAGS = ['ROOT', 'TAVERN'];
-const ANTI_TROLL_MAX_TAGS = 15;
+const ANTI_TROLL_MAX_TAGS = 50;
 
 /**
  * Imports tags for a given character
