@@ -1619,6 +1619,12 @@ function onTagCreateClick() {
     toastr.success('Tag created', 'Create Tag');
 }
 
+/**
+ * Appends a tag to the view tag list.
+ * @param {JQuery<HTMLElement>} list List element
+ * @param {Tag} tag Tag object
+ * @param {number} count Count of characters/groups using this tag
+ */
 function appendViewTagToList(list, tag, count) {
     const template = VIEW_TAG_TEMPLATE.clone();
     template.attr('id', tag.id);
@@ -1867,12 +1873,17 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
+/**
+ * Prints the tag list in the view tags popup.
+ * @param {JQuery<HTMLElement>} tagContainer Container element
+ * @param {boolean} empty Whether to empty the container before printing
+ */
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
     const tagsWithCounts = tags.map(tag => {
-        const nums = everything.filter(x => x === tag.id).length;
-        return { ...tag, count: nums };
+        const count = everything.filter(x => x === tag.id).length;
+        return { ...tag, count: count };
     });
     const sortedTags = sortTags(tagsWithCounts);
     for (const tag of sortedTags) {
