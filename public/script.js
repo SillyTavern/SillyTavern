@@ -2241,9 +2241,6 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
     /**
      * Saves the current playback times of media elements in the message.
      * @returns {Map<string, MediaState>} Media playback times by source URL
-     * @typedef {object} MediaState
-     * @property {number} currentTime Current playback time
-     * @property {boolean} paused Whether the media is paused
      */
     function saveMediaStates() {
         const states = new Map();
