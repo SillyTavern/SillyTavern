@@ -19,6 +19,7 @@ import {
     substituteParams,
     sendTextareaMessage,
     doNavbarIconClick,
+    isSwipingAllowed,
 } from '../script.js';
 
 import {
@@ -410,6 +411,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
+                    || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
@@ -1109,8 +1111,8 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_left:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
@@ -1123,8 +1125,8 @@ export function initRossMods() {
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
+                isSwipingAllowed &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_right:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&

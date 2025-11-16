@@ -40,6 +40,7 @@ import {
     postProcessPrompt,
     PROMPT_PROCESSING_TYPE,
     addAssistantPrefix,
+    embedOpenRouterMedia,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -73,6 +74,7 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_ZAI = 'https://api.z.ai/api/paas/v4';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -542,8 +544,10 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                return response.status(500).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
 
             /** @type {any} */
@@ -1836,8 +1840,11 @@ router.post('/generate', function (request, response) {
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
         const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
-        if (Array.isArray(request.body.messages) && Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
-            cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+        if (Array.isArray(request.body.messages)) {
+            embedOpenRouterMedia(request.body.messages);
+            if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
+                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+            }
         }
 
         const isGemini = /google\/gemini/.test(request.body.model);
@@ -1958,6 +1965,20 @@ router.post('/generate', function (request, response) {
             reasoning_effort: request.body.reasoning_effort,
         };
         throw new Error('This provider is temporarily disabled.');
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
+        apiUrl = API_ZAI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+        headers = {
+            'Accept-Language': 'en-US,en',
+        };
+        bodyParams = {
+            thinking: {
+                type: request.body.include_reasoning ? 'enabled' : 'disabled',
+            },
+        };
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

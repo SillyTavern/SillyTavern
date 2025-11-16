@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { copyText, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, flashHighlight } from './utils.js';
 
 import {
     Generate,
@@ -3866,11 +3866,6 @@ async function addSwipeCallback(args, value) {
         return '';
     }
 
-    if (lastMessage.extra?.image) {
-        toastr.warning(t`Can't add swipes to message containing an image.`);
-        return '';
-    }
-
     if (!Array.isArray(lastMessage.swipes)) {
         lastMessage.swipes = [lastMessage.mes];
         lastMessage.swipe_info = [{}];
@@ -4564,7 +4559,7 @@ export async function sendMessageAs(args, text) {
 
     message.swipe_id = 0;
     message.swipes = [message.mes];
-    message.swipes_info = [{
+    message.swipe_info = [{
         send_date: message.send_date,
         gen_started: null,
         gen_finished: null,
@@ -4858,6 +4853,7 @@ function getModelOptions(quiet) {
         { id: 'model_moonshot_select', api: 'openai', type: chat_completion_sources.MOONSHOT },
         { id: 'model_fireworks_select', api: 'openai', type: chat_completion_sources.FIREWORKS },
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
+        { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -5543,15 +5539,6 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
-    function canUseNegativeLookbehind() {
-        try {
-            new RegExp('(?<!_)');
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
     if (!canUseNegativeLookbehind()) {
         console.warn('Cannot use negative lookbehind in this browser');
         return;

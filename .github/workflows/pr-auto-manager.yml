@@ -56,6 +56,38 @@ jobs:
             dist/
             lib/
 
+  run-tests:
+    name: ✅ Run Unit Tests on PR
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+        with:
+            ref: ${{ github.event.pull_request.head.sha }}
+            repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        # Setup Node.js environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm ci --prefix tests
+
+      - name: Run unit tests
+        run: npm run test:unit --prefix tests
+
   label-by-size:
     name: 🏷️ Label PR by Size
     # This job should run after all others, to prevent possible concurrency issues

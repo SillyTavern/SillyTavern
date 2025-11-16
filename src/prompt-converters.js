@@ -501,6 +501,20 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
         //create the prompt parts
         const parts = [];
         message.content.forEach((part) => {
+            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType) => {
+                if (url && url.startsWith('data:')) {
+                    const [header, base64Data] = url.split(',');
+                    const mimeType = header.match(/data:([^;]+)/)?.[1] || defaultMimeType;
+
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data,
+                        },
+                    });
+                }
+            };
+
             if (part.type === 'text') {
                 parts.push({ text: part.text });
             } else if (part.type === 'tool_call_id') {
@@ -523,27 +537,14 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
                     toolNameMap[toolCall.id] = toolCall.function.name;
                 });
             } else if (part.type === 'image_url') {
-                const mimeType = part.image_url.url.split(';')[0].split(':')[1];
-                const base64Data = part.image_url.url.split(',')[1];
-                parts.push({
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Data,
-                    },
-                });
+                const imageUrl = part.image_url?.url;
+                addDataUrlPart(imageUrl, 'image/png');
             } else if (part.type === 'video_url') {
                 const videoUrl = part.video_url?.url;
-                if (videoUrl && videoUrl.startsWith('data:')) {
-                    const [header, data] = videoUrl.split(',');
-                    const mimeType = header.match(/data:([^;]+)/)?.[1] || 'video/mp4';
-
-                    parts.push({
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: data,
-                        },
-                    });
-                }
+                addDataUrlPart(videoUrl, 'video/mp4');
+            } else if (part.type === 'audio_url') {
+                const audioUrl = part.audio_url?.url;
+                addDataUrlPart(audioUrl, 'audio/mpeg');
             }
         });
 
@@ -793,7 +794,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                     return content.text;
                 }
                 // Could be extended with other non-text types
-                if (['image_url', 'video_url'].includes(content.type)) {
+                if (['image_url', 'video_url', 'audio_url'].includes(content.type)) {
                     const token = crypto.randomBytes(32).toString('base64');
                     contentTokens.set(token, content);
                     return token;
@@ -1154,4 +1155,44 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     return null;
+}
+
+/**
+ * Embed media content in OpenRouter messages.
+ * @param {object[]} messages Array of messages
+ */
+export function embedOpenRouterMedia(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.content)) {
+            continue;
+        }
+
+        for (const contentPart of message.content) {
+            if (contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
+                contentPart.type = 'input_video';
+            }
+
+            if (contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
+                const formatMap = {
+                    'audio/mpeg': 'mp3',
+                    'audio/wav': 'wav',
+                };
+
+                const [header, base64Data] = contentPart.audio_url.url.split(',');
+                const mimeType = header.match(/data:([^;]+)/)?.[1] || 'audio/mpeg';
+
+                contentPart.type = 'input_audio';
+                contentPart.input_audio = {
+                    format: formatMap[mimeType] || 'mp3',
+                    data: base64Data,
+                };
+
+                delete contentPart.audio_url;
+            }
+        }
+    }
 }

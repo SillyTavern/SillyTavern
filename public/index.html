@@ -648,7 +648,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536" step="1">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="128000" step="1">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai">
@@ -693,7 +693,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -745,7 +745,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1965,7 +1965,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai,zai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1980,7 +1980,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1990,13 +1990,9 @@
                                             </div>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it. Use the</span>
-                                            <code><i class="fa-solid fa-paperclip"></i></code>
-                                            <span data-i18n="image_inlining_hint_2">action on any message or the</span>
-                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
-                                            <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2009,7 +2005,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
                                         <label for="openai_video_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_video_inlining" type="checkbox" />
                                             <span data-i18n="Send inline videos">Send inline videos</span>
@@ -2019,12 +2015,22 @@
                                             </div>
                                         </label>
                                         <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it. Use the</span>
-                                            <code><i class="fa-solid fa-paperclip"></i></code>
-                                            <span data-i18n="video_inlining_hint_2">action on any message or the</span>
-                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
-                                            <span data-i18n="video_inlining_hint_3">menu to attach a video file to the chat.</span>
-                                            <strong data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
+                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it.</span>
+                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
+                                        <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_audio_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline audio">Send inline audio</span>
+                                            <div id="openai_audio_inlining_supported" data-cc-toggle="false">
+                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                            </div>
+                                        </label>
+                                        <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
+                                            <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it.</span>
+                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite,vertexai">
@@ -2058,7 +2064,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt,zai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2801,6 +2807,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="xai">xAI (Grok)</option>
+                                <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
                         </select>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
@@ -3674,6 +3681,31 @@
                                 <option value="kimi-thinking-preview">kimi-thinking-preview</option>
                             </select>
                         </div>
+                        <div id="zai_form" data-source="zai">
+                            <h4>
+                                <a data-i18n="Z.AI API Key" href="https://z.ai/manage-apikey/apikey-list" target="_blank" rel="noopener noreferrer">
+                                    Z.AI API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_zai" name="api_key_zai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_zai"></div>
+                            </div>
+                            <div data-for="api_key_zai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
+                            <select id="model_zai_select">
+                                <option value="glm-4.6">glm-4.6</option>
+                                <option value="glm-4.5v">glm-4.5v</option>
+                                <option value="glm-4.5">glm-4.5</option>
+                                <option value="glm-4.5-air">glm-4.5-air</option>
+                                <option value="glm-4.5-x">glm-4.5-x</option>
+                                <option value="glm-4.5-airx">glm-4.5-airx</option>
+                                <option value="glm-4.5-flash">glm-4.5-flash</option>
+                                <option value="glm-4-32b-0414-128k">glm-4-32b-0414-128k</option>
+                            </select>
+                        </div>
                         <div id="azure_openai_settings" data-source="azure_openai">
                             <!-- Azure Base URL -->
                             <h4><span data-i18n="Azure Base URL">Azure Base URL</span></h4>
@@ -3779,7 +3811,7 @@
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </a>
                     </h3>
-                    <div class="flex-container">
+                    <div class="flex-container" data-cc-null>
                         <input id="af_master_import_file" type="file" hidden accept=".json" class="displayNone">
                         <div id="af_master_import" class="menu_button menu_button_icon" title="Import Advanced Formatting settings&#10;&#10;You can also provide legacy files for Instruct and Context templates." data-i18n="[title]Import Advanced Formatting settings">
                             <i class="fa-solid fa-file-import"></i>
@@ -3791,10 +3823,16 @@
                         </div>
                     </div>
                 </div>
+                <div id="advanced-formatting-cc-notice" class="info-block warning">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span data-i18n="Grayed-out options have no effect when Chat Completion API is used.">
+                        Grayed-out options have no effect when Chat Completion API is used.
+                    </span>
+                </div>
                 <div class="flex-container spaceEvenly">
                     <div id="ContextSettings" class="flex-container flexNoGap flexFlowColumn flex1">
                         <div>
-                            <h4 class="standoutHeader title_restorable">
+                            <h4 class="standoutHeader title_restorable" data-cc-null>
                                 <div>
                                     <span data-i18n="Context Template">Context Template</span>
                                 </div>
@@ -3805,7 +3843,7 @@
                                     </label>
                                 </div>
                             </h4>
-                            <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template">
+                            <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template" data-cc-null>
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                                 <div class="flex-container justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
@@ -3819,12 +3857,14 @@
                                 </div>
                             </div>
                             <div>
-                                <label for="context_story_string" class="flex-container">
-                                    <small data-i18n="Story String">Story String</small>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                <div class="flex-container flexFlowColumn">
+                                <div data-cc-null>
+                                    <label for="context_story_string" class="flex-container">
+                                        <small data-i18n="Story String">Story String</small>
+                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                    </label>
+                                    <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                </div>
+                                <div class="flex-container flexFlowColumn" data-cc-null>
                                     <div id="context_story_string_position_block">
                                         <label for="context_story_string_position">
                                             <small data-i18n="Position:">Position:</small>
@@ -3853,7 +3893,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex-container">
+                                <div class="flex-container" data-cc-null>
                                     <div class="flex1">
                                         <label for="context_example_separator">
                                             <small data-i18n="Example Separator">Example Separator</small>
@@ -3878,13 +3918,13 @@
                                         </span>
                                     </h4>
 
-                                    <label class="checkbox_label" for="always-force-name2-checkbox">
+                                    <label class="checkbox_label" for="always-force-name2-checkbox" data-cc-null>
                                         <input id="always-force-name2-checkbox" type="checkbox" />
                                         <small data-i18n="Always add character's name to prompt">
                                             Always add character's name to prompt
                                         </small>
                                     </label>
-                                    <label class="checkbox_label" for="single_line">
+                                    <label class="checkbox_label" for="single_line" data-cc-null>
                                         <input id="single_line" type="checkbox" />
                                         <small data-i18n="Generate only one line per request">
                                             Generate only one line per request
@@ -3907,11 +3947,11 @@
                                             Trim Incomplete Sentences
                                         </small>
                                     </label>
-                                    <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings." data-i18n="[title]Add Chat Start and Example Separator to a list of stopping strings.">
+                                    <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings." data-i18n="[title]Add Chat Start and Example Separator to a list of stopping strings." data-cc-null>
                                         <input id="context_use_stop_strings" type="checkbox" />
                                         <small data-i18n="Separators as Stop Strings">Separators as Stop Strings</small>
                                     </label>
-                                    <label class="checkbox_label" title="Add Character and User names to a list of stopping strings." data-i18n="[title]Add Character and User names to a list of stopping strings.">
+                                    <label class="checkbox_label" title="Add Character and User names to a list of stopping strings." data-i18n="[title]Add Character and User names to a list of stopping strings." data-cc-null>
                                         <input id="context_names_as_stop_strings" type="checkbox" />
                                         <small data-i18n="Names as Stop Strings">Names as Stop Strings</small>
                                     </label>
@@ -3919,7 +3959,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1" data-cc-null>
                         <h4 class="standoutHeader title_restorable justifySpaceBetween">
                             <div class="flex-container">
                                 <span data-i18n="Instruct Template">Instruct Template</span>
@@ -4113,7 +4153,7 @@
                         </div>
                     </div>
                     <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween" data-cc-null>
                             <div class="flex-container">
                                 <span data-i18n="System Prompt">System Prompt</span>
                             </div>
@@ -4124,7 +4164,7 @@
                                 </label>
                             </div>
                         </h4>
-                        <div id="SystemPromptBlock" class="marginBot10">
+                        <div id="SystemPromptBlock" class="marginBot10" data-cc-null>
                             <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
                                 <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
                                 <div class="flex-container margin0 justifyCenter gap3px">
@@ -4182,7 +4222,7 @@
                             </label>
                         </div>
 
-                        <div name="tokenizerSettingsBlock">
+                        <div name="tokenizerSettingsBlock" data-cc-null>
                             <div name="tokenizerSelectorBlock">
                                 <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
                                     <a href="https://docs.sillytavern.app/usage/prompts/tokenizer/" class="notes-link" target="_blank">
@@ -4295,7 +4335,7 @@
                         </div>
                         <div>
                             <h4 class="standoutHeader" data-i18n="Miscellaneous">Miscellaneous</h4>
-                            <div name="bindModelPresetBlock">
+                            <div name="bindModelPresetBlock" data-cc-null>
                                 <label for="bind_model_templates" class="checkbox_label">
                                     <input id="bind_model_templates" type="checkbox" />
                                     <small data-i18n="Bind Model to Templates">Bind Model to Templates</small>
@@ -4635,6 +4675,13 @@
                                         <option value="0" data-i18n="Flat">Flat</option>
                                         <option value="1" data-i18n="Bubbles">Bubbles</option>
                                         <option value="2" data-i18n="Document">Document</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container alignitemscenter" title="Default display style for media attachments in chat messages. Extensions can override this setting." data-i18n="[title]Default display style for media attachments in chat messages. Extensions can override this setting.">
+                                    <span data-i18n="Media Style:">Media Style:</span>
+                                    <select id="media_display" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="list" data-i18n="List">List</option>
+                                        <option value="gallery" data-i18n="Gallery">Gallery</option>
                                     </select>
                                 </div>
                                 <div class="flex-container alignItemsBaseline">
@@ -5664,7 +5711,7 @@
                                                 <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Chat Lore Alt+Click to open the lorebook"></div>
                                                 <div id="char_connections_button" class="menu_button fa-solid fa-face-smile" title="Connected Personas" data-i18n="[title]Connected Personas"></div>
                                                 <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
-                                                <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
+                                                <!-- <div id="set_chat_character_settings" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
                                                 <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
                                                 <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character"></div>
                                                 <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
@@ -5681,8 +5728,8 @@
                                                     <option id="import_character_info" data-i18n="Import Card Lore">
                                                         Import Card Lore
                                                     </option>
-                                                    <option id="set_chat_scenario" data-i18n="Scenario Override">
-                                                        Scenario Override
+                                                    <option id="set_chat_character_settings" data-i18n="Character Settings Overrides">
+                                                        Character Settings Overrides
                                                     </option>
                                                     <option id="convert_to_persona" data-i18n="Convert to Persona">
                                                         Convert to Persona
@@ -5873,7 +5920,7 @@
                                         </div>
                                         <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
                                             <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long"></div>
-                                            <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
+                                            <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set group chat character settings overrides" data-i18n="[title]Set group chat character settings overrides"></div>
                                             <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                             <input id="rm_group_fav" type="hidden" />
                                             <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
@@ -6971,6 +7018,8 @@
                                 <div title="Prompt" class="mes_button mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
                                 <div title="Exclude message from prompts" class="mes_button mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                                 <div title="Include message in prompts" class="mes_button mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
+                                <div title="Toggle media display style" class="mes_button mes_media_gallery fa-solid fa-photo-film" data-i18n="[title]Toggle media display style"></div>
+                                <div title="Toggle media display style" class="mes_button mes_media_list fa-solid fa-table-cells-large" data-i18n="[title]Toggle media display style"></div>
                                 <div title="Embed file or image" class="mes_button mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
                                 <div title="Create checkpoint" class="mes_button mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
                                 <div title="Create branch" class="mes_button mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
@@ -7009,19 +7058,8 @@
                         <div class="mes_reasoning"></div>
                     </details>
                     <div class="mes_text"></div>
-                    <div class="mes_img_container">
-                        <div class="mes_img_controls">
-                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
-                            <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
-                            <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
-                        </div>
-                        <div class="mes_img_swipes">
-                            <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
-                            <div class="mes_img_swipe_counter">1/1</div>
-                            <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
-                        </div>
-                        <img class="mes_img" src="" />
-                    </div>
+                    <div class="mes_media_wrapper"></div>
+                    <div class="mes_file_wrapper"></div>
                     <div class="mes_bias"></div>
                 </div>
                 <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
@@ -7208,10 +7246,17 @@
             <div class="alternate_greeting">
                 <details open>
                     <summary>
-                        <div class="title_restorable">
+                        <div class="title_restorable gap5px">
                             <div class="flex-container alignItemsCenter">
                                 <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                            </div>
+                            <span class="expander"></span>
+                            <div class="menu_button menu_button_icon move_up_alternate_greeting" title="Move up" data-i18n="[title]Move up">
+                                <i class="fa-solid fa-chevron-up"></i>
+                            </div>
+                            <div class="menu_button menu_button_icon move_down_alternate_greeting" title="Move down" data-i18n="[title]Move down">
+                                <i class="fa-solid fa-chevron-down"></i>
                             </div>
                             <div class="menu_button menu_button_icon delete_alternate_greeting">
                                 <i class="fa-solid fa-trash-alt"></i>
@@ -7224,9 +7269,9 @@
             </div>
         </div>
 
-        <!-- chat and input bar -->
+        <!-- Media Templates -->
         <div id="message_file_template" class="template_element">
-            <div class="mes_file_container">
+            <div class="mes_media_container mes_file_container">
                 <div class="fa-lg fa-solid fa-file-alt mes_file_icon"></div>
                 <div class="mes_file_name"></div>
                 <div class="mes_file_size"></div>
@@ -7235,13 +7280,57 @@
             </div>
         </div>
 
+        <div id="message_image_template" class="template_element">
+            <div class="mes_media_container mes_img_container">
+                <div class="mes_img_controls">
+                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_media_enlarge" data-i18n="[title]Expand and zoom"></div>
+                    <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_media_delete" data-i18n="[title]Delete"></div>
+                </div>
+                <img class="mes_img" src="" />
+            </div>
+        </div>
+
         <div id="message_video_template" class="template_element">
-            <div class="mes_video_container">
+            <div class="mes_media_container mes_video_container">
                 <div class="mes_video_controls">
-                    <div><!-- Placeholder --></div>
-                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_video_delete" data-i18n="[title]Delete"></div>
+                    <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_media_enlarge" data-i18n="[title]Expand and zoom"></div>
+                    <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
+                    <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_media_delete" data-i18n="[title]Delete"></div>
                 </div>
                 <video class="mes_video" controls preload="metadata"></video>
+            </div>
+        </div>
+
+        <div id="message_gallery_controls" class="template_element">
+            <div class="mes_img_swipes">
+                <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                <div class="mes_img_swipe_counter">1/1</div>
+                <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
+            </div>
+        </div>
+
+        <div id="message_audio_template" class="template_element">
+            <div class="mes_media_container mes_audio_container audio-player">
+                <audio class="mes_audio" preload="auto" hidden></audio>
+                <div class="audio-player-header">
+                    <div class="audio-player-title">Audio</div>
+                    <div class="right_menu_button mes_media_delete fa-fw fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                </div>
+                <div class="audio-player-controls">
+                    <button class="audio-player-play-pause right_menu_button fa-fw fa-solid fa-play" title="Play" data-i18n="[title]Play"></button>
+                    <div class="audio-player-time">
+                        <span class="audio-player-current-time">0:00</span>
+                        <span class="audio-player-time-separator">/</span>
+                        <span class="audio-player-total-time">0:00</span>
+                    </div>
+                    <div class="audio-player-progress">
+                        <div class="audio-player-progress-bar"></div>
+                    </div>
+                    <div class="audio-player-volume-control">
+                        <button class="audio-player-volume right_menu_button fa-fw fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -7600,8 +7689,8 @@
             <div id="send_form" class="no-connection">
                 <form id="file_form" class="wide100p displayNone">
                     <div class="file_attached">
-                        <input id="file_form_input" type="file" hidden>
-                        <input id="embed_file_input" type="file" hidden>
+                        <input id="file_form_input" type="file" multiple hidden>
+                        <input id="embed_file_input" type="file" multiple hidden>
                         <i class="fa-solid fa-file-alt"></i>
                         <span class="file_name">File Name</span>
                         <span class="file_size">File Size</span>

@@ -183,6 +183,7 @@ export const CHAT_COMPLETION_SOURCES = {
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
+    ZAI: 'zai',
 };
 
 /**
@@ -476,4 +477,11 @@ export const MEDIA_EXTENSIONS = [
     '3gp',
     'mkv',
     'mpg',
+    'mp3',
+    'wav',
+    'ogg',
+    'flac',
+    'aac',
+    'm4a',
+    'aiff',
 ];
