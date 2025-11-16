@@ -1302,9 +1302,7 @@ async function onModelChange() {
         ensureElectronHubQualitySelect(models);
     }
 
-    if ([sources.openai, sources.aimlapi].includes(extension_settings.sd.source)) {
-        switchOpenAIModelControls(extension_settings.sd.model, extension_settings.sd.source);
-    }
+    switchModelSpecificControls(extension_settings.sd.model);
 
     const cloudSources = [
         sources.horde,
@@ -1756,9 +1754,7 @@ async function loadModels() {
         ensureElectronHubQualitySelect(models);
     }
 
-    if ([sources.openai, sources.aimlapi].includes(extension_settings.sd.source)) {
-        switchOpenAIModelControls(extension_settings.sd.model, extension_settings.sd.source);
-    }
+    switchModelSpecificControls(extension_settings.sd.model);
 
     for (const model of models) {
         const option = document.createElement('option');
@@ -1776,15 +1772,14 @@ async function loadModels() {
 }
 
 /**
- * Show or hide OpenAI model-specific controls based on the selected model.
+ * Show or hide model-specific controls based on the selected model.
  * @param {string} modelId Model ID
- * @param {string} source Source
  */
-function switchOpenAIModelControls(modelId, source) {
+function switchModelSpecificControls(modelId) {
     const modelControls = $('.sd_settings [data-sd-model]');
-    modelControls.show();
+    modelControls.hide();
 
-    if (source !== sources.openai || !modelId) {
+    if (!modelId) {
         return;
     }
 
