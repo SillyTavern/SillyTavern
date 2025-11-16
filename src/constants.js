@@ -161,6 +161,29 @@ export const GEMINI_SAFETY = [
     },
 ];
 
+export const VERTEX_SAFETY = [
+    {
+        category: 'HARM_CATEGORY_IMAGE_HATE',
+        threshold: 'OFF',
+    },
+    {
+        category: 'HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT',
+        threshold: 'OFF',
+    },
+    {
+        category: 'HARM_CATEGORY_IMAGE_HARASSMENT',
+        threshold: 'OFF',
+    },
+    {
+        category: 'HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT',
+        threshold: 'OFF',
+    },
+    {
+        category: 'HARM_CATEGORY_JAILBREAK',
+        threshold: 'OFF',
+    },
+];
+
 export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
