@@ -2247,6 +2247,9 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
         const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
             if (element instanceof HTMLMediaElement) {
+                if (!element.currentSrc || element.readyState === HTMLMediaElement.HAVE_NOTHING) {
+                    return;
+                }
                 const state = { currentTime: element.currentTime, paused: element.paused };
                 states.set(element.currentSrc, state);
             }
@@ -2262,10 +2265,17 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
         const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
             if (element instanceof HTMLMediaElement && states.has(element.currentSrc)) {
-                const state = states.get(element.currentSrc);
-                element.currentTime = state.currentTime;
-                if (!state.paused) {
-                    element.play();
+                const restoreState = () => {
+                    const state = states.get(element.currentSrc);
+                    element.currentTime = state.currentTime;
+                    if (!state.paused) {
+                        element.play();
+                    }
+                };
+                if (element.readyState < HTMLMediaElement.HAVE_METADATA) {
+                    element.addEventListener('loadedmetadata', () => restoreState(), { once: true });
+                } else {
+                    restoreState();
                 }
             }
         });
