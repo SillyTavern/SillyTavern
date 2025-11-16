@@ -2264,8 +2264,11 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
     function restoreMediaStates(states) {
         const media = mediaWrapper.find('video, audio');
         media.each((_, element) => {
-            if (element instanceof HTMLMediaElement && states.has(element.currentSrc)) {
+            if (element instanceof HTMLMediaElement) {
                 const restoreState = () => {
+                    if (!states.has(element.currentSrc)) {
+                        return;
+                    }
                     const state = states.get(element.currentSrc);
                     element.currentTime = state.currentTime;
                     if (!state.paused) {
