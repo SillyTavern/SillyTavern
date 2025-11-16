@@ -1,0 +1,293 @@
+# -- DATA CONFIGURATION --
+# Root directory for user data storage
+dataRoot: ./data
+# -- SERVER CONFIGURATION --
+# Listen for incoming connections
+listen: true
+# Listen on a specific address, supports IPv4 and IPv6
+listenAddress:
+  ipv4: 0.0.0.0
+  ipv6: '[::]'
+# Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
+# - Use option "auto" to automatically detect support
+# - Use true or false (no qoutes) to enable or disable each protocol
+protocol:
+    ipv4: true
+    ipv6: false
+# Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
+dnsPreferIPv6: false
+# -- BROWSER LAUNCH CONFIGURATION --
+browserLaunch:
+  # Open the browser automatically on server startup.
+  enabled: true
+  # Browser to use for opening the URL.
+  # NOT SUPPORTED ON ANDROID DEVICES.
+  # - Use "default" to use the system default browser 
+  # - Use "firefox", "chrome", "edge"
+  browser: 'default'
+  # Overrides the hostname that opens in the browser.
+  # - Use "auto" to let the server decide
+  # - Use options like 'localhost', 'st.example.com'
+  hostname: 'auto'
+  # Overrides the port for run in the browser.
+  # - Use -1 to use the server port.
+  # - Specify a port to override the default.
+  port: -1
+  # Avoids using 'localhost' as the hostname in auto mode.
+  # Use if you don't have 'localhost' in your hosts file
+  avoidLocalhost: false
+# Server port
+port: 8000
+# -- SSL options --
+ssl:
+  # Enable SSL/TLS encryption
+  enabled: false
+  # Path to certificate (relative to server root)
+  certPath: "./certs/cert.pem"
+  # Path to private key (relative to server root)
+  keyPath: "./certs/privkey.pem"
+  # Private key passphrase (leave empty if not needed)
+  # For better security, use a CLI argument or an environment variable (SILLYTAVERN_SSL_KEYPASSPHRASE)
+  keyPassphrase: ""
+# -- SECURITY CONFIGURATION --
+# Toggle whitelist mode
+whitelistMode: false
+# Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
+enableForwardedWhitelist: true
+# Whitelist of allowed IP addresses
+whitelist:
+  - ::1
+  - 127.0.0.1
+# Automatically whitelist Docker host and gateway IPs
+whitelistDockerHosts: true
+# Toggle basic authentication for endpoints
+basicAuthMode: false
+# Basic authentication credentials
+basicAuthUser:
+  username: whispy
+  password: Wh1sp4y@25
+# Enables CORS proxy middleware
+enableCorsProxy: false
+# -- REQUEST PROXY CONFIGURATION --
+requestProxy:
+  # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.
+  enabled: false
+  # Proxy URL. Possible protocols: http, https, socks, socks5, socks4, pac
+  url: "socks5://username:password@example.com:1080"
+  # Proxy bypass list. Requests to these hosts won't be routed through the proxy.
+  bypass:
+    - localhost
+    - 127.0.0.1
+# Enable multi-user mode
+enableUserAccounts: true
+# Enable discreet login mode: hides user list on the login screen
+enableDiscreetLogin: true
+# If `basicAuthMode` and this are enabled then
+# the username and passwords for basic auth are the same as those
+# for the individual accounts
+perUserBasicAuth: false
+
+# -- SSO LOGIN CONFIGURATION --
+sso:
+  # Enable's authlia based auto login. Only enable this if you
+  # have setup and installed Authelia as a middle-ware on your
+  # reverse proxy
+  # https://www.authelia.com/
+  # This will use auto login to an account with the same username
+  # as that used for authlia. (Ensure the username in authlia
+  # is an exact match in lowercase with that in sillytavern)
+  autheliaAuth: false
+  # Enable's authentik based auto login. Only enable this if you
+  # have setup and installed Authentik as a middle-ware on your
+  # reverse proxy.
+  # https://goauthentik.io/
+  # This will use auto login to an account with the same username
+  # as that used for authentik. (Ensure the username in authentik
+  # is an exact match in lowercase with that in sillytavern).
+  authentikAuth: false
+
+# Host whitelist configuration. Recommended if you're using a listen mode
+hostWhitelist:
+  # Enable or disable host whitelisting
+  enabled: false
+  # Scan incoming requests for potential host header spoofing
+  scan: true
+  # List of allowed hosts. Do not include localhost or IPs, these are safe.
+  # Use a dot to create subdomain patterns.
+  # Examples:
+  # - example.com
+  # - .trycloudflare.com
+  hosts: []
+
+# User session timeout *in seconds* (defaults to 24 hours).
+## Set to a positive number to expire session after a certain time of inactivity
+## Set to 0 to expire session when the browser is closed
+## Set to a negative number to disable session expiration
+sessionTimeout: -1
+# Disable CSRF protection - NOT RECOMMENDED
+disableCsrfProtection: false
+# Disable startup security checks - NOT RECOMMENDED
+securityOverride: false
+# -- LOGGING CONFIGURATION --
+logging:
+  # Enable access logging to access.log file and console output
+  # Records new connections with timestamp, IP address and user agent
+  enableAccessLog: true
+  # Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
+  minLogLevel: 0
+# -- RATE LIMITING CONFIGURATION --
+rateLimiting:
+  # Use X-Real-IP header instead of socket IP for rate limiting
+  # Only enable this if you are using a properly configured reverse proxy (like Nginx/traefik/Caddy)
+  preferRealIpHeader: false
+
+## BACKUP CONFIGURATION
+backups:
+  # Common settings for all backup types
+  common:
+    # Number of backups to keep for each chat and settings file
+    numberOfBackups: 50
+  chat:
+    # Enable automatic chat backups
+    enabled: true
+    # Verify integrity of chat files before saving
+    checkIntegrity: true
+    # Maximum number of chat backups to keep per user (starting from the most recent). Set to -1 to keep all backups.
+    maxTotalBackups: -1
+    # Interval in milliseconds to throttle chat backups per user
+    throttleInterval: 10000
+
+# THUMBNAILING CONFIGURATION
+thumbnails:
+  # Enable thumbnail generation
+  enabled: true
+  # Image format of avatar thumbnails:
+  # * "jpg": best compression with adjustable quality, no transparency
+  # * "png": preserves transparency but increases filesize by about 100%
+  # Changing this only affects new thumbnails. To recreate the old ones, clear out /thumbnails folder in your user data.
+  format: "jpg"
+  # JPG thumbnail quality (0-100)
+  quality: 95
+  # Maximum thumbnail dimensions per type [width, height]
+  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+
+# PERFORMANCE-RELATED CONFIGURATION
+performance:
+  # Enables lazy loading of character cards. Improves performances with large card libraries.
+  # May have compatibility issues with some extensions.
+  lazyLoadCharacters: false
+  # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
+  memoryCacheCapacity: '100mb'
+  # Enables disk caching for character cards. Improves performances with large card libraries.
+  useDiskCache: true
+
+# CACHE BUSTER CONFIGURATION
+# IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
+cacheBuster:
+  # Clear browser cache on first load or after uploading image files
+  enabled: false
+  # Only clear cache for the specified user agent regex pattern
+  # Example: 'firefox|safari' (case-insensitive)
+  userAgentPattern: ''
+
+# Allow secret keys exposure via API
+allowKeysExposure: false
+# Skip new default content checks
+skipContentCheck: false
+# Allowed hosts for card downloads
+whitelistImportDomains:
+  - localhost
+  - cdn.discordapp.com
+  - files.catbox.moe
+  - raw.githubusercontent.com
+  - char-archive.evulid.cc
+# API request overrides (for KoboldAI and Text Completion APIs)
+## Note: host includes the port number if it's not the default (80 or 443)
+## Format is an array of objects:
+## - hosts:
+##   - example.com
+##   headers:
+##     Content-Type: application/json
+##   - 127.0.0.1:5001
+##   headers:
+##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
+requestOverrides: []
+
+# EXTENSIONS CONFIGURATION
+extensions:
+  # Enable UI extensions
+  enabled: true
+  # Automatically update extensions when a release version changes
+  autoUpdate: true
+  models:
+    # Enables automatic model download from HuggingFace
+    autoDownload: true
+    # Additional models for extensions. Expects model IDs from HuggingFace model hub in ONNX format
+    classification: Cohee/distilbert-base-uncased-go-emotions-onnx
+    captioning: Xenova/vit-gpt2-image-captioning
+    embedding: Cohee/jina-embeddings-v2-base-en
+    speechToText: Xenova/whisper-small
+    textToSpeech: Xenova/speecht5_tts
+
+# Additional model tokenizers can be downloaded on demand.
+# Disabling will fallback to another locally available tokenizer.
+enableDownloadableTokenizers: true
+# -- OPENAI CONFIGURATION --
+# A placeholder message to use in strict prompt post-processing mode when the prompt doesn't start with a user message
+promptPlaceholder: "[Start a new chat]"
+openai:
+  # Will send a random user ID to OpenAI completion API
+  randomizeUserId: false
+  # If not empty, will add this as a system message to the start of every caption completion prompt
+  # Example: "Perform the instructions to the best of your ability.\n" (for LLaVA)
+  # Not used in image inlining mode
+  captionSystemPrompt: ""
+# -- DEEPL TRANSLATION CONFIGURATION --
+deepl:
+  # Available options: default, more, less, prefer_more, prefer_less
+  formality: default
+# -- MISTRAL API CONFIGURATION --
+mistral:
+  # Enables prefilling of the reply with the last assistant message in the prompt
+  # CAUTION: The prefix is echoed into the completion. You may want to use regex to trim it out.
+  enablePrefix: false
+# -- OLLAMA API CONFIGURATION --
+ollama:
+  # Controls how long the model will stay loaded into memory following the request
+  # * -1: Keep the model loaded indefinitely
+  # * 0: Unload the model immediately after the request
+  # * N (any positive number): Keep the model loaded for N seconds after the request.
+  keepAlive: -1
+  # Controls the "num_batch" (batch size) parameter of the generation request
+  # * -1: Use the default value of the model
+  # * N (positive number): Use the specified value. Must be a power of 2, e.g. 128, 256, 512, etc.
+  batchSize: -1
+# -- ANTHROPIC CLAUDE API CONFIGURATION --
+claude:
+  # Enables caching of the system prompt (if supported).
+  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # -- IMPORTANT! --
+  # Use only when the prompt before the chat history is static and doesn't change between requests
+  # (e.g {{random}} macro or lorebooks not as in-chat injections).
+  # Otherwise, you'll just waste money on cache misses.
+  enableSystemPromptCache: false
+  # Enables caching of the message history at depth (if supported).
+  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # -- IMPORTANT! --
+  # Use with caution. Behavior may be unpredictable and no guarantees can or will be made.
+  # Set to an integer to specify the desired depth. 0 (which does NOT include the prefill)
+  # should be ideal for most use cases.
+  # Any value other than a non-negative integer will be ignored and caching at depth will not be enabled.
+  cachingAtDepth: -1
+  # Use 1h TTL instead of the default 5m.
+  ## 5m: base price x 1.25
+  ## 1h: base price x 2
+  extendedTTL: false
+# -- GOOGLE GEMINI API CONFIGURATION --
+gemini:
+  # API endpoint version ("v1beta" or "v1alpha")
+  apiVersion: 'v1beta'
+# -- SERVER PLUGIN CONFIGURATION --
+enableServerPlugins: false
+# Attempt to automatically update server plugins on startup
+enableServerPluginsAutoUpdate: true

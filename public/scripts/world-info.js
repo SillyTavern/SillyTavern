@@ -23,6 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
+import { isAdmin, getCurrentUserHandle } from './user.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -954,6 +955,19 @@ export function setWorldInfoSettings(settings, data) {
 
     world_names = data.world_names?.length ? data.world_names : [];
 
+    // Visibility filter: restrict which world names are visible to non-admins
+    if (!isAdmin()) {
+        // Hide any names containing "9Z"
+        const filteredNames = world_names.filter(name => !name.includes('9Z'));
+
+        // Only show Z-(handle)-prefixed books to their owner; allow all other names
+        const currentUserHandle = getCurrentUserHandle();
+        world_names = filteredNames.filter(name => {
+            const userHandleMatch = name.match(/^Z-([^-]+)/);
+            return userHandleMatch ? userHandleMatch[1] === currentUserHandle : true;
+        });
+    }
+
     // Add to existing selected WI if it exists
     selected_world_info = selected_world_info.concat(settings.world_info?.globalSelect?.filter((e) => world_names.includes(e)) ?? []);
 
@@ -1019,7 +1033,6 @@ function registerWorldInfoSlashCommands() {
 
     async function getEntriesFromFile(file) {
         if (!file || !world_names.includes(file)) {
-            toastr.warning(t`Valid World Info file name is required`);
             return '';
         }
 
@@ -1270,7 +1283,6 @@ function registerWorldInfoSlashCommands() {
         const data = await loadWorldInfo(file);
 
         if (!data || !('entries' in data)) {
-            toastr.warning('Valid World Info file name is required');
             return '';
         }
 
@@ -1324,7 +1336,6 @@ function registerWorldInfoSlashCommands() {
         const data = await loadWorldInfo(file);
 
         if (!data || !('entries' in data)) {
-            toastr.warning('Valid World Info file name is required');
             return '';
         }
 
@@ -2011,6 +2022,17 @@ export async function updateWorldInfoList() {
         const data = await result.json();
         const editorSelected = String($('#world_editor_select').find(':selected').text());
         world_names = data.world_names?.length ? data.world_names : [];
+
+        // Visibility filter: restrict which world names are visible to non-admins
+        if (!isAdmin()) {
+            const filteredNames = world_names.filter(name => !name.includes('9Z'));
+            const currentUserHandle = getCurrentUserHandle();
+            world_names = filteredNames.filter(name => {
+                const userHandleMatch = name.match(/^Z-([^-]+)/);
+                return userHandleMatch ? userHandleMatch[1] === currentUserHandle : true;
+            });
+        }
+
         $('#world_info').find('option[value!=""]').remove();
         $('#world_editor_select').find('option[value!=""]').remove();
 

@@ -61,6 +61,7 @@
         "ip-regex": "^5.0.0",
         "ipaddr.js": "^2.2.0",
         "is-docker": "^3.0.0",
+        "js-yaml": "^4.1.0",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
         "mime-types": "^3.0.1",
