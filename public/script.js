@@ -9334,9 +9334,8 @@ export async function createOrEditCharacter(e) {
  * @param {Number} index The last unchanged messageId.
  */
 export async function redisplayChat(chat, index) {
-
     //Remove messages after index.
-    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').addBack().remove();
+    chatElement.children(`.mes[mesid="${index}"]`).nextAll('.mes').addBack().remove();
 
     //Skip to index, then add extra messages.
     for (let i = index; i <= chat.length - 1; i++) {
