@@ -1339,22 +1339,17 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
 async function onViewTagsListClick() {
     const html = $(document.createElement('div'));
     html.attr('id', 'tag_view_list');
-    const templateParams = { bogus_folders: power_user.bogus_folders };
-    html.append(await renderTemplateAsync('tagManagement', templateParams));
+    html.append(await renderTemplateAsync('tagManagement', { bogus_folders: power_user.bogus_folders }));
 
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
     const $sortModeSelect = html.find('#tag_sort_mode_select');
-
     $sortModeSelect.val(power_user.tag_sort_mode);
-
     $sortModeSelect.on('change', function () {
         const newMode = $(this).val().toString();
         power_user.tag_sort_mode = newMode;
-
         saveSettingsDebounced();
-
         printViewTagList(tagContainer);
     });
 
