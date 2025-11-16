@@ -2310,8 +2310,8 @@ export function initTags() {
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
     $(document).on('focusout', '#tag_view_list .tag_view_name', (evt) => {
-        // Reorder/reprint tags, but only if the name actually has changed, and only if we auto sort tags
-        if (power_user.tag_sort_mode !== tag_sort_mode.ALPHABETICAL || !$(evt.target).is('[dirty]')) return;
+        // Reorder/reprint tags, but only if the name actually has changed
+        if (!$(evt.target).is('[dirty]')) return;
 
         // Remember the order, so we can flash highlight if it changed after reprinting
         const tagId = ($(evt.target).closest('.tag_view_item')).attr('id');
