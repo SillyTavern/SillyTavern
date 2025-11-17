@@ -108,6 +108,23 @@ const CORS = cors({
 
 app.use(CORS);
 
+if (cliArgs.listen && cliArgs.basicAuthMode) {
+    // Paths allowed without basic auth (manifest.json and related frontend static assets) for PWA
+    const allowedUnauthenticated = (req) => {
+        const p = req.path || '';
+        return (
+            p === '/manifest.json' ||
+            // Match pattern like '/apple-icon-{width}x{height}.png'
+            /^\/img\/apple-icon-\d+x\d+\.png$/.test(p)
+        );
+    };
+
+    app.use((req, res, next) => {
+        if (allowedUnauthenticated(req)) return next();
+        return basicAuthMiddleware(req, res, next);
+    });
+}
+
 if (cliArgs.whitelistMode) {
     const whitelistMiddleware = await getWhitelistMiddleware();
     app.use(whitelistMiddleware);
@@ -215,11 +232,6 @@ app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
 // Public API
 app.use('/api/users', usersPublicRouter);
-
-// Load manifest.json and other frontend assets before basic auth
-if (cliArgs.listen && cliArgs.basicAuthMode) {
-    app.use(basicAuthMiddleware);
-}
 
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
