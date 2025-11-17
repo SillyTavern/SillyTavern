@@ -5682,6 +5682,12 @@ export function isImageInliningSupported() {
         'moonshot-v1-128k-vision-preview',
         // Z.AI (GLM)
         'glm-4.5v',
+        // SiliconFlow
+        'Qwen/Qwen3-VL-32B-Instruct',
+        'Qwen/Qwen3-VL-8B-Instruct',
+        'Qwen/Qwen3-VL-235B-A22B-Instruct',
+        'Qwen/Qwen3-VL-30B-A3B-Instruct',
+        'zai-org/GLM-4.5V'
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5726,6 +5732,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         case chat_completion_sources.ZAI:
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
+        case chat_completion_sources.SILICONFLOW:
+            return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
         default:
             return false;
     }
