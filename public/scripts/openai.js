@@ -2505,7 +2505,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         chat_completion_sources.XAI,
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.AIMLAPI,
-        chat_completion_sources.SILICONFLOW,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
     ];
