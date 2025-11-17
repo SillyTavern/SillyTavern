@@ -8715,10 +8715,10 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
 
-            //The swipe button will be shown if an overswipe would trigger a LOOP, REGENERATE or EDIT_GENERATE.
-            const isOverswipeable = (hasSwipes && overswipe == OVERSWIPE_BEHAVIOR.LOOP) ||
-                (isLastSwipe && overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) ||
-                (isLastSwipe && overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE);
+            //The swipe button will be shown if an overswipe would trigger REGENERATE or EDIT_GENERATE.
+            const isOverswipeable = isLastSwipe &&
+                overswipe == OVERSWIPE_BEHAVIOR.REGENERATE ||
+                overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
 
             div.classList.toggle('last_swipe', isOverswipeable);
 
