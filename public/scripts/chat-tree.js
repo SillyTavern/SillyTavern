@@ -66,7 +66,7 @@ export async function saveChatToTree(chat, chatTree, { start = 0, end = chat.len
                 console.assert((chatMessage['swipe_info']?.length ?? 0) <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
 
                 //branch = Full Message < swipe_info < Swipe message.
-                addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info[i], mes: swipe });
+                addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info?.[i], mes: swipe });
             });
 
             //Set the full message while preserving branches.
