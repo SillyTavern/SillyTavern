@@ -9434,7 +9434,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
      */
     function getSwipeDuration(animation_duration) {
         const now = performance.now();
-        const resetTime = 500;
+        const resetTime = 350;
 
         //Reset the counter if the last swipe was more than half a second ago.
         if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
