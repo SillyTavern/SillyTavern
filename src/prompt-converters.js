@@ -1156,3 +1156,43 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 
     return null;
 }
+
+/**
+ * Embed media content in OpenRouter messages.
+ * @param {object[]} messages Array of messages
+ */
+export function embedOpenRouterMedia(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.content)) {
+            continue;
+        }
+
+        for (const contentPart of message.content) {
+            if (contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
+                contentPart.type = 'input_video';
+            }
+
+            if (contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
+                const formatMap = {
+                    'audio/mpeg': 'mp3',
+                    'audio/wav': 'wav',
+                };
+
+                const [header, base64Data] = contentPart.audio_url.url.split(',');
+                const mimeType = header.match(/data:([^;]+)/)?.[1] || 'audio/mpeg';
+
+                contentPart.type = 'input_audio';
+                contentPart.input_audio = {
+                    format: formatMap[mimeType] || 'mp3',
+                    data: base64Data,
+                };
+
+                delete contentPart.audio_url;
+            }
+        }
+    }
+}

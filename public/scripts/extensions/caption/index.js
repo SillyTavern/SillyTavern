@@ -315,7 +315,7 @@ async function captionMultimodal(base64Img, externalPrompt) {
     let prompt = externalPrompt || extension_settings.caption.prompt || PROMPT_DEFAULT;
 
     if (!externalPrompt && extension_settings.caption.prompt_ask) {
-        const customPrompt = await callGenericPopup('Enter a comment or question:', POPUP_TYPE.INPUT, prompt, { rows: 2 });
+        const customPrompt = await callGenericPopup('Enter a comment or question:', POPUP_TYPE.INPUT, prompt, { rows: 4 });
         if (!customPrompt) {
             throw new Error('User aborted the caption sending.');
         }
