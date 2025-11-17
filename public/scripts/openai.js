@@ -2203,7 +2203,6 @@ function getReasoningEffort() {
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
-        chat_completion_sources.SILICONFLOW,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
