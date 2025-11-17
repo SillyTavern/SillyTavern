@@ -7912,6 +7912,7 @@ async function branchChat() {
     await messageEditDone(div);
 
     writeMessageToSwipe(mes);
+    await updateSwipeCounter(mesId);
 }
 
 function addBranchButton(messageBlock) {
