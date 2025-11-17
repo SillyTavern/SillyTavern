@@ -1428,7 +1428,7 @@ export async function printMessages() {
 
     chatElement.find('.mes').removeClass('last_mes');
     chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons();
+    refreshSwipeButtons(false, false);
     applyStylePins();
     scrollChatToBottom();
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
@@ -8677,9 +8677,10 @@ export function getOverswipeBehavior(messageId, message = undefined) {
  * Refreshes all swipe buttons and updates their swipe counters.
  * This has been optimized for bulk updates by minimizing DOM queries.
  * @param {boolean} updateCounters When true, the swipe counters will also be updated. Typically redundant because addOneMessage updates the counters.
+ * @param {boolean} fade By default, the chevrons fade in and out.
  * @returns
  */
-export function refreshSwipeButtons(updateCounters = false) {
+export function refreshSwipeButtons(updateCounters = false, fade = true) {
     //Never show swipe buttons on an empty chat.
     if (chat?.length === 0) return false;
 
@@ -8704,6 +8705,10 @@ export function refreshSwipeButtons(updateCounters = false) {
         //Number($(div).attr('mesid')); Would not misscount due to a missing div, but is much slower.
 
         const message = chat[messageId];
+
+        //Chevrons should not fade-in during printMessages. //https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3539315919
+        div.classList.toggle('fade', fade);
+
         if (isMessageSwipeable(messageId, message)) {
             //If a right swipe would trigger a generation or loop to the first swipe.
             const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0);
