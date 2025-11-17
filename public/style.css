@@ -1300,7 +1300,7 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     transition-duration: calc(var(--animation-duration-2x) * 0.7/0.3);
 }
 
-.fade {
+.fade :is(.swipes-counter, .swipe_left, .swipe_right){
     /* Fade in and out: */
     /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
     /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
