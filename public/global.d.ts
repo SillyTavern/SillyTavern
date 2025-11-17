@@ -179,4 +179,6 @@ declare global {
             rgba: string;
         }
     };
+
+    type SwipeEvent = JQuery.TriggeredEvent<any, any, HTMLElement, HTMLElement>;
 }

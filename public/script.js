@@ -9526,9 +9526,8 @@ export async function createOrEditCharacter(e) {
  * @param {Number} index The last unchanged messageId.
  */
 export async function redisplayChat(chat, index) {
-
     //Remove messages after index.
-    chatElement.children(`.mes[mesid=${index}]`).nextAll('.mes').addBack().remove();
+    chatElement.children(`.mes[mesid="${index}"]`).nextAll('.mes').addBack().remove();
 
     //Skip to index, then add extra messages.
     for (let i = index; i <= chat.length - 1; i++) {
@@ -9553,17 +9552,17 @@ function formatSwipeCounter(current, total) {
 
 /**
  * Handles the swipe event.
- * @param {JQuery.Event} _event Event.
+ * @param {SwipeEvent} event Event.
  * @param {'left'|'right'} direction The direction to swipe.
  * @param {object} params Additional parameters.
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
- * @param {object} [params.message=chat[chat.length - 1]] The chat message to swipe.
+ * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {object} [params.forceMesId] The message id to swipe.
  * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  * @param {number} [params.forceDuration] Overwrites the default swipe duration.
  */
-export async function swipe(_event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
+export async function swipe(event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
     if (chat.length === 0) {
         console.warn('Swipe was called on an empty chat.');
         return;
@@ -9580,7 +9579,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         }
     }
 
-    const mesId = Number(forceMesId ?? _event?.['currentTarget']?.closest('.mes').getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
+    const mesId = Number(forceMesId ?? event?.currentTarget?.closest('.mes')?.getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
     if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK || source === SWIPE_SOURCE.AUTO_SWIPE) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
@@ -9618,11 +9617,11 @@ export async function swipe(_event, direction, { source, repeated, message = cha
     /**
      * Calculates the next swipe duration with how many swipes have been repeated.
      * @param {number} animation_duration
-     * @returns
+     * @returns {number} The adjusted swipe duration.
      */
     function getSwipeDuration(animation_duration) {
-        let now = performance.now();
-        let resetTime = 1000;
+        const now = performance.now();
+        const resetTime = 500;
 
         //Reset the counter if the last swipe was more than a second ago.
         if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
@@ -9630,7 +9629,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         lastSwipeTime = now;
 
         //At 4 swipes, animation_duration will be halved.
-        let sigmoid = 1 / (1 + Math.exp(heldSwipes - 4 ));
+        const sigmoid = 1 / (1 + Math.exp(heldSwipes - 4));
 
         return animation_duration * sigmoid;
     }
@@ -10138,28 +10137,28 @@ export async function swipe(_event, direction, { source, repeated, message = cha
 /**
  * @deprecated Use `swipe` instead.
  * Handles the swipe to the left event.
- * @param {JQuery.Event} _event Event.
+ * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
-export async function swipe_left(_event, { source, repeated, message } = {}) {
-    await swipe.call(this, _event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
+export async function swipe_left(event, { source, repeated, message } = {}) {
+    await swipe.call(this, event, SWIPE_DIRECTION.LEFT, { source: source, repeated: repeated, message: message });
 }
 
 /**
  * @deprecated Use `swipe` instead.
  * Handles the swipe to the right event.
- * @param {JQuery.Event} [_event] Event.
+ * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
 //MARK: swipe_right
-export async function swipe_right(_event = null, { source, repeated, message } = {}) {
-    await swipe.call(this, _event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
+export async function swipe_right(event = null, { source, repeated, message } = {}) {
+    await swipe.call(this, event, SWIPE_DIRECTION.RIGHT, { source: source, repeated: repeated, message: message });
 }
 
 /**
