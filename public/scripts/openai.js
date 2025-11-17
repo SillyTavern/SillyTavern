@@ -5759,7 +5759,7 @@ export function isImageInliningSupported() {
         'Qwen/Qwen3-VL-8B-Instruct',
         'Qwen/Qwen3-VL-235B-A22B-Instruct',
         'Qwen/Qwen3-VL-30B-A3B-Instruct',
-        'zai-org/GLM-4.5V'
+        'zai-org/GLM-4.5V',
     ];
 
     switch (oai_settings.chat_completion_source) {
