@@ -587,7 +587,7 @@ let swipes = true;
 /** Forcefully hide swipes. */
 export let swipesHidden = false;
 export let lastSwipeTime = performance.now();
-export let heldSwipes = 0;
+export let recentSwipes = 0;
 
 export let extension_prompts = {};
 
@@ -9437,12 +9437,12 @@ export async function swipe(event, direction, { source, repeated, message = chat
         const resetTime = animation_duration * 2 + 300;
 
         //Reset the counter if the last swipe was more than half a second ago.
-        if (now - lastSwipeTime >= resetTime) heldSwipes = 0;
-        heldSwipes++;
+        if (now - lastSwipeTime >= resetTime) recentSwipes = 0;
+        recentSwipes++;
         lastSwipeTime = now;
 
         //At 4 swipes, animation_duration will be halved.
-        const sigmoid = 1 / (1 + Math.exp(heldSwipes - 4));
+        const sigmoid = 1 / (1 + Math.exp(recentSwipes - 4));
 
         return animation_duration * sigmoid;
     }
