@@ -3021,7 +3021,8 @@ class Message {
         }
 
         // Note: No compression for videos (unlike images)
-        this.content.push({ type: 'video_url', video_url: { 'url': video } });
+        const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
+        this.content.push({ type: 'video_url', video_url: { 'url': video, 'detail': quality } });
 
         try {
             // Using Gemini calculation (263 tokens per second)
