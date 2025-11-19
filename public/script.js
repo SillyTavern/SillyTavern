@@ -8734,11 +8734,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
             //Some messages, like the welcome screen, are not swipeable.
             !(message?.extra?.swipeable === false) &&
             //User messages are not swipeable.
-            !message.is_user &&
-            //And it's not a greeting without swipes.
-            !(messageId === 0 && !chat_metadata?.tainted &&
-                (message?.swipes?.length ?? 1) == 1
-            )
+            !message.is_user
         )
     )
     //The message is swipeable.
@@ -8811,6 +8807,11 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
 
         //Chevrons should not fade-in during printMessages. //https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3539315919
         div.classList.toggle('fade', fade);
+
+        //If the message does not have swipes, create them.
+        if (ensureSwipes(message)) {
+            writeMessageToSwipe(message);
+        }
 
         if (isMessageSwipeable(messageId, message)) {
             //If a right swipe would trigger a generation or loop to the first swipe.
