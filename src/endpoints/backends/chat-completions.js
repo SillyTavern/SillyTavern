@@ -12,6 +12,7 @@ import {
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
+    VERTEX_SAFETY,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -40,6 +41,7 @@ import {
     postProcessPrompt,
     PROMPT_PROCESSING_TYPE,
     addAssistantPrefix,
+    embedOpenRouterMedia,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -74,6 +76,7 @@ const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI = 'https://api.z.ai/api/paas/v4';
+const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -381,7 +384,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.5-flash-image',
         ];
 
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m);
+        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -404,7 +407,7 @@ async function sendMakerSuiteRequest(request, response) {
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
-        let safetySettings = GEMINI_SAFETY;
+        const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
         if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
             tools.push({ google_search: {} });
@@ -543,8 +546,10 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                return response.status(500).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
 
             /** @type {any} */
@@ -1566,6 +1571,10 @@ router.post('/status', async function (request, statusResponse) {
             console.error('Azure OpenAI status check connection error:', error);
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
@@ -1837,8 +1846,11 @@ router.post('/generate', function (request, response) {
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
         const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
-        if (Array.isArray(request.body.messages) && Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
-            cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+        if (Array.isArray(request.body.messages)) {
+            embedOpenRouterMedia(request.body.messages);
+            if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
+                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+            }
         }
 
         const isGemini = /google\/gemini/.test(request.body.model);
@@ -1970,6 +1982,14 @@ router.post('/generate', function (request, response) {
                 type: request.body.include_reasoning ? 'enabled' : 'disabled',
             },
         };
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
+        bodyParams = {};
         if (request.body.json_schema) {
             setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
         }

@@ -52,7 +52,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, IMAGE_OVERSWIPE, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -311,6 +311,7 @@ const defaultSettings = {
     // OpenAI settings
     openai_style: 'vivid',
     openai_quality: 'standard',
+    openai_duration: '8',
 
     style: 'Default',
     styles: defaultStyles,
@@ -510,6 +511,7 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
@@ -1025,6 +1027,11 @@ async function onOpenAiQualitySelect() {
     saveSettingsDebounced();
 }
 
+async function onOpenAiDurationSelect() {
+    extension_settings.sd.openai_duration = String($('#sd_openai_duration').find(':selected').val());
+    saveSettingsDebounced();
+}
+
 async function onViewAnlasClick() {
     const result = await loadNovelSubscriptionData();
 
@@ -1294,6 +1301,8 @@ async function onModelChange() {
         const models = cachedModel ? [cachedModel] : await loadElectronHubModels();
         ensureElectronHubQualitySelect(models);
     }
+
+    switchModelSpecificControls(extension_settings.sd.model);
 
     const cloudSources = [
         sources.horde,
@@ -1745,6 +1754,8 @@ async function loadModels() {
         ensureElectronHubQualitySelect(models);
     }
 
+    switchModelSpecificControls(extension_settings.sd.model);
+
     for (const model of models) {
         const option = document.createElement('option');
         option.innerText = model.text;
@@ -1758,6 +1769,24 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+/**
+ * Show or hide model-specific controls based on the selected model.
+ * @param {string} modelId Model ID
+ */
+function switchModelSpecificControls(modelId) {
+    const modelControls = $('.sd_settings [data-sd-model]');
+    modelControls.hide();
+
+    if (!modelId) {
+        return;
+    }
+
+    modelControls.each(function () {
+        const models = String($(this).attr('data-sd-model') || '').split(',').map(m => m.trim());
+        $(this).toggle(models.includes(modelId));
+    });
 }
 
 /**
@@ -2054,6 +2083,8 @@ async function loadOpenAiModels() {
         { value: 'gpt-image-1', text: 'gpt-image-1' },
         { value: 'dall-e-3', text: 'dall-e-3' },
         { value: 'dall-e-2', text: 'dall-e-2' },
+        { value: 'sora-2', text: 'sora-2' },
+        { value: 'sora-2-pro', text: 'sora-2-pro' },
     ];
 }
 
@@ -3512,6 +3543,7 @@ async function generateOpenAiImage(prompt, signal) {
     const isDalle2 = extension_settings.sd.model === 'dall-e-2';
     const isDalle3 = extension_settings.sd.model === 'dall-e-3';
     const isGptImg = extension_settings.sd.model === 'gpt-image-1';
+    const isSora2 = /sora-2/.test(extension_settings.sd.model);
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
         prompt = prompt.substring(0, dalle2PromptLimit);
@@ -3548,6 +3580,30 @@ async function generateOpenAiImage(prompt, signal) {
     if (isDalle2 && (extension_settings.sd.width <= 512 && extension_settings.sd.height <= 512)) {
         width = 512;
         height = 512;
+    }
+
+    if (isSora2) {
+        width = aspectRatio >= 1 ? 1280 : 720;
+        height = aspectRatio >= 1 ? 720 : 1280;
+
+        const videoResult = await fetch('/api/openai/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                size: `${width}x${height}`,
+                seconds: extension_settings.sd.openai_duration,
+            }),
+        });
+
+        if (!videoResult.ok) {
+            throw new Error(await videoResult.text());
+        }
+
+        const { format, data } = await videoResult.json();
+        return { format, data };
     }
 
     const result = await fetch('/api/openai/generate-image', {
@@ -4182,7 +4238,7 @@ async function addSDGenButtons() {
         placement: 'top',
     });
 
-    $(document).on('click', '.sd_message_gen', sdMessageButton);
+    $(document).on('click', '.sd_message_gen', (e) => sdMessageButton($(e.currentTarget), { animate: false }));
 
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
@@ -4270,10 +4326,12 @@ let buttonAbortController = null;
 
 /**
  * "Paintbrush" button handler to generate a new image for a message.
- * @param {JQuery.ClickEvent} e The click event object.
+ * @param {JQuery<HTMLElement>} $icon The click target.
+ * @param {Object} [options] Additional options for image generation.
+ * @param {boolean} [options.animate] Whether to animate the media during generation.
  * @returns {Promise<void>} A promise that resolves when the image generation process is complete.
  */
-async function sdMessageButton(e) {
+async function sdMessageButton($icon, { animate } = {}) {
     /**
      * Sets the icon to indicate busy or idle state.
      * @param {boolean} isBusy Whether the icon should indicate a busy state.
@@ -4281,11 +4339,13 @@ async function sdMessageButton(e) {
     function setBusyIcon(isBusy) {
         $icon.toggleClass(classes.idle, !isBusy);
         $icon.toggleClass(classes.busy, isBusy);
+        $media.toggleClass(classes.animation, isBusy);
     }
 
-    const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush' };
+    let $media = jQuery();
+
+    const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush', animation: 'fa-fade' };
     const context = getContext();
-    const $icon = $(e.currentTarget);
 
     if ($icon.hasClass(classes.busy)) {
         buttonAbortController?.abort('Aborted by user');
@@ -4316,6 +4376,11 @@ async function sdMessageButton(e) {
     const selectedMedia = message.extra.media.length > 0
         ? (message.extra.media[message.extra.media_index] ?? message.extra.media[message.extra.media.length - 1])
         : { url: '', title: message.mes, type: MEDIA_TYPE.IMAGE, generation_type: generationMode.FREE };
+
+    if (animate && message.extra.media.length > 0) {
+        const index = message.extra.media.indexOf(selectedMedia);
+        $media = messageElement.find(`.mes_media_container[data-index="${index}"]`).find('.mes_img, .mes_video');
+    }
 
     buttonAbortController = new AbortController();
     const newMediaAttachment = await generateMediaSwipe(
@@ -4423,6 +4488,43 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     }
 
     return result;
+}
+
+/**
+ * Handles the image swipe event to potentially generate a new image.
+ * @param {object} param Parameters object
+ * @param {ChatMessage} param.message Message object
+ * @param {JQuery<HTMLElement>} param.element Message element
+ * @param {string} param.direction Swipe direction
+ */
+async function onImageSwiped({ message, element, direction }) {
+    const { powerUserSettings, accountStorage } = getContext();
+
+    if (!message || direction !== SWIPE_DIRECTION.RIGHT || powerUserSettings.image_overswipe !== IMAGE_OVERSWIPE.GENERATE) {
+        return;
+    }
+
+    const media = message?.extra?.media;
+    if (!Array.isArray(media) || media.length === 0) {
+        return;
+    }
+
+    const shouldGenerate = message?.extra?.media_index === media.length - 1;
+    if (!shouldGenerate) {
+        return;
+    }
+
+    const key = 'imageSwipeNoticeShown';
+    const hasSeenNotice = accountStorage.getItem(key);
+    if (!hasSeenNotice) {
+        await Popup.show.text(
+            t`Image Generation Notice`,
+            t`To disable generation on image swipes, change the "Image Swipe Behavior" setting in the User Settings panel. This message will not be shown again.`,
+        );
+        accountStorage.setItem(key, 'true');
+    }
+
+    await sdMessageButton(element.find('.sd_message_gen'), { animate: true });
 }
 
 /**
@@ -4859,6 +4961,7 @@ jQuery(async () => {
     $('#sd_interactive_mode').on('input', onInteractiveModeInput);
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
+    $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
@@ -4915,6 +5018,7 @@ jQuery(async () => {
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
         eventSource.on(event, async (/** @type {string} */ key) => {

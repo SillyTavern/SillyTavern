@@ -2080,16 +2080,18 @@ async function onImageSwiped(messageId, element, direction) {
         return;
     }
 
-    if (media.length === 1) {
-        console.warn('Only one media item in the message, swiping is not applicable');
-        return;
-    }
-
     const currentIndex = getMediaIndex(message);
     const mediaDisplay = getMediaDisplay(message);
 
     if (mediaDisplay !== MEDIA_DISPLAY.GALLERY) {
         console.warn('Image swiping is only supported for gallery media display');
+        return;
+    }
+
+    await eventSource.emit(event_types.IMAGE_SWIPED, { message, element, direction });
+
+    if (media.length === 1) {
+        console.warn('Only one media item in the message, swiping is not applicable');
         return;
     }
 
@@ -2105,21 +2107,7 @@ async function onImageSwiped(messageId, element, direction) {
         message.extra.media_index = newIndex >= media.length ? 0 : newIndex;
     }
 
-    // Show a message that swipe right no longer automatically generates an image
-    if (media.length > 0 && direction === SWIPE_DIRECTION.RIGHT && message.extra.media_index === 0) {
-        const key = 'imageSwipeNoticeShown';
-        const hasSeenNotice = accountStorage.getItem(key);
-        if (!hasSeenNotice) {
-            await Popup.show.text(
-                t`Image swiping no longer automatically generates new images.`,
-                t`Use the 'Generate Image' (paintbrush) button in the message actions menu to generate more images. This message will not be shown again.`,
-            );
-            accountStorage.setItem(key, 'true');
-        }
-    }
-
     await saveChatConditional();
-    await eventSource.emit(event_types.IMAGE_SWIPED, { message, element, direction });
     appendMediaToMessage(message, element);
 }
 

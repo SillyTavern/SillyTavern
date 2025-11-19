@@ -417,12 +417,12 @@ export function convertCohereMessages(messages, names) {
 /**
  * Convert a prompt from the ChatML objects to the format used by Google MakerSuite models.
  * @param {object[]} messages Array of messages
- * @param {string} _model Model name
+ * @param {string} model Model name
  * @param {boolean} useSysPrompt Use system prompt
  * @param {PromptNames} names Prompt names
  * @returns {{contents: *[], system_instruction: {parts: {text: string}[]}}} Prompt for Google MakerSuite models
  */
-export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
+export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const sysPrompt = [];
 
     if (useSysPrompt) {
@@ -548,6 +548,13 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
             }
         });
 
+        // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
+        if (/gemini-3/.test(model)) {
+            parts.filter(p => p.functionCall).forEach(p => {
+                p.thoughtSignature = 'context_engineering_is_the_way_to_go';
+            });
+        }
+
         // merge consecutive messages with the same role
         if (index > 0 && message.role === contents[contents.length - 1].role) {
             parts.forEach((part) => {
@@ -559,7 +566,7 @@ export function convertGooglePrompt(messages, _model, useSysPrompt, names) {
                         contents[contents.length - 1].parts.push(part);
                     }
                 }
-                if (part.inlineData || part.functionCall || part.functionResponse) {
+                if (part.inlineData || part.functionCall || part.functionResponse || part.thoughtSignature) {
                     contents[contents.length - 1].parts.push(part);
                 }
             });
@@ -1155,4 +1162,44 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     return null;
+}
+
+/**
+ * Embed media content in OpenRouter messages.
+ * @param {object[]} messages Array of messages
+ */
+export function embedOpenRouterMedia(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.content)) {
+            continue;
+        }
+
+        for (const contentPart of message.content) {
+            if (contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
+                contentPart.type = 'input_video';
+            }
+
+            if (contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
+                const formatMap = {
+                    'audio/mpeg': 'mp3',
+                    'audio/wav': 'wav',
+                };
+
+                const [header, base64Data] = contentPart.audio_url.url.split(',');
+                const mimeType = header.match(/data:([^;]+)/)?.[1] || 'audio/mpeg';
+
+                contentPart.type = 'input_audio';
+                contentPart.input_audio = {
+                    format: formatMap[mimeType] || 'mp3',
+                    data: base64Data,
+                };
+
+                delete contentPart.audio_url;
+            }
+        }
+    }
 }

@@ -461,6 +461,13 @@ export class Popup {
                     if (input instanceof HTMLInputElement && !shouldSendOnEnter())
                         return;
 
+                    // If this is a multiline input popup, we should still not simply send on enter, that'd be weird.
+                    // Let's still make it possible if CTRL is toggled though
+                    if ((textarea instanceof HTMLTextAreaElement || input instanceof HTMLInputElement)
+                        && !evt.ctrlKey && this.mainInput.rows > 1) {
+                        return;
+                    }
+
                     evt.preventDefault();
                     evt.stopPropagation();
                     const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
@@ -688,7 +695,7 @@ export class Popup {
     };
 }
 
-class PopupUtils {
+export class PopupUtils {
     /**
      * Builds popup content with header and text below
      *

@@ -662,6 +662,7 @@ export class ToolManager {
             chat_completion_sources.ELECTRONHUB,
             chat_completion_sources.AZURE_OPENAI,
             chat_completion_sources.ZAI,
+            chat_completion_sources.SILICONFLOW,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

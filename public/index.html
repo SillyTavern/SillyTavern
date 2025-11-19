@@ -648,7 +648,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536" step="1">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="128000" step="1">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai">
@@ -693,7 +693,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -706,7 +706,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -719,7 +719,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -745,7 +745,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1965,7 +1965,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai,zai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,azure_openai,zai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1980,7 +1980,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1992,7 +1992,7 @@
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2005,7 +2005,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
                                         <label for="openai_video_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_video_inlining" type="checkbox" />
                                             <span data-i18n="Send inline videos">Send inline videos</span>
@@ -2016,10 +2016,10 @@
                                         </label>
                                         <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it.</span>
-                                            <strong data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
+                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
                                         <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_audio_inlining" type="checkbox" />
                                             <span data-i18n="Send inline audio">Send inline audio</span>
@@ -2030,7 +2030,7 @@
                                         </label>
                                         <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it.</span>
-                                            <strong data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
+                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite,vertexai">
@@ -2073,9 +2073,9 @@
                                             <span data-i18n="Allows the model to return its thinking process.">
                                                 Allows the model to return its thinking process.
                                             </span>
-                                            <span data-i18n="This setting affects visibility only.">
+                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai">
                                                 This setting affects visibility only.
-                                            </span>
+                                            </strong>
                                         </div>
                                     </div>
                                     <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai">
@@ -2806,6 +2806,7 @@
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
+                                <option value="siliconflow">SiliconFlow</option>
                                 <option value="xai">xAI (Grok)</option>
                                 <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
@@ -2924,6 +2925,11 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5.1">
+                                        <option value="gpt-5.1">gpt-5.1</option>
+                                        <option value="gpt-5.1-2025-11-13">gpt-5.1-2025-11-13</option>
+                                        <option value="gpt-5.1-chat-latest">gpt-5.1-chat-latest</option>
+                                    </optgroup>
                                     <optgroup label="GPT-5">
                                         <option value="gpt-5">gpt-5</option>
                                         <option value="gpt-5-2025-08-07">gpt-5-2025-08-07</option>
@@ -3161,6 +3167,9 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
+                                    <optgroup label="Gemini 3.0">
+                                        <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
@@ -3329,6 +3338,9 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 3.0">
+                                        <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                                         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
@@ -3384,6 +3396,20 @@
                                 <option value="llama3-70b-8192">llama3-70b-8192</option>
                                 <option value="llama3-8b-8192">llama3-8b-8192</option>
                                 <option value="mistral-saba-24b">mistral-saba-24b</option>
+                            </select>
+                        </div>
+                        <div id="siliconflow_form" data-source="siliconflow">
+                            <h4>SiliconFlow API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_siliconflow" name="api_key_siliconflow" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_siliconflow"></div>
+                            </div>
+                            <div data-for="api_key_siliconflow" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4>SiliconFlow Model</h4>
+                            <select id="model_siliconflow_select">
+                                <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                             </select>
                         </div>
                         <div id="electronhub_form" data-source="electronhub">
@@ -5057,7 +5083,7 @@
                                     </div>
                                 </div>
                                 <div id="examples-behavior-block">
-                                    <label>
+                                    <label for="example_messages_behavior">
                                         <small data-i18n="Example Messages Behavior">
                                             Example Messages Behavior:
                                         </small>
@@ -5066,6 +5092,17 @@
                                         <option value="normal" data-i18n="Gradual push-out">Gradual push-out</option>
                                         <option value="keep" data-i18n="Always include examples">Always include examples</option>
                                         <option value="strip" data-i18n="Never include examples">Never include examples</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="image_overswipe">
+                                        <small data-i18n="Image Swipe Behavior:">
+                                            Image Swipe Behavior:
+                                        </small>
+                                    </label>
+                                    <select id="image_overswipe">
+                                        <option value="generate" data-i18n="Generate new">Generate new</option>
+                                        <option value="rollover" data-i18n="Roll over">Roll over</option>
                                     </select>
                                 </div>
                                 <div class="flex-container alignitemscenter">
