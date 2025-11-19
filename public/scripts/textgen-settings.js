@@ -1077,20 +1077,20 @@ export function initTextGenSettings() {
 
 /**
  * Hides and shows preset samplers from the left panel.
- * @param {string?} api_type API Type selected in API Connections - Currently selected one by default
- * @param {boolean?} is_preset_switch Wheter the trigger comes from a preset switch - false by default
+ * @param {string?} apiType API Type selected in API Connections - Currently selected one by default
+ * @param {boolean?} isPresetSwitch Wheter the trigger comes from a preset switch - false by default
  * @returns void
  */
-function showSamplerControls(api_type = null, is_preset_switch = false) {
+function showSamplerControls(apiType = null, isPresetSwitch = false) {
     const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
 
-    if (is_preset_switch && !prioritizeManualSamplerSelect) return;
+    if (isPresetSwitch && !prioritizeManualSamplerSelect) return;
 
     $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
         $(this).show();
     });
 
-    showTypeSpecificControls(api_type ?? settings.type);
+    showTypeSpecificControls(apiType ?? settings.type);
 
     const samplersActivatedManually = getManualActivePresetSamplers();
 

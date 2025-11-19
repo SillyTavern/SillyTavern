@@ -498,18 +498,18 @@ export async function savePresetSelectedSamplers() {
 }
 
 /**
- * Resets the selected samplers configuration object from the local forage instace.
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * Resets the selected samplers configuration object from the local forage instance.
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @param {boolean} silent Suppresses the toastr message confirming that the data was deleted.
  */
-export async function resetPresetSelectedSamplers(preset_name = '', silent = false) {
+export async function resetPresetSelectedSamplers(presetName = '', silent = false) {
     try {
-        if (!textgenerationwebui_settings?.preset && !preset_name) return;
-        if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-        if (!selectedSamplers[preset_name]) return;
+        if (!textgenerationwebui_settings?.preset && !presetName) return;
+        if (!presetName) presetName = textgenerationwebui_settings.preset;
+        if (!selectedSamplers[presetName]) return;
 
         console.debug('Text Completions: resetting selected samplers');
-        delete selectedSamplers[preset_name];
+        delete selectedSamplers[presetName];
         await savePresetSelectedSamplers();
         if (!silent) toastr.success('Selected samplers cleared.');
     } catch (error) {
@@ -519,45 +519,45 @@ export async function resetPresetSelectedSamplers(preset_name = '', silent = fal
 
 /**
  * Saves the visibility state for selected samplers into the configuration object.
- * @param {string} sampler_name Target sampler key name
+ * @param {string} samplerName Target sampler key name
  * @param {string|boolean} state Visibility state of the target sampler
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @returns void
  */
-export function setPresetSamplersState(sampler_name, state, preset_name = '') {
-    if (!textgenerationwebui_settings?.preset && !preset_name) return;
-    if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+export function setPresetSamplersState(samplerName, state, presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
 
-    const presetSamplers = selectedSamplers[preset_name];
-    presetSamplers[sampler_name] = String(state) === 'true';
+    const presetSamplers = selectedSamplers[presetName];
+    presetSamplers[samplerName] = String(state) === 'true';
 }
 
 /**
  * Returns the local forage object belonging to the active/selected TC preset
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @returns {object} Full localforage object with manual selections
  */
-export function getManualPresetSamplers(preset_name = '') {
-    if (!textgenerationwebui_settings?.preset && !preset_name) return {};
-    if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+export function getManualPresetSamplers(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return {};
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
 
-    return selectedSamplers[preset_name];
+    return selectedSamplers[presetName];
 }
 
 /**
  * Returns the key names of all the preset samplers activated manually.
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @returns {string[]} Array of sampler key names
  */
-export function getManualActivePresetSamplers(preset_name = '') {
-    if (!textgenerationwebui_settings?.preset && !preset_name) return [];
-    if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+export function getManualActivePresetSamplers(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return [];
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
 
     try {
-        const presetSamplers = Object.entries(selectedSamplers[preset_name]);
+        const presetSamplers = Object.entries(selectedSamplers[presetName]);
 
         return presetSamplers
             .filter(([key, val]) => val === true && key !== 'st_manual_priority')
@@ -570,32 +570,31 @@ export function getManualActivePresetSamplers(preset_name = '') {
 
 /**
  * @param {string|boolean} state Target state of the feature
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @returns void
  */
-export function toggleSamplerManualPriority(state = false, preset_name = '') {
-    if (!textgenerationwebui_settings?.preset && !preset_name) return;
-    if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+export function toggleSamplerManualPriority(state = false, presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
 
-    const presetSamplers = selectedSamplers[preset_name];
+    const presetSamplers = selectedSamplers[presetName];
     presetSamplers.st_manual_priority = String(state) === 'true';
 }
 
 /**
- * @param {string?} preset_name Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
  * @returns {boolean}
  */
-export function isSamplerManualPriorityEnabled(preset_name = '') {
-    if (!textgenerationwebui_settings?.preset && !preset_name) return false;
-    if (!preset_name) preset_name = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[preset_name]) selectedSamplers[preset_name] = {};
+export function isSamplerManualPriorityEnabled(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return false;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
 
-    return selectedSamplers[preset_name]?.st_manual_priority ?? false;
+    return selectedSamplers[presetName]?.st_manual_priority ?? false;
 }
 
 export async function initCustomSelectedSamplers() {
-
     userDisabledSamplers = power_user?.selectSamplers?.forceHidden || [];
     userShownSamplers = power_user?.selectSamplers?.forceShown || [];
     power_user.selectSamplers = {};
@@ -603,7 +602,6 @@ export async function initCustomSelectedSamplers() {
     power_user.selectSamplers.forceShown = userShownSamplers;
     await saveSettingsDebounced();
     $('#samplerSelectButton').off('click').on('click', showSamplerSelectPopup);
-
 }
 
 // Goal 4: filter hidden samplers from API output
