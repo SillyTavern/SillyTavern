@@ -85,6 +85,14 @@ declare global {
         captioned?: boolean;
     }
 
+    /** Media playback state */
+    interface MediaState {
+        /** Current playback time */
+        currentTime: number;
+        /** Whether the media is paused */
+        paused: boolean;
+    }
+
     // Global namespace modules
     interface Window {
         ai: any;

@@ -85,6 +85,13 @@ export const tag_import_setting = {
     ONLY_EXISTING: 4,
 };
 
+/** @enum {string} */
+export const tag_sort_mode = {
+    MANUAL: 'manual',
+    ALPHABETICAL: 'alphabetical',
+    BY_ENTRIES: 'by_entries',
+};
+
 /**
  * @type {{ FAV: Tag, GROUP: Tag, FOLDER: Tag, VIEW: Tag, HINT: Tag, UNFILTER: Tag }}
  * A collection of global actional tags for the filter panel
@@ -140,6 +147,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [folder_type] - The bogus folder type of this tag (based on `TAG_FOLDER_TYPES`)
  * @property {string} [filter_state] - The saved state of the filter chosen of this tag (based on `FILTER_STATES`)
  * @property {number} [sort_order] - A custom integer representing the sort order if tags are sorted
+ * @property {number} [count] - The number of entities that have this tag assigned
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
@@ -1331,42 +1339,24 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
 async function onViewTagsListClick() {
     const html = $(document.createElement('div'));
     html.attr('id', 'tag_view_list');
-    html.append(await renderTemplateAsync('tagManagement', { bogus_folders: power_user.bogus_folders, auto_sort_tags: power_user.auto_sort_tags }));
+    html.append(await renderTemplateAsync('tagManagement', { bogus_folders: power_user.bogus_folders }));
 
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
+
+    const $sortModeSelect = html.find('#tag_sort_mode_select');
+    $sortModeSelect.val(power_user.tag_sort_mode);
+    $sortModeSelect.on('change', function () {
+        const newMode = $(this).val().toString();
+        power_user.tag_sort_mode = newMode;
+        saveSettingsDebounced();
+        printViewTagList(tagContainer);
+    });
 
     printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
     await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, wide: true, large: true });
-}
-
-/**
- * Print the list of tags in the tag management view
- * @param {Event} event Event that triggered the color change
- * @param {boolean} toggle State of the toggle
- */
-function toggleAutoSortTags(event, toggle) {
-    if (toggle === power_user.auto_sort_tags) return;
-
-    // Ask user to confirm if enabling and it was manually sorted before
-    if (toggle && isManuallySorted() && !confirm('Are you sure you want to automatically sort alphabetically?')) {
-        if (event.target instanceof HTMLInputElement) {
-            event.target.checked = false;
-        }
-        return;
-    }
-
-    power_user.auto_sort_tags = toggle;
-
-    printCharactersDebounced();
-    saveSettingsDebounced();
-}
-
-/** This function goes over all existing tags and checks whether they were reorderd in the past. @returns {boolean} */
-function isManuallySorted() {
-    return tags.some((tag, index) => tag.sort_order !== index);
 }
 
 function makeTagListDraggable(tagContainer) {
@@ -1380,10 +1370,10 @@ function makeTagListDraggable(tagContainer) {
         });
 
         // If tags were dragged manually, we have to disable auto sorting
-        if (power_user.auto_sort_tags) {
-            power_user.auto_sort_tags = false;
-            $('#tag_view_list input[name="auto_sort_tags"]').prop('checked', false);
-            toastr.info('Automatic sorting of tags deactivated.');
+        if (power_user.tag_sort_mode !== tag_sort_mode.MANUAL) {
+            power_user.tag_sort_mode = tag_sort_mode.MANUAL;
+            $('#tag_sort_mode_select').val(tag_sort_mode.MANUAL);
+            toastr.info('Switched to Manual sorting mode.');
         }
 
         // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
@@ -1417,11 +1407,20 @@ function sortTags(tags) {
  * @returns {number} The compare result
  */
 function compareTagsForSort(a, b) {
+    // default sort: alphabetical, case insensitive
     const defaultSort = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-    if (power_user.auto_sort_tags) {
+
+    // sort on number of entries
+    if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
+        return ((b.count || 0) - (a.count || 0)) || defaultSort;
+    }
+
+    // alphabetical sort
+    if (power_user.tag_sort_mode === tag_sort_mode.ALPHABETICAL) {
         return defaultSort;
     }
 
+    // manual sort
     if (a.sort_order !== undefined && b.sort_order !== undefined) {
         return a.sort_order - b.sort_order;
     } else if (a.sort_order !== undefined) {
@@ -1620,8 +1619,13 @@ function onTagCreateClick() {
     toastr.success('Tag created', 'Create Tag');
 }
 
-function appendViewTagToList(list, tag, everything) {
-    const count = everything.filter(x => x == tag.id).length;
+/**
+ * Appends a tag to the view tag list.
+ * @param {JQuery<HTMLElement>} list List element
+ * @param {Tag} tag Tag object
+ * @param {number} count Count of characters/groups using this tag
+ */
+function appendViewTagToList(list, tag, count) {
     const template = VIEW_TAG_TEMPLATE.clone();
     template.attr('id', tag.id);
     template.find('.tag_view_counter_value').text(count);
@@ -1869,12 +1873,21 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
+/**
+ * Prints the tag list in the view tags popup.
+ * @param {JQuery<HTMLElement>} tagContainer Container element
+ * @param {boolean} empty Whether to empty the container before printing
+ */
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
-    const sortedTags = sortTags(tags);
+    const tagsWithCounts = tags.map(tag => {
+        const count = everything.filter(x => x === tag.id).length;
+        return { ...tag, count: count };
+    });
+    const sortedTags = sortTags(tagsWithCounts);
     for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, everything);
+        appendViewTagToList(tagContainer, tag, tag.count);
     }
 }
 
@@ -2296,14 +2309,9 @@ export function initTags() {
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
-    $(document).on('input', '#tag_view_list input[name="auto_sort_tags"]', (evt) => {
-        const toggle = $(evt.target).is(':checked');
-        toggleAutoSortTags(evt.originalEvent, toggle);
-        printViewTagList($('#tag_view_list .tag_view_list_tags'));
-    });
     $(document).on('focusout', '#tag_view_list .tag_view_name', (evt) => {
-        // Reorder/reprint tags, but only if the name actually has changed, and only if we auto sort tags
-        if (!power_user.auto_sort_tags || !$(evt.target).is('[dirty]')) return;
+        // Reorder/reprint tags, but only if the name actually has changed
+        if (!$(evt.target).is('[dirty]')) return;
 
         // Remember the order, so we can flash highlight if it changed after reprinting
         const tagId = ($(evt.target).closest('.tag_view_item')).attr('id');
@@ -2323,14 +2331,6 @@ export function initTags() {
             flashHighlight($(`#tag_view_list .tag_view_item[id="${tagId}"]`));
         }
     });
-
-    // Initialize auto sort setting based on whether it was sorted before
-    if (power_user.auto_sort_tags === undefined || power_user.auto_sort_tags === null) {
-        power_user.auto_sort_tags = !isManuallySorted();
-        if (power_user.auto_sort_tags) {
-            printCharactersDebounced();
-        }
-    }
 
     registerTagsSlashCommands();
     restoreSavedTagFilters();
