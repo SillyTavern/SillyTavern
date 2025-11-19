@@ -8682,7 +8682,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
  */
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined } = {}) {
     message ??= chat[mesId];
-    messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`)
+    messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
 
     //If the message does not have swipes, create them.
     if (ensureSwipes(message)) {
