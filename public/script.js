@@ -2541,9 +2541,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Set the swipes counter for all non-user messages.
     if (!params.isUser) {
-        const swipesNum = chat[newMessageId].swipes?.length;
-        const swipeId = chat[newMessageId].swipe_id + 1;
-        newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
+        updateSwipeCounter(newMessageId);
     }
 
     //last_mes should always be updated.
@@ -3440,7 +3438,7 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
-        syncMesToSwipe(messageId);
+        writeMessageToSwipe(chat[messageId]);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
@@ -6359,6 +6357,106 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 }
 
 /**
+ * Creates a message's `swipes`, `swipe_id` and `swipe_info` if necessary.
+ * @param {ChatMessage} message
+ * @returns {boolean} True if the message was updated.
+ */
+export function ensureSwipes(message) {
+
+    if (['swipes', 'swipe_id', 'swipe_info'].some(info => message[info] == null)) {
+        message['swipes'] ??= [];
+        //Avoid overwrites.
+        message['swipe_id'] ??= message['swipes'].length;
+        message['swipe_info'] ??= [];
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Syncs message with it's swipes and swipe_info.
+ * Defaults to swipe_id 0;
+ * Creates swipes and swipe_info arrays if they don't exist.
+ * Overwrites all current contents of swipes and swipe_info arrays.
+ * @param {ChatMessage} message
+ * @returns
+ */
+export function writeMessageToSwipe(message) {
+    if (typeof message !== 'object') {
+        console.trace(`[writeMessageToSwipe] failed. '${message}' is not an object.`);
+    }
+
+    const targetId = message?.['swipe_id'] ?? 0;
+
+    message['swipes'] ??= [];
+    message['swipe_info'] ??= [];
+    message['swipe_info'][targetId] ??= {};
+
+    message.swipes[targetId] = message.mes;
+
+    const targetSwipeInfo = message['swipe_info'][targetId];
+
+    targetSwipeInfo.send_date = message?.send_date;
+    targetSwipeInfo.gen_started = message?.gen_started;
+    targetSwipeInfo.gen_finished = message?.gen_finished;
+    targetSwipeInfo.extra = structuredClone(message?.extra);
+    return true;
+}
+
+/**
+ * Loads a message from the targetSwipeId.
+ * if swipe_info does not exist, it will be backfilled.
+ * If send_date, gen_started or gen_finished do not exist in swipe_info, the message's info will NOT be overwritten.
+ * The messages extra WILL be overwritten.
+ * @param {ChatMessage} message message object.
+ * @param {number} targetSwipeId message.swipe_id will be set to targetSwipeId.
+ * @returns {boolean} false if the swipe does not exist. true on success.
+ */
+export function loadMessageFromSwipe(message, targetSwipeId = 0) {
+
+    if (typeof message?.['swipes']?.[targetSwipeId] !== 'string') {
+        console.warn(`[loadMessageFromSwipe] Message swipe #${targetSwipeId} is not a string. It's swipe_id has not been changed to #${targetSwipeId}.`);
+        return false;
+    }
+
+    message.swipe_id = targetSwipeId;
+
+    // Backfill swipe_info if missing.
+    if (!Array.isArray(message.swipe_info)) {
+        message.swipe_info = message.swipes.map(_ => ({
+            send_date: message?.send_date,
+            gen_started: void 0,
+            gen_finished: void 0,
+            extra: {},
+        }));
+    }
+
+    const targetSwipeInfo = message?.swipe_info?.[targetSwipeId];
+    if (typeof targetSwipeInfo !== 'object') {
+        console.warn(`[loadMessageFromSwipe] Message swipe_info #${targetSwipeId} is not an object. The message's info will NOT be overwritten. The message's extra WILL be overwritten.`);
+    }
+
+    message.mes = message.swipes[targetSwipeId];
+    if (typeof targetSwipeInfo?.send_date == 'number') message.send_date = targetSwipeInfo?.send_date;
+    if (typeof targetSwipeInfo?.gen_started == 'number') message.gen_started = targetSwipeInfo?.gen_started;
+    if (typeof targetSwipeInfo?.gen_finished == 'number') message.gen_finished = targetSwipeInfo?.gen_finished;
+    message.extra = structuredClone(targetSwipeInfo?.extra) ?? {};
+    return true;
+}
+
+/**
+ * Calls writeMessageToSwipe then loadMessageFromSwipe.
+ * @param {object} message
+ * @param {number} targetSwipeInfo
+ * @returns {boolean}
+ */
+export function switchMessageWithSwipe(message, targetSwipeInfo) {
+    writeMessageToSwipe(message);
+    return loadMessageFromSwipe(message, targetSwipeInfo);
+}
+
+/**
+ * @deprecated Use `writeMessageToSwipe` instead.
  * Syncs the current message and all its data into the swipe data at the given message ID (or the last message if no ID is given).
  *
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
@@ -6411,6 +6509,7 @@ export function syncMesToSwipe(messageId = null) {
 }
 
 /**
+ * @deprecated Use `loadMessageFromSwipe` instead.
  * Syncs swipe data back to the message data at the given message ID (or the last message if no ID is given).
  * If the swipe ID is not provided, the current swipe ID in the message object is used.
  *
@@ -7595,8 +7694,11 @@ function updateMessage(div) {
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
+    // editing old messages
+    mes['extra'] ??= {};
+
     let regexPlacement;
-    if (mes.is_user) {
+    if (mes?.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
     } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
@@ -7626,15 +7728,11 @@ function updateMessage(div) {
     }
     mes['mes'] = text;
     if (mes['swipe_id'] !== undefined) {
+        ensureSwipes(mes);
         mes['swipes'][mes['swipe_id']] = text;
     }
 
-    // editing old messages
-    if (!mes.extra) {
-        mes.extra = {};
-    }
-
-    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+    if (mes?.is_system || mes?.is_user || mes.extra?.type === system_message_types.NARRATOR) {
         mes.extra.bias = bias ?? null;
     } else {
         mes.extra.bias = null;
@@ -8576,7 +8674,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 
 /**
  * Update the swipe counter for mesId.
- *  By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
+ * By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
  * @param {Number} mesId
  * @param {object} [options] Options
  * @param {ChatMessage} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
@@ -8584,7 +8682,12 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
  */
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined } = {}) {
     message ??= chat[mesId];
-    messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
+    messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`)
+
+    //If the message does not have swipes, create them.
+    if (ensureSwipes(message)) {
+        writeMessageToSwipe(message);
+    }
 
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
@@ -9496,7 +9599,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             }
             else {
                 await Popup.show.confirm(
-                    t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
+                    t`ERROR: <code>loadMessageFromSwipe</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
                     t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
                     { okButton: 'OK', cancelButton: false },
                 );
@@ -9550,8 +9653,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
         delete chat[mesId].gen_finished;
 
         //Load from swipes.
-        if (syncSwipeToMes(mesId, newSwipeId) == false) {
-            let errorMessage = t`When swiping ${direction} on message ${mesId}, syncSwipeToMes has returned false. Attempting to swipe back!`;
+        if (loadMessageFromSwipe(chat[mesId], newSwipeId) == false) {
+            let errorMessage = t`When swiping ${direction} on message ${mesId}, loadMessageFromSwipe has returned false. Attempting to swipe back!`;
             toastr.error(errorMessage);
 
             chat[mesId].swipe_id = originalSwipeId;
@@ -9742,7 +9845,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
     if (source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
 
         // Make sure ad-hoc changes to extras are saved before swiping away
-        syncMesToSwipe(mesId);
+        writeMessageToSwipe(chat[mesId]);
 
         if (chat[mesId]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
             chat[mesId]['swipe_id'] = 0;                        // set it to id 0
