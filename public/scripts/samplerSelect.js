@@ -203,8 +203,9 @@ function setSamplerListListeners() {
         const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
 
-        if (main_api === 'textgenerationwebui')
-            await setPresetSamplersState(samplerName, shouldDisplay !== 'none');
+        if (main_api === 'textgenerationwebui') {
+            setPresetSamplersState(samplerName, shouldDisplay !== 'none');
+        }
 
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
     });
