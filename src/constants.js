@@ -207,6 +207,7 @@ export const CHAT_COMPLETION_SOURCES = {
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
+    SILICONFLOW: 'siliconflow',
 };
 
 /**

@@ -76,6 +76,7 @@ const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI = 'https://api.z.ai/api/paas/v4';
+const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1570,6 +1571,10 @@ router.post('/status', async function (request, statusResponse) {
             console.error('Azure OpenAI status check connection error:', error);
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
@@ -1977,6 +1982,14 @@ router.post('/generate', function (request, response) {
                 type: request.body.include_reasoning ? 'enabled' : 'disabled',
             },
         };
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
+        bodyParams = {};
         if (request.body.json_schema) {
             setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
         }

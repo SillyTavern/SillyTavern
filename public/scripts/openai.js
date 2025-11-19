@@ -194,6 +194,7 @@ export const chat_completion_sources = {
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
+    SILICONFLOW: 'siliconflow',
 };
 
 const character_names_behavior = {
@@ -280,6 +281,7 @@ export const settingsToUpdate = {
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
+    siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
     electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
@@ -387,6 +389,7 @@ const default_settings = {
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
+    siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     electronhub_model: 'gpt-4o-mini',
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
@@ -1587,6 +1590,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.perplexity_model;
         case chat_completion_sources.GROQ:
             return oai_settings.groq_model;
+        case chat_completion_sources.SILICONFLOW:
+            return oai_settings.siliconflow_model;
         case chat_completion_sources.ELECTRONHUB:
             return oai_settings.electronhub_model;
         case chat_completion_sources.NANOGPT:
@@ -1918,6 +1923,24 @@ function saveModelList(data) {
         }
 
         $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
+        $('#model_siliconflow_select').empty();
+        model_list.forEach((model) => {
+            $('#model_siliconflow_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.siliconflow_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.siliconflow_model)) {
+            oai_settings.siliconflow_model = model_list[0].id;
+        }
+
+        $('#model_siliconflow_select').val(oai_settings.siliconflow_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
@@ -2654,7 +2677,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3666,6 +3689,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.cohere_model = settings.cohere_model ?? default_settings.cohere_model;
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.groq_model = settings.groq_model ?? default_settings.groq_model;
+    oai_settings.siliconflow_model = settings.siliconflow_model ?? default_settings.siliconflow_model;
     oai_settings.electronhub_model = settings.electronhub_model ?? default_settings.electronhub_model;
     oai_settings.electronhub_sort_models = settings.electronhub_sort_models ?? default_settings.electronhub_sort_models;
     oai_settings.electronhub_group_models = settings.electronhub_group_models ?? default_settings.electronhub_group_models;
@@ -3771,6 +3795,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_perplexity_select option[value="${oai_settings.perplexity_model}"`).prop('selected', true);
     $('#model_groq_select').val(oai_settings.groq_model);
     $(`#model_groq_select option[value="${oai_settings.groq_model}"`).prop('selected', true);
+    $('#model_siliconflow_select').val(oai_settings.siliconflow_model);
+    $(`#model_siliconflow_select option[value="${oai_settings.siliconflow_model}"`).prop('selected', true);
     $('#model_electronhub_select').val(oai_settings.electronhub_model);
     $(`#model_electronhub_select option[value="${oai_settings.electronhub_model}"`).prop('selected', true);
     $('#model_nanogpt_select').val(oai_settings.nanogpt_model);
@@ -4078,6 +4104,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         cohere_model: settings.cohere_model,
         perplexity_model: settings.perplexity_model,
         groq_model: settings.groq_model,
+        siliconflow_model: settings.siliconflow_model,
         xai_model: settings.xai_model,
         pollinations_model: settings.pollinations_model,
         aimlapi_model: settings.aimlapi_model,
@@ -4767,6 +4794,65 @@ function getZaiMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the SiliconFlow model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getSiliconflowMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    const contextMap = {
+        'baidu/ERNIE-4.5-300B-A47B': max_128k,
+        'ByteDance-Seed/Seed-OSS-36B-Instruct': max_256k,
+        'deepseek-ai/DeepSeek-R1': max_128k,
+        'deepseek-ai/DeepSeek-V3': max_128k,
+        'deepseek-ai/DeepSeek-V3.1': max_128k,
+        'deepseek-ai/DeepSeek-V3.1-Terminus': max_128k,
+        'deepseek-ai/DeepSeek-V3.2-Exp': max_128k,
+        'deepseek-ai/deepseek-vl2': max_4k,
+        'inclusionAI/Ling-1T': max_128k,
+        'inclusionAI/Ling-flash-2.0': max_128k,
+        'inclusionAI/Ling-mini-2.0': max_128k,
+        'inclusionAI/Ring-1T': max_128k,
+        'inclusionAI/Ring-flash-2.0': max_128k,
+        'meta-llama/Llama-3.3-70B-Instruct': max_32k,
+        'meta-llama/Meta-Llama-3.1-8B-Instruct': max_32k,
+        'MiniMaxAI/MiniMax-M1-80k': max_128k,
+        'MiniMaxAI/MiniMax-M2': max_128k,
+        'moonshotai/Kimi-K2-Instruct': max_128k,
+        'moonshotai/Kimi-K2-Instruct-0905': max_256k,
+        'moonshotai/Kimi-K2-Thinking': max_256k,
+        'openai/gpt-oss-120b': max_128k,
+        'openai/gpt-oss-20b': max_128k,
+        'Qwen/Qwen3-235B-A22B-Instruct-2507': max_256k,
+        'Qwen/Qwen3-235B-A22B-Thinking-2507': max_256k,
+        'Qwen/Qwen3-30B-A3B-Instruct-2507': max_256k,
+        'Qwen/Qwen3-30B-A3B-Thinking-2507': max_256k,
+        'Qwen/Qwen3-VL-235B-A22B-Instruct': max_256k,
+        'Qwen/Qwen3-VL-235B-A22B-Thinking': max_256k,
+        'Qwen/Qwen3-VL-30B-A3B-Instruct': max_256k,
+        'Qwen/Qwen3-VL-30B-A3B-Thinking': max_256k,
+        'Qwen/Qwen3-VL-32B-Instruct': max_256k,
+        'Qwen/Qwen3-VL-32B-Thinking': max_256k,
+        'Qwen/Qwen3-VL-8B-Instruct': max_256k,
+        'Qwen/Qwen3-VL-8B-Thinking': max_256k,
+        'stepfun-ai/step3': max_64k,
+        'tencent/Hunyuan-A13B-Instruct': max_128k,
+        'zai-org/GLM-4.5': max_128k,
+        'zai-org/GLM-4.5-Air': max_128k,
+        'zai-org/GLM-4.5V': max_64k,
+        'zai-org/GLM-4.6': max_200k,
+    };
+
+    // Return context size if model found, otherwise default to 32k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_32k;
+
+}
+
+/**
  * Get the maximum context size for the Moonshot model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked If context limits are unlocked
@@ -4955,6 +5041,15 @@ async function onModelChange() {
         }
         console.log('Groq model changed to', value);
         oai_settings.groq_model = value;
+    }
+
+    if ($(this).is('#model_siliconflow_select')) {
+        if (!value) {
+            console.debug('Null SiliconFlow model selected. Ignoring.');
+            return;
+        }
+        console.log('SiliconFlow model changed to', value);
+        oai_settings.siliconflow_model = value;
     }
 
     if ($(this).is('#model_electronhub_select')) {
@@ -5357,6 +5452,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
+        const maxContext = getSiliconflowMaxContext(oai_settings.siliconflow_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5412,6 +5516,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.COHERE]: { key: SECRET_KEYS.COHERE, selector: '#api_key_cohere', proxy: false },
         [chat_completion_sources.PERPLEXITY]: { key: SECRET_KEYS.PERPLEXITY, selector: '#api_key_perplexity', proxy: false },
         [chat_completion_sources.GROQ]: { key: SECRET_KEYS.GROQ, selector: '#api_key_groq', proxy: false },
+        [chat_completion_sources.SILICONFLOW]: { key: SECRET_KEYS.SILICONFLOW, selector: '#api_key_siliconflow', proxy: false },
         [chat_completion_sources.ELECTRONHUB]: { key: SECRET_KEYS.ELECTRONHUB, selector: '#api_key_electronhub', proxy: false },
         [chat_completion_sources.NANOGPT]: { key: SECRET_KEYS.NANOGPT, selector: '#api_key_nanogpt', proxy: false },
         [chat_completion_sources.DEEPSEEK]: { key: SECRET_KEYS.DEEPSEEK, selector: '#api_key_deepseek', proxy: true },
@@ -5494,6 +5599,9 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         $('#model_groq_select').trigger('change');
     }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
+        $('#model_siliconflow_select').trigger('change');
+    }
     else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     }
@@ -5532,8 +5640,10 @@ function toggleChatCompletionForms() {
     }
 
     $('[data-source]').each(function () {
+        const mode = $(this).data('source-mode');
         const validSources = $(this).data('source').split(',');
-        $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
+        const matchesSource = validSources.includes(oai_settings.chat_completion_source);
+        $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
 }
 
@@ -5648,6 +5758,12 @@ export function isImageInliningSupported() {
         'moonshot-v1-128k-vision-preview',
         // Z.AI (GLM)
         'glm-4.5v',
+        // SiliconFlow
+        'Qwen/Qwen3-VL-32B-Instruct',
+        'Qwen/Qwen3-VL-8B-Instruct',
+        'Qwen/Qwen3-VL-235B-A22B-Instruct',
+        'Qwen/Qwen3-VL-30B-A3B-Instruct',
+        'zai-org/GLM-4.5V',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5692,6 +5808,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         case chat_completion_sources.ZAI:
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
+        case chat_completion_sources.SILICONFLOW:
+            return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
         default:
             return false;
     }
@@ -6572,6 +6690,7 @@ export function initOpenAI() {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
+    $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
