@@ -9531,7 +9531,16 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             if (getOverswipeBehavior(mesId) == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
-                toastr.warning('Edit the message, to set \'chat_metadata[\'tainted\'] = true;\'. Then you can regenerate the greeting.', 'Pristine greetings will always loop.');
+
+                const { accountStorage } = getContext();
+
+                const key = 'pristineGreetingSwipeNoticeShown';
+                const hasSeenNotice = accountStorage.getItem(key);
+
+                if (!hasSeenNotice) {
+                    toastr.warning('Editing the message will allow you to swipe the greeting', 'Unchanged greetings will always loop.');
+                    accountStorage.setItem(key, 'true');
+                }
             }
         }
 
