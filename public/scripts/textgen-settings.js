@@ -20,7 +20,7 @@ import { autoSelectInstructPreset, selectContextPreset, selectInstructPreset } f
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
-import { getManualActivePresetSamplers, isSamplerManualPriorityEnabled, loadPresetSelectedSamplers } from './samplerSelect.js';
+import { getActiveManualApiSamplers, isSamplerManualPriorityEnabled, loadApiSelectedSamplers } from './samplerSelect.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels } from './textgen-models.js';
@@ -372,7 +372,6 @@ async function selectPreset(name) {
         setSettingByName(name, value, true);
     }
     setGenerationParamsFromPreset(preset);
-    showSamplerControls(null, true);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(preset.logit_bias, BIAS_KEY);
     saveSettingsDebounced();
@@ -572,7 +571,7 @@ export function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
-    loadPresetSelectedSamplers();
+    loadApiSelectedSamplers();
     showSamplerControls();
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
@@ -779,7 +778,7 @@ async function getStatusTextgen() {
 }
 
 export function initTextGenSettings() {
-    loadPresetSelectedSamplers();
+    loadApiSelectedSamplers();
 
     $('#send_banned_tokens_textgenerationwebui').on('change', function () {
         const checked = !!$(this).prop('checked');
@@ -1078,21 +1077,17 @@ export function initTextGenSettings() {
 /**
  * Hides and shows preset samplers from the left panel.
  * @param {string?} apiType API Type selected in API Connections - Currently selected one by default
- * @param {boolean?} isPresetSwitch Wheter the trigger comes from a preset switch - false by default
  * @returns void
  */
-function showSamplerControls(apiType = null, isPresetSwitch = false) {
-    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled();
-
-    if (isPresetSwitch && !prioritizeManualSamplerSelect) return;
-
+function showSamplerControls(apiType = null) {
     $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
         $(this).show();
     });
 
     showTypeSpecificControls(apiType ?? settings.type);
 
-    const samplersActivatedManually = getManualActivePresetSamplers();
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled(apiType ?? settings.type);
+    const samplersActivatedManually = getActiveManualApiSamplers(apiType ?? settings.type);
 
     if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
 

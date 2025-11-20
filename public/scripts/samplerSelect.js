@@ -45,7 +45,7 @@ async function showSamplerSelectPopup() {
 
         if (main_api === 'textgenerationwebui') {
             $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', false);
-            await resetPresetSelectedSamplers(null, true);
+            await resetApiSelectedSamplers(null, true);
         }
 
         await validateDisabledSamplers(true);
@@ -76,7 +76,7 @@ async function showSamplerSelectPopup() {
     }
 
     await showPromise;
-    if (main_api === 'textgenerationwebui') await savePresetSelectedSamplers();
+    if (main_api === 'textgenerationwebui') await saveApiSelectedSamplers();
 }
 
 function setSamplerListListeners() {
@@ -204,7 +204,7 @@ function setSamplerListListeners() {
         relatedDOMElement.css('display', shouldDisplay);
 
         if (main_api === 'textgenerationwebui') {
-            setPresetSamplersState(samplerName, shouldDisplay !== 'none');
+            setApiSamplersState(samplerName, shouldDisplay !== 'none');
         }
 
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
@@ -237,7 +237,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         return availableSamplers;
     }
 
-    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActiveManualApiSamplers() : [];
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
@@ -339,7 +339,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
         console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
         if (displayname === undefined) { displayname = sampler; }
-        if (main_api === 'textgenerationwebui') setPresetSamplersState(sampler, shouldBeChecked());
+        if (main_api === 'textgenerationwebui') setApiSamplersState(sampler, shouldBeChecked());
         return html + `
         <div class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
@@ -361,7 +361,7 @@ export async function validateDisabledSamplers(redraw = false) {
         return;
     }
 
-    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getActiveManualApiSamplers() : [];
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     for (const sampler of APISamplers) {
@@ -436,7 +436,6 @@ export async function validateDisabledSamplers(redraw = false) {
             relatedDOMElement = $('#smoothingBlock');
         }
 
-
         if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
             relatedDOMElement.data('selectsampler', 'hidden');
@@ -462,7 +461,7 @@ export async function validateDisabledSamplers(redraw = false) {
     }
 
     if (redraw) {
-        if (main_api === 'textgenerationwebui') showTGSamplerControls();
+        // if (main_api === 'textgenerationwebui') showTGSamplerControls();
 
         let samplersHTML = await listSamplers(main_api);
         $('#apiSamplersList').empty().append(samplersHTML.toString());
@@ -474,8 +473,9 @@ export async function validateDisabledSamplers(redraw = false) {
 
 /**
  * Initializes the configuration object for manually selected samplers.
+ * @returns void
  */
-export async function loadPresetSelectedSamplers() {
+export async function loadApiSelectedSamplers() {
     try {
         console.debug('Text Completions: loading selected samplers');
         selectedSamplers = await textGenObjectStore.getItem('selectedSamplers') || {};
@@ -487,8 +487,9 @@ export async function loadPresetSelectedSamplers() {
 
 /**
  * Synchronizes the local forage instance with the selected samplers configuration object.
+ * @returns void
  */
-export async function savePresetSelectedSamplers() {
+export async function saveApiSelectedSamplers() {
     try {
         console.debug('Text Completions: saving selected samplers');
         await textGenObjectStore.setItem('selectedSamplers', selectedSamplers);
@@ -499,18 +500,19 @@ export async function savePresetSelectedSamplers() {
 
 /**
  * Resets the selected samplers configuration object from the local forage instance.
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @param {boolean} silent Suppresses the toastr message confirming that the data was deleted.
+ * @returns void
  */
-export async function resetPresetSelectedSamplers(presetName = '', silent = false) {
+export async function resetApiSelectedSamplers(tcApiType = '', silent = false) {
     try {
-        if (!textgenerationwebui_settings?.preset && !presetName) return;
-        if (!presetName) presetName = textgenerationwebui_settings.preset;
-        if (!selectedSamplers[presetName]) return;
+        if (!textgenerationwebui_settings?.type && !tcApiType) return;
+        if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+        if (!selectedSamplers[tcApiType]) return;
 
         console.debug('Text Completions: resetting selected samplers');
-        delete selectedSamplers[presetName];
-        await savePresetSelectedSamplers();
+        delete selectedSamplers[tcApiType];
+        await saveApiSelectedSamplers();
         if (!silent) toastr.success('Selected samplers cleared.');
     } catch (error) {
         console.log('Text Completions: unable to reset selected preset samplers', error);
@@ -521,43 +523,43 @@ export async function resetPresetSelectedSamplers(presetName = '', silent = fals
  * Saves the visibility state for selected samplers into the configuration object.
  * @param {string} samplerName Target sampler key name
  * @param {string|boolean} state Visibility state of the target sampler
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @returns void
  */
-export function setPresetSamplersState(samplerName, state, presetName = '') {
-    if (!textgenerationwebui_settings?.preset && !presetName) return;
-    if (!presetName) presetName = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+export function setApiSamplersState(samplerName, state, tcApiType = '') {
+    if (!textgenerationwebui_settings?.type && !tcApiType) return;
+    if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+    if (!selectedSamplers[tcApiType]) selectedSamplers[tcApiType] = {};
 
-    const presetSamplers = selectedSamplers[presetName];
+    const presetSamplers = selectedSamplers[tcApiType];
     presetSamplers[samplerName] = String(state) === 'true';
 }
 
 /**
- * Returns the local forage object belonging to the active/selected TC preset
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * Returns the local forage object belonging to the active/selected TC API Type
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @returns {object} Full localforage object with manual selections
  */
-export function getManualPresetSamplers(presetName = '') {
-    if (!textgenerationwebui_settings?.preset && !presetName) return {};
-    if (!presetName) presetName = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+export function getAllManualApiSamplers(tcApiType = '') {
+    if (!textgenerationwebui_settings?.type && !tcApiType) return {};
+    if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+    if (!selectedSamplers[tcApiType]) selectedSamplers[tcApiType] = {};
 
-    return selectedSamplers[presetName];
+    return selectedSamplers[tcApiType];
 }
 
 /**
- * Returns the key names of all the preset samplers activated manually.
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * Returns the key names of all the manually activated API Type samplers.
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @returns {string[]} Array of sampler key names
  */
-export function getManualActivePresetSamplers(presetName = '') {
-    if (!textgenerationwebui_settings?.preset && !presetName) return [];
-    if (!presetName) presetName = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+export function getActiveManualApiSamplers(tcApiType = '') {
+    if (!textgenerationwebui_settings?.type && !tcApiType) return [];
+    if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+    if (!selectedSamplers[tcApiType]) selectedSamplers[tcApiType] = {};
 
     try {
-        const presetSamplers = Object.entries(selectedSamplers[presetName]);
+        const presetSamplers = Object.entries(selectedSamplers[tcApiType]);
 
         return presetSamplers
             .filter(([key, val]) => val === true && key !== 'st_manual_priority')
@@ -570,28 +572,28 @@ export function getManualActivePresetSamplers(presetName = '') {
 
 /**
  * @param {string|boolean} state Target state of the feature
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @returns void
  */
-export function toggleSamplerManualPriority(state = false, presetName = '') {
-    if (!textgenerationwebui_settings?.preset && !presetName) return;
-    if (!presetName) presetName = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+export function toggleSamplerManualPriority(state = false, tcApiType = '') {
+    if (!textgenerationwebui_settings?.type && !tcApiType) return;
+    if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+    if (!selectedSamplers[tcApiType]) selectedSamplers[tcApiType] = {};
 
-    const presetSamplers = selectedSamplers[presetName];
+    const presetSamplers = selectedSamplers[tcApiType];
     presetSamplers.st_manual_priority = String(state) === 'true';
 }
 
 /**
- * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @param {string?} tcApiType Name of the target API Type - It picks the currently active TC API type name by default
  * @returns {boolean}
  */
-export function isSamplerManualPriorityEnabled(presetName = '') {
-    if (!textgenerationwebui_settings?.preset && !presetName) return false;
-    if (!presetName) presetName = textgenerationwebui_settings.preset;
-    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+export function isSamplerManualPriorityEnabled(tcApiType = '') {
+    if (!textgenerationwebui_settings?.type && !tcApiType) return false;
+    if (!tcApiType) tcApiType = textgenerationwebui_settings.type;
+    if (!selectedSamplers[tcApiType]) selectedSamplers[tcApiType] = {};
 
-    return selectedSamplers[presetName]?.st_manual_priority ?? false;
+    return selectedSamplers[tcApiType]?.st_manual_priority ?? false;
 }
 
 export async function initCustomSelectedSamplers() {
