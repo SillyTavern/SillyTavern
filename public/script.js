@@ -9587,6 +9587,27 @@ export async function swipe(event, direction, { source, repeated, message = chat
     }
 
     /**
+     * Removes a message's extra and gen times.
+     * @param {ChatMessage} message
+     */
+    function clearMessageData(message) {
+        if (message.extra && typeof message.extra === 'object') {
+            delete message.extra.memory;
+            delete message.extra.display_text;
+            delete message.extra.media;
+            delete message.extra.inline_image;
+            delete message.extra.files;
+            delete message.extra.fileLength;
+            delete message.extra.generationType;
+            delete message.extra.negative;
+            delete message.extra.title;
+            delete message.extra.append_title;
+        }
+        delete message.gen_started;
+        delete message.gen_finished;
+    }
+
+    /**
      * Sets the message to the newSwipeId and loads it.
      * @param {number} mesId
      * @param {number} newSwipeId
@@ -9595,20 +9616,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //Update the swipe_id.
         chat[mesId]['swipe_id'] = newSwipeId;
 
-        if (chat[mesId].extra && typeof chat[mesId].extra === 'object') {
-            delete chat[mesId].extra.memory;
-            delete chat[mesId].extra.display_text;
-            delete chat[mesId].extra.media;
-            delete chat[mesId].extra.inline_image;
-            delete chat[mesId].extra.files;
-            delete chat[mesId].extra.fileLength;
-            delete chat[mesId].extra.generationType;
-            delete chat[mesId].extra.negative;
-            delete chat[mesId].extra.title;
-            delete chat[mesId].extra.append_title;
-        }
-        delete chat[mesId].gen_started;
-        delete chat[mesId].gen_finished;
+        clearMessageData(chat[mesId]);
 
         //Load from swipes.
         if (syncSwipeToMes(mesId, newSwipeId) == false) {
@@ -9877,6 +9885,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             }
             //Regenerate the message
             else if (overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) {
+                await clearMessageData(chat[mesId]);
                 let run_generate = true;
                 //Generate.
                 await animateSwipe(run_generate);
