@@ -1,7 +1,7 @@
 import {
     moment,
 } from '../lib.js';
-import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
+import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, updateMessageBlock, writeMessageToSwipe } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
 import { MacrosParser } from './macros.js';
@@ -1338,7 +1338,7 @@ function registerReasoningAppEvents() {
         }
 
         if (contentUpdated) {
-            syncMesToSwipe();
+            writeMessageToSwipe(message);
             saveChatDebounced();
 
             // Find if a message already exists in DOM and must be updated
