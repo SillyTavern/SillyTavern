@@ -6368,8 +6368,8 @@ export function ensureSwipes(message) {
 
     let updated = false;
 
-    //Small system messages should not have swipes.
-    if (message?.extra?.isSmallSys == true) {
+    //Small system messages and user messages should not have swipes.
+    if (message?.is_user == true || message?.extra?.isSmallSys == true) {
         return updated;
     }
 
