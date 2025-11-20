@@ -6359,18 +6359,31 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 /**
  * Creates a message's `swipes`, `swipe_id` and `swipe_info` if necessary.
  * @param {ChatMessage} message
- * @returns {boolean} True if the message was updated.
+ * @returns {boolean} true if the message was updated.
  */
 export function ensureSwipes(message) {
-
-    if (['swipes', 'swipe_id', 'swipe_info'].some(info => message[info] == null)) {
-        message['swipes'] ??= [];
-        //Avoid overwrites.
-        message['swipe_id'] ??= message['swipes'].length;
-        message['swipe_info'] ??= [];
-        return true;
+    if (typeof message !== 'object') {
+        console.trace(`[ensureSwipes] failed. '${message}' is not an object.`);
     }
-    return false;
+
+    let updated = false;
+
+    if (!Array.isArray(message.swipes))        message.swipes = [message.mes ?? ''];        updated = true;
+    //Avoid overwrites.
+    if (typeof(message.swipe_id) !== 'number') message.swipe_id = message.swipes.length; updated = true;
+
+    if (!Array.isArray(message.swipe_info)) {
+
+        message.swipe_info = message.swipes.map(_ => ({
+            send_date: message.send_date,
+            gen_started: message.gen_started,
+            gen_finished: message.gen_finished,
+            extra: structuredClone(message.extra) ?? {},
+        }));
+        updated = true;
+    }
+
+    return updated;
 }
 
 /**
@@ -6379,27 +6392,27 @@ export function ensureSwipes(message) {
  * Creates swipes and swipe_info arrays if they don't exist.
  * Overwrites all current contents of swipes and swipe_info arrays.
  * @param {ChatMessage} message
+ * @param {boolean} [ensure=true] This should only be false when ensure has been previously called on the message.
  * @returns
  */
-export function writeMessageToSwipe(message) {
+export function writeMessageToSwipe(message, ensure = true) {
     if (typeof message !== 'object') {
         console.trace(`[writeMessageToSwipe] failed. '${message}' is not an object.`);
     }
 
     const targetId = message?.['swipe_id'] ?? 0;
 
-    message['swipes'] ??= [];
-    message['swipe_info'] ??= [];
-    message['swipe_info'][targetId] ??= {};
+    if (ensure) ensureSwipes(message);
 
+    message.swipe_info[targetId] ??= {};
     message.swipes[targetId] = message.mes;
 
-    const targetSwipeInfo = message['swipe_info'][targetId];
+    const targetSwipeInfo = message.swipe_info[targetId];
 
-    targetSwipeInfo.send_date = message?.send_date;
-    targetSwipeInfo.gen_started = message?.gen_started;
-    targetSwipeInfo.gen_finished = message?.gen_finished;
-    targetSwipeInfo.extra = structuredClone(message?.extra);
+    targetSwipeInfo.send_date = message.send_date;
+    targetSwipeInfo.gen_started = message.gen_started;
+    targetSwipeInfo.gen_finished = message.gen_finished;
+    targetSwipeInfo.extra = structuredClone(message?.extra) ?? {};
     return true;
 }
 
@@ -6414,27 +6427,21 @@ export function writeMessageToSwipe(message) {
  */
 export function loadMessageFromSwipe(message, targetSwipeId = 0) {
 
-    if (typeof message?.['swipes']?.[targetSwipeId] !== 'string') {
+    if (typeof message !== 'object') {
+        console.trace(`[loadMessageFromSwipe] failed. '${message}' is not an object.`);
+        return false;
+    }
+
+    if (typeof message.swipes[targetSwipeId] !== 'string') {
         console.warn(`[loadMessageFromSwipe] Message swipe #${targetSwipeId} is not a string. It's swipe_id has not been changed to #${targetSwipeId}.`);
         return false;
     }
 
     message.swipe_id = targetSwipeId;
 
-    // Backfill swipe_info if missing.
-    if (!Array.isArray(message.swipe_info)) {
-        message.swipe_info = message.swipes.map(_ => ({
-            send_date: message?.send_date,
-            gen_started: void 0,
-            gen_finished: void 0,
-            extra: {},
-        }));
-    }
+    ensureSwipes(message);
 
-    const targetSwipeInfo = message?.swipe_info?.[targetSwipeId];
-    if (typeof targetSwipeInfo !== 'object') {
-        console.warn(`[loadMessageFromSwipe] Message swipe_info #${targetSwipeId} is not an object. The message's info will NOT be overwritten. The message's extra WILL be overwritten.`);
-    }
+    const targetSwipeInfo = message.swipe_info[targetSwipeId];
 
     message.mes = message.swipes[targetSwipeId];
     if (typeof targetSwipeInfo?.send_date == 'number') message.send_date = targetSwipeInfo?.send_date;
@@ -8686,7 +8693,7 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 
     //If the message does not have swipes, create them.
     if (ensureSwipes(message)) {
-        writeMessageToSwipe(message);
+        writeMessageToSwipe(message, false);
     }
 
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
