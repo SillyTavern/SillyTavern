@@ -2541,9 +2541,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Set the swipes counter for all non-user messages.
     if (!params.isUser) {
-        const swipesNum = chat[newMessageId].swipes?.length;
-        const swipeId = chat[newMessageId].swipe_id + 1;
-        newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
+        updateSwipeCounter(newMessageId);
     }
 
     //last_mes should always be updated.
@@ -6359,6 +6357,40 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 }
 
 /**
+ * Creates a message's `swipes`, `swipe_id` and `swipe_info` if necessary.
+ * @param {ChatMessage} message
+ * @returns {boolean} true if the message was updated.
+ */
+export function ensureSwipes(message) {
+    if (typeof message !== 'object') {
+        console.trace(`[ensureSwipes] failed. '${message}' is not an object.`);
+    }
+
+    let updated = false;
+
+    //Small system messages should not have swipes.
+    if (message?.extra?.isSmallSys == true) {
+        return updated;
+    }
+
+    if (!Array.isArray(message.swipes))        message.swipes = [message.mes ?? ''];     updated = true;
+    if (typeof(message.swipe_id) !== 'number') message.swipe_id = 0; updated = true;
+
+    if (!Array.isArray(message.swipe_info)) {
+
+        message.swipe_info = message.swipes.map(_ => ({
+            send_date: message.send_date,
+            gen_started: message.gen_started,
+            gen_finished: message.gen_finished,
+            extra: structuredClone(message.extra) ?? {},
+        }));
+        updated = true;
+    }
+
+    return updated;
+}
+
+/**
  * Syncs the current message and all its data into the swipe data at the given message ID (or the last message if no ID is given).
  *
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
@@ -7595,8 +7627,11 @@ function updateMessage(div) {
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
+    // editing old messages
+    mes['extra'] ??= {};
+
     let regexPlacement;
-    if (mes.is_user) {
+    if (mes?.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
     } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
@@ -7626,15 +7661,11 @@ function updateMessage(div) {
     }
     mes['mes'] = text;
     if (mes['swipe_id'] !== undefined) {
+        ensureSwipes(mes);
         mes['swipes'][mes['swipe_id']] = text;
     }
 
-    // editing old messages
-    if (!mes.extra) {
-        mes.extra = {};
-    }
-
-    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+    if (mes?.is_system || mes?.is_user || mes.extra?.type === system_message_types.NARRATOR) {
         mes.extra.bias = bias ?? null;
     } else {
         mes.extra.bias = null;
@@ -8576,7 +8607,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 
 /**
  * Update the swipe counter for mesId.
- *  By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
+ * By default, the swipe counter's opacity will appear greyed out. The opacity is changed with CSS.
  * @param {Number} mesId
  * @param {object} [options] Options
  * @param {ChatMessage} [options.message=undefined] Swipe numbers from this message will be used instead of mesId.
@@ -8585,6 +8616,11 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 export async function updateSwipeCounter(mesId, { message = undefined, messageElement = undefined } = {}) {
     message ??= chat[mesId];
     messageElement ??= chatElement.children('.mes').filter(`[mesid="${mesId}"]`);
+
+    //If the message does not have swipes, create them.
+    if (ensureSwipes(message)) {
+        syncMesToSwipe(mesId);
+    }
 
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
@@ -8619,6 +8655,11 @@ export function isSwipingAllowed() {
 export function isMessageSwipeable(messageId, message = undefined) {
     message ??= chat[messageId];
 
+    //If the message does not have swipes, create them.
+    if (ensureSwipes(message)) {
+        syncMesToSwipe(messageId);
+    }
+
     if (
         //Only messages below the currently edited message can be swiped, if it's not mid-swipe edit.
         ((messageId > (this_edit_mes_id ?? -1)) && (swipeState != SWIPE_STATE.EDITING)) &&
@@ -8631,11 +8672,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
             //Some messages, like the welcome screen, are not swipeable.
             !(message?.extra?.swipeable === false) &&
             //User messages are not swipeable.
-            !message.is_user &&
-            //And it's not a greeting without swipes.
-            !(messageId === 0 && !chat_metadata?.tainted &&
-                (message?.swipes?.length ?? 1) == 1
-            )
+            !message.is_user
         )
     )
     //The message is swipeable.
