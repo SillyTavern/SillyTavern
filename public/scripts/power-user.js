@@ -63,7 +63,7 @@ import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
-import { MEDIA_DISPLAY } from './constants.js';
+import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
 import { t } from './i18n.js';
 
 export const toastPositionClasses = [
@@ -341,6 +341,7 @@ export const power_user = {
     pin_styles: true,
     click_to_edit: false,
     media_display: MEDIA_DISPLAY.LIST,
+    image_overswipe: IMAGE_OVERSWIPE.GENERATE,
 };
 
 let themes = [];
@@ -1774,6 +1775,7 @@ export async function loadPowerUserSettings(settings, data) {
     $('#pin_styles').prop('checked', power_user.pin_styles);
     $('#click_to_edit').prop('checked', power_user.click_to_edit);
     $('#media_display').val(power_user.media_display);
+    $('#image_overswipe').val(power_user.image_overswipe);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -4188,6 +4190,11 @@ jQuery(() => {
         if (isMediaDisplayReloadNeeded()) {
             await reloadCurrentChat();
         }
+    });
+
+    $('#image_overswipe').on('input', function () {
+        power_user.image_overswipe = $(this).val().toString();
+        saveSettingsDebounced();
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

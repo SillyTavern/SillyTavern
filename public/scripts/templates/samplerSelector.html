@@ -1,11 +1,17 @@
 <div class="title_restorable flexFlowColumn alignItemsBaseline">
-    <div class="flex-container justifyCenter">
+    <div class="flex-container justifySpaceBetween alignItemsBaseline wide100p">
         <h3 data-i18n="Sampler Select">Sampler Select</h3>
         <div class="flex-container alignItemsBaseline">
-        <div id="resetSelectedSamplers" class="menu_button menu_button_icon" data-i18n="[title]Reset custom sampler selection" title="Reset custom sampler selection">
-            <i class="fa-solid fa-recycle"></i>
+            <div id="resetSelectedSamplers" class="menu_button menu_button_icon" data-i18n="[title]Reset custom sampler selection" title="Reset custom sampler selection">
+                <i class="fa-solid fa-recycle"></i>
+                <span data-i18n="Reset">Reset</span>
+            </div>
+            <div id="prioritizeManuallySelectedSamplers" class="menu_button menu_button_icon" data-i18n="[title]Prioritize showing samplers manually selected from this popup." title="Prioritize showing samplers manually selected from this popup.">
+                <i class="fa-solid fa-lock"></i>
+                <span data-i18n="Prioritize">Prioritize</span>
+            </div>
+            <div class="margin5 fa-solid fa-exclamation-circle" data-i18n="[title]Toggle on to force the samplers selected in this menu to be shown when switching to this preset. By default, SillyTavern automatically selects samplers used or needed by the selected API Type in the API Connections panel." title="Toggle on to force the samplers selected in this menu to be shown when switching to this preset. By default, SillyTavern automatically selects samplers used or needed by the selected API Type in the API Connections panel."></div>
         </div>
-    </div>
         <!--<div class="flex-container alignItemsBaseline">
             <div class="menu_button menu_button_icon" title="Create a new sampler">
                 <i class="fa-solid fa-plus"></i>

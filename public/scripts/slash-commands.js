@@ -4844,6 +4844,7 @@ function getModelOptions(quiet) {
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
+        { id: 'model_siliconflow_select', api: 'openai', type: chat_completion_sources.SILICONFLOW },
         { id: 'model_electronhub_select', api: 'openai', type: chat_completion_sources.ELECTRONHUB },
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
         { id: 'model_deepseek_select', api: 'openai', type: chat_completion_sources.DEEPSEEK },

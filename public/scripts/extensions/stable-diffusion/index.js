@@ -52,7 +52,7 @@ import {
     SlashCommandArgument,
     SlashCommandNamedArgument,
 } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, VIDEO_EXTENSIONS } from '../../constants.js';
+import { debounce_timeout, IMAGE_OVERSWIPE, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION, VIDEO_EXTENSIONS } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -4238,7 +4238,7 @@ async function addSDGenButtons() {
         placement: 'top',
     });
 
-    $(document).on('click', '.sd_message_gen', sdMessageButton);
+    $(document).on('click', '.sd_message_gen', (e) => sdMessageButton($(e.currentTarget), { animate: false }));
 
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
@@ -4326,10 +4326,12 @@ let buttonAbortController = null;
 
 /**
  * "Paintbrush" button handler to generate a new image for a message.
- * @param {JQuery.ClickEvent} e The click event object.
+ * @param {JQuery<HTMLElement>} $icon The click target.
+ * @param {Object} [options] Additional options for image generation.
+ * @param {boolean} [options.animate] Whether to animate the media during generation.
  * @returns {Promise<void>} A promise that resolves when the image generation process is complete.
  */
-async function sdMessageButton(e) {
+async function sdMessageButton($icon, { animate } = {}) {
     /**
      * Sets the icon to indicate busy or idle state.
      * @param {boolean} isBusy Whether the icon should indicate a busy state.
@@ -4337,11 +4339,13 @@ async function sdMessageButton(e) {
     function setBusyIcon(isBusy) {
         $icon.toggleClass(classes.idle, !isBusy);
         $icon.toggleClass(classes.busy, isBusy);
+        $media.toggleClass(classes.animation, isBusy);
     }
 
-    const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush' };
+    let $media = jQuery();
+
+    const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush', animation: 'fa-fade' };
     const context = getContext();
-    const $icon = $(e.currentTarget);
 
     if ($icon.hasClass(classes.busy)) {
         buttonAbortController?.abort('Aborted by user');
@@ -4372,6 +4376,11 @@ async function sdMessageButton(e) {
     const selectedMedia = message.extra.media.length > 0
         ? (message.extra.media[message.extra.media_index] ?? message.extra.media[message.extra.media.length - 1])
         : { url: '', title: message.mes, type: MEDIA_TYPE.IMAGE, generation_type: generationMode.FREE };
+
+    if (animate && message.extra.media.length > 0) {
+        const index = message.extra.media.indexOf(selectedMedia);
+        $media = messageElement.find(`.mes_media_container[data-index="${index}"]`).find('.mes_img, .mes_video');
+    }
 
     buttonAbortController = new AbortController();
     const newMediaAttachment = await generateMediaSwipe(
@@ -4479,6 +4488,43 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     }
 
     return result;
+}
+
+/**
+ * Handles the image swipe event to potentially generate a new image.
+ * @param {object} param Parameters object
+ * @param {ChatMessage} param.message Message object
+ * @param {JQuery<HTMLElement>} param.element Message element
+ * @param {string} param.direction Swipe direction
+ */
+async function onImageSwiped({ message, element, direction }) {
+    const { powerUserSettings, accountStorage } = getContext();
+
+    if (!message || direction !== SWIPE_DIRECTION.RIGHT || powerUserSettings.image_overswipe !== IMAGE_OVERSWIPE.GENERATE) {
+        return;
+    }
+
+    const media = message?.extra?.media;
+    if (!Array.isArray(media) || media.length === 0) {
+        return;
+    }
+
+    const shouldGenerate = message?.extra?.media_index === media.length - 1;
+    if (!shouldGenerate) {
+        return;
+    }
+
+    const key = 'imageSwipeNoticeShown';
+    const hasSeenNotice = accountStorage.getItem(key);
+    if (!hasSeenNotice) {
+        await Popup.show.text(
+            t`Image Generation Notice`,
+            t`To disable generation on image swipes, change the "Image Swipe Behavior" setting in the User Settings panel. This message will not be shown again.`,
+        );
+        accountStorage.setItem(key, 'true');
+    }
+
+    await sdMessageButton(element.find('.sd_message_gen'), { animate: true });
 }
 
 /**
@@ -4972,6 +5018,7 @@ jQuery(async () => {
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
         eventSource.on(event, async (/** @type {string} */ key) => {
