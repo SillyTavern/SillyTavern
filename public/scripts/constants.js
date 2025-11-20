@@ -128,6 +128,8 @@ export const OVERSWIPE_BEHAVIOR = {
     NONE: 'none',
     /** An overswipe will loop to the first swipe. */
     LOOP: 'loop',
+    /** Pristine greetings will loop, and chevrons will always be shown: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373 */
+    PRISTINE_GREETING: 'pristine_greeting',
     /** If chat tree is enabled, then an overswipe will allow the user to edit the message before starting a new generation. */
     EDIT_GENERATE: 'edit_generate',
     /** This is the default behavior on character messages. */
