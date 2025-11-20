@@ -461,8 +461,6 @@ export async function validateDisabledSamplers(redraw = false) {
     }
 
     if (redraw) {
-        // if (main_api === 'textgenerationwebui') showTGSamplerControls();
-
         let samplersHTML = await listSamplers(main_api);
         $('#apiSamplersList').empty().append(samplersHTML.toString());
         setSamplerListListeners();
