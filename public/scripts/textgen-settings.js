@@ -571,8 +571,7 @@ export function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
-    loadApiSelectedSamplers();
-    showSamplerControls();
+    showSamplerControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
 
@@ -1080,8 +1079,10 @@ export function initTextGenSettings() {
  * @returns void
  */
 function showSamplerControls(apiType = null) {
-    $('#textgenerationwebui_api-settings [data-tg-samplers]:not([data-tg-type])').each(function() {
-        $(this).show();
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function(idx, elem) {
+        const typeSpecificControlled = $(elem).data('tg-type') !== undefined;
+
+        if (!typeSpecificControlled) $(this).show();
     });
 
     showTypeSpecificControls(apiType ?? settings.type);
@@ -1105,18 +1106,18 @@ function showSamplerControls(apiType = null) {
     });
 }
 
-function showTypeSpecificControls(type) {
+function showTypeSpecificControls(apiType) {
     $('[data-tg-type]').each(function () {
         const mode = String($(this).attr('data-tg-type-mode') ?? '').toLowerCase().trim();
         const tgTypes = $(this).attr('data-tg-type').split(',').map(x => x.trim());
-
+ 
         if (mode === 'except') {
-            $(this)[tgTypes.includes(type) ? 'hide' : 'show']();
+            $(this)[tgTypes.includes(apiType) ? 'hide' : 'show']();
             return;
         }
 
         for (const tgType of tgTypes) {
-            if (tgType === type || tgType == 'all') {
+            if (tgType === apiType || tgType == 'all') {
                 $(this).show();
                 return;
             } else {

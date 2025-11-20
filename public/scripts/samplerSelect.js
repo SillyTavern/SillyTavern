@@ -14,8 +14,11 @@ import { localforage } from '../lib.js';
 
 const forcedOnColoring = 'color: #89db35;';
 const forcedOffColoring = 'color: #e84f62;';
-
-let userDisabledSamplers, userShownSamplers;
+const SELECT_SAMPLER = {
+    DATA: 'selectsampler',
+    SHOWN: 'shown',
+    HIDDEN: 'hidden',
+}
 
 const textGenObjectStore = localforage.createInstance({ name: 'SillyTavern_TextCompletions' });
 let selectedSamplers = {};
@@ -38,10 +41,6 @@ async function showSamplerSelectPopup() {
 
     $('#resetSelectedSamplers').off('click').on('click', async function () {
         console.log('saw sampler select reset click');
-        userDisabledSamplers = [];
-        userShownSamplers = [];
-        power_user.selectSamplers.forceShown = [];
-        power_user.selectSamplers.forceHidden = [];
 
         if (main_api === 'textgenerationwebui') {
             $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', false);
@@ -49,15 +48,6 @@ async function showSamplerSelectPopup() {
         }
 
         await validateDisabledSamplers(true);
-    });
-
-    $('#textgen_type').on('change', async function () {
-        console.log('changed TG Type, resetting custom samplers'); //unfortunate, but necessary unless we save custom samplers for each TGTytpe
-        userDisabledSamplers = [];
-        userShownSamplers = [];
-        power_user.selectSamplers.forceShown = [];
-        power_user.selectSamplers.forceHidden = [];
-        await validateDisabledSamplers();
     });
 
     if (main_api === 'textgenerationwebui') {
@@ -79,135 +69,140 @@ async function showSamplerSelectPopup() {
     if (main_api === 'textgenerationwebui') await saveApiSelectedSamplers();
 }
 
+function getRelatedDOMElement(samplerName) {
+    let relatedDOMElement = $(`#${samplerName}_${main_api}`).parent();
+    let targetDisplayType = 'flex';
+    let displayname;
+
+    if (samplerName === 'json_schema') {
+        relatedDOMElement = $('#json_schema_block');
+        targetDisplayType = 'block';
+        displayname = 'JSON Schema Block';
+    }
+
+    if (samplerName === 'grammar_string') {
+        relatedDOMElement = $('#grammar_block_ooba');
+        targetDisplayType = 'block';
+        displayname = 'Grammar Block';
+    }
+
+    if (samplerName === 'guidance_scale') {
+        relatedDOMElement = $('#cfg_block_ooba');
+        targetDisplayType = 'block';
+        displayname = 'CFG Block';
+    }
+
+    if (samplerName === 'mirostat_mode') {
+        relatedDOMElement = $('#mirostat_block_ooba');
+        targetDisplayType = 'block';
+        displayname = 'Mirostat Block';
+    }
+
+    if (samplerName === 'dry_multiplier') {
+        relatedDOMElement = $('#dryBlock');
+        targetDisplayType = 'block';
+        displayname = 'DRY Rep Pen Block';
+    }
+
+    if (samplerName === 'xtc_probability') {
+        relatedDOMElement = $('#xtc_block');
+        targetDisplayType = 'block';
+        displayname = 'XTC Block';
+    }
+
+    if (samplerName === 'dynatemp') {
+        relatedDOMElement = $('#dynatemp_block_ooba');
+        targetDisplayType = 'block';
+        displayname = 'DynaTemp Block';
+    }
+
+    if (samplerName === 'banned_tokens') {
+        relatedDOMElement = $('#banned_tokens_block_ooba');
+        targetDisplayType = 'block';
+    }
+
+    if (samplerName === 'sampler_order') { //this is for kcpp sampler order
+        relatedDOMElement = $('#sampler_order_block_kcpp');
+        displayname = 'KCPP Sampler Order Block';
+    }
+
+    if (samplerName === 'samplers') { //this is for lcpp sampler order
+        relatedDOMElement = $('#sampler_order_block_lcpp');
+        displayname = 'LCPP Sampler Order Block';
+    }
+
+    if (samplerName === 'sampler_priority') { //this is for ooba's sampler priority
+        relatedDOMElement = $('#sampler_priority_block_ooba');
+        displayname = 'Ooba Sampler Priority Block';
+    }
+
+    if (samplerName === 'samplers_priorities') { //this is for aphrodite's sampler priority
+        relatedDOMElement = $('#sampler_priority_block_aphrodite');
+        displayname = 'Aphrodite Sampler Priority Block';
+    }
+
+    if (samplerName === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
+        relatedDOMElement = $('#contrastiveSearchBlock');
+        displayname = 'Contrast Search Block';
+    }
+
+    if (samplerName === 'num_beams') { // num_beams is the killswitch for Beam Search
+        relatedDOMElement = $('#beamSearchBlock');
+        targetDisplayType = 'block';
+        displayname = 'Beam Search Block';
+    }
+
+    if (samplerName === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
+        relatedDOMElement = $('#smoothingBlock');
+        targetDisplayType = 'block';
+        displayname = 'Smoothing Block';
+    }
+
+    return { relatedDOMElement, targetDisplayType, displayname };
+}
+
 function setSamplerListListeners() {
     // Goal 2: hide unchecked samplers from DOM
     let listContainer = $('#apiSamplersList');
     listContainer.find('input').off('change').on('change', async function () {
-
         const samplerName = this.name.replace('_checkbox', '');
-        let relatedDOMElement = $(`#${samplerName}_${main_api}`).parent();
-        let targetDisplayType = 'flex';
-
-        if (samplerName === 'json_schema') {
-            relatedDOMElement = $('#json_schema_block');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'grammar_string') {
-            relatedDOMElement = $('#grammar_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'guidance_scale') {
-            relatedDOMElement = $('#cfg_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'mirostat_mode') {
-            relatedDOMElement = $('#mirostat_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'dry_multiplier') {
-            relatedDOMElement = $('#dryBlock');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'xtc_probability') {
-            relatedDOMElement = $('#xtc_block');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'dynatemp') {
-            relatedDOMElement = $('#dynatemp_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'banned_tokens') {
-            relatedDOMElement = $('#banned_tokens_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'sampler_order') { //this is for kcpp sampler order
-            relatedDOMElement = $('#sampler_order_block_kcpp');
-        }
-
-        if (samplerName === 'samplers') { //this is for lcpp sampler order
-            relatedDOMElement = $('#sampler_order_block_lcpp');
-        }
-
-        if (samplerName === 'sampler_priority') { //this is for ooba's sampler priority
-            relatedDOMElement = $('#sampler_priority_block_ooba');
-        }
-
-        if (samplerName === 'samplers_priorities') { //this is for aphrodite's sampler priority
-            relatedDOMElement = $('#sampler_priority_block_aphrodite');
-        }
-
-        if (samplerName === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
-            relatedDOMElement = $('#contrastiveSearchBlock');
-        }
-
-        if (samplerName === 'num_beams') { // num_beams is the killswitch for Beam Search
-            relatedDOMElement = $('#beamSearchBlock');
-            targetDisplayType = 'block';
-        }
-
-        if (samplerName === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
-            relatedDOMElement = $('#smoothingBlock');
-            targetDisplayType = 'block';
-        }
+        const { relatedDOMElement, targetDisplayType } = getRelatedDOMElement(samplerName);
 
         // Get the current state of the custom data attribute
-        const previousState = relatedDOMElement.data('selectsampler');
+        const previousState = relatedDOMElement.data(SELECT_SAMPLER.DATA);
+        const isChecked = $(this).prop('checked');
+        const popupInputLabel = $(this).parent().find('.sampler_name');
 
-        if ($(this).prop('checked') === false) {
-            //console.log('saw clicking checkbox from on to off...');
-            if (previousState === 'shown') {
-                console.log('saw previously custom shown sampler');
-                //console.log('removing from custom force show list');
-                relatedDOMElement.removeData('selectsampler');
-                $(this).parent().find('.sampler_name').removeAttr('style');
-                power_user?.selectSamplers?.forceShown.splice(power_user?.selectSamplers?.forceShown.indexOf(samplerName), 1);
-                console.log(power_user?.selectSamplers?.forceShown);
+        if (isChecked === false) {
+            if (previousState === SELECT_SAMPLER.SHOWN) {
+                console.log('saw previously custom shown sampler => new state:', isChecked, samplerName);
+                relatedDOMElement.removeData(SELECT_SAMPLER.DATA);
+                popupInputLabel.removeAttr('style');
             } else {
-                console.log('saw previous untouched sampler');
-                //console.log(`adding ${samplerName} to force hide list`);
-                relatedDOMElement.data('selectsampler', 'hidden');
-                console.log(relatedDOMElement.data('selectsampler'));
-                power_user.selectSamplers.forceHidden.push(samplerName);
-                $(this).parent().find('.sampler_name').attr('style', forcedOffColoring);
-                console.log(power_user.selectSamplers.forceHidden);
+                console.log('saw previous untouched sampler => new state:', isChecked, samplerName);
+                relatedDOMElement.data(SELECT_SAMPLER.DATA, SELECT_SAMPLER.HIDDEN);
+                popupInputLabel.attr('style', forcedOffColoring);
             }
-        } else { // going from unchecked to checked
-            //console.log('saw clicking checkbox from off to on...');
-            if (previousState === 'hidden') {
-                console.log('saw previously custom hidden sampler');
-                //console.log('removing from custom force hide list');
-                relatedDOMElement.removeData('selectsampler');
-                $(this).parent().find('.sampler_name').removeAttr('style');
-                power_user?.selectSamplers?.forceHidden.splice(power_user?.selectSamplers?.forceHidden.indexOf(samplerName), 1);
-                console.log(power_user?.selectSamplers?.forceHidden);
+        } else {
+            if (previousState === SELECT_SAMPLER.HIDDEN) {
+                console.log('saw previously custom hidden sampler => new state:', isChecked, samplerName);
+                relatedDOMElement.removeData(SELECT_SAMPLER.DATA);
+                popupInputLabel.removeAttr('style');
             } else {
-                console.log('saw previous untouched sampler');
-                //console.log(`adding ${samplerName} to force shown list`);
-                relatedDOMElement.data('selectsampler', 'shown');
-                console.log(relatedDOMElement.data('selectsampler'));
-                power_user.selectSamplers.forceShown.push(samplerName);
-                $(this).parent().find('.sampler_name').attr('style', forcedOnColoring);
-                console.log(power_user.selectSamplers.forceShown);
+                console.log('saw previous untouched sampler => new state:', isChecked, samplerName);
+                relatedDOMElement.data(SELECT_SAMPLER.DATA, SELECT_SAMPLER.SHOWN);
+                popupInputLabel.attr('style', forcedOnColoring);
             }
         }
+
         await saveSettingsDebounced();
 
-        const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
+        const shouldDisplay = isChecked ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
 
-        if (main_api === 'textgenerationwebui') {
-            setApiSamplersState(samplerName, shouldDisplay !== 'none');
-        }
+        if (main_api === 'textgenerationwebui') setApiSamplersState(samplerName, shouldDisplay !== 'none');
 
-        console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
+        console.log(samplerName, relatedDOMElement.data(SELECT_SAMPLER.DATA), shouldDisplay);
     });
 
 }
@@ -241,111 +236,38 @@ async function listSamplers(main_api, arrayOnly = false) {
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
-        let customColor, displayname;
-        let targetDOMelement = $(`#${sampler}_${main_api}`);
-
-        if (sampler === 'sampler_order') { //this is for kcpp sampler order
-            targetDOMelement = $('#sampler_order_block_kcpp');
-            displayname = 'KCPP Sampler Order Block';
-        }
-
-        if (sampler === 'samplers') { //this is for lcpp sampler order
-            targetDOMelement = $('#sampler_order_block_lcpp');
-            displayname = 'LCPP Sampler Order Block';
-        }
-
-        if (sampler === 'sampler_priority') { //this is for ooba's sampler priority
-            targetDOMelement = $('#sampler_priority_block_ooba');
-            displayname = 'Ooba Sampler Priority Block';
-        }
-
-        if (sampler === 'samplers_priorities') { //this is for aphrodite's sampler priority
-            targetDOMelement = $('#sampler_priority_block_aphrodite');
-            displayname = 'Aphrodite Sampler Priority Block';
-        }
-
-        if (sampler === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
-            targetDOMelement = $('#contrastiveSearchBlock');
-            displayname = 'Contrast Search Block';
-        }
-
-        if (sampler === 'num_beams') { // num_beams is the killswitch for Beam Search
-            targetDOMelement = $('#beamSearchBlock');
-            displayname = 'Beam Search Block';
-        }
-
-        if (sampler === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
-            targetDOMelement = $('#smoothingBlock');
-            displayname = 'Smoothing Block';
-        }
-
-        if (sampler === 'dry_multiplier') {
-            targetDOMelement = $('#dryBlock');
-            displayname = 'DRY Rep Pen Block';
-        }
-        if (sampler === 'xtc_probability') {
-            targetDOMelement = $('#xtc_block');
-            displayname = 'XTC Block';
-        }
-
-        if (sampler === 'dynatemp') {
-            targetDOMelement = $('#dynatemp_block_ooba');
-            displayname = 'DynaTemp Block';
-        }
-
-        if (sampler === 'json_schema') {
-            targetDOMelement = $('#json_schema_block');
-            displayname = 'JSON Schema Block';
-        }
-
-        if (sampler === 'grammar_string') {
-            targetDOMelement = $('#grammar_block_ooba');
-            displayname = 'Grammar Block';
-        }
-
-        if (sampler === 'guidance_scale') {
-            targetDOMelement = $('#cfg_block_ooba');
-            displayname = 'CFG Block';
-        }
-
-        if (sampler === 'mirostat_mode') {
-            targetDOMelement = $('#mirostat_block_ooba');
-            displayname = 'Mirostat Block';
-        }
+        let customColor;
+        let { relatedDOMElement, displayname } = getRelatedDOMElement(sampler);
 
         const isManuallyActivated = samplersActivatedManually.includes(sampler);
-        const isInForceHiddenArray = userDisabledSamplers.includes(sampler);
-        const isInForceShownArray = userShownSamplers.includes(sampler);
-        let isVisibleInDOM = isElementVisibleInDOM(targetDOMelement[0]);
-        const isInDefaultState = () => {
-            if (isVisibleInDOM && isInForceShownArray) { return false; }
-            else if (!isVisibleInDOM && isInForceHiddenArray) { return false; }
-            else { return true; }
-        };
+        const displayModified = relatedDOMElement.data(SELECT_SAMPLER.DATA);
+        const isInDefaultState = !displayModified;
 
         const shouldBeChecked = () => {
+            let finalState = isElementVisibleInDOM(relatedDOMElement[0]);
+
             if (prioritizeManualSamplerSelect) {
-                return isManuallyActivated;
+                finalState = isManuallyActivated;
             }
-            else if (isInForceHiddenArray) {
-                customColor = forcedOffColoring;
-                return false;
+
+            else if (!isInDefaultState) {
+                finalState = displayModified === SELECT_SAMPLER.SHOWN;
+                customColor = finalState ? forcedOnColoring : forcedOffColoring;
             }
-            else if (isInForceShownArray) {
-                customColor = forcedOnColoring;
-                return true;
-            }
-            else { return isVisibleInDOM; }
+
+            return finalState;
         };
-        console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
-        if (displayname === undefined) { displayname = sampler; }
+
+        console.log(sampler, relatedDOMElement.prop('id'), isInDefaultState, shouldBeChecked());
+
+        if (displayname === undefined) displayname = sampler;
         if (main_api === 'textgenerationwebui') setApiSamplersState(sampler, shouldBeChecked());
+
         return html + `
-        <div class="sampler_view_list_item wide50p flex-container">
+        <label class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
             <small class="sampler_name" style="${customColor}">${displayname}</small>
-        </div>
-        `;
+        </label>`;
     }, '');
 
     return samplersListHTML;
@@ -365,99 +287,21 @@ export async function validateDisabledSamplers(redraw = false) {
     const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     for (const sampler of APISamplers) {
-        let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
-        let targetDisplayType = 'flex';
-
-        if (sampler === 'json_schema') {
-            relatedDOMElement = $('#json_schema_block');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'grammar_string') {
-            relatedDOMElement = $('#grammar_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'guidance_scale') {
-            relatedDOMElement = $('#cfg_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'mirostat_mode') {
-            relatedDOMElement = $('#mirostat_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'dynatemp') {
-            relatedDOMElement = $('#dynatemp_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'banned_tokens') {
-            relatedDOMElement = $('#banned_tokens_block_ooba');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'sampler_order') { //this is for kcpp sampler order
-            relatedDOMElement = $('#sampler_order_block_kcpp');
-        }
-
-        if (sampler === 'samplers') { //this is for lcpp sampler order
-            relatedDOMElement = $('#sampler_order_block_lcpp');
-        }
-
-        if (sampler === 'sampler_priority') { //this is for ooba's sampler priority
-            relatedDOMElement = $('#sampler_priority_block_ooba');
-        }
-
-        if (sampler === 'samplers_priorities') { //this is for aphrodite's sampler priority
-            relatedDOMElement = $('#sampler_priority_block_aphrodite');
-        }
-
-        if (sampler === 'dry_multiplier') {
-            relatedDOMElement = $('#dryBlock');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'xtc_probability') {
-            relatedDOMElement = $('#xtc_block');
-            targetDisplayType = 'block';
-        }
-
-        if (sampler === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
-            relatedDOMElement = $('#contrastiveSearchBlock');
-        }
-
-        if (sampler === 'num_beams') { // num_beams is the killswitch for Beam Search
-            relatedDOMElement = $('#beamSearchBlock');
-        }
-
-        if (sampler === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
-            relatedDOMElement = $('#smoothingBlock');
-        }
-
-        if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
-            //default handling for standard sliders
-            relatedDOMElement.data('selectsampler', 'hidden');
-            relatedDOMElement.css('display', 'none');
-        } else if (power_user?.selectSamplers?.forceShown.includes(sampler)) {
-            relatedDOMElement.data('selectsampler', 'shown');
-            relatedDOMElement.css('display', targetDisplayType);
-        } else {
-            if (relatedDOMElement.data('selectsampler') === 'hidden') {
-                relatedDOMElement.removeAttr('selectsampler');
-                relatedDOMElement.css('display', targetDisplayType);
-            }
-            if (relatedDOMElement.data('selectsampler') === 'shown') {
-                relatedDOMElement.removeAttr('selectsampler');
-                relatedDOMElement.css('display', 'none');
-            }
-        }
+        const { relatedDOMElement, targetDisplayType } = getRelatedDOMElement(sampler);
 
         if (prioritizeManualSamplerSelect) {
             const isManuallyActivated = samplersActivatedManually.includes(sampler);
             relatedDOMElement.css('display', isManuallyActivated ? targetDisplayType : 'none');
+        } else {
+            const selectSamplerData = relatedDOMElement.data(SELECT_SAMPLER.DATA);
+            relatedDOMElement.css('display', selectSamplerData === SELECT_SAMPLER.SHOWN ? targetDisplayType : 'none');
         }
+
+        relatedDOMElement.removeData(SELECT_SAMPLER.DATA);
+    }
+
+    if (!prioritizeManualSamplerSelect && main_api === 'textgenerationwebui') {
+        showTGSamplerControls();
     }
 
     if (redraw) {
@@ -595,11 +439,6 @@ export function isSamplerManualPriorityEnabled(tcApiType = '') {
 }
 
 export async function initCustomSelectedSamplers() {
-    userDisabledSamplers = power_user?.selectSamplers?.forceHidden || [];
-    userShownSamplers = power_user?.selectSamplers?.forceShown || [];
-    power_user.selectSamplers = {};
-    power_user.selectSamplers.forceHidden = userDisabledSamplers;
-    power_user.selectSamplers.forceShown = userShownSamplers;
     await saveSettingsDebounced();
     $('#samplerSelectButton').off('click').on('click', showSamplerSelectPopup);
 }
