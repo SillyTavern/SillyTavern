@@ -9877,8 +9877,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
             // Loop to the first swipe.
             else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP || overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
                 newSwipeId = 0;
-                await endSwipe();
-                return;
             }
         }
         await standardSwipe(newSwipeId);
