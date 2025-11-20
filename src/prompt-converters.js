@@ -550,9 +550,15 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
 
         // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
         if (/gemini-3/.test(model)) {
+            const skipSignatureMagic = 'skip_thought_signature_validator';
             parts.filter(p => p.functionCall).forEach(p => {
-                p.thoughtSignature = 'context_engineering_is_the_way_to_go';
+                p.thoughtSignature = skipSignatureMagic;
             });
+            if (/-image/.test(model) && message.role === 'model') {
+                parts.filter(p => p.text).forEach(p => {
+                    p.thoughtSignature = skipSignatureMagic;
+                });
+            }
         }
 
         // merge consecutive messages with the same role
