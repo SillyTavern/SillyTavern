@@ -8702,8 +8702,8 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     else if (message?.extra?.swipeable === false) return OVERSWIPE_BEHAVIOR.NONE;
     //Small System messages can't be swiped.
     else if (message?.extra?.isSmallSys) return OVERSWIPE_BEHAVIOR.NONE;
-    //The first message in a priistine chat will loop.
-    else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.LOOP;
+    //The first message in a priistine chat will loop. It's chevrons will always be visible https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
+    else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
     //Non-user and non-prompt hidden messages will regenerate.
     else if (!message?.is_user && !message?.is_system) return OVERSWIPE_BEHAVIOR.REGENERATE;
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
@@ -8752,6 +8752,9 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
 
+            // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
+            const pristineGreeting = overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
+
             //The swipe button will be shown if an overswipe would trigger REGENERATE or EDIT_GENERATE.
             const isOverswipeable = isLastSwipe &&
                 overswipe == OVERSWIPE_BEHAVIOR.REGENERATE ||
@@ -8760,7 +8763,7 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             div.classList.toggle('last_swipe', isOverswipeable);
 
             //If there's only one swipe, the left arrow should not be shown.
-            div.classList.toggle('swipes_visible', hasSwipes);
+            div.classList.toggle('swipes_visible', hasSwipes || pristineGreeting);
 
             //updateSwipeCounter does not need to be awaited, It can run a bit later.
             if (updateCounters) updateSwipeCounter(messageId, { message, messageElement: $(div) });
@@ -9513,11 +9516,16 @@ export async function swipe(event, direction, { source, repeated, message = chat
         }
 
         // If swipe_id has not changed, give the user feedback.
-        if (chat[mesId]?.swipe_id == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
+        if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
             //Shake 700/140=5px
             shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+
+            // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
+            if (getOverswipeBehavior(mesId) == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
+                toastr.warning(`Edit the message, to set 'chat_metadata['tainted'] = true;'. Then you can regenerate the greeting.`, `Pristine greetings will always loop.`);
+            }
         }
 
         //If the id is not within bounds, Swipe back.
@@ -9860,8 +9868,10 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 return;
             }
             // Loop to the first swipe.
-            else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP) {
+            else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP || overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
                 newSwipeId = 0;
+                await endSwipe();
+                return;
             }
         }
         await standardSwipe(newSwipeId);
