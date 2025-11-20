@@ -1110,7 +1110,7 @@ function showTypeSpecificControls(apiType) {
     $('[data-tg-type]').each(function () {
         const mode = String($(this).attr('data-tg-type-mode') ?? '').toLowerCase().trim();
         const tgTypes = $(this).attr('data-tg-type').split(',').map(x => x.trim());
- 
+
         if (mode === 'except') {
             $(this)[tgTypes.includes(apiType) ? 'hide' : 'show']();
             return;

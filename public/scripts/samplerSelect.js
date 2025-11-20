@@ -2,7 +2,6 @@ import {
     main_api,
     saveSettingsDebounced,
 } from '../script.js';
-import { power_user } from './power-user.js';
 //import { BIAS_CACHE, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
@@ -18,7 +17,7 @@ const SELECT_SAMPLER = {
     DATA: 'selectsampler',
     SHOWN: 'shown',
     HIDDEN: 'hidden',
-}
+};
 
 const textGenObjectStore = localforage.createInstance({ name: 'SillyTavern_TextCompletions' });
 let selectedSamplers = {};
