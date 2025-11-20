@@ -6362,22 +6362,29 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
  * @returns {boolean} true if the message was updated.
  */
 export function ensureSwipes(message) {
-    if (typeof message !== 'object') {
-        console.trace(`[ensureSwipes] failed. '${message}' is not an object.`);
-    }
-
     let updated = false;
 
-    //Small system messages and user messages should not have swipes.
-    if (message?.is_user == true || message?.extra?.isSmallSys == true) {
+    if (!message || typeof message !== 'object') {
+        console.trace(`[ensureSwipes] failed. '${message}' is not an object.`);
         return updated;
     }
 
-    if (!Array.isArray(message.swipes))        message.swipes = [message.mes ?? '']; updated = true;
-    if (typeof(message.swipe_id) !== 'number') message.swipe_id = 0;                 updated = true;
+    //Small system messages and user messages should not have swipes.
+    if (message?.is_user || message?.extra?.isSmallSys) {
+        return updated;
+    }
+
+    if (!Array.isArray(message.swipes)) {
+        message.swipes = [message.mes ?? ''];
+        updated = true;
+    }
+
+    if (typeof message.swipe_id !== 'number') {
+        message.swipe_id = 0;
+        updated = true;
+    }
 
     if (!Array.isArray(message.swipe_info)) {
-
         message.swipe_info = message.swipes.map(_ => ({
             send_date: message.send_date,
             gen_started: message.gen_started,
@@ -9607,7 +9614,16 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             if (getOverswipeBehavior(mesId) == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
-                toastr.warning(`Edit the message, to set 'chat_metadata['tainted'] = true;'. Then you can regenerate the greeting.`, `Pristine greetings will always loop.`);
+
+                const { accountStorage } = getContext();
+
+                const key = 'pristineGreetingSwipeNoticeShown';
+                const hasSeenNotice = accountStorage.getItem(key);
+
+                if (!hasSeenNotice) {
+                    toastr.warning('Editing the message will allow you to swipe the greeting', 'Unchanged greetings will always loop.');
+                    accountStorage.setItem(key, 'true');
+                }
             }
         }
 
@@ -9953,8 +9969,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
             // Loop to the first swipe.
             else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP || overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
                 newSwipeId = 0;
-                await endSwipe();
-                return;
             }
         }
         await standardSwipe(newSwipeId);
