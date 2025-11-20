@@ -7,17 +7,18 @@ import { power_user } from './power-user.js';
 //import { getEventSourceStream } from './sse-stream.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
-import { setting_names } from './textgen-settings.js';
+import { setting_names as TGsamplerNames, showTGSamplerControls, textgenerationwebui_settings } from './textgen-settings.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup, POPUP_TYPE } from './popup.js';
-
-
-const TGsamplerNames = setting_names;
+import { localforage } from '../lib.js';
 
 const forcedOnColoring = 'color: #89db35;';
 const forcedOffColoring = 'color: #e84f62;';
 
 let userDisabledSamplers, userShownSamplers;
+
+const textGenObjectStore = localforage.createInstance({ name: 'SillyTavern_TextCompletions' });
+let selectedSamplers = {};
 
 // Goal 1: show popup with all samplers for active API
 async function showSamplerSelectPopup() {
@@ -41,6 +42,12 @@ async function showSamplerSelectPopup() {
         userShownSamplers = [];
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
+
+        if (main_api === 'textgenerationwebui') {
+            $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', false);
+            await resetPresetSelectedSamplers(null, true);
+        }
+
         await validateDisabledSamplers(true);
     });
 
@@ -53,7 +60,23 @@ async function showSamplerSelectPopup() {
         await validateDisabledSamplers();
     });
 
+    if (main_api === 'textgenerationwebui') {
+        $('#prioritizeManuallySelectedSamplers').show();
+        $('#prioritizeManuallySelectedSamplers').toggleClass('toggleEnabled', isSamplerManualPriorityEnabled());
+        $('#prioritizeManuallySelectedSamplers').off('click').on('click', function () {
+            $(this).toggleClass('toggleEnabled');
+
+            const isActive = $(this).hasClass('toggleEnabled');
+
+            toggleSamplerManualPriority(isActive);
+        });
+    } else {
+        $('#prioritizeManuallySelectedSamplers').hide();
+        $('#prioritizeManuallySelectedSamplers').off('click');
+    }
+
     await showPromise;
+    if (main_api === 'textgenerationwebui') await savePresetSelectedSamplers();
 }
 
 function setSamplerListListeners() {
@@ -180,6 +203,10 @@ function setSamplerListListeners() {
         const shouldDisplay = $(this).prop('checked') ? targetDisplayType : 'none';
         relatedDOMElement.css('display', shouldDisplay);
 
+        if (main_api === 'textgenerationwebui') {
+            setPresetSamplersState(samplerName, shouldDisplay !== 'none');
+        }
+
         console.log(samplerName, relatedDOMElement.data('selectsampler'), shouldDisplay);
     });
 
@@ -209,6 +236,9 @@ async function listSamplers(main_api, arrayOnly = false) {
         console.debug('returning full samplers array');
         return availableSamplers;
     }
+
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
+    const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
         let customColor, displayname;
@@ -283,8 +313,7 @@ async function listSamplers(main_api, arrayOnly = false) {
             displayname = 'Mirostat Block';
         }
 
-
-
+        const isManuallyActivated = samplersActivatedManually.includes(sampler);
         const isInForceHiddenArray = userDisabledSamplers.includes(sampler);
         const isInForceShownArray = userShownSamplers.includes(sampler);
         let isVisibleInDOM = isElementVisibleInDOM(targetDOMelement[0]);
@@ -295,7 +324,10 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
 
         const shouldBeChecked = () => {
-            if (isInForceHiddenArray) {
+            if (prioritizeManualSamplerSelect) {
+                return isManuallyActivated;
+            }
+            else if (isInForceHiddenArray) {
                 customColor = forcedOffColoring;
                 return false;
             }
@@ -307,6 +339,7 @@ async function listSamplers(main_api, arrayOnly = false) {
         };
         console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
         if (displayname === undefined) { displayname = sampler; }
+        if (main_api === 'textgenerationwebui') setPresetSamplersState(sampler, shouldBeChecked());
         return html + `
         <div class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
@@ -327,6 +360,9 @@ export async function validateDisabledSamplers(redraw = false) {
     if (!Array.isArray(APISamplers)) {
         return;
     }
+
+    const samplersActivatedManually = (main_api === 'textgenerationwebui') ? getManualActivePresetSamplers() : [];
+    const prioritizeManualSamplerSelect = (main_api === 'textgenerationwebui') ? isSamplerManualPriorityEnabled() : false;
 
     for (const sampler of APISamplers) {
         let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
@@ -400,6 +436,7 @@ export async function validateDisabledSamplers(redraw = false) {
             relatedDOMElement = $('#smoothingBlock');
         }
 
+
         if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
             //default handling for standard sliders
             relatedDOMElement.data('selectsampler', 'hidden');
@@ -417,20 +454,147 @@ export async function validateDisabledSamplers(redraw = false) {
                 relatedDOMElement.css('display', 'none');
             }
         }
-        if (redraw) {
-            let samplersHTML = await listSamplers(main_api);
-            $('#apiSamplersList').empty().append(samplersHTML.toString());
-            setSamplerListListeners();
+
+        if (prioritizeManualSamplerSelect) {
+            const isManuallyActivated = samplersActivatedManually.includes(sampler);
+            relatedDOMElement.css('display', isManuallyActivated ? targetDisplayType : 'none');
         }
+    }
 
-        await saveSettingsDebounced();
+    if (redraw) {
+        if (main_api === 'textgenerationwebui') showTGSamplerControls();
 
+        let samplersHTML = await listSamplers(main_api);
+        $('#apiSamplersList').empty().append(samplersHTML.toString());
+        setSamplerListListeners();
+    }
+
+    await saveSettingsDebounced();
+}
+
+/**
+ * Initializes the configuration object for manually selected samplers.
+ */
+export async function loadPresetSelectedSamplers() {
+    try {
+        console.debug('Text Completions: loading selected samplers');
+        selectedSamplers = await textGenObjectStore.getItem('selectedSamplers') || {};
+    } catch (error) {
+        console.log('Text Completions: unable to load selected samplers, using default samplers', error);
+        selectedSamplers = {};
     }
 }
 
+/**
+ * Synchronizes the local forage instance with the selected samplers configuration object.
+ */
+export async function savePresetSelectedSamplers() {
+    try {
+        console.debug('Text Completions: saving selected samplers');
+        await textGenObjectStore.setItem('selectedSamplers', selectedSamplers);
+    } catch (error) {
+        console.log('Text Completions: unable to save selected samplers', error);
+    }
+}
+
+/**
+ * Resets the selected samplers configuration object from the local forage instance.
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @param {boolean} silent Suppresses the toastr message confirming that the data was deleted.
+ */
+export async function resetPresetSelectedSamplers(presetName = '', silent = false) {
+    try {
+        if (!textgenerationwebui_settings?.preset && !presetName) return;
+        if (!presetName) presetName = textgenerationwebui_settings.preset;
+        if (!selectedSamplers[presetName]) return;
+
+        console.debug('Text Completions: resetting selected samplers');
+        delete selectedSamplers[presetName];
+        await savePresetSelectedSamplers();
+        if (!silent) toastr.success('Selected samplers cleared.');
+    } catch (error) {
+        console.log('Text Completions: unable to reset selected preset samplers', error);
+    }
+}
+
+/**
+ * Saves the visibility state for selected samplers into the configuration object.
+ * @param {string} samplerName Target sampler key name
+ * @param {string|boolean} state Visibility state of the target sampler
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @returns void
+ */
+export function setPresetSamplersState(samplerName, state, presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+
+    const presetSamplers = selectedSamplers[presetName];
+    presetSamplers[samplerName] = String(state) === 'true';
+}
+
+/**
+ * Returns the local forage object belonging to the active/selected TC preset
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @returns {object} Full localforage object with manual selections
+ */
+export function getManualPresetSamplers(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return {};
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+
+    return selectedSamplers[presetName];
+}
+
+/**
+ * Returns the key names of all the preset samplers activated manually.
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @returns {string[]} Array of sampler key names
+ */
+export function getManualActivePresetSamplers(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return [];
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+
+    try {
+        const presetSamplers = Object.entries(selectedSamplers[presetName]);
+
+        return presetSamplers
+            .filter(([key, val]) => val === true && key !== 'st_manual_priority')
+            .map(([key, val]) => key);
+    } catch (error) {
+        console.log('Text Completions: unable to fetch active preset samplers', error);
+        return [];
+    }
+}
+
+/**
+ * @param {string|boolean} state Target state of the feature
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @returns void
+ */
+export function toggleSamplerManualPriority(state = false, presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+
+    const presetSamplers = selectedSamplers[presetName];
+    presetSamplers.st_manual_priority = String(state) === 'true';
+}
+
+/**
+ * @param {string?} presetName Name of the target preset - It picks the current active TC preset name by default
+ * @returns {boolean}
+ */
+export function isSamplerManualPriorityEnabled(presetName = '') {
+    if (!textgenerationwebui_settings?.preset && !presetName) return false;
+    if (!presetName) presetName = textgenerationwebui_settings.preset;
+    if (!selectedSamplers[presetName]) selectedSamplers[presetName] = {};
+
+    return selectedSamplers[presetName]?.st_manual_priority ?? false;
+}
 
 export async function initCustomSelectedSamplers() {
-
     userDisabledSamplers = power_user?.selectSamplers?.forceHidden || [];
     userShownSamplers = power_user?.selectSamplers?.forceShown || [];
     power_user.selectSamplers = {};
@@ -438,7 +602,6 @@ export async function initCustomSelectedSamplers() {
     power_user.selectSamplers.forceShown = userShownSamplers;
     await saveSettingsDebounced();
     $('#samplerSelectButton').off('click').on('click', showSamplerSelectPopup);
-
 }
 
 // Goal 4: filter hidden samplers from API output

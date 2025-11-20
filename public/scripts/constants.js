@@ -88,6 +88,15 @@ export const MEDIA_DISPLAY = {
 };
 
 /**
+ * @enum {string}
+ * @readonly
+ */
+export const IMAGE_OVERSWIPE = {
+    GENERATE: 'generate',
+    ROLLOVER: 'rollover',
+};
+
+/**
  * @readonly
  */
 export const MEDIA_TYPE = {

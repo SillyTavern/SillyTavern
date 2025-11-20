@@ -207,6 +207,7 @@ export const CHAT_COMPLETION_SOURCES = {
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
+    SILICONFLOW: 'siliconflow',
 };
 
 /**
@@ -466,6 +467,9 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5-mini-2025-08-07',
     'gpt-5-nano',
     'gpt-5-nano-2025-08-07',
+    'gpt-5.1',
+    'gpt-5.1-2025-11-13',
+    'gpt-5.1-chat-latest',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {
