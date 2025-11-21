@@ -9531,9 +9531,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             if (getOverswipeBehavior(mesId) == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
-
-                const { accountStorage } = getContext();
-
                 const key = 'pristineGreetingSwipeNoticeShown';
                 const hasSeenNotice = accountStorage.getItem(key);
 
