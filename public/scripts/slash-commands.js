@@ -5172,6 +5172,11 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
             return '';
         }
 
+        if (!isCurrentlyZAI && autoConnect) {
+            toastr.warning(t`Z.AI is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
         $('#zai_endpoint').val(url).trigger('input');
 
         if (autoConnect) {
