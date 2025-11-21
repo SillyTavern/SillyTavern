@@ -3221,7 +3221,7 @@ class StreamingProcessor {
         /** @type {string[]} */
         this.images = [];
         this.lastDomUpdate = 0;
-        this.dynamicThrottleDelay = 100;
+        this.dynamicThrottleDelay = 0; // Start with no delay, will be adjusted based on actual performance
     }
 
     /**
@@ -3386,8 +3386,13 @@ class StreamingProcessor {
                 // Calculate duration and adjust throttle delay for next frame
                 const updateDuration = performance.now() - updateStartTime;
                 // Target 33% CPU usage for rendering (rest 2x the duration)
-                // Clamp between 100ms and 1000ms
-                this.dynamicThrottleDelay = Math.max(100, Math.min(1000, updateDuration * 2));
+                const adaptiveDelay = updateDuration * 2;
+                // Respect user's FPS setting as minimum delay (if streaming_fps exists and is valid)
+                const userMinDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
+                    ? (1000 / power_user.streaming_fps)
+                    : 0;
+                // Use the larger of adaptive delay or user setting, cap at 1000ms for low-end protection
+                this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay));
             }
         }
 
@@ -3500,6 +3505,8 @@ class StreamingProcessor {
         this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
 
         try {
+            // Stopwatch provides basic throttling based on user's FPS setting
+            // Additional adaptive throttling is handled in onProgressStreaming
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
             const timestamps = [];
             for await (const { text, swipes, logprobs, toolCalls, state } of this.generator()) {
