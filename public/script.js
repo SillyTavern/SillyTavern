@@ -3221,7 +3221,10 @@ class StreamingProcessor {
         /** @type {string[]} */
         this.images = [];
         this.lastDomUpdate = 0;
-        this.dynamicThrottleDelay = 0; // Start with no delay, will be adjusted based on actual performance
+        // Initialize with user's FPS setting or a conservative default (50ms = 20 FPS)
+        this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
+            ? (1000 / power_user.streaming_fps)
+            : 50;
     }
 
     /**
@@ -3391,8 +3394,13 @@ class StreamingProcessor {
                 const userMinDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
                     ? (1000 / power_user.streaming_fps)
                     : 0;
-                // Use the larger of adaptive delay or user setting, cap at 1000ms for low-end protection
-                this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay));
+
+                // Low-end device protection: if update takes >200ms, enforce minimum 400ms delay
+                const performanceProtection = updateDuration > 200 ? 400 : 0;
+
+                // Use the larger of adaptive delay, user setting, or performance protection
+                // Cap at 1000ms for low-end protection
+                this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay, performanceProtection));
             }
         }
 
