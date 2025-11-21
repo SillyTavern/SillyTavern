@@ -34,6 +34,20 @@ export const SCRIPT_TYPE_UNKNOWN = -1;
  */
 const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
 
+// Cache for regex scripts to avoid rebuilding the array on every call
+let scriptsCacheAll = null;
+let scriptsCacheAllowed = null;
+// Cache for compiled RegExp objects
+const regexCache = new Map();
+
+/**
+ * Invalidates the scripts cache
+ */
+export function invalidateScriptsCache() {
+    scriptsCacheAll = null;
+    scriptsCacheAllowed = null;
+}
+
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
  *
@@ -41,7 +55,17 @@ const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
 export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
-    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+    if (options.allowedOnly) {
+        if (!scriptsCacheAllowed) {
+            scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+        }
+        return scriptsCacheAllowed;
+    }
+
+    if (!scriptsCacheAll) {
+        scriptsCacheAll = [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+    }
+    return scriptsCacheAll;
 }
 
 /**
@@ -87,14 +111,17 @@ export async function saveScriptsByType(scripts, scriptType) {
     switch (scriptType) {
         case SCRIPT_TYPES.GLOBAL:
             extension_settings.regex = scripts;
+            invalidateScriptsCache();
             saveSettingsDebounced();
             break;
         case SCRIPT_TYPES.SCOPED:
             await writeExtensionField(this_chid, 'regex_scripts', scripts);
+            invalidateScriptsCache();
             break;
         case SCRIPT_TYPES.PRESET: {
             const presetManager = getPresetManager();
             await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
+            invalidateScriptsCache();
             break;
         }
         default:
@@ -127,6 +154,7 @@ export function allowScopedScripts(character) {
     }
     if (!extension_settings.character_allowed_regex.includes(avatar)) {
         extension_settings.character_allowed_regex.push(avatar);
+        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -147,6 +175,7 @@ export function disallowScopedScripts(character) {
     const index = extension_settings.character_allowed_regex.indexOf(avatar);
     if (index !== -1) {
         extension_settings.character_allowed_regex.splice(index, 1);
+        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -179,6 +208,7 @@ export function allowPresetScripts(apiId, presetName) {
     }
     if (!extension_settings.preset_allowed_regex[apiId].includes(presetName)) {
         extension_settings.preset_allowed_regex[apiId].push(presetName);
+        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -199,6 +229,7 @@ export function disallowPresetScripts(apiId, presetName) {
     const index = extension_settings.preset_allowed_regex[apiId].indexOf(presetName);
     if (index !== -1) {
         extension_settings.preset_allowed_regex[apiId].splice(index, 1);
+        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -353,7 +384,14 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
         }
     };
     const regexString = getRegexString();
-    const findRegex = regexFromString(regexString);
+
+    let findRegex = regexCache.get(regexString);
+    if (!findRegex) {
+        findRegex = regexFromString(regexString);
+        if (findRegex) {
+            regexCache.set(regexString, findRegex);
+        }
+    }
 
     // The user skill issued. Return with nothing.
     if (!findRegex) {
