@@ -512,3 +512,8 @@ export const MEDIA_EXTENSIONS = [
     'm4a',
     'aiff',
 ];
+
+export const ZAI_ENDPOINT = {
+    COMMON: 'common',
+    CODING: 'coding',
+};

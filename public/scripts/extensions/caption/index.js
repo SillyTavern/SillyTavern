@@ -11,6 +11,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
+import { oai_settings, ZAI_ENDPOINT } from '../../openai.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -506,6 +507,11 @@ jQuery(async function () {
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
                         'zai': SECRET_KEYS.ZAI,
                     };
+
+                    // Coding endpoint has no vision models.
+                    if (api === 'zai' && oai_settings.zai_endpoint === ZAI_ENDPOINT.CODING) {
+                        return false;
+                    }
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
                         return true;

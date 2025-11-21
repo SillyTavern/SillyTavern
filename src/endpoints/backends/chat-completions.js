@@ -13,6 +13,7 @@ import {
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
+    ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -75,7 +76,8 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
-const API_ZAI = 'https://api.z.ai/api/paas/v4';
+const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
+const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
@@ -1973,7 +1975,7 @@ router.post('/generate', function (request, response) {
         };
         throw new Error('This provider is temporarily disabled.');
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
-        apiUrl = API_ZAI;
+        apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
         headers = {
             'Accept-Language': 'en-US,en',
