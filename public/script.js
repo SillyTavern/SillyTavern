@@ -3220,6 +3220,8 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
         /** @type {string[]} */
         this.images = [];
+        this.lastDomUpdate = 0;
+        this.dynamicThrottleDelay = 100;
     }
 
     /**
@@ -3314,8 +3316,6 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
             const mesChanged = chat[messageId]['mes'] !== processedText;
-            await this.#checkDomElements(messageId);
-            this.#updateMessageBlockVisibility();
             const currentTime = new Date();
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
@@ -3325,18 +3325,11 @@ class StreamingProcessor {
             }
             chat[messageId]['extra']['time_to_first_token'] = this.timeToFirstToken;
 
-            // Update reasoning
-            await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
-            processedText = chat[messageId]['mes'];
-
             // Token count update.
             const tokenCountText = this.reasoningHandler.reasoning + processedText;
             const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await getTokenCountAsync(tokenCountText, 0) : 0;
             if (currentTokenCount) {
                 chat[messageId]['extra']['token_count'] = currentTokenCount;
-                if (this.messageTokenCounterDom instanceof HTMLElement) {
-                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
-                }
             }
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
@@ -3349,30 +3342,53 @@ class StreamingProcessor {
                 };
             }
 
-            const formattedText = messageFormatting(
-                processedText,
-                chat[messageId].name,
-                chat[messageId].is_system,
-                chat[messageId].is_user,
-                messageId,
-                {},
-                false,
-            );
-            if (this.messageTextDom instanceof HTMLElement) {
-                if (power_user.stream_fade_in) {
-                    applyStreamFadeIn(this.messageTextDom, formattedText);
-                } else {
-                    this.messageTextDom.innerHTML = formattedText;
+            // Throttle DOM updates to prevent UI freeze
+            // Adaptive throttling: adjust delay based on how long the last update took.
+            // If update took 200ms, wait at least 400ms before next update to give UI thread a breather.
+            if (isFinal || (Date.now() - this.lastDomUpdate > this.dynamicThrottleDelay)) {
+                const updateStartTime = performance.now();
+                this.lastDomUpdate = Date.now();
+                await this.#checkDomElements(messageId);
+                this.#updateMessageBlockVisibility();
+
+                // Update reasoning
+                await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
+
+                if (currentTokenCount && this.messageTokenCounterDom instanceof HTMLElement) {
+                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
                 }
-            }
 
-            const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
-            if (this.messageTimerDom instanceof HTMLElement) {
-                this.messageTimerDom.textContent = timePassed.timerValue;
-                this.messageTimerDom.title = timePassed.timerTitle;
-            }
+                const formattedText = messageFormatting(
+                    processedText,
+                    chat[messageId].name,
+                    chat[messageId].is_system,
+                    chat[messageId].is_user,
+                    messageId,
+                    {},
+                    false,
+                );
+                if (this.messageTextDom instanceof HTMLElement) {
+                    if (power_user.stream_fade_in) {
+                        applyStreamFadeIn(this.messageTextDom, formattedText);
+                    } else {
+                        this.messageTextDom.innerHTML = formattedText;
+                    }
+                }
 
-            this.setFirstSwipe(messageId);
+                const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
+                if (this.messageTimerDom instanceof HTMLElement) {
+                    this.messageTimerDom.textContent = timePassed.timerValue;
+                    this.messageTimerDom.title = timePassed.timerTitle;
+                }
+
+                this.setFirstSwipe(messageId);
+
+                // Calculate duration and adjust throttle delay for next frame
+                const updateDuration = performance.now() - updateStartTime;
+                // Target 33% CPU usage for rendering (rest 2x the duration)
+                // Clamp between 100ms and 1000ms
+                this.dynamicThrottleDelay = Math.max(100, Math.min(1000, updateDuration * 2));
+            }
         }
 
         if (!scrollLock) {
