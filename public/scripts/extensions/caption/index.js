@@ -11,7 +11,6 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
-import { oai_settings, ZAI_ENDPOINT } from '../../openai.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
