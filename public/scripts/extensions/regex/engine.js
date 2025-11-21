@@ -40,6 +40,14 @@ let scriptsCacheAllowed = null;
 // Cache for compiled RegExp objects
 const regexCache = new Map();
 
+// Context tracking for cache invalidation
+let lastContext = {
+    chid: undefined,
+    characterRef: undefined,
+    presetApi: null,
+    presetName: null,
+};
+
 /**
  * Invalidates the scripts cache
  */
@@ -55,6 +63,27 @@ export function invalidateScriptsCache() {
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
 export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    // Check for context changes (character switch, preset change, character data update)
+    const currentChid = this_chid;
+    const currentCharacterRef = characters?.[currentChid];
+    const currentPresetApi = getCurrentPresetAPI();
+    const currentPresetName = getCurrentPresetName();
+
+    if (
+        currentChid !== lastContext.chid ||
+        currentCharacterRef !== lastContext.characterRef ||
+        currentPresetApi !== lastContext.presetApi ||
+        currentPresetName !== lastContext.presetName
+    ) {
+        invalidateScriptsCache();
+        lastContext = {
+            chid: currentChid,
+            characterRef: currentCharacterRef,
+            presetApi: currentPresetApi,
+            presetName: currentPresetName,
+        };
+    }
+
     if (options.allowedOnly) {
         if (!scriptsCacheAllowed) {
             scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
