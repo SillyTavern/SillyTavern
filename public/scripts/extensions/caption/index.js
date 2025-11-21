@@ -508,11 +508,6 @@ jQuery(async function () {
                         'zai': SECRET_KEYS.ZAI,
                     };
 
-                    // Coding endpoint has no vision models.
-                    if (api === 'zai' && oai_settings.zai_endpoint === ZAI_ENDPOINT.CODING) {
-                        return false;
-                    }
-
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
                         return true;
                     }
