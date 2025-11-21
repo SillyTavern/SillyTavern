@@ -9882,7 +9882,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             }
             //Regenerate the message
             else if (overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) {
-                await clearMessageData(chat[mesId]);
+                clearMessageData(chat[mesId]);
                 let run_generate = true;
                 //Generate.
                 await animateSwipe(run_generate);
