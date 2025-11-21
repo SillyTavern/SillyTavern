@@ -9528,17 +9528,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
             shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
             //Flash red.
             await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
-
-            // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
-            if (getOverswipeBehavior(mesId) == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
-                const key = 'pristineGreetingSwipeNoticeShown';
-                const hasSeenNotice = accountStorage.getItem(key);
-
-                if (!hasSeenNotice) {
-                    toastr.warning('Editing the message will allow you to swipe the greeting', 'Unchanged greetings will always loop.');
-                    accountStorage.setItem(key, 'true');
-                }
-            }
         }
 
         //If the id is not within bounds, Swipe back.
