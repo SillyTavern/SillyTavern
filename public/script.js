@@ -9538,6 +9538,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
     async function endSwipe(revert = false) {
         //Wait for the generation to end.
         try {
+            //`mes_buttons` need to be hidden until the animation completes.
+            document.body.dataset.swiping = 'true';
             await generation;
         }
         catch (error) {
@@ -9555,10 +9557,14 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         // If swipe_id has not changed, give the user feedback.
         if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
-            //Shake 700/140=5px
-            shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
-            //Flash red.
-            await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+            try {
+                //Shake 700/140=5px
+                shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
+                //Flash red.
+                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, animation_duration * 2).animate({ color: '' }).promise(), createTimeout(animation_duration * 8, `The shake animation did not end within ${animation_duration * 8}ms`)].filter(Boolean));
+            } catch (error) {
+                console.warn(error);
+            }
         }
 
         //If the id is not within bounds, Swipe back.
@@ -9589,6 +9595,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         //Allow for another swipe.
         swipeState = SWIPE_STATE.NONE;
+        delete document.body.dataset.swiping;
         showSwipeButtons();
     }
 
