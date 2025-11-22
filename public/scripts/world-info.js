@@ -4845,7 +4845,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
-        const curScanState = nextScanState;
+        const curScanState = scanState;
         scanState = nextScanState;
         if (scanState) {
             const text = successfulNewEntriesForRecursion
