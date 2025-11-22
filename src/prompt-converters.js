@@ -555,7 +555,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                 p.thoughtSignature = skipSignatureMagic;
             });
             if (/-image/.test(model) && message.role === 'model') {
-                parts.filter(p => p.text).forEach(p => {
+                parts.filter(p => typeof p.text === 'string' || p.inlineData).forEach(p => {
                     p.thoughtSignature = skipSignatureMagic;
                 });
             }
