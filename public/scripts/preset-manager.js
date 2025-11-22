@@ -27,7 +27,6 @@ import { oai_settings, openai_setting_names, openai_settings } from './openai.js
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { reasoning_templates } from './reasoning.js';
-import { getManualPresetSamplers, resetPresetSelectedSamplers, setPresetSamplersState } from './samplerSelect.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -1070,16 +1069,6 @@ export async function initPresetManager() {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
             $('#update_oai_preset').trigger('click');
             return;
-        }
-
-        if (apiId === 'textgenerationwebui') {
-            const manualSamplersIterable = Object.entries(getManualPresetSamplers(oldName));
-
-            for (const [sampler, value] of manualSamplersIterable) {
-                setPresetSamplersState(sampler, value, newName);
-            }
-
-            await resetPresetSelectedSamplers(oldName, true);
         }
 
         const successToast = !presetManager.isAdvancedFormatting() ? t`Preset renamed` : t`Template renamed`;

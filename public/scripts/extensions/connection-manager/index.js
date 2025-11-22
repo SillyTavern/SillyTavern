@@ -47,8 +47,8 @@ const CC_COMMANDS = [
 ];
 
 const TC_COMMANDS = [
-    'preset',
     'api',
+    'preset',
     'api-url',
     'model',
     'sysprompt',
