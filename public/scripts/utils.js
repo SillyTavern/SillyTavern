@@ -1209,9 +1209,12 @@ export function getVideoDurationFromDataURL(dataUrl) {
 /**
  * Gets a thumbnail image from a video URL.
  * @param {string} videoUrl URL of the video
+ * @param {number|null} [maxWidth=null] Maximum width of the thumbnail
+ * @param {number|null} [maxHeight=null] Maximum height of the thumbnail
+ * @param {string} [type='image/jpeg'] MIME type of the thumbnail
  * @returns {Promise<string>} Promise that resolves to a data URL of the video thumbnail
  */
-export function getVideoThumbnail(videoUrl) {
+export function getVideoThumbnail(videoUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
     const video = document.createElement('video');
     video.src = videoUrl;
     return new Promise((resolve, reject) => {
@@ -1222,18 +1225,63 @@ export function getVideoThumbnail(videoUrl) {
         video.onseeked = function () {
             // Create a canvas to draw the thumbnail
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(video.videoWidth, video.videoHeight, maxWidth, maxHeight);
+
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
+            ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
             // Get the data URL of the thumbnail
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            const dataUrl = canvas.toDataURL(type);
             resolve(dataUrl);
         };
         video.onerror = function () {
             reject(new Error('Failed to load video'));
         };
     });
+}
+
+/**
+ * Calculates the thumbnail size for a media element while maintaining aspect ratio.
+ * @param {number} width Media width
+ * @param {number} height Media height
+ * @param {number?} maxWidth Max width (null = no limit)
+ * @param {number?} maxHeight Max height (null = no limit)
+ * @returns {{ thumbnailWidth: number, thumbnailHeight: number }} Thumbnail size
+ */
+export function calculateThumbnailSize(width, height, maxWidth, maxHeight) {
+    // Calculate the thumbnail dimensions while maintaining the aspect ratio
+    const aspectRatio = width / height;
+    let thumbnailWidth = maxWidth;
+    let thumbnailHeight = maxHeight;
+
+    if (maxWidth === null) {
+        thumbnailWidth = width;
+        maxWidth = width;
+    }
+
+    if (maxHeight === null) {
+        thumbnailHeight = height;
+        maxHeight = height;
+    }
+
+    // Do not upscale if image is already smaller than max dimensions
+    if (width <= maxWidth && height <= maxHeight) {
+        thumbnailWidth = width;
+        thumbnailHeight = height;
+    } else {
+        if (width > height) {
+            thumbnailHeight = maxWidth / aspectRatio;
+        } else {
+            thumbnailWidth = maxHeight * aspectRatio;
+        }
+    }
+
+    return { thumbnailWidth: Math.round(thumbnailWidth), thumbnailHeight: Math.round(thumbnailHeight) };
 }
 
 /**
@@ -1720,33 +1768,7 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
-            // Calculate the thumbnail dimensions while maintaining the aspect ratio
-            const aspectRatio = img.width / img.height;
-            let thumbnailWidth = maxWidth;
-            let thumbnailHeight = maxHeight;
-
-            if (maxWidth === null) {
-                thumbnailWidth = img.width;
-                maxWidth = img.width;
-            }
-
-            if (maxHeight === null) {
-                thumbnailHeight = img.height;
-                maxHeight = img.height;
-            }
-
-            // Do not upscale if image is already smaller than max dimensions
-            if (img.width <= maxWidth && img.height <= maxHeight) {
-                thumbnailWidth = img.width;
-                thumbnailHeight = img.height;
-            } else {
-                if (img.width > img.height) {
-                    thumbnailHeight = maxWidth / aspectRatio;
-                } else {
-                    thumbnailWidth = maxHeight * aspectRatio;
-                }
-            }
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(img.width, img.height, maxWidth, maxHeight);
 
             // Set the canvas dimensions and draw the resized image
             canvas.width = thumbnailWidth;

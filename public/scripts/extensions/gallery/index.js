@@ -136,7 +136,9 @@ async function getGalleryItems(url) {
         };
 
         if (isVideo(file)) {
-            item.srct = await getVideoThumbnail(item.src);
+            // 150px of max height with some allowance for various aspect ratios
+            const maxSide = Math.round(150 * 1.5);
+            item.srct = await getVideoThumbnail(item.src, maxSide, maxSide);
         }
 
         items.push(item);
