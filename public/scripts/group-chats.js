@@ -566,7 +566,7 @@ function resetSelectedGroup() {
     is_group_generating = false;
 }
 
-async function saveGroupChat(groupId, shouldSaveGroup, chatData = chat) {
+async function saveGroupChat(groupId, shouldSaveGroup, chatData = structuredClone(chat)) {
     const group = groups.find(x => x.id == groupId);
     const chat_id = group.chat_id;
     group['date_last_chat'] = Date.now();

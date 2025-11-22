@@ -6926,7 +6926,7 @@ export function saveChatDebounced(chatData = structuredClone(chat)) {
  *
  * @returns {Promise<void>}
  */
-export async function saveChat({ chatName, withMetadata, mesId, force = false, chatData = chat } = {}) {
+export async function saveChat({ chatName, withMetadata, mesId, force = false, chatData = structuredClone(chat) } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('saveChat called with positional arguments. Please use an object instead.');
         [chatName, withMetadata, mesId, force] = arguments;
@@ -8894,7 +8894,7 @@ export async function saveMetadata() {
     }
 }
 
-export async function saveChatConditional(chatData = chat) {
+export async function saveChatConditional(chatData = structuredClone(chat)) {
     try {
         await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
     } catch {
