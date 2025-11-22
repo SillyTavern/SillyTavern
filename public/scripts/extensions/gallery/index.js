@@ -136,9 +136,13 @@ async function getGalleryItems(url) {
         };
 
         if (isVideo(file)) {
-            // 150px of max height with some allowance for various aspect ratios
-            const maxSide = Math.round(150 * 1.5);
-            item.srct = await getVideoThumbnail(item.src, maxSide, maxSide);
+            try {
+                // 150px of max height with some allowance for various aspect ratios
+                const maxSide = Math.round(150 * 1.5);
+                item.srct = await getVideoThumbnail(item.src, maxSide, maxSide);
+            } catch (error) {
+                console.error('Failed to generate video thumbnail for gallery:', error);
+            }
         }
 
         items.push(item);
@@ -175,7 +179,7 @@ async function getGalleryFolders() {
  */
 async function deleteGalleryItem(url) {
     const isDeleted = await deleteMediaFromServer(url, false);
-    if (isDeleted){
+    if (isDeleted) {
         toastr.success(t`Image deleted successfully.`);
     }
 }
