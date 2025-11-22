@@ -9488,6 +9488,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
         }
     }
 
+    // Cancel pending save to prevent accidental swipe_id overwrites.
+    cancelDebouncedChatSave();
+
     swipeState = SWIPE_STATE.SWIPING;
     let generation;
 
