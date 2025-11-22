@@ -3222,9 +3222,15 @@ class StreamingProcessor {
         this.images = [];
         this.lastDomUpdate = 0;
         // Initialize with user's FPS setting or a conservative default (50ms = 20 FPS)
-        this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
-            ? (1000 / power_user.streaming_fps)
-            : 50;
+        if (isMobile()) {
+            this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
+                ? (1000 / power_user.streaming_fps)
+                : 50;
+        } else {
+            this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
+                ? (1000 / power_user.streaming_fps)
+                : 0;
+        }
     }
 
     /**
