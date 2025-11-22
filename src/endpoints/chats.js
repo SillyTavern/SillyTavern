@@ -409,7 +409,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
         rl.on('line', (line) => {
             if (withMetadata && itemCounter === 0) {
                 const jsonData = tryParse(line);
-                if (jsonData && _.isObject(jsonData.chat_metadata)) {
+                if (jsonData && _.isObjectLike(jsonData.chat_metadata)) {
                     chatData.chat_metadata = jsonData.chat_metadata;
                 }
             }
