@@ -1369,16 +1369,15 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
             return response.send({ error: true });
         }
 
-        const files = fs.readdirSync(chatsDirectory);
-        const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
+        const files = fs.readdirSync(chatsDirectory, { withFileTypes: true });
+        const jsonFiles = files.filter(file => file.isFile() && path.extname(file.name) === '.jsonl').map(file => file.name);
 
         if (jsonFiles.length === 0) {
-            response.send({ error: true });
-            return;
+            return response.send([]);
         }
 
         if (request.body.simple) {
-            return response.send(jsonFiles.map(file => ({ file_name: file })));
+            return response.send(jsonFiles.map(file => ({ file_name: file, file_id: path.parse(file).name })));
         }
 
         const jsonFilesPromise = jsonFiles.map((file) => {

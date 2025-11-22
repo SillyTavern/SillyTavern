@@ -308,6 +308,7 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
+eventSource.on(event_types.GROUP_CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
 
 const onBeforeGeneration = async (_generationType, _options = {}, isDryRun = false) => {
     if (isDryRun) {

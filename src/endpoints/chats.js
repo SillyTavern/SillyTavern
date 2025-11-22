@@ -633,19 +633,27 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 });
 
 router.post('/delete', validateAvatarUrlMiddleware, function (request, response) {
-    const dirName = String(request.body.avatar_url).replace('.png', '');
-    const chatFileName = String(request.body.chatfile);
-    const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
-    const treeFilePath = path.format({ ...path.parse(path.join(request.user.directories.chatTrees, dirName, sanitize(chatFileName))), base: '', ext: '.json' });
+    try {
+        if (!path.extname(request.body.chatfile)) {
+            request.body.chatfile += '.jsonl';
+        }
 
-    //Return success if either file was deleted.
-    const treeDeleted = tryDeleteFile(chatFilePath);
-    const chatDeleted = tryDeleteFile(treeFilePath);
-    if (treeDeleted || chatDeleted) {
-        return response.send({ ok: true });
-    } else {
-        console.error(`Both chat files were not deleted: '${chatFilePath}' and '${treeFilePath}'`);
-        return response.sendStatus(400);
+        const dirName = String(request.body.avatar_url).replace('.png', '');
+        const chatFileName = String(request.body.chatfile);
+        const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
+        const treeFilePath = path.format({ ...path.parse(path.join(request.user.directories.chatTrees, dirName, sanitize(chatFileName))), base: '', ext: '.json' });
+        //Return success if either file was deleted.
+        const treeDeleted = tryDeleteFile(chatFilePath);
+        const chatDeleted = tryDeleteFile(treeFilePath);
+        if (treeDeleted || chatDeleted) {
+            return response.send({ ok: true });
+        } else {
+            console.error(`Both chat files were not deleted: '${chatFilePath}' and '${treeFilePath}'`);
+            return response.sendStatus(400);
+        }
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
     }
 });
 
