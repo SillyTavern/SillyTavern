@@ -27,7 +27,7 @@ export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
  */
 export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>';
 
-export const localizePagination = function(container) {
+export const localizePagination = function (container) {
     container.find('[title="Next page"]').attr('title', t`Next page`);
     container.find('[title="Previous page"]').attr('title', t`Previous page`);
     container.find('[title="First page"]').attr('title', t`First page`);
@@ -58,7 +58,7 @@ export function canUseNegativeLookbehind() {
  * @param {number[]} sizeChangerOptions Array of page size options
  * @returns {string} The rendered dropdown element as a string
  */
-export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
+export const renderPaginationDropdown = function (pageSize, sizeChangerOptions) {
     const sizeSelect = document.createElement('select');
     sizeSelect.classList.add('J-paginationjs-size-select');
 
@@ -80,7 +80,7 @@ export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
     return sizeSelect.outerHTML;
 };
 
-export const paginationDropdownChangeHandler = function(event, size) {
+export const paginationDropdownChangeHandler = function (event, size) {
     let dropdown = $(event?.originalEvent?.currentTarget || event.delegateTarget).find('select');
     dropdown.find('[selected]').removeAttr('selected');
     dropdown.find(`[value=${size}]`).attr('selected', '');
@@ -1207,6 +1207,84 @@ export function getVideoDurationFromDataURL(dataUrl) {
 }
 
 /**
+ * Gets a thumbnail image from a video URL.
+ * @param {string} videoUrl URL of the video
+ * @param {number|null} [maxWidth=null] Maximum width of the thumbnail
+ * @param {number|null} [maxHeight=null] Maximum height of the thumbnail
+ * @param {string} [type='image/jpeg'] MIME type of the thumbnail
+ * @returns {Promise<string>} Promise that resolves to a data URL of the video thumbnail
+ */
+export function getVideoThumbnail(videoUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadeddata = function () {
+            // Set the time to capture the thumbnail at the middle of the video
+            video.currentTime = video.duration / 2;
+        };
+        video.onseeked = function () {
+            // Create a canvas to draw the thumbnail
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(video.videoWidth, video.videoHeight, maxWidth, maxHeight);
+
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
+            ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
+            // Get the data URL of the thumbnail
+            const dataUrl = canvas.toDataURL(type);
+            resolve(dataUrl);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Calculates the thumbnail size for a media element while maintaining aspect ratio.
+ * @param {number} width Media width
+ * @param {number} height Media height
+ * @param {number?} maxWidth Max width (null = no limit)
+ * @param {number?} maxHeight Max height (null = no limit)
+ * @returns {{ thumbnailWidth: number, thumbnailHeight: number }} Thumbnail size
+ */
+export function calculateThumbnailSize(width, height, maxWidth, maxHeight) {
+    // Calculate the thumbnail dimensions while maintaining the aspect ratio
+    const aspectRatio = width / height;
+    let thumbnailWidth = maxWidth;
+    let thumbnailHeight = maxHeight;
+
+    if (maxWidth === null) {
+        thumbnailWidth = width;
+        maxWidth = width;
+    }
+
+    if (maxHeight === null) {
+        thumbnailHeight = height;
+        maxHeight = height;
+    }
+
+    // Do not upscale if image is already smaller than max dimensions
+    if (width <= maxWidth && height <= maxHeight) {
+        thumbnailWidth = width;
+        thumbnailHeight = height;
+    } else {
+        if (width > height) {
+            thumbnailHeight = maxWidth / aspectRatio;
+        } else {
+            thumbnailWidth = maxHeight * aspectRatio;
+        }
+    }
+
+    return { thumbnailWidth: Math.round(thumbnailWidth), thumbnailHeight: Math.round(thumbnailHeight) };
+}
+
+/**
  * Gets the duration of an audio from a data URL.
  * @param {string} dataUrl Audio data URL
  * @returns {Promise<number>} Duration in seconds
@@ -1690,33 +1768,7 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
-            // Calculate the thumbnail dimensions while maintaining the aspect ratio
-            const aspectRatio = img.width / img.height;
-            let thumbnailWidth = maxWidth;
-            let thumbnailHeight = maxHeight;
-
-            if (maxWidth === null) {
-                thumbnailWidth = img.width;
-                maxWidth = img.width;
-            }
-
-            if (maxHeight === null) {
-                thumbnailHeight = img.height;
-                maxHeight = img.height;
-            }
-
-            // Do not upscale if image is already smaller than max dimensions
-            if (img.width <= maxWidth && img.height <= maxHeight) {
-                thumbnailWidth = img.width;
-                thumbnailHeight = img.height;
-            } else {
-                if (img.width > img.height) {
-                    thumbnailHeight = maxWidth / aspectRatio;
-                } else {
-                    thumbnailWidth = maxHeight * aspectRatio;
-                }
-            }
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(img.width, img.height, maxWidth, maxHeight);
 
             // Set the canvas dimensions and draw the resized image
             canvas.width = thumbnailWidth;
@@ -2386,6 +2438,7 @@ export async function fetchFaFile(name) {
         .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
+
 export async function fetchFa() {
     return [...new Set((await Promise.all([
         fetchFaFile('fontawesome.min.css'),
@@ -2782,4 +2835,5 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
             break;
     }
 }
+
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
