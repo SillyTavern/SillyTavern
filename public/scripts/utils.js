@@ -1207,6 +1207,36 @@ export function getVideoDurationFromDataURL(dataUrl) {
 }
 
 /**
+ * Gets a thumbnail image from a video URL.
+ * @param {string} videoUrl URL of the video
+ * @returns {Promise<string>} Promise that resolves to a data URL of the video thumbnail
+ */
+export function getVideoThumbnail(videoUrl) {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadeddata = function () {
+            // Set the time to capture the thumbnail at the middle of the video
+            video.currentTime = video.duration / 2;
+        };
+        video.onseeked = function () {
+            // Create a canvas to draw the thumbnail
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Get the data URL of the thumbnail
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            resolve(dataUrl);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
  * Gets the duration of an audio from a data URL.
  * @param {string} dataUrl Audio data URL
  * @returns {Promise<number>} Duration in seconds

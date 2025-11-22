@@ -118,6 +118,17 @@ export const MEDIA_TYPE = {
 };
 
 /**
+ * Bitwise flag-style media request types.
+ * @enum {number}
+ * @readonly
+ */
+export const MEDIA_REQUEST_TYPE = {
+    IMAGE: 0b001,
+    VIDEO: 0b010,
+    AUDIO: 0b100,
+};
+
+/**
  * Scroll behavior options when appending media to messages.
  * @enum {string}
  * @readonly
