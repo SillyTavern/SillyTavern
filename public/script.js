@@ -3394,19 +3394,23 @@ class StreamingProcessor {
 
                 // Calculate duration and adjust throttle delay for next frame
                 const updateDuration = performance.now() - updateStartTime;
-                // Target 33% CPU usage for rendering (rest 2x the duration)
-                const adaptiveDelay = updateDuration * 2;
-                // Respect user's FPS setting as minimum delay (if streaming_fps exists and is valid)
-                const userMinDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
-                    ? (1000 / power_user.streaming_fps)
-                    : 0;
 
-                // Low-end device protection: if update takes >200ms, enforce minimum 400ms delay
-                const performanceProtection = updateDuration > 200 ? 400 : 0;
+                // Only apply adaptive throttling on mobile or if user explicitly enabled it
+                if (isMobile() || power_user.adaptive_throttling) {
+                    // Target 33% CPU usage for rendering (rest 2x the duration)
+                    const adaptiveDelay = updateDuration * 2;
+                    // Respect user's FPS setting as minimum delay (if streaming_fps exists and is valid)
+                    const userMinDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
+                        ? (1000 / power_user.streaming_fps)
+                        : 0;
 
-                // Use the larger of adaptive delay, user setting, or performance protection
-                // Cap at 1000ms for low-end protection
-                this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay, performanceProtection));
+                    // Low-end device protection: if update takes >200ms, enforce minimum 400ms delay
+                    const performanceProtection = updateDuration > 200 ? 400 : 0;
+
+                    // Use the larger of adaptive delay, user setting, or performance protection
+                    // Cap at 1000ms for low-end protection
+                    this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay, performanceProtection));
+                }
             }
         }
 
