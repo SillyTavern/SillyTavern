@@ -6826,7 +6826,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
     }
 }
 
-export function saveChatDebounced() {
+export function saveChatDebounced(chatData = structuredClone(chat)) {
     const chid = this_chid;
     const selectedGroup = selected_group;
 
@@ -6844,7 +6844,7 @@ export function saveChatDebounced() {
         }
 
         console.debug('Chat save timeout triggered');
-        await saveChatConditional();
+        await saveChatConditional(chatData);
         console.debug('Chat saved');
     }, DEFAULT_SAVE_EDIT_TIMEOUT);
 }
@@ -6856,10 +6856,11 @@ export function saveChatDebounced() {
  * @param {object} [options.withMetadata] Additional metadata to save with the chat
  * @param {number} [options.mesId] The message ID to save the chat up to
  * @param {boolean} [options.force] Force the saving despite the integrity check result
+ * @param {ChatMessage[]} [options.chatData] Optionally save the specified chat.
  *
  * @returns {Promise<void>}
  */
-export async function saveChat({ chatName, withMetadata, mesId, force = false } = {}) {
+export async function saveChat({ chatName, withMetadata, mesId, force = false, chatData = structuredClone(chat) } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('saveChat called with positional arguments. Please use an object instead.');
         [chatName, withMetadata, mesId, force] = arguments;
@@ -6879,16 +6880,16 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     }
 
     characters[this_chid]['date_last_chat'] = Date.now();
-    chat.forEach(function (item, i) {
+    chatData.forEach(function (item, i) {
         if (item['is_group']) {
             toastr.error(t`Trying to save group chat with regular saveChat function. Aborting to prevent corruption.`);
             throw new Error('Group chat saved from saveChat');
         }
     });
 
-    const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
-        ? chat.slice(0, Number(mesId) + 1)
-        : chat.slice();
+    const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chatData.length)
+        ? chatData.slice(0, Number(mesId) + 1)
+        : chatData.slice();
 
     const chatToSave = [
         {
@@ -8728,7 +8729,7 @@ export async function saveMetadata() {
     }
 }
 
-export async function saveChatConditional() {
+export async function saveChatConditional(chatData = structuredClone(chat)) {
     try {
         await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
     } catch {
@@ -8742,10 +8743,10 @@ export async function saveChatConditional() {
         isChatSaving = true;
 
         if (selected_group) {
-            await saveGroupChat(selected_group, true);
+            await saveGroupChat(selected_group, true, chatData);
         }
         else {
-            await saveChat();
+            await saveChat({ chatData });
         }
 
         // Save token and prompts cache to IndexedDB storage
