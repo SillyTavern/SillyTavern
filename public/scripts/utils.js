@@ -27,7 +27,7 @@ export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
  */
 export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>';
 
-export const localizePagination = function(container) {
+export const localizePagination = function (container) {
     container.find('[title="Next page"]').attr('title', t`Next page`);
     container.find('[title="Previous page"]').attr('title', t`Previous page`);
     container.find('[title="First page"]').attr('title', t`First page`);
@@ -58,7 +58,7 @@ export function canUseNegativeLookbehind() {
  * @param {number[]} sizeChangerOptions Array of page size options
  * @returns {string} The rendered dropdown element as a string
  */
-export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
+export const renderPaginationDropdown = function (pageSize, sizeChangerOptions) {
     const sizeSelect = document.createElement('select');
     sizeSelect.classList.add('J-paginationjs-size-select');
 
@@ -80,7 +80,7 @@ export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
     return sizeSelect.outerHTML;
 };
 
-export const paginationDropdownChangeHandler = function(event, size) {
+export const paginationDropdownChangeHandler = function (event, size) {
     let dropdown = $(event?.originalEvent?.currentTarget || event.delegateTarget).find('select');
     dropdown.find('[selected]').removeAttr('selected');
     dropdown.find(`[value=${size}]`).attr('selected', '');
@@ -2438,6 +2438,7 @@ export async function fetchFaFile(name) {
         .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
+
 export async function fetchFa() {
     return [...new Set((await Promise.all([
         fetchFaFile('fontawesome.min.css'),
@@ -2834,4 +2835,5 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
             break;
     }
 }
+
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
