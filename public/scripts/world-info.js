@@ -4867,7 +4867,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             },
             new: {
                 all: newEntries,
-                sucessful: successfulNewEntries,
+                successful: successfulNewEntries,
             },
             activated: {
                 entries: allActivatedEntries,
