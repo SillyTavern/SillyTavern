@@ -3453,10 +3453,15 @@ class StreamingProcessor {
             message.swipe_info.push(...swipeInfoArray);
         }
 
+        syncMesToSwipe(messageId);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
+
         if (Array.isArray(this.images) && this.images.length > 0) {
             await processImageAttachment(message, { imageUrls: this.images });
             appendMediaToMessage(message, $(this.messageDom));
         }
+
+        this.markUIGenStopped();
 
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
@@ -3465,16 +3470,13 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
-        syncMesToSwipe(messageId);
-        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
-        await saveChatConditional();
-        this.markUIGenStopped();
         updateSwipeCounter(messageId, { message, messageElement });
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
             return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
+        saveChatDebounced();
 
         playMessageSound();
     }
