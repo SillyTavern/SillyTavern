@@ -20,6 +20,7 @@ import { autoSelectInstructPreset, selectContextPreset, selectInstructPreset } f
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
+import { getActiveManualApiSamplers, loadApiSelectedSamplers, isSamplerManualPriorityEnabled } from './samplerSelect.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels } from './textgen-models.js';
@@ -230,6 +231,7 @@ const settings = {
 
 export {
     settings as textgenerationwebui_settings,
+    showSamplerControls as showTGSamplerControls,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -527,7 +529,8 @@ function calculateLogitBias() {
     return result;
 }
 
-export function loadTextGenSettings(data, loadedSettings) {
+export async function loadTextGenSettings(data, loadedSettings) {
+    await loadApiSelectedSamplers();
     textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
     Object.assign(settings, loadedSettings.textgenerationwebui_settings ?? {});
@@ -569,7 +572,7 @@ export function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
-    showTypeSpecificControls(settings.type);
+    showSamplerControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
 
@@ -902,7 +905,7 @@ export function initTextGenSettings() {
             }
         }
 
-        showTypeSpecificControls(type);
+        showSamplerControls(type);
         setOnlineStatus('no_connection');
         BIAS_CACHE.delete(BIAS_KEY);
 
@@ -1069,18 +1072,51 @@ export function initTextGenSettings() {
     });
 }
 
-function showTypeSpecificControls(type) {
+/**
+ * Hides and shows preset samplers from the left panel.
+ * @param {string?} apiType API Type selected in API Connections - Currently selected one by default
+ * @returns void
+ */
+function showSamplerControls(apiType = null) {
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function(idx, elem) {
+        const typeSpecificControlled = $(elem).data('tg-type') !== undefined;
+
+        if (!typeSpecificControlled) $(this).show();
+    });
+
+    showTypeSpecificControls(apiType ?? settings.type);
+
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled(apiType ?? settings.type);
+    const samplersActivatedManually = getActiveManualApiSamplers(apiType ?? settings.type);
+
+    if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
+
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
+        const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== '');
+
+        for (const tgSampler of tgSamplers) {
+            if (samplersActivatedManually.includes(tgSampler)) {
+                $(this).show();
+                return;
+            } else {
+                $(this).hide();
+            }
+        }
+    });
+}
+
+function showTypeSpecificControls(apiType) {
     $('[data-tg-type]').each(function () {
         const mode = String($(this).attr('data-tg-type-mode') ?? '').toLowerCase().trim();
         const tgTypes = $(this).attr('data-tg-type').split(',').map(x => x.trim());
 
         if (mode === 'except') {
-            $(this)[tgTypes.includes(type) ? 'hide' : 'show']();
+            $(this)[tgTypes.includes(apiType) ? 'hide' : 'show']();
             return;
         }
 
         for (const tgType of tgTypes) {
-            if (tgType === type || tgType == 'all') {
+            if (tgType === apiType || tgType == 'all') {
                 $(this).show();
                 return;
             } else {

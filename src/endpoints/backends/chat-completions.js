@@ -13,6 +13,7 @@ import {
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
+    ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -75,7 +76,8 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
-const API_ZAI = 'https://api.z.ai/api/paas/v4';
+const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
+const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
@@ -382,6 +384,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-preview-image-generation',
             'gemini-2.5-flash-image-preview',
             'gemini-2.5-flash-image',
+            'gemini-3-pro-image-preview',
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
@@ -1972,7 +1975,7 @@ router.post('/generate', function (request, response) {
         };
         throw new Error('This provider is temporarily disabled.');
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
-        apiUrl = API_ZAI;
+        apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
         headers = {
             'Accept-Language': 'en-US,en',
@@ -2292,3 +2295,21 @@ multimodalModels.post('/xai', async (req, res) => {
 });
 
 router.use('/multimodal-models', multimodalModels);
+
+router.post('/process', async function (request, response) {
+    try {
+        if (!Array.isArray(request.body.messages)) {
+            return response.status(400).send({ error: 'Invalid messages format' });
+        }
+
+        if (!Object.values(PROMPT_PROCESSING_TYPE).includes(request.body.type)) {
+            return response.status(400).send({ error: 'Unknown processing type' });
+        }
+
+        const messages = postProcessPrompt(request.body.messages, request.body.type, getPromptNames(request));
+        return response.send({ messages });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});

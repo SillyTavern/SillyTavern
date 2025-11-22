@@ -1451,7 +1451,7 @@ function scrollOnMediaLoad() {
         }
         mediaLoaded++;
         if (mediaLoaded === media.length) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 }
@@ -2598,8 +2598,19 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningD
     return { timerValue, timerTitle };
 }
 
-export function scrollChatToBottom() {
-    if (power_user.auto_scroll_chat_to_bottom) {
+let requestId = null;
+
+/**
+ * Scrolls the chat to the bottom if configured to do so.
+ * @param {object} [options] Options
+ * @param {boolean} [options.waitForFrame] If true, waits for the animation frame before scrolling
+ */
+export function scrollChatToBottom({ waitForFrame } = {}) {
+    if (!power_user.auto_scroll_chat_to_bottom) {
+        return;
+    }
+
+    const doScroll = () => {
         let position = chatElement[0].scrollHeight;
 
         if (power_user.waifuMode) {
@@ -2611,7 +2622,23 @@ export function scrollChatToBottom() {
         }
 
         chatElement.scrollTop(position);
+        requestId = null;
+    };
+
+    // Do not check truthiness. requestId can loop to zero.
+    if (requestId !== null) {
+        cancelAnimationFrame(requestId);
     }
+
+    if (!waitForFrame) {
+        doScroll();
+        return;
+    }
+
+    // This prevents layout thrashing.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame#return_value
+    // https://gist.github.com/paulirish/5d52fb081b3570c81e3a#file-what-forces-layout-md
+    requestId = requestAnimationFrame(() => doScroll());
 }
 
 /**
@@ -3273,7 +3300,7 @@ class StreamingProcessor {
             this.markUIGenStarted();
         }
         hideSwipeButtons({ hideCounters: true });
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
         return messageId;
     }
 
@@ -3376,7 +3403,7 @@ class StreamingProcessor {
         }
 
         if (!scrollLock) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 
@@ -5745,7 +5772,7 @@ function extractImagesFromData(data, { mainApi = null, chatCompletionSource = nu
             switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE: {
-                    const inlineData = data?.responseContent?.parts?.filter(x => x.inlineData)?.map(x => x.inlineData);
+                    const inlineData = data?.responseContent?.parts?.filter(x => x.inlineData && !x.thought)?.map(x => x.inlineData);
                     if (Array.isArray(inlineData) && inlineData.length > 0) {
                         return inlineData.map(x => `data:${x.mimeType};base64,${x.data}`).filter(isDataURL);
                     }
@@ -6117,7 +6144,7 @@ async function processImageAttachment(message, { imageUrls }) {
         return;
     }
 
-    for (const [index, imageUrl] of imageUrls.entries()) {
+    for (const [index, imageUrl] of imageUrls.filter(onlyUnique).entries()) {
         if (!imageUrl) {
             continue;
         }
@@ -7395,7 +7422,7 @@ export async function getSettings() {
         loadNovelSettings(data, settings.nai_settings ?? settings);
 
         // TextGen
-        loadTextGenSettings(data, settings);
+        await loadTextGenSettings(data, settings);
 
         // OpenAI
         loadOpenAISettings(data, settings.oai_settings ?? settings);
@@ -11732,7 +11759,7 @@ jQuery(async function () {
     await firstLoadInit();
 
     window.addEventListener('beforeunload', (e) => {
-        if (isChatSaving) {
+        if (isChatSaving || this_edit_mes_id >= 0) {
             e.preventDefault();
             e.returnValue = true;
         }

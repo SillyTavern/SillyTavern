@@ -239,6 +239,11 @@ export const reasoning_effort_types = {
     max: 'max',
 };
 
+export const ZAI_ENDPOINT = {
+    COMMON: 'common',
+    CODING: 'coding',
+};
+
 const sensitiveFields = [
     'reverse_proxy',
     'proxy_password',
@@ -302,6 +307,7 @@ export const settingsToUpdate = {
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
+    zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
@@ -402,6 +408,7 @@ const default_settings = {
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
+    zai_endpoint: ZAI_ENDPOINT.COMMON,
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -2487,6 +2494,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     if (isZai) {
         generate_data['top_p'] = generate_data.top_p || 0.01;
         generate_data['stop'] = getCustomStoppingStrings(1);
+        generate_data['zai_endpoint'] = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
         delete generate_data.presence_penalty;
         delete generate_data.frequency_penalty;
     }
@@ -2648,7 +2656,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         }
         return data?.delta?.text || '';
     } else if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(chat_completion_source)) {
-        const inlineData = data?.candidates?.[0]?.content?.parts?.filter(x => x.inlineData)?.map(x => x.inlineData) || [];
+        const inlineData = data?.candidates?.[0]?.content?.parts?.filter(x => x.inlineData && !x.thought)?.map(x => x.inlineData) || [];
         if (Array.isArray(inlineData) && inlineData.length > 0) {
             state.images.push(...inlineData.map(x => `data:${x.mimeType};base64,${x.data}`).filter(isDataURL));
         }
@@ -3702,6 +3710,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.moonshot_model = settings.moonshot_model ?? default_settings.moonshot_model;
     oai_settings.fireworks_model = settings.fireworks_model ?? default_settings.fireworks_model;
     oai_settings.zai_model = settings.zai_model ?? default_settings.zai_model;
+    oai_settings.zai_endpoint = settings.zai_endpoint ?? default_settings.zai_endpoint;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3813,6 +3822,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_moonshot_select option[value="${oai_settings.moonshot_model}"`).prop('selected', true);
     $('#model_zai_select').val(oai_settings.zai_model);
     $(`#model_zai_select option[value="${oai_settings.zai_model}"`).prop('selected', true);
+    $('#zai_endpoint').val(oai_settings.zai_endpoint);
+    $(`#zai_endpoint option[value="${oai_settings.zai_endpoint}"`).prop('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#azure_base_url').val(oai_settings.azure_base_url);
@@ -4115,6 +4126,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         fireworks_model: settings.fireworks_model,
         cometapi_model: settings.cometapi_model,
         zai_model: settings.zai_model,
+        zai_endpoint: settings.zai_endpoint,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -5155,7 +5167,9 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-2.5-flash-image')) {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (value.includes('gemini-3-pro') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
+        } else if (value.includes('gemini-3-pro-image')) {
+            $('#openai_max_context').attr('max', max_64k);
+        }  else if (value.includes('gemini-3-pro') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemma-3-27b-it')) {
             $('#openai_max_context').attr('max', max_128k);
@@ -6675,6 +6689,10 @@ export function initOpenAI() {
     });
     $('#vertexai_express_project_id').on('input', function () {
         oai_settings.vertexai_express_project_id = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#zai_endpoint').on('input', function () {
+        oai_settings.zai_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
     $('#vertexai_service_account_json').on('input', onVertexAIServiceAccountJsonChange);
