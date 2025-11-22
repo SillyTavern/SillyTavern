@@ -1416,7 +1416,7 @@ export async function printMessages() {
     chatElement.find('.mes').last().addClass('last_mes');
     refreshSwipeButtons();
     applyStylePins();
-    scrollChatToBottom();
+    scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
@@ -2532,7 +2532,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
