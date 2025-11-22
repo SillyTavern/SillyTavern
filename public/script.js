@@ -3273,7 +3273,7 @@ class StreamingProcessor {
     }
 
     markUIGenStopped() {
-        activateSendButtons();
+        unblockGeneration();
     }
 
     async onStartStreaming(text) {
@@ -3402,14 +3402,14 @@ class StreamingProcessor {
     }
 
     async onFinishStreaming(messageId, text) {
-        this.markUIGenStopped();
         await this.onProgressStreaming(messageId, text, true);
-        addCopyToCodeBlocks(chatElement.find(`.mes[mesid="${messageId}"]`));
+        const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
+        const message = chat[messageId];
+        addCopyToCodeBlocks(messageElement);
 
         await this.reasoningHandler.finish(messageId);
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
-            const message = chat[messageId];
             const swipeInfoExtra = structuredClone(message.extra ?? {});
             delete swipeInfoExtra.token_count;
             delete swipeInfoExtra.reasoning;
@@ -3422,13 +3422,13 @@ class StreamingProcessor {
             };
             const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
             parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
-            chat[messageId].swipes.push(...this.swipes);
-            chat[messageId].swipe_info.push(...swipeInfoArray);
+            message.swipes.push(...this.swipes);
+            message.swipe_info.push(...swipeInfoArray);
         }
 
         if (Array.isArray(this.images) && this.images.length > 0) {
-            await processImageAttachment(chat[messageId], { imageUrls: this.images });
-            appendMediaToMessage(chat[messageId], $(this.messageDom));
+            await processImageAttachment(message, { imageUrls: this.images });
+            appendMediaToMessage(message, $(this.messageDom));
         }
 
         if (this.type !== 'impersonate') {
@@ -3441,7 +3441,8 @@ class StreamingProcessor {
         syncMesToSwipe(messageId);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
-        unblockGeneration();
+        this.markUIGenStopped();
+        updateSwipeCounter(messageId, { message, messageElement });
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
@@ -3456,7 +3457,6 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.markUIGenStopped();
-        unblockGeneration();
 
         const noEmitTypes = ['swipe', 'impersonate', 'continue'];
         if (!noEmitTypes.includes(this.type)) {
@@ -5302,7 +5302,6 @@ function unblockGeneration(type) {
 
     is_send_press = false;
     activateSendButtons();
-    showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
     flushWIInjections();
