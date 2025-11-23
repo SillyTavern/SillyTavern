@@ -4489,11 +4489,12 @@ input[type="range"]::-webkit-slider-thumb {
     field-sizing: content;
 }
 
-body[data-generating="true"] #send_but,
-body[data-generating="true"] #mes_continue,
-body[data-generating="true"] #mes_impersonate,
-body[data-generating="true"] #chat .last_mes .mes_buttons,
-body[data-generating="true"] #chat .last_mes .mes_reasoning_actions {
+body:is([data-generating="true"], [data-swiping="true"]) :is(
+    #send_but,
+    #mes_continue,
+    #mes_impersonate,
+    #chat .last_mes .mes_buttons,
+    #chat .last_mes .mes_reasoning_actions) {
     display: none;
 }
 

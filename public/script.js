@@ -187,7 +187,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
-import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
+import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -1430,7 +1430,7 @@ export async function printMessages() {
     chatElement.find('.mes').last().addClass('last_mes');
     refreshSwipeButtons(false, false);
     applyStylePins();
-    scrollChatToBottom();
+    scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
@@ -1465,7 +1465,7 @@ function scrollOnMediaLoad() {
         }
         mediaLoaded++;
         if (mediaLoaded === media.length) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 }
@@ -2553,7 +2553,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
@@ -2619,8 +2619,19 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningD
     return { timerValue, timerTitle };
 }
 
-export function scrollChatToBottom() {
-    if (power_user.auto_scroll_chat_to_bottom) {
+let requestId = null;
+
+/**
+ * Scrolls the chat to the bottom if configured to do so.
+ * @param {object} [options] Options
+ * @param {boolean} [options.waitForFrame] If true, waits for the animation frame before scrolling
+ */
+export function scrollChatToBottom({ waitForFrame } = {}) {
+    if (!power_user.auto_scroll_chat_to_bottom) {
+        return;
+    }
+
+    const doScroll = () => {
         let position = chatElement[0].scrollHeight;
 
         if (power_user.waifuMode) {
@@ -2632,7 +2643,23 @@ export function scrollChatToBottom() {
         }
 
         chatElement.scrollTop(position);
+        requestId = null;
+    };
+
+    // Do not check truthiness. requestId can loop to zero.
+    if (requestId !== null) {
+        cancelAnimationFrame(requestId);
     }
+
+    if (!waitForFrame) {
+        doScroll();
+        return;
+    }
+
+    // This prevents layout thrashing.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame#return_value
+    // https://gist.github.com/paulirish/5d52fb081b3570c81e3a#file-what-forces-layout-md
+    requestId = requestAnimationFrame(() => doScroll());
 }
 
 /**
@@ -3273,7 +3300,7 @@ class StreamingProcessor {
     }
 
     markUIGenStopped() {
-        activateSendButtons();
+        unblockGeneration();
     }
 
     async onStartStreaming(text) {
@@ -3294,7 +3321,7 @@ class StreamingProcessor {
             this.markUIGenStarted();
         }
         hideSwipeButtons({ hideCounters: true });
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
         return messageId;
     }
 
@@ -3397,19 +3424,19 @@ class StreamingProcessor {
         }
 
         if (!scrollLock) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 
     async onFinishStreaming(messageId, text) {
-        this.markUIGenStopped();
         await this.onProgressStreaming(messageId, text, true);
-        addCopyToCodeBlocks(chatElement.find(`.mes[mesid="${messageId}"]`));
+        const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
+        const message = chat[messageId];
+        addCopyToCodeBlocks(messageElement);
 
         await this.reasoningHandler.finish(messageId);
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
-            const message = chat[messageId];
             const swipeInfoExtra = structuredClone(message.extra ?? {});
             delete swipeInfoExtra.token_count;
             delete swipeInfoExtra.reasoning;
@@ -3422,14 +3449,19 @@ class StreamingProcessor {
             };
             const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
             parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
-            chat[messageId].swipes.push(...this.swipes);
-            chat[messageId].swipe_info.push(...swipeInfoArray);
+            message.swipes.push(...this.swipes);
+            message.swipe_info.push(...swipeInfoArray);
         }
 
+        writeMessageToSwipe(chat[messageId]);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
+
         if (Array.isArray(this.images) && this.images.length > 0) {
-            await processImageAttachment(chat[messageId], { imageUrls: this.images });
-            appendMediaToMessage(chat[messageId], $(this.messageDom));
+            await processImageAttachment(message, { imageUrls: this.images });
+            appendMediaToMessage(message, $(this.messageDom));
         }
+
+        this.markUIGenStopped();
 
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
@@ -3438,15 +3470,13 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
-        writeMessageToSwipe(chat[messageId]);
-        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
-        await saveChatConditional();
-        unblockGeneration();
+        updateSwipeCounter(messageId, { message, messageElement });
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
             return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
+        saveChatDebounced();
 
         playMessageSound();
     }
@@ -3456,7 +3486,6 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.markUIGenStopped();
-        unblockGeneration();
 
         const noEmitTypes = ['swipe', 'impersonate', 'continue'];
         if (!noEmitTypes.includes(this.type)) {
@@ -5302,7 +5331,6 @@ function unblockGeneration(type) {
 
     is_send_press = false;
     activateSendButtons();
-    showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
     flushWIInjections();
@@ -8623,7 +8651,7 @@ export async function setCharacterSettingsOverrides() {
     chat_metadata['scenario'] = pendingChanges.scenario;
     chat_metadata['mes_example'] = pendingChanges.examples;
     chat_metadata['system_prompt'] = pendingChanges.system_prompt;
-    saveMetadataDebounced();
+    await saveMetadata();
 }
 
 /**
@@ -9501,8 +9529,8 @@ function formatSwipeCounter(current, total) {
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
- * @param {object} [params.forceMesId] The message id to swipe.
- * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
+ * @param {number} [params.forceMesId] The message id to swipe.
+ * @param {number} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  * @param {number} [params.forceDuration] Overwrites the default swipe duration.
  */
 export async function swipe(event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
@@ -9542,6 +9570,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
             return;
         }
     }
+
+    // Cancel pending save to prevent accidental swipe_id overwrites.
+    cancelDebouncedChatSave();
 
     swipeState = SWIPE_STATE.SWIPING;
     let generation;
@@ -9590,7 +9621,11 @@ export async function swipe(event, direction, { source, repeated, message = chat
     async function endSwipe(revert = false) {
         //Wait for the generation to end.
         try {
-            await generation;
+            //`mes_buttons` need to be hidden until the animation completes.
+            if (generation) {
+                document.body.dataset.swiping = 'true';
+                await generation;
+            }
         }
         catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
@@ -9607,10 +9642,15 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         // If swipe_id has not changed, give the user feedback.
         if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
-            //Shake 700/140=5px
-            shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
-            //Flash red.
-            await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+            try {
+                //Shake 700/140=5px
+                shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
+                //Flash red.
+                const flashTime = Math.max(animation_duration * 2, 100)
+                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
+            } catch (error) {
+                console.warn(error);
+            }
         }
 
         //If the id is not within bounds, Swipe back.
@@ -9633,7 +9673,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
                 await reloadCurrentChat();
             }
-            //Out of bounds swipes should not be saved.
+        //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             saveChatDebounced();
@@ -9641,6 +9681,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         //Allow for another swipe.
         swipeState = SWIPE_STATE.NONE;
+        delete document.body.dataset.swiping;
         showSwipeButtons();
     }
 
@@ -11532,7 +11573,7 @@ jQuery(async function () {
         const message = chat[this_edit_mes_id];
         const selectedSwipe = message['swipe_id'] ?? undefined;
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
-        const canDeleteSwipe = !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
+        const canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
 

@@ -17,7 +17,7 @@ import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
-import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
+import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
 import { serverDirectory } from './server-directory.js';
 import { isFirefox } from './express-common.js';
 
@@ -500,9 +500,10 @@ export function removeOldBackups(directory, prefix, limit = null) {
  * Get a list of images in a directory.
  * @param {string} directoryPath Path to the directory containing the images
  * @param {'name' | 'date'} sortBy Sort images by name or date
+ * @param {number} type Bitwise flag representing media types to include
  * @returns {string[]} List of image file names
  */
-export function getImages(directoryPath, sortBy = 'name') {
+export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_TYPE.IMAGE) {
     function getSortFunction() {
         switch (sortBy) {
             case 'name':
@@ -515,10 +516,24 @@ export function getImages(directoryPath, sortBy = 'name') {
     }
 
     return fs
-        .readdirSync(directoryPath)
+        .readdirSync(directoryPath, { withFileTypes: true })
+        .filter(dirent => dirent.isFile())
+        .map(dirent => dirent.name)
         .filter(file => {
-            const type = mime.lookup(file);
-            return type && type.startsWith('image/');
+            const fileType = mime.lookup(file);
+            if (!fileType) {
+                return false;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.IMAGE) && fileType.startsWith('image/')) {
+                return true;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.VIDEO) && fileType.startsWith('video/')) {
+                return true;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.AUDIO) && fileType.startsWith('audio/')) {
+                return true;
+            }
+            return false;
         })
         .sort(getSortFunction());
 }
