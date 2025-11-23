@@ -34,6 +34,8 @@ function warnOnGroupMetadata(groupData) {
 export async function migrateGroupChatsMetadataFormat(userDirectories) {
     for (const userDirs of userDirectories) {
         try {
+            let anyDataMigrated = false;
+            const backupPath = path.join(userDirs.backups, '_group_metadata_update');
             const groupFiles = await fsPromises.readdir(userDirs.groups, { withFileTypes: true });
             const groupChatFiles = await fsPromises.readdir(userDirs.groupChats, { withFileTypes: true });
             for (const groupFile of groupFiles) {
@@ -49,6 +51,10 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     if (!needsMigration) {
                         continue;
                     }
+                    if (!fs.existsSync(backupPath)){
+                        await fsPromises.mkdir(backupPath, { recursive: true });
+                    }
+                    await fsPromises.copyFile(groupFilePath, path.join(backupPath, groupFile.name));
                     const allMetadata = {
                         [groupData.chat_id]: (groupData.chat_metadata || {}),
                         ...(groupData.past_metadata || {}),
@@ -67,7 +73,6 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                             }
                             const chatFilePath = path.join(userDirs.groupChats, chatFileName);
                             const chatMetadata = allMetadata[chatId] || {};
-                            // Read existing chat data to preserve it
                             const chatDataRaw = await fsPromises.readFile(chatFilePath, 'utf8');
                             const chatData = chatDataRaw.split('\n').filter(line => line.trim()).map(line => tryParse(line)).filter(Boolean);
                             const alreadyHasMetadata = chatData.length > 0 && Object.hasOwn(chatData[0], 'chat_metadata');
@@ -75,11 +80,13 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                                 console.log(color.yellow(`Group chat ${chatId} already has chat metadata, skipping update.`));
                                 continue;
                             }
+                            await fsPromises.copyFile(chatFilePath, path.join(backupPath, chatFileName));
                             const chatHeader = { chat_metadata: chatMetadata };
                             const newChatData = [chatHeader, ...chatData];
                             const newChatDataRaw = newChatData.map(entry => JSON.stringify(entry)).join('\n');
                             await writeFileAtomic(chatFilePath, newChatDataRaw, 'utf8');
                             console.log(color.green(`Updated group chat data format for ${chatId}`));
+                            anyDataMigrated = true;
                         } catch (chatError) {
                             console.error(color.red(`Could not update existing chat data for ${chatId}`), chatError);
                         }
@@ -88,12 +95,17 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     delete groupData.past_metadata;
                     await writeFileAtomic(groupFilePath, JSON.stringify(groupData, null, 4), 'utf8');
                     console.log(color.green(`Migrated group chats metadata for group: ${groupData.id}`));
+                    anyDataMigrated = true;
                 } catch (groupError) {
                     console.error(color.red(`Could not process group file ${groupFile.name}`), groupError);
                 }
             }
+            if (anyDataMigrated) {
+                console.log(color.green(`Completed migration of group chats metadata for user at ${userDirs.root}`));
+                console.log(color.cyan(`Backups of modified files are located at ${backupPath}`));
+            }
         } catch (directoryError) {
-            console.error(`Error migrating group chats metadata for user at ${userDirs.root}:`, directoryError);
+            console.error(color.red(`Error migrating group chats metadata for user at ${userDirs.root}`), directoryError);
         }
     }
 }
