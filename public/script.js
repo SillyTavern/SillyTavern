@@ -3322,7 +3322,7 @@ class StreamingProcessor {
     }
 
     markUIGenStopped() {
-        activateSendButtons();
+        unblockGeneration();
     }
 
     async onStartStreaming(text) {
@@ -3451,14 +3451,14 @@ class StreamingProcessor {
     }
 
     async onFinishStreaming(messageId, text) {
-        this.markUIGenStopped();
         await this.onProgressStreaming(messageId, text, true);
-        addCopyToCodeBlocks(chatElement.find(`.mes[mesid="${messageId}"]`));
+        const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
+        const message = chat[messageId];
+        addCopyToCodeBlocks(messageElement);
 
         await this.reasoningHandler.finish(messageId);
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
-            const message = chat[messageId];
             const swipeInfoExtra = structuredClone(message.extra ?? {});
             delete swipeInfoExtra.token_count;
             delete swipeInfoExtra.reasoning;
@@ -3471,14 +3471,19 @@ class StreamingProcessor {
             };
             const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
             parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
-            chat[messageId].swipes.push(...this.swipes);
-            chat[messageId].swipe_info.push(...swipeInfoArray);
+            message.swipes.push(...this.swipes);
+            message.swipe_info.push(...swipeInfoArray);
         }
 
+        syncMesToSwipe(messageId);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
+
         if (Array.isArray(this.images) && this.images.length > 0) {
-            await processImageAttachment(chat[messageId], { imageUrls: this.images });
-            appendMediaToMessage(chat[messageId], $(this.messageDom));
+            await processImageAttachment(message, { imageUrls: this.images });
+            appendMediaToMessage(message, $(this.messageDom));
         }
+
+        this.markUIGenStopped();
 
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
@@ -3489,6 +3494,7 @@ class StreamingProcessor {
 
         writeMessageToSwipe(chat[messageId]);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
+        updateSwipeCounter(messageId, { message, messageElement });
         await saveChatConditional();
         unblockGeneration();
 
@@ -3496,6 +3502,7 @@ class StreamingProcessor {
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
             return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
+        saveChatDebounced();
 
         playMessageSound();
     }
@@ -3505,7 +3512,6 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.markUIGenStopped();
-        unblockGeneration();
 
         const noEmitTypes = ['swipe', 'impersonate', 'continue'];
         if (!noEmitTypes.includes(this.type)) {
@@ -5351,7 +5357,6 @@ function unblockGeneration(type) {
 
     is_send_press = false;
     activateSendButtons();
-    showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
     flushWIInjections();
@@ -9641,8 +9646,8 @@ function formatSwipeCounter(current, total) {
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
- * @param {object} [params.forceMesId] The message id to swipe.
- * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
+ * @param {number} [params.forceMesId] The message id to swipe.
+ * @param {number} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  * @param {number} [params.forceDuration] Overwrites the default swipe duration.
  */
 export async function swipe(event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
@@ -9682,6 +9687,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
             return;
         }
     }
+
+    // Cancel pending save to prevent accidental swipe_id overwrites.
+    cancelDebouncedChatSave();
 
     swipeState = SWIPE_STATE.SWIPING;
     let generation;
@@ -9730,6 +9738,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
     async function endSwipe(revert = false) {
         //Wait for the generation to end.
         try {
+            //`mes_buttons` need to be hidden until the animation completes.
+            document.body.dataset.swiping = 'true';
             await generation;
         }
         catch (error) {
@@ -9747,10 +9757,14 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         // If swipe_id has not changed, give the user feedback.
         if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
-            //Shake 700/140=5px
-            shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
-            //Flash red.
-            await thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, 200).animate({ color: '' }).promise();
+            try {
+                //Shake 700/140=5px
+                shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
+                //Flash red.
+                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, animation_duration * 2).animate({ color: '' }).promise(), createTimeout(animation_duration * 8, `The shake animation did not end within ${animation_duration * 8}ms`)].filter(Boolean));
+            } catch (error) {
+                console.warn(error);
+            }
         }
 
         //If the id is not within bounds, Swipe back.
@@ -9781,6 +9795,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         //Allow for another swipe.
         swipeState = SWIPE_STATE.NONE;
+        delete document.body.dataset.swiping;
         showSwipeButtons();
     }
 
