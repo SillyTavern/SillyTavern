@@ -1416,7 +1416,7 @@ export async function printMessages() {
     chatElement.find('.mes').last().addClass('last_mes');
     refreshSwipeButtons();
     applyStylePins();
-    scrollChatToBottom();
+    scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
@@ -1451,7 +1451,7 @@ function scrollOnMediaLoad() {
         }
         mediaLoaded++;
         if (mediaLoaded === media.length) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 }
@@ -2532,7 +2532,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
     }
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
@@ -2598,8 +2598,19 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningD
     return { timerValue, timerTitle };
 }
 
-export function scrollChatToBottom() {
-    if (power_user.auto_scroll_chat_to_bottom) {
+let requestId = null;
+
+/**
+ * Scrolls the chat to the bottom if configured to do so.
+ * @param {object} [options] Options
+ * @param {boolean} [options.waitForFrame] If true, waits for the animation frame before scrolling
+ */
+export function scrollChatToBottom({ waitForFrame } = {}) {
+    if (!power_user.auto_scroll_chat_to_bottom) {
+        return;
+    }
+
+    const doScroll = () => {
         let position = chatElement[0].scrollHeight;
 
         if (power_user.waifuMode) {
@@ -2611,7 +2622,23 @@ export function scrollChatToBottom() {
         }
 
         chatElement.scrollTop(position);
+        requestId = null;
+    };
+
+    // Do not check truthiness. requestId can loop to zero.
+    if (requestId !== null) {
+        cancelAnimationFrame(requestId);
     }
+
+    if (!waitForFrame) {
+        doScroll();
+        return;
+    }
+
+    // This prevents layout thrashing.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame#return_value
+    // https://gist.github.com/paulirish/5d52fb081b3570c81e3a#file-what-forces-layout-md
+    requestId = requestAnimationFrame(() => doScroll());
 }
 
 /**
@@ -3220,17 +3247,6 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
         /** @type {string[]} */
         this.images = [];
-        this.lastDomUpdate = 0;
-        // Initialize with user's FPS setting or a conservative default (50ms = 20 FPS)
-        if (isMobile()) {
-            this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
-                ? (1000 / power_user.streaming_fps)
-                : 50;
-        } else {
-            this.dynamicThrottleDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
-                ? (1000 / power_user.streaming_fps)
-                : 0;
-        }
     }
 
     /**
@@ -3284,7 +3300,7 @@ class StreamingProcessor {
             this.markUIGenStarted();
         }
         hideSwipeButtons({ hideCounters: true });
-        scrollChatToBottom();
+        scrollChatToBottom({ waitForFrame: true });
         return messageId;
     }
 
@@ -3325,6 +3341,8 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
             const mesChanged = chat[messageId]['mes'] !== processedText;
+            await this.#checkDomElements(messageId);
+            this.#updateMessageBlockVisibility();
             const currentTime = new Date();
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
@@ -3334,11 +3352,18 @@ class StreamingProcessor {
             }
             chat[messageId]['extra']['time_to_first_token'] = this.timeToFirstToken;
 
+            // Update reasoning
+            await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
+            processedText = chat[messageId]['mes'];
+
             // Token count update.
             const tokenCountText = this.reasoningHandler.reasoning + processedText;
             const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await getTokenCountAsync(tokenCountText, 0) : 0;
             if (currentTokenCount) {
                 chat[messageId]['extra']['token_count'] = currentTokenCount;
+                if (this.messageTokenCounterDom instanceof HTMLElement) {
+                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
+                }
             }
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
@@ -3351,71 +3376,34 @@ class StreamingProcessor {
                 };
             }
 
-            // Throttle DOM updates to prevent UI freeze
-            // Adaptive throttling: adjust delay based on how long the last update took.
-            // If update took 200ms, wait at least 400ms before next update to give UI thread a breather.
-            if (isFinal || (Date.now() - this.lastDomUpdate > this.dynamicThrottleDelay)) {
-                const updateStartTime = performance.now();
-                this.lastDomUpdate = Date.now();
-                await this.#checkDomElements(messageId);
-                this.#updateMessageBlockVisibility();
-
-                // Update reasoning
-                await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
-
-                if (currentTokenCount && this.messageTokenCounterDom instanceof HTMLElement) {
-                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
-                }
-
-                const formattedText = messageFormatting(
-                    processedText,
-                    chat[messageId].name,
-                    chat[messageId].is_system,
-                    chat[messageId].is_user,
-                    messageId,
-                    {},
-                    false,
-                );
-                if (this.messageTextDom instanceof HTMLElement) {
-                    if (power_user.stream_fade_in) {
-                        applyStreamFadeIn(this.messageTextDom, formattedText);
-                    } else {
-                        this.messageTextDom.innerHTML = formattedText;
-                    }
-                }
-
-                const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
-                if (this.messageTimerDom instanceof HTMLElement) {
-                    this.messageTimerDom.textContent = timePassed.timerValue;
-                    this.messageTimerDom.title = timePassed.timerTitle;
-                }
-
-                this.setFirstSwipe(messageId);
-
-                // Calculate duration and adjust throttle delay for next frame
-                const updateDuration = performance.now() - updateStartTime;
-
-                // Only apply adaptive throttling on mobile or if user explicitly enabled it
-                if (isMobile() || power_user.adaptive_throttling) {
-                    // Target 33% CPU usage for rendering (rest 2x the duration)
-                    const adaptiveDelay = updateDuration * 2;
-                    // Respect user's FPS setting as minimum delay (if streaming_fps exists and is valid)
-                    const userMinDelay = (power_user.streaming_fps && power_user.streaming_fps > 0)
-                        ? (1000 / power_user.streaming_fps)
-                        : 0;
-
-                    // Low-end device protection: if update takes >200ms, enforce minimum 400ms delay
-                    const performanceProtection = updateDuration > 200 ? 400 : 0;
-
-                    // Use the larger of adaptive delay, user setting, or performance protection
-                    // Cap at 1000ms for low-end protection
-                    this.dynamicThrottleDelay = Math.min(1000, Math.max(adaptiveDelay, userMinDelay, performanceProtection));
+            const formattedText = messageFormatting(
+                processedText,
+                chat[messageId].name,
+                chat[messageId].is_system,
+                chat[messageId].is_user,
+                messageId,
+                {},
+                false,
+            );
+            if (this.messageTextDom instanceof HTMLElement) {
+                if (power_user.stream_fade_in) {
+                    applyStreamFadeIn(this.messageTextDom, formattedText);
+                } else {
+                    this.messageTextDom.innerHTML = formattedText;
                 }
             }
+
+            const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
+            if (this.messageTimerDom instanceof HTMLElement) {
+                this.messageTimerDom.textContent = timePassed.timerValue;
+                this.messageTimerDom.title = timePassed.timerTitle;
+            }
+
+            this.setFirstSwipe(messageId);
         }
 
         if (!scrollLock) {
-            scrollChatToBottom();
+            scrollChatToBottom({ waitForFrame: true });
         }
     }
 
@@ -3523,8 +3511,6 @@ class StreamingProcessor {
         this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
 
         try {
-            // Stopwatch provides basic throttling based on user's FPS setting
-            // Additional adaptive throttling is handled in onProgressStreaming
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
             const timestamps = [];
             for await (const { text, swipes, logprobs, toolCalls, state } of this.generator()) {
@@ -11172,7 +11158,7 @@ jQuery(async function () {
         const message = chat[this_edit_mes_id];
         const selectedSwipe = message['swipe_id'] ?? undefined;
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
-        const canDeleteSwipe = !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
+        const canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
 
@@ -11773,7 +11759,7 @@ jQuery(async function () {
     await firstLoadInit();
 
     window.addEventListener('beforeunload', (e) => {
-        if (isChatSaving) {
+        if (isChatSaving || this_edit_mes_id >= 0) {
             e.preventDefault();
             e.returnValue = true;
         }
