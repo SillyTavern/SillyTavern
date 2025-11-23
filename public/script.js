@@ -9325,7 +9325,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (chat[mesId]['swipe_id'] !== clampedId) {
             chat[mesId]['swipe_id'] = clampedId;
             syncSwipeToMes(mesId);
-            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
+            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: true });
         }
 
         await updateSwipeCounter(mesId);
