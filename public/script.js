@@ -9739,8 +9739,10 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //Wait for the generation to end.
         try {
             //`mes_buttons` need to be hidden until the animation completes.
-            document.body.dataset.swiping = 'true';
-            await generation;
+            if (generation) {
+                document.body.dataset.swiping = 'true';
+                await generation;
+            }
         }
         catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
@@ -9761,7 +9763,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 //Shake 700/140=5px
                 shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
                 //Flash red.
-                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, animation_duration * 2).animate({ color: '' }).promise(), createTimeout(animation_duration * 8, `The shake animation did not end within ${animation_duration * 8}ms`)].filter(Boolean));
+                const flashTime = Math.max(animation_duration * 2, 100)
+                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
             } catch (error) {
                 console.warn(error);
             }
@@ -9787,7 +9790,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
                 await reloadCurrentChat();
             }
-            //Out of bounds swipes should not be saved.
+        //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             saveChatDebounced();
