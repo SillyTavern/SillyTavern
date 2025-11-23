@@ -54,7 +54,22 @@ let lastContext = {
 export function invalidateScriptsCache() {
     scriptsCacheAll = null;
     scriptsCacheAllowed = null;
-    regexCache.clear();
+}
+
+/**
+ * Prunes the regex cache by removing specified types from entries.
+ * If an entry has no remaining types, it is removed from the cache.
+ * @param {Set<number>} typesToPrune The types to remove from the cache entries
+ */
+function pruneCache(typesToPrune) {
+    for (const [key, entry] of regexCache.entries()) {
+        for (const type of typesToPrune) {
+            entry.types.delete(type);
+        }
+        if (entry.types.size === 0) {
+            regexCache.delete(key);
+        }
+    }
 }
 
 /**
@@ -76,6 +91,18 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
         currentPresetApi !== lastContext.presetApi ||
         currentPresetName !== lastContext.presetName
     ) {
+        const typesToPrune = new Set();
+        if (currentChid !== lastContext.chid || currentCharacterRef !== lastContext.characterRef) {
+            typesToPrune.add(SCRIPT_TYPES.SCOPED);
+        }
+        if (currentPresetApi !== lastContext.presetApi || currentPresetName !== lastContext.presetName) {
+            typesToPrune.add(SCRIPT_TYPES.PRESET);
+        }
+
+        if (typesToPrune.size > 0) {
+            pruneCache(typesToPrune);
+        }
+
         invalidateScriptsCache();
         lastContext = {
             chid: currentChid,
@@ -87,13 +114,17 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
 
     if (options.allowedOnly) {
         if (!scriptsCacheAllowed) {
-            scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+            scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => {
+                return getScriptsByType(type, options).map(s => ({ ...s, _type: type }));
+            })];
         }
         return scriptsCacheAllowed;
     }
 
     if (!scriptsCacheAll) {
-        scriptsCacheAll = [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
+        scriptsCacheAll = [...Object.values(SCRIPT_TYPES).flatMap(type => {
+            return getScriptsByType(type, options).map(s => ({ ...s, _type: type }));
+        })];
     }
     return scriptsCacheAll;
 }
@@ -415,15 +446,33 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
     };
     const regexString = getRegexString();
 
-    let findRegex = regexCache.get(regexString);
-    if (!findRegex) {
+    let findRegexEntry = regexCache.get(regexString);
+    let findRegex;
+
+    if (findRegexEntry) {
+        // True LRU: Refresh the item by deleting and re-setting it
+        regexCache.delete(regexString);
+        regexCache.set(regexString, findRegexEntry);
+        findRegex = findRegexEntry.regex;
+
+        // Add type tag
+        if (regexScript._type !== undefined) {
+            findRegexEntry.types.add(regexScript._type);
+        }
+    } else {
         findRegex = regexFromString(regexString);
         if (findRegex) {
             if (regexCache.size >= 100) {
                 const firstKey = regexCache.keys().next().value;
                 regexCache.delete(firstKey);
             }
-            regexCache.set(regexString, findRegex);
+
+            const types = new Set();
+            if (regexScript._type !== undefined) {
+                types.add(regexScript._type);
+            }
+
+            regexCache.set(regexString, { regex: findRegex, types });
         }
     }
 
