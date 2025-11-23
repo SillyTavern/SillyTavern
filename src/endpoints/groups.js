@@ -70,6 +70,11 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                             // Read existing chat data to preserve it
                             const chatDataRaw = await fsPromises.readFile(chatFilePath, 'utf8');
                             const chatData = chatDataRaw.split('\n').filter(line => line.trim()).map(line => tryParse(line)).filter(Boolean);
+                            const alreadyHasMetadata = chatData.length > 0 && Object.hasOwn(chatData[0], 'chat_metadata');
+                            if (alreadyHasMetadata) {
+                                console.log(color.yellow(`Group chat ${chatId} already has chat metadata, skipping update.`));
+                                continue;
+                            }
                             const chatHeader = { chat_metadata: chatMetadata };
                             const newChatData = [chatHeader, ...chatData];
                             const newChatDataRaw = newChatData.map(entry => JSON.stringify(entry)).join('\n');
