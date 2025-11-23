@@ -78,18 +78,39 @@ function pruneCache(typesToPrune) {
  * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, characterOverride = null) {
     // Check for context changes (character switch, preset change, character data update)
-    const currentChid = this_chid;
+    let currentChid = this_chid;
+
+    // Dynamic Character Loading for Group Chats
+    if (characterOverride) {
+        const overrideId = characters.findIndex(c => c.name === characterOverride);
+        if (overrideId !== -1) {
+            currentChid = overrideId;
+        }
+    }
+
     const currentCharacterRef = characters?.[currentChid];
     const currentPresetApi = getCurrentPresetAPI();
     const currentPresetName = getCurrentPresetName();
 
+    // If we are overriding, we bypass the standard cache invalidation logic based on this_chid
+    // because we are temporarily looking at another character's context.
+    // However, we still need to ensure we aren't returning cached scripts for the WRONG character.
+    // So if an override is present, we might want to skip the main cache or use a temporary one.
+    // For simplicity and safety in this fix, if an override is present, we fetch fresh (or use a separate strategy).
+    // But wait, getScriptsByType uses this_chid. We need to pass the override down or temporarily mock this_chid?
+    // No, getScriptsByType should also accept the chid.
+
+    // Let's refactor getScriptsByType to accept an optional chid.
+
     if (
-        currentChid !== lastContext.chid ||
-        currentCharacterRef !== lastContext.characterRef ||
-        currentPresetApi !== lastContext.presetApi ||
-        currentPresetName !== lastContext.presetName
+        !characterOverride && (
+            currentChid !== lastContext.chid ||
+            currentCharacterRef !== lastContext.characterRef ||
+            currentPresetApi !== lastContext.presetApi ||
+            currentPresetName !== lastContext.presetName
+        )
     ) {
         const typesToPrune = new Set();
         if (currentChid !== lastContext.chid || currentCharacterRef !== lastContext.characterRef) {
@@ -112,10 +133,18 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
         };
     }
 
+    // If override is present, we don't use the global cache variables `scriptsCacheAll` / `scriptsCacheAllowed`
+    // because they are meant for the "currently selected character" context.
+    if (characterOverride) {
+        return [...Object.values(SCRIPT_TYPES).flatMap(type => {
+            return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
+        })];
+    }
+
     if (options.allowedOnly) {
         if (!scriptsCacheAllowed) {
             scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => {
-                return getScriptsByType(type, options).map(s => ({ ...s, _type: type }));
+                return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
             })];
         }
         return scriptsCacheAllowed;
@@ -123,7 +152,7 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
 
     if (!scriptsCacheAll) {
         scriptsCacheAll = [...Object.values(SCRIPT_TYPES).flatMap(type => {
-            return getScriptsByType(type, options).map(s => ({ ...s, _type: type }));
+            return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
         })];
     }
     return scriptsCacheAll;
@@ -135,17 +164,17 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
  * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
-export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, targetChid = this_chid) {
     switch (scriptType) {
         case SCRIPT_TYPE_UNKNOWN:
             return [];
         case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
         case SCRIPT_TYPES.SCOPED: {
-            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[targetChid]?.avatar)) {
                 return [];
             }
-            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+            const scopedScripts = characters[targetChid]?.data?.extensions?.regex_scripts;
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         case SCRIPT_TYPES.PRESET: {
@@ -380,7 +409,7 @@ export function getRegexedString(rawString, placement, { characterOverride, isMa
         return finalString;
     }
 
-    const allRegex = getRegexScripts({ allowedOnly: true });
+    const allRegex = getRegexScripts({ allowedOnly: true }, characterOverride);
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
