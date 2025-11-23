@@ -183,7 +183,7 @@ import {
     trimSpaces,
     clamp,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -374,11 +374,6 @@ export let name2 = systemUserName;
 /** @type {ChatMessage[]} */
 export let chat = [];
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
-
-/**
- * @type {import('./scripts/constants.js').SWIPE_STATE}
- */
-export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
@@ -9278,8 +9273,8 @@ function formatSwipeCounter(current, total) {
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
- * @param {object} [params.forceMesId] The message id to swipe.
- * @param {object} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
+ * @param {number} [params.forceMesId] The message id to swipe.
+ * @param {number} [params.forceSwipeId] The target swipe_id. When out of range, it will be looped or clamped.
  * @param {number} [params.forceDuration] Overwrites the default swipe duration.
  */
 export async function swipe(event, direction, { source, repeated, message = chat[chat.length - 1], forceMesId, forceSwipeId, forceDuration } = {}) {
@@ -9312,7 +9307,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
     // Cancel pending save to prevent accidental swipe_id overwrites.
     cancelDebouncedChatSave();
 
-    swipeState = SWIPE_STATE.SWIPING;
     let generation;
 
     const thisMesDiv = chatElement.children('.mes').filter(`[mesid="${mesId}"]`);

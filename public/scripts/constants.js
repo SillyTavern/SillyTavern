@@ -173,13 +173,3 @@ export const SWIPE_SOURCE = {
     BACK: 'back',
     AUTO_SWIPE: 'auto_swipe',
 };
-
-/**
- * @enum {string}
- * @readonly
- */
-export const SWIPE_STATE = {
-    NONE: 'none',
-    SWIPING: 'swiping',
-    EDITING: 'editing',
-};
