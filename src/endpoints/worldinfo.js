@@ -47,9 +47,12 @@ router.post('/list', async (request, response) => {
             try {
                 const filePath = path.join(request.user.directories.worlds, file.name);
                 const fileContents = await fs.promises.readFile(filePath, 'utf8');
-                const fileExtensions = tryParse(fileContents)?.extensions || {};
+                const fileContentsParsed = tryParse(fileContents) || {};
+                const fileExtensions = fileContentsParsed?.extensions || {};
+                const fileNameWithoutExt = path.parse(file.name).name;
                 const fileData = {
-                    name: path.parse(file.name).name,
+                    file_id: fileNameWithoutExt,
+                    name: fileContentsParsed || fileNameWithoutExt,
                     extensions: _.isObjectLike(fileExtensions) ? fileExtensions : {},
                 };
                 data.push(fileData);
