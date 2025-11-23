@@ -87,7 +87,7 @@ async function mergeModelsAndMetadata(models, metadata) {
     return models.map(model => {
         const metadataModel = metadata[model.name];
         if (!metadataModel) {
-            return  { ...model, is_whitelisted: false };
+            return { ...model, is_whitelisted: false };
         }
         return { ...model, ...metadataModel, is_whitelisted: true };
     });
@@ -294,8 +294,15 @@ router.post('/user-info', async (request, response) => {
 
     try {
         const ai_horde = await getHordeClient();
+        const sharedKey = await (async () => {
+            try {
+                return await ai_horde.getSharedKey(api_key_horde);
+            } catch {
+                return null;
+            }
+        })();
         const user = await ai_horde.findUser({ token: api_key_horde });
-        return response.send(user);
+        return response.send({ user, sharedKey, anonymous: false });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
