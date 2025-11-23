@@ -625,7 +625,7 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chat_id, chat: [chatHeader, ...chat] }),
+        body: JSON.stringify({ id: chat_id, chat: [chatHeader, ...chat], force: force }),
     });
 
     if (!response.ok) {
