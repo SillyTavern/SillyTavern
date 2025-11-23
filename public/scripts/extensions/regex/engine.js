@@ -54,6 +54,7 @@ let lastContext = {
 export function invalidateScriptsCache() {
     scriptsCacheAll = null;
     scriptsCacheAllowed = null;
+    regexCache.clear();
 }
 
 /**
@@ -418,6 +419,10 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
     if (!findRegex) {
         findRegex = regexFromString(regexString);
         if (findRegex) {
+            if (regexCache.size >= 100) {
+                const firstKey = regexCache.keys().next().value;
+                regexCache.delete(firstKey);
+            }
             regexCache.set(regexString, findRegex);
         }
     }
