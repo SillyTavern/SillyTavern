@@ -2,7 +2,7 @@ import { promises as fsPromises } from 'node:fs';
 import path from 'node:path';
 import urlJoin from 'url-join';
 import { DEFAULT_AVATAR_PATH } from './constants.js';
-import { extractFileFromZipBuffer, humanizedISO8601DateTime } from './util.js';
+import { extractFileFromZipBuffer, humanizedDateTime } from './util.js';
 
 /**
  * A parser for BYAF (Backyard Archive Format) files.
@@ -267,7 +267,7 @@ export class ByafParser {
                 extensions: { ...(character?.displayName && { 'display_name': character?.displayName }) }, // Preserve display name unmodified using extensions. "display_name" is not used by SillyTavern currently.
             },
             // @ts-ignore Non-standard spec extension
-            create_date: humanizedISO8601DateTime(),
+            create_date: humanizedDateTime(),
         };
     }
     /**
@@ -330,7 +330,7 @@ export class ByafParser {
      * @returns {string} Chat data
      */
     static getChatFromScenario(scenario, userName, characterName, chatBackgrounds) {
-        const chatStartDate = scenario?.messages?.length == 0 ? humanizedISO8601DateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
+        const chatStartDate = scenario?.messages?.length == 0 ? humanizedDateTime() : scenario?.messages?.filter(m => 'createdAt' in m)[0].createdAt;
         const chatBackground = chatBackgrounds.find(bg => bg.paths.includes(scenario?.backgroundImage || ''))?.name || '';
         /** @type {object[]} */
         const chat = [{

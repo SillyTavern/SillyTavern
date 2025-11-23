@@ -11,7 +11,7 @@ import _ from 'lodash';
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
     getConfigValue,
-    humanizedISO8601DateTime,
+    humanizedDateTime,
     tryParse,
     generateTimestamp,
     removeOldBackups,
@@ -108,7 +108,7 @@ function importOobaChat(userName, characterName, jsonData) {
     const chat = [{
         user_name: userName,
         character_name: characterName,
-        create_date: humanizedISO8601DateTime(),
+        create_date: humanizedDateTime(),
     }];
 
     for (const arr of jsonData.data_visible) {
@@ -116,7 +116,7 @@ function importOobaChat(userName, characterName, jsonData) {
             const userMessage = {
                 name: userName,
                 is_user: true,
-                send_date: humanizedISO8601DateTime(),
+                send_date: humanizedDateTime(),
                 mes: arr[0],
             };
             chat.push(userMessage);
@@ -125,7 +125,7 @@ function importOobaChat(userName, characterName, jsonData) {
             const charMessage = {
                 name: characterName,
                 is_user: false,
-                send_date: humanizedISO8601DateTime(),
+                send_date: humanizedDateTime(),
                 mes: arr[1],
             };
             chat.push(charMessage);
@@ -147,7 +147,7 @@ function importAgnaiChat(userName, characterName, jsonData) {
     const chat = [{
         user_name: userName,
         character_name: characterName,
-        create_date: humanizedISO8601DateTime(),
+        create_date: humanizedDateTime(),
     }];
 
     for (const message of jsonData.messages) {
@@ -155,7 +155,7 @@ function importAgnaiChat(userName, characterName, jsonData) {
         chat.push({
             name: isUser ? userName : characterName,
             is_user: isUser,
-            send_date: humanizedISO8601DateTime(),
+            send_date: humanizedDateTime(),
             mes: message.msg,
         });
     }
@@ -180,13 +180,13 @@ function importCAIChat(userName, characterName, jsonData) {
         const starter = {
             user_name: userName,
             character_name: characterName,
-            create_date: humanizedISO8601DateTime(),
+            create_date: humanizedDateTime(),
         };
 
         const historyData = history.msgs.map((msg) => ({
             name: msg.src.is_human ? userName : characterName,
             is_user: msg.src.is_human,
-            send_date: humanizedISO8601DateTime(),
+            send_date: humanizedDateTime(),
             mes: msg.text,
         }));
 
@@ -278,7 +278,7 @@ function importRisuChat(userName, characterName, jsonData) {
     const chat = [{
         user_name: userName,
         character_name: characterName,
-        create_date: humanizedISO8601DateTime(),
+        create_date: humanizedDateTime(),
     }];
 
     for (const message of jsonData.data.message) {
@@ -630,7 +630,7 @@ router.post('/group/import', function (request, response) {
             return response.sendStatus(400);
         }
 
-        const chatname = humanizedISO8601DateTime();
+        const chatname = humanizedDateTime();
         const pathToUpload = path.join(filedata.destination, filedata.filename);
         const pathToNewFile = path.join(request.user.directories.groupChats, `${chatname}.jsonl`);
         fs.copyFileSync(pathToUpload, pathToNewFile);
@@ -682,7 +682,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
             }
 
             const handleChat = (chat) => {
-                const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
                 const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
                 fileNames.push(fileName);
                 writeFileAtomicSync(filePath, chat, 'utf8');
@@ -721,7 +721,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
                 console.warn('Failed to flatten Chub Chat data: ', error);
             }
 
-            const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+            const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
             const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
             fileNames.push(fileName);
             if (flattenedChat !== data) {

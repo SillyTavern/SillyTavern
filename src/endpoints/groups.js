@@ -5,7 +5,7 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { humanizedISO8601DateTime } from '../util.js';
+import { humanizedDateTime } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
@@ -27,7 +27,7 @@ router.post('/all', (request, response) => {
             const group = JSON.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
-            group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
+            group['create_date'] = humanizedDateTime(groupStat.birthtimeMs);
 
             let chat_size = 0;
             let date_last_chat = 0;
