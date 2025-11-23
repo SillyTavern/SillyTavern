@@ -56,8 +56,8 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     }
                     await fsPromises.copyFile(groupFilePath, path.join(backupPath, groupFile.name));
                     const allMetadata = {
-                        [groupData.chat_id]: (groupData.chat_metadata || {}),
                         ...(groupData.past_metadata || {}),
+                        [groupData.chat_id]: (groupData.chat_metadata || {}),
                     };
                     if (!Array.isArray(groupData.chats)) {
                         console.warn(color.yellow(`Group ${groupFile.name} has no chats array, skipping migration.`));
