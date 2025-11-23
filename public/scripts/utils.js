@@ -2836,4 +2836,12 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
     }
 }
 
+/**
+ * If value is less than min, it's set to min.
+ * If value is greater than max, it's set to max.
+ * @param {number} value The target value.
+ * @param {number} min The minimum for value.
+ * @param {number} max The maximum for value.
+ * @returns {number} The clamped value.
+ */
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
