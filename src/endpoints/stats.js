@@ -52,6 +52,11 @@ function timestampToMoment(timestamp) {
         return timestamp;
     }
 
+    const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
+    if (isoPattern.test(timestamp)) {
+        return new Date(timestamp).getTime();
+    }
+
     const pattern1 =
         /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
     const replacement1 = (
