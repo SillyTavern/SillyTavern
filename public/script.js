@@ -9539,8 +9539,10 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //Wait for the generation to end.
         try {
             //`mes_buttons` need to be hidden until the animation completes.
-            document.body.dataset.swiping = 'true';
-            await generation;
+            if (generation) {
+                document.body.dataset.swiping = 'true';
+                await generation;
+            }
         }
         catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
@@ -9588,7 +9590,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
                 await reloadCurrentChat();
             }
-            //Out of bounds swipes should not be saved.
+        //Out of bounds swipes should not be saved.
         } else if (source != SWIPE_SOURCE.BACK) {
             //Save the chat if swipe_id has changed.
             saveChatDebounced();
