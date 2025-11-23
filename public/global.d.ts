@@ -15,6 +15,42 @@ declare global {
     type ChatCompletionSettings = typeof oai_settings;
     type TextCompletionSettings = typeof textgenerationwebui_settings;
     type MessageTimestamp = string | number | Date;
+    type Character = import('./scripts/char-data').v1CharData;
+
+    interface Group {
+        id: string;
+        name: string;
+        members: string[];
+        disabled_members: string[];
+        chat_id: string;
+        chats: string[];
+        generation_mode?: number;
+        generation_mode_join_prefix?: string;
+        generation_mode_join_suffix?: string;
+        activation_strategy?: number;
+        auto_mode_delay?: number;
+        allow_self_responses?: boolean;
+        avatar_url?: string;
+        hideMutedSprites?: boolean;
+        fav?: boolean;
+    }
+
+    interface ChatFile extends Array<ChatMessage> {
+        [index: number]: ChatMessage;
+        0?: ChatHeader;
+    }
+
+    interface ChatHeader {
+        chat_metadata: ChatMetadata;
+    }
+
+    interface ChatMetadata {
+        tainted?: boolean;
+        integrity?: string;
+        scenario?: string;
+        persona?: string;
+        [key: string]: any;
+    }
 
     interface ChatMessage {
         name?: string;
@@ -34,6 +70,7 @@ declare global {
     };
 
     interface ChatMessageExtra {
+        gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;
         memory?: string;

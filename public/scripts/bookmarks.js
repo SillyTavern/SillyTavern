@@ -298,9 +298,11 @@ export async function convertSoloToGroupChat() {
     const chats = [chatName];
     const members = [character.avatar];
     const favChecked = character.fav || character.fav == 'true';
-    /** @type {any} */
+    /** @type {ChatMetadata} */
     const metadata = Object.assign({}, chat_metadata);
     delete metadata.main_chat;
+    /** @type {ChatHeader} */
+    const chatHeader = { chat_metadata: metadata };
 
     const createGroupResponse = await fetch('/api/groups/create', {
         method: 'POST',
@@ -312,7 +314,6 @@ export async function convertSoloToGroupChat() {
             allow_self_responses: false,
             activation_strategy: group_activation_strategy.NATURAL,
             disabled_members: [],
-            chat_metadata: metadata,
             fav: favChecked,
             chat_id: chatName,
             chats: chats,
@@ -368,7 +369,7 @@ export async function convertSoloToGroupChat() {
     const createChatResponse = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatName, chat: groupChat }),
+        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat] }),
     });
 
     if (!createChatResponse.ok) {
