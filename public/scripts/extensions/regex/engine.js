@@ -34,11 +34,89 @@ export const SCRIPT_TYPE_UNKNOWN = -1;
  */
 const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
 
+/**
+ * Manages the compiled regex cache with LRU eviction and type-aware pruning.
+ */
+class RegexCache {
+    #cache = new Map();
+    #maxSize = 100;
+
+    /**
+     * Gets a cached regex entry.
+     * @param {string} regexString The regex string to look up
+     * @returns {{ regex: RegExp, types: Set<number> } | undefined} The cached entry or undefined
+     */
+    get(regexString) {
+        const entry = this.#cache.get(regexString);
+        if (entry) {
+            // LRU: Move to end by re-inserting
+            this.#cache.delete(regexString);
+            this.#cache.set(regexString, entry);
+        }
+        return entry;
+    }
+
+    /**
+     * Sets a cache entry.
+     * @param {string} regexString The regex string to cache
+     * @param {RegExp} regex The compiled regex
+     * @param {number} [scriptType] The script type to tag this entry with
+     */
+    set(regexString, regex, scriptType) {
+        // Evict oldest if at capacity
+        if (this.#cache.size >= this.#maxSize) {
+            const firstKey = this.#cache.keys().next().value;
+            this.#cache.delete(firstKey);
+        }
+
+        const types = new Set();
+        if (scriptType !== undefined) {
+            types.add(scriptType);
+        }
+
+        this.#cache.set(regexString, { regex, types });
+    }
+
+    /**
+     * Adds a type tag to an existing cache entry.
+     * @param {string} regexString The regex string
+     * @param {number} scriptType The script type to add
+     */
+    addType(regexString, scriptType) {
+        const entry = this.#cache.get(regexString);
+        if (entry && scriptType !== undefined) {
+            entry.types.add(scriptType);
+        }
+    }
+
+    /**
+     * Prunes cache entries by removing specified types.
+     * @param {Set<number>} typesToPrune The types to remove
+     */
+    prune(typesToPrune) {
+        for (const [key, entry] of this.#cache.entries()) {
+            for (const type of typesToPrune) {
+                entry.types.delete(type);
+            }
+            if (entry.types.size === 0) {
+                this.#cache.delete(key);
+            }
+        }
+    }
+
+    /**
+     * Clears the entire cache.
+     */
+    clear() {
+        this.#cache.clear();
+    }
+}
+
 // Cache for regex scripts to avoid rebuilding the array on every call
 let scriptsCacheAll = null;
 let scriptsCacheAllowed = null;
 // Cache for compiled RegExp objects
-const regexCache = new Map();
+const regexCache = new RegexCache();
 
 // Context tracking for cache invalidation
 let lastContext = {
@@ -58,18 +136,10 @@ export function invalidateScriptsCache() {
 
 /**
  * Prunes the regex cache by removing specified types from entries.
- * If an entry has no remaining types, it is removed from the cache.
  * @param {Set<number>} typesToPrune The types to remove from the cache entries
  */
 function pruneCache(typesToPrune) {
-    for (const [key, entry] of regexCache.entries()) {
-        for (const type of typesToPrune) {
-            entry.types.delete(type);
-        }
-        if (entry.types.size === 0) {
-            regexCache.delete(key);
-        }
-    }
+    regexCache.prune(typesToPrune);
 }
 
 /**
@@ -84,7 +154,7 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, cha
 
     // Dynamic Character Loading for Group Chats
     if (characterOverride) {
-        const overrideId = characters.findIndex(c => c.name === characterOverride);
+        const overrideId = characters.findIndex(c => c.avatar === characterOverride);
         if (overrideId !== -1) {
             currentChid = overrideId;
         }
@@ -479,29 +549,13 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
     let findRegex;
 
     if (findRegexEntry) {
-        // True LRU: Refresh the item by deleting and re-setting it
-        regexCache.delete(regexString);
-        regexCache.set(regexString, findRegexEntry);
         findRegex = findRegexEntry.regex;
-
         // Add type tag
-        if (regexScript._type !== undefined) {
-            findRegexEntry.types.add(regexScript._type);
-        }
+        regexCache.addType(regexString, regexScript._type);
     } else {
         findRegex = regexFromString(regexString);
         if (findRegex) {
-            if (regexCache.size >= 100) {
-                const firstKey = regexCache.keys().next().value;
-                regexCache.delete(firstKey);
-            }
-
-            const types = new Set();
-            if (regexScript._type !== undefined) {
-                types.add(regexScript._type);
-            }
-
-            regexCache.set(regexString, { regex: findRegex, types });
+            regexCache.set(regexString, findRegex, regexScript._type);
         }
     }
 
