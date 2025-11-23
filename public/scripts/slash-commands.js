@@ -5190,7 +5190,7 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
     const isCurrentlyVertexAI = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI;
     if (api === chat_completion_sources.VERTEXAI || (!api && isCurrentlyVertexAI)) {
         const defaultRegion = 'us-central1';
-        const dataList = Array
+        const permittedValues = Array
             .from(document.querySelectorAll('#vertexai_region_suggestions option'))
             .map(e => e instanceof HTMLOptionElement ? e.value : '')
             .filter(x => x);
@@ -5199,7 +5199,6 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
             return oai_settings.vertexai_region || defaultRegion;
         }
 
-        const permittedValues = Object.values(dataList);
         if (!permittedValues.includes(url)) {
             !isQuiet && toastr.info(t`Generation requests may fail.`, t`Unknown VertexAI region '${url}'`);
         }
