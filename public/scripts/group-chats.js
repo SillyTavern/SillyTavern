@@ -2036,7 +2036,7 @@ function filterGroupMembers() {
 }
 
 async function createGroup() {
-    let name = $('#rm_group_chat_name').val();
+    let name = $('#rm_group_chat_name').val().toString();
     let allowSelfResponses = !!$('#rm_group_allow_self_responses').prop('checked');
     let activationStrategy = Number($('#rm_group_activation_strategy').find(':selected').val()) ?? group_activation_strategy.NATURAL;
     let generationMode = Number($('#rm_group_generation_mode').find(':selected').val()) ?? group_generation_mode.SWAP;
@@ -2048,28 +2048,30 @@ async function createGroup() {
         name = t`Group: ${memberNames}`;
     }
 
-    const avatar_url = $('#group_avatar_preview img').attr('src');
-
+    const avatarUrl = $('#group_avatar_preview img').attr('src');
     const chatName = humanizedDateTime();
     const chats = [chatName];
+
+    /** @type {Omit<Group, 'id'>} */
+    const groupCreateModel = {
+        name: name,
+        members: members,
+        avatar_url: isValidImageUrl(avatarUrl) ? avatarUrl : default_avatar,
+        allow_self_responses: allowSelfResponses,
+        hideMutedSprites: hideMutedSprites,
+        activation_strategy: activationStrategy,
+        generation_mode: generationMode,
+        disabled_members: [],
+        fav: fav_grp_checked,
+        chat_id: chatName,
+        chats: chats,
+        auto_mode_delay: autoModeDelay,
+    };
 
     const createGroupResponse = await fetch('/api/groups/create', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({
-            name: name,
-            members: members,
-            avatar_url: isValidImageUrl(avatar_url) ? avatar_url : default_avatar,
-            allow_self_responses: allowSelfResponses,
-            hideMutedSprites: hideMutedSprites,
-            activation_strategy: activationStrategy,
-            generation_mode: generationMode,
-            disabled_members: [],
-            fav: fav_grp_checked,
-            chat_id: chatName,
-            chats: chats,
-            auto_mode_delay: autoModeDelay,
-        }),
+        body: JSON.stringify(groupCreateModel),
     });
 
     if (createGroupResponse.ok) {
