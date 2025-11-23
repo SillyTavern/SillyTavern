@@ -4500,6 +4500,10 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
 async function onImageSwiped({ message, element, direction }) {
     const { powerUserSettings, accountStorage } = getContext();
 
+    if (!isValidState()) {
+        return;
+    }
+
     if (!message || direction !== SWIPE_DIRECTION.RIGHT || powerUserSettings.image_overswipe !== IMAGE_OVERSWIPE.GENERATE) {
         return;
     }
