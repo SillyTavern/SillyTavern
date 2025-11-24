@@ -496,6 +496,10 @@ export async function parseJsonFile(file) {
 
 /**
  * Calculates a hash code for a string.
+ * cyrb53 (c) 2018 bryc ({@link https://github.com/bryc/code/blob/master/jshash/experimental/cyrb53.js|github.com/bryc})
+ * License: Public domain (or MIT if needed). Attribution appreciated.
+ * A fast and simple 53-bit string hash function with decent collision resistance.
+ * Largely inspired by MurmurHash2/3, but with a focus on speed/simplicity.
  * @param {string} str The string to hash.
  * @param {number} [seed=0] The seed to use for the hash.
  * @returns {number} The hash code.
