@@ -3688,7 +3688,7 @@ function loadOpenAISettings(data, settings) {
     for (const migration of migrateMap) {
         if (Object.hasOwn(settings, migration.oldKey)) {
             if (settings[migration.oldKey] === migration.oldValue) {
-                settings[migration.newKey] = settings[migration.newValue];
+                settings[migration.newKey] = migration.newValue;
             }
         }
     }
