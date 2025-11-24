@@ -1945,6 +1945,15 @@ router.post('/generate', function (request, response) {
         if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
             request.body.model = `${request.body.model}:online`;
         }
+        if (request.body.min_p !== undefined) {
+            bodyParams['min_p'] = request.body.min_p;
+        }
+        if (request.body.top_a !== undefined) {
+            bodyParams['top_a'] = request.body.top_a;
+        }
+        if (request.body.repetition_penalty !== undefined) {
+            bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+        }
         const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
         const isClaude3or4 = /claude-(3|opus-4|sonnet-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';

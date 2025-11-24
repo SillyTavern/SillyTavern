@@ -2320,6 +2320,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
     const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
     const isZai = oai_settings.chat_completion_source == chat_completion_sources.ZAI;
+    const isNanoGPT = oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2527,6 +2528,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         generate_data['zai_endpoint'] = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
         delete generate_data.presence_penalty;
         delete generate_data.frequency_penalty;
+    }
+
+    // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
+    if (isNanoGPT) {
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['min_p'] = Number(oai_settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(oai_settings.top_a_openai);
     }
 
     const seedSupportedSources = [
