@@ -277,7 +277,6 @@ export const settingsToUpdate = {
     claude_model: ['#model_claude_select', 'claude_model', false, true],
     openrouter_model: ['#model_openrouter_select', 'openrouter_model', false, true],
     helicone_model: ['#model_helicone_select', 'helicone_model', false, true],
-    api_key_helicone: ['#api_key_helicone', 'api_key_helicone', false, false],
     openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true, true],
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
     openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
@@ -6746,6 +6745,7 @@ export function initOpenAI() {
     $('#model_openrouter_select').on('change', onModelChange);
     $('#model_helicone_select').on('change', onModelChange);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     $('#helicone_enable_web_search').on('input', function () {
         oai_settings.helicone_enable_web_search = !!$(this).prop('checked');
@@ -6756,6 +6756,8 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 >>>>>>> 0b8015419 (fix merge conflicts)
+=======
+>>>>>>> 9adff13e4 (fix comments)
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);

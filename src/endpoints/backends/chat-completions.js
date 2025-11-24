@@ -1635,19 +1635,6 @@ router.post('/status', async function (request, statusResponse) {
                 });
 
                 console.info('Available OpenRouter models:', models);
-            } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE && Array.isArray(data?.models)) {
-                let models = [];
-
-                data.models.forEach(model => {
-                    const context_length = model.contextLength || 0;
-                    models[model.id] = {
-                        context_length: context_length,
-                        name: model.name,
-                        author: model.author,
-                    };
-                });
-
-                console.info('Available Helicone models:', models);
             } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
                 const models = data?.data;
                 console.info(models);
@@ -1884,31 +1871,6 @@ router.post('/generate', function (request, response) {
         const isGemini = /google\/gemini/.test(request.body.model);
         if (isGemini) {
             bodyParams['safety_settings'] = GEMINI_SAFETY;
-        }
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
-        apiUrl = 'https://ai-gateway.helicone.ai';
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
-        headers = { ...HELICONE_HEADERS };
-        bodyParams = {
-            logprobs: request.body.logprobs,
-            top_logprobs: undefined,
-        };
-
-        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
-        if (!isTextCompletion && bodyParams.logprobs > 0) {
-            bodyParams.top_logprobs = bodyParams.logprobs;
-            bodyParams.logprobs = true;
-        }
-
-        if (request.body.json_schema) {
-            bodyParams['response_format'] = {
-                type: 'json_schema',
-                json_schema: {
-                    name: request.body.json_schema.name,
-                    schema: request.body.json_schema.value,
-                    strict: request.body.json_schema.strict ?? true,
-                },
-            };
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
