@@ -3724,6 +3724,8 @@ function loadOpenAISettings(data, settings) {
 
     $(`#settings_preset_openai option[value="${openai_setting_names[oai_settings.preset_settings_openai]}"]`).prop('selected', true);
     $('#bind_preset_to_connection').prop('checked', oai_settings.bind_preset_to_connection);
+    $('#openai_external_category').toggle(oai_settings.show_external_models);
+    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
 
     // Don't display Service Account JSON in textarea - it's stored in backend secrets
     $('#vertexai_service_account_json').val('');
@@ -3750,7 +3752,6 @@ function loadOpenAISettings(data, settings) {
     setNamesBehaviorControls();
     setContinuePostfixControls();
 
-    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
     $('#openrouter_providers_chat').trigger('change');
     $('#chat_completion_source').trigger('change');
 }
