@@ -266,7 +266,6 @@ export const settingsToUpdate = {
     claude_model: ['#model_claude_select', 'claude_model', false, true],
     openrouter_model: ['#model_openrouter_select', 'openrouter_model', false, true],
     helicone_model: ['#model_helicone_select', 'helicone_model', false, true],
-    api_key_helicone: ['#api_key_helicone', 'api_key_helicone', false, false],
     openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true, true],
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
     openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
@@ -405,8 +404,6 @@ const default_settings = {
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
     helicone_model: 'gpt-4o-mini',
-    helicone_enable_web_search: false,
-    helicone_custom_properties: '{}',
     openrouter_use_fallback: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
@@ -504,8 +501,6 @@ const oai_settings = {
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
     helicone_model: 'gpt-4o-mini',
-    helicone_enable_web_search: false,
-    helicone_custom_properties: '{}',
     openrouter_use_fallback: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
@@ -543,6 +538,8 @@ const oai_settings = {
     bind_preset_to_connection: true,
     extensions: {},
 };
+
+const oai_settings = structuredClone(default_settings);
 
 export let proxies = [
     {
@@ -2320,6 +2317,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
+    const isHelicone = oai_settings.chat_completion_source == chat_completion_sources.HELICONE;
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isVertexAI = oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
@@ -2341,9 +2339,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot || isHelicone);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.HELICONE, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2400,15 +2398,15 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, and Vertex AI
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
+    // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, Vertex AI, and other OpenAI-compatible providers
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI, chat_completion_sources.HELICONE].includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi || isHelicone)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -3670,8 +3668,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
     oai_settings.helicone_model = settings.helicone_model ?? default_settings.helicone_model;
-    oai_settings.helicone_enable_web_search = settings.helicone_enable_web_search ?? default_settings.helicone_enable_web_search;
-    oai_settings.helicone_custom_properties = settings.helicone_custom_properties ?? default_settings.helicone_custom_properties;
     oai_settings.openrouter_group_models = settings.openrouter_group_models ?? default_settings.openrouter_group_models;
     oai_settings.openrouter_sort_models = settings.openrouter_sort_models ?? default_settings.openrouter_sort_models;
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
@@ -3810,8 +3806,6 @@ function loadOpenAISettings(data, settings) {
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
     $('#openrouter_sort_models').val(oai_settings.openrouter_sort_models);
     $('#model_helicone_select').val(oai_settings.helicone_model);
-    $('#helicone_enable_web_search').prop('checked', oai_settings.helicone_enable_web_search);
-    $('#helicone_custom_properties').val(oai_settings.helicone_custom_properties);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
@@ -4081,8 +4075,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         claude_model: settings.claude_model,
         openrouter_model: settings.openrouter_model,
         helicone_model: settings.helicone_model,
-        helicone_enable_web_search: settings.helicone_enable_web_search,
-        helicone_custom_properties: settings.helicone_custom_properties,
         openrouter_use_fallback: settings.openrouter_use_fallback,
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
@@ -5598,22 +5590,6 @@ async function onConnectButtonClick(e) {
             return;
         }
 
-        // Fetch Helicone models from our backend
-        try {
-            const response = await fetch('/api/helicone', {
-                method: 'GET',
-                headers: getRequestHeaders(),
-            });
-
-            if (response.ok) {
-                const models = await response.json();
-                saveModelList(models);
-            } else {
-                console.error('Failed to fetch Helicone models:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error fetching Helicone models:', error);
-        }
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
@@ -5870,6 +5846,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
             return (Array.isArray(model_list) && ['text+image->text+image', 'text+image->text'].includes(model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.modality));
+        case chat_completion_sources.HELICONE:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.helicone_model)?.inputModalities?.includes('image'));
         case chat_completion_sources.CUSTOM:
             return true;
         case chat_completion_sources.MISTRALAI:
@@ -6720,14 +6698,6 @@ export function initOpenAI() {
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
     $('#model_openrouter_select').on('change', onModelChange);
     $('#model_helicone_select').on('change', onModelChange);
-    $('#helicone_enable_web_search').on('input', function () {
-        oai_settings.helicone_enable_web_search = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-    $('#helicone_custom_properties').on('input', function () {
-        oai_settings.helicone_custom_properties = String($(this).val() || '');
-        saveSettingsDebounced();
-    });
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);

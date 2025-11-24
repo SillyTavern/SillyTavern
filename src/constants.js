@@ -328,24 +328,6 @@ export const OPENAI_KEYS = [
     'best_of',
 ];
 
-// Helicone is OpenAI-compatible, so uses similar parameters
-export const HELICONE_KEYS = [
-    'model',
-    'messages',
-    'stream',
-    'temperature',
-    'top_p',
-    'frequency_penalty',
-    'presence_penalty',
-    'stop',
-    'seed',
-    'logit_bias',
-    'logprobs',
-    'max_tokens',
-    'n',
-    'tools',
-    'tool_choice',
-];
 
 export const AVATAR_WIDTH = 512;
 export const AVATAR_HEIGHT = 768;
