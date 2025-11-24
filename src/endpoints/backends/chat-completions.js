@@ -1407,7 +1407,7 @@ router.post('/status', async function (request, statusResponse) {
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = { ...OPENROUTER_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
-        apiUrl = 'https://ai-gateway.helicone.ai';
+        apiUrl = 'https://ai-gateway.helicone.ai/v1';
         apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
         // Helicone uses custom headers for tracking
         headers = { ...HELICONE_HEADERS };
@@ -1589,7 +1589,7 @@ router.post('/status', async function (request, statusResponse) {
         return statusResponse.status(400).send({ error: true });
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
         console.warn('Chat Completion API key is missing.');
         return statusResponse.status(400).send({ error: true });
     }
@@ -1602,7 +1602,7 @@ router.post('/status', async function (request, statusResponse) {
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
-                'Authorization': 'Bearer ' + apiKey,
+                ...(apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}),
                 ...headers,
             },
         });
@@ -1813,6 +1813,12 @@ router.post('/generate', function (request, response) {
             'plugins': getOpenRouterPlugins(request),
             'include_reasoning': Boolean(request.body.include_reasoning),
         };
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        apiUrl = 'https://ai-gateway.helicone.ai/v1';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
+        // Helicone uses custom headers for tracking
+        headers = { ...HELICONE_HEADERS };
+        bodyParams = {};
 
         if (request.body.min_p !== undefined) {
             bodyParams['min_p'] = request.body.min_p;
@@ -2008,13 +2014,13 @@ router.post('/generate', function (request, response) {
     }
 
     // A few of OpenAIs reasoning models support reasoning effort
-    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI, CHAT_COMPLETION_SOURCES.HELICONE].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
         console.warn('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -2074,12 +2080,17 @@ router.post('/generate', function (request, response) {
         excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
     }
 
+    // Remove OpenRouter-specific parameters for Helicone
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        delete requestBody.reasoning;
+    }
+
     /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey,
+            ...(apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}),
             ...headers,
         },
         body: JSON.stringify(requestBody),
