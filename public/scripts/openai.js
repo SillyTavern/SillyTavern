@@ -3683,11 +3683,15 @@ function loadOpenAISettings(data, settings) {
         { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
         { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
         { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
+        { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
     ];
 
     for (const migration of migrateMap) {
         if (Object.hasOwn(settings, migration.oldKey)) {
-            if (settings[migration.oldKey] === migration.oldValue) {
+            const shouldMigrate = migration.oldValue instanceof RegExp
+                ? migration.oldValue.test(settings[migration.oldKey])
+                : settings[migration.oldKey] === migration.oldValue;
+            if (shouldMigrate) {
                 settings[migration.newKey] = migration.newValue;
             }
         }
