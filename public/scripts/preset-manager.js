@@ -19,12 +19,14 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { t } from './i18n.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { openai_settings, openai_setting_names, oai_settings } from './openai.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
+import { oai_settings, openai_setting_names, openai_settings } from './openai.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
+import { reasoning_templates } from './reasoning.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -33,13 +35,11 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import { renderTemplateAsync } from './templates.js';
 import {
+    textgenerationwebui_settings as textgen_settings,
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
-    textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
 import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
-import { t } from './i18n.js';
-import { reasoning_templates } from './reasoning.js';
 
 const presetManagers = {};
 
@@ -187,6 +187,23 @@ class PresetManager {
             },
             isValid: (data) => PresetManager.isPossiblyReasoningData(data),
         },
+        'srw': {
+            name: 'Start Reply With',
+            getData: () => {
+                return {
+                    value: power_user.user_prompt_bias ?? '',
+                    show: power_user.show_user_prompt_bias ?? false,
+                };
+            },
+            setData: (data) => {
+                power_user.user_prompt_bias = data.value ?? '';
+                power_user.show_user_prompt_bias = data.show ?? false;
+                $('#start_reply_with').val(power_user.user_prompt_bias);
+                $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
+                return saveSettingsDebounced();
+            },
+            isValid: (data) => PresetManager.isPossiblyStartReplyWithData(data),
+        },
     };
 
     static isPossiblyInstructData(data) {
@@ -212,6 +229,10 @@ class PresetManager {
     static isPossiblyReasoningData(data) {
         const reasoningProps = ['name', 'prefix', 'suffix', 'separator'];
         return data && reasoningProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyStartReplyWithData(data) {
+        return data && 'value' in data && 'show' in data;
     }
 
     /**
@@ -313,7 +334,7 @@ class PresetManager {
      */
     static async performMasterExport() {
         const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
-            acc[key] = { key: key, name: section.name, checked: key !== 'preset' };
+            acc[key] = { key: key, name: section.name, checked: !['preset', 'srw'].includes(key) };
             return acc;
         }, {});
         const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
@@ -397,8 +418,10 @@ class PresetManager {
 
     /**
      * Updates the preset select element with the current API presets.
+     * @param {object} [options] Options for saving the preset
+     * @param {boolean} [options.skipUpdate=false] If true, skips updating the preset list after saving.
      */
-    async updatePreset() {
+    async updatePreset(option = { skipUpdate: false }) {
         const selected = $(this.select).find('option:selected');
         console.log(selected);
 
@@ -408,7 +431,7 @@ class PresetManager {
         }
 
         const name = selected.text();
-        await this.savePreset(name);
+        await this.savePreset(name, null, option);
 
         const successToast = !this.isAdvancedFormatting() ? t`Preset updated` : t`Template updated`;
         toastr.success(successToast);

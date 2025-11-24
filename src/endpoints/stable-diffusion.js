@@ -983,7 +983,15 @@ electronhub.post('/models', async (request, response) => {
 
         /** @type {any} */
         const data = await modelsResponse.json();
-        const models = data.data.filter(x => x.endpoints.includes('/v1/images/generations')).map(x => ({ value: x.id, text: x.name }));
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('Electron Hub returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        const models = data.data
+            .filter(x => x && Array.isArray(x.endpoints) && x.endpoints.includes('/v1/images/generations'))
+            .map(x => ({ ...x, value: x.id, text: x.name }));
         return response.send(models);
     } catch (error) {
         console.error(error);
@@ -1009,6 +1017,12 @@ electronhub.post('/generate', async (request, response) => {
         if (request.body.size) {
             bodyParams.size = request.body.size;
         }
+
+        if (request.body.quality) {
+            bodyParams.quality = request.body.quality;
+        }
+
+        console.debug('Electron Hub request:', bodyParams);
 
         const result = await fetch('https://api.electronhub.ai/v1/images/generations', {
             method: 'POST',
@@ -1308,7 +1322,8 @@ falai.post('/models', async (_request, response) => {
 
         const modelOptions = models
             .sort((a, b) => a.title.localeCompare(b.title))
-            .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
+            .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }))
+            .map(x => ({ ...x, text: `${x.text} (${x.value})` }));
         return response.send(modelOptions);
     } catch (error) {
         console.error(error);
