@@ -188,6 +188,88 @@ export class TextCompletionService {
     }
 
     /**
+    * Return a formatted prompt string given an array of messages, a chosen instruct preset, and instruct settings.
+    * @param {prompt} an array of messages
+    * @param {instructPreset} Either the name of an instruct preset of the instruct preset object itself.
+    * @param {instructSettings} configured instruct settings
+    */
+    static constructPrompt(prompt, instructPreset, instructSettings) {
+        // InstructPreset may either be a name or itself a preset
+        if (typeof instructPreset === 'string') {
+            const instructPresetManager = getPresetManager('instruct');
+            instructPreset = instructPresetManager?.getCompletionPresetByName(instructPreset);
+        }
+
+        // Clone the preset to avoid modifying the original
+        instructPreset = structuredClone(instructPreset);
+        instructPreset.names_behavior = names_behavior_types.NONE;
+        if (instructSettings) {
+            Object.assign(instructPreset, instructSettings);
+        }
+
+        // Format messages using instruct formatting
+        const formattedMessages = [];
+        const prefillActive = prompt.length > 0 ? prompt[prompt.length - 1].role === 'assistant' : false;
+        for (const message of prompt) {
+            let messageContent = message.content;
+            if (!message.ignoreInstruct) {
+                const isLastMessage = message === prompt[prompt.length - 1];
+
+                // This complicated logic means:
+                // 1. If prefill is not active, format all messages
+                // 2. If prefill is active, format all messages except the last one
+                if (!isLastMessage || !prefillActive) {
+                    messageContent = formatInstructModeChat(
+                        message.role,
+                        message.content,
+                        message.role === 'user',
+                        message.role === 'system',
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        instructPreset,
+                    );
+                }
+
+                // Add prompt formatting for the last message.
+                if (isLastMessage) {
+                    if (!prefillActive) { // e.g. "<|im_start|>user:"
+                        messageContent += formatInstructModePrompt(
+                            undefined,
+                            false,
+                            undefined,
+                            undefined,
+                            undefined,
+                            false,
+                            false,
+                            instructPreset,
+                        );
+                    } else { // e.g. "<|im_start|>assistant: Hello, my name is"
+                        const overriddenInstructPreset = structuredClone(instructPreset);
+                        overriddenInstructPreset.output_suffix = '';
+                        overriddenInstructPreset.wrap = false;
+                        messageContent = formatInstructModeChat(
+                            message.role,
+                            message.content,
+                            false, // since it is assistant
+                            false,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            overriddenInstructPreset,
+                        );
+                    }
+                }
+            }
+            formattedMessages.push(messageContent);
+        }
+        return formattedMessages.join('');
+    }
+
+
+    /**
      * Process and send a text completion request with optional preset & instruct
      * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} custom
      * @param {Object} options - Configuration options
@@ -234,72 +316,7 @@ export class TextCompletionService {
             const instructPresetManager = getPresetManager('instruct');
             instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
             if (instructPreset) {
-                // Clone the preset to avoid modifying the original
-                instructPreset = structuredClone(instructPreset);
-                instructPreset.names_behavior = names_behavior_types.NONE;
-                if (options.instructSettings) {
-                    Object.assign(instructPreset, options.instructSettings);
-                }
-
-                // Format messages using instruct formatting
-                const formattedMessages = [];
-                const prefillActive = prompt.length > 0 ? prompt[prompt.length - 1].role === 'assistant' : false;
-                for (const message of prompt) {
-                    let messageContent = message.content;
-                    if (!message.ignoreInstruct) {
-                        const isLastMessage = message === prompt[prompt.length - 1];
-
-                        // This complicated logic means:
-                        // 1. If prefill is not active, format all messages
-                        // 2. If prefill is active, format all messages except the last one
-                        if (!isLastMessage || !prefillActive) {
-                            messageContent = formatInstructModeChat(
-                                message.role,
-                                message.content,
-                                message.role === 'user',
-                                message.role === 'system',
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                instructPreset,
-                            );
-                        }
-
-                        // Add prompt formatting for the last message.
-                        if (isLastMessage) {
-                            if (!prefillActive) { // e.g. "<|im_start|>user:"
-                                messageContent += formatInstructModePrompt(
-                                    undefined,
-                                    false,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    false,
-                                    false,
-                                    instructPreset,
-                                );
-                            } else { // e.g. "<|im_start|>assistant: Hello, my name is"
-                                const overriddenInstructPreset = structuredClone(instructPreset);
-                                overriddenInstructPreset.output_suffix = '';
-                                overriddenInstructPreset.wrap = false;
-                                messageContent = formatInstructModeChat(
-                                    message.role,
-                                    message.content,
-                                    false, // since it is assistant
-                                    false,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    overriddenInstructPreset,
-                                );
-                            }
-                        }
-                    }
-                    formattedMessages.push(messageContent);
-                }
-                requestData.prompt = formattedMessages.join('');
+                requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings)
                 const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
                 requestData.stop = stoppingStrings;
                 requestData.stopping_strings = stoppingStrings;

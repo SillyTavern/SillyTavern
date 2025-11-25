@@ -450,6 +450,42 @@ export class ConnectionManagerRequestService {
     }
 
     /**
+    * Return a formatted prompt string given an array of messages, a given profile ID, and optional instruct settings.
+    *  If using chat completion, the prompt will simply be returned if the API supports chat completion.
+    * @param {prompt} an array of messages
+    * @param {profileId} ID of a given connection profile (from which to infer a completion preset).
+    * @param {instructSettings} optional instruct settings
+    */
+    static constructPrompt(prompt, profileId, instructSettings=null) {
+        const context = SillyTavern.getContext();
+        const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        const instructName = profile.instruct
+        const selectedApiMap = this.validateProfile(profile);
+
+        console.log("API: ", selectedApiMap.selected)
+        console.log("PROFILE: ", profile)
+        console.log("INSTRUCT NAME: ", instructName)
+
+        switch (selectedApiMap.selected) {
+            case 'openai': {
+                if (!selectedApiMap.source) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
+                }
+                return prompt
+            }
+            case 'textgenerationwebui': {
+                if (!selectedApiMap.type) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
+                }
+                return context.TextCompletionService.constructPrompt(prompt, instructName, instructSettings);
+            }
+            default: {
+                throw new Error(`Unknown API type ${selectedApiMap.selected}`);
+            }
+        }
+    }
+
+    /**
      * Respects allowed types.
      * @returns {import('./connection-manager/index.js').ConnectionProfile[]}
      */
