@@ -353,7 +353,6 @@ export const OPENAI_KEYS = [
     'best_of',
 ];
 
-
 export const AVATAR_WIDTH = 512;
 export const AVATAR_HEIGHT = 768;
 export const DEFAULT_AVATAR_PATH = './public/img/ai4.png';
