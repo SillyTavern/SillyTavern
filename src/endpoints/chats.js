@@ -367,11 +367,10 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * Reads the information from a chat file.
  * @param {string} pathToFile - Path to the chat file
  * @param {object} additionalData - Additional data to include in the result
- * @param {boolean} isGroup - Whether the chat is a group chat
  * @param {boolean} withMetadata - Whether to read chat metadata
  * @returns {Promise<ChatInfo>}
  */
-export async function getChatInfo(pathToFile, additionalData = {}, isGroup = false, withMetadata = false) {
+export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false) {
     return new Promise(async (res) => {
         const parsedPath = path.parse(pathToFile);
         const stats = await fs.promises.stat(pathToFile);
@@ -387,13 +386,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
             ...additionalData,
         };
 
-        if (stats.size === 0 && !isGroup) {
-            console.warn(`Found an empty chat file: ${pathToFile}`);
-            res({});
-            return;
-        }
-
-        if (stats.size === 0 && isGroup) {
+        if (stats.size === 0) {
             res(chatData);
             return;
         }
@@ -422,7 +415,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
             if (lastLine) {
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
-                    chatData.chat_items = isGroup ? itemCounter : (itemCounter - 1);
+                    chatData.chat_items = (itemCounter - 1);
                     chatData.mes = jsonData['mes'] || '[The message is empty]';
                     chatData.last_mes = jsonData['send_date'] || stats.mtimeMs;
 
@@ -774,23 +767,38 @@ router.post('/group/delete', (request, response) => {
     return response.send({ error: true });
 });
 
-router.post('/group/save', (request, response) => {
-    if (!request.body || !request.body.id) {
-        return response.sendStatus(400);
+router.post('/group/save', async (request, response) => {
+    try{
+        if (!request.body || !request.body.id) {
+            return response.sendStatus(400);
+        }
+
+        const id = request.body.id;
+        const filePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
+
+        if (!fs.existsSync(request.user.directories.groupChats)) {
+            fs.mkdirSync(request.user.directories.groupChats, { recursive: true });
+        }
+
+        const chatData = request.body.chat;
+        const jsonlData = chatData.map(JSON.stringify).join('\n');
+
+        if (checkIntegrity && !request.body.force) {
+            const integritySlug = chatData?.[0]?.chat_metadata?.integrity;
+            const isIntact = await checkChatIntegrity(filePath, integritySlug);
+            if (!isIntact) {
+                console.error(`Chat integrity check failed for ${filePath}`);
+                return response.status(400).send({ error: 'integrity' });
+            }
+        }
+
+        writeFileAtomicSync(filePath, jsonlData, 'utf8');
+        getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
+        return response.send({ ok: true });
+    } catch (error) {
+        console.error(error);
+        return response.send({ error: true });
     }
-
-    const id = request.body.id;
-    const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
-
-    if (!fs.existsSync(request.user.directories.groupChats)) {
-        fs.mkdirSync(request.user.directories.groupChats);
-    }
-
-    let chat_data = request.body.chat;
-    let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
-    getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
-    return response.send({ ok: true });
 });
 
 router.post('/search', validateAvatarUrlMiddleware, function (request, response) {
@@ -983,10 +991,10 @@ router.post('/recent', async function (request, response) {
         const max = parseInt(request.body.max ?? Number.MAX_SAFE_INTEGER);
         const recentChats = allChatFiles.sort((a, b) => b.mtime - a.mtime).slice(0, max);
         const jsonFilesPromise = recentChats.map((file) => {
-            const withMetadata = Boolean(request.body.metadata);
+            const withMetadata = !!request.body.metadata;
             return file.groupId
-                ? getChatInfo(file.filePath, { group: file.groupId }, true, withMetadata)
-                : getChatInfo(file.filePath, { avatar: file.pngFile }, false, withMetadata);
+                ? getChatInfo(file.filePath, { group: file.groupId }, withMetadata)
+                : getChatInfo(file.filePath, { avatar: file.pngFile }, withMetadata);
         });
 
         const chatData = (await Promise.allSettled(jsonFilesPromise)).filter(x => x.status === 'fulfilled').map(x => x.value);

@@ -52,7 +52,7 @@ router.post('/list', async (request, response) => {
                 const fileNameWithoutExt = path.parse(file.name).name;
                 const fileData = {
                     file_id: fileNameWithoutExt,
-                    name: fileContentsParsed || fileNameWithoutExt,
+                    name: fileContentsParsed?.name || fileNameWithoutExt,
                     extensions: _.isObjectLike(fileExtensions) ? fileExtensions : {},
                 };
                 data.push(fileData);
