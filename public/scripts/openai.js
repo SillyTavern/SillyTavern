@@ -4691,6 +4691,9 @@ async function onModelChange() {
     biasCache = undefined;
     let value = String($(this).val() || '');
 
+    // Skip setting the context size for sources that get it from external APIs
+    const hasModelsLoaded = Array.isArray(model_list) && model_list.length > 0;
+
     if ($(this).is('#model_claude_select')) {
         if (value.includes('-v')) {
             value = value.replace('-v', '-');
@@ -4709,7 +4712,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_openrouter_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null OR model selected. Ignoring.');
             return;
         }
@@ -4744,7 +4747,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_mistralai_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null MistralAI model selected. Ignoring.');
             return;
         }
@@ -4769,7 +4772,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_groq_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null Groq model selected. Ignoring.');
             return;
         }
@@ -4787,7 +4790,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_electronhub_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null ElectronHub model selected. Ignoring.');
             return;
         }
@@ -4796,7 +4799,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_nanogpt_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null NanoGPT model selected. Ignoring.');
             return;
         }
@@ -4827,7 +4830,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_aimlapi_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null AI/ML model selected. Ignoring.');
             return;
         }
@@ -4844,8 +4847,8 @@ async function onModelChange() {
         oai_settings.xai_model = value;
     }
 
-    if (value && $(this).is('#model_moonshot_select')) {
-        if (!value) {
+    if ($(this).is('#model_moonshot_select')) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null Moonshot model selected. Ignoring.');
             return;
         }
@@ -4854,7 +4857,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_fireworks_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null Fireworks model selected. Ignoring.');
             return;
         }
@@ -4917,7 +4920,7 @@ async function onModelChange() {
             if (model?.context_length) {
                 $('#openai_max_context').attr('max', model.context_length);
             } else {
-                $('#openai_max_context').attr('max', max_8k);
+                $('#openai_max_context').attr('max', max_128k);
             }
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -6109,6 +6112,7 @@ export function initOpenAI() {
     });
 
     $('#chat_completion_source').on('change', function () {
+        model_list = [];
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
