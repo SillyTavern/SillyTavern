@@ -4839,7 +4839,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_xai_select')) {
-        if (!value || !hasModelsLoaded) {
+        if (!value) {
             console.debug('Null XAI model selected. Ignoring.');
             return;
         }
