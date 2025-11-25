@@ -324,7 +324,7 @@ export async function getGroupChat(groupId, reload = false) {
  * Retrieves the members of a group
  *
  * @param {string} [groupId=selected_group] - The ID of the group to retrieve members from. Defaults to the currently selected group.
- * @returns {import('../script.js').Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
+ * @returns {Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
  */
 export function getGroupMembers(groupId = selected_group) {
     const group = groups.find((x) => x.id === groupId);
@@ -617,7 +617,11 @@ function resetSelectedGroup() {
  */
 async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const group = groups.find(x => x.id == groupId);
-    const chat_id = group.chat_id;
+    if (!group) {
+        console.warn('Group not found', groupId);
+        return;
+    }
+    const chatId = group.chat_id;
     group['date_last_chat'] = Date.now();
     /** @type {ChatHeader} */
     const chatHeader = {
@@ -626,7 +630,7 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chat_id, chat: [chatHeader, ...chat], force: force }),
+        body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force }),
     });
 
     if (!response.ok) {
