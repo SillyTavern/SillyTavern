@@ -18,6 +18,7 @@ import {
     paginationDropdownChangeHandler,
     waitUntilCondition,
     uuidv4,
+    humanFileSize,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -2126,10 +2127,10 @@ export async function getGroupPastChats(groupId) {
             if (!Array.isArray(messages)) {
                 continue;
             }
+            const fileSize = humanFileSize(JSON.stringify(messages).length);
             if (messages.length > 0 && Object.hasOwn(messages[0], 'chat_metadata')) {
                 messages.shift();
             }
-            const fileSize = (JSON.stringify(messages).length / 1024).toFixed(2) + 'kb';
             const chatItems = messages.length;
             const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
             const lastMessageDate = messages.length ? (messages[messages.length - 1].send_date || Date.now()) : Date.now();
