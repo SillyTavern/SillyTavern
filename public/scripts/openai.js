@@ -4866,7 +4866,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_cometapi_select')) {
-        if (!value || !hasModelsLoaded) {
+        if (!value) {
             console.debug('Null CometAPI model selected. Ignoring.');
             return;
         }
