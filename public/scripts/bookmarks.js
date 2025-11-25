@@ -341,7 +341,7 @@ export async function convertSoloToGroupChat() {
     await getCharacters();
 
     // Convert chat to group format
-    const groupChat = chat.slice();
+    const groupChat = [...chat].map(m => structuredClone(m));
     const genIdFirst = Date.now();
 
     for (let index = 0; index < groupChat.length; index++) {
