@@ -414,7 +414,7 @@ const processCharacter = async (item, directories, { shallow }) => {
         character['json_data'] = imgData;
         const charStat = fs.statSync(path.join(directories.characters, item));
         character['date_added'] = charStat.ctimeMs;
-        character['create_date'] = jsonObject['create_date'] || humanizedDateTime(charStat.ctimeMs);
+        character['create_date'] = jsonObject['create_date'] || new Date(Math.round(charStat.ctimeMs)).toISOString();
         const chatsDirectory = path.join(directories.chats, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(chatsDirectory);
@@ -452,7 +452,7 @@ function getCharaCardV2(jsonObject, directories, hoistDate = true) {
         jsonObject = convertToV2(jsonObject, directories);
 
         if (hoistDate && !jsonObject.create_date) {
-            jsonObject.create_date = humanizedDateTime();
+            jsonObject.create_date = new Date().toISOString();
         }
     } else {
         jsonObject = readFromV2(jsonObject);
@@ -624,9 +624,6 @@ function charaFormatData(data, directories) {
     _.set(char, 'data.extensions.depth_prompt.prompt', data.depth_prompt_prompt ?? '');
     _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
     _.set(char, 'data.extensions.depth_prompt.role', role_value);
-    //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
-    //_.set(char, 'data.extensions.avatar', 'none');
-    //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
 
     // V3 fields
     _.set(char, 'data.group_only_greetings', data.group_only_greetings ?? []);
@@ -746,7 +743,7 @@ async function importFromYaml(uploadPath, context, preservedFileName) {
         'name': yamlData.name,
         'description': yamlData.context ?? '',
         'first_mes': yamlData.greeting ?? '',
-        'create_date': humanizedDateTime(),
+        'create_date': new Date().toISOString(),
         'chat': `${yamlData.name} - ${humanizedDateTime()}`,
         'personality': '',
         'creatorcomment': '',
@@ -800,7 +797,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
     }
 
     unsetPrivateFields(card);
-    card['create_date'] = humanizedDateTime();
+    card['create_date'] = new Date().toISOString();
     card.name = sanitize(card.name);
     const fileName = preservedFileName || getPngName(card.name, request.user.directories);
     const result = await writeCharacterData(avatar, JSON.stringify(card), fileName, request);
@@ -898,7 +895,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         importRisuSprites(request.user.directories, jsonData);
         unsetPrivateFields(jsonData);
         jsonData = readFromV2(jsonData);
-        jsonData['create_date'] = humanizedDateTime();
+        jsonData['create_date'] = new Date().toISOString();
         const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
@@ -920,7 +917,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
             'chat': jsonData.name + ' - ' + humanizedDateTime(),
             'mes_example': jsonData.mes_example ?? '',
             'scenario': jsonData.scenario ?? '',
-            'create_date': humanizedDateTime(),
+            'create_date': new Date().toISOString(),
             'talkativeness': jsonData.talkativeness ?? 0.5,
             'creator': jsonData.creator ?? '',
             'tags': jsonData.tags ?? '',
@@ -946,7 +943,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
             'chat': jsonData.name + ' - ' + humanizedDateTime(),
             'mes_example': jsonData.example_dialogue ?? '',
             'scenario': jsonData.world_scenario ?? '',
-            'create_date': humanizedDateTime(),
+            'create_date': new Date().toISOString(),
             'talkativeness': jsonData.talkativeness ?? 0.5,
             'creator': jsonData.creator ?? '',
             'tags': jsonData.tags ?? '',
@@ -981,7 +978,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
         importRisuSprites(request.user.directories, jsonData);
         unsetPrivateFields(jsonData);
         jsonData = readFromV2(jsonData);
-        jsonData['create_date'] = humanizedDateTime();
+        jsonData['create_date'] = new Date().toISOString();
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(uploadPath, char, pngName, request);
         fs.unlinkSync(uploadPath);
@@ -1003,7 +1000,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
             'chat': jsonData.name + ' - ' + humanizedDateTime(),
             'mes_example': jsonData.mes_example ?? '',
             'scenario': jsonData.scenario ?? '',
-            'create_date': humanizedDateTime(),
+            'create_date': new Date().toISOString(),
             'talkativeness': jsonData.talkativeness ?? 0.5,
             'creator': jsonData.creator ?? '',
             'tags': jsonData.tags ?? '',
