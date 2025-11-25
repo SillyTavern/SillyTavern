@@ -450,9 +450,9 @@ export class ConnectionManagerRequestService {
     }
 
     /**
-    * Return a formatted prompt string given an array of messages, a given profile ID, and optional instruct settings.
-    *  If using chat completion, the prompt will simply be returned if the API supports chat completion.
-    * @param {prompt} an array of messages
+    * If using text completion, return a formatted prompt string given an array of messages, a given profile ID, and optional instruct settings.
+    * If using chat completion, simply return the given prompt as-is.
+    * @param {prompt} an array of prompt messages.
     * @param {profileId} ID of a given connection profile (from which to infer a completion preset).
     * @param {instructSettings} optional instruct settings
     */
@@ -461,10 +461,6 @@ export class ConnectionManagerRequestService {
         const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
         const instructName = profile.instruct
         const selectedApiMap = this.validateProfile(profile);
-
-        console.log("API: ", selectedApiMap.selected)
-        console.log("PROFILE: ", profile)
-        console.log("INSTRUCT NAME: ", instructName)
 
         switch (selectedApiMap.selected) {
             case 'openai': {

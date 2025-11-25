@@ -190,8 +190,8 @@ export class TextCompletionService {
     /**
     * Return a formatted prompt string given an array of messages, a chosen instruct preset, and instruct settings.
     * @param {prompt} an array of messages
-    * @param {instructPreset} Either the name of an instruct preset of the instruct preset object itself.
-    * @param {instructSettings} configured instruct settings
+    * @param {instructPreset} Either the name of an instruct preset or the instruct preset object itself.
+    * @param {instructSettings} optional instruct settings
     */
     static constructPrompt(prompt, instructPreset, instructSettings) {
         // InstructPreset may either be a name or itself a preset
