@@ -352,15 +352,16 @@ export async function convertSoloToGroupChat() {
             continue;
         }
 
+        if (!message.extra || typeof message.extra !== 'object') {
+            message.extra = {};
+        }
+
         // Set force fields for solo character
         message.name = character.name;
         message.original_avatar = character.avatar;
         message.force_avatar = getThumbnailUrl('avatar', character.avatar);
-
         // Allow regens of a single message in group
-        if (!message.extra || typeof message.extra !== 'object') {
-            message.extra = { gen_id: genIdFirst + index };
-        }
+        message.extra.gen_id = genIdFirst + index;
     }
 
     // Save group chat
