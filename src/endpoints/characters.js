@@ -486,7 +486,7 @@ function convertToV2(char, directories) {
         depth_prompt_role: char.depth_prompt_role,
     }, directories);
 
-    result.chat = char.chat ?? humanizedDateTime();
+    result.chat = char.chat ?? `${char.name} - ${humanizedDateTime()}`;
     result.create_date = char.create_date;
 
     return result;
@@ -551,7 +551,7 @@ function readFromV2(char) {
         char[charField] = v2Value;
     });
 
-    char['chat'] = char['chat'] ?? humanizedDateTime();
+    char['chat'] = char['chat'] ?? `${char.name} - ${humanizedDateTime()}`;
 
     return char;
 }
