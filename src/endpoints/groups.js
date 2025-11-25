@@ -85,7 +85,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                             const newChatData = [chatHeader, ...chatData];
                             const newChatDataRaw = newChatData.map(entry => JSON.stringify(entry)).join('\n');
                             await writeFileAtomic(chatFilePath, newChatDataRaw, 'utf8');
-                            console.log(color.green(`Updated group chat data format for ${chatId}`));
+                            console.log(`Updated group chat data format for ${chatId}`);
                             anyDataMigrated = true;
                         } catch (chatError) {
                             console.error(color.red(`Could not update existing chat data for ${chatId}`), chatError);
@@ -94,7 +94,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     delete groupData.chat_metadata;
                     delete groupData.past_metadata;
                     await writeFileAtomic(groupFilePath, JSON.stringify(groupData, null, 4), 'utf8');
-                    console.log(color.green(`Migrated group chats metadata for group: ${groupData.id}`));
+                    console.log(`Migrated group chats metadata for group: ${groupData.id}`);
                     anyDataMigrated = true;
                 } catch (groupError) {
                     console.error(color.red(`Could not process group file ${groupFile.name}`), groupError);
