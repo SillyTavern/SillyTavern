@@ -18,7 +18,7 @@
 
 ---
 
-SillyTavern bietet eine einheitliche Benutzeroberfläche für viele LLM-APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral und mehr), ein mobilfreundliches Layout, einen Visual-Novel-Modus, die Integration von Automatic1111 & ComfyUI API zur Bilderzeugung, TTS, WorldInfo (Lorebooks), anpassbare UI, automatische Übersetzung, mehr Eingabeaufforderungsoptionen, als du jemals wolltest oder brauchst, und unendliches Wachstumspotenzial durch Drittanbietererweiterungen.
+SillyTavern bietet eine einheitliche Benutzeroberfläche für viele LLM-APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Helicone, Claude, Mistral und mehr), ein mobilfreundliches Layout, einen Visual-Novel-Modus, die Integration von Automatic1111 & ComfyUI API zur Bilderzeugung, TTS, WorldInfo (Lorebooks), anpassbare UI, automatische Übersetzung, mehr Eingabeaufforderungsoptionen, als du jemals wolltest oder brauchst, und unendliches Wachstumspotenzial durch Drittanbietererweiterungen.
 
 Wir haben eine [Dokumentationswebsite](https://docs.sillytavern.app/), um die meisten deiner Fragen zu beantworten und dir den Einstieg zu erleichtern.
 

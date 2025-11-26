@@ -9,6 +9,7 @@ import {
     AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    HELICONE_HEADERS,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENROUTER_HEADERS,
@@ -1405,6 +1406,11 @@ router.post('/status', async function (request, statusResponse) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = { ...OPENROUTER_HEADERS };
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        apiUrl = 'https://ai-gateway.helicone.ai/v1';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
+        // Helicone uses custom headers for tracking
+        headers = { ...HELICONE_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
@@ -1583,7 +1589,7 @@ router.post('/status', async function (request, statusResponse) {
         return statusResponse.status(400).send({ error: true });
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
         console.warn('Chat Completion API key is missing.');
         return statusResponse.status(400).send({ error: true });
     }
@@ -1596,7 +1602,7 @@ router.post('/status', async function (request, statusResponse) {
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
-                'Authorization': 'Bearer ' + apiKey,
+                ...(apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}),
                 ...headers,
             },
         });
@@ -1807,6 +1813,12 @@ router.post('/generate', function (request, response) {
             'plugins': getOpenRouterPlugins(request),
             'include_reasoning': Boolean(request.body.include_reasoning),
         };
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        apiUrl = 'https://ai-gateway.helicone.ai/v1';
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.HELICONE);
+        // Helicone uses custom headers for tracking
+        headers = { ...HELICONE_HEADERS };
+        bodyParams = {};
 
         if (request.body.min_p !== undefined) {
             bodyParams['min_p'] = request.body.min_p;
@@ -2011,13 +2023,13 @@ router.post('/generate', function (request, response) {
     }
 
     // A few of OpenAIs reasoning models support reasoning effort
-    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI, CHAT_COMPLETION_SOURCES.HELICONE].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
         console.warn('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -2077,12 +2089,17 @@ router.post('/generate', function (request, response) {
         excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
     }
 
+    // Remove OpenRouter-specific parameters for Helicone
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
+        delete requestBody.reasoning;
+    }
+
     /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey,
+            ...(apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {}),
             ...headers,
         },
         body: JSON.stringify(requestBody),
@@ -2296,6 +2313,41 @@ multimodalModels.post('/xai', async (req, res) => {
             // The endpoint says it doesn't support images, but it does
             multimodalModels.push('grok-4-0709');
         }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/helicone', async (_req, res) => {
+    try {
+        const response = await fetch('https://api.helicone.ai/v1/public/model-registry/models', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const models = data?.models || [];
+
+        // Filter for multimodal models based on image capability
+        const multimodalModels = models
+            .filter(m => {
+                // Check if model has image capability in inputModalities or outputModalities
+                const hasImageInput = m?.inputModalities?.includes('image');
+                const hasImageOutput = m?.outputModalities?.includes('image');
+
+                return hasImageInput || hasImageOutput;
+            })
+            .map(m => m.id);
+
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);

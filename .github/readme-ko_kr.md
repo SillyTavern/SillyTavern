@@ -18,7 +18,7 @@
 
 ---
 
-SillyTavern은 많은 LLM API(KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral 등)에 대한 단일 통합 인터페이스, 모바일 친화적 레이아웃, 비주얼 노벨 모드, Automatic1111 & ComfyUI API 이미지 생성 통합, TTS, 월드 인포 (로어북), 커스텀 가능한 UI, 자동 번역, 필요 이상의 프롬프트 옵션, 그리고 서드파티 확장을 통한 무궁무진한 성장 가능성을 제공합니다.
+SillyTavern은 많은 LLM API(KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Helicone, Claude, Mistral 등)에 대한 단일 통합 인터페이스, 모바일 친화적 레이아웃, 비주얼 노벨 모드, Automatic1111 & ComfyUI API 이미지 생성 통합, TTS, 월드 인포 (로어북), 커스텀 가능한 UI, 자동 번역, 필요 이상의 프롬프트 옵션, 그리고 서드파티 확장을 통한 무궁무진한 성장 가능성을 제공합니다.
 
 또한, 자주 묻는 질문에 대한 답변과, 시작하는 데 도움을 주기 위한 [문서 웹사이트](https://docs.sillytavern.app/)가 있습니다.
 
