@@ -65,7 +65,6 @@ import {
     renameGroupMember,
     createNewGroupChat,
     getGroupAvatar,
-    editGroup,
     deleteGroupChat,
     renameGroupChat,
     importGroupChat,
@@ -383,14 +382,13 @@ export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
-let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
 export let displayVersion = 'SillyTavern';
 
 let generation_started = new Date();
-/** @type {import('./scripts/char-data.js').v1CharData[]} */
+/** @type {Character[]} */
 export let characters = [];
 /**
  * Stringified index of a currently chosen entity in the characters array.
@@ -417,6 +415,7 @@ export const chatElement = $('#chat');
 
 let dialogueResolve = null;
 let dialogueCloseStop = false;
+/** @type {ChatMetadata} */
 export let chat_metadata = {};
 /** @type {StreamingProcessor} */
 export let streamingProcessor = null;
@@ -1042,9 +1041,6 @@ function verifyCharactersSearchSortRule() {
     }
 }
 
-/** @typedef {object} Character - A character */
-/** @typedef {object} Group - A group */
-
 /**
  * @typedef {object} Entity - Object representing a display entity
  * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
@@ -1308,7 +1304,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
     // Make sure all the data is loaded.
     await unshallowCharacter(characterId);
 
-    /** @type {import('./scripts/char-data.js').v1CharData} */
+    /** @type {Character} */
     const character = characters[characterId];
     if (!character) {
         console.warn(`Character with ID ${characterId} not found.`);
@@ -6797,7 +6793,7 @@ export async function renameCharacter(name = null, { silent = false, renameChats
                 }
 
                 // Also rename as a group member
-                await renameGroupMember(oldAvatar, newAvatar, newValue);
+                await renameGroupMember(oldAvatar, newAvatar, newValue.toString());
                 const renamePastChatsConfirm = renameChats !== null
                     ? renameChats
                     : silent
@@ -6926,6 +6922,11 @@ export function saveChatDebounced() {
  * @returns {Promise<void>}
  */
 export async function saveChat({ chatName, withMetadata, mesId, force = false } = {}) {
+    if (selected_group) {
+        toastr.error(t`Operation was aborted to prevent data corruption.`, t`saveChat called for a group chat`);
+        throw new Error('saveChat called for a group chat');
+    }
+
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('saveChat called with positional arguments. Please use an object instead.');
         [chatName, withMetadata, mesId, force] = arguments;
@@ -6945,26 +6946,15 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     }
 
     characters[this_chid]['date_last_chat'] = Date.now();
-    chat.forEach(function (item, i) {
-        if (item['is_group']) {
-            toastr.error(t`Trying to save group chat with regular saveChat function. Aborting to prevent corruption.`);
-            throw new Error('Group chat saved from saveChat');
-        }
-    });
 
     const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
         ? chat.slice(0, Number(mesId) + 1)
         : chat.slice();
 
-    const chatToSave = [
-        {
-            user_name: name1,
-            character_name: name2,
-            create_date: chat_create_date,
-            chat_metadata: metadata,
-        },
-        ...trimmedChat,
-    ];
+    /** @type {ChatHeader} */
+    const chatHeader = {
+        chat_metadata: metadata,
+    };
 
     try {
         const result = await fetch('/api/chats/save', {
@@ -6974,7 +6964,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
             body: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: fileName,
-                chat: chatToSave,
+                chat: [chatHeader, ...trimmedChat],
                 avatar_url: characters[this_chid].avatar,
                 force: force,
             }),
@@ -7148,7 +7138,7 @@ export async function unshallowCharacter(characterId) {
         return;
     }
 
-    /** @type {import('./scripts/char-data.js').v1CharData} */
+    /** @type {Character} */
     const character = characters[characterId];
     if (!character) {
         console.debug('Character not found:', characterId);
@@ -7187,13 +7177,10 @@ export async function getChat() {
         });
         if (response[0] !== undefined) {
             chat.splice(0, chat.length, ...response);
-            chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
 
             chat.shift();
             chat.forEach(ensureMessageMediaIsArray);
-        } else {
-            chat_create_date = humanizedDateTime();
         }
         if (!chat_metadata['integrity']) {
             chat_metadata['integrity'] = uuidv4();
@@ -8328,7 +8315,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
     $('#selected_chat_pole').val(characters[chid].chat);
-    $('#create_date_pole').val(characters[chid].create_date);
+    $('#create_date_pole').val(timestampToMoment(characters[chid].create_date).toISOString());
     $('#avatar_url_pole').val(characters[chid].avatar);
     $('#chat_import_avatar_url').val(characters[chid].avatar);
     $('#chat_import_character_name').val(characters[chid].name);
@@ -8885,12 +8872,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
 }
 
 export async function saveMetadata() {
-    if (selected_group) {
-        await editGroup(selected_group, true, false);
-    }
-    else {
-        await saveChatConditional();
-    }
+    return await saveChatConditional();
 }
 
 export async function saveChatConditional() {
@@ -10679,7 +10661,7 @@ jQuery(async function () {
     });
     $('#rm_button_selected_ch').on('click', function () {
         if (selected_group) {
-            select_group_chats(selected_group);
+            select_group_chats(selected_group, false);
         } else {
             selected_button = 'character_edit';
             select_selected_character(this_chid);
@@ -11621,7 +11603,7 @@ jQuery(async function () {
 
     $('#rm_button_group_chats').on('click', function () {
         selected_button = 'group_chats';
-        select_group_chats();
+        select_group_chats(null, false);
     });
 
     $('#rm_button_back_from_group').on('click', function () {

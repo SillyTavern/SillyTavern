@@ -212,6 +212,14 @@
     background-color: var(--white30a);
 }
 
+.group_select.avatar {
+    padding: 0;
+}
+
+.group_select.missing-avatar.inline_avatar {
+    justify-content: center;
+}
+
 .group_select .avatar {
     flex: 0;
 }

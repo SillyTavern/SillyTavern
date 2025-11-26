@@ -579,13 +579,26 @@ export class DataMaidService {
                         const fileContent = await fs.promises.readFile(pathToFile, 'utf-8');
                         const groupData = tryParse(fileContent);
                         if (groupData?.chat_metadata && filterFn(groupData.chat_metadata)) {
+                            console.warn('Found group chat metadata in group definition - this is deprecated behavior.');
                             allMetadata.push(groupData.chat_metadata);
                         }
                         if (groupData?.past_metadata) {
+                            console.warn('Found group past chat metadata in group definition - this is deprecated behavior.');
                             allMetadata.push(...Object.values(groupData.past_metadata).filter(filterFn));
                         }
                     } catch (error) {
                         console.error(`[Data Maid] Error parsing group chat file ${file.name}:`, error);
+                    }
+                }
+            }
+
+            const groupChats = await fs.promises.readdir(this.directories.groupChats, { withFileTypes: true });
+            for (const file of groupChats) {
+                if (file.isFile() && path.parse(file.name).ext === '.jsonl') {
+                    const chatMessages = await this.#parseChatFile(path.join(this.directories.groupChats, file.name));
+                    const chatMetadata = chatMessages?.[0]?.chat_metadata;
+                    if (chatMetadata && filterFn(chatMetadata)) {
+                        allMetadata.push(chatMetadata);
                     }
                 }
             }
