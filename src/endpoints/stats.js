@@ -38,11 +38,12 @@ const TIMESTAMPS = new Map();
 
 /**
  * Convert a timestamp to an integer timestamp.
- * (sorry, it's momentless for now, didn't want to add a package just for this)
  * This function can handle several different timestamp formats:
- * 1. Unix timestamps (the number of seconds since the Unix Epoch)
- * 2. ST "humanized" timestamps, formatted like "YYYY-MM-DD @HHh MMm SSs ms"
- * 3. Date strings in the format "Month DD, YYYY H:MMam/pm"
+ * 1. Date.now timestamps (the number of milliseconds since the Unix Epoch)
+ * 2. ST "humanized" timestamps, formatted like `YYYY-MM-DD@HHhMMmSSsMSms`
+ * 3. Date strings in the format `Month DD, YYYY H:MMam/pm`
+ * 4. ISO 8601 formatted strings
+ * 5. Date objects
  *
  * The function returns the timestamp as the number of milliseconds since
  * the Unix Epoch, which can be converted to a JavaScript Date object with new Date().
@@ -52,13 +53,13 @@ const TIMESTAMPS = new Map();
  *
  * @example
  * // Unix timestamp
- * timestampToMoment(1609459200);
+ * parseTimestamp(1609459200);
  * // ST humanized timestamp
- * timestampToMoment("2021-01-01 \@00h 00m 00s 000ms");
+ * parseTimestamp("2021-01-01 \@00h 00m 00s 000ms");
  * // Date string
- * timestampToMoment("January 1, 2021 12:00am");
+ * parseTimestamp("January 1, 2021 12:00am");
  */
-function timestampToMoment(timestamp) {
+function parseTimestamp(timestamp) {
     if (!timestamp) {
         return 0;
     }
@@ -417,7 +418,7 @@ function calculateTotalGenTimeAndWordCount(
                 // If this is the first user message, set the first chat time
                 if (json.is_user) {
                     //get min between firstChatTime and timestampToMoment(json.send_date)
-                    firstChatTime = Math.min(timestampToMoment(json.send_date), firstChatTime);
+                    firstChatTime = Math.min(parseTimestamp(json.send_date), firstChatTime);
                 }
             } catch (error) {
                 console.error(`Error parsing line ${line}: ${error}`);
