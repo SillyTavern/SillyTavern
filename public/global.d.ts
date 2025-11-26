@@ -6,6 +6,7 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
+import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
 
 declare global {
     // Custom types
@@ -42,6 +43,10 @@ declare global {
 
     interface ChatHeader {
         chat_metadata: ChatMetadata;
+        /** @deprecated For backward compatibility ONLY */
+        user_name: 'unused';
+        /** @deprecated For backward compatibility ONLY */
+        character_name: 'unused';
     }
 
     interface ChatMetadata {
@@ -80,6 +85,9 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        /** When false, the message cannot be swiped. */
+        swipeable?: boolean;
+        overswipe_behavior?: OVERSWIPE_BEHAVIOR;
         files?: FileAttachment[];
         inline_image?: boolean;
         media_display?: string;
@@ -202,4 +210,6 @@ declare global {
             rgba: string;
         }
     };
+
+    type SwipeEvent = JQuery.TriggeredEvent<any, any, HTMLElement, HTMLElement>;
 }

@@ -1105,6 +1105,8 @@ function parseTimestamp(timestamp) {
         ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
         return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
     };
+    // 2024-07-12@01h31m37s123ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s(\d{1,3})ms/ });
     // 2024-7-12@01h31m37s
     dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
     // 2024-6-5 @14h 56m 50s 682ms
@@ -2840,4 +2842,45 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
     }
 }
 
+/**
+ * If value is less than min, it's set to min.
+ * If value is greater than max, it's set to max.
+ * @param {number} value The target value.
+ * @param {number} min The minimum for value.
+ * @param {number} max The maximum for value.
+ * @returns {number} The clamped value.
+ */
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+/**
+ * Shakes the targetElement.
+ * @param {HTMLElement|JQuery<HTMLElement>} targetElement
+ * @param {number} distance Distance in pixels.
+ * @param {number} duration Duration in milliseconds.
+ * @param {string} easing CSS easing function.
+ */
+export function shakeElement(targetElement, distance = 10, duration = 100, easing = 'ease-in-out') {
+    // Don't call the JQuery animation.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+    if (targetElement instanceof jQuery) targetElement = targetElement[0];
+
+    return targetElement.animate([
+        { transform: 'translateX(0)' },
+        { transform: `translateX(${distance}px)` },
+        { transform: 'translateX(0)' },
+    ], { duration, easing });
+}
+
+/**
+ * Creates a promise that rejects after a specified delay.
+ * Used for Promise.race fallbacks.
+ * @param {number} ms The delay in milliseconds.
+ * @param {string?} [errorMessage='']
+ * @returns {Promise<never>} A promise that rejects.
+ */
+export function createTimeout(ms, errorMessage = '') {
+    errorMessage ??= `Operation timed out after ${ms}ms.`;
+    return new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), ms);
+    });
+}
