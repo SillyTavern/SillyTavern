@@ -1,0 +1,9 @@
+{
+    "display_name": "ctrl-z",
+    "loading_order": 20,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "version": "0.0.1",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}

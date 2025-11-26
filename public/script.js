@@ -374,9 +374,6 @@ export let name1 = default_user_name;
 export let name2 = systemUserName;
 /** @type {ChatMessage[]} */
 export let chat = [];
-/** @type {ChatMessage[][]} */
-export let chatHistory = [];
-export let chatHistoryIndex = 0;
 
 /**
  * @type {import('./scripts/constants.js').SWIPE_STATE}
@@ -6916,54 +6913,6 @@ export function saveChatDebounced() {
 }
 
 /**
- * Resets chatHistory, and set's the first entry.
- * @param {ChatMessage[]} chatData
- */
-export async function resetChatSnapshots(chatData = chat){
-    chatHistory.length = 0;
-    saveChatSnapshot(chatData);
-}
-
-eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(chat));
-
-/**
- * Save a copy of chatData to chatHistory.
- * @param {ChatMessage[]} chatData
- */
-export function saveChatSnapshot(chatData = chat){
-    //Overwrite history that has been undone.
-    chatHistory.splice(chatHistoryIndex + 1);
-
-    chatHistory.push(structuredClone(chatData));
-    chatHistoryIndex = chatHistory.length - 1;
-}
-
-/**
- * Load a chat from chatHistory.
- * @param {number} index The chatHistory index to load.
- */
-export async function loadChatSnapshot(index) {
-    if (chatHistory[index]) {
-        chatHistoryIndex = index;
-        //Replace the chat.
-        chat.splice(0, chat.length, ...structuredClone(chatHistory[chatHistoryIndex]));
-
-        clearChat();
-        printMessages();
-
-        // Is this needed?
-        // await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-        // eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
-
-        toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
-    }
-    else {
-        toastr.error(`Chat ${index + 1}/${chatHistory.length} does not exist!`);
-    }
-
-}
-
-/**
  * Saves the chat to the server.
  * @param {object} [options] - Additional options.
  * @param {string} [options.chatName] The name of the chat file to save to
@@ -6996,8 +6945,6 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
         console.warn('saveChat called without chat_name and no chat file found');
         return;
     }
-
-    saveChatSnapshot(chat);
 
     characters[this_chid]['date_last_chat'] = Date.now();
 

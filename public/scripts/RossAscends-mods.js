@@ -20,8 +20,6 @@ import {
     sendTextareaMessage,
     doNavbarIconClick,
     isSwipingAllowed,
-    loadChatSnapshot,
-    chatHistoryIndex,
 } from '../script.js';
 
 import {
@@ -1259,17 +1257,5 @@ export function initRossMods() {
             // event.preventDefault();
             console.log('Ctrl +' + event.key + ' pressed!');
         }
-
-        if (!isInputElementInFocus()) {
-            //Undo.
-            if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'z') {
-                await loadChatSnapshot(chatHistoryIndex - 1);
-            }
-            //Redo.
-            if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Z') {
-                await loadChatSnapshot(chatHistoryIndex + 1);
-            }
-        }
-
     }
 }
