@@ -1504,80 +1504,83 @@ export function replaceMacrosInList(str) {
     }
 }
 
-export async function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
+export function createTextGenGenerationData(parameters, finalPrompt=null, maxTokens=null, isImpersonate=false, isContinue=false, cfgValues=null, type=null) {
+    // Given a settings object, structure it appropriately according the to the API in use
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
-    const jsonSchema = isObject(settings.json_schema)
-        ? settings.json_schema_allow_empty
-            ? settings.json_schema
-            : Object.keys(settings.json_schema).length > 0 ? settings.json_schema : undefined
+    const jsonSchema = isObject(parameters.json_schema)
+        ? parameters.json_schema_allow_empty
+            ? parameters.json_schema
+            : Object.keys(parameters.json_schema).length > 0 ? parameters.json_schema : undefined
         : undefined;
 
+    maxTokens = maxTokens ?? parameters.genamt
+
     let params = {
-        'prompt': finalPrompt,
+        'prompt': finalPrompt ?? parameters.prompt,
         'model': getTextGenModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
-        'logprobs': power_user.request_token_probabilities ? getLogprobsNumber() : undefined,
-        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
-        'top_p': settings.top_p,
-        'typical_p': settings.typical_p,
-        'typical': settings.typical_p,
-        'sampler_seed': settings.seed >= 0 ? settings.seed : undefined,
-        'min_p': settings.min_p,
-        'repetition_penalty': settings.rep_pen,
-        'frequency_penalty': settings.freq_pen,
-        'presence_penalty': settings.presence_pen,
-        'top_k': settings.top_k,
-        'skew': settings.skew,
-        'min_length': settings.type === OOBA ? settings.min_length : undefined,
-        'minimum_message_content_tokens': settings.type === DREAMGEN ? settings.min_length : undefined,
-        'min_tokens': settings.min_length,
-        'num_beams': settings.type === OOBA ? settings.num_beams : undefined,
-        'length_penalty': settings.type === OOBA ? settings.length_penalty : undefined,
-        'early_stopping': settings.type === OOBA ? settings.early_stopping : undefined,
-        'add_bos_token': settings.add_bos_token,
+        'logprobs': power_user.request_token_probabilities ? getLogprobsNumber(parameters.type) : undefined,
+        'temperature': dynatemp ? (parameters.min_temp + parameters.max_temp) / 2 : parameters.temp,
+        'top_p': parameters.top_p,
+        'typical_p': parameters.typical_p,
+        'typical': parameters.typical_p,
+        'sampler_seed': parameters.seed >= 0 ? parameters.seed : undefined,
+        'min_p': parameters.min_p,
+        'repetition_penalty': parameters.rep_pen,
+        'frequency_penalty': parameters.freq_pen,
+        'presence_penalty': parameters.presence_pen,
+        'top_k': parameters.top_k,
+        'skew': parameters.skew,
+        'min_length': parameters.type === OOBA ? parameters.min_length : undefined,
+        'minimum_message_content_tokens': parameters.type === DREAMGEN ? parameters.min_length : undefined,
+        'min_tokens': parameters.min_length,
+        'num_beams': parameters.type === OOBA ? parameters.num_beams : undefined,
+        'length_penalty': parameters.type === OOBA ? parameters.length_penalty : undefined,
+        'early_stopping': parameters.type === OOBA ? parameters.early_stopping : undefined,
+        'add_bos_token': parameters.add_bos_token,
         'dynamic_temperature': dynatemp ? true : undefined,
-        'dynatemp_low': dynatemp ? settings.min_temp : undefined,
-        'dynatemp_high': dynatemp ? settings.max_temp : undefined,
-        'dynatemp_range': dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
-        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
-        'smoothing_factor': settings.smoothing_factor,
-        'smoothing_curve': settings.smoothing_curve,
-        'dry_allowed_length': settings.dry_allowed_length,
-        'dry_multiplier': settings.dry_multiplier,
-        'dry_base': settings.dry_base,
-        'dry_sequence_breakers': replaceMacrosInList(settings.dry_sequence_breakers),
-        'dry_penalty_last_n': settings.dry_penalty_last_n,
-        'max_tokens_second': settings.max_tokens_second,
-        'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
-        'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
+        'dynatemp_low': dynatemp ? parameters.min_temp : undefined,
+        'dynatemp_high': dynatemp ? parameters.max_temp : undefined,
+        'dynatemp_range': dynatemp ? (parameters.max_temp - parameters.min_temp) / 2 : undefined,
+        'dynatemp_exponent': dynatemp ? parameters.dynatemp_exponent : undefined,
+        'smoothing_factor': parameters.smoothing_factor,
+        'smoothing_curve': parameters.smoothing_curve,
+        'dry_allowed_length': parameters.dry_allowed_length,
+        'dry_multiplier': parameters.dry_multiplier,
+        'dry_base': parameters.dry_base,
+        'dry_sequence_breakers': replaceMacrosInList(parameters.dry_sequence_breakers),
+        'dry_penalty_last_n': parameters.dry_penalty_last_n,
+        'max_tokens_second': parameters.max_tokens_second,
+        'sampler_priority': parameters.type === OOBA ? parameters.sampler_priority : undefined,
+        'samplers': parameters.type === LLAMACPP ? parameters.samplers : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
-        'ban_eos_token': settings.ban_eos_token,
-        'skip_special_tokens': settings.skip_special_tokens,
-        'include_reasoning': settings.include_reasoning,
-        'top_a': settings.top_a,
-        'tfs': settings.tfs,
-        'epsilon_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.epsilon_cutoff : undefined,
-        'eta_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.eta_cutoff : undefined,
-        'mirostat_mode': settings.mirostat_mode,
-        'mirostat_tau': settings.mirostat_tau,
-        'mirostat_eta': settings.mirostat_eta,
-        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
+        'ban_eos_token': parameters.ban_eos_token,
+        'skip_special_tokens': parameters.skip_special_tokens,
+        'include_reasoning': parameters.include_reasoning,
+        'top_a': parameters.top_a,
+        'tfs': parameters.tfs,
+        'epsilon_cutoff': [OOBA, MANCER].includes(parameters.type) ? parameters.epsilon_cutoff : undefined,
+        'eta_cutoff': [OOBA, MANCER].includes(parameters.type) ? parameters.eta_cutoff : undefined,
+        'mirostat_mode': parameters.mirostat_mode,
+        'mirostat_tau': parameters.mirostat_tau,
+        'mirostat_eta': parameters.mirostat_eta,
+        'custom_token_bans': [APHRODITE, MANCER].includes(parameters.type) ?
             toIntArray(banned_tokens) :
             banned_tokens,
         'banned_strings': banned_strings,
-        'api_type': settings.type,
-        'api_server': getTextGenServer(),
-        'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
-        'xtc_threshold': settings.xtc_threshold,
-        'xtc_probability': settings.xtc_probability,
-        'nsigma': settings.nsigma,
-        'top_n_sigma': settings.nsigma,
-        'min_keep': settings.min_keep,
+        'api_type': parameters.type,
+        'api_server': getTextGenServer(parameters.type),
+        'sampler_order': parameters.type === textgen_types.KOBOLDCPP ? parameters.sampler_order : undefined,
+        'xtc_threshold': parameters.xtc_threshold,
+        'xtc_probability': parameters.xtc_probability,
+        'nsigma': parameters.nsigma,
+        'top_n_sigma': parameters.nsigma,
+        'min_keep': parameters.min_keep,
         parseSequenceBreakers: function () {
             try {
                 return JSON.parse(this.dry_sequence_breakers);
@@ -1590,98 +1593,98 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         },
     };
     const nonAphroditeParams = {
-        'rep_pen': settings.rep_pen,
-        'rep_pen_range': settings.rep_pen_range,
-        'repetition_decay': settings.type === TABBY ? settings.rep_pen_decay : undefined,
-        'repetition_penalty_range': settings.rep_pen_range,
-        'encoder_repetition_penalty': settings.type === OOBA ? settings.encoder_rep_pen : undefined,
-        'no_repeat_ngram_size': settings.type === OOBA ? settings.no_repeat_ngram_size : undefined,
-        'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
-        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE || settings.type == TABBY) ? settings.temperature_last : undefined,
-        'speculative_ngram': settings.type === TABBY ? settings.speculative_ngram : undefined,
-        'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
-        'seed': settings.seed >= 0 ? settings.seed : undefined,
-        'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
-        'grammar_string': settings.grammar_string || undefined,
-        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? jsonSchema : undefined,
+        'rep_pen': parameters.rep_pen,
+        'rep_pen_range': parameters.rep_pen_range,
+        'repetition_decay': parameters.type === TABBY ? parameters.rep_pen_decay : undefined,
+        'repetition_penalty_range': parameters.rep_pen_range,
+        'encoder_repetition_penalty': parameters.type === OOBA ? parameters.encoder_rep_pen : undefined,
+        'no_repeat_ngram_size': parameters.type === OOBA ? parameters.no_repeat_ngram_size : undefined,
+        'penalty_alpha': parameters.type === OOBA ? parameters.penalty_alpha : undefined,
+        'temperature_last': (parameters.type === OOBA || parameters.type === APHRODITE || parameters.type == TABBY) ? parameters.temperature_last : undefined,
+        'speculative_ngram': parameters.type === TABBY ? parameters.speculative_ngram : undefined,
+        'do_sample': parameters.type === OOBA ? parameters.do_sample : undefined,
+        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? parameters.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(parameters.negative_prompt) ?? '',
+        'grammar_string': parameters.grammar_string || undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(parameters.type) ? jsonSchema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
-        'repeat_penalty': settings.rep_pen,
-        'repeat_last_n': settings.rep_pen_range,
+        'repeat_penalty': parameters.rep_pen,
+        'repeat_last_n': parameters.rep_pen_range,
         'n_predict': maxTokens,
         'num_predict': maxTokens,
         'num_ctx': max_context,
-        'mirostat': settings.mirostat_mode,
-        'ignore_eos': settings.ban_eos_token,
+        'mirostat': parameters.mirostat_mode,
+        'ignore_eos': parameters.ban_eos_token,
         'n_probs': power_user.request_token_probabilities ? 10 : undefined,
-        'rep_pen_slope': settings.rep_pen_slope,
+        'rep_pen_slope': parameters.rep_pen_slope,
     };
     const vllmParams = {
-        'n': canMultiSwipe ? settings.n : 1,
-        'ignore_eos': settings.ignore_eos_token,
-        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
-        'seed': settings.seed >= 0 ? settings.seed : undefined,
+        'n': canMultiSwipe ? parameters.n : 1,
+        'ignore_eos': parameters.ignore_eos_token,
+        'spaces_between_special_tokens': parameters.spaces_between_special_tokens,
+        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
     };
     const aphroditeParams = {
-        'n': canMultiSwipe ? settings.n : 1,
-        'frequency_penalty': settings.freq_pen,
-        'presence_penalty': settings.presence_pen,
-        'repetition_penalty': settings.rep_pen,
-        'seed': settings.seed >= 0 ? settings.seed : undefined,
+        'n': canMultiSwipe ? parameters.n : 1,
+        'frequency_penalty': parameters.freq_pen,
+        'presence_penalty': parameters.presence_pen,
+        'repetition_penalty': parameters.rep_pen,
+        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
         'stop': getStoppingStrings(isImpersonate, isContinue),
-        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
-        'temperature_last': settings.temperature_last,
-        'top_p': settings.top_p,
-        'top_k': settings.top_k,
-        'top_a': settings.top_a,
-        'min_p': settings.min_p,
-        'tfs': settings.tfs,
-        'eta_cutoff': settings.eta_cutoff,
-        'epsilon_cutoff': settings.epsilon_cutoff,
-        'typical_p': settings.typical_p,
-        'smoothing_factor': settings.smoothing_factor,
-        'smoothing_curve': settings.smoothing_curve,
-        'ignore_eos': settings.ignore_eos_token,
-        'min_tokens': settings.min_length,
-        'skip_special_tokens': settings.skip_special_tokens,
-        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
-        'guided_grammar': settings.grammar_string || undefined,
+        'temperature': dynatemp ? (parameters.min_temp + parameters.max_temp) / 2 : parameters.temp,
+        'temperature_last': parameters.temperature_last,
+        'top_p': parameters.top_p,
+        'top_k': parameters.top_k,
+        'top_a': parameters.top_a,
+        'min_p': parameters.min_p,
+        'tfs': parameters.tfs,
+        'eta_cutoff': parameters.eta_cutoff,
+        'epsilon_cutoff': parameters.epsilon_cutoff,
+        'typical_p': parameters.typical_p,
+        'smoothing_factor': parameters.smoothing_factor,
+        'smoothing_curve': parameters.smoothing_curve,
+        'ignore_eos': parameters.ignore_eos_token,
+        'min_tokens': parameters.min_length,
+        'skip_special_tokens': parameters.skip_special_tokens,
+        'spaces_between_special_tokens': parameters.spaces_between_special_tokens,
+        'guided_grammar': parameters.grammar_string || undefined,
         'guided_json': jsonSchema || undefined,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
-        'dynatemp_min': dynatemp ? settings.min_temp : undefined,
-        'dynatemp_max': dynatemp ? settings.max_temp : undefined,
-        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
-        'xtc_threshold': settings.xtc_threshold,
-        'xtc_probability': settings.xtc_probability,
-        'nsigma': settings.nsigma,
+        'dynatemp_min': dynatemp ? parameters.min_temp : undefined,
+        'dynatemp_max': dynatemp ? parameters.max_temp : undefined,
+        'dynatemp_exponent': dynatemp ? parameters.dynatemp_exponent : undefined,
+        'xtc_threshold': parameters.xtc_threshold,
+        'xtc_probability': parameters.xtc_probability,
+        'nsigma': parameters.nsigma,
         'custom_token_bans': toIntArray(banned_tokens),
-        'no_repeat_ngram_size': settings.no_repeat_ngram_size,
-        'sampler_priority': settings.type === APHRODITE && !arraysEqual(
-            settings.samplers_priorities,
+        'no_repeat_ngram_size': parameters.no_repeat_ngram_size,
+        'sampler_priority': parameters.type === APHRODITE && !arraysEqual(
+            parameters.samplers_priorities,
             APHRODITE_DEFAULT_ORDER)
-            ? settings.samplers_priorities
+            ? parameters.samplers_priorities
             : undefined,
     };
 
-    if (settings.type === OPENROUTER) {
-        params.provider = settings.openrouter_providers;
-        params.allow_fallbacks = settings.openrouter_allow_fallbacks;
+    if (parameters.type === OPENROUTER) {
+        params.provider = parameters.openrouter_providers;
+        params.allow_fallbacks = parameters.openrouter_allow_fallbacks;
     }
 
-    if (settings.type === KOBOLDCPP) {
-        params.grammar = settings.grammar_string || undefined;
+    if (parameters.type === KOBOLDCPP) {
+        params.grammar = parameters.grammar_string || undefined;
         params.trim_stop = true;
     }
 
-    if (settings.type === HUGGINGFACE) {
+    if (parameters.type === HUGGINGFACE) {
         params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
         params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
-        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : Math.floor(Math.random() * Math.pow(2, 32));
+        nonAphroditeParams.seed = parameters.seed >= 0 ? parameters.seed : Math.floor(Math.random() * Math.pow(2, 32));
     }
 
-    if (settings.type === MANCER) {
-        params.n = canMultiSwipe ? settings.n : 1;
+    if (parameters.type === MANCER) {
+        params.n = canMultiSwipe ? parameters.n : 1;
         params.epsilon_cutoff /= 1000;
         params.eta_cutoff /= 1000;
         params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
@@ -1692,11 +1695,11 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
 
-    if (settings.type === TABBY) {
-        params.n = canMultiSwipe ? settings.n : 1;
+    if (parameters.type === TABBY) {
+        params.n = canMultiSwipe ? parameters.n : 1;
     }
 
-    switch (settings.type) {
+    switch (parameters.type) {
         case VLLM:
         case INFERMATICAI:
             params = Object.assign(params, vllmParams);
@@ -1712,13 +1715,13 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
             break;
     }
 
-    if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
+    if (Array.isArray(parameters.logit_bias) && parameters.logit_bias.length) {
         const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
         BIAS_CACHE.set(BIAS_KEY, logitBias);
         params.logit_bias = logitBias;
     }
 
-    if (settings.type === LLAMACPP || settings.type === OLLAMA) {
+    if (parameters.type === LLAMACPP || parameters.type === OLLAMA) {
         // Convert bias and token bans to array of arrays
         const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
             ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
@@ -1729,7 +1732,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
             // Conflicts with ooba's grammar_string
-            'grammar': settings.grammar_string,
+            'grammar': parameters.grammar_string,
             'cache_prompt': true,
             'dry_sequence_breakers': sequenceBreakers,
         };
@@ -1740,7 +1743,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
     }
 
     // Grammar conflicts with with json_schema
-    if ([LLAMACPP, APHRODITE].includes(settings.type)) {
+    if ([LLAMACPP, APHRODITE].includes(parameters.type)) {
         if (jsonSchema) {
             delete params.grammar_string;
             delete params.grammar;
@@ -1750,8 +1753,11 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
             delete params.guided_json;
         }
     }
+    return params
+}
 
+export async function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
+    const params = createTextGenGenerationData(settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type)
     await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
-
     return params;
 }

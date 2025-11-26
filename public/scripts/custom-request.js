@@ -1,9 +1,9 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { getTextGenServer } from './textgen-settings.js';
+import { getTextGenServer, createTextGenGenerationData } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences, names_behavior_types } from './instruct-mode.js';
-import { getStreamingReply, tryParseStreamingError } from './openai.js';
+import { getStreamingReply, tryParseStreamingError, createGenerationParameters } from './openai.js';
 import EventSourceStream from './sse-stream.js';
 
 // #region Type Definitions
@@ -291,24 +291,6 @@ export class TextCompletionService {
         let requestData = { ...custom };
         const prompt = custom.prompt;
 
-        // Apply generation preset if specified
-        if (presetName) {
-            const presetManager = getPresetManager(this.TYPE);
-            if (presetManager) {
-                const preset = presetManager.getCompletionPresetByName(presetName);
-                if (preset) {
-                    // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
-                    requestData = { ...presetPayload, ...requestData };
-                } else {
-                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
-                }
-            } else {
-                console.warn('Preset manager not found, continuing with default settings');
-            }
-        }
-
-
         /** @type {InstructSettings | undefined} */
         let instructPreset;
         // Handle instruct formatting if requested
@@ -328,6 +310,23 @@ export class TextCompletionService {
             requestData.prompt = prompt;
         } else {
             requestData.prompt = prompt.map(x => x.content).join('\n\n');
+        }
+
+        // Apply generation preset if specified
+        if (presetName) {
+            const presetManager = getPresetManager(this.TYPE);
+            if (presetManager) {
+                const preset = presetManager.getCompletionPresetByName(presetName);
+                if (preset) {
+                    // Convert preset to payload and merge with custom parameters
+                    const presetPayload = this.presetToGeneratePayload(preset, {});
+                    requestData = { ...presetPayload, ...requestData };
+                } else {
+                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
+                }
+            } else {
+                console.warn('Preset manager not found, continuing with default settings');
+            }
         }
 
         // @ts-ignore
@@ -407,9 +406,12 @@ export class TextCompletionService {
 
         // Initialize base payload with common parameters
         let payload = {
+            ...settings,
             'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
             'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
         };
+
+        payload = createTextGenGenerationData(payload)
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
@@ -592,8 +594,11 @@ export class ChatCompletionService {
 
         // Initialize base payload with common parameters
         const payload = {
+            ...settings,
             temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
         };
+
+        payload = createGenerationParameters(payload)
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
