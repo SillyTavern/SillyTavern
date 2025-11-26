@@ -6950,7 +6950,6 @@ export async function loadChatSnapshot(index) {
 
         clearChat();
         printMessages();
-        refreshSwipeButtons();
 
         // Is this needed?
         // await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
