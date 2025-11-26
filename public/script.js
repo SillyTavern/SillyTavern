@@ -6870,13 +6870,15 @@ export function saveChatSnapshot(chatData = chat){
 export async function loadChatSnapshot(index) {
     if (chatHistory[index]) {
         chatHistoryIndex = index;
-        chat = structuredClone(chatHistory[chatHistoryIndex]);
+        //Replace the chat.
+        chat.splice(0, chat.length, ...structuredClone(chatHistory[chatHistoryIndex]));
 
         clearChat();
         printMessages();
         refreshSwipeButtons();
 
         // Is this needed?
+        // await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         // eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 
         toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
