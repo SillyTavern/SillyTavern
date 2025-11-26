@@ -1752,7 +1752,13 @@ function saveModelList(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.HELICONE) {
         if (model_list.length > 0) {
             $('#model_helicone_select').empty();
-            appendHeliconeOptions(model_list);
+w            model_list.forEach((model) => {
+                $('#model_helicone_select').append(
+                    $('<option>', {
+                        value: model.id,
+                        text: model.name || model.id
+                    }));
+            });
         }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.helicone_model);
@@ -2082,16 +2088,6 @@ function appendOpenRouterOptions(model_list, groupModels = false, sort = false) 
             appendOption(model);
         });
     }
-}
-
-function appendHeliconeOptions(model_list) {
-    model_list.forEach((model) => {
-        $('#model_helicone_select').append(
-            $('<option>', {
-                value: model.id,
-                text: model.name || model.id,
-            }));
-    });
 }
 
 const openRouterSortBy = (data, property = 'alphabetically') => {
