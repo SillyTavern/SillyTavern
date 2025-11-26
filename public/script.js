@@ -185,7 +185,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './scripts/constants.js';
 
-import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
+import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -8504,7 +8504,7 @@ export async function setCharacterSettingsOverrides() {
     chat_metadata['scenario'] = pendingChanges.scenario;
     chat_metadata['mes_example'] = pendingChanges.examples;
     chat_metadata['system_prompt'] = pendingChanges.system_prompt;
-    saveMetadataDebounced();
+    await saveMetadata();
 }
 
 /**
@@ -9326,7 +9326,7 @@ export async function swipe(_event, direction, { source, repeated, message = cha
         if (chat[mesId]['swipe_id'] !== clampedId) {
             chat[mesId]['swipe_id'] = clampedId;
             syncSwipeToMes(mesId);
-            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: false });
+            addOneMessage(chat[mesId], { type: 'swipe', forceId: mesId, scroll: true });
         }
 
         await updateSwipeCounter(mesId);
@@ -11159,7 +11159,7 @@ jQuery(async function () {
         const message = chat[this_edit_mes_id];
         const selectedSwipe = message['swipe_id'] ?? undefined;
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
-        const canDeleteSwipe = !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
+        const canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
 

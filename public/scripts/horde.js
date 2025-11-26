@@ -344,7 +344,7 @@ async function showKudos() {
     }
 
     console.log('Horde user data', data.user, 'shared key data', data.sharedKey);
-    const kudos = data.sharedKey?.kudos || data.user?.kudos || 0;
+    const kudos = data.sharedKey?.kudos ?? data.user?.kudos ?? 0;
     toastr.info(`Kudos: ${kudos}`, data.user.username);
 }
 
