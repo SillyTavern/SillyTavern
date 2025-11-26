@@ -6744,9 +6744,6 @@ export function initOpenAI() {
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
     $('#model_openrouter_select').on('change', onModelChange);
     $('#model_helicone_select').on('change', onModelChange);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     $('#helicone_enable_web_search').on('input', function () {
         oai_settings.helicone_enable_web_search = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -6755,9 +6752,6 @@ export function initOpenAI() {
         oai_settings.helicone_custom_properties = String($(this).val() || '');
         saveSettingsDebounced();
     });
->>>>>>> 0b8015419 (fix merge conflicts)
-=======
->>>>>>> 9adff13e4 (fix comments)
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);

@@ -208,6 +208,7 @@ export const CHAT_COMPLETION_SOURCES = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    HELICONE: 'helicone',
 };
 
 /**
@@ -367,6 +368,11 @@ export const AIMLAPI_HEADERS = {
 };
 
 export const FEATHERLESS_HEADERS = {
+    'HTTP-Referer': 'https://sillytavern.app',
+    'X-Title': 'SillyTavern',
+};
+
+export const HELICONE_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
     'X-Title': 'SillyTavern',
 };
