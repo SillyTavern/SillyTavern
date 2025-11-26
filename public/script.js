@@ -373,7 +373,7 @@ export let name2 = systemUserName;
 /** @type {ChatMessage[]} */
 export let chat = [];
 /** @type {ChatMessage[][]} */
-export let chatHistory = [chat];
+export let chatHistory = [];
 export let chatHistoryIndex = 0;
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
 let chatSaveTimeout;
@@ -6850,6 +6850,17 @@ export function saveChatDebounced() {
         console.debug('Chat saved');
     }, DEFAULT_SAVE_EDIT_TIMEOUT);
 }
+
+/**
+ * Resets chatHistory, and set's the first entry.
+ * @param {ChatMessage[]} chatData
+ */
+export async function resetChatSnapshots(chatData = chat){
+    chatHistory.length = 0;
+    saveChatSnapshot(chatData);
+}
+
+eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(chat));
 
 /**
  * Save a copy of chatData to chatHistory.

@@ -1290,11 +1290,11 @@ export function initRossMods() {
         if (!isInputElementInFocus()) {
             //Undo.
             if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'z') {
-                loadChatSnapshot(chatHistoryIndex - 1);
+                await loadChatSnapshot(chatHistoryIndex - 1);
             }
             //Redo.
             if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Z') {
-                loadChatSnapshot(chatHistoryIndex + 1);
+                await loadChatSnapshot(chatHistoryIndex + 1);
             }
         }
 
