@@ -372,6 +372,9 @@ export let name1 = default_user_name;
 export let name2 = systemUserName;
 /** @type {ChatMessage[]} */
 export let chat = [];
+/** @type {ChatMessage[][]} */
+export let chatHistory = [chat];
+export let chatHistoryIndex = 0;
 export let isSwipingAllowed = true; //false when a swipe is in progress, or swiping is blocked.
 let chatSaveTimeout;
 let importFlashTimeout;
@@ -6849,6 +6852,42 @@ export function saveChatDebounced() {
 }
 
 /**
+ * Save a copy of chatData to chatHistory.
+ * @param {ChatMessage[]} chatData
+ */
+export function saveChatSnapshot(chatData = chat){
+    //Overwrite history that has been undone.
+    chatHistory.splice(chatHistoryIndex + 1);
+
+    chatHistory.push(structuredClone(chatData));
+    chatHistoryIndex = chatHistory.length - 1;
+}
+
+/**
+ * Load a chat from chatHistory.
+ * @param {number} index The chatHistory index to load.
+ */
+export async function loadChatSnapshot(index) {
+    if (chatHistory[index]) {
+        chatHistoryIndex = index;
+        chat = structuredClone(chatHistory[chatHistoryIndex]);
+
+        clearChat();
+        printMessages();
+        refreshSwipeButtons();
+
+        // Is this needed?
+        // eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+
+        toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
+    }
+    else {
+        toastr.error(`Chat ${index + 1}/${chatHistory.length} does not exist!`);
+    }
+
+}
+
+/**
  * Saves the chat to the server.
  * @param {object} [options] - Additional options.
  * @param {string} [options.chatName] The name of the chat file to save to
@@ -6881,6 +6920,8 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
         console.warn('saveChat called without chat_name and no chat file found');
         return;
     }
+
+    saveChatSnapshot(chat);
 
     characters[this_chid]['date_last_chat'] = Date.now();
 
