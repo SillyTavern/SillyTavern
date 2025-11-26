@@ -463,7 +463,6 @@
         "stream_openai": true,
         "openai_max_context": 4095,
         "openai_max_tokens": 300,
-        "wrap_in_quotes": false,
         "prompts": [
             {
                 "name": "Main Prompt",

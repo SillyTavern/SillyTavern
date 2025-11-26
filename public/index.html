@@ -1920,18 +1920,6 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
-                                            <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
-                                                Wrap in Quotes</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Wrap entire user message in quotes before sending.">Wrap
-                                                entire user message in quotes before sending.</span><br>
-                                            <span data-i18n="Leave off if you use quotes manually for speech.">Leave off
-                                                if you use quotes manually for speech.</span>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
                                         <label for="continue_prefill" class="checkbox_label widthFreeExpand">
                                             <input id="continue_prefill" type="checkbox" />
                                             <span data-i18n="Continue prefill">Continue prefill</span>
@@ -1942,16 +1930,16 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block">
-                                        <label for="squash_system_messages" title="Squash system messages" data-i18n="[title]Squash system messages" class="checkbox_label widthFreeExpand">
-                                            <input id="squash_system_messages" type="checkbox" />
-                                            <span data-i18n="Squash system messages">
-                                                Squash system messages
+                                    <div class="range-block" data-source="claude,makersuite,vertexai">
+                                        <label for="use_sysprompt" class="checkbox_label widthFreeExpand">
+                                            <input id="use_sysprompt" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Use system prompt">Use system prompt</span>
                                             </span>
                                         </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.">
-                                                Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
+                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
                                     </div>
@@ -1985,16 +1973,28 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_image_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline images">Send inline images</span>
-                                            <div id="openai_image_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                        <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_media_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline media">Send inline media</span>
+                                            <div class="flex-container">
+                                                <div id="openai_image_inlining_supported">
+                                                    <i class="icon-supported fa-solid fa-image" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-image" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
+                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                    <i class="icon-supported fa-solid fa-film" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-film" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
+                                                <div id="openai_audio_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                    <i class="icon-supported fa-solid fa-music" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-music" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
                                             </div>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it.</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends attached media in prompts if supported by the model.</span>
+                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long.</strong>
+                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB.</strong>
                                         </div>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow">
                                             <div class="flex-container oneline-dropdown">
@@ -2009,40 +2009,12 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
-                                        <label for="openai_video_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_video_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline videos">Send inline videos</span>
-                                            <div id="openai_video_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
-                                            </div>
-                                        </label>
-                                        <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it.</span>
-                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
-                                        <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_audio_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline audio">Send inline audio</span>
-                                            <div id="openai_audio_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
-                                            </div>
-                                        </label>
-                                        <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it.</span>
-                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
-                                        </div>
-                                    </div>
                                     <div class="range-block" data-source="makersuite,vertexai">
                                         <label for="openai_request_images" class="checkbox_label widthFreeExpand">
                                             <input id="openai_request_images" type="checkbox" />
                                             <span>
                                                 <span data-i18n="Request inline images">Request inline images</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.0 Flash Experimental"></i>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.5 Flash Image / Gemini 3 Pro Image"></i>
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
@@ -2052,20 +2024,6 @@
                                             <em data-source="makersuite,vertexai" data-i18n="Request inline images_desc_2">
                                                 Incompatible with the following features: function calling, web search, system prompt.
                                             </em>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
-                                        <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
-                                            <input id="use_makersuite_sysprompt" type="checkbox" />
-                                            <span>
-                                                <span data-i18n="Use system prompt">Use system prompt</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 1.5+, LearnLM"></i>
-                                            </span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Merges_all_system_messages_desc_1">
-                                                Merges all system messages up until the first message with a non-system role, and sends them in a</span> <code>system_instruction</code> <span data-i18n="Merges_all_system_messages_desc_2">field.
-                                            </span>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt,zai">
@@ -2123,15 +2081,6 @@
                                         <div id="claude_function_prefill_warning">
                                             <i class="fa-solid fa-circle-info"></i>
                                             <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
-                                        </div>
-                                        <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_use_sysprompt" type="checkbox" />
-                                            <span data-i18n="Use system prompt">Use system prompt</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
-                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
