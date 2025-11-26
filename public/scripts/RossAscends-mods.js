@@ -35,7 +35,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, getStringHash, isValidUrl } from './utils.js';
+import { debounce, getStringHash, isInputElementInFocus, isModifiedKeyboardEvent, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
@@ -955,27 +955,6 @@ export function initRossMods() {
             }
         }
     });
-
-
-    function isInputElementInFocus() {
-        //return $(document.activeElement).is(":input");
-        var focused = $(':focus');
-        if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
-            if (focused.attr('id') === 'send_textarea') {
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    function isModifiedKeyboardEvent(event) {
-        return (event instanceof KeyboardEvent &&
-            event.shiftKey ||
-            event.ctrlKey ||
-            event.altKey ||
-            event.metaKey);
-    }
 
     $(document).on('keydown', async function (event) {
         await processHotkeys(event.originalEvent);

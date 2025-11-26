@@ -2884,3 +2884,32 @@ export function createTimeout(ms, errorMessage = '') {
         setTimeout(() => reject(new Error(errorMessage)), ms);
     });
 }
+
+/**
+ * Returns true if an input, textarea or contenteditable is focused.
+ * @returns {boolean}
+ */
+export function isInputElementInFocus() {
+    //return $(document.activeElement).is(":input");
+    const focused = $(':focus');
+    if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
+        if (focused.attr('id') === 'send_textarea') {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Returns true if shift, ctrl, alt or meta was held during the event.
+ * @param {KeyboardEvent} event
+ * @returns {boolean}
+ */
+export function isModifiedKeyboardEvent(event) {
+    return (event instanceof KeyboardEvent &&
+        event.shiftKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey);
+}
