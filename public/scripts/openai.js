@@ -3599,10 +3599,10 @@ export class ChatCompletion {
 }
 
 /**
- * Migrate old OpenAI settings to new format.
+ * Migrate old Chat Completion settings to new format.
  * @param {ChatCompletionSettings} settings Settings to migrate
  */
-function migrateOpenAISettings(settings) {
+function migrateChatCompletionSettings(settings) {
     const migrateMap = [
         { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
         { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
@@ -3613,6 +3613,8 @@ function migrateOpenAISettings(settings) {
         { oldKey: 'audio_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
+        { oldKey: 'assistant_impersonation', oldValue: undefined, newKey: 'assistant_impersonation', newValue: (settings.assistant_prefill ?? '') },
+        { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
     ];
 
     for (const migration of migrateMap) {
@@ -3654,7 +3656,7 @@ function loadOpenAISettings(data, settings) {
     });
     openai_setting_names = settingNames;
 
-    migrateOpenAISettings(settings);
+    migrateChatCompletionSettings(settings);
 
     for (const key of Object.keys(default_settings)) {
         oai_settings[key] = settings[key] ?? default_settings[key];
@@ -4290,15 +4292,7 @@ function onSettingsPresetChange() {
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
-    // Migrate old settings
-    if (preset.names_in_completion === true && preset.names_behavior === undefined) {
-        preset.names_behavior = character_names_behavior.COMPLETION;
-    }
-
-    // Claude: Assistant Impersonation Prefill = Inherit from Assistant Prefill
-    if (preset.assistant_prefill !== undefined && preset.assistant_impersonation === undefined) {
-        preset.assistant_impersonation = preset.assistant_prefill;
-    }
+    migrateChatCompletionSettings(preset);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input', { source: 'preset' });
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
@@ -4315,8 +4309,6 @@ function onSettingsPresetChange() {
         if (oai_settings.bind_preset_to_connection) {
             $('.model_custom_select').empty();
         }
-
-        migrateOpenAISettings(preset);
 
         for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
             if (isConnection && !oai_settings.bind_preset_to_connection) {
@@ -4711,11 +4703,6 @@ async function onModelChange() {
         if (!value || !hasModelsLoaded) {
             console.debug('Null MistralAI model selected. Ignoring.');
             return;
-        }
-        // Upgrade old mistral models to new naming scheme
-        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
-        if (value === 'mistral-medium' || value === 'mistral-small') {
-            value = value + '-latest';
         }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
