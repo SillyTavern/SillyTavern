@@ -1589,7 +1589,7 @@ router.post('/status', async function (request, statusResponse) {
         return statusResponse.status(400).send({ error: true });
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.warn('Chat Completion API key is missing.');
         return statusResponse.status(400).send({ error: true });
     }
@@ -1839,15 +1839,8 @@ router.post('/generate', function (request, response) {
             };
         }
 
-        if (request.body.use_fallback) {
-            bodyParams['route'] = 'fallback';
-        }
 
-        if (request.body.reasoning_effort) {
-            bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
-        }
-
-        if (request.body.json_schema) {
+    if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
@@ -2023,13 +2016,13 @@ router.post('/generate', function (request, response) {
     }
 
     // A few of OpenAIs reasoning models support reasoning effort
-    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI, CHAT_COMPLETION_SOURCES.HELICONE].includes(request.body.chat_completion_source)) {
+    if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
         }
     }
 
-    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.HELICONE) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.warn('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -2087,11 +2080,6 @@ router.post('/generate', function (request, response) {
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
-    }
-
-    // Remove OpenRouter-specific parameters for Helicone
-    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HELICONE) {
-        delete requestBody.reasoning;
     }
 
     /** @type {import('node-fetch').RequestInit} */
@@ -2322,7 +2310,7 @@ multimodalModels.post('/xai', async (req, res) => {
 
 multimodalModels.post('/helicone', async (_req, res) => {
     try {
-        const response = await fetch('https://api.helicone.ai/v1/public/model-registry/models', {
+        const response = await fetch('https://ai-gateway.helicone.ai/v1/models/multimodal', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -2335,20 +2323,8 @@ multimodalModels.post('/helicone', async (_req, res) => {
 
         /** @type {any} */
         const data = await response.json();
-        const models = data?.models || [];
 
-        // Filter for multimodal models based on image capability
-        const multimodalModels = models
-            .filter(m => {
-                // Check if model has image capability in inputModalities or outputModalities
-                const hasImageInput = m?.inputModalities?.includes('image');
-                const hasImageOutput = m?.outputModalities?.includes('image');
-
-                return hasImageInput || hasImageOutput;
-            })
-            .map(m => m.id);
-
-        return res.json(multimodalModels);
+        return res.json(data);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
