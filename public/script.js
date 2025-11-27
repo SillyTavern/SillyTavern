@@ -6429,11 +6429,12 @@ export function ensureSwipes(message) {
  * Overwrites all current contents of swipes and swipe_info arrays.
  * @param {ChatMessage} message
  * @param {boolean} [ensure=true] This should only be false when ensure has been previously called on the message.
- * @returns
+ * @returns {boolean} false if the message object does not exist. true on success.
  */
 export function writeMessageToSwipe(message, ensure = true) {
     if (typeof message !== 'object') {
         console.trace(`[writeMessageToSwipe] failed. '${message}' is not an object.`);
+        return false;
     }
 
     const targetId = message?.['swipe_id'] ?? 0;
