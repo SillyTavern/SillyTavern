@@ -216,7 +216,7 @@ function importKoboldLiteChat(_userName, _characterName, data) {
     function processKoboldMessage(msg) {
         const isUser = msg.includes(inputToken);
         return {
-            name: isUser ? header.user_name : header.character_name,
+            name: isUser ? userName : characterName,
             is_user: isUser,
             mes: msg.replaceAll(inputToken, '').replaceAll(outputToken, '').trim(),
             send_date: new Date().toISOString(),
@@ -225,9 +225,12 @@ function importKoboldLiteChat(_userName, _characterName, data) {
     }
 
     // Create the header
+    const userName = String(data.savedsettings.chatname);
+    const characterName = String(data.savedsettings.chatopponent).split('||$||')[0];
     const header = {
-        user_name: String(data.savedsettings.chatname),
-        character_name: String(data.savedsettings.chatopponent).split('||$||')[0],
+        chat_metadata: {},
+        user_name: 'unused',
+        character_name: 'unused',
     };
     // Format messages
     const formattedMessages = data.actions.map(processKoboldMessage);
