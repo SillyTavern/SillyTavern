@@ -3472,7 +3472,7 @@ class StreamingProcessor {
             message.swipe_info.push(...swipeInfoArray);
         }
 
-        syncMesToSwipe(messageId);
+        writeMessageToSwipe(chat[messageId]);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
 
         if (Array.isArray(this.images) && this.images.length > 0) {
@@ -6516,12 +6516,12 @@ export function loadMessageFromSwipe(message, targetSwipeId = 0) {
 /**
  * Calls writeMessageToSwipe then loadMessageFromSwipe.
  * @param {object} message
- * @param {number} targetSwipeInfo
+ * @param {number} targetSwipeId
  * @returns {boolean}
  */
-export function switchMessageWithSwipe(message, targetSwipeInfo) {
+export function switchMessageWithSwipe(message, targetSwipeId) {
     writeMessageToSwipe(message);
-    return loadMessageFromSwipe(message, targetSwipeInfo);
+    return loadMessageFromSwipe(message, targetSwipeId);
 }
 
 /**
@@ -9745,7 +9745,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 //Shake 700/140=5px
                 shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
                 //Flash red.
-                const flashTime = Math.max(animation_duration * 2, 100)
+                const flashTime = Math.max(animation_duration * 2, 100);
                 await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
             } catch (error) {
                 console.warn(error);
