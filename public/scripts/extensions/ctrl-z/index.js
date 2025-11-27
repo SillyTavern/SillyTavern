@@ -34,15 +34,19 @@ export function saveChatSnapshot(chatData = chat){
 export async function loadChatSnapshot(index) {
     if (chatHistory[index]) {
         chatHistoryIndex = index;
+
+        const newChat = structuredClone(chatHistory[chatHistoryIndex]);
+
         //Replace the chat.
-        chat.splice(0, chat.length, ...structuredClone(chatHistory[chatHistoryIndex]));
+        chat.splice(0, chat.length, ...newChat);
 
         clearChat();
         printMessages();
 
-        // Is this needed?
-        // await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-        // eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+        await eventSource.emit(event_types.CHAT_SNAPSHOT_LOADED, index);
+
+        if (newChat.length > chat.length) { await eventSource.emit(event_types.MESSAGE_RECEIVED); }
+        if (newChat.length < chat.length) { await eventSource.emit(event_types.MESSAGE_DELETED); }
 
         toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
 
