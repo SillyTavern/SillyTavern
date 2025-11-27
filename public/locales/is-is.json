@@ -235,7 +235,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "Sameinar samhliða kerfisskilaboð í eitt (sem er utan umsagna dæmum). Getur bætt samfelldni fyrir sumar módel.",
     "Enable function calling": "Virkja aðgerðarkall",
     "Send inline images": "Senda myndir í línu",
-    "image_inlining_hint_1": "Sendir myndir í skilaboðum ef líkanið styður það.",
+    "image_inlining_hint_1": "Sendir margmiðlunarskrár í skilaboðum ef líkanið styður það.",
     "image_inlining_hint_2": "aðgerð á hvaða skilaboðum sem er eða",
     "image_inlining_hint_3": "valmynd til að hengja myndskrá við spjallið.",
     "Inline Image Quality": "Innbyggð myndgæði",
