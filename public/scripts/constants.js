@@ -165,13 +165,14 @@ export const SWIPE_DIRECTION = {
 };
 
 /**
- * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back', readonly AUTO_SWIPE: 'auto_swipe'}}
+ * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back', readonly AUTO_SWIPE: 'auto_swipe', readonly TOUCH_SCREEN: 'touch_screen'}}
  */
 export const SWIPE_SOURCE = {
     DELETE: 'delete',
     KEYBOARD: 'keyboard',
     BACK: 'back',
     AUTO_SWIPE: 'auto_swipe',
+    TOUCH_SCREEN: 'touch_screen',
 };
 
 /**

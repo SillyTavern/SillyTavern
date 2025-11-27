@@ -20,6 +20,7 @@ import {
     sendTextareaMessage,
     doNavbarIconClick,
     isSwipingAllowed,
+    swipe,
 } from '../script.js';
 
 import {
@@ -37,7 +38,7 @@ import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
-import { debounce_timeout, SWIPE_SOURCE } from './constants.js';
+import { debounce_timeout, SWIPE_DIRECTION, SWIPE_SOURCE } from './constants.js';
 
 import { Popup } from './popup.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -904,55 +905,46 @@ export function initRossMods() {
 
     restoreUserInput();
 
+    /**
+     * Handles swipe gestures.
+     * @param {Event} e event.
+     * @param {import('./constants.js').SWIPE_DIRECTION} direction left or right.
+     * @returns
+     */
+    function handleSwipeGestureEvent(e, direction) {
+        if (power_user.gestures === false) {
+            return;
+        }
+        if (Popup.util.isPopupOpen()) {
+            return;
+        }
+        if (!$(e.target).closest('#sheld').length) {
+            return;
+        }
+        if ($('#curEditTextarea').length) {
+            // Don't swipe while in text edit mode
+            // the ios selection gestures get picked up
+            // as swipe gestures
+            return;
+        }
+
+        const SwipeTargetMesClassParent = $(e.target).closest('.mes');
+        const messageId = SwipeTargetMesClassParent.attr('mesid');
+        if (SwipeTargetMesClassParent !== null) {
+            swipe(null, direction, { source: SWIPE_SOURCE.TOUCH_SCREEN, repeated: false, forceMesId: Number(messageId) });
+        }
+    }
+
     // Swipe gestures (see: https://www.npmjs.com/package/swiped-events)
     document.addEventListener('swiped-left', function (e) {
-        if (power_user.gestures === false) {
-            return;
-        }
-        if (Popup.util.isPopupOpen()) {
-            return;
-        }
-        if (!$(e.target).closest('#sheld').length) {
-            return;
-        }
-        if ($('#curEditTextarea').length) {
-            // Don't swipe while in text edit mode
-            // the ios selection gestures get picked up
-            // as swipe gestures
-            return;
-        }
-        var SwipeButR = $('.swipe_right:last');
-        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
-        if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButR.is(':visible')) {
-                SwipeButR.trigger('click');
-            }
-        }
+        handleSwipeGestureEvent(e, SWIPE_DIRECTION.RIGHT);
     });
     document.addEventListener('swiped-right', function (e) {
-        if (power_user.gestures === false) {
-            return;
-        }
-        if (Popup.util.isPopupOpen()) {
-            return;
-        }
-        if (!$(e.target).closest('#sheld').length) {
-            return;
-        }
-        if ($('#curEditTextarea').length) {
-            // Don't swipe while in text edit mode
-            // the ios selection gestures get picked up
-            // as swipe gestures
-            return;
-        }
-        var SwipeButL = $('.swipe_left:last');
-        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
-        if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButL.is(':visible')) {
-                SwipeButL.trigger('click');
-            }
-        }
+
+        handleSwipeGestureEvent(e, SWIPE_DIRECTION.LEFT);
     });
+
+
 
 
     function isInputElementInFocus() {
