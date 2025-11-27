@@ -365,7 +365,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
         //If the user has a "user_name" or "charater_name" that's over 64KB long, this will not find the integrity slug.
         const match = await getFirstFileRegexMatch(filePath, /"integrity":"([\d|\w|-]+)"/g);
 
-        // If there's no match, assume the file is corrupt.
+        // If there's no match, the file will be reported as intact.
         if (match !== undefined) {
             chatIntegrity = match?.next()?.value?.[1];
         }
