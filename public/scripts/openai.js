@@ -1117,60 +1117,48 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Bias
     if (bias && bias.trim().length) await addToChatCompletion('bias');
 
-    // Tavern Extras - Summary
-    if (prompts.has('summary')) {
-        const summary = prompts.get('summary');
-
-        if (summary.position) {
-            const message = await Message.fromPromptAsync(summary);
-            chatCompletion.insert(message, 'main', summary.position);
+    const injectToMain = async (/** @type {Prompt} */ prompt, /** @type {string|number} */ position) => {
+        if (chatCompletion.has('main')) {
+            const message = await Message.fromPromptAsync(prompt);
+            chatCompletion.insert(message, 'main', position);
+        } else {
+            // Convert the relative prompt to an injection and place it relative to main prompt
+            // Keeping prompts in the same order bucket will squash them together during in-chat injection
+            const indexOfMain = absolutePrompts.findIndex(p => p.identifier === 'main');
+            if (indexOfMain >= 0) {
+                const main = absolutePrompts[indexOfMain];
+                const promptCopy = new Prompt(prompt);
+                promptCopy.role = main.role;
+                promptCopy.injection_position = main.injection_position;
+                promptCopy.injection_depth = main.injection_depth;
+                promptCopy.injection_order = main.injection_order;
+                const newIndex = position === 'end' ? indexOfMain + 1 : indexOfMain;
+                absolutePrompts.splice(newIndex, 0, promptCopy);
+            }
         }
-    }
+    };
 
-    // Authors Note
-    if (prompts.has('authorsNote')) {
-        const authorsNote = prompts.get('authorsNote');
+    const knownPrompts = [
+        'summary',
+        'authorsNote',
+        'vectorsMemory',
+        'vectorsDataBank',
+        'smartContext',
+    ];
 
-        if (authorsNote.position) {
-            const message = await Message.fromPromptAsync(authorsNote);
-            chatCompletion.insert(message, 'main', authorsNote.position);
-        }
-    }
-
-    // Vectors Memory
-    if (prompts.has('vectorsMemory')) {
-        const vectorsMemory = prompts.get('vectorsMemory');
-
-        if (vectorsMemory.position) {
-            const message = await Message.fromPromptAsync(vectorsMemory);
-            chatCompletion.insert(message, 'main', vectorsMemory.position);
-        }
-    }
-
-    // Vectors Data Bank
-    if (prompts.has('vectorsDataBank')) {
-        const vectorsDataBank = prompts.get('vectorsDataBank');
-
-        if (vectorsDataBank.position) {
-            const message = await Message.fromPromptAsync(vectorsDataBank);
-            chatCompletion.insert(message, 'main', vectorsDataBank.position);
-        }
-    }
-
-    // Smart Context (ChromaDB)
-    if (prompts.has('smartContext')) {
-        const smartContext = prompts.get('smartContext');
-
-        if (smartContext.position) {
-            const message = await Message.fromPromptAsync(smartContext);
-            chatCompletion.insert(message, 'main', smartContext.position);
+    // Known relative extension prompts
+    for (const key of knownPrompts) {
+        if (prompts.has(key)) {
+            const prompt = prompts.get(key);
+            if (prompt.position) {
+                await injectToMain(prompt, prompt.position);
+            }
         }
     }
 
     // Other relative extension prompts
     for (const prompt of prompts.collection.filter(p => p.extension && p.position)) {
-        const message = await Message.fromPromptAsync(prompt);
-        chatCompletion.insert(message, 'main', prompt.position);
+        await injectToMain(prompt, prompt.position);
     }
 
     // Pre-allocation of tokens for tool data
