@@ -21,7 +21,7 @@ export const SCRIPT_TYPES = {
 export const SCRIPT_TYPE_UNKNOWN = -1;
 
 /**
- * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
+ * @typedef {import('../../char-data.js').RegexScriptData & { _type?: number }} RegexScript
  */
 
 /**
@@ -39,69 +39,41 @@ const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
  */
 class RegexCache {
     #cache = new Map();
-    #maxSize = 100;
+    #maxSize = 500;
 
     /**
      * Gets a cached regex entry.
      * @param {string} regexString The regex string to look up
-     * @returns {{ regex: RegExp, types: Set<number> } | undefined} The cached entry or undefined
+     * @returns {RegExp | undefined} The cached entry or undefined
      */
     get(regexString) {
-        const entry = this.#cache.get(regexString);
-        if (entry) {
+        const regex = this.#cache.get(regexString);
+        if (regex) {
             // LRU: Move to end by re-inserting
             this.#cache.delete(regexString);
-            this.#cache.set(regexString, entry);
+            this.#cache.set(regexString, regex);
+
+            // Clone the regex if it is stateful (global or sticky) to avoid lastIndex issues
+            if (regex.global || regex.sticky) {
+                return new RegExp(regex.source, regex.flags);
+            }
         }
-        return entry;
+        return regex;
     }
 
     /**
      * Sets a cache entry.
      * @param {string} regexString The regex string to cache
      * @param {RegExp} regex The compiled regex
-     * @param {number} [scriptType] The script type to tag this entry with
      */
-    set(regexString, regex, scriptType) {
+    set(regexString, regex) {
         // Evict oldest if at capacity
         if (this.#cache.size >= this.#maxSize) {
             const firstKey = this.#cache.keys().next().value;
             this.#cache.delete(firstKey);
         }
 
-        const types = new Set();
-        if (scriptType !== undefined) {
-            types.add(scriptType);
-        }
-
-        this.#cache.set(regexString, { regex, types });
-    }
-
-    /**
-     * Adds a type tag to an existing cache entry.
-     * @param {string} regexString The regex string
-     * @param {number} scriptType The script type to add
-     */
-    addType(regexString, scriptType) {
-        const entry = this.#cache.get(regexString);
-        if (entry && scriptType !== undefined) {
-            entry.types.add(scriptType);
-        }
-    }
-
-    /**
-     * Prunes cache entries by removing specified types.
-     * @param {Set<number>} typesToPrune The types to remove
-     */
-    prune(typesToPrune) {
-        for (const [key, entry] of this.#cache.entries()) {
-            for (const type of typesToPrune) {
-                entry.types.delete(type);
-            }
-            if (entry.types.size === 0) {
-                this.#cache.delete(key);
-            }
-        }
+        this.#cache.set(regexString, regex);
     }
 
     /**
@@ -135,14 +107,6 @@ export function invalidateScriptsCache() {
 }
 
 /**
- * Prunes the regex cache by removing specified types from entries.
- * @param {Set<number>} typesToPrune The types to remove from the cache entries
- */
-function pruneCache(typesToPrune) {
-    regexCache.prune(typesToPrune);
-}
-
-/**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
  *
  * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
@@ -156,7 +120,7 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, cha
     if (characterOverride) {
         const overrideId = characters.findIndex(c => c.avatar === characterOverride);
         if (overrideId !== -1) {
-            currentChid = overrideId;
+            currentChid = String(overrideId);
         }
     }
 
@@ -182,18 +146,6 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, cha
             currentPresetName !== lastContext.presetName
         )
     ) {
-        const typesToPrune = new Set();
-        if (currentChid !== lastContext.chid || currentCharacterRef !== lastContext.characterRef) {
-            typesToPrune.add(SCRIPT_TYPES.SCOPED);
-        }
-        if (currentPresetApi !== lastContext.presetApi || currentPresetName !== lastContext.presetName) {
-            typesToPrune.add(SCRIPT_TYPES.PRESET);
-        }
-
-        if (typesToPrune.size > 0) {
-            pruneCache(typesToPrune);
-        }
-
         invalidateScriptsCache();
         lastContext = {
             chid: currentChid,
@@ -545,17 +497,12 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
     };
     const regexString = getRegexString();
 
-    let findRegexEntry = regexCache.get(regexString);
-    let findRegex;
+    let findRegex = regexCache.get(regexString);
 
-    if (findRegexEntry) {
-        findRegex = findRegexEntry.regex;
-        // Add type tag
-        regexCache.addType(regexString, regexScript._type);
-    } else {
+    if (!findRegex) {
         findRegex = regexFromString(regexString);
         if (findRegex) {
-            regexCache.set(regexString, findRegex, regexScript._type);
+            regexCache.set(regexString, findRegex);
         }
     }
 
