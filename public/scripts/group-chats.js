@@ -327,7 +327,7 @@ export async function getGroupChat(groupId, reload = false) {
  * Retrieves the members of a group
  *
  * @param {string} [groupId=selected_group] - The ID of the group to retrieve members from. Defaults to the currently selected group.
- * @returns {import('../script.js').Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
+ * @returns {Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
  */
 export function getGroupMembers(groupId = selected_group) {
     const group = groups.find((x) => x.id === groupId);
@@ -620,16 +620,22 @@ function resetSelectedGroup() {
  */
 async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const group = groups.find(x => x.id == groupId);
-    const chat_id = group.chat_id;
+    if (!group) {
+        console.warn('Group not found', groupId);
+        return;
+    }
+    const chatId = group.chat_id;
     group['date_last_chat'] = Date.now();
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata },
+        user_name: 'unused',
+        character_name: 'unused',
     };
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chat_id, chat: [chatHeader, ...chat], force: force, chatTree:chatTree }),
+        body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force, chatTree:chatTree }),
     });
 
     if (!response.ok) {
@@ -730,6 +736,8 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                     }
 
                     if (hadChanges) {
+                        await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, messages, oldAvatar, newAvatar);
+
                         const saveChatResponse = await fetch('/api/chats/group/save', {
                             method: 'POST',
                             headers: getRequestHeaders(),
@@ -2346,6 +2354,8 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata, ...(metadata || {}) },
+        user_name: 'unused',
+        character_name: 'unused',
     };
 
     /** @type {ChatMessage[]} */

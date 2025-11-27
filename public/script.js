@@ -587,7 +587,8 @@ export let max_context = 2048;
 let swipes = true;
 /** Forcefully hide swipes. */
 export let swipesHidden = false;
-export let lastSwipeTime = performance.now();
+/** @type {{ now: number, direction: string }} */
+export let lastSwipeInfo = { now: performance.now(), direction: SWIPE_DIRECTION.RIGHT };
 export let recentSwipes = 0;
 
 export let extension_prompts = {};
@@ -1043,9 +1044,6 @@ function verifyCharactersSearchSortRule() {
         $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
     }
 }
-
-/** @typedef {object} Character - A character */
-/** @typedef {object} Group - A group */
 
 /**
  * @typedef {object} Entity - Object representing a display entity
@@ -7072,6 +7070,8 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: metadata,
+        user_name: 'unused',
+        character_name: 'unused',
     };
 
 
@@ -7786,7 +7786,6 @@ function updateMessage(div) {
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
-
     // editing old messages
     mes['extra'] ??= {};
 
@@ -8494,7 +8493,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
     $('#selected_chat_pole').val(characters[chid].chat);
-    $('#create_date_pole').val(characters[chid].create_date);
+    $('#create_date_pole').val(timestampToMoment(characters[chid].create_date).toISOString());
     $('#avatar_url_pole').val(characters[chid].avatar);
     $('#chat_import_avatar_url').val(characters[chid].avatar);
     $('#chat_import_character_name').val(characters[chid].name);
@@ -9698,9 +9697,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
         const resetTime = animation_duration * 2 + 300;
 
         //Reset the counter if the last swipe was more than half a second ago.
-        if (now - lastSwipeTime >= resetTime) recentSwipes = 0;
+        if (now - lastSwipeInfo.now >= resetTime || direction !== lastSwipeInfo.direction) recentSwipes = 0;
         recentSwipes++;
-        lastSwipeTime = now;
+        lastSwipeInfo = { now, direction };
 
         //At 4 swipes, animation_duration will be halved.
         const sigmoid = 1 / (1 + Math.exp(recentSwipes - 4));

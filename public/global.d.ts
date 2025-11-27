@@ -43,6 +43,10 @@ declare global {
 
     interface ChatHeader {
         chat_metadata: ChatMetadata;
+        /** @deprecated For backward compatibility ONLY */
+        user_name: 'unused';
+        /** @deprecated For backward compatibility ONLY */
+        character_name: 'unused';
     }
 
     interface ChatMetadata {

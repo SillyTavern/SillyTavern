@@ -6,7 +6,7 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync, default as writeFileAtomic } from 'write-file-atomic';
 
-import { color, humanizedISO8601DateTime, tryParse } from '../util.js';
+import { color, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
@@ -81,7 +81,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                                 continue;
                             }
                             await fsPromises.copyFile(chatFilePath, path.join(backupPath, chatFileName));
-                            const chatHeader = { chat_metadata: chatMetadata };
+                            const chatHeader = { chat_metadata: chatMetadata, user_name: 'unused', character_name: 'unused' };
                             const newChatData = [chatHeader, ...chatData];
                             const newChatDataRaw = newChatData.map(entry => JSON.stringify(entry)).join('\n');
                             await writeFileAtomic(chatFilePath, newChatDataRaw, 'utf8');
@@ -127,7 +127,7 @@ router.post('/all', (request, response) => {
             const group = JSON.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
-            group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
+            group['create_date'] = new Date(groupStat.birthtimeMs).toISOString();
 
             let chat_size = 0;
             let date_last_chat = 0;

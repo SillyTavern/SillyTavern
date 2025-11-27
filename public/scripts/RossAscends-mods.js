@@ -162,43 +162,37 @@ export function shouldSendOnEnter() {
     }
 }
 
-//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
-//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
-//Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
-//New chats made with characters will use this new formatting.
-export function humanizedDateTime() {
-    const now = new Date(Date.now());
+/**
+ * Gets a humanized date time string from a given timestamp.
+ * @param {number} timestamp Timestamp in milliseconds
+ * @returns {string} Humanized date time string in the format `YYYY-MM-DD@HHhMMmSSsMSms`
+ */
+export function humanizedDateTime(timestamp = Date.now()) {
+    const date = new Date(timestamp);
     const dt = {
-        year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate(),
-        hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds(),
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        second: date.getSeconds(),
+        millisecond: date.getMilliseconds(),
     };
     for (const key in dt) {
-        dt[key] = dt[key].toString().padStart(2, '0');
+        const padLength = key === 'millisecond' ? 3 : 2;
+        dt[key] = dt[key].toString().padStart(padLength, '0');
     }
-    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s`;
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s${dt.millisecond}ms`;
 }
 
-//this is a common format version to display a timestamp on each chat message
-//returns something like: June 19, 2023 2:20pm
-export function getMessageTimeStamp() {
-    const date = Date.now();
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const d = new Date(date);
-    const month = months[d.getMonth()];
-    const day = d.getDate();
-    const year = d.getFullYear();
-    let hours = d.getHours();
-    const minutes = ('0' + d.getMinutes()).slice(-2);
-    let meridiem = 'am';
-    if (hours >= 12) {
-        meridiem = 'pm';
-        hours -= 12;
-    }
-    if (hours === 0) {
-        hours = 12;
-    }
-    const formattedDate = month + ' ' + day + ', ' + year + ' ' + hours + ':' + minutes + meridiem;
-    return formattedDate;
+/**
+ * Gets a timestamp for messages in ISO 8601 format.
+ * @param {number} timestamp - optional timestamp in milliseconds
+ * @returns {string} ISO 8601 formatted timestamp
+ */
+export function getMessageTimeStamp(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    return date.toISOString();
 }
 
 
