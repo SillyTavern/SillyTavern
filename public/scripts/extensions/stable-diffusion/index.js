@@ -268,6 +268,8 @@ const defaultSettings = {
     snap: false,
     free_extend: false,
     function_tool: false,
+    prompts_preprocessing_enabled: false,
+    prompts_preprocessing : "image###(.*?)###",
 
     prompts: promptTemplates,
 
@@ -515,6 +517,8 @@ async function loadSettings() {
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
+    $('#sd_prompt_preprocessing_enabled').prop('checked', extension_settings.sd.prompts_preprocessing_enabled);
+    $('#sd_prompt_preprocessing').val(extension_settings.sd.prompts_preprocessing);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
@@ -636,6 +640,14 @@ function onSnapInput() {
     extension_settings.sd.snap = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
+function onPromptsPreprocessingInput() {
+    extension_settings.sd.prompts_preprocessing_enabled = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+function onPromptsPreprocessing(){
+    extension_settings.sd.prompts_preprocessing = String($('#sd_prompt_preprocessing').val());
+    
+}
 
 function onStyleSelect() {
     const selectedStyle = String($('#sd_style').find(':selected').val());
@@ -734,6 +746,15 @@ async function onSaveStyleClick() {
 async function refinePrompt(prompt, isNegative) {
     if (extension_settings.sd.refine_mode) {
         const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
+
+        if(extension_settings.sd.prompts_preprocessing_enabled){
+            let prompt_regex = new RegExp(extension_settings.sd.prompts_preprocessing);
+            let prompt_match = prompt.match(prompt_regex);
+            if (prompt_match) {
+                prompt = prompt_match[1];
+            }
+        }
+
         const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 5, okButton: 'Continue' });
 
         if (refinedPrompt) {
@@ -4968,6 +4989,8 @@ jQuery(async () => {
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
+    $('#sd_prompt_preprocessing_enabled').on('input', onPromptsPreprocessingInput);
+    $('#sd_prompt_preprocessing').on('input', onPromptsPreprocessing);
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
