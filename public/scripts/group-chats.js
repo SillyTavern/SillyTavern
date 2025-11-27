@@ -192,7 +192,7 @@ async function regenerateGroup() {
 /**
  * Loads group chat messages from the server.
  * @param {string} chatId Chat ID
- * @returns {Promise<ChatFile>} Array of chat messages
+ * @returns {Promise<[ChatFile, ChatTree]>} Array of chat messages
  */
 async function loadGroupChat(chatId) {
     const response = await fetch('/api/chats/group/get', {
@@ -210,7 +210,7 @@ async function loadGroupChat(chatId) {
         return [currentChat, currentChatTree];
     }
 
-    return [];
+    return [[], {}];
 }
 
 /**
