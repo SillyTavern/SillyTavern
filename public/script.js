@@ -6404,6 +6404,14 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    message.swipes = message.swipes.map((mes) => {
+        if (typeof mes !== 'string') {
+            updated = true;
+            return '';
+        }
+        return mes;
+    });
+
     if (typeof message.swipe_id !== 'number') {
         message.swipe_id = 0;
         updated = true;
