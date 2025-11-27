@@ -2,6 +2,8 @@ import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebou
 import { debounce_timeout } from '/scripts/constants.js';
 import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 
+const ExtensionName = 'ChatUndoHistory'
+
 /** @type {ChatMessage[][]} */
 export let chatHistory = [];
 export let chatHistoryIndex = 0;
