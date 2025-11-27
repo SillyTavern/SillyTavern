@@ -9631,7 +9631,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 //Shake 700/140=5px
                 shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
                 //Flash red.
-                const flashTime = Math.max(animation_duration * 2, 100)
+                const flashTime = Math.max(animation_duration * 2, 100);
                 await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
             } catch (error) {
                 console.warn(error);
