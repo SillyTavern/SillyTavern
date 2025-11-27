@@ -6430,6 +6430,15 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    message.swipes = message.swipes.map((mes) => {
+        if (typeof mes !== 'string') {
+            updated = true;
+            console.warn('The message had a swipe that is not a string. It has has been set to \'\'.', message);
+            return '';
+        }
+        return mes;
+    });
+
     if (typeof message.swipe_id !== 'number') {
         message.swipe_id = 0;
         updated = true;
@@ -6455,11 +6464,12 @@ export function ensureSwipes(message) {
  * Overwrites all current contents of swipes and swipe_info arrays.
  * @param {ChatMessage} message
  * @param {boolean} [ensure=true] This should only be false when ensure has been previously called on the message.
- * @returns
+ * @returns {boolean} false if the message object does not exist. true on success.
  */
 export function writeMessageToSwipe(message, ensure = true) {
     if (typeof message !== 'object') {
         console.trace(`[writeMessageToSwipe] failed. '${message}' is not an object.`);
+        return false;
     }
 
     const targetId = message?.['swipe_id'] ?? 0;
@@ -6503,9 +6513,9 @@ export function loadMessageFromSwipe(message, targetSwipeId = 0) {
 
     ensureSwipes(message);
 
-    const targetSwipeInfo = message.swipe_info[targetSwipeId];
+    const targetSwipeInfo = message.swipe_info[targetSwipeId] ?? {};
 
-    message.mes = message.swipes[targetSwipeId];
+    message.mes = message.swipes[targetSwipeId] ?? '';
     if (typeof targetSwipeInfo?.send_date == 'number') message.send_date = targetSwipeInfo?.send_date;
     if (typeof targetSwipeInfo?.gen_started == 'number') message.gen_started = targetSwipeInfo?.gen_started;
     if (typeof targetSwipeInfo?.gen_finished == 'number') message.gen_finished = targetSwipeInfo?.gen_finished;

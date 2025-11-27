@@ -924,7 +924,7 @@ export function initRossMods() {
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButR.css('display') === 'flex') {
+            if (SwipeButR.is(':visible')) {
                 SwipeButR.trigger('click');
             }
         }
@@ -948,7 +948,7 @@ export function initRossMods() {
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButL.css('display') === 'flex') {
+            if (SwipeButL.is(':visible')) {
                 SwipeButL.trigger('click');
             }
         }
