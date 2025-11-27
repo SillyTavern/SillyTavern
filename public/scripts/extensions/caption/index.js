@@ -108,7 +108,7 @@ async function wrapCaptionTemplate(caption) {
             'Review and edit the generated caption:',
             'Press "Cancel" to abort the caption sending.',
             messageText,
-            { rows: 5, okButton: 'Send' });
+            { rows: 8, okButton: 'Send' });
 
         if (!messageText) {
             throw new Error('User aborted the caption sending.');

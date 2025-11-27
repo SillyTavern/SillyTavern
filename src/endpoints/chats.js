@@ -107,6 +107,8 @@ function importOobaChat(userName, characterName, jsonData) {
     /** @type {object[]} */
     const chat = [{
         chat_metadata: {},
+        user_name: 'unused',
+        character_name: 'unused',
     }];
 
     for (const arr of jsonData.data_visible) {
@@ -146,6 +148,8 @@ function importAgnaiChat(userName, characterName, jsonData) {
     /** @type {object[]} */
     const chat = [{
         chat_metadata: {},
+        user_name: 'unused',
+        character_name: 'unused',
     }];
 
     for (const message of jsonData.messages) {
@@ -178,6 +182,8 @@ function importCAIChat(userName, characterName, jsonData) {
     function convert(history) {
         const starter = {
             chat_metadata: {},
+            user_name: 'unused',
+            character_name: 'unused',
         };
 
         const historyData = history.msgs.map((msg) => ({
@@ -210,7 +216,7 @@ function importKoboldLiteChat(_userName, _characterName, data) {
     function processKoboldMessage(msg) {
         const isUser = msg.includes(inputToken);
         return {
-            name: isUser ? header.user_name : header.character_name,
+            name: isUser ? userName : characterName,
             is_user: isUser,
             mes: msg.replaceAll(inputToken, '').replaceAll(outputToken, '').trim(),
             send_date: new Date().toISOString(),
@@ -219,9 +225,12 @@ function importKoboldLiteChat(_userName, _characterName, data) {
     }
 
     // Create the header
+    const userName = String(data.savedsettings.chatname);
+    const characterName = String(data.savedsettings.chatopponent).split('||$||')[0];
     const header = {
-        user_name: String(data.savedsettings.chatname),
-        character_name: String(data.savedsettings.chatopponent).split('||$||')[0],
+        chat_metadata: {},
+        user_name: 'unused',
+        character_name: 'unused',
     };
     // Format messages
     const formattedMessages = data.actions.map(processKoboldMessage);
@@ -276,6 +285,8 @@ function importRisuChat(userName, characterName, jsonData) {
     /** @type {object[]} */
     const chat = [{
         chat_metadata: {},
+        user_name: 'unused',
+        character_name: 'unused',
     }];
 
     for (const message of jsonData.data.message) {
@@ -696,7 +707,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
 
             const jsonData = JSON.parse(header);
 
-            if (!(jsonData.user_name !== undefined || jsonData.name !== undefined)) {
+            if (!(jsonData.user_name !== undefined || jsonData.name !== undefined || jsonData.chat_metadata !== undefined)) {
                 console.error('Incorrect chat format .jsonl');
                 return response.send({ error: true });
             }

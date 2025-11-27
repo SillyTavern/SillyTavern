@@ -6955,6 +6955,8 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: metadata,
+        user_name: 'unused',
+        character_name: 'unused',
     };
 
     try {

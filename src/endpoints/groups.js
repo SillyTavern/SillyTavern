@@ -81,7 +81,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                                 continue;
                             }
                             await fsPromises.copyFile(chatFilePath, path.join(backupPath, chatFileName));
-                            const chatHeader = { chat_metadata: chatMetadata };
+                            const chatHeader = { chat_metadata: chatMetadata, user_name: 'unused', character_name: 'unused' };
                             const newChatData = [chatHeader, ...chatData];
                             const newChatDataRaw = newChatData.map(entry => JSON.stringify(entry)).join('\n');
                             await writeFileAtomic(chatFilePath, newChatDataRaw, 'utf8');

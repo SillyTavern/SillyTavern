@@ -626,6 +626,8 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata },
+        user_name: 'unused',
+        character_name: 'unused',
     };
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
@@ -2334,6 +2336,8 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata, ...(metadata || {}) },
+        user_name: 'unused',
+        character_name: 'unused',
     };
 
     /** @type {ChatMessage[]} */

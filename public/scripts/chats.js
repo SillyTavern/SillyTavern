@@ -2140,8 +2140,14 @@ export function initChatUtilities() {
     });
 
     $(document).on('click', '.assistant_note_export', async function (_e) {
+        /** @type {ChatHeader} */
+        const chatHeader = {
+            chat_metadata: chat_metadata,
+            user_name: 'unused',
+            character_name: 'unused',
+        };
         const chatToSave = [
-            { chat_metadata: chat_metadata },
+            chatHeader,
             ...chat.filter(x => x?.extra?.type !== system_message_types.ASSISTANT_NOTE),
         ];
 

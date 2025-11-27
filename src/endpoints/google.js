@@ -449,7 +449,7 @@ router.post('/generate-image', async (request, response) => {
                 enhancePrompt: isVertex ? Boolean(request.body.enhance ?? false) : undefined,
                 negativePrompt: isVertex ? (request.body.negative_prompt || undefined) : undefined,
                 aspectRatio: String(request.body.aspect_ratio || '1:1'),
-                personGeneration: !isDeprecated ? 'allow_all' : undefined,
+                personGeneration: !isDeprecated ? 'allow_adult' : undefined,
                 language: isVertex ? 'auto' : undefined,
                 safetySetting: !isDeprecated ? (isVertex ? 'block_only_high' : 'block_low_and_above') : undefined,
                 addWatermark: isVertex ? false : undefined,

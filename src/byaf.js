@@ -334,6 +334,8 @@ export class ByafParser {
         const chatBackground = chatBackgrounds.find(bg => bg.paths.includes(scenario?.backgroundImage || ''))?.name || '';
         /** @type {object[]} */
         const chat = [{
+            user_name: 'unused',
+            character_name: 'unused',
             chat_metadata: {
                 scenario: scenario?.narrative ?? '',
                 mes_example: ByafParser.formatExampleMessages(scenario?.exampleMessages),
