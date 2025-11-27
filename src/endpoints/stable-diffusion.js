@@ -603,6 +603,174 @@ comfy.post('/generate', async (request, response) => {
     }
 });
 
+const comfyRunPod = express.Router();
+
+comfyRunPod.post('/ping', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.RUNPOD);
+
+        if (!key) {
+            console.warn('RunPod key not found.');
+            return response.sendStatus(400);
+        }
+
+        const url = new URL(urlJoin(request.body.url, '/health'));
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${key}` }
+        });
+        if (!result.ok) {
+            console.log(JSON.stringify(result));
+            throw new Error('ComfyUI returned an error.');
+        }
+        const data = await result.json();
+        if (data.workers.ready <= 0) {
+            console.log(`No workers reported as ready. ${result}`);
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/samplers', async (request, response) => {
+    return response.send('N/A');
+});
+
+comfyRunPod.post('/models', async (request, response) => {
+    return response.send('N/A');
+});
+
+comfyRunPod.post('/schedulers', async (request, response) => {
+    return response.send('N/A');
+});
+
+comfyRunPod.post('/vaes', async (request, response) => {
+    return response.send('N/A');
+});
+
+comfyRunPod.post('/workflows', async (request, response) => {
+    try {
+        const data = getComfyWorkflows(request.user.directories);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/workflow', async (request, response) => {
+    try {
+        let filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (!fs.existsSync(filePath)) {
+            filePath = path.join(request.user.directories.comfyWorkflows, 'Default_Comfy_Workflow.json');
+        }
+        const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
+        return response.send(JSON.stringify(data));
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/save-workflow', async (request, response) => {
+    try {
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        writeFileAtomicSync(filePath, request.body.workflow, 'utf8');
+        const data = getComfyWorkflows(request.user.directories);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/delete-workflow', async (request, response) => {
+    try {
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.RUNPOD);
+
+        if (!key) {
+            console.warn('RunPod key not found.');
+            return response.sendStatus(400);
+        }
+
+        let jobId;
+        let item;
+        const url = new URL(urlJoin(request.body.url, '/run'));
+
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            if (!response.writableEnded && !item) {
+                const interruptUrl = new URL(urlJoin(request.body.url, `/cancel/${jobId}`));
+                fetch(interruptUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}` } });
+            }
+            controller.abort();
+        });
+        const workflow = JSON.parse(request.body.prompt).prompt;
+        const wrappedWorkflow = {input:{workflow:workflow}};
+        const runpodPrompt = JSON.stringify(wrappedWorkflow);
+
+        const promptResult = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${key}` },
+            body: runpodPrompt,
+        });
+        console.log(`prompt: ${JSON.stringify(runpodPrompt)}`);
+        console.log(`url: ${url}, key: ${key}`);
+        console.log(JSON.stringify(promptResult));
+        if (!promptResult.ok) {
+            const text = await promptResult.text();
+            throw new Error('ComfyUI returned an error.', { cause: tryParse(text) });
+        }
+
+        /** @type {any} */
+        const data = await promptResult.json();
+        jobId = data.id;
+        const statusUrl = new URL(urlJoin(request.body.url, `/status/${jobId}`));
+        while (true) {
+            const result = await fetch(statusUrl, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${key}` }
+            });
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+            /** @type {any} */
+            const status = await result.json();
+            if (status.output) {
+                item = status.output.images[0];
+            }
+            if (item) {
+                break;
+            }
+            await delay(500);
+        }
+        const format = path.extname(item.filename).slice(1).toLowerCase() || 'png';
+        return response.send({ format: format, data: item.data });        
+    } catch (error) {
+        console.error('ComfyUI error:', error);
+        response.status(500).send(error.message);
+        return response;
+    }
+});
+
 const together = express.Router();
 
 together.post('/models', async (request, response) => {
@@ -1561,6 +1729,7 @@ aimlapi.post('/generate-image', async (req, res) => {
 });
 
 router.use('/comfy', comfy);
+router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);

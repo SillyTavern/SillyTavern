@@ -40,6 +40,7 @@
                 <option value="aimlapi">AI/ML API</option>
                 <option value="bfl">BFL (Black Forest Labs)</option>
                 <option value="comfy">ComfyUI</option>
+                <option value="comfy_runpod">ComfyUI RunPod</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
                 <option value="extras">Extras API (deprecated)</option>
@@ -200,6 +201,43 @@
                     </div>
                 </div>
                 <p><i><b data-i18n="Important:">Important:</b></i><i data-i18n="The server must be accessible from the SillyTavern host machine."> The server must be accessible from the SillyTavern host machine.</i></p>
+                <label for="sd_comfy_workflow2">ComfyUI Workflow</label>
+                <div class="flex-container flexnowrap">
+                    <select id="sd_comfy_workflow2" class="flex1 text_pole"></select>
+                    <div id="sd_comfy_open_workflow_editor2" class="menu_button menu_button_icon" data-i18n="[title]Open workflow editor" title="Open workflow editor">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div id="sd_comfy_new_workflow2" class="menu_button menu_button_icon" data-i18n="[title]Create new workflow" title="Create new workflow">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div id="sd_comfy_delete_workflow2" class="menu_button menu_button_icon" data-i18n="[title]Delete workflow" title="Delete workflow">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                </div>
+            </div>
+            <div data-sd-source="comfy_runpod">
+                <label for="sd_comfy_runpod_url">ComfyUI RunPod URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_comfy_runpod_url" type="text" class="text_pole" data-i18n="[placeholder]sd_comfy_runpod_url" placeholder="Example: {{comfy_runpod_url}}" value="{{comfy_runpod_url}}" />
+                    <div id="sd_comfy_runpod_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <p><i><b data-i18n="Important:">Important:</b></i><i data-i18n="The server must be accessible from the SillyTavern host machine."> The server must be accessible from the SillyTavern host machine.</i></p>
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <a href="https://api.bfl.ml/" target="_blank" rel="noopener noreferrer">
+                        <strong data-i18n="API Key">API Key</strong>
+                        <i class="fa-solid fa-share-from-square"></i>
+                    </a>
+                    <span class="expander"></span>
+                    <div id="sd_runpod_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_runpod">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
                 <label for="sd_comfy_workflow">ComfyUI Workflow</label>
                 <div class="flex-container flexnowrap">
                     <select id="sd_comfy_workflow" class="flex1 text_pole"></select>

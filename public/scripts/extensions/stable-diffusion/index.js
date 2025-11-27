@@ -76,6 +76,7 @@ const sources = {
     openai: 'openai',
     aimlapi: 'aimlapi',
     comfy: 'comfy',
+    comfy_runpod: 'comfy_runpod',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
     pollinations: 'pollinations',
@@ -320,6 +321,8 @@ const defaultSettings = {
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
 
+    comfy_runpod_url: 'https://api.runpod.ai/v2/iunj07kvan2sed',
+
     // Pollinations settings
     pollinations_enhance: false,
 
@@ -514,6 +517,7 @@ async function loadSettings() {
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
+    $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
@@ -1166,6 +1170,12 @@ function onComfyUrlInput() {
     saveSettingsDebounced();
 }
 
+function onComfyRunPodUrlInput() {
+    // Remove trailing slashes
+    extension_settings.sd.comfy_runpod_url = String($('#sd_comfy_runpod_url').val());
+    saveSettingsDebounced();
+}
+
 function onHFModelInput() {
     extension_settings.sd.huggingface_model_id = $('#sd_huggingface_model_id').val();
     saveSettingsDebounced();
@@ -1288,6 +1298,30 @@ async function validateComfyUrl() {
         toastr.success('ComfyUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate ComfyUI API: ${error.message}`);
+    }
+}
+
+async function validateComfyRunPodUrl() {
+    try {
+        if (!extension_settings.sd.comfy_runpod_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/comfyrunpod/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_runpod_url,
+            }),
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI RunPod returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('ComfyUI RunPod API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate ComfyUI RunPod API: ${error.message}`);
     }
 }
 
@@ -1519,6 +1553,9 @@ async function loadSamplers() {
         case sources.comfy:
             samplers = await loadComfySamplers();
             break;
+        case sources.comfy_runpod:
+            samplers = ['N/A'];
+            break;
         case sources.togetherai:
             samplers = ['N/A'];
             break;
@@ -1718,6 +1755,11 @@ async function loadModels() {
         case sources.comfy:
             models = await loadComfyModels();
             break;
+        case sources.comfy_runpod:
+            models = await loadComfyRunPodModels();
+        case sources.comfy_runpod:
+            models = [{ value: '', text: t`N/A` }];
+            break;
         case sources.togetherai:
             models = await loadTogetherAIModels();
             break;
@@ -1850,6 +1892,13 @@ async function loadBflModels() {
         { value: 'flux-pro-1.1', text: 'flux-pro-1.1' },
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
+    ];
+}
+
+async function loadComfyRunPodModels() {
+    $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.RUNPOD]);
+    return [
+        { value: '', text: 'N/A' }
     ];
 }
 
@@ -2269,6 +2318,9 @@ async function loadSchedulers() {
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
+        case sources.comfy_runpod:
+            schedulers = ['N/A'];
+            break;
         case sources.stability:
             schedulers = ['N/A'];
             break;
@@ -2368,6 +2420,9 @@ async function loadVaes() {
             break;
         case sources.comfy:
             vaes = await loadComfyVaes();
+            break;
+        case sources.comfy_runpod:
+            vaes = ['N/A'];
             break;
         case sources.stability:
             vaes = ['N/A'];
@@ -2949,6 +3004,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.comfy:
                 result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.comfy_runpod:
+                result = await generateComfyRunPodImage(prefixedPrompt, negativePrompt, signal);
+                break;
             case sources.togetherai:
                 result = await generateTogetherAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -2982,6 +3040,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         }
 
         if (!result.data) {
+            console.log(JSON.stringify(result));
             throw new Error('Endpoint did not return image data.');
         }
     } catch (err) {
@@ -3765,6 +3824,98 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
     return { format, data };
 }
 
+/**
+ * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateComfyRunPodImage(prompt, negativePrompt, signal) {
+    const placeholders = [
+        'model',
+        'vae',
+        'sampler',
+        'scheduler',
+        'steps',
+        'scale',
+        'width',
+        'height',
+    ];
+
+    const workflowResponse = await fetch('/api/sd/comfyrunpod/workflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    });
+    if (!workflowResponse.ok) {
+        const text = await workflowResponse.text();
+        toastr.error(`Failed to load workflow.\n\n${text}`);
+    }
+    let workflow = (await workflowResponse.json()).replaceAll('"%prompt%"', JSON.stringify(prompt));
+    workflow = workflow.replaceAll('"%negative_prompt%"', JSON.stringify(negativePrompt));
+
+    const seed = extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(seed));
+
+    const denoising_strength = extension_settings.sd.denoising_strength === undefined ? 1.0 : extension_settings.sd.denoising_strength;
+    workflow = workflow.replaceAll('"%denoise%"', JSON.stringify(denoising_strength));
+
+    const clip_skip = isNaN(extension_settings.sd.clip_skip) ? -1 : -extension_settings.sd.clip_skip;
+    workflow = workflow.replaceAll('"%clip_skip%"', JSON.stringify(clip_skip));
+
+    placeholders.forEach(ph => {
+        workflow = workflow.replaceAll(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+    });
+    (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
+        workflow = workflow.replaceAll(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
+    });
+    if (/%user_avatar%/gi.test(workflow)) {
+        const response = await fetch(getUserAvatarUrl());
+        if (response.ok) {
+            const avatarBlob = await response.blob();
+            const avatarBase64DataUrl = await getBase64Async(avatarBlob);
+            const avatarBase64 = avatarBase64DataUrl.split(',')[1];
+            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(avatarBase64));
+        } else {
+            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
+        }
+    }
+    if (/%char_avatar%/gi.test(workflow)) {
+        const response = await fetch(getCharacterAvatarUrl());
+        if (response.ok) {
+            const avatarBlob = await response.blob();
+            const avatarBase64DataUrl = await getBase64Async(avatarBlob);
+            const avatarBase64 = avatarBase64DataUrl.split(',')[1];
+            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(avatarBase64));
+        } else {
+            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
+        }
+    }
+    console.log(`{
+        "prompt": ${workflow}
+    }`);
+    const promptResult = await fetch('/api/sd/comfyrunpod/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            url: extension_settings.sd.comfy_runpod_url,
+            prompt: `{
+                "prompt": ${workflow}
+            }`,
+        }),
+    });
+    if (!promptResult.ok) {
+        const text = await promptResult.text();
+        throw new Error(text);
+    }
+    const { format, data } = await promptResult.json();
+    return { format, data };
+}
 
 /**
  * Generates an image in Hugging Face Inference API using the provided prompt and configuration settings (model selected).
@@ -4298,6 +4449,8 @@ function isValidState() {
         case sources.aimlapi:
             return secret_state[SECRET_KEYS.AIMLAPI];
         case sources.comfy:
+            return true;
+        case sources.comfy_runpod:
             return true;
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
@@ -4953,7 +5106,9 @@ jQuery(async () => {
     $('#sd_novel_variety_boost').on('input', onNovelVarietyBoostInput);
     $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
+    $('#sd_comfy_runpod_validate').on('click', validateComfyRunPodUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
+    $('#sd_comfy_runpod_url').on('input', onComfyRunPodUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
     $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
     $('#sd_comfy_new_workflow').on('click', onComfyNewWorkflowClick);
