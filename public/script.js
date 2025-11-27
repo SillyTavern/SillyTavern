@@ -6490,12 +6490,12 @@ export function loadMessageFromSwipe(message, targetSwipeId = 0) {
 /**
  * Calls writeMessageToSwipe then loadMessageFromSwipe.
  * @param {object} message
- * @param {number} targetSwipeInfo
+ * @param {number} targetSwipeId
  * @returns {boolean}
  */
-export function switchMessageWithSwipe(message, targetSwipeInfo) {
+export function switchMessageWithSwipe(message, targetSwipeId) {
     writeMessageToSwipe(message);
-    return loadMessageFromSwipe(message, targetSwipeInfo);
+    return loadMessageFromSwipe(message, targetSwipeId);
 }
 
 /**
