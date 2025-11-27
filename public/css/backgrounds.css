@@ -63,6 +63,7 @@
     display: flex;
     gap: 5px;
     width: 100%;
+    align-items: baseline;
 }
 
 /* Control buttons in header */

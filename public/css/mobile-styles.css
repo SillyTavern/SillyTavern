@@ -97,6 +97,11 @@
         max-width: 100dvw;
     }
 
+    #add_background_button_top>span,
+    #auto_background>span {
+        display: none;
+    }
+
     #extensions_settings,
     #extensions_settings2 {
         width: 100% !important;

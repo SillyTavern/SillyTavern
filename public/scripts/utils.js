@@ -496,6 +496,10 @@ export async function parseJsonFile(file) {
 
 /**
  * Calculates a hash code for a string.
+ * cyrb53 (c) 2018 bryc ({@link https://github.com/bryc/code/blob/master/jshash/experimental/cyrb53.js|github.com/bryc})
+ * License: Public domain (or MIT if needed). Attribution appreciated.
+ * A fast and simple 53-bit string hash function with decent collision resistance.
+ * Largely inspired by MurmurHash2/3, but with a focus on speed/simplicity.
  * @param {string} str The string to hash.
  * @param {number} [seed=0] The seed to use for the hash.
  * @returns {number} The hash code.
@@ -1101,6 +1105,8 @@ function parseTimestamp(timestamp) {
         ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
         return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
     };
+    // 2024-07-12@01h31m37s123ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s(\d{1,3})ms/ });
     // 2024-7-12@01h31m37s
     dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
     // 2024-6-5 @14h 56m 50s 682ms
@@ -2554,7 +2560,7 @@ export function findPersona({ name = null, allowAvatar = true, insensitive = tru
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
  * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
- * @returns {import('./char-data.js').v1CharData?} - The found character or null if not found
+ * @returns {Character?} - The found character or null if not found
  */
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);

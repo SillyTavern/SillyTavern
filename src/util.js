@@ -389,17 +389,27 @@ export function uuidv4() {
     });
 }
 
-export function humanizedISO8601DateTime(date) {
-    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
-    let humanYear = baseDate.getFullYear();
-    let humanMonth = (baseDate.getMonth() + 1);
-    let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
-    let humanMinute = (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
-    let humanSecond = (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
-    let humanMillisecond = (baseDate.getMilliseconds() < 10 ? '0' : '') + baseDate.getMilliseconds();
-    let HumanizedDateTime = (humanYear + '-' + humanMonth + '-' + humanDate + ' @' + humanHour + 'h ' + humanMinute + 'm ' + humanSecond + 's ' + humanMillisecond + 'ms');
-    return HumanizedDateTime;
+/**
+ * Gets a humanized date time string from a given timestamp.
+ * @param {number} timestamp Timestamp in milliseconds
+ * @returns {string} Humanized date time string in the format `YYYY-MM-DD@HHhMMmSSsMSms`
+ */
+export function humanizedDateTime(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    const dt = {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        second: date.getSeconds(),
+        millisecond: date.getMilliseconds(),
+    };
+    for (const key in dt) {
+        const padLength = key === 'millisecond' ? 3 : 2;
+        dt[key] = dt[key].toString().padStart(padLength, '0');
+    }
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s${dt.millisecond}ms`;
 }
 
 export function tryParse(str) {

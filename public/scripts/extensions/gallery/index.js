@@ -95,7 +95,7 @@ function initSettings() {
 
 /**
  * Retrieves the gallery folder for a given character.
- * @param {import('../../char-data.js').v1CharData} char Character data
+ * @param {Character} char Character data
  * @returns {string} The gallery folder for the character
  */
 function getGalleryFolder(char) {
