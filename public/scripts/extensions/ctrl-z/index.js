@@ -1,4 +1,4 @@
-import { chat, clearChat, event_types, eventSource, printMessages } from '../../../script.js';
+import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
 
 /** @type {ChatMessage[][]} */
 export let chatHistory = [];
@@ -50,18 +50,6 @@ export async function loadChatSnapshot(index) {
     else {
         toastr.error(`Chat ${index + 1}/${chatHistory.length} does not exist!`);
     }
-}
-
-function isInputElementInFocus() {
-    //return $(document.activeElement).is(":input");
-    var focused = $(':focus');
-    if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
-        if (focused.attr('id') === 'send_textarea') {
-            return false;
-        }
-        return true;
-    }
-    return false;
 }
 
 $(document).on('keydown', async function (event) {
