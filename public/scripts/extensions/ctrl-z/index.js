@@ -1,4 +1,6 @@
 import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
+import { debounce_timeout } from '/scripts/constants.js';
+import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 
 /** @type {ChatMessage[][]} */
 export let chatHistory = [];
@@ -67,7 +69,7 @@ $(document).on('keydown', async function (event) {
 eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(chat));
 
 //Snapshot the chat when a message is modified.
-const snapshotEvents = [event_types.MESSAGE_DELETED, event_types.MESSAGE_EDITED, event_types.MESSAGE_SENT]; //Incomplete list.
+const save = debounce(() => saveChatSnapshot(chat), debounce_timeout.short);
 snapshotEvents.forEach((type) => {
-    eventSource.on(type, () => saveChatSnapshot(chat));
+    eventSource.on(type, save);
 });
