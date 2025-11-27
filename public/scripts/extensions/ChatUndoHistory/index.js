@@ -1,8 +1,9 @@
 import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
 import { debounce_timeout } from '/scripts/constants.js';
+import { renderExtensionTemplateAsync } from '/scripts/extensions.js';
 import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 
-const ExtensionName = 'ChatUndoHistory'
+const ExtensionName = 'ChatUndoHistory';
 
 /** @type {ChatMessage[][]} */
 export let chatHistory = [];
@@ -89,4 +90,13 @@ const snapshotEvents = [
 const save = debounce(() => saveChatSnapshot(chat), debounce_timeout.short);
 snapshotEvents.forEach((type) => {
     eventSource.on(type, save);
+});
+
+jQuery(async () => {
+    const buttonsHtml = await renderExtensionTemplateAsync(ExtensionName, 'buttons');
+
+    $('#options .options-content').prepend(buttonsHtml);
+
+    $(document).on('click', '#option_undo', () => loadChatSnapshot(chatHistoryIndex - 1));
+    $(document).on('click', '#option_redo', () => loadChatSnapshot(chatHistoryIndex + 1));
 });
