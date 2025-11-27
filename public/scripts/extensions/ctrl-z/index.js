@@ -72,6 +72,18 @@ $(document).on('keydown', async function (event) {
 eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(chat));
 
 //Snapshot the chat when a message is modified.
+const snapshotEvents = [
+    // event_types.MESSAGE_SWIPE_ENDED, //Redundant? MESSAGE_RECEIVED is emitted after swipe generate.
+    event_types.MESSAGE_SENT,
+    event_types.MESSAGE_RECEIVED,
+    event_types.MESSAGE_EDITED,
+    event_types.MESSAGE_DELETED,
+    event_types.MESSAGE_UPDATED,
+    event_types.MESSAGE_FILE_EMBEDDED,
+    event_types.MESSAGE_REASONING_EDITED,
+    event_types.MESSAGE_REASONING_DELETED,
+    event_types.MESSAGE_SWIPE_DELETED ];
+
 const save = debounce(() => saveChatSnapshot(chat), debounce_timeout.short);
 snapshotEvents.forEach((type) => {
     eventSource.on(type, save);
