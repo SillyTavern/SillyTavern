@@ -9490,6 +9490,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
     const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
+    await eventSource.emit(event_types.MESSAGE_SWIPE_STARTED, { mesId, originalSwipeId, event, direction, source, repeated, message: chat[mesId], forceMesId, forceSwipeId, forceDuration });
+
+
     /**
      * Calculates the next swipe duration with how many swipes have been repeated.
      * @param {number} animation_duration
@@ -9584,6 +9587,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //Allow for another swipe.
         swipeState = SWIPE_STATE.NONE;
         delete document.body.dataset.swiping;
+
+        await eventSource.emit(event_types.MESSAGE_SWIPE_ENDED, { mesId, originalSwipeId, clampedId, generation, event, direction, source, repeated, message: chat[mesId], forceMesId, forceSwipeId, forceDuration });
         showSwipeButtons();
     }
 
