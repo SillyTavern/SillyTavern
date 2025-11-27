@@ -1383,7 +1383,7 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
         const jsonFilesPromise = jsonFiles.map((file) => {
             const withMetadata = !!request.body.metadata;
             const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
-            return getChatInfo(pathToFile, {}, false, withMetadata);
+            return getChatInfo(pathToFile, {}, withMetadata);
         });
 
         const chatData = (await Promise.allSettled(jsonFilesPromise)).filter(x => x.status === 'fulfilled').map(x => x.value);

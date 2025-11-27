@@ -105,7 +105,7 @@ export async function saveScriptsByType(scripts, scriptType) {
 
 /**
  * Check if character's regexes are allowed to be used; if character is undefined, returns false
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {boolean}
  */
 export function isScopedScriptsAllowed(character) {
@@ -114,7 +114,7 @@ export function isScopedScriptsAllowed(character) {
 
 /**
  * Allow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function allowScopedScripts(character) {
@@ -133,7 +133,7 @@ export function allowScopedScripts(character) {
 
 /**
  * Disallow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function disallowScopedScripts(character) {

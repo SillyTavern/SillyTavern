@@ -2558,7 +2558,7 @@ export function findPersona({ name = null, allowAvatar = true, insensitive = tru
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
  * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
- * @returns {import('./char-data.js').v1CharData?} - The found character or null if not found
+ * @returns {Character?} - The found character or null if not found
  */
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
