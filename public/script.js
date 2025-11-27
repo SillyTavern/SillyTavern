@@ -6404,13 +6404,12 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
-    message.swipes = message.swipes.map((mes) => {
+    message.swipes.forEach((mes, index, swipes) => {
         if (typeof mes !== 'string') {
             updated = true;
             console.warn('The message had a swipe that is not a string. It has has been set to \'\'.', message);
-            return '';
+            swipes[index] = '';
         }
-        return mes;
     });
 
     if (typeof message.swipe_id !== 'number') {
