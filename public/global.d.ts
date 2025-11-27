@@ -17,6 +17,7 @@ declare global {
     type TextCompletionSettings = typeof textgenerationwebui_settings;
     type MessageTimestamp = string | number | Date;
     type Character = import('./scripts/char-data').v1CharData;
+    type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
 
     interface Group {
         id: string;
@@ -69,12 +70,19 @@ declare global {
         force_avatar?: string;
         original_avatar?: string;
         swipes?: string[];
-        swipe_info?: Record<string, any>;
+        swipe_info?: SwipeInfo[];
         swipe_id?: number;
-        extra?: ChatMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+        extra?: ChatMessageExtra;
     };
 
-    interface ChatMessageExtra {
+    interface SwipeInfo {
+        send_date?: MessageTimestamp;
+        gen_started?: MessageTimestamp;
+        gen_finished?: MessageTimestamp;
+        extra?: ChatMessageExtra;
+    }
+
+    interface BaseMessageExtra {
         gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;

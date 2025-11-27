@@ -6409,6 +6409,7 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    /** @type {() => SwipeInfo} */
     const createSwipeInfo = () => ({
         send_date: message.send_date,
         gen_started: message.gen_started,
