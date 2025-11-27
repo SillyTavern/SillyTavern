@@ -6407,6 +6407,7 @@ export function ensureSwipes(message) {
     message.swipes = message.swipes.map((mes) => {
         if (typeof mes !== 'string') {
             updated = true;
+            console.warn('The message had a swipe that is not a string. It has has been set to \'\'.', message);
             return '';
         }
         return mes;
