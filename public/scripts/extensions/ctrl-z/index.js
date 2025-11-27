@@ -50,8 +50,7 @@ export async function loadChatSnapshot(index) {
 
         toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
 
-        //Should undo save the chat?
-        // saveChat()
+        saveChatDebounced();
     }
     else {
         toastr.error(`Chat ${index + 1}/${chatHistory.length} does not exist!`);
