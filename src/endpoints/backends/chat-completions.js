@@ -427,9 +427,17 @@ async function sendMakerSuiteRequest(request, response) {
                         delete tool.function.parameters;
                     }
                     functionDeclarations.push(tool.function);
+                } else if (tool.type === 'retrieval') {
+                    if (authType === 'full') {
+                        tools.push({ retrieval: tool.retrieval });
+                    } else {
+                        console.warn('Skipping Vertex AI Search: grounding is only supported in Full (Service Account) authentication mode.');
+                    }
                 }
             }
-            tools.push({ function_declarations: functionDeclarations });
+            if (functionDeclarations.length > 0) {
+                tools.push({ function_declarations: functionDeclarations });
+            }
         }
 
         if (isThinkingConfigModel(model)) {
