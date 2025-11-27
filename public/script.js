@@ -6404,27 +6404,34 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    if (typeof message.swipe_id !== 'number') {
+        message.swipe_id = 0;
+        updated = true;
+    }
+
+    const createSwipeInfo = () => ({
+        send_date: message.send_date,
+        gen_started: message.gen_started,
+        gen_finished: message.gen_finished,
+        extra: structuredClone(message.extra) ?? {},
+    });
+
+    if (!Array.isArray(message.swipe_info)) {
+        message.swipe_info = message.swipes.map(_ => createSwipeInfo());
+        updated = true;
+    }
+
     for (let i = 0; i < message.swipes.length; i++) {
         if (typeof message.swipes[i] !== 'string') {
             updated = true;
             console.warn('The message had a swipe that is not a string. It has has been set to \'\'.', message);
             message.swipes[i] = '';
         }
-    }
-
-    if (typeof message.swipe_id !== 'number') {
-        message.swipe_id = 0;
-        updated = true;
-    }
-
-    if (!Array.isArray(message.swipe_info)) {
-        message.swipe_info = message.swipes.map(_ => ({
-            send_date: message.send_date,
-            gen_started: message.gen_started,
-            gen_finished: message.gen_finished,
-            extra: structuredClone(message.extra) ?? {},
-        }));
-        updated = true;
+        if (!message.swipe_info[i] || typeof message.swipe_info[i] !== 'object') {
+            updated = true;
+            console.warn('The message had missing or invalid swipe_info for a swipe. It has been backfilled.', message);
+            message.swipe_info[i] = createSwipeInfo();
+        }
     }
 
     return updated;
