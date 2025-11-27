@@ -6404,6 +6404,14 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    message.swipes = message.swipes.map((mes) => {
+        if (typeof mes !== 'string') {
+            updated = true;
+            return '';
+        }
+        return mes;
+    });
+
     if (typeof message.swipe_id !== 'number') {
         message.swipe_id = 0;
         updated = true;
@@ -6478,9 +6486,9 @@ export function loadMessageFromSwipe(message, targetSwipeId = 0) {
 
     ensureSwipes(message);
 
-    const targetSwipeInfo = message.swipe_info[targetSwipeId];
+    const targetSwipeInfo = message.swipe_info[targetSwipeId] ?? {};
 
-    message.mes = message.swipes[targetSwipeId];
+    message.mes = message.swipes[targetSwipeId] ?? '';
     if (typeof targetSwipeInfo?.send_date == 'number') message.send_date = targetSwipeInfo?.send_date;
     if (typeof targetSwipeInfo?.gen_started == 'number') message.gen_started = targetSwipeInfo?.gen_started;
     if (typeof targetSwipeInfo?.gen_finished == 'number') message.gen_finished = targetSwipeInfo?.gen_finished;
