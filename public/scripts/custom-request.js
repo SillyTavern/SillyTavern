@@ -1,5 +1,5 @@
 import { getPresetManager } from './preset-manager.js';
-import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
+import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders, name1, name2 } from '../script.js';
 import { getTextGenServer, createTextGenGenerationData } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences, names_behavior_types } from './instruct-mode.js';
@@ -202,8 +202,7 @@ export class TextCompletionService {
 
         // Clone the preset to avoid modifying the original
         instructPreset = structuredClone(instructPreset);
-        instructPreset.names_behavior = names_behavior_types.NONE;
-        if (instructSettings) {
+        if (instructSettings) {  // apply any additional settings
             Object.assign(instructPreset, instructSettings);
         }
 
@@ -219,14 +218,18 @@ export class TextCompletionService {
                 // 1. If prefill is not active, format all messages
                 // 2. If prefill is active, format all messages except the last one
                 if (!isLastMessage || !prefillActive) {
+                    let name = '';
+                    if (message.role === 'user') name = message.name ?? name1;
+                    if (message.role === 'assistant') name = message.name ?? name2;
+                    if (message.role === 'system') name = message.name ?? '';
                     messageContent = formatInstructModeChat(
-                        message.role,
+                        name,
                         message.content,
                         message.role === 'user',
                         message.role === 'system',
                         undefined,
-                        undefined,
-                        undefined,
+                        name1,
+                        name2,
                         undefined,
                         instructPreset,
                     );
@@ -235,31 +238,33 @@ export class TextCompletionService {
                 // Add prompt formatting for the last message.
                 if (isLastMessage) {
                     if (!prefillActive) { // e.g. "<|im_start|>user:"
-                        messageContent += formatInstructModePrompt(
-                            undefined,
+                        messageContent += formatInstructModePrompt(  // used for formatting the last line
+                            name1,  // user message
+                            false,  // not an impersonation
+                            undefined,  // no prompt bias
+                            name1,
+                            name2,
+                            true,
                             false,
-                            undefined,
-                            undefined,
-                            undefined,
-                            false,
-                            false,
-                            instructPreset,
+                            instructPreset
                         );
                     } else { // e.g. "<|im_start|>assistant: Hello, my name is"
                         const overriddenInstructPreset = structuredClone(instructPreset);
-                        overriddenInstructPreset.output_suffix = '';
-                        overriddenInstructPreset.wrap = false;
-                        messageContent = formatInstructModeChat(
-                            message.role,
-                            message.content,
-                            false, // since it is assistant
+                        messageContent = formatInstructModePrompt(  // used for formatting the last line
+                            name2,  // assistant message
+                            false,  // not an impersonation
+                            message.content,  // the last message is the prompt bias
+                            name1,
+                            name2,
+                            true,
                             false,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            overriddenInstructPreset,
-                        );
+                            overriddenInstructPreset
+                        )
+
+                        // remove newline after prefill if it's not in the prefill itself
+                        if (!message.content.endsWith("\n")) {
+                            messageContent = messageContent.slice(0, -1)
+                        }
                     }
                 }
             }
