@@ -33,7 +33,7 @@ export function saveChatSnapshot(toast, chatData = chat){
 
 
     //Enforce the maximum chat length.
-    if (chat.length >= maximumChatLength) {
+    if (chatData.length >= maximumChatLength) {
         toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
         return;
     }
@@ -63,7 +63,7 @@ export function saveChatSnapshot(toast, chatData = chat){
 export async function loadChatSnapshot(index) {
     const maximumChatLength = extension_settings[extensionName]?.max_length ?? 1000;
 
-    //Enforce the maximum chat length.
+    //Don't overwrite chats that are longer than maximumChatLength.
     if (chat.length >= maximumChatLength) {
         toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
         return;
@@ -73,17 +73,18 @@ export async function loadChatSnapshot(index) {
         chatHistoryIndex = index;
 
         const newChat = structuredClone(chatHistory[chatHistoryIndex]);
+        const oldChatLength = chat.length;
 
         //Replace the chat.
-        chat.splice(0, chat.length, ...newChat);
+        chat.splice(0, oldChatLength, ...newChat);
 
         clearChat();
         printMessages();
 
         await eventSource.emit(event_types.CHAT_SNAPSHOT_LOADED, index);
 
-        if (newChat.length > chat.length) { await eventSource.emit(event_types.MESSAGE_RECEIVED); }
-        if (newChat.length < chat.length) { await eventSource.emit(event_types.MESSAGE_DELETED); }
+        if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED); }
+        if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED); }
 
         toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
 
