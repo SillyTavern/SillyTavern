@@ -1354,10 +1354,6 @@ async function sendAzureOpenAIRequest(request, response) {
         ? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
         : undefined;
 
-    if (request.body.verbosity && OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
-        apiRequestBody['verbosity'] = request.body.verbosity;
-    }
-
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', () => controller.abort());

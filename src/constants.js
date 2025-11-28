@@ -451,7 +451,6 @@ export const AZURE_OPENAI_KEYS = [
     'tools',
     'tool_choice',
     'reasoning_effort',
-    'verbosity',
 ];
 
 export const OPENAI_VERBOSITY_MODELS = /^gpt-5/;
