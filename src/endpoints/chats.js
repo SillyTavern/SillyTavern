@@ -503,7 +503,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
         const doIntegrityCheck = (checkIntegrity && !request.body.force);
         const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
-        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.chat_metadata?.integrity : undefined;
+        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.integrity : undefined;
 
 
         if (chatData) {
@@ -891,7 +891,7 @@ router.post('/group/save', async function (request, response) {
 
         const doIntegrityCheck = (checkIntegrity && !request.body.force);
         const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
-        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.chat_metadata?.integrity : undefined;
+        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.integrity : undefined;
 
 
         if (chatData) {
