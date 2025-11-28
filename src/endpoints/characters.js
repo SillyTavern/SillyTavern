@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedDateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
+import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -23,6 +23,7 @@ import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
 import { ByafParser } from '../byaf.js';
+import { CharXParser, persistCharXAssets } from '../charx.js';
 import cacheBuster from '../middleware/cacheBuster.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
@@ -767,40 +768,37 @@ async function importFromYaml(uploadPath, context, preservedFileName) {
  * @returns {Promise<string>} Internal name of the character
  */
 async function importFromCharX(uploadPath, { request }, preservedFileName) {
-    const data = fs.readFileSync(uploadPath).buffer;
+    const fileBuffer = fs.readFileSync(uploadPath);
+    // Create a properly-sized ArrayBuffer (Node's buffer pool can cause oversized .buffer)
+    const data = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
     fs.unlinkSync(uploadPath);
-    console.info('Importing from CharX');
-    const cardBuffer = await extractFileFromZipBuffer(data, 'card.json');
 
-    if (!cardBuffer) {
-        throw new Error('Failed to extract card.json from CharX file');
-    }
+    const parser = new CharXParser(data);
+    const { card, avatar, auxiliaryAssets, extractedBuffers } = await parser.parse();
 
-    const card = readFromV2(JSON.parse(cardBuffer.toString()));
+    // Apply standard character transformations
+    let processedCard = readFromV2(card);
+    unsetPrivateFields(processedCard);
+    processedCard['create_date'] = new Date().toISOString();
+    processedCard.name = sanitize(processedCard.name);
 
-    if (card.spec === undefined) {
-        throw new Error('Invalid CharX card file: missing spec field');
-    }
+    const fileName = preservedFileName || getPngName(processedCard.name, request.user.directories);
+    // Use the actual character name for asset folders, not the unique filename
+    // ST's sprite system looks up by character name, not PNG filename
+    const characterFolder = processedCard.name;
 
-    /** @type {string|Buffer} */
-    let avatar = DEFAULT_AVATAR_PATH;
-    const assets = _.get(card, 'data.assets');
-    if (Array.isArray(assets) && assets.length) {
-        for (const asset of assets.filter(x => x.type === 'icon' && typeof x.uri === 'string')) {
-            const pathNoProtocol = String(asset.uri.replace(/^(?:\/\/|[^/]+)*\//, ''));
-            const buffer = await extractFileFromZipBuffer(data, pathNoProtocol);
-            if (buffer) {
-                avatar = buffer;
-                break;
+    if (auxiliaryAssets.length > 0) {
+        try {
+            const summary = persistCharXAssets(auxiliaryAssets, extractedBuffers, request.user.directories, characterFolder);
+            if (summary.sprites || summary.backgrounds || summary.misc) {
+                console.log(`CharX: Imported ${summary.sprites} sprite(s), ${summary.backgrounds} background(s), ${summary.misc} misc asset(s) for ${characterFolder}`);
             }
+        } catch (error) {
+            console.warn(`CharX: Failed to persist auxiliary assets for ${characterFolder}`, error);
         }
     }
 
-    unsetPrivateFields(card);
-    card['create_date'] = new Date().toISOString();
-    card.name = sanitize(card.name);
-    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
-    const result = await writeCharacterData(avatar, JSON.stringify(card), fileName, request);
+    const result = await writeCharacterData(avatar, JSON.stringify(processedCard), fileName, request);
     return result ? fileName : '';
 }
 

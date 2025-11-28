@@ -237,7 +237,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "연속된 시스템 메시지를 하나로 결합합니다(예제 대화 제외). 일부 모델의 일관성을 향상시킬 수 있습니다.",
     "Enable function calling": "함수 호출 활성화",
     "Send inline images": "인라인 이미지 전송",
-    "image_inlining_hint_1": "모델이 지원하는 경우 메시지로 이미지를 보냅니다.",
+    "image_inlining_hint_1": "모델이 지원하는 경우 메시지로 미디어 파일을 보냅니다.",
     "Inline Image Quality": "인라인 이미지 품질",
     "openai_inline_image_quality_auto": "자동",
     "openai_inline_image_quality_low": "낮은",

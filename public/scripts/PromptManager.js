@@ -579,10 +579,6 @@ class PromptManager {
                 const sourceName = this.promptSources[promptId];
                 entrySource.textContent = sourceName;
             }
-
-            if (!this.systemPrompts.includes(promptId)) {
-                injectionPositionField.removeAttribute('disabled');
-            }
         };
 
         // Append prompt to selected character
@@ -1399,10 +1395,6 @@ class PromptManager {
             entrySource.textContent = sourceName;
         }
 
-        if (this.systemPrompts.includes(prompt.identifier)) {
-            injectionPositionField.setAttribute('disabled', 'disabled');
-        }
-
         const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
         if (true === prompt.system_prompt) {
             resetPromptButton.style.display = 'block';
@@ -1757,7 +1749,7 @@ class PromptManager {
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
                         ${this.isPromptInspectionAllowed(prompt) ? `<a title="${encodedName}" class="prompt-manager-inspect-action">${encodedName}</a>` : `<span title="${encodedName}">${encodedName}</span>`}
                         ${roleIcon ? `<span data-role="${escapeHtml(prompt.role)}" class="fa-xs fa-solid ${roleIcon}" title="${roleTitle}"></span>` : ''}
-                        ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${escapeHtml(prompt.injection_depth)}</small>` : ''}
+                        ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${escapeHtml(prompt.injection_depth.toString())}</small>` : ''}
                         ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
                     <span>

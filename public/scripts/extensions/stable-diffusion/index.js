@@ -734,7 +734,7 @@ async function onSaveStyleClick() {
 async function refinePrompt(prompt, isNegative) {
     if (extension_settings.sd.refine_mode) {
         const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
-        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 5, okButton: 'Continue' });
+        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 8, okButton: 'Continue' });
 
         if (refinedPrompt) {
             return String(refinedPrompt);
@@ -2907,10 +2907,16 @@ async function generatePrompt(quietPrompt) {
  */
 async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator, signal) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
-    const prefix = noCharPrefix.includes(generationType)
+    const isCharChat = this_chid !== undefined && !selected_group;
+    const ignoreNoCharForSwipe = initiator === initiators.swipe && isCharChat;
+
+    const skipCharPrefix = !ignoreNoCharForSwipe && noCharPrefix.includes(generationType);
+
+    const prefix = skipCharPrefix
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
-    const negativePrefix = noCharPrefix.includes(generationType)
+
+    const negativePrefix = skipCharPrefix
         ? extension_settings.sd.negative_prompt
         : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
 
@@ -4370,6 +4376,10 @@ async function sdMessageButton($icon, { animate } = {}) {
 
     if (!Array.isArray(message.extra.media)) {
         message.extra.media = [];
+    }
+
+    if (!message.extra.media.length && !message.extra.media_display) {
+        message.extra.media_display = MEDIA_DISPLAY.GALLERY;
     }
 
     /** @type {MediaAttachment} */

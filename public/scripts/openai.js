@@ -239,6 +239,13 @@ export const reasoning_effort_types = {
     max: 'max',
 };
 
+export const verbosity_levels = {
+    auto: 'auto',
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+};
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -310,7 +317,6 @@ export const settingsToUpdate = {
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
-    wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
     send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false, false],
     impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false, false],
@@ -331,21 +337,19 @@ export const settingsToUpdate = {
     proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
-    claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true, false],
-    use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true, false],
+    use_sysprompt: ['#use_sysprompt', 'use_sysprompt', true, false],
     vertexai_auth_mode: ['#vertexai_auth_mode', 'vertexai_auth_mode', false, true],
     vertexai_region: ['#vertexai_region', 'vertexai_region', false, true],
     vertexai_express_project_id: ['#vertexai_express_project_id', 'vertexai_express_project_id', false, true],
     squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true, false],
-    image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
+    media_inlining: ['#openai_media_inlining', 'media_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
-    video_inlining: ['#openai_video_inlining', 'video_inlining', true, false],
-    audio_inlining: ['#openai_audio_inlining', 'audio_inlining', true, false],
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
+    verbosity: ['#openai_verbosity', 'verbosity', false, false],
     enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true, false],
     seed: ['#seed_openai', 'seed', false, false],
     n: ['#n_openai', 'n', false, false],
@@ -371,7 +375,6 @@ const default_settings = {
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
-    wrap_in_quotes: false,
     ...chatCompletionDefaultPrompts,
     ...promptManagerDefaultPromptOrders,
     send_if_empty: '',
@@ -432,16 +435,13 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     assistant_impersonation: '',
-    claude_use_sysprompt: false,
-    use_makersuite_sysprompt: true,
+    use_sysprompt: false,
     vertexai_auth_mode: 'express',
     vertexai_region: 'us-central1',
     vertexai_express_project_id: '',
     squash_system_messages: false,
-    image_inlining: true,
+    media_inlining: true,
     inline_image_quality: 'auto',
-    video_inlining: true,
-    audio_inlining: true,
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
@@ -450,6 +450,7 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: reasoning_effort_types.auto,
+    verbosity: verbosity_levels.auto,
     enable_web_search: false,
     request_images: false,
     seed: -1,
@@ -552,8 +553,6 @@ function setOpenAIMessages(chat) {
         // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');
 
-        // Apply the "wrap in quotes" option
-        if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const media = chat[j]?.extra?.media;
         const mediaDisplay = getMediaDisplay(chat[j]);
@@ -1117,60 +1116,48 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Bias
     if (bias && bias.trim().length) await addToChatCompletion('bias');
 
-    // Tavern Extras - Summary
-    if (prompts.has('summary')) {
-        const summary = prompts.get('summary');
-
-        if (summary.position) {
-            const message = await Message.fromPromptAsync(summary);
-            chatCompletion.insert(message, 'main', summary.position);
+    const injectToMain = async (/** @type {Prompt} */ prompt, /** @type {string|number} */ position) => {
+        if (chatCompletion.has('main')) {
+            const message = await Message.fromPromptAsync(prompt);
+            chatCompletion.insert(message, 'main', position);
+        } else {
+            // Convert the relative prompt to an injection and place it relative to main prompt
+            // Keeping prompts in the same order bucket will squash them together during in-chat injection
+            const indexOfMain = absolutePrompts.findIndex(p => p.identifier === 'main');
+            if (indexOfMain >= 0) {
+                const main = absolutePrompts[indexOfMain];
+                const promptCopy = new Prompt(prompt);
+                promptCopy.role = main.role;
+                promptCopy.injection_position = main.injection_position;
+                promptCopy.injection_depth = main.injection_depth;
+                promptCopy.injection_order = main.injection_order;
+                const newIndex = position === 'end' ? indexOfMain + 1 : indexOfMain;
+                absolutePrompts.splice(newIndex, 0, promptCopy);
+            }
         }
-    }
+    };
 
-    // Authors Note
-    if (prompts.has('authorsNote')) {
-        const authorsNote = prompts.get('authorsNote');
+    const knownPrompts = [
+        'summary',
+        'authorsNote',
+        'vectorsMemory',
+        'vectorsDataBank',
+        'smartContext',
+    ];
 
-        if (authorsNote.position) {
-            const message = await Message.fromPromptAsync(authorsNote);
-            chatCompletion.insert(message, 'main', authorsNote.position);
-        }
-    }
-
-    // Vectors Memory
-    if (prompts.has('vectorsMemory')) {
-        const vectorsMemory = prompts.get('vectorsMemory');
-
-        if (vectorsMemory.position) {
-            const message = await Message.fromPromptAsync(vectorsMemory);
-            chatCompletion.insert(message, 'main', vectorsMemory.position);
-        }
-    }
-
-    // Vectors Data Bank
-    if (prompts.has('vectorsDataBank')) {
-        const vectorsDataBank = prompts.get('vectorsDataBank');
-
-        if (vectorsDataBank.position) {
-            const message = await Message.fromPromptAsync(vectorsDataBank);
-            chatCompletion.insert(message, 'main', vectorsDataBank.position);
-        }
-    }
-
-    // Smart Context (ChromaDB)
-    if (prompts.has('smartContext')) {
-        const smartContext = prompts.get('smartContext');
-
-        if (smartContext.position) {
-            const message = await Message.fromPromptAsync(smartContext);
-            chatCompletion.insert(message, 'main', smartContext.position);
+    // Known relative extension prompts
+    for (const key of knownPrompts) {
+        if (prompts.has(key)) {
+            const prompt = prompts.get(key);
+            if (prompt.position) {
+                await injectToMain(prompt, prompt.position);
+            }
         }
     }
 
     // Other relative extension prompts
     for (const prompt of prompts.collection.filter(p => p.extension && p.position)) {
-        const message = await Message.fromPromptAsync(prompt);
-        chatCompletion.insert(message, 'main', prompt.position);
+        await injectToMain(prompt, prompt.position);
     }
 
     // Pre-allocation of tokens for tool data
@@ -2248,6 +2235,15 @@ function getReasoningEffort() {
     return reasoningEffort;
 }
 
+function getVerbosity() {
+    if (oai_settings.verbosity === verbosity_levels.auto) {
+        return undefined;
+    }
+
+    // TODO: Adjust verbosity based on model capabilities
+    return oai_settings.verbosity;
+}
+
 /**
  * Send a chat completion request to backend
  * @param {string} type (impersonate, quiet, continue, etc)
@@ -2335,6 +2331,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'enable_web_search': Boolean(oai_settings.enable_web_search),
         'request_images': Boolean(oai_settings.request_images),
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
+        'verbosity': getVerbosity(),
     };
 
     if (isAzureOpenAI) {
@@ -2381,7 +2378,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     if (isClaude) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
+        generate_data['use_sysprompt'] = oai_settings.use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
         if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
@@ -2408,7 +2405,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         const stopStringsLimit = 5;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
+        generate_data['use_sysprompt'] = oai_settings.use_sysprompt;
         if (isVertexAI) {
             generate_data['vertexai_auth_mode'] = oai_settings.vertexai_auth_mode;
             generate_data['vertexai_region'] = oai_settings.vertexai_region;
@@ -3302,7 +3299,6 @@ class MessageCollection {
  *
  */
 export class ChatCompletion {
-
     /**
      * Combines consecutive system messages into one if they have no name attached.
      * @returns {Promise<void>}
@@ -3656,6 +3652,40 @@ export class ChatCompletion {
 }
 
 /**
+ * Migrate old Chat Completion settings to new format.
+ * @param {ChatCompletionSettings} settings Settings to migrate
+ */
+function migrateChatCompletionSettings(settings) {
+    const migrateMap = [
+        { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
+        { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
+        { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
+        { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
+        { oldKey: 'image_inlining', oldValue: false, newKey: 'media_inlining', newValue: false },
+        { oldKey: 'image_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'video_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'audio_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
+        { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
+        { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
+    ];
+
+    for (const migration of migrateMap) {
+        if (Object.hasOwn(settings, migration.oldKey)) {
+            const shouldMigrate = migration.oldValue instanceof RegExp
+                ? migration.oldValue.test(settings[migration.oldKey])
+                : settings[migration.oldKey] === migration.oldValue;
+            if (shouldMigrate) {
+                settings[migration.newKey] = migration.newValue;
+            }
+            if (migration.oldKey !== migration.newKey) {
+                delete settings[migration.oldKey];
+            }
+        }
+    }
+}
+
+/**
  * Load OpenAI settings from backend data
  * @param {any} data Settings data from backend
  * @param {ChatCompletionSettings} settings Saved settings from backend
@@ -3679,23 +3709,7 @@ function loadOpenAISettings(data, settings) {
     });
     openai_setting_names = settingNames;
 
-    const migrateMap = [
-        { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
-        { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
-        { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
-        { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
-    ];
-
-    for (const migration of migrateMap) {
-        if (Object.hasOwn(settings, migration.oldKey)) {
-            const shouldMigrate = migration.oldValue instanceof RegExp
-                ? migration.oldValue.test(settings[migration.oldKey])
-                : settings[migration.oldKey] === migration.oldValue;
-            if (shouldMigrate) {
-                settings[migration.newKey] = migration.newValue;
-            }
-        }
-    }
+    migrateChatCompletionSettings(settings);
 
     for (const key of Object.keys(default_settings)) {
         oai_settings[key] = settings[key] ?? default_settings[key];
@@ -4331,15 +4345,7 @@ function onSettingsPresetChange() {
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
-    // Migrate old settings
-    if (preset.names_in_completion === true && preset.names_behavior === undefined) {
-        preset.names_behavior = character_names_behavior.COMPLETION;
-    }
-
-    // Claude: Assistant Impersonation Prefill = Inherit from Assistant Prefill
-    if (preset.assistant_prefill !== undefined && preset.assistant_impersonation === undefined) {
-        preset.assistant_impersonation = preset.assistant_prefill;
-    }
+    migrateChatCompletionSettings(preset);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input', { source: 'preset' });
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
@@ -4750,11 +4756,6 @@ async function onModelChange() {
         if (!value || !hasModelsLoaded) {
             console.debug('Null MistralAI model selected. Ignoring.');
             return;
-        }
-        // Upgrade old mistral models to new naming scheme
-        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
-        if (value === 'mistral-medium' || value === 'mistral-small') {
-            value = value + '-latest';
         }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
@@ -5448,7 +5449,7 @@ export function isImageInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.image_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5563,7 +5564,7 @@ export function isVideoInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.video_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5596,7 +5597,7 @@ export function isAudioInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.audio_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5980,18 +5981,8 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#wrap_in_quotes').on('change', function () {
-        oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#claude_use_sysprompt').on('change', function () {
-        oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#use_makersuite_sysprompt').on('change', function () {
-        oai_settings.use_makersuite_sysprompt = !!$('#use_makersuite_sysprompt').prop('checked');
+    $('#use_sysprompt').on('change', function () {
+        oai_settings.use_sysprompt = !!$('#use_sysprompt').prop('checked');
         saveSettingsDebounced();
     });
 
@@ -6191,26 +6182,14 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openai_image_inlining').on('input', function () {
-        oai_settings.image_inlining = !!$(this).prop('checked');
+    $('#openai_media_inlining').on('input', function () {
+        oai_settings.media_inlining = !!$(this).prop('checked');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
     $('#openai_inline_image_quality').on('input', function () {
         oai_settings.inline_image_quality = String($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $('#openai_video_inlining').on('input', function () {
-        oai_settings.video_inlining = !!$(this).prop('checked');
-        updateFeatureSupportFlags();
-        saveSettingsDebounced();
-    });
-
-    $('#openai_audio_inlining').on('input', function () {
-        oai_settings.audio_inlining = !!$(this).prop('checked');
-        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
@@ -6333,6 +6312,11 @@ export function initOpenAI() {
 
     $('#openai_reasoning_effort').on('input', function () {
         oai_settings.reasoning_effort = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_verbosity').on('input', function () {
+        oai_settings.verbosity = String($(this).val());
         saveSettingsDebounced();
     });
 
