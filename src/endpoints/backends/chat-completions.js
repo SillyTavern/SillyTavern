@@ -399,7 +399,7 @@ async function sendMakerSuiteRequest(request, response) {
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
-        const isImageConfigModel = m => /^gemini-3/.test(m);
+        const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -414,12 +414,12 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
-        const enableImageConfig = enableImageModality && isImageConfigModel(model) && (aspectRatio || imageSize);
+        const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
             if (enableImageConfig) {
                 generationConfig.imageConfig = {};
-                if (imageSize) {
+                if (imageSize && isImageSizeModel(model)) {
                     generationConfig.imageConfig.imageSize = imageSize;
                 }
                 if (aspectRatio) {
