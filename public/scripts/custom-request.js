@@ -2,7 +2,7 @@ import { getPresetManager } from './preset-manager.js';
 import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders, name1, name2 } from '../script.js';
 import { getTextGenServer, createTextGenGenerationData } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
-import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences, names_behavior_types } from './instruct-mode.js';
+import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
 import { getStreamingReply, tryParseStreamingError, createGenerationParameters } from './openai.js';
 import EventSourceStream from './sse-stream.js';
 
@@ -125,7 +125,7 @@ export class TextCompletionService {
 
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw new Error(String(json.error?.message || json.error || "Response not OK"));
+                throw new Error(String(json.error?.message || json.error || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -246,7 +246,7 @@ export class TextCompletionService {
                             name2,
                             true,
                             false,
-                            instructPreset
+                            instructPreset,
                         );
                     } else { // e.g. "<|im_start|>assistant: Hello, my name is"
                         const overriddenInstructPreset = structuredClone(instructPreset);
@@ -258,12 +258,12 @@ export class TextCompletionService {
                             name2,
                             true,
                             false,
-                            overriddenInstructPreset
-                        )
+                            overriddenInstructPreset,
+                        );
 
                         // remove newline after prefill if it's not in the prefill itself
-                        if (!message.content.endsWith("\n")) {
-                            messageContent = messageContent.slice(0, -1)
+                        if (!message.content.endsWith('\n')) {
+                            messageContent = messageContent.slice(0, -1);
                         }
                     }
                 }
@@ -303,7 +303,7 @@ export class TextCompletionService {
             const instructPresetManager = getPresetManager('instruct');
             instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
             if (instructPreset) {
-                requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings)
+                requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings);
                 const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
                 requestData.stop = stoppingStrings;
                 requestData.stopping_strings = stoppingStrings;
@@ -413,10 +413,10 @@ export class TextCompletionService {
             ...settings,
             'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
             'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
-            'type': settings.api_type
+            'type': settings.api_type,
         };
 
-        payload = createTextGenGenerationData(payload, payload.prompt, payload.genamt)
+        payload = createTextGenGenerationData(payload, payload.prompt, payload.genamt);
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
@@ -486,7 +486,7 @@ export class ChatCompletionService {
         if (!data.stream) {
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw new Error(String(json.error?.message || json.error || "Response not OK"));
+                throw new Error(String(json.error?.message || json.error || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -600,11 +600,11 @@ export class ChatCompletionService {
         let payload = {
             ...settings,
             temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
-            bias_preset_selected: settings.bias_presets !== undefined ? settings.bias_preset_selected : undefined
+            bias_preset_selected: settings.bias_presets !== undefined ? settings.bias_preset_selected : undefined,
         };
 
-        let data = await createGenerationParameters(payload, 'quiet', payload.messages)
-        payload = data.generate_data
+        let data = await createGenerationParameters(payload, 'quiet', payload.messages);
+        payload = data.generate_data;
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {

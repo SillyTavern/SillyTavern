@@ -1515,7 +1515,7 @@ export function replaceMacrosInList(str) {
  * @param {string} type - request type (impersonate, quiet, continue, etc)
  * @returns {object} final generation parameters object appropriate for the text completion source
  */
-export function createTextGenGenerationData(parameters, finalPrompt=null, maxTokens=null, isImpersonate=false, isContinue=false, cfgValues=null, type='quiet') {
+export function createTextGenGenerationData(parameters, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
@@ -1761,11 +1761,11 @@ export function createTextGenGenerationData(parameters, finalPrompt=null, maxTok
             delete params.guided_json;
         }
     }
-    return params
+    return params;
 }
 
 export async function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
-    const params = createTextGenGenerationData(settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type)
+    const params = createTextGenGenerationData(settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type);
     await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
     return params;
 }

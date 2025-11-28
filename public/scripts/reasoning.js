@@ -1234,11 +1234,11 @@ export function parseReasoningFromString(str, { strict = true, template = null }
     if (template) {
         template = reasoning_templates.find(p => p.name === template);  // get reasoning template with the given name
         if (!template) {
-            console.error(`Unknown reasoning template name: "${template}"`)
-            return
+            console.error(`Unknown reasoning template name: "${template}"`);
+            return;
         }
     } else {  // if no template given, use the currently selected template
-        template = power_user.reasoning
+        template = power_user.reasoning;
     }
 
     if (!template.prefix || !template.suffix) {

@@ -2571,7 +2571,7 @@ export async function createGenerationParameters(parameters, type, messages, { j
         generate_data.json_schema = jsonSchema;
     }
 
-    return {generate_data, stream, canMultiSwipe}
+    return { generate_data, stream, canMultiSwipe };
 }
 
 /**
@@ -2590,7 +2590,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         signal = new AbortController().signal;
     }
 
-    const {generate_data, stream, canMultiSwipe} = await createGenerationParameters(oai_settings, type, messages, {jsonSchema})
+    const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, type, messages, { jsonSchema });
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';

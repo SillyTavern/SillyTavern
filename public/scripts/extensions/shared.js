@@ -456,10 +456,10 @@ export class ConnectionManagerRequestService {
     * @param {profileId} ID of a given connection profile (from which to infer a completion preset).
     * @param {instructSettings} optional instruct settings
     */
-    static constructPrompt(prompt, profileId, instructSettings=null) {
+    static constructPrompt(prompt, profileId, instructSettings = null) {
         const context = SillyTavern.getContext();
         const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
-        const instructName = profile.instruct
+        const instructName = profile.instruct;
         const selectedApiMap = this.validateProfile(profile);
 
         switch (selectedApiMap.selected) {
@@ -467,7 +467,7 @@ export class ConnectionManagerRequestService {
                 if (!selectedApiMap.source) {
                     throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
                 }
-                return prompt
+                return prompt;
             }
             case 'textgenerationwebui': {
                 if (!selectedApiMap.type) {
