@@ -241,7 +241,7 @@
   "Allows the model to return its thinking process.": "อนุญาตให้โมเดลส่งคืนกระบวนการคิดของตัวเอง",
   "This setting affects visibility only.": "การตั้งค่านี้มีผลต่อการมองเห็นเท่านั้น",
   "Send inline images": "ส่งรูปภาพแบบ inline",
-  "image_inlining_hint_1": "ส่งรูปภาพในพรอมต์หากโมเดลรองรับ",
+  "image_inlining_hint_1": "ส่งไฟล์สื่อในพรอมต์หากโมเดลรองรับ",
   "Inline Image Quality": "คุณภาพรูปภาพ Inline",
   "openai_inline_image_quality_auto": "อัตโนมัติ",
   "openai_inline_image_quality_low": "ต่ำ",

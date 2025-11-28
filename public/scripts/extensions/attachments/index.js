@@ -218,7 +218,7 @@ function cleanUpAttachments() {
 
 /**
  * Clean up character attachments when a character is deleted.
- * @param {{character: import('../../char-data.js').v1CharData}} data Event data
+ * @param {{character: Character}} data Event data
  */
 function cleanUpCharacterAttachments(data) {
     const avatar = data?.character?.avatar;

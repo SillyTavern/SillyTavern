@@ -235,7 +235,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "Combina mensajes del sistema consecutivos en uno solo (excluyendo diálogos de ejemplo). Puede mejorar la coherencia para algunos modelos.",
     "Enable function calling": "Habilitar llamada a función",
     "Send inline images": "Enviar imágenes en línea",
-    "image_inlining_hint_1": "Envía imágenes en mensajes si el modelo lo admite.",
+    "image_inlining_hint_1": "Envía archivos multimedia en mensajes si el modelo lo admite.",
     "image_inlining_hint_2": "acción sobre cualquier mensaje o el",
     "image_inlining_hint_3": "menú para adjuntar un archivo de imagen al chat.",
     "Inline Image Quality": "Calidad de imagen en línea",

@@ -438,6 +438,8 @@ router.post('/generate-image', async (request, response) => {
         const isVertex = request.body.api === 'vertexai';
         // Is it even worth it?
         const isDeprecated = model.startsWith('imagegeneration');
+        // Get person generation setting from config
+        const personGeneration = getConfigValue('gemini.image.personGeneration', 'allow_adult');
 
         const requestBody = {
             instances: [{
@@ -449,7 +451,7 @@ router.post('/generate-image', async (request, response) => {
                 enhancePrompt: isVertex ? Boolean(request.body.enhance ?? false) : undefined,
                 negativePrompt: isVertex ? (request.body.negative_prompt || undefined) : undefined,
                 aspectRatio: String(request.body.aspect_ratio || '1:1'),
-                personGeneration: !isDeprecated ? 'allow_all' : undefined,
+                personGeneration: !isDeprecated && personGeneration ? personGeneration : undefined,
                 language: isVertex ? 'auto' : undefined,
                 safetySetting: !isDeprecated ? (isVertex ? 'block_only_high' : 'block_low_and_above') : undefined,
                 addWatermark: isVertex ? false : undefined,

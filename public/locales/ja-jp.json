@@ -235,7 +235,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "連続するシステムメッセージを1つに結合します（例のダイアログを除く）。一部のモデルの一貫性を向上させる可能性があります。",
     "Enable function calling": "関数呼び出しを有効にする",
     "Send inline images": "インライン画像を送信",
-    "image_inlining_hint_1": "モデルがサポートしている場合、プロンプトで画像を送信します。",
+    "image_inlining_hint_1": "モデルがサポートしている場合、プロンプトでメディアファイルを送信します。",
     "image_inlining_hint_2": "メッセージに対するアクションまたは",
     "image_inlining_hint_3": "チャットに画像ファイルを添付するためのメニュー。",
     "Inline Image Quality": "インライン画像品質",
