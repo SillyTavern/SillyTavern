@@ -83,8 +83,8 @@ export async function loadChatSnapshot(index) {
 
         await eventSource.emit(event_types.CHAT_SNAPSHOT_LOADED, index);
 
-        if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED); }
-        if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED); }
+        if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
+        if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
         toastr.success(`Chat ${chatHistoryIndex + 1}/${chatHistory.length} has been loaded.`);
 

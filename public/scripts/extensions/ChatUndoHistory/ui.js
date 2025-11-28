@@ -59,18 +59,22 @@ export async function addSettings() {
     undoToggles.append(toggleSaveElement);
 
     const undoAdvanced = $('#undo_advanced_options');
-    //Debounce duration.
 
-    let saveChatSnapshotDebounced = debounce(() => saveChatSnapshot(false), extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
+    //Debounce duration.
+    let saveChatSnapshotDebounced;
     function setDebounced(id, value) {
         saveChatSnapshotDebounced = debounce(() => saveChatSnapshot(false), value ?? debounce_timeout.short);
     }
-    function getDebounced() { return saveChatSnapshotDebounced(); }
+    setDebounced(undefined, extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
+    function getDebounced(_, source) {
+        //Needed to prevent redundant saves. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2571515880
+        if (source !== 'undo') { return saveChatSnapshotDebounced(); }
+    }
 
     const debounceSlider = new rangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 1, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
     undoAdvanced.append(debounceSlider);
 
-    //Allow the each event to be separately toggled.
+    //Allow each event to be separately toggled.
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
