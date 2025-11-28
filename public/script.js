@@ -6414,7 +6414,7 @@ export function ensureSwipes(message) {
         send_date: message.send_date,
         gen_started: message.gen_started,
         gen_finished: message.gen_finished,
-        extra: structuredClone(message.extra) ?? {},
+        extra: {},
     });
 
     if (!Array.isArray(message.swipe_info)) {
