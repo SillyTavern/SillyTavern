@@ -319,8 +319,7 @@ export class TextCompletionService {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
-                    requestData = { ...presetPayload, ...requestData };
+                    requestData = this.presetToGeneratePayload(preset, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -404,14 +403,15 @@ export class TextCompletionService {
         // Merge preset with custom parameters
         const settings = { ...preset, ...customPreset };
 
-        // Initialize base payload with common parameters
+        // Initialize base payload, fixing any issues not addressed in createTextGenerationData
         let payload = {
             ...settings,
             'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
             'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
+            'type': settings.api_type
         };
 
-        payload = createTextGenGenerationData(payload)
+        payload = createTextGenGenerationData(payload, payload.prompt, payload.genamt)
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
@@ -562,8 +562,7 @@ export class ChatCompletionService {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
-                    requestData = { ...presetPayload, ...requestData };
+                    requestData = await this.presetToGeneratePayload(preset, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -584,7 +583,7 @@ export class ChatCompletionService {
      * @param {Object} customParams - Additional parameters to override preset values
      * @returns {Object} - Formatted payload for chat completion API
      */
-    static presetToGeneratePayload(preset, customParams = {}) {
+    static async presetToGeneratePayload(preset, customParams = {}) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
@@ -592,13 +591,15 @@ export class ChatCompletionService {
         // Merge preset with custom parameters
         const settings = { ...preset, ...customParams };
 
-        // Initialize base payload with common parameters
-        const payload = {
+        // Initialize base payload, fixing any issues with the preset that aren't addressed in createGenerationParameters
+        let payload = {
             ...settings,
             temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
+            bias_preset_selected: settings.bias_presets !== undefined ? settings.bias_preset_selected : undefined
         };
 
-        payload = createGenerationParameters(payload)
+        let data = await createGenerationParameters(payload, 'quiet', payload.messages)
+        payload = data.generate_data
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {

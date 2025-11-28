@@ -2248,7 +2248,21 @@ function getReasoningEffort() {
     return reasoningEffort;
 }
 
-export async function createGenerationParameters(parameters) {
+/**
+ * Build the generation parameter object for an OAI request.
+ * @param {object} parameters - the initial set of parameters
+ * @param {string} type - request type (impersonate, quiet, continue, etc)
+ * @param {array} messages - array of message objects
+ * @param {import('../script.js').AdditionalRequestOptions} options
+ * @returns {object} final generation parameters object appropriate for the chat completion source
+ */
+export async function createGenerationParameters(parameters, type, messages, { jsonSchema = null } = {}) {
+    // HACK: Filter out null and non-object messages
+    if (!Array.isArray(messages)) {
+        throw new Error('messages must be an array');
+    }
+    messages = messages.filter(msg => msg && typeof msg === 'object');
+
     // construct the generation parameters for oai requests
     let logit_bias = {};
     const isClaude = parameters.chat_completion_source == chat_completion_sources.CLAUDE;
@@ -2556,7 +2570,8 @@ export async function createGenerationParameters(parameters) {
     if (jsonSchema) {
         generate_data.json_schema = jsonSchema;
     }
-    return generate_data
+
+    return {generate_data, stream, canMultiSwipe}
 }
 
 /**
@@ -2575,14 +2590,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         signal = new AbortController().signal;
     }
 
-    // HACK: Filter out null and non-object messages
-    if (!Array.isArray(messages)) {
-        throw new Error('messages must be an array');
-    }
-
-    messages = messages.filter(msg => msg && typeof msg === 'object');
-
-    const generate_data = await createGenerationParameters(oai_settings)
+    const {generate_data, stream, canMultiSwipe} = await createGenerationParameters(oai_settings, type, messages, {jsonSchema})
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';

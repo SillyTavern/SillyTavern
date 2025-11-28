@@ -1504,8 +1504,18 @@ export function replaceMacrosInList(str) {
     }
 }
 
-export function createTextGenGenerationData(parameters, finalPrompt=null, maxTokens=null, isImpersonate=false, isContinue=false, cfgValues=null, type=null) {
-    // Given a settings object, structure it appropriately according the to the API in use
+/**
+ * Build the generation parameter object for an text completion request
+ * @param {object} parameters - the initial set of parameters
+ * @param {string} finalPrompt - the complete text prompt
+ * @param {number} maxTokens - max allowed generation tokens
+ * @param {boolean} isImpersonate - whether this is for an impersonation
+ * @param {boolean} isContinue - whether this is for a continue
+ * @param {object} cfgValues - additional parameters (guidanceScale, negativePrompt)
+ * @param {string} type - request type (impersonate, quiet, continue, etc)
+ * @returns {object} final generation parameters object appropriate for the text completion source
+ */
+export function createTextGenGenerationData(parameters, finalPrompt=null, maxTokens=null, isImpersonate=false, isContinue=false, cfgValues=null, type='quiet') {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
@@ -1515,10 +1525,8 @@ export function createTextGenGenerationData(parameters, finalPrompt=null, maxTok
             : Object.keys(parameters.json_schema).length > 0 ? parameters.json_schema : undefined
         : undefined;
 
-    maxTokens = maxTokens ?? parameters.genamt
-
     let params = {
-        'prompt': finalPrompt ?? parameters.prompt,
+        'prompt': finalPrompt,
         'model': getTextGenModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
