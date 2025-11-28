@@ -16,10 +16,10 @@ import {
     generateTimestamp,
     removeOldBackups,
     formatBytes,
-    getFirstFileRegexMatch,
     tryWriteFileSync,
     tryReadFileSync,
     tryDeleteFile,
+    pickFirstObjectFromJsonFile,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -361,18 +361,14 @@ async function checkChatIntegrity(filePath, integritySlug) {
     }
     //Assume filepath is a chatTree.
     else if (path.extname(filePath) == '.json') {
-        //The metadata should be at the start of the file.
-        //If the user has a "user_name" or "charater_name" that's over 64KB long, this will not find the integrity slug.
-        const match = await getFirstFileRegexMatch(filePath, /"integrity":"([\d|\w|-]+)"/g);
-
-        // If there's no match, the file will be reported as intact.
-        if (match !== undefined) {
-            chatIntegrity = match?.next()?.value?.[1];
-        }
+        //The metadata should be at the start of the file, this assumes that metadata will always come before tree.
+        const data = await pickFirstObjectFromJsonFile(filePath, ['metadata', 'integrity']);
+        chatIntegrity = data?.value;
     }
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
+        console.warn(`File ${filePath} does not have integrity metadata matching ${integritySlug}, It will be overwritten.`);
         return true;
     }
     // Check if the integrity matches
