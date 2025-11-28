@@ -482,6 +482,11 @@ async function sendMakerSuiteRequest(request, response) {
 
         if (tools.length) {
             body.tools = tools;
+
+            if (request.body.tool_config) {
+                body.toolConfig = request.body.tool_config;
+            }
+
         }
 
         return body;
