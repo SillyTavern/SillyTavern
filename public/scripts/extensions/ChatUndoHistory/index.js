@@ -1,9 +1,11 @@
 import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
-import { debounce_timeout } from '/scripts/constants.js';
-import { renderExtensionTemplateAsync } from '/scripts/extensions.js';
-import { debounce, isInputElementInFocus } from '/scripts/utils.js';
+import { extension_settings } from '/scripts/extensions.js';
+import { t } from '/scripts/i18n.js';
+import { isInputElementInFocus } from '/scripts/utils.js';
+import { addButtons, addSettings } from './ui.js';
 
-const ExtensionName = 'ChatUndoHistory';
+export const extensionName = 'ChatUndoHistory';
+
 
 /** @type {ChatMessage[][]} */
 export let chatHistory = [];
@@ -11,23 +13,47 @@ export let chatHistoryIndex = 0;
 
 /**
  * Resets chatHistory, and set's the first entry.
+ * @param {boolean} toast toast that the has been cleared.
  * @param {ChatMessage[]} chatData
  */
-export async function resetChatSnapshots(chatData = chat){
+export async function resetChatSnapshots(toast, chatData = chat){
     chatHistory.length = 0;
-    saveChatSnapshot(chatData);
+    saveChatSnapshot(false, chatData);
+    toast && toastr.warning(t`Success, You now have ${chatHistory.length} saved chats.`);
 }
 
 /**
  * Save a copy of chatData to chatHistory.
+ * @param {boolean} toast toast that the chat has saved.
  * @param {ChatMessage[]} chatData
  */
-export function saveChatSnapshot(chatData = chat){
+export function saveChatSnapshot(toast, chatData = chat){
+    const maximumChatLength = extension_settings[extensionName]?.max_length ?? 512;
+    const maximumChatHistoryItems = extension_settings[extensionName]?.max_history ?? 100;
+
+
+    //Enforce the maximum chat length.
+    if (chat.length >= maximumChatLength) {
+        toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
+        return;
+    }
+
+    //Enforce the maximum chat history length.
+    if (0 >= maximumChatHistoryItems) {
+        toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History'`, t`You cannot save the chat because your maximum history items is set to ${maximumChatHistoryItems}. (Check Settings.)`);
+        return;
+    }
+
+    //Enforce the maximum chat History length.
+    chatHistory.splice(0, chatHistory.length - maximumChatHistoryItems + 1);
+
     //Overwrite history that has been undone.
     chatHistory.splice(chatHistoryIndex + 1);
 
-    chatHistory.push(structuredClone(chatData));
+    const newChat = structuredClone(chatData);
+    chatHistory.push(newChat);
     chatHistoryIndex = chatHistory.length - 1;
+    toast && toastr.success(t`Success, You now have ${chatHistory.length} saved chats.`);
 }
 
 /**
@@ -35,6 +61,14 @@ export function saveChatSnapshot(chatData = chat){
  * @param {number} index The chatHistory index to load.
  */
 export async function loadChatSnapshot(index) {
+    const maximumChatLength = extension_settings[extensionName]?.max_length ?? 1000;
+
+    //Enforce the maximum chat length.
+    if (chat.length >= maximumChatLength) {
+        toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
+        return;
+    }
+
     if (chatHistory[index]) {
         chatHistoryIndex = index;
 
@@ -72,10 +106,10 @@ $(document).on('keydown', async function (event) {
 });
 
 //Reset chatHistory when the chat has changed.
-eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(chat));
+eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(false, chat));
 
 //Snapshot the chat when a message is modified.
-const snapshotEvents = [
+export const snapshotEvents = [
     // event_types.MESSAGE_SWIPE_ENDED, //Redundant? MESSAGE_RECEIVED is emitted after swipe generate.
     event_types.MESSAGE_SENT,
     event_types.MESSAGE_RECEIVED,
@@ -87,16 +121,7 @@ const snapshotEvents = [
     event_types.MESSAGE_REASONING_DELETED,
     event_types.MESSAGE_SWIPE_DELETED ];
 
-const save = debounce(() => saveChatSnapshot(chat), debounce_timeout.short);
-snapshotEvents.forEach((type) => {
-    eventSource.on(type, save);
-});
-
 jQuery(async () => {
-    const buttonsHtml = await renderExtensionTemplateAsync(ExtensionName, 'buttons');
-
-    $('#options .options-content').prepend(buttonsHtml);
-
-    $(document).on('click', '#option_undo', () => loadChatSnapshot(chatHistoryIndex - 1));
-    $(document).on('click', '#option_redo', () => loadChatSnapshot(chatHistoryIndex + 1));
+    await addButtons();
+    await addSettings();
 });
