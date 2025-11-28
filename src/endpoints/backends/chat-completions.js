@@ -11,6 +11,7 @@ import {
     GEMINI_SAFETY,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
     ZAI_ENDPOINT,
@@ -163,6 +164,7 @@ async function sendClaudeRequest(request, response) {
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model);
         const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5)/.test(request.body.model);
+        const useVerbosity = /^claude-(opus-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -266,6 +268,13 @@ async function sendClaudeRequest(request, response) {
 
         if (fixThinkingPrefill && convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
+        }
+
+        // Verbosity = 'effort' (same values as OpenAI)
+        if (useVerbosity && request.body.verbosity) {
+            betaHeaders.push('effort-2025-11-24');
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = request.body.verbosity;
         }
 
         if (betaHeaders.length) {
@@ -1345,6 +1354,10 @@ async function sendAzureOpenAIRequest(request, response) {
         ? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
         : undefined;
 
+    if (request.body.verbosity && OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+        apiRequestBody['verbosity'] = request.body.verbosity;
+    }
+
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', () => controller.abort());
@@ -1835,6 +1848,10 @@ router.post('/generate', function (request, response) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
         }
 
+        if (request.body.verbosity) {
+            bodyParams['verbosity'] = request.body.verbosity;
+        }
+
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
@@ -2014,6 +2031,12 @@ router.post('/generate', function (request, response) {
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        }
+    }
+
+    if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+        if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            bodyParams['verbosity'] = request.body.verbosity;
         }
     }
 

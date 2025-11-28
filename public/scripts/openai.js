@@ -239,6 +239,13 @@ export const reasoning_effort_types = {
     max: 'max',
 };
 
+export const verbosity_levels = {
+    auto: 'auto',
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+};
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -342,6 +349,7 @@ export const settingsToUpdate = {
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
+    verbosity: ['#openai_verbosity', 'verbosity', false, false],
     enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true, false],
     seed: ['#seed_openai', 'seed', false, false],
     n: ['#n_openai', 'n', false, false],
@@ -442,6 +450,7 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: reasoning_effort_types.auto,
+    verbosity: verbosity_levels.auto,
     enable_web_search: false,
     request_images: false,
     seed: -1,
@@ -2226,6 +2235,15 @@ function getReasoningEffort() {
     return reasoningEffort;
 }
 
+function getVerbosity() {
+    if (oai_settings.verbosity === verbosity_levels.auto) {
+        return undefined;
+    }
+
+    // TODO: Adjust verbosity based on model capabilities
+    return oai_settings.verbosity;
+}
+
 /**
  * Send a chat completion request to backend
  * @param {string} type (impersonate, quiet, continue, etc)
@@ -2313,6 +2331,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'enable_web_search': Boolean(oai_settings.enable_web_search),
         'request_images': Boolean(oai_settings.request_images),
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
+        'verbosity': getVerbosity(),
     };
 
     if (isAzureOpenAI) {
@@ -6293,6 +6312,11 @@ export function initOpenAI() {
 
     $('#openai_reasoning_effort').on('input', function () {
         oai_settings.reasoning_effort = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_verbosity').on('input', function () {
+        oai_settings.verbosity = String($(this).val());
         saveSettingsDebounced();
     });
 
