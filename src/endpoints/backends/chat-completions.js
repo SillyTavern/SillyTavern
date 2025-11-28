@@ -11,6 +11,7 @@ import {
     GEMINI_SAFETY,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
     ZAI_ENDPOINT,
@@ -158,11 +159,12 @@ async function sendClaudeRequest(request, response) {
         const additionalHeaders = {};
         const betaHeaders = ['output-128k-2025-02-19'];
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
-        const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
+        const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model);
         const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5)/.test(request.body.model);
+        const useVerbosity = /^claude-(opus-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -268,6 +270,13 @@ async function sendClaudeRequest(request, response) {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
         }
 
+        // Verbosity = 'effort' (same values as OpenAI)
+        if (useVerbosity && request.body.verbosity) {
+            betaHeaders.push('effort-2025-11-24');
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = request.body.verbosity;
+        }
+
         if (betaHeaders.length) {
             additionalHeaders['anthropic-beta'] = betaHeaders.join(',');
         }
@@ -358,6 +367,8 @@ async function sendMakerSuiteRequest(request, response) {
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
     const includeReasoning = Boolean(request.body.include_reasoning);
+    const aspectRatio = String(request.body.request_image_aspect_ratio);
+    const imageSize = String(request.body.request_image_resolution);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -388,6 +399,7 @@ async function sendMakerSuiteRequest(request, response) {
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
+        const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -402,22 +414,29 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
+        const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
+            if (enableImageConfig) {
+                generationConfig.imageConfig = {};
+                if (imageSize && isImageSizeModel(model)) {
+                    generationConfig.imageConfig.imageSize = imageSize;
+                }
+                if (aspectRatio) {
+                    generationConfig.imageConfig.aspectRatio = aspectRatio;
+                }
+            }
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_makersuite_sysprompt;
+        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_sysprompt;
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
-        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            tools.push({ google_search: {} });
-        }
-
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
             const functionDeclarations = [];
+            const customTools = [];
             for (const tool of request.body.tools) {
                 if (tool.type === 'function') {
                     if (tool.function.parameters?.$schema) {
@@ -427,9 +446,24 @@ async function sendMakerSuiteRequest(request, response) {
                         delete tool.function.parameters;
                     }
                     functionDeclarations.push(tool.function);
+                } else if (tool[tool.type]) {
+                    customTools.push({ [tool.type]: tool[tool.type] });
                 }
             }
-            tools.push({ function_declarations: functionDeclarations });
+            if (functionDeclarations.length > 0) {
+                tools.push({ function_declarations: functionDeclarations });
+            }
+            // Custom tools are only supported when no function calling is present
+            if (functionDeclarations.length === 0 && customTools.length > 0) {
+                tools.push(...customTools);
+            }
+        }
+
+        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
+            // Tool use with function calling is unsupported
+            if (!tools.some(t => t.function_declarations)) {
+                tools.push({ google_search: {} });
+            }
         }
 
         if (isThinkingConfigModel(model)) {
@@ -1835,6 +1869,10 @@ router.post('/generate', function (request, response) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
         }
 
+        if (request.body.verbosity) {
+            bodyParams['verbosity'] = request.body.verbosity;
+        }
+
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
@@ -2014,6 +2052,12 @@ router.post('/generate', function (request, response) {
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        }
+    }
+
+    if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+        if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            bodyParams['verbosity'] = request.body.verbosity;
         }
     }
 

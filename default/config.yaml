@@ -287,6 +287,10 @@ claude:
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")
   apiVersion: 'v1beta'
+  # https://ai.google.dev/gemini-api/docs/imagen#imagen-configuration
+  image:
+    # Leave empty to use the API-default value.
+    personGeneration: 'allow_adult'
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
 # Attempt to automatically update server plugins on startup

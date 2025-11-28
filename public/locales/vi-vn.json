@@ -235,7 +235,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "Kết hợp các tin nhắn hệ thống liên tiếp thành một (loại bỏ các đoạn hội thoại mẫu). Có thể cải thiện tính nhất quán cho một số model.",
     "Enable function calling": "Sử dụng tính năng gọi hàm (function calling)",
     "Send inline images": "Gửi hình ảnh nội bộ",
-    "image_inlining_hint_1": "Gửi hình ảnh theo Prompt nếu kiểu máy hỗ trợ.",
+    "image_inlining_hint_1": "Gửi tệp phương tiện theo Prompt nếu kiểu máy hỗ trợ.",
     "Inline Image Quality": "Chất lượng hình ảnh nội tuyến",
     "openai_inline_image_quality_auto": "Tự động",
     "openai_inline_image_quality_low": "Thấp",
