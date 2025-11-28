@@ -34,7 +34,7 @@ export function saveChatSnapshot(toast, chatData = chat){
 
     //Enforce the maximum chat length.
     if (chatData.length >= maximumChatLength) {
-        toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
+        toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${chatData.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
         return;
     }
 
@@ -61,7 +61,7 @@ export function saveChatSnapshot(toast, chatData = chat){
  * @param {number} index The chatHistory index to load.
  */
 export async function loadChatSnapshot(index) {
-    const maximumChatLength = extension_settings[extensionName]?.max_length ?? 1000;
+    const maximumChatLength = extension_settings[extensionName]?.max_length ?? 512;
 
     //Don't overwrite chats that are longer than maximumChatLength.
     if (chat.length >= maximumChatLength) {
