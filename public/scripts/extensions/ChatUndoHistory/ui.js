@@ -2,7 +2,7 @@ import { chatHistoryIndex, extensionName, loadChatSnapshot, resetChatSnapshots, 
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { debounce_timeout } from '/scripts/constants.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
-import { debounce } from '/scripts/utils.js';
+import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 
 /**
  * Displays buttons in the options menu.
@@ -53,10 +53,32 @@ export async function addSettings() {
     const toggleMenuElement = new toggleInput('show_menu_buttons', 'Hide the Undo/Redo Buttons from the Options Menu.', { defaultValue: false, callback: menuVisibility }).create();
     const toggleSaveElement = new toggleInput('show_save_button', 'Hide the Save/Reset Buttons from the Options Menu.', { defaultValue: true, callback: saveVisibility }).create();
 
+    async function processUndoHotkey(event) {
+        if (!isInputElementInFocus()) {
+            if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+                //Undo.
+                event.key === 'z' && await loadChatSnapshot(chatHistoryIndex - 1);
+                //Redo.
+                event.key === 'Z' && await loadChatSnapshot(chatHistoryIndex + 1);
+            }
+        }
+    }
+
+    const toggleEventFunction = (event, enabled, eventFunction) => {
+        //Toggle on.
+        if (enabled) { eventSource.on(event, eventFunction); }
+        //Toggle off.
+        else { eventSource.removeListener(event, eventFunction); }
+    };
+
+    const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction('keydown', enabled, processUndoHotkey);
+    const toggleUndoHotkeyElement = new toggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
+
     //Places the settings.
     const undoToggles = $('#undo_toggles');
     undoToggles.append(toggleMenuElement);
     undoToggles.append(toggleSaveElement);
+    undoToggles.append(toggleUndoHotkeyElement);
 
     const undoAdvanced = $('#undo_advanced_options');
 
@@ -78,12 +100,7 @@ export async function addSettings() {
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
-        const toggleSnapshot = (id, enabled) => {
-            //Toggle on.
-            if (enabled) { eventSource.on(id, getDebounced); }
-            //Toggle off.
-            else { eventSource.removeListener(id, getDebounced); }
-        };
+        const toggleSnapshot = (id, enabled, _) => toggleEventFunction(id, enabled, getDebounced);
         const toggleSnapshotEvent = new toggleInput(snapShotEvent, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
         eventToggles.append(toggleSnapshotEvent);
     }

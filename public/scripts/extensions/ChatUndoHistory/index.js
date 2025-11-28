@@ -1,7 +1,6 @@
 import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
-import { isInputElementInFocus } from '/scripts/utils.js';
 import { addButtons, addSettings } from './ui.js';
 
 export const extensionName = 'ChatUndoHistory';
@@ -95,16 +94,6 @@ export async function loadChatSnapshot(index) {
     }
 }
 
-$(document).on('keydown', async function (event) {
-    if (!isInputElementInFocus()) {
-        if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-            //Undo.
-            event.key === 'z' && await loadChatSnapshot(chatHistoryIndex - 1);
-            //Redo.
-            event.key === 'Z' && await loadChatSnapshot(chatHistoryIndex + 1);
-        }
-    }
-});
 
 //Reset chatHistory when the chat has changed.
 eventSource.on(event_types.CHAT_CHANGED,  async () => await resetChatSnapshots(false, chat));
