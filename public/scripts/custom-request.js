@@ -125,7 +125,7 @@ export class TextCompletionService {
 
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw json;
+                throw new Error(String(json.error?.message || json.error || "Response not OK"));
             }
 
             if (!extractData) {
@@ -481,7 +481,7 @@ export class ChatCompletionService {
         if (!data.stream) {
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw json;
+                throw new Error(String(json.error?.message || json.error || "Response not OK"));
             }
 
             if (!extractData) {

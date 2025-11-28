@@ -1219,23 +1219,34 @@ export function removeReasoningFromString(str) {
 }
 
 /**
- * Parses reasoning from a string using the power user reasoning settings.
+ * Parses reasoning from a string using the power user reasoning settings or optional template.
  * @typedef {Object} ParsedReasoning
  * @property {string} reasoning Reasoning block
  * @property {string} content Message content
  * @param {string} str Content of the message
  * @param {Object} options Optional arguments
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
+ * @param {string} [options.template=null] Optional reasoning template name to use instead of power_user.reasoning
  * @returns {ParsedReasoning|null} Parsed reasoning block and message content
  */
-export function parseReasoningFromString(str, { strict = true } = {}) {
+export function parseReasoningFromString(str, { strict = true, template = null } = {}) {
     // Both prefix and suffix must be defined
-    if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
+    if (template) {
+        template = reasoning_templates.find(p => p.name === template);  // get reasoning template with the given name
+        if (!template) {
+            console.error(`Unknown reasoning template name: "${template}"`)
+            return
+        }
+    } else {  // if no template given, use the currently selected template
+        template = power_user.reasoning
+    }
+
+    if (!template.prefix || !template.suffix) {
         return null;
     }
 
     try {
-        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(power_user.reasoning.prefix)}(.*?)${escapeRegex(power_user.reasoning.suffix)}`, 's');
+        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(template.prefix)}(.*?)${escapeRegex(template.suffix)}`, 's');
 
         let didReplace = false;
         let reasoning = '';
