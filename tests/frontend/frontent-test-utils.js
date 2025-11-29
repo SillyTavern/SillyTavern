@@ -1,5 +1,3 @@
-
-
 export const testSetup = {
     /**
      * Navigates to the home page without waiting for SillyTavern to load.
