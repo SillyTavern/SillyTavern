@@ -1406,45 +1406,51 @@ function toIntArray(string) {
     return string.split(',').map(x => parseInt(x)).filter(x => !isNaN(x));
 }
 
-export function getTextGenModel() {
-    switch (settings.type) {
+/**
+ * Gets the text generation model specified by the given text completion settings
+ * @param {TextCompletionSettings} parameters - text completion settings to use
+ * @returns {string} model name
+ */
+export function getTextGenModel(parameters = null) {
+    parameters = parameters ?? settings;
+    switch (parameters.type) {
         case OOBA:
-            if (settings.custom_model) {
-                return settings.custom_model;
+            if (parameters.custom_model) {
+                return parameters.custom_model;
             }
             break;
         case GENERIC:
-            if (settings.generic_model) {
-                return settings.generic_model;
+            if (parameters.generic_model) {
+                return parameters.generic_model;
             }
             break;
         case MANCER:
-            return settings.mancer_model;
+            return parameters.mancer_model;
         case TOGETHERAI:
-            return settings.togetherai_model;
+            return parameters.togetherai_model;
         case INFERMATICAI:
-            return settings.infermaticai_model;
+            return parameters.infermaticai_model;
         case DREAMGEN:
-            return settings.dreamgen_model;
+            return parameters.dreamgen_model;
         case OPENROUTER:
-            return settings.openrouter_model;
+            return parameters.openrouter_model;
         case VLLM:
-            return settings.vllm_model;
+            return parameters.vllm_model;
         case APHRODITE:
-            return settings.aphrodite_model;
+            return parameters.aphrodite_model;
         case OLLAMA:
-            if (!settings.ollama_model) {
+            if (!parameters.ollama_model) {
                 toastr.error(t`No Ollama model selected.`, 'Text Completion API');
                 throw new Error('No Ollama model selected');
             }
-            return settings.ollama_model;
+            return parameters.ollama_model;
         case FEATHERLESS:
-            return settings.featherless_model;
+            return parameters.featherless_model;
         case HUGGINGFACE:
             return 'tgi';
         case TABBY:
-            if (settings.tabby_model) {
-                return settings.tabby_model;
+            if (parameters.tabby_model) {
+                return parameters.tabby_model;
             }
             break;
         default:
@@ -1458,8 +1464,14 @@ export function isJsonSchemaSupported() {
     return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
 }
 
-function isDynamicTemperatureSupported() {
-    return settings.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(settings.type);
+/**
+ * Returns whether dynamic temperature is supported by the given text completion settings
+ * @param {TextCompletionSettings} parameters - text completion settings to use
+ * @returns {boolean} whether dynamic temperature supported
+ */
+function isDynamicTemperatureSupported(parameters = null) {
+    parameters = parameters ?? settings;
+    return parameters.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(parameters.type);
 }
 
 /**
@@ -1506,7 +1518,7 @@ export function replaceMacrosInList(str) {
 
 /**
  * Build the generation parameter object for an text completion request
- * @param {object} parameters - the initial set of parameters
+ * @param {TextCompletionSettings} parameters - the initial text completion settings
  * @param {string} finalPrompt - the complete text prompt
  * @param {number} maxTokens - max allowed generation tokens
  * @param {boolean} isImpersonate - whether this is for an impersonation
@@ -1517,7 +1529,7 @@ export function replaceMacrosInList(str) {
  */
 export function createTextGenGenerationData(parameters, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
-    const dynatemp = isDynamicTemperatureSupported();
+    const dynatemp = isDynamicTemperatureSupported(parameters);
     const { banned_tokens, banned_strings } = getCustomTokenBans();
     const jsonSchema = isObject(parameters.json_schema)
         ? parameters.json_schema_allow_empty
@@ -1527,7 +1539,7 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
 
     let params = {
         'prompt': finalPrompt,
-        'model': getTextGenModel(),
+        'model': getTextGenModel(parameters),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? getLogprobsNumber(parameters.type) : undefined,

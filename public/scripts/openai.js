@@ -2188,8 +2188,14 @@ function getAimlapiModelTemplate(option) {
     `));
 }
 
-function getReasoningEffort() {
+/**
+ * Get the reasoning effort from chat completion settings
+ * @param {ChatCompletionSettings} parameters - initial chat completion settings
+ * @returns {string} reasoning effort, if present
+ */
+function getReasoningEffort(parameters = null) {
     // These sources expect the effort as string.
+    parameters = parameters ?? oai_settings;
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
         chat_completion_sources.AZURE_OPENAI,
@@ -2203,31 +2209,31 @@ function getReasoningEffort() {
         chat_completion_sources.ELECTRONHUB,
     ];
 
-    if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
-        return oai_settings.reasoning_effort;
+    if (!reasoningEffortSources.includes(parameters.chat_completion_source)) {
+        return parameters.reasoning_effort;
     }
 
     function resolveReasoningEffort() {
-        switch (oai_settings.reasoning_effort) {
+        switch (parameters.reasoning_effort) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(oai_settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
+                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(parameters.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 return reasoning_effort_types.high;
             default:
-                return oai_settings.reasoning_effort;
+                return parameters.reasoning_effort;
         }
     }
 
     const reasoningEffort = resolveReasoningEffort();
 
     // Check if the resolved effort supported by the model
-    if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
+    if (parameters.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
         if (Array.isArray(model_list) && reasoningEffort) {
-            const currentModel = model_list.find(m => m.id === oai_settings.electronhub_model);
+            const currentModel = model_list.find(m => m.id === parameters.electronhub_model);
             const supportedEfforts = currentModel?.metadata?.supported_reasoning_efforts;
             if (Array.isArray(supportedEfforts) && supportedEfforts.includes(reasoningEffort)) {
                 return reasoningEffort;
@@ -2239,20 +2245,26 @@ function getReasoningEffort() {
     return reasoningEffort;
 }
 
-function getVerbosity() {
-    if (oai_settings.verbosity === verbosity_levels.auto) {
+/**
+ * Get the verbosity from chat completion settings
+ * @param {ChatCompletionSettings} parameters - initial chat completion settings
+ * @returns {string} verbosity level, if present
+ */
+function getVerbosity(parameters = null) {
+    parameters = parameters ?? oai_settings;
+    if (parameters.verbosity === verbosity_levels.auto) {
         return undefined;
     }
 
     // TODO: Adjust verbosity based on model capabilities
-    return oai_settings.verbosity;
+    return parameters.verbosity;
 }
 
 /**
  * Build the generation parameter object for an OAI request.
- * @param {object} parameters - the initial set of parameters
+ * @param {ChatCompletionSettings} parameters - the initial set of parameters
  * @param {string} type - request type (impersonate, quiet, continue, etc)
- * @param {array} messages - array of message objects
+ * @param {ChatMessage[]} messages - array of message objects
  * @param {import('../script.js').AdditionalRequestOptions} options
  * @returns {object} final generation parameters object appropriate for the chat completion source
  */
@@ -2324,13 +2336,13 @@ export async function createGenerationParameters(parameters, type, messages, { j
         'char_name': name2,
         'group_names': getGroupNames(),
         'include_reasoning': Boolean(parameters.show_thoughts),
-        'reasoning_effort': getReasoningEffort(),
+        'reasoning_effort': getReasoningEffort(parameters),
         'enable_web_search': Boolean(parameters.enable_web_search),
         'request_images': Boolean(parameters.request_images),
-        'request_image_resolution': String(oai_settings.request_image_resolution),
-        'request_image_aspect_ratio': String(oai_settings.request_image_aspect_ratio),
+        'request_image_resolution': String(parameters.request_image_resolution),
+        'request_image_aspect_ratio': String(parameters.request_image_aspect_ratio),
         'custom_prompt_post_processing': parameters.custom_prompt_post_processing,
-        'verbosity': getVerbosity(),
+        'verbosity': getVerbosity(parameters),
     };
 
     if (isAzureOpenAI) {
@@ -2343,7 +2355,7 @@ export async function createGenerationParameters(parameters, type, messages, { j
         }
     }
 
-    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
+    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type, parameters)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
 
@@ -2580,7 +2592,7 @@ export async function createGenerationParameters(parameters, type, messages, { j
 /**
  * Send a chat completion request to backend
  * @param {string} type (impersonate, quiet, continue, etc)
- * @param {Array} messages
+ * @param {ChatMessage[]} messages
  * @param {AbortSignal?} signal
  * @param {import('../script.js').AdditionalRequestOptions} options
  * @returns {Promise<unknown>}

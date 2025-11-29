@@ -407,7 +407,7 @@ export class TextCompletionService {
         preset.temp = preset.temp >= 0 ? Number(preset.temp) : undefined;
         preset.min_p = preset.min_p >= 0 ? Number(preset.min_p) : undefined;
 
-        // Only take fields from the preset specified in setting_names
+        // Only take fields from the preset specified in setting_names to use as TextCompletionSettings
         const settings = {};
         for (const [key, value] of Object.entries(preset)) {
             if (!setting_names.includes(key)) continue;
@@ -601,7 +601,7 @@ export class ChatCompletionService {
         preset.temperature = preset.temperature >= 0 ? Number(preset.temperature) : undefined;
         preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
-        // Convert from preset to oai settings
+        // Convert from preset to ChatCompletionSettings
         const settings = {};
         for (const [key, value] of Object.entries(preset)) {
             const settingToUpdate = settingsToUpdate[key];
