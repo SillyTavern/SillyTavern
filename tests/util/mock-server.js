@@ -25,7 +25,7 @@ export class MockServer {
      * @param {object} jsonBody The parsed JSON body from the request.
      * @returns {object} Mock response object.
      */
-    #handleChatCompletions(jsonBody) {
+    handleChatCompletions(jsonBody) {
         const messages = jsonBody?.messages;
         const lastMessage = messages?.[messages.length - 1];
         const mockResponse = {
@@ -57,7 +57,7 @@ export class MockServer {
                     const body = await readAllChunks(req);
                     const jsonBody = tryParse(body.toString());
                     if (req.method === 'POST' && req.url === '/v1/chat/completions') {
-                        const mockResponse = this.#handleChatCompletions(jsonBody);
+                        const mockResponse = this.handleChatCompletions(jsonBody);
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify(mockResponse));
                     } else {
