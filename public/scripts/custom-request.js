@@ -1,9 +1,9 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders, name1, name2 } from '../script.js';
-import { getTextGenServer, createTextGenGenerationData } from './textgen-settings.js';
+import { getTextGenServer, createTextGenGenerationData, setting_names } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
-import { getStreamingReply, tryParseStreamingError, createGenerationParameters } from './openai.js';
+import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate } from './openai.js';
 import EventSourceStream from './sse-stream.js';
 
 // #region Type Definitions
@@ -125,7 +125,7 @@ export class TextCompletionService {
 
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw new Error(String(json.error?.message || json.error || 'Response not OK'));
+                throw new Error(String(json.error?.message || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -286,12 +286,7 @@ export class TextCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(
-        custom,
-        options = {},
-        extractData = true,
-        signal = null,
-    ) {
+    static async processRequest(custom, options = {}, extractData = true,signal = null) {
         const { presetName, instructName } = options;
         let requestData = { ...custom };
         const prompt = custom.prompt;
@@ -406,17 +401,24 @@ export class TextCompletionService {
         }
 
         // Merge preset with custom parameters
-        const settings = { ...preset, ...customPreset };
+        preset = { ...preset, ...customPreset };
 
-        // Initialize base payload, fixing any issues not addressed in createTextGenerationData
-        let payload = {
-            ...settings,
-            'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
-            'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
-            'type': settings.api_type,
-        };
+        // Convert a few fields from preset to settings
+        preset.temp = preset.temp >= 0 ? Number(preset.temp) : undefined;
+        preset.min_p = preset.min_p >= 0 ? Number(preset.min_p) : undefined;
 
-        payload = createTextGenGenerationData(payload, payload.prompt, payload.genamt);
+        // Only take fields from the preset specified in setting_names
+        const settings = {};
+        for (const [key, value] of Object.entries(preset)) {
+            if (!setting_names.includes(key)) continue;
+            settings[key] = value;
+        }
+
+        // neither type nor api_type are in setting_names, but it is necessary or TC requests fail.
+        settings.type = preset.api_type
+
+        // convert to a generation payload
+        const payload = createTextGenGenerationData(settings, preset.prompt, preset.genamt);
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
@@ -485,7 +487,7 @@ export class ChatCompletionService {
         if (!data.stream) {
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw new Error(String(json.error?.message || json.error || 'Response not OK'));
+                throw new Error(String(json.error?.message || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -593,17 +595,23 @@ export class ChatCompletionService {
         }
 
         // Merge preset with custom parameters
-        const settings = { ...preset, ...customParams };
+        preset = { ...preset, ...customParams };
 
-        // Initialize base payload, fixing any issues with the preset that aren't addressed in createGenerationParameters
-        let payload = {
-            ...settings,
-            temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
-            bias_preset_selected: settings.bias_presets !== undefined ? settings.bias_preset_selected : undefined,
-        };
+        // Fix a few fields before converting to settings
+        preset.temperature = preset.temperature >= 0 ? Number(preset.temperature) : undefined;
+        preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
-        let data = await createGenerationParameters(payload, 'quiet', payload.messages);
-        payload = data.generate_data;
+        // Convert from preset to oai settings
+        const settings = {};
+        for (const [key, value] of Object.entries(preset)) {
+            const settingToUpdate = settingsToUpdate[key];
+            if (!settingToUpdate) continue;
+            settings[settingToUpdate[1]] = value;
+        }
+
+        // Convert from settings to generation payload
+        const data = await createGenerationParameters(settings, 'quiet', preset.messages);
+        const payload = data.generate_data;
 
         // Remove undefined values to avoid API errors
         Object.keys(payload).forEach(key => {
