@@ -563,3 +563,7 @@ label[for="bind_preset_to_connection"]:has(input:checked) {
     filter: grayscale(0.5);
     cursor: not-allowed;
 }
+
+#request_images_block:has(#openai_request_images:not(:checked)) #request_images_settings {
+    display: none;
+}

@@ -367,6 +367,8 @@ async function sendMakerSuiteRequest(request, response) {
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
     const includeReasoning = Boolean(request.body.include_reasoning);
+    const aspectRatio = String(request.body.request_image_aspect_ratio);
+    const imageSize = String(request.body.request_image_resolution);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -397,6 +399,7 @@ async function sendMakerSuiteRequest(request, response) {
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
+        const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -411,8 +414,18 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
+        const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
+            if (enableImageConfig) {
+                generationConfig.imageConfig = {};
+                if (imageSize && isImageSizeModel(model)) {
+                    generationConfig.imageConfig.imageSize = imageSize;
+                }
+                if (aspectRatio) {
+                    generationConfig.imageConfig.aspectRatio = aspectRatio;
+                }
+            }
         }
 
         const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_sysprompt;

@@ -355,6 +355,8 @@ export const settingsToUpdate = {
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    request_image_aspect_ratio: ['#request_image_aspect_ratio', 'request_image_aspect_ratio', false, false],
+    request_image_resolution: ['#request_image_resolution', 'request_image_resolution', false, false],
     azure_base_url: ['#azure_base_url', 'azure_base_url', false, true],
     azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
     azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
@@ -453,6 +455,8 @@ const default_settings = {
     verbosity: verbosity_levels.auto,
     enable_web_search: false,
     request_images: false,
+    request_image_aspect_ratio: '',
+    request_image_resolution: '',
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
@@ -2330,6 +2334,8 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'reasoning_effort': getReasoningEffort(),
         'enable_web_search': Boolean(oai_settings.enable_web_search),
         'request_images': Boolean(oai_settings.request_images),
+        'request_image_resolution': String(oai_settings.request_image_resolution),
+        'request_image_aspect_ratio': String(oai_settings.request_image_aspect_ratio),
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
         'verbosity': getVerbosity(),
     };
@@ -6328,6 +6334,16 @@ export function initOpenAI() {
 
     $('#openai_request_images').on('input', function () {
         oai_settings.request_images = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#request_image_resolution').on('input', function () {
+        oai_settings.request_image_resolution = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#request_image_aspect_ratio').on('input', function () {
+        oai_settings.request_image_aspect_ratio = String($(this).val());
         saveSettingsDebounced();
     });
 
