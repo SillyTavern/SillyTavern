@@ -213,10 +213,6 @@ whitelistImportDomains:
 ##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
 requestOverrides: []
 
-# -- DEVELOPMENT CONFIGURATION --
-# Enables a mock completions API at /v1/chat/completions.
-enableMockCompletionsApi: false
-
 # EXTENSIONS CONFIGURATION
 extensions:
   # Enable UI extensions
