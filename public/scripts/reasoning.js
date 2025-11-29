@@ -1219,6 +1219,18 @@ export function removeReasoningFromString(str) {
 }
 
 /**
+ * Returns the reasoning template object from its name
+ * @param {string} name of the template
+ * @returns {ReasoningTemplate} the reasoning template object
+ * @throws {Error}
+ */
+export function getReasoningTemplateByName(name) {
+    const template = reasoning_templates.find(p => p.name === name);
+    if (!template) throw new Error(`Unknown reasoning template name: "${name}"`);
+    return template;
+}
+
+/**
  * Parses reasoning from a string using the power user reasoning settings or optional template.
  * @typedef {Object} ParsedReasoning
  * @property {string} reasoning Reasoning block
@@ -1226,21 +1238,13 @@ export function removeReasoningFromString(str) {
  * @param {string} str Content of the message
  * @param {Object} options Optional arguments
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
- * @param {string} [options.template=null] Optional reasoning template name to use instead of power_user.reasoning
+ * @param {ReasoningTemplate} template Optional reasoning template to use instead of power_user.reasoning
  * @returns {ParsedReasoning|null} Parsed reasoning block and message content
  */
-export function parseReasoningFromString(str, { strict = true, template = null } = {}) {
-    // Both prefix and suffix must be defined
-    if (template) {
-        template = reasoning_templates.find(p => p.name === template);  // get reasoning template with the given name
-        if (!template) {
-            console.error(`Unknown reasoning template name: "${template}"`);
-            return;
-        }
-    } else {  // if no template given, use the currently selected template
-        template = power_user.reasoning;
-    }
+export function parseReasoningFromString(str, { strict = true } = {}, template = null) {
+    template = template ?? power_user.reasoning;  // if no template given, use the currently selected template
 
+    // Both prefix and suffix must be defined
     if (!template.prefix || !template.suffix) {
         return null;
     }
