@@ -13,7 +13,7 @@ describe('MockServer tests', () => {
         await mockServer.stop();
     });
 
-    test('should access OpenAI-compatible endpoint', async () => {
+    test('should provide OpenAI-compatible endpoint', async () => {
         const requestBody = {
             model: 'gpt-4o',
             max_tokens: 400,
@@ -26,7 +26,7 @@ describe('MockServer tests', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
         });
-        const expectedResponse = { 'choices':[{ 'finish_reason':'stop','index':0,'message':{ 'role':'assistant','reasoning_content':'gpt-4o\n1\n400','content':'Hello, world!' } }],'created':0,'model':'gpt-4o' };
+        const expectedResponse = { 'choices': [{ 'finish_reason': 'stop', 'index': 0, 'message': { 'role': 'assistant', 'reasoning_content': 'gpt-4o\n1\n400', 'content': 'Hello, world!' } }], 'created': 0, 'model': 'gpt-4o' };
         expect(response.status).toBe(200);
         const json = await response.json();
         expect(json).toEqual(expectedResponse);
