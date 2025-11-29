@@ -483,8 +483,32 @@ async function sendMakerSuiteRequest(request, response) {
         if (tools.length) {
             body.tools = tools;
 
-            if (request.body.tool_config) {
-                body.toolConfig = request.body.tool_config;
+            const toolChoice = request.body.tool_choice;
+            let functionCallingConfig;
+
+            // Translate OpenAI's `tool_choice` to Gemini's `functionCallingConfig`
+            if (typeof toolChoice === 'string') {
+                switch (toolChoice) {
+                    case 'none':
+                        functionCallingConfig = { mode: 'NONE' };
+                        break;
+                    case 'required':
+                        functionCallingConfig = { mode: 'ANY' };
+                        break;
+                    case 'auto':
+                        functionCallingConfig = { mode: 'AUTO' };
+                        break;
+                }
+            } else if (typeof toolChoice === 'object' && toolChoice?.function?.name) {
+                // Force a specific function call
+                functionCallingConfig = {
+                    mode: 'ANY',
+                    allowedFunctionNames: [toolChoice.function.name],
+                };
+            }
+
+            if (functionCallingConfig) {
+                body.toolConfig = { functionCallingConfig };
             }
 
         }
