@@ -40,7 +40,7 @@ export class MockServer {
                     },
                 },
             ],
-            created: Date.now(),
+            created: 0,
             model: jsonBody?.model,
         };
         return mockResponse;
