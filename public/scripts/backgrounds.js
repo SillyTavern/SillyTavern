@@ -39,6 +39,26 @@ const THUMBNAIL_CONFIG = {
 };
 
 /**
+ * Background source types.
+ * @readonly
+ * @enum {number}
+ */
+const BG_SOURCES = {
+    GLOBAL: 0,
+    CHAT: 1,
+};
+
+/**
+ * Mapping of background sources to their corresponding tab IDs.
+ * @readonly
+ * @type {Record<string, string>}
+ */
+const BG_TABS = Object.freeze({
+    [BG_SOURCES.GLOBAL]: 'bg_global_tab',
+    [BG_SOURCES.CHAT]: 'bg_chat_tab',
+});
+
+/**
  * Global IntersectionObserver instance for lazy loading backgrounds
  * @type {IntersectionObserver|null}
  */
@@ -746,6 +766,14 @@ function onBackgroundFilterInput() {
 
 const debouncedOnBackgroundFilterInput = debounce(onBackgroundFilterInput, debounce_timeout.standard);
 
+/**
+ * Gets the active background tab source.
+ * @returns {BG_SOURCES} Active background tab source
+ */
+export function getActiveBackgroundTab() {
+    return $('#bg_tabs').tabs('option', 'active');
+}
+
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
@@ -839,9 +867,13 @@ export function initBackgrounds() {
         await onChatChanged();
     });
 
-    setupScrollToTop({
-        scrollContainerId: 'bg-scrollable-content',
-        buttonId: 'bg-scroll-top',
-        drawerId: 'Backgrounds',
+    Object.values(BG_TABS).forEach(tabId => {
+        setupScrollToTop({
+            scrollContainerId: tabId,
+            buttonId: 'bg-scroll-top',
+            drawerId: 'Backgrounds',
+        });
     });
+
+    $('#bg_tabs').tabs();
 }

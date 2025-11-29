@@ -5418,11 +5418,14 @@
                         <input id="bg-filter" class="text_pole" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                     </div>
                 </div>
-                <div id="bg-scrollable-content">
-                    <div class="heading-container-with-controls">
-                        <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter heading-text">
-                            System Backgrounds
-                        </h3>
+                <div id="bg_tabs" class="heading-container-with-controls">
+                    <ul class="bg_tabs_list">
+                        <li class="menu_button">
+                            <a href="#bg_global_tab" data-i18n="Global">Global</a>
+                        </li>
+                        <li class="menu_button">
+                            <a href="#bg_chat_tab" data-i18n="Chat">Chat</a>
+                        </li>
                         <div class="heading-controls">
                             <button id="bg_thumb_zoom_out" class="menu_button menu_button_icon" title="Make thumbnails smaller" data-i18n="[title]Make thumbnails smaller">
                                 <i class="fa-solid fa-minus"></i>
@@ -5431,16 +5434,15 @@
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
+                    </ul>
+                    <div id="bg_global_tab" class="bg_tab_panel">
+                        <div id="bg_menu_content" class="bg_list"></div>
                     </div>
-                    <div id="bg_menu_content" class="bg_list">
-                    </div>
-                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
-                        Chat Backgrounds
-                    </h3>
-                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
-                        <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
-                    </div>
-                    <div id="bg_custom_content" class="bg_list">
+                    <div id="bg_chat_tab" class="bg_tab_panel">
+                        <div id="bg_custom_content" class="bg_list"></div>
+                        <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                            <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
+                        </div>
                     </div>
                 </div>
                 <form id="form_bg_upload" style="display: none;">

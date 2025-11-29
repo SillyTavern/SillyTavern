@@ -97,6 +97,10 @@
         max-width: 100dvw;
     }
 
+    #bg_tabs .bg_tabs_list>li {
+        min-width: 6em;
+    }
+
     #add_background_button_top>span,
     #auto_background>span {
         display: none;
