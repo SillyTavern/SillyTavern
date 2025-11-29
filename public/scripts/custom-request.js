@@ -415,7 +415,7 @@ export class TextCompletionService {
         }
 
         // neither type nor api_type are in setting_names, but it is necessary or TC requests fail.
-        settings.type = preset.api_type
+        settings.type = preset.api_type;
 
         // convert to a generation payload
         const payload = createTextGenGenerationData(settings, preset.prompt, preset.genamt);
