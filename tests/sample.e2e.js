@@ -1,10 +1,12 @@
-describe('sample', () => {
-    beforeAll(async () => {
-        await page.goto(global.ST_URL);
+import { test, expect } from '@playwright/test';
+
+test.describe('sample', () => {
+    test.beforeEach(async({ page }) => {
+        await page.goto('/');
         await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
     });
 
-    it('should be titled "SillyTavern"', async () => {
-        await expect(page.title()).resolves.toMatch('SillyTavern');
+    test('should be titled "SillyTavern"', async ({ page }) => {
+        await expect(page).toHaveTitle('SillyTavern');
     });
 });
