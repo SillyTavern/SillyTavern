@@ -393,7 +393,7 @@ export class ConnectionManagerRequestService {
             throw new Error('Connection Manager is not available');
         }
 
-        const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        const profile = this.getProfile(profileId);
         const selectedApiMap = this.validateProfile(profile);
 
         try {
@@ -458,9 +458,9 @@ export class ConnectionManagerRequestService {
     */
     static constructPrompt(prompt, profileId, instructSettings = null) {
         const context = SillyTavern.getContext();
-        const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
-        const instructName = profile.instruct;
+        const profile = this.getProfile(profileId);
         const selectedApiMap = this.validateProfile(profile);
+        const instructName = profile.instruct;
 
         switch (selectedApiMap.selected) {
             case 'openai': {
@@ -493,6 +493,18 @@ export class ConnectionManagerRequestService {
 
         const profiles = context.extensionSettings.connectionManager.profiles;
         return profiles.filter((p) => this.isProfileSupported(p));
+    }
+
+    /**
+     * Return profile data given the profile ID
+     * @param {string} profileId
+     * @returns {import('./connection-manager/index.js').ConnectionProfile?} [profile]
+     * @throws {Error}
+     */
+    static getProfile(profileId) {
+        const profile = SillyTavern.getContext().extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        if (!profile) throw new Error(`Profile not found (ID: ${profileId})`);
+        return profile;
     }
 
     /**
