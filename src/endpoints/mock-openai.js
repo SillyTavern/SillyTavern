@@ -11,7 +11,7 @@ export const router = express.Router();
  */
 function getMockResponse(prompt) {
     const messages = prompt.messages;
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages?.[messages.length - 1];
     return {
         'choices': [
             {
@@ -19,8 +19,8 @@ function getMockResponse(prompt) {
                 'index': 0,
                 'message': {
                     'role': 'assistant',
-                    'reasoning_content': `${prompt.model}\n${messages.length}\n${prompt.max_tokens}`,
-                    'content': lastMessage.content,
+                    'reasoning_content': `${prompt.model}\n${messages?.length}\n${prompt.max_tokens}`,
+                    'content': String(lastMessage?.content ?? 'No prompt messages.'),
                 },
             },
         ],
