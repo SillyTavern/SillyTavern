@@ -444,9 +444,9 @@ export class ToolManager {
                 }
 
                 for (const toolCallDelta of toolCallDeltas) {
-                    const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
+                    const toolCallIndex = toolCallDelta?.index >= 0 ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
 
-                    if (isNaN(toolCallIndex) || toolCallIndex < 0) {
+                    if (isNaN(toolCallIndex)) {
                         continue;
                     }
 
@@ -661,6 +661,8 @@ export class ToolManager {
             chat_completion_sources.COMETAPI,
             chat_completion_sources.ELECTRONHUB,
             chat_completion_sources.AZURE_OPENAI,
+            chat_completion_sources.ZAI,
+            chat_completion_sources.SILICONFLOW,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

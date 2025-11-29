@@ -2,7 +2,7 @@ import { DOMPurify, moment } from '../lib.js';
 import { event_types, eventSource, getRequestHeaders } from '../script.js';
 import { t } from './i18n.js';
 import { chat_completion_sources } from './openai.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -68,6 +68,8 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    ZAI: 'api_key_zai',
+    SILICONFLOW: 'api_key_siliconflow',
 };
 
 const FRIENDLY_NAMES = {
@@ -124,6 +126,8 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
     [SECRET_KEYS.COMETAPI]: 'CometAPI',
     [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
+    [SECRET_KEYS.ZAI]: 'Z.AI',
+    [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
 };
 
 const INPUT_MAP = {
@@ -163,6 +167,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.FIREWORKS]: '#api_key_fireworks',
     [SECRET_KEYS.COMETAPI]: '#api_key_cometapi',
     [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
+    [SECRET_KEYS.ZAI]: '#api_key_zai',
+    [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
 };
 
 const getLabel = () => moment().format('L LT');
@@ -293,11 +299,13 @@ export let secret_state = {};
  * @param {string} key Secret key
  * @param {string} value Secret value to write
  * @param {string} [label] (Optional) Label for the key. If not provided, generated automatically.
+ * @param {Object} [options] Additional options
+ * @param {boolean} [options.allowEmpty] Whether to allow writing empty values. If false and value is empty, the secret will be deleted.
  * @return {Promise<string?>} The ID of the newly created secret key, or null if no value is provided.
  */
-export async function writeSecret(key, value, label) {
+export async function writeSecret(key, value, label, { allowEmpty } = {}) {
     try {
-        if (!value) {
+        if (!value && !allowEmpty) {
             console.warn(`No value provided for ${key} in writeSecret, redirecting to deleteSecret`);
             await deleteSecret(key);
             return null;
@@ -558,7 +566,8 @@ async function openKeyManagerDialog(key) {
     const template = $(await renderTemplateAsync('secretKeyManager', { name, key }));
     template.find('button[data-action="add-secret"]').on('click', async function () {
         let label = '';
-        const value = await Popup.show.input(t`Add Secret`, t`Enter the secret value:`, '', {
+        let result = POPUP_RESULT.CANCELLED;
+        const value = await Popup.show.input(t`Add Secret`, t`Enter the secret value (can be empty):`, '', {
             customInputs: [{
                 id: 'newSecretLabel',
                 type: 'text',
@@ -567,13 +576,20 @@ async function openKeyManagerDialog(key) {
             onClose: popup => {
                 if (popup.result) {
                     label = popup.inputResults.get('newSecretLabel').toString().trim();
+                    result = popup.result;
                 }
             },
         });
         if (!value) {
-            return;
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                return;
+            }
+            const allowEmpty = await Popup.show.confirm(t`No value entered`, t`No value was entered for the secret. Do you want to add an empty secret?`);
+            if (!allowEmpty) {
+                return;
+            }
         }
-        await writeSecret(key, value, label);
+        await writeSecret(key, value, label, { allowEmpty: true });
         await renderSecretsList();
     });
 
@@ -821,6 +837,13 @@ function registerSecretSlashCommands() {
                 isRequired: false,
                 typeList: [ARGUMENT_TYPE.STRING],
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'empty',
+                description: t`Whether to allow empty values.`,
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: String(false),
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -831,6 +854,7 @@ function registerSecretSlashCommands() {
         ],
         callback: async (args, value) => {
             const quiet = isTrueBoolean(args?.quiet?.toString());
+            const allowEmpty = isTrueBoolean(args?.empty?.toString());
             const key = args?.key?.toString()?.trim() || resolveSecretKey();
 
             if (!key) {
@@ -849,7 +873,7 @@ function registerSecretSlashCommands() {
             }
 
             const valueStr = value?.toString()?.trim();
-            if (!valueStr) {
+            if (!valueStr && !allowEmpty) {
                 if (!quiet) {
                     toastr.error(t`No value provided for the secret key: ${key}`);
                 }
@@ -857,7 +881,7 @@ function registerSecretSlashCommands() {
             }
 
             const label = args?.label?.toString()?.trim() || getLabel();
-            const id = await writeSecret(key, valueStr, label);
+            const id = await writeSecret(key, valueStr, label, { allowEmpty });
 
             if (!quiet) {
                 toastr.success(t`Secret has been written for the key: ${key}`);

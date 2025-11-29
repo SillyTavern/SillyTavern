@@ -40,6 +40,8 @@ const OPENROUTER_PROVIDERS = [
     'BaseTen',
     'Cerebras',
     'Chutes',
+    'Cirrascale',
+    'Clarifai',
     'Cloudflare',
     'Cohere',
     'CrofAI',
@@ -47,6 +49,7 @@ const OPENROUTER_PROVIDERS = [
     'DeepInfra',
     'DeepSeek',
     'Enfer',
+    'FakeProvider',
     'Featherless',
     'Fireworks',
     'Friendli',
@@ -59,7 +62,6 @@ const OPENROUTER_PROVIDERS = [
     'InferenceNet',
     'Infermatic',
     'Inflection',
-    'InoCloud',
     'Kluster',
     'Lambda',
     'Liquid',
@@ -67,6 +69,8 @@ const OPENROUTER_PROVIDERS = [
     'Meta',
     'Minimax',
     'Mistral',
+    'ModelRun',
+    'Modular',
     'Moonshot AI',
     'Morph',
     'NCompass',
@@ -80,6 +84,7 @@ const OPENROUTER_PROVIDERS = [
     'Parasail',
     'Perplexity',
     'Phala',
+    'Relace',
     'SambaNova',
     'SiliconFlow',
     'Stealth',
@@ -929,15 +934,9 @@ export function getCurrentOpenRouterModelTokenizer() {
 export function getCurrentDreamGenModelTokenizer() {
     const modelId = textgen_settings.dreamgen_model;
     const model = dreamGenModels.find(x => x.id === modelId);
-    if (model.id.startsWith('opus-v1-sm')) {
+    if (model.id.startsWith('lucid-v1-medium') || model.id.startsWith('lucid-v1-base')) {
         return tokenizers.MISTRAL;
-    } else if (model.id.startsWith('opus-v1-lg')) {
-        return tokenizers.YI;
-    } else if (model.id.startsWith('opus-v1-xl')) {
-        return tokenizers.LLAMA;
-    } else if (model.id.startsWith('lucid-v1-medium')) {
-        return tokenizers.NEMO;
-    } else if (model.id.startsWith('lucid-v1-extra-large')) {
+    } else if (model.id.startsWith('lucid-v1-extra-large') || model.id.startsWith('lucid-v1-max')) {
         return tokenizers.LLAMA3;
     } else {
         return tokenizers.MISTRAL;

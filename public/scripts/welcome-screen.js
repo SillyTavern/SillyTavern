@@ -106,7 +106,7 @@ async function unshallowPermanentAssistant() {
 
 /**
  * Returns a greeting message for the assistant based on the character.
- * @param {import('./char-data.js').v1CharData} character Character data
+ * @param {Character} character Character data
  * @returns {string} Greeting message
 */
 function getAssistantGreeting(character) {
@@ -135,6 +135,7 @@ function sendAssistantMessage() {
         send_date: getMessageTimeStamp(),
         extra: {
             type: system_message_types.ASSISTANT_MESSAGE,
+            swipeable: false,
         },
     };
 
@@ -514,23 +515,29 @@ async function getRecentChats() {
     /** @type {RecentChat[]} */
     const data = await response.json();
 
-    data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)))
-        .map(chat => ({ chat, character: characters.find(x => x.avatar === chat.avatar), group: groups.find(x => x.id === chat.group) }))
-        .filter(t => t.character || t.group)
-        .forEach(({ chat, character, group }, index) => {
-            const chatTimestamp = timestampToMoment(chat.last_mes);
-            chat.char_name = character?.name || group?.name || '';
-            chat.date_short = chatTimestamp.format('l');
-            chat.date_long = chatTimestamp.format('LL LT');
-            chat.chat_name = chat.file_name.replace('.jsonl', '');
-            chat.char_thumbnail = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
-            chat.is_group = !!group;
-            chat.hidden = index >= DEFAULT_DISPLAYED;
-            chat.avatar = chat.avatar || '';
-            chat.group = chat.group || '';
-        });
+    if (!Array.isArray(data) || data.length === 0) {
+        return [];
+    }
 
-    return data;
+    const dataWithEntities = data
+        .sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)))
+        .map(chat => ({ chat, character: characters.find(x => x.avatar === chat.avatar), group: groups.find(x => x.id === chat.group) }))
+        .filter(t => t.character || t.group);
+
+    dataWithEntities.forEach(({ chat, character, group }, index) => {
+        const chatTimestamp = timestampToMoment(chat.last_mes);
+        chat.char_name = character?.name || group?.name || '';
+        chat.date_short = chatTimestamp.format('l');
+        chat.date_long = chatTimestamp.format('LL LT');
+        chat.chat_name = chat.file_name.replace('.jsonl', '');
+        chat.char_thumbnail = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
+        chat.is_group = !!group;
+        chat.hidden = index >= DEFAULT_DISPLAYED;
+        chat.avatar = chat.avatar || '';
+        chat.group = chat.group || '';
+    });
+
+    return dataWithEntities.map(t => t.chat);
 }
 
 export async function openPermanentAssistantChat({ tryCreate = true, created = false } = {}) {
@@ -617,7 +624,7 @@ export function assignCharacterAsAssistant(characterId) {
     if (characterId === undefined) {
         return;
     }
-    /** @type {import('./char-data.js').v1CharData} */
+    /** @type {Character} */
     const character = characters[characterId];
     if (!character) {
         return;

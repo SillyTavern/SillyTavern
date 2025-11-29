@@ -61,6 +61,8 @@ export const SECRET_KEYS = {
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
     AZURE_OPENAI: 'api_key_azure_openai',
+    ZAI: 'api_key_zai',
+    SILICONFLOW: 'api_key_siliconflow',
 };
 
 /**
@@ -561,12 +563,13 @@ router.post('/find', (request, response) => {
         }
 
         const manager = new SecretManager(request.user.directories);
-        const secretValue = manager.readSecret(key, id);
+        const state = manager.getSecretState();
 
-        if (!secretValue) {
+        if (!state[key]) {
             return response.sendStatus(404);
         }
 
+        const secretValue = manager.readSecret(key, id);
         return response.send({ value: secretValue });
     } catch (error) {
         console.error('Error finding secret:', error);

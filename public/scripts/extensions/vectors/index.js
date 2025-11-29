@@ -61,12 +61,14 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    electronhub_model: 'text-embedding-3-small',
+    openrouter_model: 'openai/text-embedding-3-large',
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
     vllm_model: '',
     webllm_model: '',
-    google_model: 'text-embedding-004',
+    google_model: 'text-embedding-005',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -425,7 +427,7 @@ function getStringHash(str) {
 
 /**
  * Retrieves files from the chat and inserts them into the vector index.
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @returns {Promise<void>}
  */
 async function processFiles(chat) {
@@ -442,39 +444,49 @@ async function processFiles(chat) {
         }
 
         for (const message of chat) {
-            // Message has no file
-            if (!message?.extra?.file) {
+            // Message has no files
+            if (!Array.isArray(message?.extra?.files) || !message.extra.files.length) {
                 continue;
             }
 
             // Trim file inserted by the script
-            const fileText = String(message.mes)
-                .substring(0, message.extra.fileLength).trim();
+            const allFileText = String(message.mes || '').substring(0, message.extra.fileLength).trim();
 
             // Convert kilobytes to string length
             const thresholdLength = settings.size_threshold * 1024;
 
             // File is too small
-            if (fileText.length < thresholdLength) {
+            if (allFileText.length < thresholdLength) {
                 continue;
             }
 
             message.mes = message.mes.substring(message.extra.fileLength);
 
-            const fileName = message.extra.file.name;
-            const fileUrl = message.extra.file.url;
-            const collectionId = getFileCollectionId(fileUrl);
-            const hashesInCollection = await getSavedHashes(collectionId);
+            const allFileChunks = [];
+            const queryText = await getQueryText(chat, 'file');
 
-            // File is already in the collection
-            if (!hashesInCollection.length) {
-                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+            for (const file of message.extra.files) {
+                const fileName = file.name;
+                const fileUrl = file.url;
+                const collectionId = getFileCollectionId(fileUrl);
+                const hashesInCollection = await getSavedHashes(collectionId);
+
+                // File is not vectorized yet
+                if (!hashesInCollection.length) {
+                    const fileText = file.text || (await getFileAttachment(fileUrl));
+                    if (!fileText) {
+                        continue;
+                    }
+                    await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+                }
+
+                const fileChunks = await retrieveFileChunks(queryText, collectionId);
+                if (fileChunks) {
+                    allFileChunks.push(fileChunks);
+                }
             }
 
-            const queryText = await getQueryText(chat, 'file');
-            const fileChunks = await retrieveFileChunks(queryText, collectionId);
-
-            message.mes = `${fileChunks}\n\n${message.mes}`;
+            message.mes = `${allFileChunks.join('\n\n')}\n\n${message.mes}`;
         }
     } catch (error) {
         console.error('Vectors: Failed to retrieve files', error);
@@ -613,7 +625,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
 /**
  * Removes the most relevant messages from the chat and displays them in the extension prompt
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @param {number} _contextSize Context size (unused)
  * @param {function} _abort Abort function (unused)
  * @param {string} type Generation type
@@ -739,13 +751,18 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 
 /**
  * Gets the text to query from the chat
- * @param {object[]} chat Chat messages
+ * @param {ChatMessage[]} chat Chat messages
  * @param {'file'|'chat'|'world-info'} initiator Initiator of the query
  * @returns {Promise<string>} Text to query
  */
 async function getQueryText(chat, initiator) {
+    const getTextWithoutAttachments = (x) => {
+        const fileLength = x?.extra?.fileLength || 0;
+        return String(x?.mes || '').substring(fileLength).trim();
+    };
+
     let hashedMessages = chat
-        .map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: chat.indexOf(x) }))
+        .map(x => ({ text: substituteParams(getTextWithoutAttachments(x)), hash: getStringHash(substituteParams(getTextWithoutAttachments(x))), index: chat.indexOf(x) }))
         .filter(x => x.text)
         .reverse()
         .slice(0, settings.query);
@@ -770,6 +787,12 @@ function getVectorsRequestBody(args = {}) {
         case 'extras':
             body.extrasUrl = extension_settings.apiUrl;
             body.extrasKey = extension_settings.apiKey;
+            break;
+        case 'electronhub':
+            body.model = extension_settings.vectors.electronhub_model;
+            break;
+        case 'openrouter':
+            body.model = extension_settings.vectors.openrouter_model;
             break;
         case 'togetherai':
             body.model = extension_settings.vectors.togetherai_model;
@@ -889,6 +912,8 @@ async function insertVectorItems(collectionId, items) {
  */
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB] ||
+        settings.source === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
@@ -1101,6 +1126,8 @@ function toggleSettings() {
     $('#vectors_world_info_settings').toggle(!!settings.enabled_world_info);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
+    $('#openrouter_vectorsModel').toggle(settings.source === 'openrouter');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
@@ -1110,9 +1137,94 @@ function toggleSettings() {
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
-    if (settings.source === 'webllm') {
-        loadWebLlmModels();
+    switch (settings.source) {
+        case 'webllm':
+            loadWebLlmModels();
+            break;
+        case 'electronhub':
+            loadElectronHubModels();
+            break;
+        case 'openrouter':
+            loadOpenRouterModels();
+            break;
     }
+}
+
+async function loadElectronHubModels() {
+    try {
+        const response = await fetch('/api/openai/electronhub/models', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        // filter by embeddings endpoint
+        const models = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
+        populateElectronHubModelSelect(models);
+    } catch (err) {
+        console.warn('Electron Hub models fetch failed', err);
+        populateElectronHubModelSelect([]);
+    }
+}
+
+/**
+ * Populates the Electron Hub model select element.
+ * @param {{ id: string, name: string }[]} models Electron Hub models
+ */
+function populateElectronHubModelSelect(models) {
+    const select = $('#vectors_electronhub_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.electronhub_model && models.length) {
+        settings.electronhub_model = models[0].id;
+    }
+    $('#vectors_electronhub_model').val(settings.electronhub_model);
+}
+
+async function loadOpenRouterModels() {
+    try {
+        const response = await fetch('/api/openrouter/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateOpenRouterModelSelect(models);
+    } catch (err) {
+        console.warn('OpenRouter models fetch failed', err);
+        populateOpenRouterModelSelect([]);
+    }
+}
+
+/**
+ * Populates the OpenRouter model select element.
+ * @param {{ id: string, name: string }[]} models OpenRouter models
+ */
+function populateOpenRouterModelSelect(models) {
+    const select = $('#vectors_openrouter_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.openrouter_model && models.length) {
+        settings.openrouter_model = models[0].id;
+    }
+    $('#vectors_openrouter_model').val(settings.openrouter_model);
 }
 
 /**
@@ -1263,7 +1375,7 @@ async function onViewStatsClick() {
 async function onVectorizeAllFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         /**
@@ -1340,7 +1452,7 @@ async function onVectorizeAllFilesClick() {
 async function onPurgeFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         for (const file of allFiles) {
@@ -1510,6 +1622,16 @@ jQuery(async () => {
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
         settings.openai_model = String($('#vectors_openai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_electronhub_model').val(settings.electronhub_model).on('change', () => {
+        settings.electronhub_model = String($('#vectors_electronhub_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_openrouter_model').val(settings.openrouter_model).on('change', () => {
+        settings.openrouter_model = String($('#vectors_openrouter_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

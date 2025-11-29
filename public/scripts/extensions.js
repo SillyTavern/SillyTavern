@@ -10,10 +10,12 @@ import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { SimpleMutex } from './util/SimpleMutex.js';
 
 export {
     getContext,
     getApiUrl,
+    SimpleMutex as ModuleWorkerWrapper,
 };
 
 /** @type {string[]} */
@@ -124,31 +126,6 @@ export function renderExtensionTemplateAsync(extensionName, templateId, template
     return renderTemplateAsync(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
 }
 
-// Disables parallel updates
-export class ModuleWorkerWrapper {
-    constructor(callback) {
-        this.isBusy = false;
-        this.callback = callback;
-    }
-
-    // Called by the extension
-    async update(...args) {
-        // Don't touch me I'm busy...
-        if (this.isBusy) {
-            return;
-        }
-
-        // I'm free. Let's update!
-        try {
-            this.isBusy = true;
-            await this.callback(...args);
-        }
-        finally {
-            this.isBusy = false;
-        }
-    }
-}
-
 export const extension_settings = {
     apiUrl: defaultUrl,
     apiKey: '',
@@ -190,7 +167,10 @@ export const extension_settings = {
     regex: [],
     /** @type {import('./extensions/regex/index.js').RegexPreset[]} */
     regex_presets: [],
+    /** @type {string[]} */
     character_allowed_regex: [],
+    /** @type {Record<string, string[]>} */
+    preset_allowed_regex: {},
     tts: {},
     sd: {
         prompts: {},

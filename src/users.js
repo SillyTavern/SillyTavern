@@ -16,7 +16,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -24,7 +24,8 @@ import { serverDirectory } from './server-directory.js';
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
-const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false, 'boolean');
+const AUTHELIA_AUTH = getConfigValue('sso.autheliaAuth', false, 'boolean');
+const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
@@ -716,6 +717,10 @@ export async function tryAutoLogin(request, basicAuthMode) {
             return true;
         }
 
+        if (AUTHENTIK_AUTH && await authentikUserLogin(request)) {
+            return true;
+        }
+
         if (basicAuthMode && PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
             return true;
         }
@@ -746,20 +751,41 @@ async function singleUserLogin(request) {
 }
 
 /**
- * Tries auto-login with authlia trusted headers.
+ * Attempts auto-login using an Authelia header.
  * https://www.authelia.com/integration/trusted-header-sso/introduction/
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
 async function autheliaUserLogin(request) {
+    return headerUserLogin(request, 'Remote-User');
+}
+
+/**
+ * Attempts auto-login using an Authentik header.
+ * https://docs.goauthentik.io/add-secure-apps/providers/proxy/forward_auth/
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function authentikUserLogin(request) {
+    return headerUserLogin(request, 'X-Authentik-Username');
+}
+
+/**
+ * Tries auto-login with a given header.
+ * @param {import('express').Request} request Request object
+ * @param {string} [header='Remote-User'] The header to use for the trusted user
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function headerUserLogin(request, header = 'Remote-User') {
     if (!request.session) {
         return false;
     }
 
-    const remoteUser = request.get('Remote-User');
+    const remoteUser = request.get(header);
     if (!remoteUser) {
         return false;
     }
+    console.debug(`Attempting auto-login for user from header ${header}: ${remoteUser}`);
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
@@ -926,6 +952,8 @@ function createRouteHandler(directoryFn) {
             if (!exists) {
                 return res.sendStatus(404);
             }
+
+            invalidateFirefoxCache(filePath, req, res);
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
             return res.sendStatus(500);

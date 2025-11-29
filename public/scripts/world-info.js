@@ -1,7 +1,7 @@
 import { Fuse } from '../lib.js';
 
-import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents } from './utils.js';
+import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1 } from '../script.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -22,6 +22,7 @@ import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -95,6 +96,7 @@ export const METADATA_KEY = 'world_info';
 export const DEFAULT_DEPTH = 4;
 export const DEFAULT_WEIGHT = 100;
 export const MAX_SCAN_DEPTH = 1000;
+const MAX_COMMENT_LENGTH = 100;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
@@ -1041,39 +1043,69 @@ function registerWorldInfoSlashCommands() {
 
     /**
      * Gets the name of the persona-bound lorebook.
-     * @returns {string} The name of the persona-bound lorebook
+     * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+     * @param {string} _unnamedArg not used
+     * @returns {Promise<string>} The name of the persona-bound lorebook
      */
-    function getPersonaBookCallback() {
-        return power_user.persona_description_lorebook || '';
+    async function getPersonaBookCallback({ name, create }, _unnamedArg) {
+        let bookName = power_user.persona_description_lorebook || '';
+        if (bookName) {
+            return bookName;
+        }
+
+        if (isTrueBoolean(String(create))) {
+            const newName = await createWorldWithName(name, `Persona Book ${name1}`.replace(/[^a-z0-9 -]/gi, '_').replace(/_{2,}/g, '_').substring(0, 64));
+            power_user.persona_description_lorebook = newName;
+            setPersonaDescription();
+            saveSettingsDebounced();
+            return newName;
+        }
+
+        return '';
     }
 
     /**
      * Gets the name of the character-bound lorebook.
      * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
-     * @param {string} name Character name
-     * @returns {string} The name of the character-bound lorebook, a JSON string of the character's lorebooks, or an empty string
+     * @param {string} characterIdentifier Character name
+     * @returns {Promise<string>} The name of the character-bound lorebook, a JSON string of the character's lorebooks, or an empty string
      */
-    function getCharBookCallback({ type }, name) {
+    async function getCharBookCallback({ type, name, create }, characterIdentifier) {
         const context = getContext();
-        if (context.groupId && !name) throw new Error('This command is not available in groups without providing a character name');
+        if (context.groupId && !characterIdentifier) throw new Error('This command is not available in groups without providing a character name');
         type = String(type ?? '').trim().toLowerCase() || 'primary';
-        name = String(name ?? '') || context.characters[context.characterId]?.avatar || null;
-        const character = findChar({ name });
+        characterIdentifier = String(characterIdentifier ?? '') || context.characters[context.characterId]?.avatar || null;
+        const character = findChar({ name: characterIdentifier });
         if (!character) {
             toastr.error(t`Character not found.`);
             return '';
         }
         const books = [];
-        if (type === 'all' || type === 'primary') {
-            books.push(character.data?.extensions?.world);
+        if (type === 'all' || type === 'primary' && character.data?.extensions?.world) {
+            books.push(character.data.extensions.world);
         }
         if (type === 'all' || type === 'additional') {
             const fileName = getCharaFilename(context.characters.indexOf(character));
             const extraCharLore = world_info.charLore?.find((e) => e.name === fileName);
             if (extraCharLore && Array.isArray(extraCharLore.extraBooks)) {
-                books.push(...extraCharLore.extraBooks);
+                books.push(...extraCharLore.extraBooks.filter(onlyUnique).filter(Boolean));
             }
         }
+
+        if (isTrueBoolean(String(create)) && books.length === 0) {
+            const newName = await createWorldWithName(name, `Character Book ${character.name}`.replace(/[^a-z0-9 -]/gi, '_').replace(/_{2,}/g, '_').substring(0, 64));
+            // Also assign the book now - additional if requested, otherwise as primary
+            if (type === 'additional') {
+                await charUpdateAddAuxWorld(character.avatar, newName);
+            }
+            else {
+                await charUpdatePrimaryWorld(newName);
+            }
+            // Refresh UI, if needed
+            setWorldInfoButtonClass(this_chid);
+            books.push(newName);
+        }
+
         return type === 'primary' ? (books[0] ?? '') : JSON.stringify(books.filter(onlyUnique).filter(Boolean));
     }
 
@@ -1094,10 +1126,23 @@ function registerWorldInfoSlashCommands() {
             return chat_metadata[METADATA_KEY];
         }
 
-        const name = (() => {
+        if (isFalseBoolean(String(args.create))) {
+            return '';
+        }
+
+        const name = await createWorldWithName(args.name, `Chat Book ${getCurrentChatId()}`.replace(/[^a-z0-9 -]/gi, '_').replace(/_{2,}/g, '_').substring(0, 64));
+
+        chat_metadata[METADATA_KEY] = name;
+        await saveMetadata();
+        $('.chat_lorebook_button').addClass('world_set');
+        return name;
+    }
+
+    async function createWorldWithName(possibleName = undefined, fallbackName = undefined) {
+        let newName = (() => {
             // Use the provided name if it's not in use
-            if (typeof args.name === 'string') {
-                const name = String(args.name);
+            if (typeof possibleName === 'string') {
+                const name = String(possibleName);
                 if (world_names.includes(name)) {
                     throw new Error('This World Info file name is already in use');
                 }
@@ -1105,14 +1150,14 @@ function registerWorldInfoSlashCommands() {
             }
 
             // Replace non-alphanumeric characters with underscores, cut to 64 characters
-            return `Chat Book ${getCurrentChatId()}`.replace(/[^a-z0-9]/gi, '_').replace(/_{2,}/g, '_').substring(0, 64);
+            return fallbackName ?? `Lorebook (${uuidv4()})`;
         })();
-        await createNewWorldInfo(name);
 
-        chat_metadata[METADATA_KEY] = name;
-        await saveMetadata();
-        $('.chat_lorebook_button').addClass('world_set');
-        return name;
+        // Make sure the name is unique
+        newName = getUniqueName(newName, world_names.includes.bind(world_names));
+
+        await createNewWorldInfo(newName);
+        return newName;
     }
 
     async function findBookEntryCallback(args, value) {
@@ -1549,6 +1594,15 @@ function registerWorldInfoSlashCommands() {
                 isRequired: false,
                 acceptsMultiple: false,
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'create',
+                description: 'create a new lorebook if it doesn\'t exist',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'true',
+            }),
         ],
         aliases: ['getchatlore', 'getchatwi'],
     }));
@@ -1563,6 +1617,25 @@ function registerWorldInfoSlashCommands() {
         name: 'getpersonabook',
         callback: getPersonaBookCallback,
         returns: 'lorebook name',
+
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'lorebook name if creating a new one, will be auto-generated otherwise',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'create',
+                description: 'create a new lorebook if it doesn\'t exist',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+        ],
         helpString: 'Get a name of the current persona-bound lorebook and pass it down the pipe. Returns empty string if persona lorebook is not set.',
         aliases: ['getpersonalore', 'getpersonawi'],
     }));
@@ -1577,6 +1650,22 @@ function registerWorldInfoSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: ['primary', 'additional', 'all'],
                 defaultValue: 'primary',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'lorebook name if creating a new one, will be auto-generated otherwise',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'create',
+                description: 'create a new lorebook if it doesn\'t exist',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
         ],
         unnamedArgumentList: [
@@ -2335,7 +2424,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         let counter = 0;
         for (const entry of Object.values(data.entries)) {
             if (!entry.comment && Array.isArray(entry.key) && entry.key.length > 0) {
-                entry.comment = entry.key[0];
+                entry.comment = entry.key.join(', ').slice(0, MAX_COMMENT_LENGTH);
                 setWIOriginalDataValue(data, entry.uid, 'comment', entry.comment);
                 counter++;
             }
@@ -2758,6 +2847,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
             }
             $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
+            }
         });
 
         input.toggleClass('empty', !entry[entryPropName].length);
@@ -2792,6 +2886,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
                 await saveWorldInfo(name, data);
                 $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            }
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(value, commentInput);
             }
         });
         input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
@@ -3102,6 +3201,17 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 }
 
 /**
+ * Update commentInput's placeholder.
+ * @param {string} keys Text to display in commentInput's placeholder.
+ * @param {JQuery<HTMLElement>} commentInput The comment input element.
+ */
+function setCommentPlaceholder(keys, commentInput) {
+    // Limit placeholder text to avoid performance issues.
+    keys = keys.slice(0, MAX_COMMENT_LENGTH);
+    commentInput.attr('placeholder', (keys || t`Entry Title/Memo`));
+}
+
+/**
  * Main function to build the WI entry editor template.
  * @param {string} name - The name of the world info file.
  * @param {object} data - The world info data object.
@@ -3118,6 +3228,11 @@ export async function getWorldEntry(name, data, entry) {
 
     // Comment
     const commentInput = headerTemplate.find('textarea[name="comment"]');
+
+    //Update the commentInput's placeholder.
+    const keys = entry['key'].join(', ');
+    setCommentPlaceholder(keys, commentInput);
+
     commentInput.data('uid', entry.uid);
     commentInput.on('input', async function (_, { skipReset = false, noSave = false } = {}) {
         const uid = $(this).data('uid');
@@ -3995,6 +4110,16 @@ export async function deleteWorldInfo(worldInfoName) {
         }
     }
 
+    if (power_user.persona_description_lorebook === worldInfoName) {
+        power_user.persona_description_lorebook = '';
+        if (power_user.personas[user_avatar]) {
+            const object = getOrCreatePersonaDescriptor();
+            object.lorebook = '';
+        }
+        $('#persona_lore_button').toggleClass('world_set', false);
+        saveSettingsDebounced();
+    }
+
     return true;
 }
 
@@ -4720,6 +4845,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
+        const curScanState = scanState;
         scanState = nextScanState;
         if (scanState) {
             const text = successfulNewEntriesForRecursion
@@ -4731,6 +4857,45 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         } else {
             logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
+
+        // Fire an event after each scan loop, so extensions can hook into the current scanning state
+        const args = {
+            state: {
+                current: curScanState,
+                next: scanState,
+                loopCount: count,
+            },
+            new: {
+                all: newEntries,
+                successful: successfulNewEntries,
+            },
+            activated: {
+                entries: allActivatedEntries,
+                text: allActivatedText,
+            },
+            sortedEntries,
+            recursionDelay: {
+                availableLevels: availableRecursionDelayLevels,
+                currentLevel: currentRecursionDelayLevel,
+            },
+            budget: {
+                current: budget,
+                overflowed: token_budget_overflowed,
+            },
+            timedEffects,
+        };
+        await eventSource.emit(event_types.WORLDINFO_SCAN_DONE, args);
+
+        // Some fields are allowed to be changed by listeners, those will be handled here manually. They can be updated via changed the args from the listeners.
+        // Any array provided directly can be modified by updating it's elements, adding or removing elements. This has to be done consistently.
+        if (args.state.next !== scanState) {
+            logNextState('[WI] Scan state changed from', scanState, 'to', args.state.next);
+            scanState = args.state.next;
+        }
+        allActivatedText = args.activated.text;
+        currentRecursionDelayLevel = args.recursionDelay.currentLevel;
+        budget = args.budget.current;
+        token_budget_overflowed = args.budget.overflowed;
     }
 
     console.debug('[WI] --- BUILDING PROMPT ---');
@@ -5634,6 +5799,90 @@ export async function moveWorldInfoEntry(sourceName, targetName, uid, { deleteOr
         console.error('[WI Move] Unexpected error:', error);
         return false;
     }
+}
+
+
+/**
+ * Updates the primary world info linked to a character.
+ * Can also unset it to null.
+ * @param {string} name - The name of the world info to link to the character.
+ */
+export async function charUpdatePrimaryWorld(name) {
+    const previousValue = $('#character_world').val();
+    $('#character_world').val(name);
+
+    console.debug('Character world selected:', name);
+
+    if (menu_type == 'create') {
+        create_save.world = name;
+        return;
+    }
+
+    if (previousValue && !name) {
+        try {
+            // Dirty hack to remove embedded lorebook from character JSON data.
+            const data = JSON.parse(String($('#character_json_data').val()));
+
+            if (data?.data?.character_book) {
+                data.data.character_book = undefined;
+            }
+
+            $('#character_json_data').val(JSON.stringify(data));
+            toastr.info(t`Embedded lorebook will be removed from this character.`);
+        } catch {
+            console.error('Failed to parse character JSON data.');
+        }
+    }
+
+    await createOrEditCharacter();
+
+    setWorldInfoButtonClass(undefined, !!name);
+}
+
+/**
+ * Adds one or more auxiliary world books to a character.
+ * @param {string} characterKey - The key of the character to add auxiliary world books to
+ * @param {string|string[]} nameOrNames - The name or names of the auxiliary world books to add
+ */
+export async function charUpdateAddAuxWorld(characterKey, nameOrNames) {
+    const fileName = getCharaFilename(null, { manualAvatarKey: characterKey });
+    const toAdd = Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames];
+    updateAuxBooks(fileName, curr => [...curr, ...toAdd]);
+}
+
+/**
+ * Replaces the entire list of auxiliary world books for a character.
+ * @param {string} fileName - The filename of the character to update
+ * @param {string[]} books - The new list of auxiliary world books to replace the existing list with
+ */
+export function charSetAuxWorlds(fileName, books) {
+    updateAuxBooks(fileName, _ => Array.isArray(books) ? books : []);
+}
+
+function updateAuxBooks(fileName, computeNext) {
+    if (!fileName) return;
+
+    if (menu_type === 'create') {
+        const current = create_save.extra_books ?? [];
+        create_save.extra_books = normalizeArray(computeNext(current));
+        return; // no debounced save in create flow
+    }
+
+    const charLore = world_info.charLore ?? [];
+    const idx = charLore.findIndex(e => e.name === fileName);
+    const current = idx !== -1 ? (charLore[idx].extraBooks ?? []) : [];
+    const next = normalizeArray(computeNext(current));
+
+    if (next.length === 0) {
+        if (idx !== -1) charLore.splice(idx, 1);
+    } else if (idx === -1) {
+        charLore.push({ name: fileName, extraBooks: next });
+    } else {
+        charLore[idx] = { ...charLore[idx], extraBooks: next };
+    }
+
+    Object.assign(world_info, { charLore });
+    saveSettingsDebounced();
 }
 
 export function initWorldInfo() {

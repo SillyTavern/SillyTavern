@@ -1,3 +1,8 @@
+.minimax_tts_settings>.tts_block {
+    gap: 5px;
+    margin: 5px 0;
+}
+
 .minimax-custom-item {
     display: flex;
     justify-content: space-between;

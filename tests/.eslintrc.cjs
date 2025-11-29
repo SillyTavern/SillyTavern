@@ -5,19 +5,24 @@ module.exports = {
     ],
     extends: [
         'eslint:recommended',
+        'plugin:jest/recommended',
     ],
     env: {
         es6: true,
         node: true,
-        "jest/globals": true,
+        'jest/globals': true,
     },
     parserOptions: {
         ecmaVersion: 'latest',
+        sourceType: 'module',
     },
     overrides: [
     ],
     ignorePatterns: [
     ],
+    globals: {
+        page: 'readonly',
+    },
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
@@ -33,5 +38,10 @@ module.exports = {
         'space-infix-ops': 'error',
         'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
         'no-cond-assign': 'error',
+    },
+    settings: {
+        jest: {
+            version: '29.7.0',
+        },
     },
 };

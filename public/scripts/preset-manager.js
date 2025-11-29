@@ -19,12 +19,14 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { t } from './i18n.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { openai_settings, openai_setting_names, oai_settings } from './openai.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
+import { oai_settings, openai_setting_names, openai_settings } from './openai.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
+import { reasoning_templates } from './reasoning.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -33,13 +35,11 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import { renderTemplateAsync } from './templates.js';
 import {
+    textgenerationwebui_settings as textgen_settings,
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
-    textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
 import { download, ensurePlainObject, equalsIgnoreCaseAndAccents, getSanitizedFilename, parseJsonFile, waitUntilCondition } from './utils.js';
-import { t } from './i18n.js';
-import { reasoning_templates } from './reasoning.js';
 
 const presetManagers = {};
 
@@ -81,6 +81,9 @@ function autoSelectPreset() {
  * @returns {PresetManager} Preset manager
  */
 export function getPresetManager(apiId = '') {
+    if (apiId === 'koboldhorde') {
+        apiId = 'kobold';
+    }
     if (!apiId) {
         apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
     }
@@ -184,6 +187,23 @@ class PresetManager {
             },
             isValid: (data) => PresetManager.isPossiblyReasoningData(data),
         },
+        'srw': {
+            name: 'Start Reply With',
+            getData: () => {
+                return {
+                    value: power_user.user_prompt_bias ?? '',
+                    show: power_user.show_user_prompt_bias ?? false,
+                };
+            },
+            setData: (data) => {
+                power_user.user_prompt_bias = data.value ?? '';
+                power_user.show_user_prompt_bias = data.show ?? false;
+                $('#start_reply_with').val(power_user.user_prompt_bias);
+                $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
+                return saveSettingsDebounced();
+            },
+            isValid: (data) => PresetManager.isPossiblyStartReplyWithData(data),
+        },
     };
 
     static isPossiblyInstructData(data) {
@@ -209,6 +229,10 @@ class PresetManager {
     static isPossiblyReasoningData(data) {
         const reasoningProps = ['name', 'prefix', 'suffix', 'separator'];
         return data && reasoningProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyStartReplyWithData(data) {
+        return data && 'value' in data && 'show' in data;
     }
 
     /**
@@ -310,7 +334,7 @@ class PresetManager {
      */
     static async performMasterExport() {
         const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
-            acc[key] = { key: key, name: section.name, checked: key !== 'preset' };
+            acc[key] = { key: key, name: section.name, checked: !['preset', 'srw'].includes(key) };
             return acc;
         }, {});
         const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
@@ -394,8 +418,10 @@ class PresetManager {
 
     /**
      * Updates the preset select element with the current API presets.
+     * @param {object} [options] Options for saving the preset
+     * @param {boolean} [options.skipUpdate=false] If true, skips updating the preset list after saving.
      */
-    async updatePreset() {
+    async updatePreset(option = { skipUpdate: false }) {
         const selected = $(this.select).find('option:selected');
         console.log(selected);
 
@@ -405,7 +431,7 @@ class PresetManager {
         }
 
         const name = selected.text();
-        await this.savePreset(name);
+        await this.savePreset(name, null, option);
 
         const successToast = !this.isAdvancedFormatting() ? t`Preset updated` : t`Template updated`;
         toastr.success(successToast);
@@ -814,7 +840,7 @@ class PresetManager {
      * Reads a preset extension field from the preset.
      * @param {object} options
      * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
-     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'. If empty, reads the entire extensions object.
      * @return {any} The value of the preset extension field, or null if not found.
      */
     readPresetExtensionField({ name, path }) {
@@ -825,7 +851,7 @@ class PresetManager {
         // Read from settings if the selected preset is the same as the provided name
         if (settings && selectedName === presetName) {
             const settingsExtensions = ensurePlainObject(settings.extensions || {});
-            return lodash.get(settingsExtensions, path, null);
+            return path ? lodash.get(settingsExtensions, path, null) : settingsExtensions;
         }
 
         // Otherwise, read from the preset by name
@@ -835,7 +861,7 @@ class PresetManager {
         }
 
         const presetExtensions = ensurePlainObject(preset.extensions || {});
-        const value = lodash.get(presetExtensions, path, null);
+        const value = path ? lodash.get(presetExtensions, path, null) : presetExtensions;
         return value;
     }
 
@@ -843,7 +869,7 @@ class PresetManager {
      * Writes a value to a preset extension field.
      * @param {object} options
      * @param {string} [options.name] Name of the preset. If not provided, uses the currently selected preset name.
-     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'.
+     * @param {string} options.path Path to the preset extension field, e.g. 'myextension.data'. If empty, writes to the root of the extensions object.
      * @param {any} options.value Value to write to the preset extension field.
      * @return {Promise<void>} Resolves when the preset is saved.
      */
@@ -856,7 +882,7 @@ class PresetManager {
         if (settings && selectedName === presetName) {
             // Set the value at the specified path
             settings.extensions = ensurePlainObject(settings.extensions || {});
-            lodash.set(settings.extensions, path, value);
+            path ? lodash.set(settings.extensions, path, value) : (settings.extensions = value);
             await saveSettings();
         }
 
@@ -868,7 +894,7 @@ class PresetManager {
 
         // Set the value at the specified path
         preset.extensions = ensurePlainObject(preset.extensions || {});
-        lodash.set(preset.extensions, path, value);
+        path ? lodash.set(preset.extensions, path, value) : (preset.extensions = value);
 
         // Save the updated preset
         await this.savePreset(presetName, preset, { skipUpdate: true });
@@ -1033,10 +1059,11 @@ export async function initPresetManager() {
             return;
         }
 
+        await eventSource.emit(event_types.PRESET_RENAMED_BEFORE, { apiId: apiId, oldName: oldName, newName: newName });
+        const extensions = presetManager.readPresetExtensionField({ name: oldName, path: '' });
         await presetManager.renamePreset(newName);
-
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: oldName });
-        await eventSource.emit(event_types.PRESET_CHANGED, { apiId: apiId, name: newName });
+        await presetManager.writePresetExtensionField({ name: newName, path: '', value: extensions });
+        await eventSource.emit(event_types.PRESET_RENAMED, { apiId: apiId, oldName: oldName, newName: newName });
 
         if (apiId === 'openai') {
             // This is a horrible mess, but prevents the renamed preset from being corrupted.
@@ -1116,13 +1143,13 @@ export async function initPresetManager() {
         if (result) {
             const successToast = !presetManager.isAdvancedFormatting() ? t`Preset deleted` : t`Template deleted`;
             toastr.success(successToast);
+            await eventSource.emit(event_types.PRESET_DELETED, { apiId, name });
         } else {
             const warningToast = !presetManager.isAdvancedFormatting() ? t`Preset was not deleted from server` : t`Template was not deleted from server`;
             toastr.warning(warningToast);
         }
 
         saveSettingsDebounced();
-        await eventSource.emit(event_types.PRESET_DELETED, { apiId: apiId, name: name });
     });
 
     $(document).on('click', '[data-preset-manager-restore]', async function () {

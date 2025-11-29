@@ -11,7 +11,10 @@ import {
     GEMINI_SAFETY,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
+    VERTEX_SAFETY,
+    ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -40,6 +43,7 @@ import {
     postProcessPrompt,
     PROMPT_PROCESSING_TYPE,
     addAssistantPrefix,
+    embedOpenRouterMedia,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -73,6 +77,9 @@ const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
+const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
+const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -152,11 +159,12 @@ async function sendClaudeRequest(request, response) {
         const additionalHeaders = {};
         const betaHeaders = ['output-128k-2025-02-19'];
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
-        const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
+        const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model);
-        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.enable_web_search);
-        const isOpus41 = /^claude-opus-4-1/.test(request.body.model);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model);
+        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5)/.test(request.body.model);
+        const useVerbosity = /^claude-(opus-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -226,7 +234,7 @@ async function sendClaudeRequest(request, response) {
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
-        if (isOpus41) {
+        if (isLimitedSampling) {
             if (requestBody.top_p < 1) {
                 delete requestBody.temperature;
             } else {
@@ -260,6 +268,13 @@ async function sendClaudeRequest(request, response) {
 
         if (fixThinkingPrefill && convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
+        }
+
+        // Verbosity = 'effort' (same values as OpenAI)
+        if (useVerbosity && request.body.verbosity) {
+            betaHeaders.push('effort-2025-11-24');
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = request.body.verbosity;
         }
 
         if (betaHeaders.length) {
@@ -352,6 +367,8 @@ async function sendMakerSuiteRequest(request, response) {
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
     const includeReasoning = Boolean(request.body.include_reasoning);
+    const aspectRatio = String(request.body.request_image_aspect_ratio);
+    const imageSize = String(request.body.request_image_resolution);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -377,24 +394,18 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-exp-image-generation',
             'gemini-2.0-flash-preview-image-generation',
             'gemini-2.5-flash-image-preview',
+            'gemini-2.5-flash-image',
+            'gemini-3-pro-image-preview',
         ];
 
-        // These models do not support setting the threshold to OFF at all.
-        const blockNoneModels = [
-            'gemini-1.5-pro-001',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-flash-8b-exp-0827',
-            'gemini-1.5-flash-8b-exp-0924',
-        ];
-
-        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m) && !/-image-preview$/.test(m);
+        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
+        const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
             'gemini-2.0-flash-lite-001',
             'gemini-2.0-flash-lite-preview-02-05',
-            'gemini-1.5-flash-8b-exp-0924',
-            'gemini-1.5-flash-8b-exp-0827',
+            'gemini-robotics-er-1.5-preview',
         ];
         // #endregion
 
@@ -403,29 +414,29 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
+        const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
+            if (enableImageConfig) {
+                generationConfig.imageConfig = {};
+                if (imageSize && isImageSizeModel(model)) {
+                    generationConfig.imageConfig.imageSize = imageSize;
+                }
+                if (aspectRatio) {
+                    generationConfig.imageConfig.aspectRatio = aspectRatio;
+                }
+            }
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_makersuite_sysprompt;
+        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_sysprompt;
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
-        let safetySettings = GEMINI_SAFETY;
-
-        if (blockNoneModels.includes(model)) {
-            safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
-        }
-
-        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            const searchTool = model.includes('1.5')
-                ? ({ google_search_retrieval: {} })
-                : ({ google_search: {} });
-            tools.push(searchTool);
-        }
+        const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
             const functionDeclarations = [];
+            const customTools = [];
             for (const tool of request.body.tools) {
                 if (tool.type === 'function') {
                     if (tool.function.parameters?.$schema) {
@@ -435,9 +446,24 @@ async function sendMakerSuiteRequest(request, response) {
                         delete tool.function.parameters;
                     }
                     functionDeclarations.push(tool.function);
+                } else if (tool[tool.type]) {
+                    customTools.push({ [tool.type]: tool[tool.type] });
                 }
             }
-            tools.push({ function_declarations: functionDeclarations });
+            if (functionDeclarations.length > 0) {
+                tools.push({ function_declarations: functionDeclarations });
+            }
+            // Custom tools are only supported when no function calling is present
+            if (functionDeclarations.length === 0 && customTools.length > 0) {
+                tools.push(...customTools);
+            }
+        }
+
+        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
+            // Tool use with function calling is unsupported
+            if (!tools.some(t => t.function_declarations)) {
+                tools.push({ google_search: {} });
+            }
         }
 
         if (isThinkingConfigModel(model)) {
@@ -557,8 +583,10 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                return response.status(500).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
 
             /** @type {any} */
@@ -1012,7 +1040,7 @@ async function sendXaiRequest(request, response) {
             bodyParams['stop'] = request.body.stop;
         }
 
-        if (request.body.reasoning_effort && ['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+        if (request.body.reasoning_effort) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
@@ -1580,6 +1608,10 @@ router.post('/status', async function (request, statusResponse) {
             console.error('Azure OpenAI status check connection error:', error);
             return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
@@ -1837,6 +1869,10 @@ router.post('/generate', function (request, response) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
         }
 
+        if (request.body.verbosity) {
+            bodyParams['verbosity'] = request.body.verbosity;
+        }
+
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
@@ -1849,10 +1885,13 @@ router.post('/generate', function (request, response) {
         }
 
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
-        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
-        if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
-            cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+        if (Array.isArray(request.body.messages)) {
+            embedOpenRouterMedia(request.body.messages);
+            if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
+                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+            }
         }
 
         const isGemini = /google\/gemini/.test(request.body.model);
@@ -1932,8 +1971,17 @@ router.post('/generate', function (request, response) {
         if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
             request.body.model = `${request.body.model}:online`;
         }
+        if (request.body.min_p !== undefined) {
+            bodyParams['min_p'] = request.body.min_p;
+        }
+        if (request.body.top_a !== undefined) {
+            bodyParams['top_a'] = request.body.top_a;
+        }
+        if (request.body.repetition_penalty !== undefined) {
+            bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+        }
         const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
-        const isClaude3or4 = /claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        const isClaude3or4 = /claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         if (enableSystemPromptCache && isClaude3or4) {
             bodyParams['cache_control'] = {
@@ -1973,6 +2021,28 @@ router.post('/generate', function (request, response) {
             reasoning_effort: request.body.reasoning_effort,
         };
         throw new Error('This provider is temporarily disabled.');
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
+        apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+        headers = {
+            'Accept-Language': 'en-US,en',
+        };
+        bodyParams = {
+            thinking: {
+                type: request.body.include_reasoning ? 'enabled' : 'disabled',
+            },
+        };
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
+        apiUrl = API_SILICONFLOW;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
+        bodyParams = {};
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
@@ -1982,6 +2052,12 @@ router.post('/generate', function (request, response) {
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        }
+    }
+
+    if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+        if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            bodyParams['verbosity'] = request.body.verbosity;
         }
     }
 
@@ -2238,4 +2314,55 @@ multimodalModels.post('/mistral', async (req, res) => {
     }
 });
 
+multimodalModels.post('/xai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        // xAI's /models endpoint doesn't return modality info, so we must use /language-models instead
+        const response = await fetch('https://api.x.ai/v1/language-models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = data.models.filter(m => m.input_modalities?.includes('image')).map(m => m.id);
+        if (!multimodalModels.includes('grok-4-0709')) {
+            // The endpoint says it doesn't support images, but it does
+            multimodalModels.push('grok-4-0709');
+        }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.use('/multimodal-models', multimodalModels);
+
+router.post('/process', async function (request, response) {
+    try {
+        if (!Array.isArray(request.body.messages)) {
+            return response.status(400).send({ error: 'Invalid messages format' });
+        }
+
+        if (!Object.values(PROMPT_PROCESSING_TYPE).includes(request.body.type)) {
+            return response.status(400).send({ error: 'Unknown processing type' });
+        }
+
+        const messages = postProcessPrompt(request.body.messages, request.body.type, getPromptNames(request));
+        return response.send({ messages });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});

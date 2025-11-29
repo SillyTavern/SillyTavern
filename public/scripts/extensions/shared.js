@@ -33,12 +33,13 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
     const safeMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const mimeType = base64Img?.split(';')?.[0]?.split(':')?.[1];
+    const mimeType = base64Img?.split(';')?.[0]?.split(':')?.[1] || 'image/jpeg';
+    const isImage = mimeType.startsWith('image/');
     const thumbnailNeeded = ['google', 'openrouter', 'mistral', 'groq', 'vertexai'].includes(extension_settings.caption.multimodal_api);
-    if ((thumbnailNeeded && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
+    if ((isImage && thumbnailNeeded && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
         const maxSide = 2048;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide);
-    } else if (!safeMimeTypes.includes(mimeType)) {
+    } else if (isImage && !safeMimeTypes.includes(mimeType)) {
         base64Img = await createThumbnail(base64Img, null, null);
     }
     if (isOllama && base64Img.startsWith('data:image/')) {
@@ -255,6 +256,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB]) {
         throw new Error('Electron Hub API key is not set.');
     }
+
+    if (multimodalApi === 'zai' && !secret_state[SECRET_KEYS.ZAI]) {
+        throw new Error('Z.AI API key is not set.');
+    }
 }
 
 /**
@@ -410,6 +415,7 @@ export class ConnectionManagerRequestService {
                         custom_url: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
+                        custom_prompt_post_processing: profile['prompt-post-processing'],
                         ...overridePayload,
                     }, {
                         presetName: includePreset ? profile.preset : undefined,
