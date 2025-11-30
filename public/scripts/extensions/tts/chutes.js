@@ -1,4 +1,4 @@
-import { getRequestHeaders } from '../../../script.js';
+import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
@@ -18,15 +18,14 @@ class ChutesTtsProvider {
 
     get settingsHtml() {
         let html = `
-        <div>Chutes TTS API.</div>
         <div class="flex-container alignItemsCenter">
-            <div class="flex1"></div>
+            <div class="flex1">Chutes TTS API</div>
             <div id="chutes_tts_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_chutes">
                 <i class="fa-solid fa-key"></i>
                 <span>API Key</span>
             </div>
         </div>
-        <div class="flex-container flexGap10 wrap">
+        <div class="flex-container flexFlowColumn">
             <div class="flex1">
                 <label for="chutes_tts_model">Model</label>
                 <select id="chutes_tts_model" class="text_pole"></select>
@@ -37,6 +36,20 @@ class ChutesTtsProvider {
             </div>
         </div>`;
         return html;
+    }
+
+    constructor() {
+        this.handler = async function (/** @type {string} */ key) {
+            if (key !== SECRET_KEYS.CHUTES) return;
+            $('#chutes_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CHUTES]);
+            await this.onRefreshClick();
+        }.bind(this);
+    }
+
+    dispose() {
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.removeListener(event, this.handler);
+        });
     }
 
     onSettingsChange() {
@@ -60,6 +73,11 @@ class ChutesTtsProvider {
         $('#chutes_tts_model').val(this.settings.model);
         $('#chutes_tts_speed').val(this.settings.speed);
         $('#chutes_tts_speed_output').text(this.settings.speed);
+
+        $('#chutes_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CHUTES]);
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.on(event, this.handler);
+        });
 
         await this.checkReady();
 
