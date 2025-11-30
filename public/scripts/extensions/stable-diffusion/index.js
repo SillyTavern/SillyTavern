@@ -1320,6 +1320,7 @@ async function onModelChange() {
         sources.falai,
         sources.xai,
         sources.google,
+        sources.chutes,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
