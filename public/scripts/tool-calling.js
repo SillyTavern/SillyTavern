@@ -559,6 +559,10 @@ export class ToolManager {
             const targetValue = target[key];
 
             if (deltaValue === null || deltaValue === undefined) {
+                // Don't reset the value if it already exists
+                if (targetValue) {
+                    continue;
+                }
                 target[key] = deltaValue;
                 continue;
             }
