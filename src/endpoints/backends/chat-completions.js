@@ -1776,6 +1776,7 @@ router.post('/status', async function (request, statusResponse) {
                         return {
                             ...model,
                             pricing: {
+                                ...model.pricing,
                                 input: model.pricing.prompt,
                                 output: model.pricing.completion,
                             },
