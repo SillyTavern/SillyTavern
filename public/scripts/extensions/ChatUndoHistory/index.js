@@ -2,7 +2,7 @@ import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebou
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
-import { applyDiff, diff } from '/lib.js';
+import { applyDiff, diff, lodash } from '/lib.js';
 
 export const extensionName = 'ChatUndoHistory';
 
@@ -49,6 +49,12 @@ class ChatHistory {
         //Enforce the maximum chat history length.
         if (0 >= maximumChatHistoryItems) {
             toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History'`, t`You cannot save the chat because your maximum history items is set to ${maximumChatHistoryItems}. (Check Settings.)`);
+            return;
+        }
+
+        //Only save changed chats.
+        if (this.fullHistoryInterval !== 1 && lodash.isEqual(this.chatData, this.getChatSnapshot(this.chatHistoryIndex))) {
+            toast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`);
             return;
         }
 
