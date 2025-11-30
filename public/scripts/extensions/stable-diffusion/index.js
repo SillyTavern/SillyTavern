@@ -734,7 +734,7 @@ async function onSaveStyleClick() {
 async function refinePrompt(prompt, isNegative) {
     if (extension_settings.sd.refine_mode) {
         const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
-        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 5, okButton: 'Continue' });
+        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 8, okButton: 'Continue' });
 
         if (refinedPrompt) {
             return String(refinedPrompt);
@@ -2865,7 +2865,7 @@ function getCharacterAvatarUrl() {
     if (context.groupId) {
         const groupMembers = context.groups.find(x => x.id === context.groupId)?.members;
         const lastMessageAvatar = context.chat?.filter(x => !x.is_system && !x.is_user)?.slice(-1)[0]?.original_avatar;
-        const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)]?.avatar : null;
+        const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)] : null;
         const avatarToUse = lastMessageAvatar || randomMemberAvatar;
         return formatCharacterAvatar(avatarToUse);
     } else {
@@ -2907,10 +2907,16 @@ async function generatePrompt(quietPrompt) {
  */
 async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator, signal) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
-    const prefix = noCharPrefix.includes(generationType)
+    const isCharChat = this_chid !== undefined && !selected_group;
+    const ignoreNoCharForSwipe = initiator === initiators.swipe && isCharChat;
+
+    const skipCharPrefix = !ignoreNoCharForSwipe && noCharPrefix.includes(generationType);
+
+    const prefix = skipCharPrefix
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
-    const negativePrefix = noCharPrefix.includes(generationType)
+
+    const negativePrefix = skipCharPrefix
         ? extension_settings.sd.negative_prompt
         : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
 
@@ -4372,6 +4378,10 @@ async function sdMessageButton($icon, { animate } = {}) {
         message.extra.media = [];
     }
 
+    if (!message.extra.media.length && !message.extra.media_display) {
+        message.extra.media_display = MEDIA_DISPLAY.GALLERY;
+    }
+
     /** @type {MediaAttachment} */
     const selectedMedia = message.extra.media.length > 0
         ? (message.extra.media[message.extra.media_index] ?? message.extra.media[message.extra.media.length - 1])
@@ -4499,6 +4509,10 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
  */
 async function onImageSwiped({ message, element, direction }) {
     const { powerUserSettings, accountStorage } = getContext();
+
+    if (!isValidState()) {
+        return;
+    }
 
     if (!message || direction !== SWIPE_DIRECTION.RIGHT || powerUserSettings.image_overswipe !== IMAGE_OVERSWIPE.GENERATE) {
         return;

@@ -5,8 +5,8 @@ import { regexFromString } from '../../utils.js';
 import { lodash } from '../../../lib.js';
 
 /**
- * @enum {number} Regex scripts types
  * @readonly
+ * @enum {number} Regex scripts types
  */
 export const SCRIPT_TYPES = {
     // ORDER MATTERS: defines the regex script priority
@@ -105,7 +105,7 @@ export async function saveScriptsByType(scripts, scriptType) {
 
 /**
  * Check if character's regexes are allowed to be used; if character is undefined, returns false
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {boolean}
  */
 export function isScopedScriptsAllowed(character) {
@@ -114,7 +114,7 @@ export function isScopedScriptsAllowed(character) {
 
 /**
  * Allow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function allowScopedScripts(character) {
@@ -133,7 +133,7 @@ export function allowScopedScripts(character) {
 
 /**
  * Disallow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function disallowScopedScripts(character) {
@@ -220,8 +220,8 @@ export function getCurrentPresetName() {
 }
 
 /**
- * @enum {number} Where the regex script should be applied
  * @readonly
+ * @enum {number} Where the regex script should be applied
  */
 export const regex_placement = {
     /**
@@ -237,8 +237,8 @@ export const regex_placement = {
 };
 
 /**
- * @enum {number} How to substitute parameters in the find regex
  * @readonly
+ * @enum {number} How to substitute parameters in the find regex
  */
 export const substitute_find_regex = {
     NONE: 0,

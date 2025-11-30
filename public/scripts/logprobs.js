@@ -417,6 +417,7 @@ function createSwipe(messageId, prompt) {
 
     console.debug('cleanedPrompt: ', cleanedPrompt);
 
+    /** @type {SwipeInfo} */
     const newSwipeInfo = {
         send_date: msg.send_date,
         gen_started: msg.gen_started,

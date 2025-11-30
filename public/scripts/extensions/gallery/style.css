@@ -49,3 +49,7 @@
     opacity: 1;
     filter: unset;
 }
+
+.galleryImageDraggable video {
+    width: 100%;
+}

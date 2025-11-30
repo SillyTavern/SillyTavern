@@ -732,7 +732,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub">
+                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,nanogpt">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -758,7 +758,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter">
+                                <div class="range-block" data-source="openrouter,nanogpt">
                                     <div class="range-block-title" data-i18n="Repetition Penalty">
                                         Repetition Penalty
                                     </div>
@@ -771,7 +771,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter">
+                                <div class="range-block" data-source="openrouter,nanogpt">
                                     <div class="range-block-title" data-i18n="Min P">
                                         Min P
                                     </div>
@@ -784,7 +784,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter">
+                                <div class="range-block" data-source="openrouter,nanogpt">
                                     <div class="range-block-title" data-i18n="Top A">
                                         Top A
                                     </div>
@@ -1707,6 +1707,10 @@
                                             </a>
                                         </h4>
                                         <textarea id="tabby_json_schema" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired JSON schema" placeholder="Type in the desired JSON schema"></textarea>
+                                        <label for="json_schema_allow_empty_textgenerationwebui" class="checkbox_label" title="Treat empty JSON object as a valid JSON schema." data-tg-type="all">
+                                            <input type="checkbox" id="json_schema_allow_empty_textgenerationwebui" />
+                                            <small data-i18n="Allow empty schema objects">Allow empty schema objects</small>
+                                        </label>
                                     </div>
                                     <div id="sampler_order_block_kcpp" data-tg-type="koboldcpp" data-tg-samplers="sampler_order" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
@@ -1916,18 +1920,6 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
-                                            <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
-                                                Wrap in Quotes</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Wrap entire user message in quotes before sending.">Wrap
-                                                entire user message in quotes before sending.</span><br>
-                                            <span data-i18n="Leave off if you use quotes manually for speech.">Leave off
-                                                if you use quotes manually for speech.</span>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
                                         <label for="continue_prefill" class="checkbox_label widthFreeExpand">
                                             <input id="continue_prefill" type="checkbox" />
                                             <span data-i18n="Continue prefill">Continue prefill</span>
@@ -1948,6 +1940,19 @@
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.">
                                                 Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="claude,makersuite,vertexai">
+                                        <label for="use_sysprompt" class="checkbox_label widthFreeExpand">
+                                            <input id="use_sysprompt" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Use system prompt">Use system prompt</span>
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
+                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
                                     </div>
@@ -1981,16 +1986,28 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_image_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline images">Send inline images</span>
-                                            <div id="openai_image_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                        <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_media_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline media">Send inline media</span>
+                                            <div class="flex-container">
+                                                <div id="openai_image_inlining_supported">
+                                                    <i class="icon-supported fa-solid fa-image" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-image" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
+                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                    <i class="icon-supported fa-solid fa-film" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-film" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
+                                                <div id="openai_audio_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                    <i class="icon-supported fa-solid fa-music" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
+                                                    <i class="icon-unsupported fa-solid fa-music" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
+                                                </div>
                                             </div>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it.</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends attached media in prompts if supported by the model.</span>
+                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long.</strong>
+                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB.</strong>
                                         </div>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,makersuite,vertexai">
                                             <div class="flex-container oneline-dropdown">
@@ -2005,40 +2022,12 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
-                                        <label for="openai_video_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_video_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline videos">Send inline videos</span>
-                                            <div id="openai_video_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
-                                            </div>
-                                        </label>
-                                        <div id="video_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="video_inlining_hint_1">Sends videos in prompts if the model supports it.</span>
-                                            <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long</strong>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,openrouter">
-                                        <label for="openai_audio_inlining" class="checkbox_label flexWrap widthFreeExpand">
-                                            <input id="openai_audio_inlining" type="checkbox" />
-                                            <span data-i18n="Send inline audio">Send inline audio</span>
-                                            <div id="openai_audio_inlining_supported" data-cc-toggle="false">
-                                                <i class="icon-supported fa-solid fa-circle-check" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
-                                                <i class="icon-unsupported fa-solid fa-circle-exclamation" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
-                                            </div>
-                                        </label>
-                                        <div id="audio_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="audio_inlining_hint_1">Sends audio in prompts if the model supports it.</span>
-                                            <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB</strong>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
+                                    <div id="request_images_block" class="range-block" data-source="makersuite,vertexai">
                                         <label for="openai_request_images" class="checkbox_label widthFreeExpand">
                                             <input id="openai_request_images" type="checkbox" />
                                             <span>
                                                 <span data-i18n="Request inline images">Request inline images</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.0 Flash Experimental"></i>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.5 Flash Image / Gemini 3 Pro Image"></i>
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
@@ -2049,19 +2038,36 @@
                                                 Incompatible with the following features: function calling, web search, system prompt.
                                             </em>
                                         </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite,vertexai">
-                                        <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
-                                            <input id="use_makersuite_sysprompt" type="checkbox" />
-                                            <span>
-                                                <span data-i18n="Use system prompt">Use system prompt</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 1.5+, LearnLM"></i>
-                                            </span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Merges_all_system_messages_desc_1">
-                                                Merges all system messages up until the first message with a non-system role, and sends them in a</span> <code>system_instruction</code> <span data-i18n="Merges_all_system_messages_desc_2">field.
-                                            </span>
+                                        <div id="request_images_settings" class="flex-container wide100p textAlignCenter">
+                                            <div class="flex1">
+                                                <label for="request_image_resolution">
+                                                    <small data-i18n="Resolution">Resolution</small>
+                                                </label>
+                                                <select id="request_image_resolution" class="text_pole">
+                                                    <option value="">Auto</option>
+                                                    <option value="1K">1K</option>
+                                                    <option value="2K">2K</option>
+                                                    <option value="4K">4K</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex1">
+                                                <label for="request_image_aspect_ratio">
+                                                    <small data-i18n="Aspect Ratio">Aspect Ratio</small>
+                                                </label>
+                                                <select id="request_image_aspect_ratio" class="text_pole">
+                                                    <option value="">Auto</option>
+                                                    <option value="1:1">1:1</option>
+                                                    <option value="9:16">9:16</option>
+                                                    <option value="16:9">16:9</option>
+                                                    <option value="3:4">3:4</option>
+                                                    <option value="4:3">4:3</option>
+                                                    <option value="3:2">3:2</option>
+                                                    <option value="2:3">2:3</option>
+                                                    <option value="5:4">5:4</option>
+                                                    <option value="4:5">4:5</option>
+                                                    <option value="21:9">21:9</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,azure_openai,nanogpt,zai">
@@ -2103,6 +2109,22 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,openrouter,claude">
+                                        <div class="flex-container oneline-dropdown">
+                                            <label for="openai_verbosity">
+                                                <span data-i18n="Verbosity">Verbosity</span>
+                                            </label>
+                                            <select id="openai_verbosity">
+                                                <option data-i18n="openai_verbosity_auto" value="auto">Auto</option>
+                                                <option data-i18n="openai_verbosity_low" value="low">Low</option>
+                                                <option data-i18n="openai_verbosity_medium" value="medium">Medium</option>
+                                                <option data-i18n="openai_verbosity_high" value="high">High</option>
+                                            </select>
+                                            <div class="toggle-description justifyLeft marginBot5" data-i18n="Constrains the verbosity of the model's response.">
+                                                Constrains the verbosity of the model's response.
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="claude">
                                         <div class="wide100p">
                                             <div class="flex-container alignItemsCenter">
@@ -2119,15 +2141,6 @@
                                         <div id="claude_function_prefill_warning">
                                             <i class="fa-solid fa-circle-info"></i>
                                             <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
-                                        </div>
-                                        <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_use_sysprompt" type="checkbox" />
-                                            <span data-i18n="Use system prompt">Use system prompt</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
-                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -2391,7 +2404,7 @@
                                     <h4 data-i18n="Model Providers">Model Providers</h4>
                                     <select id="openrouter_providers_text" class="openrouter_providers" multiple>
                                     </select>
-                                    <label class="checkbox_label" data-i18n="[title]Automatically chooses an alternative provider if chosen providers can't serve your request." for="openrouter_allow_fallbacks_textgenerationwebui" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
+                                    <label class="checkbox_label" data-tg-samplers="openrouter_allow_fallbacks" data-i18n="[title]Automatically chooses an alternative provider if chosen providers can't serve your request." for="openrouter_allow_fallbacks_textgenerationwebui" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
                                         <input id="openrouter_allow_fallbacks_textgenerationwebui" type="checkbox" />
                                         <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                     </label>
@@ -3029,6 +3042,8 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-5">claude-opus-4-5</option>
+                                        <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                                         <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
                                         <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929</option>
                                         <option value="claude-haiku-4-5">claude-haiku-4-5</option>
@@ -5379,10 +5394,9 @@
             <div id="Backgrounds" class="drawer-content closedDrawer bg-drawer-layout">
                 <div id="bg-header-fixed">
                     <div class="bg-header-row-1">
-                        <label for="add_bg_button" id="add_background_button_top" class="menu_button menu_button_icon" data-i18n="[title]Add a new background" title="Add a new background">
-                            <i class="fa-solid fa-plus"></i>
-                            <span data-i18n="Add Background">Add Background</span>
-                        </label>
+                        <h3 class="margin0">
+                            <span data-i18n="Backgrounds">Backgrounds</span>
+                        </h3>
                         <span class="expander"></span>
                         <select id="background_fitting" class="text_pole" data-i18n="[title]Background Fitting" title="Background Fitting">
                             <option value="classic" data-i18n="Classic">Classic</option>
@@ -5395,16 +5409,23 @@
                             <i class="fa-solid fa-wand-magic"></i>
                             <span data-i18n="Auto-select">Auto-select</span>
                         </div>
+                        <label for="add_bg_button" id="add_background_button_top" class="menu_button menu_button_icon" data-i18n="[title]Add a new background" title="Add a new background">
+                            <i class="fa-solid fa-upload"></i>
+                            <span data-i18n="Add Background">Add Background</span>
+                        </label>
                     </div>
                     <div class="bg-header-row-2">
                         <input id="bg-filter" class="text_pole" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                     </div>
                 </div>
-                <div id="bg-scrollable-content">
-                    <div class="heading-container-with-controls">
-                        <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter heading-text">
-                            System Backgrounds
-                        </h3>
+                <div id="bg_tabs" class="heading-container-with-controls">
+                    <ul class="bg_tabs_list">
+                        <li class="bg_tab_button">
+                            <a href="#bg_global_tab" data-i18n="Global">Global</a>
+                        </li>
+                        <li class="bg_tab_button">
+                            <a href="#bg_chat_tab" data-i18n="Chat">Chat</a>
+                        </li>
                         <div class="heading-controls">
                             <button id="bg_thumb_zoom_out" class="menu_button menu_button_icon" title="Make thumbnails smaller" data-i18n="[title]Make thumbnails smaller">
                                 <i class="fa-solid fa-minus"></i>
@@ -5413,20 +5434,19 @@
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
+                    </ul>
+                    <div id="bg_global_tab" class="bg_tab_panel">
+                        <div id="bg_menu_content" class="bg_list"></div>
                     </div>
-                    <div id="bg_menu_content" class="bg_list">
-                    </div>
-                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
-                        Chat Backgrounds
-                    </h3>
-                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
-                        <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
-                    </div>
-                    <div id="bg_custom_content" class="bg_list">
+                    <div id="bg_chat_tab" class="bg_tab_panel">
+                        <div id="bg_custom_content" class="bg_list"></div>
+                        <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                            <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
+                        </div>
                     </div>
                 </div>
-                <form id="form_bg_upload" style="display: none;">
-                    <input type="file" id="add_bg_button" name="avatar" accept="image/jpeg,image/png,image/gif,image/bmp,image/svg+xml,video/*">
+                <form id="form_bg_upload" hidden>
+                    <input type="file" id="add_bg_button" name="avatar" accept="image/*,video/*" multiple hidden>
                 </form>
                 <button id="bg-scroll-top" type="button" class="menu_button menu_button_icon" title="Scroll backgrounds to top" data-i18n="[title]Scroll backgrounds to top">
                     <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
@@ -6375,7 +6395,7 @@
                 <div class="jg-menu">
                     <div data-action="lock" class="jg-button jg-lock fa-solid fa-lock fa-fw pointer" data-i18n="[title]Lock" title="Lock"></div>
                     <div data-action="unlock" class="jg-button jg-unlock fa-solid fa-lock-open fa-fw pointer" data-i18n="[title]Unlock" title="Unlock"></div>
-                    <div data-action="copy" class="jg-button jg-copy fa-solid fa-file-arrow-up" data-i18n="[title]Copy to system backgrounds" title="Copy to system backgrounds"></div>
+                    <div data-action="copy" class="jg-button jg-copy fa-solid fa-file-arrow-up" data-i18n="[title]Copy to global backgrounds" title="Copy to global backgrounds"></div>
                     <div data-action="edit" class="jg-button jg-edit fa-solid fa-pen-to-square fa-fw pointer" data-i18n="[title]Rename Background" title="Rename Background"></div>
                     <div data-action="delete" class="jg-button jg-delete fa-solid fa-trash-can fa-fw pointer" data-i18n="[title]Delete Background" title="Delete Background"></div>
                 </div>
@@ -7043,7 +7063,7 @@
                     <div class="mes_timer"></div>
                     <div class="tokenCounterDisplay"></div>
                 </div>
-                <div class="swipe_left fa-solid fa-chevron-left" style="display: none;"></div>
+                <div class="swipe_left fa-solid fa-chevron-left"></div>
                 <div class="mes_block">
                     <div class="ch_name flex-container justifySpaceBetween">
                         <div class="flex-container flex1 alignitemscenter">
@@ -7107,7 +7127,7 @@
                     <div class="mes_bias"></div>
                 </div>
                 <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
-                    <div class="swipe_right fa-solid fa-chevron-right" style="display: none;"></div>
+                    <div class="swipe_right fa-solid fa-chevron-right"></div>
                     <div class="swipes-counter"></div>
                 </div>
             </div>
@@ -7206,9 +7226,8 @@
                         <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-chevron-down" data-i18n="[title]Move down"></div>
                     </div>
                     <div title="View character card" data-action="view" class="right_menu_button fa-solid fa-xl fa-image-portrait" data-i18n="[title]View character card"></div>
-                    <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark" data-i18n="[title]Remove from group">
-                    </div>
-                    <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus" data-i18n="[title]Add to group"></div>
+                    <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-xl fa-xmark" data-i18n="[title]Remove from group"></div>
+                    <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-xl fa-plus" data-i18n="[title]Add to group"></div>
                 </div>
             </div>
         </div>

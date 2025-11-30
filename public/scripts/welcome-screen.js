@@ -106,7 +106,7 @@ async function unshallowPermanentAssistant() {
 
 /**
  * Returns a greeting message for the assistant based on the character.
- * @param {import('./char-data.js').v1CharData} character Character data
+ * @param {Character} character Character data
  * @returns {string} Greeting message
 */
 function getAssistantGreeting(character) {
@@ -135,6 +135,7 @@ function sendAssistantMessage() {
         send_date: getMessageTimeStamp(),
         extra: {
             type: system_message_types.ASSISTANT_MESSAGE,
+            swipeable: false,
         },
     };
 
@@ -623,7 +624,7 @@ export function assignCharacterAsAssistant(characterId) {
     if (characterId === undefined) {
         return;
     }
-    /** @type {import('./char-data.js').v1CharData} */
+    /** @type {Character} */
     const character = characters[characterId];
     if (!character) {
         return;

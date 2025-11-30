@@ -1,5 +1,6 @@
 /**
  * Common debounce timeout values to use with `debounce` calls.
+ * @readonly
  * @enum {number}
  */
 export const debounce_timeout = {
@@ -68,8 +69,8 @@ export const COMETAPI_IGNORE_PATTERNS = [
 ];
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const MEDIA_SOURCE = {
     API: 'api',
@@ -79,8 +80,8 @@ export const MEDIA_SOURCE = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const MEDIA_DISPLAY = {
     LIST: 'list',
@@ -88,8 +89,8 @@ export const MEDIA_DISPLAY = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const IMAGE_OVERSWIPE = {
     GENERATE: 'generate',
@@ -118,9 +119,20 @@ export const MEDIA_TYPE = {
 };
 
 /**
- * Scroll behavior options when appending media to messages.
- * @enum {string}
+ * Bitwise flag-style media request types.
  * @readonly
+ * @enum {number}
+ */
+export const MEDIA_REQUEST_TYPE = {
+    IMAGE: 0b001,
+    VIDEO: 0b010,
+    AUDIO: 0b100,
+};
+
+/**
+ * Scroll behavior options when appending media to messages.
+ * @readonly
+ * @enum {string}
  */
 export const SCROLL_BEHAVIOR = {
     NONE: 'none',
@@ -129,9 +141,48 @@ export const SCROLL_BEHAVIOR = {
 };
 
 /**
- * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
+ * @readonly
+ * @enum {string}
+ */
+export const OVERSWIPE_BEHAVIOR = {
+    /** The overswipe right chevron will not be displayed. */
+    NONE: 'none',
+    /** An overswipe will loop to the first swipe. */
+    LOOP: 'loop',
+    /** Pristine greetings will loop, and chevrons will always be shown: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373 */
+    PRISTINE_GREETING: 'pristine_greeting',
+    /** If chat tree is enabled, then an overswipe will allow the user to edit the message before starting a new generation. */
+    EDIT_GENERATE: 'edit_generate',
+    /** This is the default behavior on character messages. */
+    REGENERATE: 'regenerate',
+};
+
+/**
+ * @readonly
+ * @enum {string}
  */
 export const SWIPE_DIRECTION = {
     LEFT: 'left',
     RIGHT: 'right',
+};
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const SWIPE_SOURCE = {
+    DELETE: 'delete',
+    KEYBOARD: 'keyboard',
+    BACK: 'back',
+    AUTO_SWIPE: 'auto_swipe',
+};
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const SWIPE_STATE = {
+    NONE: 'none',
+    SWIPING: 'swiping',
+    EDITING: 'editing',
 };
