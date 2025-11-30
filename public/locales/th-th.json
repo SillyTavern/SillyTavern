@@ -921,7 +921,7 @@
   "Save": "บันทึก",
   "Chat History": "ประวัติการแชท",
   "Import Chat": "นำเข้าไฟล์แชท",
-  "Copy to system backgrounds": "คัดลอกไปยังพื้นหลัง",
+  "Copy to global backgrounds": "คัดลอกไปยังพื้นหลังทั่วโลก",
   "Rename background": "เปลี่ยนชื่อพื้นหลัง",
   "Lock": "ล็อค",
   "Unlock": "ปลดล็อค",
