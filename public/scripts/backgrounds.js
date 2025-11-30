@@ -1,12 +1,15 @@
 import { Fuse, localforage } from '../lib.js';
-import { chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
+import { characters, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveMetadata, saveSettingsDebounced, this_chid } from '../script.js';
 import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { createThumbnail, flashHighlight, getBase64Async, stringFormat, debounce, setupScrollToTop } from './utils.js';
+import { createThumbnail, flashHighlight, getBase64Async, stringFormat, debounce, setupScrollToTop, saveBase64AsFile, getFileExtension } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { t } from './i18n.js';
 import { Popup } from './popup.js';
+import { groups, selected_group } from './group-chats.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
+import { deleteMediaFromServer } from './chats.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -207,6 +210,7 @@ function onLockBackgroundClick(event = null) {
 
     // Update UI states to reflect the new lock.
     highlightLockedBackground();
+    highlightSelectedBackground();
 }
 
 /**
@@ -395,13 +399,28 @@ async function onDeleteBackgroundClick(e) {
     const bgToDelete = $(this).closest('.bg_example');
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
-    const confirm = await Popup.show.confirm(t`Delete the background?`, null);
+    const deleteFromServerId = 'delete_bg_from_server';
+    const customInputs = [
+        {
+            type: 'checkbox',
+            label: t`Also delete file from server`,
+            id: deleteFromServerId,
+            defaultState: true,
+        },
+    ];
+    let deleteFromServer = true;
+    const confirm = await Popup.show.confirm(t`Delete the background?`, null, {
+        customInputs: isCustom ? customInputs : [],
+        onClose: (popup) => {
+            deleteFromServer = Boolean(popup.inputResults.get(deleteFromServerId) ?? false);
+        },
+    });
     const bg = bgToDelete.attr('bgfile');
 
     if (confirm) {
         // If it's not custom, it's a built-in background. Delete it from the server
         if (!isCustom) {
-            delBackground(bg);
+            await delBackground(bg);
         } else {
             const list = chat_metadata[LIST_METADATA_KEY] || [];
             const index = list.indexOf(bg);
@@ -429,13 +448,18 @@ async function onDeleteBackgroundClick(e) {
 
         if (url === chat_metadata[BG_METADATA_KEY]) {
             removeBackgroundMetadata();
-            highlightLockedBackground();
         }
 
         if (isCustom) {
+            if (deleteFromServer) {
+                await deleteMediaFromServer(bg);
+            }
             renderChatBackgrounds();
-            saveMetadataDebounced();
+            await saveMetadata();
         }
+
+        highlightLockedBackground();
+        highlightSelectedBackground();
     }
 }
 
@@ -644,7 +668,18 @@ async function onBackgroundUploadSelected() {
     }
 
     await convertFileIfVideo(formData);
-    await uploadBackground(formData);
+    switch (getActiveBackgroundTab()) {
+        case BG_SOURCES.GLOBAL:
+            await uploadBackground(formData);
+            break;
+        case BG_SOURCES.CHAT:
+            await uploadChatBackground(formData);
+            break;
+        default:
+            console.error('Unknown background source type');
+            return;
+    }
+
     form.reset();
 }
 
@@ -715,6 +750,50 @@ async function uploadBackground(formData) {
         highlightNewBackground(bg);
     } catch (error) {
         console.error('Error uploading background:', error);
+    }
+}
+
+/**
+ * Upload a chat background using a FormData object.
+ * @param {FormData} formData FormData containing the background file
+ * @returns {Promise<void>}
+ */
+async function uploadChatBackground(formData) {
+    try {
+        if (!getCurrentChatId()) {
+            toastr.warning(t`Select a chat to upload a background for it`);
+            return;
+        }
+        if (!formData.has('avatar')) {
+            console.log('No file provided. Chat background upload cancelled.');
+            return;
+        }
+
+        const file = formData.get('avatar');
+        if (!(file instanceof File)) {
+            console.error('Invalid file type for chat background upload');
+            return;
+        }
+
+        const imageDataUri = await getBase64Async(file);
+        const base64Data = imageDataUri.split(',')[1];
+        const extension = getFileExtension(file);
+        const characterName = selected_group
+            ? groups.find(g => g.id === selected_group)?.id?.toString()
+            : characters[this_chid]?.name;
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const imagePath = await saveBase64AsFile(base64Data, characterName, filename, extension);
+
+        const list = chat_metadata[LIST_METADATA_KEY] || [];
+        list.push(imagePath);
+        chat_metadata[LIST_METADATA_KEY] = list;
+        await saveMetadata();
+        renderChatBackgrounds();
+        highlightNewBackground(imagePath);
+        highlightLockedBackground();
+        highlightSelectedBackground();
+    } catch (error) {
+        console.error('Error uploading chat background:', error);
     }
 }
 
