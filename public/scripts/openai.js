@@ -5031,7 +5031,7 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_chutes_select')) {
-        if (!value) {
+        if (!value || !hasModelsLoaded) {
             console.debug('Null Chutes model selected. Ignoring.');
             return;
         }
