@@ -9442,7 +9442,7 @@ function formatSwipeCounter(current, total) {
 /**
  * Handles the swipe event.
  * @param {SwipeEvent} event Event.
- * @param {'left'|'right'} direction The direction to swipe.
+ * @param {SWIPE_DIRECTION} direction The direction to swipe.
  * @param {object} params Additional parameters.
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
