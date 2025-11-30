@@ -636,15 +636,15 @@ export class ToolManager {
 
         if (oai_settings.chat_completion_source === chat_completion_sources.CHUTES && Array.isArray(model_list)) {
             const currentModel = model_list.find(model => model.id === oai_settings.chutes_model);
-            if (currentModel && currentModel.supported_features?.includes('tools')) {
-                return true;
+            if (currentModel) {
+                return currentModel.supported_features?.includes('tools');
             }
         }
 
         if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
             const currentModel = model_list.find(model => model.id === oai_settings.electronhub_model);
-            if (currentModel && currentModel.metadata?.function_call) {
-                return currentModel.metadata.function_call;
+            if (currentModel) {
+                return currentModel.metadata?.function_call;
             }
         }
 
