@@ -587,6 +587,42 @@ router.post('/chutes/user/quotas', async (request, response) => {
     }
 });
 
+router.post('/chutes/models/embedding', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch('https://api.chutes.ai/chutes/?template=embedding&include_public=true&limit=999', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes embedding models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!Array.isArray(data?.items)) {
+            console.warn('Chutes embedding models response invalid', data);
+            return response.sendStatus(500);
+        }
+        return response.json(data.items);
+    } catch (error) {
+        console.error('Chutes embedding models fetch failed', error);
+        response.sendStatus(500);
+    }
+});
+
 router.post('/generate-image', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
