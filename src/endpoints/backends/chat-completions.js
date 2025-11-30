@@ -1395,10 +1395,6 @@ async function sendChutesRequest(request, response) {
             };
         }
 
-        if (request.body.reasoning_effort) {
-            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
-        }
-
         const requestBody = {
             'messages': request.body.messages,
             'model': request.body.model,
@@ -1411,6 +1407,7 @@ async function sendChutesRequest(request, response) {
             'top_k': request.body.top_k,
             'seed': request.body.seed,
             'stop': request.body.stop,
+            'reasoning_effort': request.body.reasoning_effort,
             ...bodyParams,
         };
 
