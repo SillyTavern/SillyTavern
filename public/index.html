@@ -5461,11 +5461,14 @@
                         <input id="bg-filter" class="text_pole" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                     </div>
                 </div>
-                <div id="bg-scrollable-content">
-                    <div class="heading-container-with-controls">
-                        <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter heading-text">
-                            System Backgrounds
-                        </h3>
+                <div id="bg_tabs" class="heading-container-with-controls">
+                    <ul class="bg_tabs_list">
+                        <li class="bg_tab_button">
+                            <a href="#bg_global_tab" data-i18n="Global">Global</a>
+                        </li>
+                        <li class="bg_tab_button">
+                            <a href="#bg_chat_tab" data-i18n="Chat">Chat</a>
+                        </li>
                         <div class="heading-controls">
                             <button id="bg_thumb_zoom_out" class="menu_button menu_button_icon" title="Make thumbnails smaller" data-i18n="[title]Make thumbnails smaller">
                                 <i class="fa-solid fa-minus"></i>
@@ -5474,20 +5477,19 @@
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
+                    </ul>
+                    <div id="bg_global_tab" class="bg_tab_panel">
+                        <div id="bg_menu_content" class="bg_list"></div>
                     </div>
-                    <div id="bg_menu_content" class="bg_list">
-                    </div>
-                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
-                        Chat Backgrounds
-                    </h3>
-                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
-                        <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
-                    </div>
-                    <div id="bg_custom_content" class="bg_list">
+                    <div id="bg_chat_tab" class="bg_tab_panel">
+                        <div id="bg_custom_content" class="bg_list"></div>
+                        <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                            <span data-i18n="bg_chat_hint_1">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="bg_chat_hint_2">extension will appear here.</span>
+                        </div>
                     </div>
                 </div>
-                <form id="form_bg_upload" style="display: none;">
-                    <input type="file" id="add_bg_button" name="avatar" accept="image/jpeg,image/png,image/gif,image/bmp,image/svg+xml,video/*">
+                <form id="form_bg_upload" hidden>
+                    <input type="file" id="add_bg_button" name="avatar" accept="image/*,video/*" multiple hidden>
                 </form>
                 <button id="bg-scroll-top" type="button" class="menu_button menu_button_icon" title="Scroll backgrounds to top" data-i18n="[title]Scroll backgrounds to top">
                     <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
@@ -6436,7 +6438,7 @@
                 <div class="jg-menu">
                     <div data-action="lock" class="jg-button jg-lock fa-solid fa-lock fa-fw pointer" data-i18n="[title]Lock" title="Lock"></div>
                     <div data-action="unlock" class="jg-button jg-unlock fa-solid fa-lock-open fa-fw pointer" data-i18n="[title]Unlock" title="Unlock"></div>
-                    <div data-action="copy" class="jg-button jg-copy fa-solid fa-file-arrow-up" data-i18n="[title]Copy to system backgrounds" title="Copy to system backgrounds"></div>
+                    <div data-action="copy" class="jg-button jg-copy fa-solid fa-file-arrow-up" data-i18n="[title]Copy to global backgrounds" title="Copy to global backgrounds"></div>
                     <div data-action="edit" class="jg-button jg-edit fa-solid fa-pen-to-square fa-fw pointer" data-i18n="[title]Rename Background" title="Rename Background"></div>
                     <div data-action="delete" class="jg-button jg-delete fa-solid fa-trash-can fa-fw pointer" data-i18n="[title]Delete Background" title="Delete Background"></div>
                 </div>
