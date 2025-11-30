@@ -1138,6 +1138,7 @@ chutes.post('/generate', async (request, response) => {
             num_inference_steps: request.body.steps || 10,
         };
 
+        console.debug('Chutes request:', bodyParams);
 
         const result = await fetch('https://image.chutes.ai/generate', {
             method: 'POST',
