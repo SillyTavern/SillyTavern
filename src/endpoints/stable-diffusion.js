@@ -1165,19 +1165,6 @@ chutes.post('/generate', async (request, response) => {
     }
 });
 
-chutes.post('/sizes', async (request, response) => {
-    const sizes = [
-        { value: '512x512', text: '512x512' },
-        { value: '768x768', text: '768x768' },
-        { value: '1024x1024', text: '1024x1024' },
-        { value: '1024x768', text: '1024x768' },
-        { value: '768x1024', text: '768x1024' },
-        { value: '1280x720', text: '1280x720' },
-        { value: '720x1280', text: '720x1280' },
-    ];
-    return response.send({ sizes });
-});
-
 const nanogpt = express.Router();
 
 nanogpt.post('/models', async (request, response) => {
