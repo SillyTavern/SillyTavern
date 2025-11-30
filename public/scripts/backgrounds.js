@@ -243,12 +243,17 @@ function removeBackgroundMetadata() {
     saveMetadataDebounced();
 }
 
-function onSelectBackgroundClick() {
+/**
+ * Handles the click event for selecting a background.
+ * @param {JQuery.Event} e Event
+ */
+function onSelectBackgroundClick(e) {
     const bgFile = $(this).attr('bgfile');
     const isCustom = $(this).attr('custom') === 'true';
     const backgroundCssUrl = getUrlParameter(this);
+    const bypassGlobalLock = !isCustom && e.shiftKey;
 
-    if (isChatBackgroundLocked() || isCustom) {
+    if ((isChatBackgroundLocked() || isCustom) && !bypassGlobalLock) {
         // If a background is locked, update the locked background directly
         saveBackgroundMetadata(backgroundCssUrl);
         $('#bg1').css('background-image', backgroundCssUrl);
