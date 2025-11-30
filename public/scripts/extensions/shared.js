@@ -456,9 +456,9 @@ export class ConnectionManagerRequestService {
     /**
     * If using text completion, return a formatted prompt string given an array of messages, a given profile ID, and optional instruct settings.
     * If using chat completion, simply return the given prompt as-is.
-    * @param {prompt} an array of prompt messages.
-    * @param {profileId} ID of a given connection profile (from which to infer a completion preset).
-    * @param {instructSettings} optional instruct settings
+    * @param {ChatCompletionMessage[]} prompt An array of prompt messages.
+    * @param {string} profileId ID of a given connection profile (from which to infer a completion preset).
+    * @param {InstructSettings} instructSettings optional instruct settings
     */
     static constructPrompt(prompt, profileId, instructSettings = null) {
         const context = SillyTavern.getContext();
