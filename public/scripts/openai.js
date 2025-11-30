@@ -1836,7 +1836,7 @@ async function displayChutesQuotaInfo() {
     try {
         const [quotaData, balance] = await Promise.all([
             fetchChutesQuotas(chute_id),
-            fetchChutesBalance()
+            fetchChutesBalance(),
         ]);
 
         let infoHtml = '';
@@ -1856,7 +1856,7 @@ async function displayChutesQuotaInfo() {
             }
         }
 
-        const linkHtml = `<small><a href="https://chutes.ai/app/api/billing-balance" target="_blank" data-i18n="View Billing/Balance">View Billing/Balance</a></small>`;
+        const linkHtml = '<small><a href="https://chutes.ai/app/api/billing-balance" target="_blank" data-i18n="View Billing/Balance">View Billing/Balance</a></small>';
 
         if (infoHtml) {
             creditsElement.html(`<div class="flex-container flexFlowColumn">${infoHtml}${linkHtml}</div>`);
@@ -5523,6 +5523,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: false },
+        [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
     };
 
     // Vertex AI Express version - use API key
