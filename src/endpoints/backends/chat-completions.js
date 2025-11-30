@@ -1405,9 +1405,11 @@ async function sendChutesRequest(request, response) {
             'frequency_penalty': request.body.frequency_penalty,
             'top_p': request.body.top_p,
             'top_k': request.body.top_k,
+            'repetition_penalty': request.body.repetition_penalty,
             'seed': request.body.seed,
             'stop': request.body.stop,
             'reasoning_effort': request.body.reasoning_effort,
+            'logit_bias': request.body.logit_bias,
             ...bodyParams,
         };
 
