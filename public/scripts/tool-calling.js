@@ -559,6 +559,10 @@ export class ToolManager {
             const targetValue = target[key];
 
             if (deltaValue === null || deltaValue === undefined) {
+                // Don't reset the value if it already exists
+                if (targetValue) {
+                    continue;
+                }
                 target[key] = deltaValue;
                 continue;
             }
@@ -634,10 +638,17 @@ export class ToolManager {
             }
         }
 
+        if (oai_settings.chat_completion_source === chat_completion_sources.CHUTES && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.chutes_model);
+            if (currentModel) {
+                return currentModel.supported_features?.includes('tools');
+            }
+        }
+
         if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
             const currentModel = model_list.find(model => model.id === oai_settings.electronhub_model);
-            if (currentModel && currentModel.metadata?.function_call) {
-                return currentModel.metadata.function_call;
+            if (currentModel) {
+                return currentModel.metadata?.function_call;
             }
         }
 
@@ -659,6 +670,7 @@ export class ToolManager {
             chat_completion_sources.MOONSHOT,
             chat_completion_sources.FIREWORKS,
             chat_completion_sources.COMETAPI,
+            chat_completion_sources.CHUTES,
             chat_completion_sources.ELECTRONHUB,
             chat_completion_sources.AZURE_OPENAI,
             chat_completion_sources.ZAI,

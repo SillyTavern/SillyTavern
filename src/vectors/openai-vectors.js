@@ -8,30 +8,44 @@ const SOURCES = {
         url: 'https://api.together.xyz/v1',
         model: 'togethercomputer/m2-bert-80M-32k-retrieval',
         headers: {},
+        processBody: () => {},
     },
     'mistral': {
         secretKey: SECRET_KEYS.MISTRALAI,
         url: 'https://api.mistral.ai/v1',
         model: 'mistral-embed',
         headers: {},
+        processBody: () => {},
     },
     'openai': {
         secretKey: SECRET_KEYS.OPENAI,
         url: 'https://api.openai.com/v1',
         model: 'text-embedding-ada-002',
         headers: {},
+        processBody: () => {},
     },
     'electronhub': {
         secretKey: SECRET_KEYS.ELECTRONHUB,
         url: 'https://api.electronhub.ai/v1',
         model: 'text-embedding-3-small',
         headers: {},
+        processBody: () => {},
     },
     'openrouter': {
         secretKey: SECRET_KEYS.OPENROUTER,
         url: 'https://openrouter.ai/api/v1',
         model: 'openai/text-embedding-3-large',
         headers: { ...OPENROUTER_HEADERS },
+        processBody: () => {},
+    },
+    'chutes': {
+        secretKey: SECRET_KEYS.CHUTES,
+        url: 'https://{{MODEL}}.chutes.ai/v1',
+        model: 'chutes-qwen-qwen3-embedding-8b',
+        headers: {},
+        processBody: (body) => {
+            body.model = null;
+        },
     },
 };
 
@@ -58,7 +72,17 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
         throw new Error('No API key found');
     }
 
-    const url = config.url;
+    const modelName = model || config.model;
+    const url = config.url.replace('{{MODEL}}', modelName);
+    const body = {
+        input: texts,
+        model: modelName,
+    };
+
+    if (typeof config.processBody === 'function') {
+        config.processBody(body);
+    }
+
     const response = await fetch(`${url}/embeddings`, {
         method: 'POST',
         headers: {
@@ -66,10 +90,7 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
             'Authorization': `Bearer ${key}`,
             ...config.headers,
         },
-        body: JSON.stringify({
-            input: texts,
-            model: model || config.model,
-        }),
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {

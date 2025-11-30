@@ -81,6 +81,7 @@ const sources = {
     pollinations: 'pollinations',
     stability: 'stability',
     huggingface: 'huggingface',
+    chutes: 'chutes',
     electronhub: 'electronhub',
     nanogpt: 'nanogpt',
     bfl: 'bfl',
@@ -1319,6 +1320,7 @@ async function onModelChange() {
         sources.falai,
         sources.xai,
         sources.google,
+        sources.chutes,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1531,6 +1533,9 @@ async function loadSamplers() {
         case sources.huggingface:
             samplers = ['N/A'];
             break;
+        case sources.chutes:
+            samplers = ['N/A'];
+            break;
         case sources.electronhub:
             samplers = ['N/A'];
             break;
@@ -1730,6 +1735,9 @@ async function loadModels() {
         case sources.huggingface:
             models = [{ value: '', text: t`<Enter Model ID above>` }];
             break;
+        case sources.chutes:
+            models = await loadChutesModels();
+            break;
         case sources.electronhub:
             models = await loadElectronHubModels();
             break;
@@ -1902,6 +1910,27 @@ async function loadTogetherAIModels() {
         return await result.json();
     }
 
+    return [];
+}
+
+async function loadChutesModels() {
+    if (!secret_state[SECRET_KEYS.CHUTES]) {
+        console.debug('Chutes API key is not set.');
+        return [];
+    }
+
+    const result = await fetch('/api/sd/chutes/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const models = await result.json();
+        console.debug('Loaded Chutes image models:', models);
+        return models;
+    }
+
+    console.warn('Failed to load Chutes models:', result.status);
     return [];
 }
 
@@ -2275,6 +2304,9 @@ async function loadSchedulers() {
         case sources.huggingface:
             schedulers = ['N/A'];
             break;
+        case sources.chutes:
+            schedulers = ['N/A'];
+            break;
         case sources.electronhub:
             schedulers = ['N/A'];
             break;
@@ -2373,6 +2405,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.huggingface:
+            vaes = ['N/A'];
+            break;
+        case sources.chutes:
             vaes = ['N/A'];
             break;
         case sources.electronhub:
@@ -2966,6 +3001,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.huggingface:
                 result = await generateHuggingFaceImage(prefixedPrompt, signal);
+                break;
+            case sources.chutes:
+                result = await generateChutesImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.electronhub:
                 result = await generateElectronHubImage(prefixedPrompt, signal);
@@ -3799,6 +3837,38 @@ async function generateHuggingFaceImage(prompt, signal) {
 }
 
 /**
+ * Generates an image using the Chutes API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateChutesImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/sd/chutes/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            model: extension_settings.sd.model,
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            steps: extension_settings.sd.steps,
+            guidance_scale: extension_settings.sd.scale,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the Electron Hub API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
@@ -4207,6 +4277,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     context.addOneMessage(message);
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId, 'extension');
     await context.saveChat();
+    setTimeout(() => context.scrollOnMediaLoad(), debounce_timeout.short);
 }
 
 /**
@@ -4313,6 +4384,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
             return secret_state[SECRET_KEYS.HUGGINGFACE];
+        case sources.chutes:
+            return secret_state[SECRET_KEYS.CHUTES];
         case sources.electronhub:
             return secret_state[SECRET_KEYS.ELECTRONHUB];
         case sources.nanogpt:

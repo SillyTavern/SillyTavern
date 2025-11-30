@@ -1431,7 +1431,7 @@ export async function printMessages() {
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
-function scrollOnMediaLoad() {
+export function scrollOnMediaLoad() {
     const started = Date.now();
     const media = chatElement.find('.mes_block img, .mes_block video, .mes_block audio').toArray();
     let mediaLoaded = 0;
@@ -5928,6 +5928,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.COHERE:
                 case chat_completion_sources.XAI:
                 case chat_completion_sources.ELECTRONHUB:
+                case chat_completion_sources.CHUTES:
                 case chat_completion_sources.AZURE_OPENAI:
                 case chat_completion_sources.ZAI:
                 default:
