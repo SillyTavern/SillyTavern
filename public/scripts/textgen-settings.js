@@ -499,10 +499,13 @@ function toggleBannedStringsKillSwitch(isEnabled, title) {
 
 /**
  * Calculates logit bias object from the logit bias list.
+ * @param {TextCompletionSettings} settings Text completion settings
  * @returns {object} Logit bias object
  */
-function calculateLogitBias() {
-    if (!Array.isArray(textgenerationwebui_settings.logit_bias) || textgenerationwebui_settings.logit_bias.length === 0) {
+function calculateLogitBias(settings = null) {
+    settings = settings ?? textgenerationwebui_settings;
+
+    if (!Array.isArray(settings.logit_bias) || settings.logit_bias.length === 0) {
         return {};
     }
 
@@ -528,7 +531,7 @@ function calculateLogitBias() {
         return result;
     }
 
-    getLogitBiasListResult(textgenerationwebui_settings.logit_bias, tokenizer, addBias);
+    getLogitBiasListResult(settings.logit_bias, tokenizer, addBias);
 
     return result;
 }
@@ -1738,7 +1741,7 @@ export function createTextGenGenerationData(settings, finalPrompt = null, maxTok
     }
 
     if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
-        const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
+        const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias(settings);
         BIAS_CACHE.set(BIAS_KEY, logitBias);
         params.logit_bias = logitBias;
     }
