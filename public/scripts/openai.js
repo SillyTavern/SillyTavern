@@ -2620,6 +2620,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         if (supportedParams.includes('seed') && oai_settings.seed >= 0) {
             generate_data['seed'] = oai_settings.seed;
         }
+        if (supportedParams.includes('stop')) {
+            generate_data['stop'] = getCustomStoppingStrings();
+        }
     }
 
     // https://docs.z.ai/api-reference/llm/chat-completion

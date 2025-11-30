@@ -1410,6 +1410,7 @@ async function sendChutesRequest(request, response) {
             'top_p': request.body.top_p,
             'top_k': request.body.top_k,
             'seed': request.body.seed,
+            'stop': request.body.stop,
             ...bodyParams,
         };
 
