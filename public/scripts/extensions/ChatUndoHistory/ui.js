@@ -1,4 +1,4 @@
-import { chatHistoryIndex, extensionName, loadChatSnapshot, resetChatSnapshots, saveChatSnapshot, snapshotEvents } from './index.js';
+import { chatHistory, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { debounce_timeout } from '/scripts/constants.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
@@ -15,14 +15,14 @@ export async function addButtons() {
     $('#options .options-content').prepend(buttonsHtml);
 
     //Undo.
-    $(document).on('click', '#option_undo_undo', () => loadChatSnapshot(chatHistoryIndex - 1));
+    $(document).on('click', '#option_undo_undo', async () => await chatHistory.loadPreviousSnapshot());
     //Redo.
-    $(document).on('click', '#option_undo_redo', () => loadChatSnapshot(chatHistoryIndex + 1));
+    $(document).on('click', '#option_undo_redo', async () => await chatHistory.loadNextSnapshot());
 
     //Save.
-    $(document).on('click', '#option_undo_save', () => saveChatSnapshot(true));
+    $(document).on('click', '#option_undo_save', () => chatHistory.saveChatSnapshot(true));
     //Discard.
-    $(document).on('click', '#option_undo_discard', () => resetChatSnapshots(true));
+    $(document).on('click', '#option_undo_discard', () => chatHistory.resetChatSnapshots(true));
 }
 
 /**
@@ -57,9 +57,9 @@ export async function addSettings() {
         if (!isInputElementInFocus()) {
             if ((event.ctrlKey || event.metaKey) && !event.altKey) {
                 //Undo.
-                event.key === 'z' && await loadChatSnapshot(chatHistoryIndex - 1);
+                event.key === 'z' && await chatHistory.loadPreviousSnapshot();
                 //Redo.
-                event.key === 'Z' && await loadChatSnapshot(chatHistoryIndex + 1);
+                event.key === 'Z' && await chatHistory.loadNextSnapshot();
             }
         }
     }
@@ -85,7 +85,7 @@ export async function addSettings() {
     //Debounce duration.
     let saveChatSnapshotDebounced;
     function setDebounced(id, value) {
-        saveChatSnapshotDebounced = debounce(() => saveChatSnapshot(false), value ?? debounce_timeout.short);
+        saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), value ?? debounce_timeout.short);
     }
     setDebounced(undefined, extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
     function getDebounced(_, source) {
