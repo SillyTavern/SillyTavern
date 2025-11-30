@@ -42,6 +42,7 @@ class ChatHistory {
      * @param {boolean} toast toast that the chat has saved.
      */
     async saveChatSnapshot(toast){
+        const t1 = performance.now();
         const max_chunks = extension_settings[extensionName]?.max_chunks ?? defaultMaxHistoryChunks;
         const max_history = max_chunks * this.fullHistoryInterval;
         const max_length = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
@@ -91,6 +92,7 @@ class ChatHistory {
 
         this.chatHistory.push(resultingChat);
         toast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+        console.debug(`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
     /**
@@ -123,6 +125,7 @@ class ChatHistory {
      * @param {number} index The chatHistory index to load.
      */
     async loadChatSnapshot(index) {
+        const t1 = performance.now();
         const maximumChatLength = extension_settings[extensionName]?.max_length ?? 512;
 
         //Don't overwrite chats that are longer than maximumChatLength.
@@ -155,6 +158,7 @@ class ChatHistory {
         else {
             toastr.error(`Chat ${index + 1}/${this.chatHistory.length} does not exist!`);
         }
+        console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
     async loadPreviousSnapshot() {
         await this.loadChatSnapshot(this.chatHistoryIndex - 1);
