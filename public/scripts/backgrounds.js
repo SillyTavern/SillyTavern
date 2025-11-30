@@ -245,19 +245,20 @@ function removeBackgroundMetadata() {
 
 function onSelectBackgroundClick() {
     const bgFile = $(this).attr('bgfile');
+    const isCustom = $(this).attr('custom') === 'true';
     const backgroundCssUrl = getUrlParameter(this);
 
-    if (isChatBackgroundLocked()) {
+    if (isChatBackgroundLocked() || isCustom) {
         // If a background is locked, update the locked background directly
         saveBackgroundMetadata(backgroundCssUrl);
         $('#bg1').css('background-image', backgroundCssUrl);
-        highlightLockedBackground();
     } else {
         // Otherwise, update the global background setting
         setBackground(bgFile, backgroundCssUrl);
     }
 
     // Update UI highlights to reflect the changes.
+    highlightLockedBackground();
     highlightSelectedBackground();
 }
 
