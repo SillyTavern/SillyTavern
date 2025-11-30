@@ -1565,62 +1565,63 @@ function checkModerationError(data, { quiet = false } = {}) {
 
 /**
  * Gets the API model for the selected chat completion source.
- * @param {string} source If it's set, ignores active source
+ * @param {ChatCompletionSettings} settings Chat completion settings
  * @returns {string} API model
  */
-export function getChatCompletionModel(source = null) {
-    const activeSource = source ?? oai_settings.chat_completion_source;
-    switch (activeSource) {
+export function getChatCompletionModel(settings = null) {
+    settings = settings ?? oai_settings;
+    const source = settings.chat_completion_source;
+    switch (source) {
         case chat_completion_sources.CLAUDE:
-            return oai_settings.claude_model;
+            return settings.claude_model;
         case chat_completion_sources.OPENAI:
-            return oai_settings.openai_model;
+            return settings.openai_model;
         case chat_completion_sources.MAKERSUITE:
-            return oai_settings.google_model;
+            return settings.google_model;
         case chat_completion_sources.VERTEXAI:
-            return oai_settings.vertexai_model;
+            return settings.vertexai_model;
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
+            return settings.openrouter_model !== openrouter_website_model ? settings.openrouter_model : null;
         case chat_completion_sources.AI21:
-            return oai_settings.ai21_model;
+            return settings.ai21_model;
         case chat_completion_sources.MISTRALAI:
-            return oai_settings.mistralai_model;
+            return settings.mistralai_model;
         case chat_completion_sources.CUSTOM:
-            return oai_settings.custom_model;
+            return settings.custom_model;
         case chat_completion_sources.COHERE:
-            return oai_settings.cohere_model;
+            return settings.cohere_model;
         case chat_completion_sources.PERPLEXITY:
-            return oai_settings.perplexity_model;
+            return settings.perplexity_model;
         case chat_completion_sources.GROQ:
-            return oai_settings.groq_model;
+            return settings.groq_model;
         case chat_completion_sources.SILICONFLOW:
-            return oai_settings.siliconflow_model;
+            return settings.siliconflow_model;
         case chat_completion_sources.ELECTRONHUB:
-            return oai_settings.electronhub_model;
+            return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
-            return oai_settings.chutes_model;
+            return settings.chutes_model;
         case chat_completion_sources.NANOGPT:
-            return oai_settings.nanogpt_model;
+            return settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
-            return oai_settings.deepseek_model;
+            return settings.deepseek_model;
         case chat_completion_sources.AIMLAPI:
-            return oai_settings.aimlapi_model;
+            return settings.aimlapi_model;
         case chat_completion_sources.XAI:
-            return oai_settings.xai_model;
+            return settings.xai_model;
         case chat_completion_sources.POLLINATIONS:
-            return oai_settings.pollinations_model;
+            return settings.pollinations_model;
         case chat_completion_sources.COMETAPI:
-            return oai_settings.cometapi_model;
+            return settings.cometapi_model;
         case chat_completion_sources.MOONSHOT:
-            return oai_settings.moonshot_model;
+            return settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
-            return oai_settings.fireworks_model;
+            return settings.fireworks_model;
         case chat_completion_sources.AZURE_OPENAI:
-            return oai_settings.azure_openai_model;
+            return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
-            return oai_settings.zai_model;
+            return settings.zai_model;
         default:
-            console.error(`Unknown chat completion source: ${activeSource}`);
+            console.error(`Unknown chat completion source: ${source}`);
             return '';
     }
 }
@@ -2332,7 +2333,7 @@ function getReasoningEffort(settings = null) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
+                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel(settings))
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
@@ -2416,7 +2417,7 @@ export async function createGenerationParameters(settings, type, messages, { jso
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
+    const stream = settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel(settings)));
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
@@ -2433,7 +2434,7 @@ export async function createGenerationParameters(settings, type, messages, { jso
         logit_bias = undefined;
     }
 
-    const model = getChatCompletionModel(settings.chat_completion_source);
+    const model = getChatCompletionModel(settings);
     const generate_data = {
         'type': type,
         'messages': messages,
