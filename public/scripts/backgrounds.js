@@ -428,7 +428,7 @@ async function onDeleteBackgroundClick(e) {
             list.splice(index, 1);
         }
 
-        if (bg === background_settings.name) {
+        if (bg === background_settings.name || url === chat_metadata[BG_METADATA_KEY]) {
             const siblingSelector = '.bg_example';
             const nextBg = bgToDelete.next(siblingSelector);
             const prevBg = bgToDelete.prev(siblingSelector);
