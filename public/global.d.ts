@@ -149,7 +149,7 @@ declare global {
     interface ChatCompletionMessage {
         name?: string;
         role: 'system' | 'user' | 'assistant' | 'tool';
-        content: string|object[];
+        content: string;
     }
 
     // Global namespace modules

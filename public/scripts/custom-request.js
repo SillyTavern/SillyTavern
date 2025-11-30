@@ -34,6 +34,7 @@ import EventSourceStream from './sse-stream.js';
 
 /**
  * @typedef {Object} ChatCompletionMessage
+ * @property {string} [name] - The name of the message author (optional)
  * @property {string} role - The role of the message author (e.g., "user", "assistant", "system")
  * @property {string} content - The content of the message
  */
@@ -189,9 +190,9 @@ export class TextCompletionService {
 
     /**
     * Return a formatted prompt string given an array of messages, a chosen instruct preset, and instruct settings.
-    * @param {prompt} an array of messages
-    * @param {instructPreset} Either the name of an instruct preset or the instruct preset object itself.
-    * @param {instructSettings} optional instruct settings
+    * @param {(ChatCompletionMessage & {ignoreInstruct?: boolean})[]} prompt An array of messages
+    * @param {InstructSettings|string} instructPreset Either the name of an instruct preset or the instruct preset object itself.
+    * @param {Partial<InstructSettings>} instructSettings Optional instruct settings
     */
     static constructPrompt(prompt, instructPreset, instructSettings) {
         // InstructPreset may either be a name or itself a preset
@@ -204,6 +205,11 @@ export class TextCompletionService {
         instructPreset = structuredClone(instructPreset);
         if (instructSettings) {  // apply any additional settings
             Object.assign(instructPreset, instructSettings);
+        }
+
+        // Make the type check shut up. We 100% don't have a string here.
+        if (typeof instructPreset === 'string') {
+            return;
         }
 
         // Format messages using instruct formatting
@@ -404,7 +410,7 @@ export class TextCompletionService {
         preset.min_p = preset.min_p >= 0 ? Number(preset.min_p) : undefined;
 
         // Only take fields from the preset specified in setting_names to use as TextCompletionSettings
-        const settings = {};
+        const settings = /** @type {TextCompletionSettings} */ ({});
         for (const [key, value] of Object.entries(preset)) {
             if (!setting_names.includes(key)) continue;
             settings[key] = value;
@@ -583,7 +589,7 @@ export class ChatCompletionService {
      * Only supports temperature.
      * @param {Object} preset - The preset configuration
      * @param {Object} customParams - Additional parameters to override preset values
-     * @returns {Object} - Formatted payload for chat completion API
+     * @returns {Promise<any>} - Formatted payload for chat completion API
      */
     static async presetToGeneratePayload(preset, customParams = {}) {
         if (!preset || typeof preset !== 'object') {
@@ -598,7 +604,7 @@ export class ChatCompletionService {
         preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
         // Convert from preset to ChatCompletionSettings
-        const settings = {};
+        const settings = /** @type {ChatCompletionSettings} */ ({});
         for (const [key, value] of Object.entries(preset)) {
             const settingToUpdate = settingsToUpdate[key];
             if (!settingToUpdate) continue;
