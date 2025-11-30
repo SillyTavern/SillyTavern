@@ -521,7 +521,7 @@ router.post('/chutes/user/quotas', async (request, response) => {
         }
 
         const chute_id = request.body.chute_id || '';
-        console.log('Fetching quota for chute_id:', chute_id);
+        console.debug('Fetching quota for chute_id:', chute_id);
 
         const [quotaResult, usageResult] = await Promise.all([
             fetch('https://api.chutes.ai/users/me/quotas', {
@@ -547,8 +547,8 @@ router.post('/chutes/user/quotas', async (request, response) => {
         const quotaDataResponse = await quotaResult.json();
         const usageData = await usageResult.json();
 
-        console.log('Quota data:', quotaDataResponse);
-        console.log('Usage data:', usageData);
+        console.debug('Quota data:', quotaDataResponse);
+        console.debug('Usage data:', usageData);
 
         const quotaData = {};
         if (Array.isArray(quotaDataResponse)) {
