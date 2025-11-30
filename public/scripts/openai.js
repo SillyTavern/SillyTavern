@@ -2609,20 +2609,11 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     if (isChutes) {
-        const currentModel = model_list.find(m => m.id === oai_settings.chutes_model);
-        const supportedParams = currentModel?.supported_sampling_parameters || [];
-        if (supportedParams.includes('top_k') && Number(oai_settings.top_k_openai) !== 0) {
-            generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        }
-        if (supportedParams.includes('repetition_penalty')) {
-            generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
-        }
-        if (supportedParams.includes('seed') && oai_settings.seed >= 0) {
-            generate_data['seed'] = oai_settings.seed;
-        }
-        if (supportedParams.includes('stop')) {
-            generate_data['stop'] = getCustomStoppingStrings();
-        }
+        generate_data['min_p'] = Number(oai_settings.min_p_openai);
+        generate_data['top_k'] = oai_settings.top_k_openai > 0 ? Number(oai_settings.top_k_openai) : undefined;
+        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
+        generate_data['seed'] = oai_settings.seed >= 0 ? oai_settings.seed : undefined;
+        generate_data['stop'] = getCustomStoppingStrings();
     }
 
     // https://docs.z.ai/api-reference/llm/chat-completion
