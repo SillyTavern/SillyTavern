@@ -2134,25 +2134,7 @@ router.post('/generate', function (request, response) {
                 'ttl': cacheTTL,
             };
         }
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHUTES) {
-        apiUrl = API_CHUTES;
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
-        headers = {};
-        bodyParams = {};
-
-        if (request.body.json_schema) {
-            bodyParams['response_format'] = {
-                type: 'json_schema',
-                json_schema: {
-                    name: request.body.json_schema.name,
-                    description: request.body.json_schema.description,
-                    schema: request.body.json_schema.value,
-                    strict: request.body.json_schema.strict ?? true,
-                },
-            };
-        }
-    }
-    else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = API_POLLINATIONS;
         apiKey = 'NONE';
         headers = {
