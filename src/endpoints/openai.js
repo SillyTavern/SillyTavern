@@ -184,7 +184,7 @@ router.post('/caption-image', async (request, response) => {
         if (request.body.api === 'chutes') {
             apiUrl = 'https://llm.chutes.ai/v1/chat/completions';
         }
-        
+
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
         }
@@ -535,7 +535,7 @@ router.post('/chutes/user/quotas', async (request, response) => {
                 headers: {
                     Authorization: `Bearer ${key}`,
                 },
-            })
+            }),
         ]);
 
         if (!quotaResult.ok || !usageResult.ok) {
@@ -546,10 +546,10 @@ router.post('/chutes/user/quotas', async (request, response) => {
 
         const quotaDataResponse = await quotaResult.json();
         const usageData = await usageResult.json();
-        
+
         console.log('Quota data:', quotaDataResponse);
         console.log('Usage data:', usageData);
-        
+
         const quotaData = {};
         if (Array.isArray(quotaDataResponse)) {
             quotaDataResponse.forEach(quota => {
@@ -560,17 +560,17 @@ router.post('/chutes/user/quotas', async (request, response) => {
         } else {
             Object.assign(quotaData, quotaDataResponse);
         }
-        
+
         /** @type {{quota?: number, used?: number, [key: string]: any}} */
         const typedUsageData = /** @type {{quota?: number, used?: number, [key: string]: any}} */ (usageData);
-        
+
         /** @type {{quotas: any, usage: any, remaining: {[key: string]: number}}} */
         const combinedData = {
             quotas: quotaData,
             usage: {},
-            remaining: {}
+            remaining: {},
         };
-        
+
         if (quotaData && typedUsageData) {
             combinedData.usage = typedUsageData;
             Object.keys(quotaData).forEach(key => {
@@ -579,7 +579,7 @@ router.post('/chutes/user/quotas', async (request, response) => {
                 combinedData.remaining[key] = Math.max(0, limit - used);
             });
         }
-        
+
         return response.json(combinedData);
     } catch (error) {
         console.error('Chutes user quotas fetch failed', error);

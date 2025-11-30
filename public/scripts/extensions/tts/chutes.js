@@ -1,6 +1,6 @@
-import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
+import { getRequestHeaders } from '../../../script.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
-import { getPreviewString, saveTtsProviderSettings, initVoiceMap } from './index.js';
+import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export { ChutesTtsProvider };
 
@@ -82,11 +82,11 @@ class ChutesTtsProvider {
     async updateModels() {
         // For Chutes TTS, we always use the Kokoro model currently.
         this.models = ['kokoro'];
-        
+
         $('#chutes_tts_model').empty();
         $('#chutes_tts_model').append($('<option>').val('kokoro').text('Kokoro'));
         $('#chutes_tts_model').val('kokoro');
-        
+
         this.settings.model = 'kokoro';
     }
 
@@ -148,11 +148,11 @@ class ChutesTtsProvider {
             { id: 'zm_yunxia', name: 'Yunxia (Chinese Male)', lang: 'zh-CN' },
             { id: 'zm_yunyang', name: 'Yunyang (Chinese Male)', lang: 'zh-CN' },
         ];
-        
-        this.voices = kokoroVoices.map(v => ({ 
-            name: v.name, 
-            voice_id: v.id, 
-            lang: v.lang 
+
+        this.voices = kokoroVoices.map(v => ({
+            name: v.name,
+            voice_id: v.id,
+            lang: v.lang,
         }));
     }
 
@@ -198,7 +198,7 @@ class ChutesTtsProvider {
         if (this.voices.length === 0) {
             await this.updateVoices();
         }
-        
+
         const voiceIds = this.voices
             .map(voice => ({ name: voice.name, voice_id: voice.voice_id, preview_url: false }));
         return voiceIds;

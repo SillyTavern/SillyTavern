@@ -701,7 +701,7 @@ export function getTokenizerModel() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES && oai_settings.chutes_model) {
         const model = oai_settings.chutes_model.toLowerCase();
-        
+
         if (model.includes('deepseek') || model.includes('mai-ds')) {
             return deepseekTokenizer;
         }
@@ -721,7 +721,7 @@ export function getTokenizerModel() {
             return mistralTokenizer;
         }
         else if (model.includes('gpt-oss')) {
-            return gpt4Tokenizer;
+            return gpt4oTokenizer;
         }
     }
 

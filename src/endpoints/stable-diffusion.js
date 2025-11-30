@@ -1108,7 +1108,7 @@ chutes.post('/models', async (request, response) => {
         }
 
         const data = await modelsResponse.json();
-        
+
         const chutesData = /** @type {{items: Array<{name: string}>}} */ (data);
         const models = chutesData.items.map(x => ({ value: x.name, text: x.name }));
         return response.send(models);

@@ -1775,8 +1775,8 @@ router.post('/status', async function (request, statusResponse) {
                             ...model,
                             pricing: {
                                 input: model.pricing.prompt,
-                                output: model.pricing.completion
-                            }
+                                output: model.pricing.completion,
+                            },
                         };
                     }
                     return model;
@@ -2463,7 +2463,7 @@ multimodalModels.post('/chutes', async (req, res) => {
         }
 
         const data = await response.json();
-        
+
         const modelsData = /** @type {{object: string, data: Array<{id: string, input_modalities?: string[]}>}} */ (data);
         const multimodalModels = modelsData.data
             .filter(m => m.input_modalities?.includes('image'))
