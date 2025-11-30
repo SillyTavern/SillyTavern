@@ -454,6 +454,8 @@ router.post('/chutes/generate-voice', async (request, response) => {
             voice: request.body.voice || 'af_heart',
         };
 
+        console.debug('Chutes TTS request', requestBody);
+
         const result = await fetch('https://chutes-kokoro.chutes.ai/speak', {
             method: 'POST',
             headers: {

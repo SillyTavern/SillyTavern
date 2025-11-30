@@ -97,6 +97,10 @@ class ChutesTtsProvider {
         await this.updateVoices();
     }
 
+    async onRefreshClick() {
+        return await this.checkReady();
+    }
+
     async updateModels() {
         // For Chutes TTS, we always use the Kokoro model currently.
         this.models = ['kokoro'];
