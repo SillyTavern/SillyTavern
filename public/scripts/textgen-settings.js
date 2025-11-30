@@ -139,7 +139,7 @@ export const SERVER_INPUTS = {
 };
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
-const settings = {
+export const textgenerationwebui_settings = {
     temp: 0.7,
     temperature_last: true,
     top_p: 0.5,
@@ -231,7 +231,6 @@ const settings = {
 };
 
 export {
-    settings as textgenerationwebui_settings,
     showSamplerControls as showTGSamplerControls,
 };
 
@@ -318,7 +317,7 @@ export const setting_names = [
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
 
 export function validateTextGenUrl() {
-    const selector = SERVER_INPUTS[settings.type];
+    const selector = SERVER_INPUTS[textgenerationwebui_settings.type];
 
     if (!selector) {
         return;
@@ -342,7 +341,7 @@ export function validateTextGenUrl() {
  * @returns {string} API URL
  */
 export function getTextGenServer(type = null) {
-    const selectedType = type ?? settings.type;
+    const selectedType = type ?? textgenerationwebui_settings.type;
     switch (selectedType) {
         case FEATHERLESS:
             return FEATHERLESS_SERVER;
@@ -357,7 +356,7 @@ export function getTextGenServer(type = null) {
         case OPENROUTER:
             return OPENROUTER_SERVER;
         default:
-            return settings.server_urls[selectedType] ?? '';
+            return textgenerationwebui_settings.server_urls[selectedType] ?? '';
     }
 }
 
@@ -368,7 +367,7 @@ async function selectPreset(name) {
         return;
     }
 
-    settings.preset = name;
+    textgenerationwebui_settings.preset = name;
     for (const name of setting_names) {
         const value = preset[name];
         setSettingByName(name, value, true);
@@ -382,7 +381,7 @@ async function selectPreset(name) {
 export function formatTextGenURL(value) {
     try {
         const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
-        if (noFormatTypes.includes(settings.type)) {
+        if (noFormatTypes.includes(textgenerationwebui_settings.type)) {
             return value;
         }
 
@@ -399,7 +398,7 @@ function convertPresets(presets) {
 }
 
 function getTokenizerForTokenIds() {
-    if (power_user.tokenizer === tokenizers.API_CURRENT && TEXTGEN_TOKENIZERS.includes(settings.type)) {
+    if (power_user.tokenizer === tokenizers.API_CURRENT && TEXTGEN_TOKENIZERS.includes(textgenerationwebui_settings.type)) {
         return tokenizers.API_CURRENT;
     }
 
@@ -407,11 +406,11 @@ function getTokenizerForTokenIds() {
         return power_user.tokenizer;
     }
 
-    if (settings.type === OPENROUTER) {
+    if (textgenerationwebui_settings.type === OPENROUTER) {
         return getCurrentOpenRouterModelTokenizer();
     }
 
-    if (settings.type === DREAMGEN) {
+    if (textgenerationwebui_settings.type === DREAMGEN) {
         return getCurrentDreamGenModelTokenizer();
     }
 
@@ -423,7 +422,7 @@ function getTokenizerForTokenIds() {
  * @returns {TokenBanResult} String with comma-separated banned token IDs
  */
 function getCustomTokenBans() {
-    if (!settings.send_banned_tokens || (!settings.banned_tokens && !settings.global_banned_tokens && !textgenerationwebui_banned_in_macros.length)) {
+    if (!textgenerationwebui_settings.send_banned_tokens || (!textgenerationwebui_settings.banned_tokens && !textgenerationwebui_settings.global_banned_tokens && !textgenerationwebui_banned_in_macros.length)) {
         return {
             banned_tokens: '',
             banned_strings: [],
@@ -434,8 +433,8 @@ function getCustomTokenBans() {
     const banned_tokens = [];
     const banned_strings = [];
     const sequences = []
-        .concat(settings.banned_tokens.split('\n'))
-        .concat(settings.global_banned_tokens.split('\n'))
+        .concat(textgenerationwebui_settings.banned_tokens.split('\n'))
+        .concat(textgenerationwebui_settings.global_banned_tokens.split('\n'))
         .concat(textgenerationwebui_banned_in_macros)
         .filter(x => x.length > 0)
         .filter(onlyUnique)
@@ -491,7 +490,7 @@ function getCustomTokenBans() {
 function toggleBannedStringsKillSwitch(isEnabled, title) {
     $('#send_banned_tokens_textgenerationwebui').prop('checked', isEnabled);
     $('#send_banned_tokens_label').find('.menu_button').toggleClass('toggleEnabled', isEnabled).prop('title', title);
-    settings.send_banned_tokens = isEnabled;
+    textgenerationwebui_settings.send_banned_tokens = isEnabled;
     saveSettingsDebounced();
 }
 
@@ -500,7 +499,7 @@ function toggleBannedStringsKillSwitch(isEnabled, title) {
  * @returns {object} Logit bias object
  */
 function calculateLogitBias() {
-    if (!Array.isArray(settings.logit_bias) || settings.logit_bias.length === 0) {
+    if (!Array.isArray(textgenerationwebui_settings.logit_bias) || textgenerationwebui_settings.logit_bias.length === 0) {
         return {};
     }
 
@@ -526,7 +525,7 @@ function calculateLogitBias() {
         return result;
     }
 
-    getLogitBiasListResult(settings.logit_bias, tokenizer, addBias);
+    getLogitBiasListResult(textgenerationwebui_settings.logit_bias, tokenizer, addBias);
 
     return result;
 }
@@ -535,25 +534,25 @@ export async function loadTextGenSettings(data, loadedSettings) {
     await loadApiSelectedSamplers();
     textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
-    Object.assign(settings, loadedSettings.textgenerationwebui_settings ?? {});
+    Object.assign(textgenerationwebui_settings, loadedSettings.textgenerationwebui_settings ?? {});
 
     if (loadedSettings.api_server_textgenerationwebui) {
         for (const type of Object.keys(SERVER_INPUTS)) {
-            settings.server_urls[type] = loadedSettings.api_server_textgenerationwebui;
+            textgenerationwebui_settings.server_urls[type] = loadedSettings.api_server_textgenerationwebui;
         }
         delete loadedSettings.api_server_textgenerationwebui;
     }
 
     for (const [type, selector] of Object.entries(SERVER_INPUTS)) {
         const control = $(selector);
-        control.val(settings.server_urls[type] ?? '').on('input', function () {
-            settings.server_urls[type] = String($(this).val()).trim();
+        control.val(textgenerationwebui_settings.server_urls[type] ?? '').on('input', function () {
+            textgenerationwebui_settings.server_urls[type] = String($(this).val()).trim();
             saveSettingsDebounced();
         });
     }
 
     if (loadedSettings.api_use_mancer_webui) {
-        settings.type = MANCER;
+        textgenerationwebui_settings.type = MANCER;
     }
 
     for (const name of textgenerationwebui_preset_names) {
@@ -563,20 +562,20 @@ export async function loadTextGenSettings(data, loadedSettings) {
         $('#settings_preset_textgenerationwebui').append(option);
     }
 
-    if (settings.preset) {
-        $('#settings_preset_textgenerationwebui').val(settings.preset);
+    if (textgenerationwebui_settings.preset) {
+        $('#settings_preset_textgenerationwebui').val(textgenerationwebui_settings.preset);
     }
 
     for (const i of setting_names) {
-        const value = settings[i];
+        const value = textgenerationwebui_settings[i];
         setSettingByName(i, value);
     }
 
-    $('#textgen_type').val(settings.type);
-    $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
-    showSamplerControls(settings.type);
+    $('#textgen_type').val(textgenerationwebui_settings.type);
+    $('#openrouter_providers_text').val(textgenerationwebui_settings.openrouter_providers).trigger('change');
+    showSamplerControls(textgenerationwebui_settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
-    displayLogitBias(settings.logit_bias, BIAS_KEY);
+    displayLogitBias(textgenerationwebui_settings.logit_bias, BIAS_KEY);
 
     registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
         const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
@@ -648,7 +647,7 @@ async function getStatusTextgen() {
         return resultCheckStatus();
     }
 
-    if ([textgen_types.GENERIC, textgen_types.OOBA].includes(settings.type) && settings.bypass_status_check) {
+    if ([textgen_types.GENERIC, textgen_types.OOBA].includes(textgenerationwebui_settings.type) && textgenerationwebui_settings.bypass_status_check) {
         setOnlineStatus(t`Status check bypassed`);
         return resultCheckStatus();
     }
@@ -659,46 +658,46 @@ async function getStatusTextgen() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 api_server: endpoint,
-                api_type: settings.type,
+                api_type: textgenerationwebui_settings.type,
             }),
             signal: abortStatusCheck.signal,
         });
 
         const data = await response.json();
 
-        if (settings.type === textgen_types.MANCER) {
+        if (textgenerationwebui_settings.type === textgen_types.MANCER) {
             loadMancerModels(data?.data);
-            setOnlineStatus(settings.mancer_model);
-        } else if (settings.type === textgen_types.TOGETHERAI) {
+            setOnlineStatus(textgenerationwebui_settings.mancer_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.TOGETHERAI) {
             loadTogetherAIModels(data?.data);
-            setOnlineStatus(settings.togetherai_model);
-        } else if (settings.type === textgen_types.OLLAMA) {
+            setOnlineStatus(textgenerationwebui_settings.togetherai_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.OLLAMA) {
             loadOllamaModels(data?.data);
-            setOnlineStatus(settings.ollama_model || t`Connected`);
-        } else if (settings.type === textgen_types.INFERMATICAI) {
+            setOnlineStatus(textgenerationwebui_settings.ollama_model || t`Connected`);
+        } else if (textgenerationwebui_settings.type === textgen_types.INFERMATICAI) {
             loadInfermaticAIModels(data?.data);
-            setOnlineStatus(settings.infermaticai_model);
-        } else if (settings.type === textgen_types.DREAMGEN) {
+            setOnlineStatus(textgenerationwebui_settings.infermaticai_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.DREAMGEN) {
             loadDreamGenModels(data?.data);
-            setOnlineStatus(settings.dreamgen_model);
-        } else if (settings.type === textgen_types.OPENROUTER) {
+            setOnlineStatus(textgenerationwebui_settings.dreamgen_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.OPENROUTER) {
             loadOpenRouterModels(data?.data);
-            setOnlineStatus(settings.openrouter_model);
-        } else if (settings.type === textgen_types.VLLM) {
+            setOnlineStatus(textgenerationwebui_settings.openrouter_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.VLLM) {
             loadVllmModels(data?.data);
-            setOnlineStatus(settings.vllm_model);
-        } else if (settings.type === textgen_types.APHRODITE) {
+            setOnlineStatus(textgenerationwebui_settings.vllm_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
             loadAphroditeModels(data?.data);
-            setOnlineStatus(settings.aphrodite_model);
-        } else if (settings.type === textgen_types.FEATHERLESS) {
+            setOnlineStatus(textgenerationwebui_settings.aphrodite_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.FEATHERLESS) {
             loadFeatherlessModels(data?.data);
-            setOnlineStatus(settings.featherless_model);
-        } else if (settings.type === textgen_types.TABBY) {
+            setOnlineStatus(textgenerationwebui_settings.featherless_model);
+        } else if (textgenerationwebui_settings.type === textgen_types.TABBY) {
             loadTabbyModels(data?.data);
-            setOnlineStatus(settings.tabby_model || data?.result);
-        } else if (settings.type === textgen_types.GENERIC) {
+            setOnlineStatus(textgenerationwebui_settings.tabby_model || data?.result);
+        } else if (textgenerationwebui_settings.type === textgen_types.GENERIC) {
             loadGenericModels(data?.data);
-            setOnlineStatus(settings.generic_model || data?.result || t`Connected`);
+            setOnlineStatus(textgenerationwebui_settings.generic_model || data?.result || t`Connected`);
         } else {
             setOnlineStatus(data?.result);
         }
@@ -718,7 +717,7 @@ async function getStatusTextgen() {
         const wantsInstructDerivation = !autoSelected && (power_user.instruct.enabled && power_user.instruct_derived);
         const wantsContextDerivation = !autoSelected && power_user.context_derived;
         const wantsContextSize = power_user.context_size_derived;
-        const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(settings.type);
+        const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(textgenerationwebui_settings.type);
 
         if (supportsChatTemplate && (wantsInstructDerivation || wantsContextDerivation || wantsContextSize)) {
             const response = await fetch('/api/backends/text-completions/props', {
@@ -726,7 +725,7 @@ async function getStatusTextgen() {
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
                     api_server: endpoint,
-                    api_type: settings.type,
+                    api_type: textgenerationwebui_settings.type,
                 }),
             });
 
@@ -795,15 +794,15 @@ export function initTextGenSettings() {
             $('#koboldcpp_order').children().each(function () {
                 order.push($(this).data('id'));
             });
-            settings.sampler_order = order;
-            console.log('Samplers reordered:', settings.sampler_order);
+            textgenerationwebui_settings.sampler_order = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.sampler_order);
             saveSettingsDebounced();
         },
     });
 
     $('#koboldcpp_default_order').on('click', function () {
-        settings.sampler_order = KOBOLDCPP_ORDER;
-        sortKoboldItemsByOrder(settings.sampler_order);
+        textgenerationwebui_settings.sampler_order = KOBOLDCPP_ORDER;
+        sortKoboldItemsByOrder(textgenerationwebui_settings.sampler_order);
         saveSettingsDebounced();
     });
 
@@ -814,16 +813,16 @@ export function initTextGenSettings() {
             $('#llamacpp_samplers_sortable').children().each(function () {
                 order.push($(this).data('name'));
             });
-            settings.samplers = order;
-            console.log('Samplers reordered:', settings.samplers);
+            textgenerationwebui_settings.samplers = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.samplers);
             saveSettingsDebounced();
         },
     });
 
     $('#llamacpp_samplers_default_order').on('click', function () {
         sortLlamacppItemsByOrder(LLAMACPP_DEFAULT_ORDER);
-        settings.samplers = LLAMACPP_DEFAULT_ORDER;
-        console.log('Default samplers order loaded:', settings.samplers);
+        textgenerationwebui_settings.samplers = LLAMACPP_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', textgenerationwebui_settings.samplers);
         saveSettingsDebounced();
     });
 
@@ -834,8 +833,8 @@ export function initTextGenSettings() {
             $('#sampler_priority_container').children().each(function () {
                 order.push($(this).data('name'));
             });
-            settings.sampler_priority = order;
-            console.log('Samplers reordered:', settings.sampler_priority);
+            textgenerationwebui_settings.sampler_priority = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.sampler_priority);
             saveSettingsDebounced();
         },
     });
@@ -847,8 +846,8 @@ export function initTextGenSettings() {
             $('#sampler_priority_container_aphrodite').children().each(function () {
                 order.push($(this).data('name'));
             });
-            settings.samplers_priorities = order;
-            console.log('Samplers reordered:', settings.samplers_priorities);
+            textgenerationwebui_settings.samplers_priorities = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.samplers_priorities);
             saveSettingsDebounced();
         },
     });
@@ -858,12 +857,12 @@ export function initTextGenSettings() {
 
         if (json_schema_string) {
             try {
-                settings.json_schema = JSON.parse(json_schema_string);
+                textgenerationwebui_settings.json_schema = JSON.parse(json_schema_string);
             } catch {
-                settings.json_schema = null;
+                textgenerationwebui_settings.json_schema = null;
             }
         } else {
-            settings.json_schema = null;
+            textgenerationwebui_settings.json_schema = null;
         }
 
         saveSettingsDebounced();
@@ -871,38 +870,38 @@ export function initTextGenSettings() {
 
     $('#textgenerationwebui_default_order').on('click', function () {
         sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
-        settings.sampler_priority = OOBA_DEFAULT_ORDER;
-        console.log('Default samplers order loaded:', settings.sampler_priority);
+        textgenerationwebui_settings.sampler_priority = OOBA_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', textgenerationwebui_settings.sampler_priority);
         saveSettingsDebounced();
     });
 
     $('#aphrodite_default_order').on('click', function () {
         sortAphroditeItemsByOrder(APHRODITE_DEFAULT_ORDER);
-        settings.samplers_priorities = APHRODITE_DEFAULT_ORDER;
-        console.log('Default samplers order loaded:', settings.samplers_priorities);
+        textgenerationwebui_settings.samplers_priorities = APHRODITE_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', textgenerationwebui_settings.samplers_priorities);
         saveSettingsDebounced();
     });
 
     $('#textgen_type').on('change', function () {
         const type = String($(this).val());
-        settings.type = type;
+        textgenerationwebui_settings.type = type;
 
-        if ([VLLM, APHRODITE, INFERMATICAI].includes(settings.type)) {
+        if ([VLLM, APHRODITE, INFERMATICAI].includes(textgenerationwebui_settings.type)) {
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
             $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
             //special handling for vLLM/Aphrodite topK -1 disable state
             $('#top_k_textgenerationwebui').attr('min', -1);
-            if ($('#top_k_textgenerationwebui').val() === '0' || settings['top_k'] === 0) {
-                settings['top_k'] = -1;
+            if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
+                textgenerationwebui_settings['top_k'] = -1;
                 $('#top_k_textgenerationwebui').val('-1').trigger('input');
             }
         } else {
             $('#mirostat_mode_textgenerationwebui').attr('step', 1);
             //undo special vLLM/Aphrodite setup for topK
             $('#top_k_textgenerationwebui').attr('min', 0);
-            if ($('#top_k_textgenerationwebui').val() === '-1' || settings['top_k'] === -1) {
-                settings['top_k'] = 0;
+            if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings['top_k'] === -1) {
+                textgenerationwebui_settings['top_k'] = 0;
                 $('#top_k_textgenerationwebui').val('0').trigger('input');
             }
         }
@@ -913,7 +912,7 @@ export function initTextGenSettings() {
 
         $('#main_api').trigger('change');
 
-        if (!SERVER_INPUTS[type] || settings.server_urls[type]) {
+        if (!SERVER_INPUTS[type] || textgenerationwebui_settings.server_urls[type]) {
             $('#api_button_textgenerationwebui').trigger('click');
         }
 
@@ -929,7 +928,7 @@ export function initTextGenSettings() {
     $('#samplerResetButton').off('click').on('click', function () {
         const inputs = {
             'temp_textgenerationwebui': 1,
-            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) ? -1 : 0,
+            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, VLLM].includes(textgenerationwebui_settings.type) ? -1 : 0,
             'top_p_textgenerationwebui': 1,
             'min_p_textgenerationwebui': 0,
             'rep_pen_textgenerationwebui': 1,
@@ -1007,19 +1006,19 @@ export function initTextGenSettings() {
 
             if (isCheckbox) {
                 const value = $(this).prop('checked');
-                settings[id] = value;
+                textgenerationwebui_settings[id] = value;
             }
             else if (isText) {
                 const value = $(this).val();
-                settings[id] = value;
+                textgenerationwebui_settings[id] = value;
             }
             else {
                 const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).val(value);
-                settings[id] = value;
+                textgenerationwebui_settings[id] = value;
                 //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) && value === 0) {
-                    settings[id] = -1;
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(textgenerationwebui_settings.type) && value === 0) {
+                    textgenerationwebui_settings[id] = -1;
                     $(this).val(-1);
                 }
             }
@@ -1027,7 +1026,7 @@ export function initTextGenSettings() {
         });
     }
 
-    $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
+    $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(textgenerationwebui_settings.logit_bias, BIAS_KEY));
 
     $('#openrouter_providers_text').on('change', function () {
         const selectedProviders = $(this).val();
@@ -1037,7 +1036,7 @@ export function initTextGenSettings() {
             return;
         }
 
-        settings.openrouter_providers = selectedProviders;
+        textgenerationwebui_settings.openrouter_providers = selectedProviders;
 
         saveSettingsDebounced();
     });
@@ -1086,10 +1085,10 @@ function showSamplerControls(apiType = null) {
         if (!typeSpecificControlled) $(this).show();
     });
 
-    showTypeSpecificControls(apiType ?? settings.type);
+    showTypeSpecificControls(apiType ?? textgenerationwebui_settings.type);
 
-    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled(apiType ?? settings.type);
-    const samplersActivatedManually = getActiveManualApiSamplers(apiType ?? settings.type);
+    const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled(apiType ?? textgenerationwebui_settings.type);
+    const samplersActivatedManually = getActiveManualApiSamplers(apiType ?? textgenerationwebui_settings.type);
 
     if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
 
@@ -1150,13 +1149,13 @@ function insertMissingArrayItems(source, target) {
 function setSettingByName(setting, value, trigger) {
     if ('extensions' === setting) {
         value = value || {};
-        settings.extensions = value;
+        textgenerationwebui_settings.extensions = value;
         return;
     }
 
     if ('json_schema' === setting) {
-        settings.json_schema = value ?? null;
-        $('#tabby_json_schema').val(value ? JSON.stringify(settings.json_schema, null, 2) : '');
+        textgenerationwebui_settings.json_schema = value ?? null;
+        $('#tabby_json_schema').val(value ? JSON.stringify(textgenerationwebui_settings.json_schema, null, 2) : '');
         return;
     }
 
@@ -1167,7 +1166,7 @@ function setSettingByName(setting, value, trigger) {
     if ('sampler_order' === setting) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
         sortKoboldItemsByOrder(value);
-        settings.sampler_order = value;
+        textgenerationwebui_settings.sampler_order = value;
         return;
     }
 
@@ -1175,7 +1174,7 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
         insertMissingArrayItems(OOBA_DEFAULT_ORDER, value);
         sortOobaItemsByOrder(value);
-        settings.sampler_priority = value;
+        textgenerationwebui_settings.sampler_priority = value;
         return;
     }
 
@@ -1183,7 +1182,7 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : APHRODITE_DEFAULT_ORDER;
         insertMissingArrayItems(APHRODITE_DEFAULT_ORDER, value);
         sortAphroditeItemsByOrder(value);
-        settings.samplers_priorities = value;
+        textgenerationwebui_settings.samplers_priorities = value;
         return;
     }
 
@@ -1191,12 +1190,12 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
         insertMissingArrayItems(LLAMACPP_DEFAULT_ORDER, value);
         sortLlamacppItemsByOrder(value);
-        settings.samplers = value;
+        textgenerationwebui_settings.samplers = value;
         return;
     }
 
     if ('logit_bias' === setting) {
-        settings.logit_bias = Array.isArray(value) ? value : [];
+        textgenerationwebui_settings.logit_bias = Array.isArray(value) ? value : [];
         return;
     }
 
@@ -1234,8 +1233,8 @@ function setSettingByName(setting, value, trigger) {
 
 /**
  * Sends a streaming request for textgenerationwebui.
- * @param generate_data
- * @param signal
+ * @param {object} generate_data
+ * @param {AbortSignal} signal
  * @returns {Promise<(function(): AsyncGenerator<{swipes: [], text: string, toolCalls: [], logprobs: {token: string, topLogprobs: Candidate[]}|null}, void, *>)|*>}
  * @throws {Error} - If the response status is not OK, or from within the generator
  */
@@ -1304,7 +1303,7 @@ export function parseTextgenLogprobs(token, logprobs) {
         return null;
     }
 
-    switch (settings.type) {
+    switch (textgenerationwebui_settings.type) {
         case KOBOLDCPP:
         case TABBY:
         case VLLM:
@@ -1408,49 +1407,49 @@ function toIntArray(string) {
 
 /**
  * Gets the text generation model specified by the given text completion settings
- * @param {TextCompletionSettings} parameters - text completion settings to use
+ * @param {TextCompletionSettings} settings Text completion settings to use
  * @returns {string} model name
  */
-export function getTextGenModel(parameters = null) {
-    parameters = parameters ?? settings;
-    switch (parameters.type) {
+export function getTextGenModel(settings = null) {
+    settings = settings ?? textgenerationwebui_settings;
+    switch (settings.type) {
         case OOBA:
-            if (parameters.custom_model) {
-                return parameters.custom_model;
+            if (settings.custom_model) {
+                return settings.custom_model;
             }
             break;
         case GENERIC:
-            if (parameters.generic_model) {
-                return parameters.generic_model;
+            if (settings.generic_model) {
+                return settings.generic_model;
             }
             break;
         case MANCER:
-            return parameters.mancer_model;
+            return settings.mancer_model;
         case TOGETHERAI:
-            return parameters.togetherai_model;
+            return settings.togetherai_model;
         case INFERMATICAI:
-            return parameters.infermaticai_model;
+            return settings.infermaticai_model;
         case DREAMGEN:
-            return parameters.dreamgen_model;
+            return settings.dreamgen_model;
         case OPENROUTER:
-            return parameters.openrouter_model;
+            return settings.openrouter_model;
         case VLLM:
-            return parameters.vllm_model;
+            return settings.vllm_model;
         case APHRODITE:
-            return parameters.aphrodite_model;
+            return settings.aphrodite_model;
         case OLLAMA:
-            if (!parameters.ollama_model) {
+            if (!settings.ollama_model) {
                 toastr.error(t`No Ollama model selected.`, 'Text Completion API');
                 throw new Error('No Ollama model selected');
             }
-            return parameters.ollama_model;
+            return settings.ollama_model;
         case FEATHERLESS:
-            return parameters.featherless_model;
+            return settings.featherless_model;
         case HUGGINGFACE:
             return 'tgi';
         case TABBY:
-            if (parameters.tabby_model) {
-                return parameters.tabby_model;
+            if (settings.tabby_model) {
+                return settings.tabby_model;
             }
             break;
         default:
@@ -1461,17 +1460,17 @@ export function getTextGenModel(parameters = null) {
 }
 
 export function isJsonSchemaSupported() {
-    return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
+    return [TABBY, LLAMACPP].includes(textgenerationwebui_settings.type) && main_api === 'textgenerationwebui';
 }
 
 /**
  * Returns whether dynamic temperature is supported by the given text completion settings
- * @param {TextCompletionSettings} parameters - text completion settings to use
- * @returns {boolean} whether dynamic temperature supported
+ * @param {TextCompletionSettings} settings Text completion settings to use
+ * @returns {boolean} Whether dynamic temperature supported
  */
-function isDynamicTemperatureSupported(parameters = null) {
-    parameters = parameters ?? settings;
-    return parameters.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(parameters.type);
+function isDynamicTemperatureSupported(settings = null) {
+    settings = settings ?? textgenerationwebui_settings;
+    return settings.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(settings.type);
 }
 
 /**
@@ -1480,7 +1479,7 @@ function isDynamicTemperatureSupported(parameters = null) {
  * @returns {number} Number of logprobs to request
  */
 export function getLogprobsNumber(type = null) {
-    const selectedType = type ?? settings.type;
+    const selectedType = type ?? textgenerationwebui_settings.type;
     if (selectedType === VLLM || selectedType === INFERMATICAI) {
         return 5;
     }
@@ -1518,89 +1517,89 @@ export function replaceMacrosInList(str) {
 
 /**
  * Build the generation parameter object for an text completion request
- * @param {TextCompletionSettings} parameters - the initial text completion settings
- * @param {string} finalPrompt - the complete text prompt
- * @param {number} maxTokens - max allowed generation tokens
- * @param {boolean} isImpersonate - whether this is for an impersonation
- * @param {boolean} isContinue - whether this is for a continue
- * @param {object} cfgValues - additional parameters (guidanceScale, negativePrompt)
- * @param {string} type - request type (impersonate, quiet, continue, etc)
- * @returns {object} final generation parameters object appropriate for the text completion source
+ * @param {TextCompletionSettings} settings Text completion settings to use
+ * @param {string} finalPrompt The final prompt to send
+ * @param {number} maxTokens Max allowed generation tokens
+ * @param {boolean} isImpersonate Whether this is for an impersonation
+ * @param {boolean} isContinue Whether this is for a continue
+ * @param {object} cfgValues Additional parameters (guidanceScale, negativePrompt)
+ * @param {string} type Request type (impersonate, quiet, continue, etc)
+ * @returns {object} Final generation parameters object appropriate for the text completion source
  */
-export function createTextGenGenerationData(parameters, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
+export function createTextGenGenerationData(settings, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
-    const dynatemp = isDynamicTemperatureSupported(parameters);
+    const dynatemp = isDynamicTemperatureSupported(settings);
     const { banned_tokens, banned_strings } = getCustomTokenBans();
-    const jsonSchema = isObject(parameters.json_schema)
-        ? parameters.json_schema_allow_empty
-            ? parameters.json_schema
-            : Object.keys(parameters.json_schema).length > 0 ? parameters.json_schema : undefined
+    const jsonSchema = isObject(settings.json_schema)
+        ? settings.json_schema_allow_empty
+            ? settings.json_schema
+            : Object.keys(settings.json_schema).length > 0 ? settings.json_schema : undefined
         : undefined;
 
     let params = {
         'prompt': finalPrompt,
-        'model': getTextGenModel(parameters),
+        'model': getTextGenModel(settings),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
-        'logprobs': power_user.request_token_probabilities ? getLogprobsNumber(parameters.type) : undefined,
-        'temperature': dynatemp ? (parameters.min_temp + parameters.max_temp) / 2 : parameters.temp,
-        'top_p': parameters.top_p,
-        'typical_p': parameters.typical_p,
-        'typical': parameters.typical_p,
-        'sampler_seed': parameters.seed >= 0 ? parameters.seed : undefined,
-        'min_p': parameters.min_p,
-        'repetition_penalty': parameters.rep_pen,
-        'frequency_penalty': parameters.freq_pen,
-        'presence_penalty': parameters.presence_pen,
-        'top_k': parameters.top_k,
-        'skew': parameters.skew,
-        'min_length': parameters.type === OOBA ? parameters.min_length : undefined,
-        'minimum_message_content_tokens': parameters.type === DREAMGEN ? parameters.min_length : undefined,
-        'min_tokens': parameters.min_length,
-        'num_beams': parameters.type === OOBA ? parameters.num_beams : undefined,
-        'length_penalty': parameters.type === OOBA ? parameters.length_penalty : undefined,
-        'early_stopping': parameters.type === OOBA ? parameters.early_stopping : undefined,
-        'add_bos_token': parameters.add_bos_token,
+        'logprobs': power_user.request_token_probabilities ? getLogprobsNumber(settings.type) : undefined,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
+        'top_p': settings.top_p,
+        'typical_p': settings.typical_p,
+        'typical': settings.typical_p,
+        'sampler_seed': settings.seed >= 0 ? settings.seed : undefined,
+        'min_p': settings.min_p,
+        'repetition_penalty': settings.rep_pen,
+        'frequency_penalty': settings.freq_pen,
+        'presence_penalty': settings.presence_pen,
+        'top_k': settings.top_k,
+        'skew': settings.skew,
+        'min_length': settings.type === OOBA ? settings.min_length : undefined,
+        'minimum_message_content_tokens': settings.type === DREAMGEN ? settings.min_length : undefined,
+        'min_tokens': settings.min_length,
+        'num_beams': settings.type === OOBA ? settings.num_beams : undefined,
+        'length_penalty': settings.type === OOBA ? settings.length_penalty : undefined,
+        'early_stopping': settings.type === OOBA ? settings.early_stopping : undefined,
+        'add_bos_token': settings.add_bos_token,
         'dynamic_temperature': dynatemp ? true : undefined,
-        'dynatemp_low': dynatemp ? parameters.min_temp : undefined,
-        'dynatemp_high': dynatemp ? parameters.max_temp : undefined,
-        'dynatemp_range': dynatemp ? (parameters.max_temp - parameters.min_temp) / 2 : undefined,
-        'dynatemp_exponent': dynatemp ? parameters.dynatemp_exponent : undefined,
-        'smoothing_factor': parameters.smoothing_factor,
-        'smoothing_curve': parameters.smoothing_curve,
-        'dry_allowed_length': parameters.dry_allowed_length,
-        'dry_multiplier': parameters.dry_multiplier,
-        'dry_base': parameters.dry_base,
-        'dry_sequence_breakers': replaceMacrosInList(parameters.dry_sequence_breakers),
-        'dry_penalty_last_n': parameters.dry_penalty_last_n,
-        'max_tokens_second': parameters.max_tokens_second,
-        'sampler_priority': parameters.type === OOBA ? parameters.sampler_priority : undefined,
-        'samplers': parameters.type === LLAMACPP ? parameters.samplers : undefined,
+        'dynatemp_low': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_high': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_range': dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+        'smoothing_factor': settings.smoothing_factor,
+        'smoothing_curve': settings.smoothing_curve,
+        'dry_allowed_length': settings.dry_allowed_length,
+        'dry_multiplier': settings.dry_multiplier,
+        'dry_base': settings.dry_base,
+        'dry_sequence_breakers': replaceMacrosInList(settings.dry_sequence_breakers),
+        'dry_penalty_last_n': settings.dry_penalty_last_n,
+        'max_tokens_second': settings.max_tokens_second,
+        'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
+        'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
-        'ban_eos_token': parameters.ban_eos_token,
-        'skip_special_tokens': parameters.skip_special_tokens,
-        'include_reasoning': parameters.include_reasoning,
-        'top_a': parameters.top_a,
-        'tfs': parameters.tfs,
-        'epsilon_cutoff': [OOBA, MANCER].includes(parameters.type) ? parameters.epsilon_cutoff : undefined,
-        'eta_cutoff': [OOBA, MANCER].includes(parameters.type) ? parameters.eta_cutoff : undefined,
-        'mirostat_mode': parameters.mirostat_mode,
-        'mirostat_tau': parameters.mirostat_tau,
-        'mirostat_eta': parameters.mirostat_eta,
-        'custom_token_bans': [APHRODITE, MANCER].includes(parameters.type) ?
+        'ban_eos_token': settings.ban_eos_token,
+        'skip_special_tokens': settings.skip_special_tokens,
+        'include_reasoning': settings.include_reasoning,
+        'top_a': settings.top_a,
+        'tfs': settings.tfs,
+        'epsilon_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.epsilon_cutoff : undefined,
+        'eta_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.eta_cutoff : undefined,
+        'mirostat_mode': settings.mirostat_mode,
+        'mirostat_tau': settings.mirostat_tau,
+        'mirostat_eta': settings.mirostat_eta,
+        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
             toIntArray(banned_tokens) :
             banned_tokens,
         'banned_strings': banned_strings,
-        'api_type': parameters.type,
-        'api_server': getTextGenServer(parameters.type),
-        'sampler_order': parameters.type === textgen_types.KOBOLDCPP ? parameters.sampler_order : undefined,
-        'xtc_threshold': parameters.xtc_threshold,
-        'xtc_probability': parameters.xtc_probability,
-        'nsigma': parameters.nsigma,
-        'top_n_sigma': parameters.nsigma,
-        'min_keep': parameters.min_keep,
+        'api_type': settings.type,
+        'api_server': getTextGenServer(settings.type),
+        'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
+        'nsigma': settings.nsigma,
+        'top_n_sigma': settings.nsigma,
+        'min_keep': settings.min_keep,
         parseSequenceBreakers: function () {
             try {
                 return JSON.parse(this.dry_sequence_breakers);
@@ -1613,98 +1612,98 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
         },
     };
     const nonAphroditeParams = {
-        'rep_pen': parameters.rep_pen,
-        'rep_pen_range': parameters.rep_pen_range,
-        'repetition_decay': parameters.type === TABBY ? parameters.rep_pen_decay : undefined,
-        'repetition_penalty_range': parameters.rep_pen_range,
-        'encoder_repetition_penalty': parameters.type === OOBA ? parameters.encoder_rep_pen : undefined,
-        'no_repeat_ngram_size': parameters.type === OOBA ? parameters.no_repeat_ngram_size : undefined,
-        'penalty_alpha': parameters.type === OOBA ? parameters.penalty_alpha : undefined,
-        'temperature_last': (parameters.type === OOBA || parameters.type === APHRODITE || parameters.type == TABBY) ? parameters.temperature_last : undefined,
-        'speculative_ngram': parameters.type === TABBY ? parameters.speculative_ngram : undefined,
-        'do_sample': parameters.type === OOBA ? parameters.do_sample : undefined,
-        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
-        'guidance_scale': cfgValues?.guidanceScale?.value ?? parameters.guidance_scale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(parameters.negative_prompt) ?? '',
-        'grammar_string': parameters.grammar_string || undefined,
-        'json_schema': [TABBY, LLAMACPP].includes(parameters.type) ? jsonSchema : undefined,
+        'rep_pen': settings.rep_pen,
+        'rep_pen_range': settings.rep_pen_range,
+        'repetition_decay': settings.type === TABBY ? settings.rep_pen_decay : undefined,
+        'repetition_penalty_range': settings.rep_pen_range,
+        'encoder_repetition_penalty': settings.type === OOBA ? settings.encoder_rep_pen : undefined,
+        'no_repeat_ngram_size': settings.type === OOBA ? settings.no_repeat_ngram_size : undefined,
+        'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
+        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE || settings.type == TABBY) ? settings.temperature_last : undefined,
+        'speculative_ngram': settings.type === TABBY ? settings.speculative_ngram : undefined,
+        'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
+        'seed': settings.seed >= 0 ? settings.seed : undefined,
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
+        'grammar_string': settings.grammar_string || undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? jsonSchema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
-        'repeat_penalty': parameters.rep_pen,
-        'repeat_last_n': parameters.rep_pen_range,
+        'repeat_penalty': settings.rep_pen,
+        'repeat_last_n': settings.rep_pen_range,
         'n_predict': maxTokens,
         'num_predict': maxTokens,
         'num_ctx': max_context,
-        'mirostat': parameters.mirostat_mode,
-        'ignore_eos': parameters.ban_eos_token,
+        'mirostat': settings.mirostat_mode,
+        'ignore_eos': settings.ban_eos_token,
         'n_probs': power_user.request_token_probabilities ? 10 : undefined,
-        'rep_pen_slope': parameters.rep_pen_slope,
+        'rep_pen_slope': settings.rep_pen_slope,
     };
     const vllmParams = {
-        'n': canMultiSwipe ? parameters.n : 1,
-        'ignore_eos': parameters.ignore_eos_token,
-        'spaces_between_special_tokens': parameters.spaces_between_special_tokens,
-        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
+        'n': canMultiSwipe ? settings.n : 1,
+        'ignore_eos': settings.ignore_eos_token,
+        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
+        'seed': settings.seed >= 0 ? settings.seed : undefined,
     };
     const aphroditeParams = {
-        'n': canMultiSwipe ? parameters.n : 1,
-        'frequency_penalty': parameters.freq_pen,
-        'presence_penalty': parameters.presence_pen,
-        'repetition_penalty': parameters.rep_pen,
-        'seed': parameters.seed >= 0 ? parameters.seed : undefined,
+        'n': canMultiSwipe ? settings.n : 1,
+        'frequency_penalty': settings.freq_pen,
+        'presence_penalty': settings.presence_pen,
+        'repetition_penalty': settings.rep_pen,
+        'seed': settings.seed >= 0 ? settings.seed : undefined,
         'stop': getStoppingStrings(isImpersonate, isContinue),
-        'temperature': dynatemp ? (parameters.min_temp + parameters.max_temp) / 2 : parameters.temp,
-        'temperature_last': parameters.temperature_last,
-        'top_p': parameters.top_p,
-        'top_k': parameters.top_k,
-        'top_a': parameters.top_a,
-        'min_p': parameters.min_p,
-        'tfs': parameters.tfs,
-        'eta_cutoff': parameters.eta_cutoff,
-        'epsilon_cutoff': parameters.epsilon_cutoff,
-        'typical_p': parameters.typical_p,
-        'smoothing_factor': parameters.smoothing_factor,
-        'smoothing_curve': parameters.smoothing_curve,
-        'ignore_eos': parameters.ignore_eos_token,
-        'min_tokens': parameters.min_length,
-        'skip_special_tokens': parameters.skip_special_tokens,
-        'spaces_between_special_tokens': parameters.spaces_between_special_tokens,
-        'guided_grammar': parameters.grammar_string || undefined,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
+        'temperature_last': settings.temperature_last,
+        'top_p': settings.top_p,
+        'top_k': settings.top_k,
+        'top_a': settings.top_a,
+        'min_p': settings.min_p,
+        'tfs': settings.tfs,
+        'eta_cutoff': settings.eta_cutoff,
+        'epsilon_cutoff': settings.epsilon_cutoff,
+        'typical_p': settings.typical_p,
+        'smoothing_factor': settings.smoothing_factor,
+        'smoothing_curve': settings.smoothing_curve,
+        'ignore_eos': settings.ignore_eos_token,
+        'min_tokens': settings.min_length,
+        'skip_special_tokens': settings.skip_special_tokens,
+        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
+        'guided_grammar': settings.grammar_string || undefined,
         'guided_json': jsonSchema || undefined,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
-        'dynatemp_min': dynatemp ? parameters.min_temp : undefined,
-        'dynatemp_max': dynatemp ? parameters.max_temp : undefined,
-        'dynatemp_exponent': dynatemp ? parameters.dynatemp_exponent : undefined,
-        'xtc_threshold': parameters.xtc_threshold,
-        'xtc_probability': parameters.xtc_probability,
-        'nsigma': parameters.nsigma,
+        'dynatemp_min': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_max': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
+        'nsigma': settings.nsigma,
         'custom_token_bans': toIntArray(banned_tokens),
-        'no_repeat_ngram_size': parameters.no_repeat_ngram_size,
-        'sampler_priority': parameters.type === APHRODITE && !arraysEqual(
-            parameters.samplers_priorities,
+        'no_repeat_ngram_size': settings.no_repeat_ngram_size,
+        'sampler_priority': settings.type === APHRODITE && !arraysEqual(
+            settings.samplers_priorities,
             APHRODITE_DEFAULT_ORDER)
-            ? parameters.samplers_priorities
+            ? settings.samplers_priorities
             : undefined,
     };
 
-    if (parameters.type === OPENROUTER) {
-        params.provider = parameters.openrouter_providers;
-        params.allow_fallbacks = parameters.openrouter_allow_fallbacks;
+    if (settings.type === OPENROUTER) {
+        params.provider = settings.openrouter_providers;
+        params.allow_fallbacks = settings.openrouter_allow_fallbacks;
     }
 
-    if (parameters.type === KOBOLDCPP) {
-        params.grammar = parameters.grammar_string || undefined;
+    if (settings.type === KOBOLDCPP) {
+        params.grammar = settings.grammar_string || undefined;
         params.trim_stop = true;
     }
 
-    if (parameters.type === HUGGINGFACE) {
+    if (settings.type === HUGGINGFACE) {
         params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
         params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
-        nonAphroditeParams.seed = parameters.seed >= 0 ? parameters.seed : Math.floor(Math.random() * Math.pow(2, 32));
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : Math.floor(Math.random() * Math.pow(2, 32));
     }
 
-    if (parameters.type === MANCER) {
-        params.n = canMultiSwipe ? parameters.n : 1;
+    if (settings.type === MANCER) {
+        params.n = canMultiSwipe ? settings.n : 1;
         params.epsilon_cutoff /= 1000;
         params.eta_cutoff /= 1000;
         params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
@@ -1715,11 +1714,11 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
         params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
 
-    if (parameters.type === TABBY) {
-        params.n = canMultiSwipe ? parameters.n : 1;
+    if (settings.type === TABBY) {
+        params.n = canMultiSwipe ? settings.n : 1;
     }
 
-    switch (parameters.type) {
+    switch (settings.type) {
         case VLLM:
         case INFERMATICAI:
             params = Object.assign(params, vllmParams);
@@ -1735,13 +1734,13 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
             break;
     }
 
-    if (Array.isArray(parameters.logit_bias) && parameters.logit_bias.length) {
+    if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
         const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
         BIAS_CACHE.set(BIAS_KEY, logitBias);
         params.logit_bias = logitBias;
     }
 
-    if (parameters.type === LLAMACPP || parameters.type === OLLAMA) {
+    if (settings.type === LLAMACPP || settings.type === OLLAMA) {
         // Convert bias and token bans to array of arrays
         const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
             ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
@@ -1752,7 +1751,7 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
             // Conflicts with ooba's grammar_string
-            'grammar': parameters.grammar_string,
+            'grammar': settings.grammar_string,
             'cache_prompt': true,
             'dry_sequence_breakers': sequenceBreakers,
         };
@@ -1763,7 +1762,7 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
     }
 
     // Grammar conflicts with with json_schema
-    if ([LLAMACPP, APHRODITE].includes(parameters.type)) {
+    if ([LLAMACPP, APHRODITE].includes(settings.type)) {
         if (jsonSchema) {
             delete params.grammar_string;
             delete params.grammar;
@@ -1777,7 +1776,7 @@ export function createTextGenGenerationData(parameters, finalPrompt = null, maxT
 }
 
 export async function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
-    const params = createTextGenGenerationData(settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type);
+    const params = createTextGenGenerationData(textgenerationwebui_settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type);
     await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
     return params;
 }
