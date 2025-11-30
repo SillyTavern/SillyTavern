@@ -288,7 +288,7 @@ export class TextCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(custom, options = {}, extractData = true,signal = null) {
+    static async processRequest(custom, options = {}, extractData = true, signal = null) {
         const { presetName, instructName } = options;
         let requestData = { ...custom };
         const prompt = custom.prompt;
