@@ -1383,6 +1383,11 @@ async function sendChutesRequest(request, response) {
             bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',

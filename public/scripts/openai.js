@@ -2481,7 +2481,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi || isChutes)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -2855,6 +2855,7 @@ function parseChatCompletionLogprobs(data) {
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
+        case chat_completion_sources.CHUTES:
             if (!data.choices?.length) {
                 return null;
             }
