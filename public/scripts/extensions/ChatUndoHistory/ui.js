@@ -86,7 +86,11 @@ export async function addSettings() {
     let saveChatSnapshotDebounced;
     function setDebounced(id, value) {
         //This is not awaited so performance is less impacted.
-        saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), value ?? debounce_timeout.short);
+        if (value > 0) {
+            saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), value ?? debounce_timeout.short);
+        } else {
+            saveChatSnapshotDebounced = () => chatHistory.saveChatSnapshot(false);
+        }
     }
     setDebounced(undefined, extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
     function getDebounced(_, source) {
