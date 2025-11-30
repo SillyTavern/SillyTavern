@@ -510,7 +510,6 @@ async function sendMakerSuiteRequest(request, response) {
             if (functionCallingConfig) {
                 body.toolConfig = { functionCallingConfig };
             }
-
         }
 
         return body;
