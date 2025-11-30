@@ -148,7 +148,7 @@ declare global {
 
     interface ChatCompletionMessage {
         name?: string;
-        role: 'system' | 'user' | 'assistant' | 'tool';
+        role: string;
         content: string;
     }
 
