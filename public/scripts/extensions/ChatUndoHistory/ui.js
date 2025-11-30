@@ -64,14 +64,14 @@ export async function addSettings() {
         }
     }
 
-    const toggleEventFunction = (event, enabled, eventFunction) => {
+    const toggleEventFunction = (source, event, enabled, eventFunction) => {
         //Toggle on.
-        if (enabled) { eventSource.on(event, eventFunction); }
+        if (enabled) { source.on(event, eventFunction); }
         //Toggle off.
-        else { eventSource.removeListener(event, eventFunction); }
+        else { source.removeListener(event, eventFunction); }
     };
 
-    const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction('keydown', enabled, processUndoHotkey);
+    const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction($(document), 'keydown', enabled, processUndoHotkey);
     const toggleUndoHotkeyElement = new toggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
@@ -100,7 +100,7 @@ export async function addSettings() {
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
-        const toggleSnapshot = (id, enabled, _) => toggleEventFunction(id, enabled, getDebounced);
+        const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, getDebounced);
         const toggleSnapshotEvent = new toggleInput(snapShotEvent, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
         eventToggles.append(toggleSnapshotEvent);
     }
