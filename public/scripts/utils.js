@@ -2775,8 +2775,12 @@ export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibi
     };
     btn.addEventListener('click', onActivate);
 
+    let frameHandle = null;
     const resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(() => {
+        if (frameHandle !== null) {
+            cancelAnimationFrame(frameHandle);
+        }
+        frameHandle = requestAnimationFrame(() => {
             updateButtonVisibilityThrottled();
         });
     });
