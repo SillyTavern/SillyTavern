@@ -5,12 +5,14 @@
     "scripts": {
         "test": "npm run test:unit && npm run test:e2e",
         "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json",
-        "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest-e2e.config.json"
+        "test:e2e": "playwright test",
+        "lint": "eslint \"**/*.js\" ./*.js",
+        "lint:fix": "eslint \"**/*.js\" ./*.js --fix"
     },
     "dependencies": {
+        "@playwright/test": "^1.56.1",
         "@types/jest": "^29.5.12",
         "eslint": "^8.57.0",
-        "jest": "^29.7.0",
-        "jest-puppeteer": "^10.0.1"
+        "jest": "^29.7.0"
     }
 }

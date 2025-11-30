@@ -81,6 +81,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         }
 
+        if (request.body.api === 'chutes') {
+            key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+        }
+
         if (request.body.api === 'electronhub') {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
@@ -175,6 +179,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'nanogpt') {
             apiUrl = 'https://nano-gpt.com/api/v1/chat/completions';
+        }
+
+        if (request.body.api === 'chutes') {
+            apiUrl = 'https://llm.chutes.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'electronhub') {
@@ -428,6 +436,84 @@ router.post('/electronhub/models', async (request, response) => {
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);
         response.status(500).send('Internal server error');
+    }
+});
+
+// Chutes TTS
+router.post('/chutes/generate-voice', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            text: request.body.input,
+            voice: request.body.voice || 'af_heart',
+        };
+
+        console.debug('Chutes TTS request', requestBody);
+
+        const result = await fetch('https://chutes-kokoro.chutes.ai/speak', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes TTS request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || 'audio/mpeg';
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', contentType);
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('Chutes TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.post('/chutes/models/embedding', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch('https://api.chutes.ai/chutes/?template=embedding&include_public=true&limit=999', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes embedding models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!Array.isArray(data?.items)) {
+            console.warn('Chutes embedding models response invalid', data);
+            return response.sendStatus(500);
+        }
+        return response.json(data.items);
+    } catch (error) {
+        console.error('Chutes embedding models fetch failed', error);
+        response.sendStatus(500);
     }
 });
 
