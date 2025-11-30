@@ -2,6 +2,7 @@ import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebou
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
+import { applyDiff, diff } from '/lib.js';
 
 export const extensionName = 'ChatUndoHistory';
 
@@ -15,7 +16,7 @@ class ChatHistory {
         this.chatData = chatData;
         this.chatHistory = [];
         this.chatHistoryIndex = 0;
-        this.fullHistoryInterval = 0;
+        this.fullHistoryInterval = 20;
 
         //Reset chatHistory when the chat has changed.
         eventSource.on(event_types.CHAT_CHANGED,  async () => await this.resetChatSnapshots(false));
@@ -56,16 +57,51 @@ class ChatHistory {
 
         //Overwrite history that has been undone.
         this.chatHistory.splice(this.chatHistoryIndex + 1);
-    chatHistory.splice(chatHistoryIndex + 1);
 
-        const newFullChat = structuredClone(this.chatData);
-        this.chatHistory.push(newFullChat);
-    const newChat = structuredClone(chatData);
-    chatHistory.push(newChat);
-    chatHistoryIndex = chatHistory.length - 1;
-    toast && toastr.success(t`Success, You now have ${chatHistory.length} saved chats.`);
-        this.chatHistoryIndex = this.chatHistory.length - 1;
+        //Set the index to the new location.
+        this.chatHistoryIndex = this.chatHistory.length;
+        const fullChatOffset = (this.chatHistoryIndex % this.fullHistoryInterval);
+
+        let resultingChat;
+        //Save the full history.
+        if (fullChatOffset === 0) {
+            resultingChat = structuredClone(this.chatData);
+        }
+        //Save the history diff.
+        else {
+            //The most recent full chat snapshot.
+            const recentFullChat = this.chatHistory[this.chatHistoryIndex - fullChatOffset];
+            //Save a partial history.
+            resultingChat = diff(recentFullChat, this.chatData);
+        }
+
+        this.chatHistory.push(resultingChat);
         toast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+    }
+
+    /**
+     * Returns the full chat history at index.
+     * @param {number} index
+     * @returns
+     */
+    getChatSnapshot(index) {
+        let chat;
+        // Return the full snapshot.
+        if ((index % this.fullHistoryInterval) == 0) {
+            chat = this.chatHistory[index];
+        }
+        //Create the full snapshot.
+        else {
+            //The most recent full history snapshot.
+            const recentFullChatIndex = (index - (index % this.fullHistoryInterval));
+            const recentFullChat = this.chatHistory[recentFullChatIndex];
+
+            const chatDiff = this.chatHistory[index];
+
+            //Return the resulting full history snapshot.
+            chat = applyDiff(recentFullChat, chatDiff);
+        }
+        return structuredClone(chat);
     }
 
     /**
@@ -81,10 +117,10 @@ class ChatHistory {
             return;
         }
 
-        if (this.chatHistory[index]) {
+        if (typeof(this.chatHistory[index]) !== 'undefined') {
             this.chatHistoryIndex = index;
 
-            const newChat = structuredClone(this.chatHistory[this.chatHistoryIndex]);
+            const newChat = this.getChatSnapshot(this.chatHistoryIndex);
             const oldChatLength = chat.length;
 
             //Replace the chat.
