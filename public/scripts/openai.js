@@ -1790,84 +1790,6 @@ function calculateChutesCost() {
     $('#chutes_max_prompt_cost').text(cost);
 }
 
-async function fetchChutesBalance() {
-    const response = await fetch('/api/openai/chutes/user/balance', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({}),
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        return data.balance || 0;
-    }
-
-    return 0;
-}
-
-async function fetchChutesQuotas(chute_id) {
-    const response = await fetch('/api/openai/chutes/user/quotas', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ chute_id: chute_id || '' }),
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        return data;
-    }
-
-    return null;
-}
-
-async function displayChutesQuotaInfo() {
-    if (oai_settings.chat_completion_source !== chat_completion_sources.CHUTES) {
-        return;
-    }
-
-    const currentModel = model_list.find(m => m.id === oai_settings.chutes_model);
-    const chute_id = currentModel?.chute_id || '';
-
-    const creditsElement = $('#chutes_credits_display');
-    if (!creditsElement.length) {
-        return;
-    }
-
-    try {
-        const [quotaData, balance] = await Promise.all([
-            fetchChutesQuotas(chute_id),
-            fetchChutesBalance(),
-        ]);
-
-        let infoHtml = '';
-
-        if (quotaData && quotaData.quotas && quotaData.quotas['*'] !== undefined) {
-            const limit = quotaData.quotas['*'];
-            const balanceFormatted = (Math.floor((balance || 0) * 100) / 100).toFixed(2);
-
-            if (limit > 0) {
-                const used = quotaData.usage?.used || 0;
-                const remaining = quotaData.remaining?.['*'] || (limit - used);
-                infoHtml += `<small>Messages: <span id="chutes_messages_used">${used}</span>/<span id="chutes_messages_limit">${limit}</span> used (<span id="chutes_messages_remaining">${remaining}</span> left)</small>`;
-            }
-
-            if (balance !== undefined) {
-                infoHtml += `<small>Balance: $<span id="chutes_balance">${balanceFormatted}</span></small>`;
-            }
-        }
-
-        const linkHtml = '<small><a href="https://chutes.ai/app/api/billing-balance" target="_blank" data-i18n="View Billing/Balance">View Billing/Balance</a></small>';
-
-        if (infoHtml) {
-            creditsElement.html(`<div class="flex-container flexFlowColumn">${infoHtml}${linkHtml}</div>`);
-        } else {
-            creditsElement.html(linkHtml.replace('<small>', '').replace('</small>', ''));
-        }
-    } catch (error) {
-        console.error('Failed to fetch Chutes quota info:', error);
-    }
-}
-
 function saveModelList(data) {
     model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
@@ -5037,7 +4959,6 @@ async function onModelChange() {
         }
         console.log('Chutes model changed to', value);
         oai_settings.chutes_model = value;
-        displayChutesQuotaInfo();
     }
 
     if ($(this).is('#model_nanogpt_select')) {
