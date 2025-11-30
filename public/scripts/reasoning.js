@@ -125,6 +125,7 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.MOONSHOT:
                 case chat_completion_sources.COMETAPI:
+                case chat_completion_sources.CHUTES:
                 case chat_completion_sources.ELECTRONHUB:
                 case chat_completion_sources.NANOGPT:
                 case chat_completion_sources.SILICONFLOW:
