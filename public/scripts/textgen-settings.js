@@ -418,11 +418,14 @@ function getTokenizerForTokenIds() {
 }
 
 /**
+ * Gets the custom token bans from settings and macros.
+ * @param {TextCompletionSettings} settings Text completion settings to use
  * @typedef {{banned_tokens: string, banned_strings: string[]}} TokenBanResult
  * @returns {TokenBanResult} String with comma-separated banned token IDs
  */
-function getCustomTokenBans() {
-    if (!textgenerationwebui_settings.send_banned_tokens || (!textgenerationwebui_settings.banned_tokens && !textgenerationwebui_settings.global_banned_tokens && !textgenerationwebui_banned_in_macros.length)) {
+function getCustomTokenBans(settings = null) {
+    settings = settings ?? textgenerationwebui_settings;
+    if (!settings.send_banned_tokens || (!settings.banned_tokens && !settings.global_banned_tokens && !textgenerationwebui_banned_in_macros.length)) {
         return {
             banned_tokens: '',
             banned_strings: [],
@@ -433,8 +436,8 @@ function getCustomTokenBans() {
     const banned_tokens = [];
     const banned_strings = [];
     const sequences = []
-        .concat(textgenerationwebui_settings.banned_tokens.split('\n'))
-        .concat(textgenerationwebui_settings.global_banned_tokens.split('\n'))
+        .concat(settings.banned_tokens.split('\n'))
+        .concat(settings.global_banned_tokens.split('\n'))
         .concat(textgenerationwebui_banned_in_macros)
         .filter(x => x.length > 0)
         .filter(onlyUnique)
@@ -1529,7 +1532,7 @@ export function replaceMacrosInList(str) {
 export function createTextGenGenerationData(settings, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported(settings);
-    const { banned_tokens, banned_strings } = getCustomTokenBans();
+    const { banned_tokens, banned_strings } = getCustomTokenBans(settings);
     const jsonSchema = isObject(settings.json_schema)
         ? settings.json_schema_allow_empty
             ? settings.json_schema
