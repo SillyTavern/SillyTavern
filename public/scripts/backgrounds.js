@@ -409,11 +409,13 @@ async function onDeleteBackgroundClick(e) {
             defaultState: true,
         },
     ];
-    let deleteFromServer = true;
+    let deleteFromServer = false;
     const confirm = await Popup.show.confirm(t`Delete the background?`, null, {
         customInputs: isCustom ? customInputs : [],
         onClose: (popup) => {
-            deleteFromServer = Boolean(popup.inputResults.get(deleteFromServerId) ?? false);
+            if (isCustom) {
+                deleteFromServer = Boolean(popup?.inputResults?.get(deleteFromServerId) ?? false);
+            }
         },
     });
     const bg = bgToDelete.attr('bgfile');
@@ -652,36 +654,43 @@ async function delBackground(bg) {
     }
 }
 
-async function onBackgroundUploadSelected() {
-    const form = $('#form_bg_upload').get(0);
+/**
+ * Background upload handler.
+ * @param {Event} e Event
+ * @returns {Promise<void>}
+ */
+async function onBackgroundUploadSelected(e) {
+    const input = e.currentTarget;
 
-    if (!(form instanceof HTMLFormElement)) {
-        console.error('form_bg_upload is not a form');
+    if (!(input instanceof HTMLInputElement)) {
+        console.error('Invalid input element for background upload');
         return;
     }
 
-    const formData = new FormData(form);
+    for (const file of input.files) {
+        if (file.size === 0) {
+            continue;
+        }
 
-    const file = formData.get('avatar');
-    if (!(file instanceof File) || file.size === 0) {
-        form.reset();
-        return;
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        await convertFileIfVideo(formData);
+        switch (getActiveBackgroundTab()) {
+            case BG_SOURCES.GLOBAL:
+                await uploadBackground(formData);
+                break;
+            case BG_SOURCES.CHAT:
+                await uploadChatBackground(formData);
+                break;
+            default:
+                console.error('Unknown background source type');
+                continue;
+        }
     }
 
-    await convertFileIfVideo(formData);
-    switch (getActiveBackgroundTab()) {
-        case BG_SOURCES.GLOBAL:
-            await uploadBackground(formData);
-            break;
-        case BG_SOURCES.CHAT:
-            await uploadChatBackground(formData);
-            break;
-        default:
-            console.error('Unknown background source type');
-            return;
-    }
-
-    form.reset();
+    // Allow re-uploading the same file again by clearing the input value
+    input.value = '';
 }
 
 /**
@@ -905,7 +914,7 @@ export function initBackgrounds() {
         applyThumbnailColumns(background_settings.thumbnailColumns + 1);
     });
     $('#auto_background').on('click', autoBackgroundCommand);
-    $('#add_bg_button').on('change', onBackgroundUploadSelected);
+    $('#add_bg_button').on('change', (e) => onBackgroundUploadSelected(e.originalEvent));
     $('#bg-filter').on('input', () => debouncedOnBackgroundFilterInput());
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
