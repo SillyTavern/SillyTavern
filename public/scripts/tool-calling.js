@@ -589,66 +589,66 @@ export class ToolManager {
 
     /**
      * Checks if tool calling is supported for the current settings and generation type.
-     * @param {ChatCompletionSettings} parameters - optional chat completion settings
+     * @param {ChatCompletionSettings} settings Optional chat completion settings
      * @returns {boolean} Whether tool calling is supported for the given type
      */
-    static isToolCallingSupported(parameters = null) {
-        parameters = parameters ?? oai_settings;
-        if (main_api !== 'openai' || !parameters.function_calling) {
+    static isToolCallingSupported(settings = null) {
+        settings = settings ?? oai_settings;
+        if (main_api !== 'openai' || !settings.function_calling) {
             return false;
         }
 
         // Post-processing will forcefully remove past tool calls from the prompt, making them useless
         const { NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS } = custom_prompt_post_processing_types;
         const allowedPromptPostProcessing = [NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS];
-        if (!allowedPromptPostProcessing.includes(parameters.custom_prompt_post_processing)) {
+        if (!allowedPromptPostProcessing.includes(settings.custom_prompt_post_processing)) {
             return false;
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.pollinations_model);
+        if (settings.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.pollinations_model);
             if (currentModel) {
                 return currentModel.tools;
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.FIREWORKS && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.fireworks_model);
+        if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.fireworks_model);
             if (currentModel) {
                 return currentModel.supports_tools;
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.OPENROUTER && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.openrouter_model);
+        if (settings.chat_completion_source === chat_completion_sources.OPENROUTER && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.openrouter_model);
             if (Array.isArray(currentModel?.supported_parameters)) {
                 return currentModel.supported_parameters.includes('tools');
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.MISTRALAI && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.mistralai_model);
+        if (settings.chat_completion_source === chat_completion_sources.MISTRALAI && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.mistralai_model);
             if (currentModel && currentModel.capabilities) {
                 return currentModel.capabilities.function_calling;
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.AIMLAPI && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.aimlapi_model);
+        if (settings.chat_completion_source === chat_completion_sources.AIMLAPI && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.aimlapi_model);
             if (Array.isArray(currentModel?.features)) {
                 return currentModel.features.includes('openai/chat-completion.function');
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.CHUTES && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.chutes_model);
+        if (settings.chat_completion_source === chat_completion_sources.CHUTES && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.chutes_model);
             if (currentModel) {
                 return currentModel.supported_features?.includes('tools');
             }
         }
 
-        if (parameters.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === parameters.electronhub_model);
+        if (settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === settings.electronhub_model);
             if (currentModel) {
                 return currentModel.metadata?.function_call;
             }
@@ -678,7 +678,7 @@ export class ToolManager {
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
         ];
-        return supportedSources.includes(parameters.chat_completion_source);
+        return supportedSources.includes(settings.chat_completion_source);
     }
 
     /**

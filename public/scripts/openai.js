@@ -2302,12 +2302,13 @@ function getAimlapiModelTemplate(option) {
 
 /**
  * Get the reasoning effort from chat completion settings
- * @param {ChatCompletionSettings} parameters - initial chat completion settings
- * @returns {string} reasoning effort, if present
+ * @param {ChatCompletionSettings} settings Chat completion settings
+ * @returns {string} Reasoning effort, if present
  */
-function getReasoningEffort(parameters = null) {
+function getReasoningEffort(settings = null) {
+    settings = settings ?? oai_settings;
+
     // These sources expect the effort as string.
-    parameters = parameters ?? oai_settings;
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
         chat_completion_sources.AZURE_OPENAI,
@@ -2322,31 +2323,31 @@ function getReasoningEffort(parameters = null) {
         chat_completion_sources.CHUTES,
     ];
 
-    if (!reasoningEffortSources.includes(parameters.chat_completion_source)) {
-        return parameters.reasoning_effort;
+    if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
+        return settings.reasoning_effort;
     }
 
     function resolveReasoningEffort() {
-        switch (parameters.reasoning_effort) {
+        switch (settings.reasoning_effort) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(parameters.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
+                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel())
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 return reasoning_effort_types.high;
             default:
-                return parameters.reasoning_effort;
+                return settings.reasoning_effort;
         }
     }
 
     const reasoningEffort = resolveReasoningEffort();
 
     // Check if the resolved effort supported by the model
-    if (parameters.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
+    if (settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
         if (Array.isArray(model_list) && reasoningEffort) {
-            const currentModel = model_list.find(m => m.id === parameters.electronhub_model);
+            const currentModel = model_list.find(m => m.id === settings.electronhub_model);
             const supportedEfforts = currentModel?.metadata?.supported_reasoning_efforts;
             if (Array.isArray(supportedEfforts) && supportedEfforts.includes(reasoningEffort)) {
                 return reasoningEffort;
@@ -2360,28 +2361,29 @@ function getReasoningEffort(parameters = null) {
 
 /**
  * Get the verbosity from chat completion settings
- * @param {ChatCompletionSettings} parameters - initial chat completion settings
- * @returns {string} verbosity level, if present
+ * @param {ChatCompletionSettings} settings Chat completion settings
+ * @returns {string} Verbosity level, if present
  */
-function getVerbosity(parameters = null) {
-    parameters = parameters ?? oai_settings;
-    if (parameters.verbosity === verbosity_levels.auto) {
+function getVerbosity(settings = null) {
+    settings = settings ?? oai_settings;
+
+    if (settings.verbosity === verbosity_levels.auto) {
         return undefined;
     }
 
     // TODO: Adjust verbosity based on model capabilities
-    return parameters.verbosity;
+    return settings.verbosity;
 }
 
 /**
  * Build the generation parameter object for an OAI request.
- * @param {ChatCompletionSettings} parameters - the initial set of parameters
- * @param {string} type - request type (impersonate, quiet, continue, etc)
- * @param {ChatMessage[]} messages - array of message objects
- * @param {import('../script.js').AdditionalRequestOptions} options
- * @returns {object} final generation parameters object appropriate for the chat completion source
+ * @param {ChatCompletionSettings} settings Initial chat completion settings
+ * @param {string} type Request type (impersonate, quiet, continue, etc)
+ * @param {ChatCompletionMessage[]} messages Array of chat completion messages
+ * @param {import('../script.js').AdditionalRequestOptions} options Additional request options
+ * @returns {Promise<object>} Final generation parameters object appropriate for the chat completion source
  */
-export async function createGenerationParameters(parameters, type, messages, { jsonSchema = null } = {}) {
+export async function createGenerationParameters(settings, type, messages, { jsonSchema = null } = {}) {
     // HACK: Filter out null and non-object messages
     if (!Array.isArray(messages)) {
         throw new Error('messages must be an array');
@@ -2390,39 +2392,39 @@ export async function createGenerationParameters(parameters, type, messages, { j
 
     // construct the generation parameters for oai requests
     let logit_bias = {};
-    const isClaude = parameters.chat_completion_source == chat_completion_sources.CLAUDE;
-    const isOpenRouter = parameters.chat_completion_source == chat_completion_sources.OPENROUTER;
-    const isGoogle = parameters.chat_completion_source == chat_completion_sources.MAKERSUITE;
-    const isVertexAI = parameters.chat_completion_source == chat_completion_sources.VERTEXAI;
-    const isOAI = parameters.chat_completion_source == chat_completion_sources.OPENAI;
-    const isMistral = parameters.chat_completion_source == chat_completion_sources.MISTRALAI;
-    const isCustom = parameters.chat_completion_source == chat_completion_sources.CUSTOM;
-    const isCohere = parameters.chat_completion_source == chat_completion_sources.COHERE;
-    const isPerplexity = parameters.chat_completion_source == chat_completion_sources.PERPLEXITY;
-    const isGroq = parameters.chat_completion_source == chat_completion_sources.GROQ;
-    const isDeepSeek = parameters.chat_completion_source == chat_completion_sources.DEEPSEEK;
-    const isAimlapi = parameters.chat_completion_source == chat_completion_sources.AIMLAPI;
-    const isElectronHub = parameters.chat_completion_source == chat_completion_sources.ELECTRONHUB;
-    const isChutes = parameters.chat_completion_source == chat_completion_sources.CHUTES;
-    const isXAI = parameters.chat_completion_source == chat_completion_sources.XAI;
-    const isPollinations = parameters.chat_completion_source == chat_completion_sources.POLLINATIONS;
-    const isMoonshot = parameters.chat_completion_source == chat_completion_sources.MOONSHOT;
-    const isAzureOpenAI = parameters.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
-    const isZai = parameters.chat_completion_source == chat_completion_sources.ZAI;
-    const isNanoGPT = parameters.chat_completion_source == chat_completion_sources.NANOGPT;
-    const isTextCompletion = isOAI && textCompletionModels.includes(parameters.openai_model);
+    const isClaude = settings.chat_completion_source == chat_completion_sources.CLAUDE;
+    const isOpenRouter = settings.chat_completion_source == chat_completion_sources.OPENROUTER;
+    const isGoogle = settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
+    const isVertexAI = settings.chat_completion_source == chat_completion_sources.VERTEXAI;
+    const isOAI = settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isMistral = settings.chat_completion_source == chat_completion_sources.MISTRALAI;
+    const isCustom = settings.chat_completion_source == chat_completion_sources.CUSTOM;
+    const isCohere = settings.chat_completion_source == chat_completion_sources.COHERE;
+    const isPerplexity = settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
+    const isGroq = settings.chat_completion_source == chat_completion_sources.GROQ;
+    const isDeepSeek = settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
+    const isAimlapi = settings.chat_completion_source == chat_completion_sources.AIMLAPI;
+    const isElectronHub = settings.chat_completion_source == chat_completion_sources.ELECTRONHUB;
+    const isChutes = settings.chat_completion_source == chat_completion_sources.CHUTES;
+    const isXAI = settings.chat_completion_source == chat_completion_sources.XAI;
+    const isPollinations = settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
+    const isMoonshot = settings.chat_completion_source == chat_completion_sources.MOONSHOT;
+    const isAzureOpenAI = settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
+    const isZai = settings.chat_completion_source == chat_completion_sources.ZAI;
+    const isNanoGPT = settings.chat_completion_source == chat_completion_sources.NANOGPT;
+    const isTextCompletion = isOAI && textCompletionModels.includes(settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = parameters.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
+    const stream = settings.stream_openai && !isQuiet && !((isOAI || isAzureOpenAI) && ['o1-2024-12-17', 'o1'].includes(getChatCompletionModel()));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = parameters.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
+    const canMultiSwipe = settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CHUTES, chat_completion_sources.CUSTOM];
-    if (parameters.bias_preset_selected
-        && logitBiasSources.includes(parameters.chat_completion_source)
-        && Array.isArray(parameters.bias_presets[parameters.bias_preset_selected])
-        && parameters.bias_presets[parameters.bias_preset_selected].length) {
+    if (settings.bias_preset_selected
+        && logitBiasSources.includes(settings.chat_completion_source)
+        && Array.isArray(settings.bias_presets[settings.bias_preset_selected])
+        && settings.bias_presets[settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
     }
@@ -2431,45 +2433,45 @@ export async function createGenerationParameters(parameters, type, messages, { j
         logit_bias = undefined;
     }
 
-    const model = getChatCompletionModel(parameters.chat_completion_source);
+    const model = getChatCompletionModel(settings.chat_completion_source);
     const generate_data = {
         'type': type,
         'messages': messages,
         'model': model,
-        'temperature': Number(parameters.temp_openai),
-        'frequency_penalty': Number(parameters.freq_pen_openai),
-        'presence_penalty': Number(parameters.pres_pen_openai),
-        'top_p': Number(parameters.top_p_openai),
-        'max_tokens': parameters.openai_max_tokens,
+        'temperature': Number(settings.temp_openai),
+        'frequency_penalty': Number(settings.freq_pen_openai),
+        'presence_penalty': Number(settings.pres_pen_openai),
+        'top_p': Number(settings.top_p_openai),
+        'max_tokens': settings.openai_max_tokens,
         'stream': stream,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
-        'chat_completion_source': parameters.chat_completion_source,
-        'n': canMultiSwipe ? parameters.n : undefined,
+        'chat_completion_source': settings.chat_completion_source,
+        'n': canMultiSwipe ? settings.n : undefined,
         'user_name': name1,
         'char_name': name2,
         'group_names': getGroupNames(),
-        'include_reasoning': Boolean(parameters.show_thoughts),
-        'reasoning_effort': getReasoningEffort(parameters),
-        'enable_web_search': Boolean(parameters.enable_web_search),
-        'request_images': Boolean(parameters.request_images),
-        'request_image_resolution': String(parameters.request_image_resolution),
-        'request_image_aspect_ratio': String(parameters.request_image_aspect_ratio),
-        'custom_prompt_post_processing': parameters.custom_prompt_post_processing,
-        'verbosity': getVerbosity(parameters),
+        'include_reasoning': Boolean(settings.show_thoughts),
+        'reasoning_effort': getReasoningEffort(settings),
+        'enable_web_search': Boolean(settings.enable_web_search),
+        'request_images': Boolean(settings.request_images),
+        'request_image_resolution': String(settings.request_image_resolution),
+        'request_image_aspect_ratio': String(settings.request_image_aspect_ratio),
+        'custom_prompt_post_processing': settings.custom_prompt_post_processing,
+        'verbosity': getVerbosity(settings),
     };
 
     if (isAzureOpenAI) {
-        generate_data.azure_base_url = parameters.azure_base_url;
-        generate_data.azure_deployment_name = parameters.azure_deployment_name;
-        generate_data.azure_api_version = parameters.azure_api_version;
+        generate_data.azure_base_url = settings.azure_base_url;
+        generate_data.azure_deployment_name = settings.azure_deployment_name;
+        generate_data.azure_api_version = settings.azure_api_version;
         // Reasoning effort is not supported on some Azure models (e.g. GPT-3.x, GPT-4.x)
-        if (/^gpt-[34]/.test(parameters.azure_openai_model)) {
+        if (/^gpt-[34]/.test(settings.azure_openai_model)) {
             delete generate_data.reasoning_effort;
         }
     }
 
-    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type, parameters)) {
+    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type, settings)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
 
@@ -2479,10 +2481,10 @@ export async function createGenerationParameters(parameters, type, messages, { j
     }
 
     // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, and Vertex AI
-    if (parameters.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(parameters.chat_completion_source)) {
+    if (settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(settings.chat_completion_source)) {
         await validateReverseProxy();
-        generate_data['reverse_proxy'] = parameters.reverse_proxy;
-        generate_data['proxy_password'] = parameters.proxy_password;
+        generate_data['reverse_proxy'] = settings.reverse_proxy;
+        generate_data['proxy_password'] = settings.proxy_password;
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
@@ -2492,34 +2494,34 @@ export async function createGenerationParameters(parameters, type, messages, { j
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
     const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
-    if ((isOAI && isVision(parameters.openai_model)) || (isAzureOpenAI && isVision(parameters.azure_openai_model)) || (isOpenRouter && isVision(parameters.openrouter_model))) {
+    if ((isOAI && isVision(settings.openai_model)) || (isAzureOpenAI && isVision(settings.azure_openai_model)) || (isOpenRouter && isVision(settings.openrouter_model))) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
-    if ((isOAI && parameters.openai_model.includes('gpt-4.5')) || (isAzureOpenAI && parameters.azure_openai_model.includes('gpt-4.5')) || (isOpenRouter && parameters.openrouter_model.includes('gpt-4.5'))) {
+    if ((isOAI && settings.openai_model.includes('gpt-4.5')) || (isAzureOpenAI && settings.azure_openai_model.includes('gpt-4.5')) || (isOpenRouter && settings.openrouter_model.includes('gpt-4.5'))) {
         delete generate_data.logprobs;
     }
 
     if (isClaude) {
-        generate_data['top_k'] = Number(parameters.top_k_openai);
-        generate_data['use_sysprompt'] = parameters.use_sysprompt;
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['use_sysprompt'] = settings.use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
-        if (!isQuiet && !(isContinue && parameters.continue_prefill)) {
-            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(parameters.assistant_impersonation) : substituteParams(parameters.assistant_prefill);
+        if (!isQuiet && !(isContinue && settings.continue_prefill)) {
+            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(settings.assistant_impersonation) : substituteParams(settings.assistant_prefill);
         }
     }
 
     if (isOpenRouter) {
-        generate_data['top_k'] = Number(parameters.top_k_openai);
-        generate_data['min_p'] = Number(parameters.min_p_openai);
-        generate_data['repetition_penalty'] = Number(parameters.repetition_penalty_openai);
-        generate_data['top_a'] = Number(parameters.top_a_openai);
-        generate_data['use_fallback'] = parameters.openrouter_use_fallback;
-        generate_data['provider'] = parameters.openrouter_providers;
-        generate_data['allow_fallbacks'] = parameters.openrouter_allow_fallbacks;
-        generate_data['middleout'] = parameters.openrouter_middleout;
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['min_p'] = Number(settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(settings.top_a_openai);
+        generate_data['use_fallback'] = settings.openrouter_use_fallback;
+        generate_data['provider'] = settings.openrouter_providers;
+        generate_data['allow_fallbacks'] = settings.openrouter_allow_fallbacks;
+        generate_data['middleout'] = settings.openrouter_middleout;
 
         if (isTextCompletion) {
             generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
@@ -2528,13 +2530,13 @@ export async function createGenerationParameters(parameters, type, messages, { j
 
     if (isGoogle || isVertexAI) {
         const stopStringsLimit = 5;
-        generate_data['top_k'] = Number(parameters.top_k_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_sysprompt'] = parameters.use_sysprompt;
+        generate_data['use_sysprompt'] = settings.use_sysprompt;
         if (isVertexAI) {
-            generate_data['vertexai_auth_mode'] = parameters.vertexai_auth_mode;
-            generate_data['vertexai_region'] = parameters.vertexai_region;
-            generate_data['vertexai_express_project_id'] = parameters.vertexai_express_project_id;
+            generate_data['vertexai_auth_mode'] = settings.vertexai_auth_mode;
+            generate_data['vertexai_region'] = settings.vertexai_region;
+            generate_data['vertexai_express_project_id'] = settings.vertexai_express_project_id;
         }
     }
 
@@ -2544,26 +2546,26 @@ export async function createGenerationParameters(parameters, type, messages, { j
     }
 
     if (isCustom) {
-        generate_data['custom_url'] = parameters.custom_url;
-        generate_data['custom_include_body'] = parameters.custom_include_body;
-        generate_data['custom_exclude_body'] = parameters.custom_exclude_body;
-        generate_data['custom_include_headers'] = parameters.custom_include_headers;
+        generate_data['custom_url'] = settings.custom_url;
+        generate_data['custom_include_body'] = settings.custom_include_body;
+        generate_data['custom_exclude_body'] = settings.custom_exclude_body;
+        generate_data['custom_include_headers'] = settings.custom_include_headers;
     }
 
     if (isCohere) {
         // Clamp to 0.01 -> 0.99
-        generate_data['top_p'] = Math.min(Math.max(Number(parameters.top_p_openai), 0.01), 0.99);
-        generate_data['top_k'] = Number(parameters.top_k_openai);
+        generate_data['top_p'] = Math.min(Math.max(Number(settings.top_p_openai), 0.01), 0.99);
+        generate_data['top_k'] = Number(settings.top_k_openai);
         // Clamp to 0 -> 1
-        generate_data['frequency_penalty'] = Math.min(Math.max(Number(parameters.freq_pen_openai), 0), 1);
-        generate_data['presence_penalty'] = Math.min(Math.max(Number(parameters.pres_pen_openai), 0), 1);
+        generate_data['frequency_penalty'] = Math.min(Math.max(Number(settings.freq_pen_openai), 0), 1);
+        generate_data['presence_penalty'] = Math.min(Math.max(Number(settings.pres_pen_openai), 0), 1);
         generate_data['stop'] = getCustomStoppingStrings(5);
     }
 
     if (isPerplexity) {
-        generate_data['top_k'] = Number(parameters.top_k_openai);
-        generate_data['frequency_penalty'] = Number(parameters.freq_pen_openai);
-        generate_data['presence_penalty'] = Number(parameters.pres_pen_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['frequency_penalty'] = Number(settings.freq_pen_openai);
+        generate_data['presence_penalty'] = Number(settings.pres_pen_openai);
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
         delete generate_data['stop'];
@@ -2610,14 +2612,14 @@ export async function createGenerationParameters(parameters, type, messages, { j
 
     // https://docs.electronhub.ai/api-reference/chat/completions
     if (isElectronHub) {
-        generate_data['top_k'] = Number(parameters.top_k_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
     }
 
     if (isChutes) {
-        generate_data['min_p'] = Number(parameters.min_p_openai);
-        generate_data['top_k'] = parameters.top_k_openai > 0 ? Number(parameters.top_k_openai) : undefined;
-        generate_data['repetition_penalty'] = Number(parameters.repetition_penalty_openai);
-        generate_data['seed'] = parameters.seed >= 0 ? parameters.seed : undefined;
+        generate_data['min_p'] = Number(settings.min_p_openai);
+        generate_data['top_k'] = settings.top_k_openai > 0 ? Number(settings.top_k_openai) : undefined;
+        generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
+        generate_data['seed'] = settings.seed >= 0 ? settings.seed : undefined;
         generate_data['stop'] = getCustomStoppingStrings();
     }
 
@@ -2625,17 +2627,17 @@ export async function createGenerationParameters(parameters, type, messages, { j
     if (isZai) {
         generate_data['top_p'] = generate_data.top_p || 0.01;
         generate_data['stop'] = getCustomStoppingStrings(1);
-        generate_data['zai_endpoint'] = parameters.zai_endpoint || ZAI_ENDPOINT.COMMON;
+        generate_data['zai_endpoint'] = settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
         delete generate_data.presence_penalty;
         delete generate_data.frequency_penalty;
     }
 
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
     if (isNanoGPT) {
-        generate_data['top_k'] = Number(parameters.top_k_openai);
-        generate_data['min_p'] = Number(parameters.min_p_openai);
-        generate_data['repetition_penalty'] = Number(parameters.repetition_penalty_openai);
-        generate_data['top_a'] = Number(parameters.top_a_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['min_p'] = Number(settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(settings.top_a_openai);
     }
 
     const seedSupportedSources = [
@@ -2654,8 +2656,8 @@ export async function createGenerationParameters(parameters, type, messages, { j
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
     ];
-    if (seedSupportedSources.includes(parameters.chat_completion_source) && parameters.seed >= 0) {
-        generate_data['seed'] = parameters.seed;
+    if (seedSupportedSources.includes(settings.chat_completion_source) && settings.seed >= 0) {
+        generate_data['seed'] = settings.seed;
     }
 
     if ((isOAI && /^(o1|o3|o4)/.test(model)) || (isAzureOpenAI && /^(o1|o3|o4)/.test(model))) {
@@ -2713,14 +2715,13 @@ export async function createGenerationParameters(parameters, type, messages, { j
 
 /**
  * Send a chat completion request to backend
- * @param {string} type (impersonate, quiet, continue, etc)
- * @param {ChatMessage[]} messages
- * @param {AbortSignal?} signal
- * @param {import('../script.js').AdditionalRequestOptions} options
+ * @param {string} type Request type (impersonate, quiet, continue, etc)
+ * @param {ChatCompletionMessage[]} messages Array of chat completion messages
+ * @param {AbortSignal?} signal Abort signal for request cancellation
+ * @param {import('../script.js').AdditionalRequestOptions} options Additional request options
  * @returns {Promise<unknown>}
  * @throws {Error}
  */
-
 async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } = {}) {
     // Provide default abort signal
     if (!signal) {

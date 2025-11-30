@@ -146,6 +146,12 @@ declare global {
         paused: boolean;
     }
 
+    interface ChatCompletionMessage {
+        name?: string;
+        role: 'system' | 'user' | 'assistant' | 'tool';
+        content: string|object[];
+    }
+
     // Global namespace modules
     interface Window {
         ai: any;
