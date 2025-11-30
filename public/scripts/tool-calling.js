@@ -684,13 +684,13 @@ export class ToolManager {
     /**
      * Checks if tool calls can be performed for the current settings and generation type.
      * @param {string} type Generation type
-     * @param {ChatCompletionSettings} parameters - optional chat completion settings
+     * @param {ChatCompletionSettings} settings Optional chat completion settings
      * @returns {boolean} Whether tool calls can be performed for the given type
      */
-    static canPerformToolCalls(type, parameters = null) {
-        parameters = parameters ?? oai_settings;
+    static canPerformToolCalls(type, settings = null) {
+        settings = settings ?? oai_settings;
         const noToolCallTypes = ['impersonate', 'quiet', 'continue'];
-        const isSupported = ToolManager.isToolCallingSupported(parameters);
+        const isSupported = ToolManager.isToolCallingSupported(settings);
         return isSupported && !noToolCallTypes.includes(type);
     }
 
