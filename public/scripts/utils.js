@@ -2775,6 +2775,13 @@ export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibi
     };
     btn.addEventListener('click', onActivate);
 
+    const resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(() => {
+            updateButtonVisibilityThrottled();
+        });
+    });
+    resizeObserver.observe(drawer);
+
     // Initial state check
     updateButtonVisibility();
 
@@ -2782,6 +2789,7 @@ export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibi
     return () => {
         scrollContainer.removeEventListener('scroll', onScroll);
         btn.removeEventListener('click', onActivate);
+        resizeObserver.disconnect();
     };
 }
 
