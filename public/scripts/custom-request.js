@@ -218,12 +218,8 @@ export class TextCompletionService {
                 // 1. If prefill is not active, format all messages
                 // 2. If prefill is active, format all messages except the last one
                 if (!isLastMessage || !prefillActive) {
-                    let name = '';
-                    if (message.role === 'user') name = message.name ?? name1;
-                    if (message.role === 'assistant') name = message.name ?? name2;
-                    if (message.role === 'system') name = message.name ?? '';
                     messageContent = formatInstructModeChat(
-                        name,
+                        message.name ?? message.role,
                         message.content,
                         message.role === 'user',
                         message.role === 'system',
@@ -239,7 +235,7 @@ export class TextCompletionService {
                 if (isLastMessage) {
                     if (!prefillActive) { // e.g. "<|im_start|>user:"
                         messageContent += formatInstructModePrompt(  // used for formatting the last line
-                            name1,  // user message
+                            message.name ?? message.role,
                             false,  // not an impersonation
                             undefined,  // no prompt bias
                             name1,
@@ -251,7 +247,7 @@ export class TextCompletionService {
                     } else { // e.g. "<|im_start|>assistant: Hello, my name is"
                         const overriddenInstructPreset = structuredClone(instructPreset);
                         messageContent = formatInstructModePrompt(  // used for formatting the last line
-                            name2,  // assistant message
+                            message.name ?? message.role,
                             false,  // not an impersonation
                             message.content,  // the last message is the prompt bias
                             name1,
@@ -262,7 +258,7 @@ export class TextCompletionService {
                         );
 
                         // remove newline after prefill if it's not in the prefill itself
-                        if (!message.content.endsWith('\n')) {
+                        if (messageContent.endsWith('\n') && !message.content.endsWith('\n')) {
                             messageContent = messageContent.slice(0, -1);
                         }
                     }
