@@ -5,11 +5,6 @@ import { addButtons, addSettings } from './ui.js';
 
 export const extensionName = 'ChatUndoHistory';
 
-
-/** @type {ChatMessage[][]} */
-export let chatHistory = [];
-export let chatHistoryIndex = 0;
-
 class ChatHistory {
     /**
      *
@@ -112,14 +107,14 @@ class ChatHistory {
         }
     }
     async loadPreviousSnapshot() {
-        await this.loadChatSnapshot(this.chatHistoryIndex - 1)
+        await this.loadChatSnapshot(this.chatHistoryIndex - 1);
     }
     async loadNextSnapshot() {
-        await this.loadChatSnapshot(this.chatHistoryIndex + 1)
+        await this.loadChatSnapshot(this.chatHistoryIndex + 1);
     }
 }
 
-export const chatHistory = new ChatHistory(chat)
+export const chatHistory = new ChatHistory(chat);
 
 //Snapshot the chat when a message is modified.
 export const snapshotEvents = [
