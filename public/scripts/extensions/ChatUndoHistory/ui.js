@@ -1,4 +1,4 @@
-import { chatHistory, extensionName, snapshotEvents } from './index.js';
+import { chatHistory, defaultChunkSize as defaultChunkSize, defaultMaxChatLength, defaultMaxHistoryChunks, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { debounce_timeout } from '/scripts/constants.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
@@ -20,9 +20,9 @@ export async function addButtons() {
     $(document).on('click', '#option_undo_redo', async () => await chatHistory.loadNextSnapshot());
 
     //Save.
-    $(document).on('click', '#option_undo_save', () => chatHistory.saveChatSnapshot(true));
+    $(document).on('click', '#option_undo_save', async () => await chatHistory.saveChatSnapshot(true));
     //Discard.
-    $(document).on('click', '#option_undo_discard', () => chatHistory.resetChatSnapshots(true));
+    $(document).on('click', '#option_undo_discard', async () => await chatHistory.resetChatSnapshots(true));
 }
 
 /**
@@ -37,12 +37,12 @@ export async function addSettings() {
     $('#extensions_settings2').prepend(settingsHtml);
 
     //Creates sliders.
-    const historyElement = new rangeInput('max_history', 'Max Undo History', { defaultValue: 100 }).create();
-    const lengthElement = new rangeInput('max_length', 'Max chat length', { defaultValue: 512 }).create();
+    const maxChunksElement = new rangeInput('max_chunks', 'Max Undo History Chunks.', { defaultValue: defaultMaxHistoryChunks }).create();
+    const lengthElement = new rangeInput('max_length', 'Max chat length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
-    undoOptions.append(historyElement);
+    undoOptions.append(maxChunksElement);
     undoOptions.append(lengthElement);
 
     //Toggles visibility of undo_buttons and undo_save_options.
@@ -85,6 +85,7 @@ export async function addSettings() {
     //Debounce duration.
     let saveChatSnapshotDebounced;
     function setDebounced(id, value) {
+        //This is not awaited so performance is less impacted.
         saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), value ?? debounce_timeout.short);
     }
     setDebounced(undefined, extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
@@ -93,8 +94,14 @@ export async function addSettings() {
         if (source !== 'undo') { return saveChatSnapshotDebounced(); }
     }
 
-    const debounceSlider = new rangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 1, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
+    const debounceSlider = new rangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 10, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
+
+    //Resetting the chatHistory is necassary to update chunk_size.
+    const resetDebounced = debounce(() => chatHistory.resetChatSnapshots(true), debounce_timeout.short);
+    const chunkSizeElement = new rangeInput('chunk_size', 'History Chunk Size. ⚠️ This will ERASE your history! Higher will use more memory, lower will reduce performance.', { min: 1, max: 10000, step: 10, defaultValue: defaultChunkSize, callback: () => resetDebounced(), runCallbackOnLoad: false }).create();
+
     undoAdvanced.append(debounceSlider);
+    undoAdvanced.append(chunkSizeElement);
 
     //Allow each event to be separately toggled.
     const eventToggles = $('#undo_events');
@@ -110,11 +117,12 @@ export async function addSettings() {
  * Creates a range input.
  */
 class rangeInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 100, defaultValue = 1000 } = {}) {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 100, defaultValue = 1000, runCallbackOnLoad = true } = {}) {
         this.category = category;
         this.id = id;
         this.title = title;
         this.callback = callback;
+        this.runCallbackOnLoad = runCallbackOnLoad;
         this.min = min;
         this.max = max;
         this.step = step;
@@ -154,7 +162,7 @@ class rangeInput {
         sliderInput.on('input', onSliderElementInput);
         textInput.on('input', onTextElementInput);
 
-        this.callback(this.id, value);
+        this.runCallbackOnLoad && this.callback(this.id, value);
         return this.element;
     }
 }
@@ -163,10 +171,11 @@ class rangeInput {
  * Creates a toggle button.
  */
 class toggleInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true } = {}) {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true, runCallbackOnLoad = true } = {}) {
         this.category = category;
         this.id = id;
         this.callback = callback;
+        this.runCallbackOnLoad = runCallbackOnLoad;
         this.title = title;
         this.defaultValue = defaultValue;
         this.element = undefined;
@@ -190,7 +199,7 @@ class toggleInput {
         buttonInput.prop('checked', value);
         buttonInput.on('input', onElementInput);
 
-        this.callback(this.id, value);
+        this.runCallbackOnLoad && this.callback(this.id, value);
         return this.element;
     }
 }
