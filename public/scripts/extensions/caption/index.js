@@ -10,7 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
-import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
+import { debounce_timeout, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -211,6 +211,7 @@ async function sendCaptionedMessage(caption, image, mimeType) {
     context.addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, messageId);
     await context.saveChat();
+    setTimeout(() => context.scrollOnMediaLoad(), debounce_timeout.short);
 }
 
 /**

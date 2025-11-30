@@ -4277,6 +4277,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     context.addOneMessage(message);
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId, 'extension');
     await context.saveChat();
+    setTimeout(() => context.scrollOnMediaLoad(), debounce_timeout.short);
 }
 
 /**

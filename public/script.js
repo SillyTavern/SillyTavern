@@ -1431,7 +1431,7 @@ export async function printMessages() {
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
-function scrollOnMediaLoad() {
+export function scrollOnMediaLoad() {
     const started = Date.now();
     const media = chatElement.find('.mes_block img, .mes_block video, .mes_block audio').toArray();
     let mediaLoaded = 0;

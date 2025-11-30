@@ -63,6 +63,8 @@ import {
     ensureMessageMediaIsArray,
     getMediaDisplay,
     getMediaIndex,
+    scrollChatToBottom,
+    scrollOnMediaLoad,
 } from '../script.js';
 import {
     extension_settings,
@@ -217,6 +219,8 @@ export function getContext() {
         ensureMessageMediaIsArray,
         getMediaDisplay,
         getMediaIndex,
+        scrollChatToBottom,
+        scrollOnMediaLoad,
         swipe: {
             left: swipe_left,
             right: swipe_right,
