@@ -704,23 +704,17 @@ export function getTokenizerModel() {
 
         if (model.includes('deepseek') || model.includes('mai-ds')) {
             return deepseekTokenizer;
-        }
-        else if (model.includes('qwen') || model.includes('qwq') || model.includes('tongyi') || model.includes('kimi')) {
+        } else if (model.includes('qwen') || model.includes('qwq') || model.includes('tongyi') || model.includes('kimi')) {
             return qwen2Tokenizer;
-        }
-        else if (model.includes('llama') || model.includes('longcat') || model.includes('hermes')) {
+        } else if (model.includes('llama') || model.includes('longcat') || model.includes('hermes')) {
             return llamaTokenizer;
-        }
-        else if (model.includes('gemma')) {
+        } else if (model.includes('gemma')) {
             return gemmaTokenizer;
-        }
-        else if (model.includes('nemo')) {
+        } else if (model.includes('nemo')) {
             return nemoTokenizer;
-        }
-        else if (model.includes('mistral')) {
+        } else if (model.includes('mistral')) {
             return mistralTokenizer;
-        }
-        else if (model.includes('gpt-oss')) {
+        } else if (model.includes('gpt-oss')) {
             return gpt4oTokenizer;
         }
     }
