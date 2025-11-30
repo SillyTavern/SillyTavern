@@ -707,7 +707,7 @@ export function getTokenizerModel() {
         } else if (model.includes('qwen') || model.includes('qwq') || model.includes('tongyi') || model.includes('kimi')) {
             return qwen2Tokenizer;
         } else if (model.includes('llama') || model.includes('longcat') || model.includes('hermes')) {
-            return llamaTokenizer;
+            return llama3Tokenizer;
         } else if (model.includes('gemma')) {
             return gemmaTokenizer;
         } else if (model.includes('nemo')) {
