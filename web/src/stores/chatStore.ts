@@ -177,12 +177,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const chats = await api.getChats(characterName);
-      const chatFiles: ChatFile[] = chats.map((chat) => ({
+      console.log('[Chat] Fetched chat files for', characterName, ':', chats);
+      const chatFiles: ChatFile[] = (Array.isArray(chats) ? chats : []).map((chat) => ({
         // Strip .jsonl extension - backend adds it when loading/saving
         fileName: chat.file_name?.replace(/\.jsonl$/, '') || chat.file_name,
         fileSize: chat.file_size,
         lastMessage: chat.last_mes,
       }));
+      console.log('[Chat] Processed chat files:', chatFiles);
       set({ chatFiles, isLoading: false });
     } catch (error) {
       set({
@@ -193,9 +195,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   loadChat: async (characterName: string, fileName: string) => {
+    console.log('[Chat] Loading chat:', characterName, fileName);
     set({ isLoading: true, error: null, currentChatFile: fileName });
     try {
       const rawMessages = await api.getChatMessages(characterName, fileName);
+      console.log('[Chat] Loaded messages:', rawMessages?.length || 0);
       const messages: ChatMessage[] = rawMessages.map((msg) => ({
         id: generateId(),
         name: msg.name,
@@ -229,6 +233,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     const fileName = await api.createChat(character.name);
+    console.log('[Chat] Starting new chat, fileName:', fileName);
     set({
       messages,
       currentChatFile: fileName,
@@ -317,10 +322,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
         }
 
-        // Save chat to backend (fire and forget)
+        // Save chat to backend
         const { currentChatFile } = get();
+        console.log('[Chat] Saving chat, currentChatFile:', currentChatFile);
+
         if (currentChatFile) {
           const allMessages = get().messages;
+          console.log('[Chat] Messages to save:', allMessages.length);
 
           // Build chat data with header as first entry
           const chatData = [
@@ -340,9 +348,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
             })),
           ];
 
-          api.saveChat(character.name, currentChatFile, chatData).catch((err) => {
+          console.log('[Chat] Saving to:', character.name, currentChatFile);
+          try {
+            await api.saveChat(character.name, currentChatFile, chatData);
+            console.log('[Chat] Save successful');
+          } catch (err) {
             console.error('[Chat] Failed to save:', err);
-          });
+          }
+        } else {
+          console.warn('[Chat] No currentChatFile set, cannot save');
         }
       }
     } catch (error) {
