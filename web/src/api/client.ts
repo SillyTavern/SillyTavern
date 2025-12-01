@@ -79,10 +79,36 @@ export const api = {
   },
 
   async register(handle: string, name: string, password?: string): Promise<{ handle: string }> {
-    return apiRequest('/api/users/create', {
+    // Registration requires admin. For first-time setup, we need to:
+    // 1. Login as default-user (auto-created, no password, is admin)
+    // 2. Create the new user as admin
+    // 3. Return success
+
+    // First, try to login as default-user to get admin access
+    try {
+      await apiRequest('/api/users/login', {
+        method: 'POST',
+        body: JSON.stringify({ handle: 'default-user', password: '' }),
+      });
+    } catch (e) {
+      // If default-user login fails, we can't bootstrap
+      throw new Error('Cannot register: Please login as an admin user first');
+    }
+
+    // Now create the new user (we're logged in as default-user/admin)
+    const result = await apiRequest<{ handle: string }>('/api/users/create', {
       method: 'POST',
-      body: JSON.stringify({ handle, name, password, admin: false }),
+      body: JSON.stringify({ handle, name, password, admin: true }), // Make first real user an admin
     });
+
+    // Logout default-user
+    try {
+      await apiRequest('/api/users/logout', { method: 'POST' });
+    } catch {
+      // Ignore logout errors
+    }
+
+    return result;
   },
 
   async checkCanRegister(): Promise<{ canRegister: boolean; requiresAdmin: boolean }> {
