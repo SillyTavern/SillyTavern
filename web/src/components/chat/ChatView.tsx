@@ -7,10 +7,47 @@ import { ChatInput } from './ChatInput';
 
 export function ChatView() {
   const { selectedCharacter } = useCharacterStore();
-  const { messages, isSending, sendMessage } = useChatStore();
+  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastCharacterRef = useRef<string | null>(null);
 
   const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+
+  // Load chat when character changes
+  useEffect(() => {
+    if (!selectedCharacter) return;
+    if (lastCharacterRef.current === selectedCharacter.avatar) return;
+
+    lastCharacterRef.current = selectedCharacter.avatar;
+
+    // Check for existing chats and load the most recent one, or start new
+    const loadOrCreateChat = async () => {
+      try {
+        await fetchChatFiles(selectedCharacter.name);
+        // fetchChatFiles updates chatFiles state, we check it after
+      } catch {
+        // Start fresh on error
+        startNewChat(selectedCharacter);
+      }
+    };
+    loadOrCreateChat();
+  }, [selectedCharacter, fetchChatFiles, startNewChat]);
+
+  // When chat files are loaded, load the most recent or start new
+  useEffect(() => {
+    if (!selectedCharacter) return;
+    // Only run this effect when we have fresh data for this character
+    if (lastCharacterRef.current !== selectedCharacter.avatar) return;
+
+    if (chatFiles.length > 0) {
+      // Load most recent chat
+      loadChat(selectedCharacter.name, chatFiles[0].fileName);
+    } else if (messages.length === 0) {
+      // Start new chat with first_mes only if no messages loaded
+      startNewChat(selectedCharacter);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatFiles]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -19,7 +56,7 @@ export function ChatView() {
 
   const handleSend = (content: string) => {
     if (selectedCharacter) {
-      sendMessage(content, selectedCharacter.name);
+      sendMessage(content, selectedCharacter);
     }
   };
 
@@ -72,6 +109,13 @@ export function ChatView() {
                 timestamp={message.timestamp}
               />
             ))}
+
+            {/* Error display */}
+            {error && (
+              <div className="mx-4 my-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
 
             {/* Typing indicator */}
             {isSending && (

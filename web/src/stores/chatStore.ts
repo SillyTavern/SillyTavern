@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '../api/client';
+import { api, type CharacterInfo } from '../api/client';
 
 interface ChatMessage {
   id: string;
@@ -27,13 +27,97 @@ interface ChatState {
   // Actions
   fetchChatFiles: (characterName: string) => Promise<void>;
   loadChat: (characterName: string, fileName: string) => Promise<void>;
+  startNewChat: (character: CharacterInfo) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
-  sendMessage: (content: string, characterName: string) => Promise<void>;
+  sendMessage: (content: string, character: CharacterInfo) => Promise<void>;
   clearChat: () => void;
 }
 
 let messageIdCounter = 0;
 const generateId = () => `msg_${++messageIdCounter}_${Date.now()}`;
+
+// Parse SSE stream and extract content tokens
+async function* parseSSEStream(
+  stream: ReadableStream<Uint8Array>
+): AsyncGenerator<string> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const json = JSON.parse(trimmed.slice(6));
+            // Handle different response formats
+            const content =
+              json.choices?.[0]?.delta?.content ||
+              json.choices?.[0]?.text ||
+              json.content ||
+              '';
+            if (content) {
+              yield content;
+            }
+          } catch {
+            // Non-JSON data line, might be raw text
+            yield trimmed.slice(6);
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// Build conversation context for AI
+function buildConversationContext(
+  messages: ChatMessage[],
+  character: CharacterInfo
+): { role: 'user' | 'assistant' | 'system'; content: string }[] {
+  const context: { role: 'user' | 'assistant' | 'system'; content: string }[] = [];
+
+  // Add character system prompt
+  const systemPrompt = [
+    character.description && `Description: ${character.description}`,
+    character.personality && `Personality: ${character.personality}`,
+    character.scenario && `Scenario: ${character.scenario}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  if (systemPrompt) {
+    context.push({
+      role: 'system',
+      content: `You are ${character.name}. Stay in character.\n\n${systemPrompt}`,
+    });
+  }
+
+  // Add conversation history (last 20 messages to avoid token limits)
+  const recentMessages = messages.slice(-20);
+  for (const msg of recentMessages) {
+    if (msg.isSystem) continue;
+    context.push({
+      role: msg.isUser ? 'user' : 'assistant',
+      content: msg.content,
+    });
+  }
+
+  return context;
+}
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
@@ -82,6 +166,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  startNewChat: async (character: CharacterInfo) => {
+    const messages: ChatMessage[] = [];
+
+    // Add character's first message if available
+    if (character.first_mes) {
+      messages.push({
+        id: generateId(),
+        name: character.name,
+        isUser: false,
+        isSystem: false,
+        content: character.first_mes,
+        timestamp: Date.now(),
+      });
+    }
+
+    const fileName = await api.createChat(character.name);
+    set({
+      messages,
+      currentChatFile: fileName,
+      error: null,
+    });
+  },
+
   addMessage: (message) => {
     const newMessage: ChatMessage = {
       ...message,
@@ -90,7 +197,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({ messages: [...state.messages, newMessage] }));
   },
 
-  sendMessage: async (content: string, characterName: string) => {
+  sendMessage: async (content: string, character: CharacterInfo) => {
     const { addMessage } = get();
 
     // Add user message
@@ -102,26 +209,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
       timestamp: Date.now(),
     });
 
-    set({ isSending: true });
+    set({ isSending: true, error: null });
 
     try {
-      // For POC, we'll add a placeholder response
-      // In production, this would stream from the API
-      const stream = await api.generateMessage(content, characterName);
+      // Build conversation context
+      const updatedMessages = get().messages;
+      const context = buildConversationContext(updatedMessages, character);
+
+      // Call API
+      const stream = await api.generateMessage(context, character.name);
 
       if (stream) {
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let responseText = '';
-
-        // Add initial AI message
+        // Add initial AI message placeholder
         const aiMessageId = generateId();
         set((state) => ({
           messages: [
             ...state.messages,
             {
               id: aiMessageId,
-              name: characterName,
+              name: character.name,
               isUser: false,
               isSystem: false,
               content: '',
@@ -130,20 +236,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ],
         }));
 
-        // Stream the response
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          responseText += chunk;
-
-          // Update the message content
+        // Stream the response using SSE parser
+        let responseText = '';
+        for await (const token of parseSSEStream(stream)) {
+          responseText += token;
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === aiMessageId ? { ...msg, content: responseText } : msg
             ),
           }));
+        }
+
+        // Save chat to backend (fire and forget)
+        const { currentChatFile } = get();
+        if (currentChatFile) {
+          const allMessages = get().messages;
+          const chatData = allMessages.map((msg) => ({
+            name: msg.name,
+            is_user: msg.isUser,
+            is_system: msg.isSystem,
+            mes: msg.content,
+            send_date: msg.timestamp,
+          }));
+          api.saveChat(character.name, currentChatFile, chatData).catch(console.error);
         }
       }
     } catch (error) {

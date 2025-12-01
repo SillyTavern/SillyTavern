@@ -188,8 +188,11 @@ export const api = {
     return response.messages || [];
   },
 
-  // Generate message (simplified for POC)
-  async generateMessage(prompt: string, _characterName: string): Promise<ReadableStream<Uint8Array> | null> {
+  // Generate message with full context
+  async generateMessage(
+    messages: { role: 'user' | 'assistant' | 'system'; content: string }[],
+    _characterName: string
+  ): Promise<ReadableStream<Uint8Array> | null> {
     const token = await getCsrfToken();
 
     const response = await fetch('/api/backends/chat-completions/generate', {
@@ -200,12 +203,42 @@ export const api = {
       },
       credentials: 'include',
       body: JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
+        messages,
         stream: true,
+        max_tokens: 1024,
+        temperature: 0.9,
       }),
     });
 
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Generation failed' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
     return response.body;
+  },
+
+  // Save chat to backend
+  async saveChat(
+    characterName: string,
+    fileName: string,
+    messages: { name: string; is_user: boolean; is_system: boolean; mes: string; send_date: number }[]
+  ): Promise<void> {
+    await apiRequest('/api/chats/save', {
+      method: 'POST',
+      body: JSON.stringify({
+        avatar_url: `${characterName}.png`,
+        file_name: fileName,
+        chat: messages,
+      }),
+    });
+  },
+
+  // Create a new chat file
+  async createChat(characterName: string): Promise<string> {
+    const timestamp = Date.now();
+    const fileName = `${characterName} - ${new Date(timestamp).toISOString().split('T')[0]}@${timestamp}.jsonl`;
+    return fileName;
   },
 };
 
