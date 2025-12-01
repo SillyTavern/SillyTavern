@@ -50,9 +50,10 @@ async function* parseSSEStream(
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
+      const chunk = decoder.decode(value, { stream: true });
+      buffer += chunk;
 
-      // Process complete lines
+      // Process complete lines (SSE uses \n\n as delimiter, but we split by \n)
       const lines = buffer.split('\n');
       buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
@@ -61,20 +62,64 @@ async function* parseSSEStream(
         if (!trimmed || trimmed === 'data: [DONE]') continue;
 
         if (trimmed.startsWith('data: ')) {
+          const data = trimmed.slice(6);
+
+          // Skip empty data
+          if (!data || data === '[DONE]') continue;
+
           try {
-            const json = JSON.parse(trimmed.slice(6));
-            // Handle different response formats
+            const json = JSON.parse(data);
+
+            // Handle different response formats from various providers
             const content =
+              // OpenAI streaming format
               json.choices?.[0]?.delta?.content ||
+              // Text completion format
               json.choices?.[0]?.text ||
+              // Claude/Anthropic streaming format
+              json.delta?.text ||
+              // Claude content block delta
+              (json.type === 'content_block_delta' ? json.delta?.text : null) ||
+              // Simple content field
               json.content ||
+              // Message content array (Claude)
+              json.message?.content?.[0]?.text ||
               '';
+
             if (content) {
               yield content;
             }
           } catch {
-            // Non-JSON data line, might be raw text
-            yield trimmed.slice(6);
+            // Non-JSON data line, might be raw text - yield it directly
+            if (data.length > 0 && data !== 'undefined') {
+              yield data;
+            }
+          }
+        } else if (!trimmed.startsWith(':') && !trimmed.startsWith('event:')) {
+          // Not a comment or event line - might be raw text response
+          // Some backends return plain text without SSE formatting
+          if (trimmed.length > 0) {
+            yield trimmed;
+          }
+        }
+      }
+    }
+
+    // Process any remaining buffer content
+    if (buffer.trim()) {
+      const trimmed = buffer.trim();
+      if (trimmed.startsWith('data: ')) {
+        const data = trimmed.slice(6);
+        if (data && data !== '[DONE]') {
+          try {
+            const json = JSON.parse(data);
+            const content = json.choices?.[0]?.delta?.content ||
+                           json.choices?.[0]?.text ||
+                           json.delta?.text ||
+                           json.content || '';
+            if (content) yield content;
+          } catch {
+            yield data;
           }
         }
       }
