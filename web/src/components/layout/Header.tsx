@@ -1,4 +1,5 @@
 import { Menu, Settings, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCharacterStore } from '../../stores/characterStore';
 import { Avatar, Button } from '../ui';
@@ -8,6 +9,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const navigate = useNavigate();
   const { currentUser, logout } = useAuthStore();
   const { selectedCharacter } = useCharacterStore();
 
@@ -46,7 +48,13 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* User Menu */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="p-2" aria-label="Settings">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-2"
+          aria-label="Settings"
+          onClick={() => navigate('/settings')}
+        >
           <Settings size={20} />
         </Button>
         <Button

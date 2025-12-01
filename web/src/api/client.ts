@@ -249,3 +249,70 @@ interface ChatMessage {
   mes: string;
   send_date: number;
 }
+
+// Settings types
+export interface SecretState {
+  id: string;
+  label: string;
+  active: boolean;
+  // value is masked - only last 3 chars shown
+}
+
+export interface SecretsResponse {
+  [key: string]: SecretState[] | boolean;
+}
+
+export const SECRET_KEYS = {
+  OPENAI: 'api_key_openai',
+  CLAUDE: 'api_key_claude',
+  GOOGLE: 'api_key_makersuite',
+  MISTRAL: 'api_key_mistralai',
+  GROQ: 'api_key_groq',
+  OPENROUTER: 'api_key_openrouter',
+  COHERE: 'api_key_cohere',
+} as const;
+
+export const PROVIDERS = [
+  { id: 'openai', name: 'OpenAI', secretKey: SECRET_KEYS.OPENAI, models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
+  { id: 'claude', name: 'Claude', secretKey: SECRET_KEYS.CLAUDE, models: ['claude-sonnet-4-5-20250929', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'] },
+  { id: 'makersuite', name: 'Google Gemini', secretKey: SECRET_KEYS.GOOGLE, models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'] },
+  { id: 'mistralai', name: 'Mistral AI', secretKey: SECRET_KEYS.MISTRAL, models: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest'] },
+  { id: 'groq', name: 'Groq', secretKey: SECRET_KEYS.GROQ, models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'] },
+  { id: 'openrouter', name: 'OpenRouter', secretKey: SECRET_KEYS.OPENROUTER, models: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-pro-1.5'] },
+] as const;
+
+export const settingsApi = {
+  // Get current secrets state (masked)
+  async getSecrets(): Promise<SecretsResponse> {
+    return apiRequest('/api/secrets/read', { method: 'POST' });
+  },
+
+  // Write/update a secret
+  async writeSecret(key: string, value: string, label?: string): Promise<void> {
+    await apiRequest('/api/secrets/write', {
+      method: 'POST',
+      body: JSON.stringify({ key, value, label }),
+    });
+  },
+
+  // Delete a secret
+  async deleteSecret(key: string, id?: string): Promise<void> {
+    await apiRequest('/api/secrets/delete', {
+      method: 'POST',
+      body: JSON.stringify({ key, id }),
+    });
+  },
+
+  // Get user settings
+  async getSettings(): Promise<{ settings: Record<string, unknown> }> {
+    return apiRequest('/api/settings/get', { method: 'POST' });
+  },
+
+  // Save user settings
+  async saveSettings(settings: Record<string, unknown>): Promise<void> {
+    await apiRequest('/api/settings/save', {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    });
+  },
+};
