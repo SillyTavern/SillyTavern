@@ -49,6 +49,30 @@ export interface UserInfo {
   created?: number;
 }
 
+export interface CharacterInfo {
+  name: string;
+  avatar: string; // filename like "CharacterName.png"
+  description?: string;
+  personality?: string;
+  first_mes?: string;
+  scenario?: string;
+  create_date?: string;
+  date_added?: number;
+  date_last_chat?: number;
+  chat_size?: number;
+  fav?: boolean;
+  tags?: string[];
+  data?: {
+    name?: string;
+    description?: string;
+    personality?: string;
+    first_mes?: string;
+    scenario?: string;
+    creator_notes?: string;
+    creator?: string;
+  };
+}
+
 export const api = {
   // Auth endpoints
   async getUsers(): Promise<UserInfo[]> {
@@ -129,15 +153,18 @@ export const api = {
   },
 
   // Character endpoints
-  async getCharacters(): Promise<string[]> {
-    const response = await apiRequest<{ characters: string[] }>('/api/characters/all');
-    return response.characters || [];
+  async getCharacters(): Promise<CharacterInfo[]> {
+    // Returns array of character objects directly
+    const response = await apiRequest<CharacterInfo[]>('/api/characters/all', {
+      method: 'POST',
+    });
+    return response || [];
   },
 
-  async getCharacter(name: string): Promise<Record<string, unknown>> {
-    return apiRequest(`/api/characters/get`, {
+  async getCharacter(avatarUrl: string): Promise<CharacterInfo> {
+    return apiRequest('/api/characters/get', {
       method: 'POST',
-      body: JSON.stringify({ name, avatar_url: `${name}.png` }),
+      body: JSON.stringify({ avatar_url: avatarUrl }),
     });
   },
 

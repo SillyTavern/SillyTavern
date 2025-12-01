@@ -1,23 +1,15 @@
 import { create } from 'zustand';
-import { api } from '../api/client';
-
-interface Character {
-  name: string;
-  avatar: string;
-  description?: string;
-  loaded?: boolean;
-  data?: Record<string, unknown>;
-}
+import { api, type CharacterInfo } from '../api/client';
 
 interface CharacterState {
-  characters: Character[];
-  selectedCharacter: Character | null;
+  characters: CharacterInfo[];
+  selectedCharacter: CharacterInfo | null;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   fetchCharacters: () => Promise<void>;
-  selectCharacter: (name: string) => Promise<void>;
+  selectCharacter: (avatar: string) => Promise<void>;
   clearSelection: () => void;
 }
 
@@ -30,11 +22,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   fetchCharacters: async () => {
     set({ isLoading: true, error: null });
     try {
-      const characterNames = await api.getCharacters();
-      const characters: Character[] = characterNames.map((name) => ({
-        name: name.replace('.png', ''),
-        avatar: `/characters/${encodeURIComponent(name)}`,
-      }));
+      const characters = await api.getCharacters();
       set({ characters, isLoading: false });
     } catch (error) {
       set({
@@ -44,32 +32,32 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     }
   },
 
-  selectCharacter: async (name: string) => {
+  selectCharacter: async (avatar: string) => {
     const { characters } = get();
-    let character = characters.find((c) => c.name === name);
+    let character = characters.find((c) => c.avatar === avatar);
 
     if (!character) {
       set({ error: 'Character not found' });
       return;
     }
 
-    // Load full character data if not already loaded
-    if (!character.loaded) {
+    // If we don't have full data, fetch it
+    if (!character.first_mes) {
       try {
-        const data = await api.getCharacter(name);
-        character = {
-          ...character,
-          description: data.description as string,
-          data,
-          loaded: true,
-        };
+        set({ isLoading: true });
+        const fullCharacter = await api.getCharacter(avatar);
+        character = { ...character, ...fullCharacter };
 
         // Update in the list
         set({
-          characters: characters.map((c) => (c.name === name ? character! : c)),
+          characters: characters.map((c) => (c.avatar === avatar ? character! : c)),
+          isLoading: false,
         });
       } catch (error) {
-        set({ error: error instanceof Error ? error.message : 'Failed to load character' });
+        set({
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Failed to load character',
+        });
         return;
       }
     }

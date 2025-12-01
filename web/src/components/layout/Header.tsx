@@ -11,6 +11,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { currentUser, logout } = useAuthStore();
   const { selectedCharacter } = useCharacterStore();
 
+  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+
   return (
     <header className="h-14 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center px-4 gap-3 safe-top">
       {/* Menu Button (Mobile) */}
@@ -28,7 +30,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex-1 flex items-center gap-3 min-w-0">
         {selectedCharacter ? (
           <>
-            <Avatar src={selectedCharacter.avatar} alt={selectedCharacter.name} size="sm" />
+            <Avatar src={getAvatarUrl(selectedCharacter.avatar)} alt={selectedCharacter.name} size="sm" />
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
                 {selectedCharacter.name}

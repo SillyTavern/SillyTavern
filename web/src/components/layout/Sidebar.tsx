@@ -16,10 +16,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     fetchCharacters();
   }, [fetchCharacters]);
 
-  const handleCharacterSelect = (name: string) => {
-    selectCharacter(name);
+  const handleCharacterSelect = (avatar: string) => {
+    selectCharacter(avatar);
     onClose();
   };
+
+  // Build avatar URL from filename
+  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
 
   return (
     <>
@@ -87,20 +90,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ) : (
             <ul className="py-2">
               {characters.map((character) => (
-                <li key={character.name}>
+                <li key={character.avatar}>
                   <button
-                    onClick={() => handleCharacterSelect(character.name)}
+                    onClick={() => handleCharacterSelect(character.avatar)}
                     className={`
                       w-full flex items-center gap-3 px-4 py-3
                       transition-colors
                       ${
-                        selectedCharacter?.name === character.name
+                        selectedCharacter?.avatar === character.avatar
                           ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
                           : 'hover:bg-[var(--color-bg-tertiary)]'
                       }
                     `}
                   >
-                    <Avatar src={character.avatar} alt={character.name} size="md" />
+                    <Avatar src={getAvatarUrl(character.avatar)} alt={character.name} size="md" />
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
                         {character.name}

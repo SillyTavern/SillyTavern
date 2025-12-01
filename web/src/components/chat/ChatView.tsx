@@ -10,6 +10,8 @@ export function ChatView() {
   const { messages, isSending, sendMessage } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -65,7 +67,7 @@ export function ChatView() {
                 avatar={
                   message.isUser
                     ? undefined
-                    : selectedCharacter.avatar
+                    : getAvatarUrl(selectedCharacter.avatar)
                 }
                 timestamp={message.timestamp}
               />
