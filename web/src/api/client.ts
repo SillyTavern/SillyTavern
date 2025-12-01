@@ -41,10 +41,22 @@ export async function apiRequest<T>(
   return JSON.parse(text);
 }
 
+export interface UserInfo {
+  handle: string;
+  name: string;
+  avatar: string;
+  password: boolean; // true if user has a password set
+  created?: number;
+}
+
 export const api = {
   // Auth endpoints
-  async getUsers(): Promise<{ handles: Array<{ handle: string; name: string; avatar: string }> }> {
-    return apiRequest('/api/users/list');
+  async getUsers(): Promise<UserInfo[]> {
+    const response = await apiRequest<UserInfo[] | undefined>('/api/users/list', {
+      method: 'POST',
+    });
+    // Returns array directly, or empty array if 204 (discreet login)
+    return response || [];
   },
 
   async login(handle: string, password?: string): Promise<{ handle: string }> {
@@ -75,12 +87,14 @@ export const api = {
 
   async checkCanRegister(): Promise<{ canRegister: boolean; requiresAdmin: boolean }> {
     try {
-      // Check if there are existing users - if none, first user can self-register
+      // Check if there are existing users
       const users = await this.getUsers();
-      const hasUsers = users.handles && users.handles.length > 0;
+      // Only the default-user exists (auto-created) = allow registration as first "real" user
+      const onlyDefaultUser = users.length === 1 && users[0].handle === 'default-user';
+      const noUsers = users.length === 0;
       return {
-        canRegister: !hasUsers, // Can self-register only if no users exist
-        requiresAdmin: hasUsers
+        canRegister: noUsers || onlyDefaultUser,
+        requiresAdmin: !noUsers && !onlyDefaultUser
       };
     } catch {
       // If we can't fetch users, assume registration requires admin

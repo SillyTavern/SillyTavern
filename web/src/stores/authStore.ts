@@ -1,17 +1,11 @@
 import { create } from 'zustand';
-import { api } from '../api/client';
-
-interface UserHandle {
-  handle: string;
-  name: string;
-  avatar: string;
-}
+import { api, type UserInfo } from '../api/client';
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   currentUser: { handle: string; name: string } | null;
-  availableUsers: UserHandle[];
+  availableUsers: UserInfo[];
   error: string | null;
   canSelfRegister: boolean;
 
@@ -49,8 +43,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchUsers: async () => {
     try {
-      const response = await api.getUsers();
-      set({ availableUsers: response.handles || [] });
+      const users = await api.getUsers();
+      set({ availableUsers: users });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to fetch users' });
     }
