@@ -37,11 +37,16 @@ body {
 }
 
 /* Safe area support for mobile */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Extra bottom padding for input areas to prevent cutoff */
+.input-safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  margin-bottom: env(safe-area-inset-bottom, 0px);
 }

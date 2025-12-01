@@ -122,7 +122,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* New Character Button */}
-        <div className="p-3 border-t border-[var(--color-border)] safe-bottom">
+        <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
           <Button variant="secondary" className="w-full">
             <Plus size={18} className="mr-2" />
             New Character
