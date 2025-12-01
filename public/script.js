@@ -279,7 +279,7 @@ import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
-import { chatTree, getStickFromTree, saveChatToTree, setChatTree, spliceStickToChat, updateChatTreeMessages } from './scripts/chat-tree.js';
+import { chatTree, spliceStickToChat, Tree } from './scripts/chat-tree.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -838,7 +838,7 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
             selected_button = 'character_edit';
             setCharacterId(id);
             chat.length = 0;
-            setChatTree({});
+            chatTree.setChatTree({});
             chat_metadata = {};
             await getChat();
         }
@@ -1347,7 +1347,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
 export async function replaceCurrentChat() {
     await clearChat();
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
 
     const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
@@ -1590,7 +1590,7 @@ export async function reloadCurrentChat() {
     preserveNeutralChat();
     await clearChat();
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
 
     if (selected_group) {
         await getGroupChat(selected_group, true);
@@ -6926,11 +6926,12 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                 for (const message of currentChat) {
                     rename(message);
                 }
-                //The tree may not have metadata.
+                //The oldest versions may not have metadata.
                 let tree = currentChatTree?.['tree'] ?? currentChatTree;
+                const temporaryTree = new Tree(tree, false);
 
                 //Recursively update the chatTree
-                await updateChatTreeMessages(tree, rename, newName);
+                await temporaryTree.updateMessages(rename, newName);
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
@@ -7031,10 +7032,10 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
 
     let chatTreeToSave;
     if (power_user.enable_chat_tree) {
-        await saveChatToTree(chat, chatTree);
+        await chatTree.saveChatToTree(chat);
         chatTreeToSave = {
             metadata: metadata,
-            tree: chatTree,
+            tree: chatTree.chatTree,
         };
     }
 
@@ -7276,7 +7277,7 @@ export async function getChat() {
         //The tree may not have metadata.
         let tree = chatTreeData?.['tree'] ?? chatTreeData;
         //Load the chatTree.
-        setChatTree(tree ?? {});
+        chatTree.setChatTree(tree ?? {});
 
         // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
@@ -7356,7 +7357,7 @@ export async function openCharacterChat(file_name) {
     await clearChat();
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
     chat_metadata = {};
     await getChat();
     $('#selected_chat_pole').val(file_name);
@@ -7911,7 +7912,7 @@ async function branchChat() {
 
     syncMesToSwipe(mesId);
     //Assume swipes exist.
-    await saveChatToTree(chat, chatTree);
+    await chatTree.saveChatToTree(chat);
 
     mes['swipe_id'] = mes['swipes']?.length;
     //Delete chat after mesId
@@ -9851,7 +9852,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             //Everything after end will be pruned from the tree.
             let end = chat.length - 1;
             //Save the chat to the chatTree.
-            await saveChatToTree(chat, chatTree, { start:0, end: end });
+            await chatTree.saveChatToTree(chat, { start:0, end: end });
         }
     }
 
@@ -9879,7 +9880,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         if (power_user.enable_chat_tree) {
             //Get chat after the swipe.
-            let stick = await getStickFromTree(chatTree, chat, mesId);
+            let stick = await chatTree.getStick(chat, mesId);
 
             //When editing user messages, the stick's length is zero.
             //Extensions may exist that alter swipes. Until swipes are deprecated they must be prioritized over the branch.
@@ -10380,7 +10381,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
 
     chat_file_for_del = getCurrentChatDetails()?.sessionName;
 
@@ -10501,7 +10502,7 @@ export async function closeCurrentChat() {
         await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
         await clearChat();
         chat.length = 0;
-        setChatTree({});
+        chatTree.setChatTree({});
         resetSelectedGroup();
         setCharacterId(undefined);
         setCharacterName('');

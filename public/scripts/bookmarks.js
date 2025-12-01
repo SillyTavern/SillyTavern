@@ -373,7 +373,7 @@ export async function convertSoloToGroupChat() {
     const createChatResponse = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat], chatTree: chatTree }),
+        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat], chatTree: chatTree.chatTree }),
     });
 
     if (!createChatResponse.ok) {

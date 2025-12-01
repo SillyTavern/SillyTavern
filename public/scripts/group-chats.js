@@ -88,7 +88,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { chatTree, setChatTree, updateChatTreeMessages } from './chat-tree.js';
+import { chatTree, Tree } from './chat-tree.js';
 
 export {
     selected_group,
@@ -308,7 +308,7 @@ export async function getGroupChat(groupId, reload = false) {
     } else if (Array.isArray(data) && data.length) {
         chat.splice(0, chat.length, ...data);
         chat.forEach(ensureMessageMediaIsArray);
-        setChatTree(treeData);
+        chatTree.setChatTree(treeData);
         chatElement.find('.mes').remove();
         await printMessages();
     }
@@ -715,8 +715,11 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                     }
                 }
 
+                const tree = treeData?.['tree'] ?? treeData;
+                const temporaryTree = new Tree(tree, false);
+
                 //Recursively update the chatTree
-                await updateChatTreeMessages(treeData, updateMessage, newName);
+                await temporaryTree.updateMessages(updateMessage, newName);
 
                 // Chat shouldn't be empty
                 if (Array.isArray(messages) && messages.length) {
@@ -2018,7 +2021,7 @@ export async function openGroupById(groupId) {
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
             chat.length = 0;
-            setChatTree({});
+            chatTree.setChatTree({});
             await getGroupChat(groupId);
             return true;
         }
@@ -2121,7 +2124,7 @@ export async function createNewGroupChat(groupId) {
 
     await clearChat();
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
     const newChatName = humanizedDateTime();
     group.chats.push(newChatName);
     group.chat_id = newChatName;
@@ -2148,7 +2151,7 @@ export async function getGroupPastChats(groupId) {
     try {
         for (const chatId of group.chats) {
             // eslint-disable-next-line no-unused-vars
-            const [messages, chatTree] = await loadGroupChat(chatId);
+            const [messages, _] = await loadGroupChat(chatId);
             if (!Array.isArray(messages)) {
                 continue;
             }
@@ -2189,7 +2192,7 @@ export async function openGroupChat(groupId, chatId) {
 
     await clearChat();
     chat.length = 0;
-    setChatTree({});
+    chatTree.setChatTree({});
     group.chat_id = chatId;
     group['date_last_chat'] = Date.now();
     updateChatMetadata({}, true);
