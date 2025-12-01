@@ -37,8 +37,8 @@ export async function addSettings() {
     $('#extensions_settings2').prepend(settingsHtml);
 
     //Creates sliders.
-    const maxChunksElement = new rangeInput('max_chunks', 'Max Undo History Chunks.', { defaultValue: defaultMaxHistoryChunks }).create();
-    const lengthElement = new rangeInput('max_length', 'Max chat length', { defaultValue: defaultMaxChatLength }).create();
+    const maxChunksElement = new RangeInput('max_chunks', 'Max Undo History Chunks.', { defaultValue: defaultMaxHistoryChunks }).create();
+    const lengthElement = new RangeInput('max_length', 'Max chat length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
@@ -50,8 +50,8 @@ export async function addSettings() {
     const saveVisibility = (_, value) => $('#undo_save_options').toggle(!value);
 
     //Setting that toggles menuVisibility and saveVisibility.
-    const toggleMenuElement = new toggleInput('show_menu_buttons', 'Hide the Undo/Redo Buttons from the Options Menu.', { defaultValue: false, callback: menuVisibility }).create();
-    const toggleSaveElement = new toggleInput('show_save_button', 'Hide the Save/Reset Buttons from the Options Menu.', { defaultValue: true, callback: saveVisibility }).create();
+    const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Hide the Undo/Redo Buttons from the Options Menu.', { defaultValue: false, callback: menuVisibility }).create();
+    const toggleSaveElement = new ToggleInput('show_save_button', 'Hide the Save/Reset Buttons from the Options Menu.', { defaultValue: true, callback: saveVisibility }).create();
 
     async function processUndoHotkey(event) {
         if (!isInputElementInFocus()) {
@@ -72,7 +72,7 @@ export async function addSettings() {
     };
 
     const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction($(document), 'keydown', enabled, processUndoHotkey);
-    const toggleUndoHotkeyElement = new toggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
+    const toggleUndoHotkeyElement = new ToggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
@@ -98,11 +98,11 @@ export async function addSettings() {
         if (source !== 'undo') { return saveChatSnapshotDebounced(); }
     }
 
-    const debounceSlider = new rangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 10, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
+    const debounceSlider = new RangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 10, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
 
     //Resetting the chatHistory is necassary to update chunk_size.
     const resetDebounced = debounce(() => chatHistory.resetChatSnapshots(true), debounce_timeout.short);
-    const chunkSizeElement = new rangeInput('chunk_size', 'History Chunk Size. ⚠️ This will ERASE your history! Higher will use more memory, lower will reduce performance.', { min: 1, max: 10000, step: 10, defaultValue: defaultChunkSize, callback: () => resetDebounced(), runCallbackOnLoad: false }).create();
+    const chunkSizeElement = new RangeInput('chunk_size', 'History Chunk Size. ⚠️ This will ERASE your history! Higher will use more memory, lower will reduce performance.', { min: 1, max: 10000, step: 10, defaultValue: defaultChunkSize, callback: () => resetDebounced(), runCallbackOnLoad: false }).create();
 
     undoAdvanced.append(debounceSlider);
     undoAdvanced.append(chunkSizeElement);
@@ -112,7 +112,7 @@ export async function addSettings() {
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
         const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, getDebounced);
-        const toggleSnapshotEvent = new toggleInput(snapShotEvent, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
+        const toggleSnapshotEvent = new ToggleInput(snapShotEvent, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
         eventToggles.append(toggleSnapshotEvent);
     }
 }
@@ -120,7 +120,7 @@ export async function addSettings() {
 /**
  * Creates a range input.
  */
-class rangeInput {
+class RangeInput {
     constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 100, defaultValue = 1000, runCallbackOnLoad = true } = {}) {
         this.category = category;
         this.id = id;
@@ -174,7 +174,7 @@ class rangeInput {
 /**
  * Creates a toggle button.
  */
-class toggleInput {
+class ToggleInput {
     constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true, runCallbackOnLoad = true } = {}) {
         this.category = category;
         this.id = id;
