@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Lock, LogIn } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Lock, LogIn, UserPlus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { Button, Input, Avatar } from '../ui';
 
@@ -11,7 +11,9 @@ export function LoginPage() {
     isLoading,
     error,
     isAuthenticated,
+    canSelfRegister,
     fetchUsers,
+    checkRegistration,
     login,
     clearError,
   } = useAuthStore();
@@ -28,7 +30,8 @@ export function LoginPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    checkRegistration();
+  }, [fetchUsers, checkRegistration]);
 
   const handleUserSelect = (handle: string) => {
     setSelectedUser(handle);
@@ -76,9 +79,17 @@ export function LoginPage() {
           {availableUsers.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <User size={48} className="mx-auto text-[var(--color-text-secondary)] mb-4" />
-              <p className="text-[var(--color-text-secondary)]">
-                No users found. Create a user in SillyTavern first.
+              <p className="text-[var(--color-text-secondary)] mb-4">
+                No users found. Create your first account to get started.
               </p>
+              {canSelfRegister && (
+                <Link to="/register">
+                  <Button size="lg">
+                    <UserPlus size={20} className="mr-2" />
+                    Create Account
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -154,9 +165,19 @@ export function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[var(--color-text-secondary)] text-sm mt-6">
-          Mobile-friendly React UI
-        </p>
+        <div className="text-center mt-6">
+          {canSelfRegister && availableUsers.length > 0 && (
+            <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+              New user?{' '}
+              <Link to="/register" className="text-[var(--color-primary)] hover:underline">
+                Create an account
+              </Link>
+            </p>
+          )}
+          <p className="text-[var(--color-text-secondary)] text-sm">
+            Mobile-friendly React UI
+          </p>
+        </div>
       </div>
     </div>
   );

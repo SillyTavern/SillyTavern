@@ -13,10 +13,13 @@ interface AuthState {
   currentUser: { handle: string; name: string } | null;
   availableUsers: UserHandle[];
   error: string | null;
+  canSelfRegister: boolean;
 
   // Actions
   checkAuth: () => Promise<void>;
   fetchUsers: () => Promise<void>;
+  checkRegistration: () => Promise<void>;
+  register: (handle: string, name: string, password?: string) => Promise<boolean>;
   login: (handle: string, password?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -28,6 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   currentUser: null,
   availableUsers: [],
   error: null,
+  canSelfRegister: false,
 
   checkAuth: async () => {
     set({ isLoading: true });
@@ -49,6 +53,36 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ availableUsers: response.handles || [] });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to fetch users' });
+    }
+  },
+
+  checkRegistration: async () => {
+    try {
+      const result = await api.checkCanRegister();
+      set({ canSelfRegister: result.canRegister });
+    } catch {
+      set({ canSelfRegister: false });
+    }
+  },
+
+  register: async (handle: string, name: string, password?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await api.register(handle, name, password);
+      // After successful registration, log the user in
+      const loginResult = await api.login(result.handle, password);
+      set({
+        isAuthenticated: true,
+        currentUser: { handle: loginResult.handle, name },
+        isLoading: false,
+      });
+      return true;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Registration failed',
+      });
+      return false;
     }
   },
 

@@ -66,6 +66,28 @@ export const api = {
     }
   },
 
+  async register(handle: string, name: string, password?: string): Promise<{ handle: string }> {
+    return apiRequest('/api/users/create', {
+      method: 'POST',
+      body: JSON.stringify({ handle, name, password, admin: false }),
+    });
+  },
+
+  async checkCanRegister(): Promise<{ canRegister: boolean; requiresAdmin: boolean }> {
+    try {
+      // Check if there are existing users - if none, first user can self-register
+      const users = await this.getUsers();
+      const hasUsers = users.handles && users.handles.length > 0;
+      return {
+        canRegister: !hasUsers, // Can self-register only if no users exist
+        requiresAdmin: hasUsers
+      };
+    } catch {
+      // If we can't fetch users, assume registration requires admin
+      return { canRegister: false, requiresAdmin: true };
+    }
+  },
+
   // Character endpoints
   async getCharacters(): Promise<string[]> {
     const response = await apiRequest<{ characters: string[] }>('/api/characters/all');
