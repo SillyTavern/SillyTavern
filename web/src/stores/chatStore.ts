@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api, type CharacterInfo } from '../api/client';
+import { useSettingsStore } from './settingsStore';
 
 interface ChatMessage {
   id: string;
@@ -216,8 +217,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const updatedMessages = get().messages;
       const context = buildConversationContext(updatedMessages, character);
 
+      // Get AI provider settings
+      const { activeProvider, activeModel } = useSettingsStore.getState();
+
       // Call API
-      const stream = await api.generateMessage(context, character.name);
+      const stream = await api.generateMessage(context, character.name, activeProvider, activeModel);
 
       if (stream) {
         // Add initial AI message placeholder

@@ -191,7 +191,9 @@ export const api = {
   // Generate message with full context
   async generateMessage(
     messages: { role: 'user' | 'assistant' | 'system'; content: string }[],
-    _characterName: string
+    _characterName: string,
+    provider?: string,
+    model?: string
   ): Promise<ReadableStream<Uint8Array> | null> {
     const token = await getCsrfToken();
 
@@ -207,12 +209,21 @@ export const api = {
         stream: true,
         max_tokens: 1024,
         temperature: 0.9,
+        chat_completion_source: provider || 'openai',
+        model: model || 'gpt-4o',
       }),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Generation failed' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      const errorData = await response.json().catch(() => ({ error: 'Generation failed' }));
+      // Handle various SillyTavern error formats
+      const errorMessage =
+        typeof errorData.error === 'string'
+          ? errorData.error
+          : errorData.message ||
+            errorData.error?.message ||
+            (errorData.error === true ? 'AI generation failed - check API key configuration' : `HTTP ${response.status}`);
+      throw new Error(errorMessage);
     }
 
     return response.body;
