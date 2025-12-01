@@ -81,6 +81,21 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         throw new Error('Unknown provider');
       }
 
+      // Delete any existing secrets for this provider first to avoid stale entries
+      const { secrets } = get();
+      const existingSecrets = secrets[provider.secretKey];
+      if (Array.isArray(existingSecrets) && existingSecrets.length > 0) {
+        // Delete all existing secrets for this key
+        for (const secret of existingSecrets) {
+          try {
+            await settingsApi.deleteSecret(provider.secretKey, secret.id);
+          } catch {
+            // Ignore delete errors, continue with save
+          }
+        }
+      }
+
+      // Now save the new secret
       await settingsApi.writeSecret(provider.secretKey, apiKey, provider.name);
 
       // Refresh secrets
