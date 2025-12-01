@@ -4,7 +4,7 @@ import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
 import { applyDiff, diff, lodash } from '/lib.js';
 
-export const extensionName = 'ChatUndoHistory';
+export const extensionName = 'undo';
 export const defaultChunkSize = 20;
 export const defaultMaxHistoryChunks = 20;
 export const defaultMaxChatLength = 512;

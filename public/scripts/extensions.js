@@ -211,7 +211,7 @@ export const extension_settings = {
         /** @type {string} */
         sort: 'dateAsc',
     },
-    ChatUndoHistory: {},
+    undo: {},
 };
 
 function showHideExtensionsMenu() {
