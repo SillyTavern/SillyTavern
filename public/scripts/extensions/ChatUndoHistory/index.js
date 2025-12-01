@@ -1,4 +1,4 @@
-import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '../../../script.js';
+import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
