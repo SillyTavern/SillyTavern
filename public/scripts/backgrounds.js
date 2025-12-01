@@ -1,12 +1,15 @@
 import { Fuse, localforage } from '../lib.js';
-import { chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
+import { characters, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveMetadata, saveSettingsDebounced, this_chid } from '../script.js';
 import { openThirdPartyExtensionMenu, saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { createThumbnail, flashHighlight, getBase64Async, stringFormat, debounce, setupScrollToTop } from './utils.js';
+import { createThumbnail, flashHighlight, getBase64Async, stringFormat, debounce, setupScrollToTop, saveBase64AsFile, getFileExtension } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { t } from './i18n.js';
 import { Popup } from './popup.js';
+import { groups, selected_group } from './group-chats.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
+import { deleteMediaFromServer } from './chats.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -37,6 +40,26 @@ const THUMBNAIL_CONFIG = {
     width: 160,
     height: 90,
 };
+
+/**
+ * Background source types.
+ * @readonly
+ * @enum {number}
+ */
+const BG_SOURCES = {
+    GLOBAL: 0,
+    CHAT: 1,
+};
+
+/**
+ * Mapping of background sources to their corresponding tab IDs.
+ * @readonly
+ * @type {Record<string, string>}
+ */
+const BG_TABS = Object.freeze({
+    [BG_SOURCES.GLOBAL]: 'bg_global_tab',
+    [BG_SOURCES.CHAT]: 'bg_chat_tab',
+});
 
 /**
  * Global IntersectionObserver instance for lazy loading backgrounds
@@ -187,6 +210,7 @@ function onLockBackgroundClick(event = null) {
 
     // Update UI states to reflect the new lock.
     highlightLockedBackground();
+    highlightSelectedBackground();
 }
 
 /**
@@ -219,21 +243,27 @@ function removeBackgroundMetadata() {
     saveMetadataDebounced();
 }
 
-function onSelectBackgroundClick() {
+/**
+ * Handles the click event for selecting a background.
+ * @param {JQuery.Event} e Event
+ */
+function onSelectBackgroundClick(e) {
     const bgFile = $(this).attr('bgfile');
+    const isCustom = $(this).attr('custom') === 'true';
     const backgroundCssUrl = getUrlParameter(this);
+    const bypassGlobalLock = !isCustom && e.shiftKey;
 
-    if (isChatBackgroundLocked()) {
+    if ((isChatBackgroundLocked() || isCustom) && !bypassGlobalLock) {
         // If a background is locked, update the locked background directly
         saveBackgroundMetadata(backgroundCssUrl);
         $('#bg1').css('background-image', backgroundCssUrl);
-        highlightLockedBackground();
     } else {
         // Otherwise, update the global background setting
         setBackground(bgFile, backgroundCssUrl);
     }
 
     // Update UI highlights to reflect the changes.
+    highlightLockedBackground();
     highlightSelectedBackground();
 }
 
@@ -375,20 +405,37 @@ async function onDeleteBackgroundClick(e) {
     const bgToDelete = $(this).closest('.bg_example');
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
-    const confirm = await Popup.show.confirm(t`Delete the background?`, null);
+    const deleteFromServerId = 'delete_bg_from_server';
+    const customInputs = [
+        {
+            type: 'checkbox',
+            label: t`Also delete file from server`,
+            id: deleteFromServerId,
+            defaultState: true,
+        },
+    ];
+    let deleteFromServer = false;
+    const confirm = await Popup.show.confirm(t`Delete the background?`, null, {
+        customInputs: isCustom ? customInputs : [],
+        onClose: (popup) => {
+            if (isCustom) {
+                deleteFromServer = Boolean(popup?.inputResults?.get(deleteFromServerId) ?? false);
+            }
+        },
+    });
     const bg = bgToDelete.attr('bgfile');
 
     if (confirm) {
         // If it's not custom, it's a built-in background. Delete it from the server
         if (!isCustom) {
-            delBackground(bg);
+            await delBackground(bg);
         } else {
             const list = chat_metadata[LIST_METADATA_KEY] || [];
             const index = list.indexOf(bg);
             list.splice(index, 1);
         }
 
-        if (bg === background_settings.name) {
+        if (bg === background_settings.name || url === chat_metadata[BG_METADATA_KEY]) {
             const siblingSelector = '.bg_example';
             const nextBg = bgToDelete.next(siblingSelector);
             const prevBg = bgToDelete.prev(siblingSelector);
@@ -409,13 +456,18 @@ async function onDeleteBackgroundClick(e) {
 
         if (url === chat_metadata[BG_METADATA_KEY]) {
             removeBackgroundMetadata();
-            highlightLockedBackground();
         }
 
         if (isCustom) {
+            if (deleteFromServer) {
+                await deleteMediaFromServer(bg);
+            }
             renderChatBackgrounds();
-            saveMetadataDebounced();
+            await saveMetadata();
         }
+
+        highlightLockedBackground();
+        highlightSelectedBackground();
     }
 }
 
@@ -607,25 +659,43 @@ async function delBackground(bg) {
     }
 }
 
-async function onBackgroundUploadSelected() {
-    const form = $('#form_bg_upload').get(0);
+/**
+ * Background upload handler.
+ * @param {Event} e Event
+ * @returns {Promise<void>}
+ */
+async function onBackgroundUploadSelected(e) {
+    const input = e.currentTarget;
 
-    if (!(form instanceof HTMLFormElement)) {
-        console.error('form_bg_upload is not a form');
+    if (!(input instanceof HTMLInputElement)) {
+        console.error('Invalid input element for background upload');
         return;
     }
 
-    const formData = new FormData(form);
+    for (const file of input.files) {
+        if (file.size === 0) {
+            continue;
+        }
 
-    const file = formData.get('avatar');
-    if (!(file instanceof File) || file.size === 0) {
-        form.reset();
-        return;
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        await convertFileIfVideo(formData);
+        switch (getActiveBackgroundTab()) {
+            case BG_SOURCES.GLOBAL:
+                await uploadBackground(formData);
+                break;
+            case BG_SOURCES.CHAT:
+                await uploadChatBackground(formData);
+                break;
+            default:
+                console.error('Unknown background source type');
+                continue;
+        }
     }
 
-    await convertFileIfVideo(formData);
-    await uploadBackground(formData);
-    form.reset();
+    // Allow re-uploading the same file again by clearing the input value
+    input.value = '';
 }
 
 /**
@@ -699,6 +769,50 @@ async function uploadBackground(formData) {
 }
 
 /**
+ * Upload a chat background using a FormData object.
+ * @param {FormData} formData FormData containing the background file
+ * @returns {Promise<void>}
+ */
+async function uploadChatBackground(formData) {
+    try {
+        if (!getCurrentChatId()) {
+            toastr.warning(t`Select a chat to upload a background for it`);
+            return;
+        }
+        if (!formData.has('avatar')) {
+            console.log('No file provided. Chat background upload cancelled.');
+            return;
+        }
+
+        const file = formData.get('avatar');
+        if (!(file instanceof File)) {
+            console.error('Invalid file type for chat background upload');
+            return;
+        }
+
+        const imageDataUri = await getBase64Async(file);
+        const base64Data = imageDataUri.split(',')[1];
+        const extension = getFileExtension(file);
+        const characterName = selected_group
+            ? groups.find(g => g.id === selected_group)?.id?.toString()
+            : characters[this_chid]?.name;
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const imagePath = await saveBase64AsFile(base64Data, characterName, filename, extension);
+
+        const list = chat_metadata[LIST_METADATA_KEY] || [];
+        list.push(imagePath);
+        chat_metadata[LIST_METADATA_KEY] = list;
+        await saveMetadata();
+        renderChatBackgrounds();
+        highlightNewBackground(imagePath);
+        highlightLockedBackground();
+        highlightSelectedBackground();
+    } catch (error) {
+        console.error('Error uploading chat background:', error);
+    }
+}
+
+/**
  * @param {string} bg
  */
 function highlightNewBackground(bg) {
@@ -745,6 +859,14 @@ function onBackgroundFilterInput() {
 }
 
 const debouncedOnBackgroundFilterInput = debounce(onBackgroundFilterInput, debounce_timeout.standard);
+
+/**
+ * Gets the active background tab source.
+ * @returns {BG_SOURCES} Active background tab source
+ */
+export function getActiveBackgroundTab() {
+    return $('#bg_tabs').tabs('option', 'active');
+}
 
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
@@ -797,7 +919,7 @@ export function initBackgrounds() {
         applyThumbnailColumns(background_settings.thumbnailColumns + 1);
     });
     $('#auto_background').on('click', autoBackgroundCommand);
-    $('#add_bg_button').on('change', onBackgroundUploadSelected);
+    $('#add_bg_button').on('change', (e) => onBackgroundUploadSelected(e.originalEvent));
     $('#bg-filter').on('input', () => debouncedOnBackgroundFilterInput());
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lockbg',
@@ -839,9 +961,13 @@ export function initBackgrounds() {
         await onChatChanged();
     });
 
-    setupScrollToTop({
-        scrollContainerId: 'bg-scrollable-content',
-        buttonId: 'bg-scroll-top',
-        drawerId: 'Backgrounds',
+    Object.values(BG_TABS).forEach(tabId => {
+        setupScrollToTop({
+            scrollContainerId: tabId,
+            buttonId: 'bg-scroll-top',
+            drawerId: 'Backgrounds',
+        });
     });
+
+    $('#bg_tabs').tabs();
 }

@@ -50,6 +50,14 @@ const toolbarSelectors = [
     '.jg-menu',
 ].join(', ');
 
+const tabListSelectors = [
+    '#bg_tabs .bg_tabs_list',
+].join(', ');
+
+const tabItemSelectors = [
+    '#bg_tabs .bg_tabs_list .bg_tab_button',
+].join(', ');
+
 /** @type {Record<string, (element: Element) => void>} */
 const a11yRules = {
     [buttonSelectors]: (element) => {
@@ -63,6 +71,12 @@ const a11yRules = {
     },
     [toolbarSelectors]: (element) => {
         element.setAttribute('role', 'toolbar');
+    },
+    [tabListSelectors]: (element) => {
+        element.setAttribute('role', 'tablist');
+    },
+    [tabItemSelectors]: (element) => {
+        element.setAttribute('role', 'tab');
     },
     '#toast-container .toast': (element) => {
         element.setAttribute('role', 'status');

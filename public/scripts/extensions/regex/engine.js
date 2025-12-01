@@ -5,8 +5,8 @@ import { regexFromString } from '../../utils.js';
 import { lodash } from '../../../lib.js';
 
 /**
- * @enum {number} Regex scripts types
  * @readonly
+ * @enum {number} Regex scripts types
  */
 export const SCRIPT_TYPES = {
     // ORDER MATTERS: defines the regex script priority
@@ -220,8 +220,8 @@ export function getCurrentPresetName() {
 }
 
 /**
- * @enum {number} Where the regex script should be applied
  * @readonly
+ * @enum {number} Where the regex script should be applied
  */
 export const regex_placement = {
     /**
@@ -237,8 +237,8 @@ export const regex_placement = {
 };
 
 /**
- * @enum {number} How to substitute parameters in the find regex
  * @readonly
+ * @enum {number} How to substitute parameters in the find regex
  */
 export const substitute_find_regex = {
     NONE: 0,
