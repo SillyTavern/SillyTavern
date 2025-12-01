@@ -237,6 +237,7 @@ async function* parseStreamData(json) {
                     yield {
                         data: { ...json, choices },
                         chunk: str,
+                        reasoning: true,
                     };
                 }
                 return;
@@ -252,6 +253,7 @@ async function* parseStreamData(json) {
                     yield {
                         data: { ...json, choices },
                         chunk: str,
+                        reasoning: true,
                     };
                 }
                 return;
@@ -317,7 +319,7 @@ export class SmoothEventSourceStream extends EventSourceStream {
                     }
 
                     for await (const parsed of parseStreamData(json)) {
-                        hasFocus && await delay(getDelay(lastStr));
+                        !(power_user.smooth_streaming_think && parsed.reasoning) && hasFocus && await delay(getDelay(lastStr));
                         controller.enqueue(new MessageEvent(event.type, { data: JSON.stringify(parsed.data) }));
                         lastStr = parsed.chunk;
                     }
