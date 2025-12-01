@@ -320,14 +320,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const { currentChatFile } = get();
         if (currentChatFile) {
           const allMessages = get().messages;
-          const chatData = allMessages.map((msg) => ({
-            name: msg.name,
-            is_user: msg.isUser,
-            is_system: msg.isSystem,
-            mes: msg.content,
-            send_date: msg.timestamp,
-          }));
-          api.saveChat(character.name, currentChatFile, chatData).catch(console.error);
+
+          // Build chat data with header as first entry
+          const chatData = [
+            // Header/metadata (required first entry)
+            {
+              user_name: 'You',
+              character_name: character.name,
+              create_date: new Date().toISOString(),
+            },
+            // Messages
+            ...allMessages.map((msg) => ({
+              name: msg.name,
+              is_user: msg.isUser,
+              is_system: msg.isSystem,
+              mes: msg.content,
+              send_date: msg.timestamp,
+            })),
+          ];
+
+          api.saveChat(character.name, currentChatFile, chatData).catch((err) => {
+            console.error('[Chat] Failed to save:', err);
+          });
         }
       }
     } catch (error) {

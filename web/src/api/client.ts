@@ -233,14 +233,15 @@ export const api = {
   async saveChat(
     characterName: string,
     fileName: string,
-    messages: { name: string; is_user: boolean; is_system: boolean; mes: string; send_date: number }[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    chatData: any[]
   ): Promise<void> {
     await apiRequest('/api/chats/save', {
       method: 'POST',
       body: JSON.stringify({
         avatar_url: `${characterName}.png`,
         file_name: fileName,
-        chat: messages,
+        chat: chatData,
       }),
     });
   },
