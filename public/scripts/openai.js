@@ -2570,7 +2570,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['middleout'] = settings.openrouter_middleout;
     }
 
-    if ([chat_completion_sources.GOOGLE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
+    if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
         const stopStringsLimit = 5;
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
