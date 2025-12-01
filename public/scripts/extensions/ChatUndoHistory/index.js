@@ -177,7 +177,7 @@ export const snapshotEvents = [
     event_types.MESSAGE_RECEIVED,
     event_types.MESSAGE_EDITED,
     event_types.MESSAGE_DELETED,
-    event_types.MESSAGE_UPDATED,
+    // event_types.MESSAGE_UPDATED, //Redundant. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2578928658
     event_types.MESSAGE_FILE_EMBEDDED,
     event_types.MESSAGE_REASONING_EDITED,
     event_types.MESSAGE_REASONING_DELETED,
