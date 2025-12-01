@@ -2575,7 +2575,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
         generate_data['use_sysprompt'] = settings.use_sysprompt;
-        if (settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+        if (settings.chat_completion_source === chat_completion_sources.VERTEXAI) {
             generate_data['vertexai_auth_mode'] = settings.vertexai_auth_mode;
             generate_data['vertexai_region'] = settings.vertexai_region;
             generate_data['vertexai_express_project_id'] = settings.vertexai_express_project_id;
@@ -2608,8 +2608,6 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['frequency_penalty'] = Number(settings.freq_pen_openai);
         generate_data['presence_penalty'] = Number(settings.pres_pen_openai);
-
-        // YEAH BRO JUST USE OPENAI CLIENT BRO
         delete generate_data['stop'];
     }
 
