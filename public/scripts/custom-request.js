@@ -1,9 +1,9 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders, name1, name2 } from '../script.js';
-import { getTextGenServer, createTextGenGenerationData, setting_names } from './textgen-settings.js';
+import { getTextGenServer, createTextGenGenerationData, setting_names, textgenerationwebui_settings } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
-import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate } from './openai.js';
+import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate, oai_settings } from './openai.js';
 import EventSourceStream from './sse-stream.js';
 
 // #region Type Definitions
@@ -278,7 +278,7 @@ export class TextCompletionService {
 
     /**
      * Process and send a text completion request with optional preset & instruct
-     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} requestData
+     * @param {TextCompletionPayload} requestData
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {string?} [options.instructName] - Name of instruct preset for message formatting
@@ -298,22 +298,24 @@ export class TextCompletionService {
         let instructPreset;
         const prompt = requestData.prompt;
         // Handle instruct formatting if requested
-        if (Array.isArray(prompt) && instructName) {
-            const instructPresetManager = getPresetManager('instruct');
-            instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
-            if (instructPreset) {
-                requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings);
-                const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
-                requestData.stop = stoppingStrings;
-                requestData.stopping_strings = stoppingStrings;
+        if (Array.isArray(prompt)) {
+            if (instructName) {
+                const instructPresetManager = getPresetManager('instruct');
+                instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
+                if (instructPreset) {
+                    requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings);
+                    const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
+                    requestData.stop = stoppingStrings;
+                    requestData.stopping_strings = stoppingStrings;
+                } else {
+                    console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
+                    requestData.prompt = prompt.map(x => x.content).join('\n\n');
+                }
             } else {
-                console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
                 requestData.prompt = prompt.map(x => x.content).join('\n\n');
             }
         } else if (typeof prompt === 'string') {
             requestData.prompt = prompt;
-        } else {
-            requestData.prompt = prompt.map(x => x.content).join('\n\n');
         }
 
         // Apply generation preset if specified
@@ -411,7 +413,7 @@ export class TextCompletionService {
         preset.min_p = preset.min_p >= 0 ? Number(preset.min_p) : undefined;
 
         // Only take fields from the preset specified in setting_names to use as TextCompletionSettings
-        const settings = /** @type {TextCompletionSettings} */ ({});
+        const settings = structuredClone(textgenerationwebui_settings);
         for (const [key, value] of Object.entries(preset)) {
             if (!setting_names.includes(key)) continue;
             settings[key] = value;
@@ -595,7 +597,7 @@ export class ChatCompletionService {
         preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
         // Convert from preset to ChatCompletionSettings
-        const settings = /** @type {ChatCompletionSettings} */ ({});
+        const settings = structuredClone(oai_settings);
         for (const [key, value] of Object.entries(preset)) {
             const settingToUpdate = settingsToUpdate[key];
             if (!settingToUpdate) continue;
