@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
 export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { fetchSettings, fetchSecrets } = useSettingsStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Load settings when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSettings();
+      fetchSecrets();
+    }
+  }, [isAuthenticated, fetchSettings, fetchSecrets]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
