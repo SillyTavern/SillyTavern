@@ -2414,6 +2414,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
+        chat_completion_sources.CHUTES,
     ];
 
     // Sources that support proxying
@@ -2546,7 +2547,7 @@ export async function createGenerationParameters(settings, model, type, messages
         delete generate_data.logprobs;
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+    if (settings.chat_completion_source === chat_completion_sources.CLAUDE) {
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['use_sysprompt'] = settings.use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
@@ -2558,7 +2559,7 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
+    if (settings.chat_completion_source === chat_completion_sources.OPENROUTER) {
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['min_p'] = Number(settings.min_p_openai);
         generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
@@ -2581,19 +2582,19 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+    if (settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
         generate_data['safe_prompt'] = false; // already defaults to false, but just incase they change that in the future.
         generate_data['stop'] = getCustomStoppingStrings(); // Mistral shouldn't have limits on stop strings.
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+    if (settings.chat_completion_source === chat_completion_sources.CUSTOM) {
         generate_data['custom_url'] = settings.custom_url;
         generate_data['custom_include_body'] = settings.custom_include_body;
         generate_data['custom_exclude_body'] = settings.custom_exclude_body;
         generate_data['custom_include_headers'] = settings.custom_include_headers;
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.COHERE) {
+    if (settings.chat_completion_source === chat_completion_sources.COHERE) {
         // Clamp to 0.01 -> 0.99
         generate_data['top_p'] = Math.min(Math.max(Number(settings.top_p_openai), 0.01), 0.99);
         generate_data['top_k'] = Number(settings.top_k_openai);
@@ -2603,7 +2604,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['stop'] = getCustomStoppingStrings(5);
     }
 
-    if (settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
+    if (settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
         generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['frequency_penalty'] = Number(settings.freq_pen_openai);
         generate_data['presence_penalty'] = Number(settings.pres_pen_openai);
@@ -2659,7 +2660,6 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['min_p'] = Number(settings.min_p_openai);
         generate_data['top_k'] = settings.top_k_openai > 0 ? Number(settings.top_k_openai) : undefined;
         generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
-        generate_data['seed'] = settings.seed >= 0 ? settings.seed : undefined;
         generate_data['stop'] = getCustomStoppingStrings();
     }
 
