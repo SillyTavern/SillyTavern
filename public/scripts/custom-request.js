@@ -603,7 +603,7 @@ export class ChatCompletionService {
         }
 
         // Convert from settings to generation payload
-        const data = await createGenerationParameters(settings, 'quiet', preset.prompts);
+        const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', preset.prompts);
         const payload = data.generate_data;
 
         // apply overrides
