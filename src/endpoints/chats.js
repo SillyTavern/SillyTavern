@@ -901,8 +901,12 @@ router.post('/group/save', async function (request, response) {
 
         return response.send({ ok: true });
     } catch (error) {
+        if (error instanceof IntegrityMismatch) {
+            console.error(error.message);
+            return response.status(400).send({ error: 'integrity' });
+        }
         console.error(error);
-        return response.send({ error: true });
+        return response.send(error);
     }
 });
 
