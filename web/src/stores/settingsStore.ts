@@ -46,19 +46,34 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await settingsApi.getSettings();
-      const settings = response.settings || {};
 
-      // Extract provider and model from settings
-      const mainApi = (settings.main_api as string) || 'openai';
-      const chatCompletionSource = (settings.chat_completion_source as string) || mainApi;
+      // Settings is returned as a JSON string, need to parse it
+      let settings: Record<string, unknown> = {};
+      if (typeof response.settings === 'string') {
+        try {
+          settings = JSON.parse(response.settings);
+        } catch {
+          console.warn('[Settings] Failed to parse settings JSON');
+        }
+      } else if (response.settings) {
+        settings = response.settings as Record<string, unknown>;
+      }
+
+      // Extract provider and model from oai_settings (where chat completion settings live)
+      const oaiSettings = (settings.oai_settings as Record<string, unknown>) || {};
+      const chatCompletionSource = (oaiSettings.chat_completion_source as string) || 'openai';
 
       // Try to find active model based on provider
       let model = 'gpt-4o';
       if (chatCompletionSource === 'openai') {
-        model = (settings.oai_settings as Record<string, unknown>)?.openai_model as string || 'gpt-4o';
+        model = (oaiSettings.openai_model as string) || 'gpt-4o';
       } else if (chatCompletionSource === 'claude') {
-        model = (settings.oai_settings as Record<string, unknown>)?.claude_model as string || 'claude-sonnet-4-5-20250929';
+        model = (oaiSettings.claude_model as string) || 'claude-3-5-sonnet-20241022';
+      } else if (chatCompletionSource === 'makersuite') {
+        model = (oaiSettings.google_model as string) || 'gemini-1.5-pro';
       }
+
+      console.log('[Settings] Loaded provider:', chatCompletionSource, 'model:', model);
 
       set({
         activeProvider: chatCompletionSource,
@@ -136,10 +151,35 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const providerInfo = PROVIDERS.find((p) => p.id === provider);
       const defaultModel = providerInfo?.models[0] || 'gpt-4o';
 
-      await settingsApi.saveSettings({
-        main_api: 'chat_completions',
-        chat_completion_source: provider,
-      });
+      // Get current settings first to merge properly
+      const response = await settingsApi.getSettings();
+      let settings: Record<string, unknown> = {};
+      if (typeof response.settings === 'string') {
+        try {
+          settings = JSON.parse(response.settings);
+        } catch {
+          settings = {};
+        }
+      }
+
+      // Update oai_settings with new provider
+      const oaiSettings = (settings.oai_settings as Record<string, unknown>) || {};
+      oaiSettings.chat_completion_source = provider;
+
+      // Also set the appropriate model for this provider
+      if (provider === 'openai') {
+        oaiSettings.openai_model = defaultModel;
+      } else if (provider === 'claude') {
+        oaiSettings.claude_model = defaultModel;
+      } else if (provider === 'makersuite') {
+        oaiSettings.google_model = defaultModel;
+      }
+
+      settings.oai_settings = oaiSettings;
+
+      await settingsApi.saveSettings(settings);
+
+      console.log('[Settings] Saved provider:', provider, 'model:', defaultModel);
 
       set({
         activeProvider: provider,
@@ -159,17 +199,31 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const { activeProvider } = get();
 
-      // Build the settings object based on provider
-      const settingsUpdate: Record<string, unknown> = {};
+      // Get current settings first to merge properly
+      const response = await settingsApi.getSettings();
+      let settings: Record<string, unknown> = {};
+      if (typeof response.settings === 'string') {
+        try {
+          settings = JSON.parse(response.settings);
+        } catch {
+          settings = {};
+        }
+      }
+
+      // Update oai_settings with new model
+      const oaiSettings = (settings.oai_settings as Record<string, unknown>) || {};
 
       if (activeProvider === 'openai') {
-        settingsUpdate.oai_settings = { openai_model: model };
+        oaiSettings.openai_model = model;
       } else if (activeProvider === 'claude') {
-        settingsUpdate.oai_settings = { claude_model: model };
+        oaiSettings.claude_model = model;
+      } else if (activeProvider === 'makersuite') {
+        oaiSettings.google_model = model;
       }
-      // Add more provider-specific model settings as needed
 
-      await settingsApi.saveSettings(settingsUpdate);
+      settings.oai_settings = oaiSettings;
+
+      await settingsApi.saveSettings(settings);
 
       set({ activeModel: model, isSaving: false });
     } catch (error) {

@@ -265,8 +265,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Get AI provider settings
       const { activeProvider, activeModel } = useSettingsStore.getState();
 
+      // Debug: log what provider we're using
+      console.log('[Chat] Using provider:', activeProvider, 'model:', activeModel);
+
+      if (!activeProvider || activeProvider === 'openai') {
+        // Check if we actually have the provider configured
+        const { secrets } = useSettingsStore.getState();
+        const hasOpenAI = Array.isArray(secrets['api_key_openai']) && secrets['api_key_openai'].length > 0;
+        const hasClaude = Array.isArray(secrets['api_key_claude']) && secrets['api_key_claude'].length > 0;
+
+        if (!hasOpenAI && hasClaude) {
+          // User has Claude but not OpenAI, auto-switch
+          console.log('[Chat] Auto-switching to Claude since OpenAI is not configured');
+          useSettingsStore.setState({ activeProvider: 'claude', activeModel: 'claude-3-5-sonnet-20241022' });
+        }
+      }
+
+      // Re-get the settings in case we auto-switched
+      const finalProvider = useSettingsStore.getState().activeProvider;
+      const finalModel = useSettingsStore.getState().activeModel;
+
       // Call API
-      const stream = await api.generateMessage(context, character.name, activeProvider, activeModel);
+      const stream = await api.generateMessage(context, character.name, finalProvider, finalModel);
 
       if (stream) {
         // Add initial AI message placeholder
