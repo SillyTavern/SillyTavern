@@ -251,4 +251,4 @@ export async function spliceStickToChat(stick, chat, index = 0) {
     eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
-export const chatTree = new Tree({}, true);
+export const tree = new Tree({}, true);

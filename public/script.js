@@ -279,7 +279,7 @@ import { initAccessibility } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
-import { chatTree, spliceStickToChat, Tree } from './scripts/chat-tree.js';
+import { tree, spliceStickToChat, Tree } from './scripts/chat-tree.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -838,7 +838,7 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
             selected_button = 'character_edit';
             setCharacterId(id);
             chat.length = 0;
-            chatTree.setChatTree({});
+            tree.setChatTree({});
             chat_metadata = {};
             await getChat();
         }
@@ -1347,7 +1347,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
 export async function replaceCurrentChat() {
     await clearChat();
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
 
     const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
@@ -1590,7 +1590,7 @@ export async function reloadCurrentChat() {
     preserveNeutralChat();
     await clearChat();
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
 
     if (selected_group) {
         await getGroupChat(selected_group, true);
@@ -7032,10 +7032,10 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
 
     let chatTreeToSave;
     if (power_user.enable_chat_tree) {
-        await chatTree.saveChatToTree(chat);
+        await tree.saveChatToTree(chat);
         chatTreeToSave = {
             metadata: metadata,
-            tree: chatTree.chatTree,
+            tree: tree.chatTree,
         };
     }
 
@@ -7277,7 +7277,7 @@ export async function getChat() {
         //The tree may not have metadata.
         let tree = chatTreeData?.['tree'] ?? chatTreeData;
         //Load the chatTree.
-        chatTree.setChatTree(tree ?? {});
+        tree.setChatTree(tree ?? {});
 
         // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
@@ -7357,7 +7357,7 @@ export async function openCharacterChat(file_name) {
     await clearChat();
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
     chat_metadata = {};
     await getChat();
     $('#selected_chat_pole').val(file_name);
@@ -7912,7 +7912,7 @@ async function branchChat() {
 
     syncMesToSwipe(mesId);
     //Assume swipes exist.
-    await chatTree.saveChatToTree(chat);
+    await tree.saveChatToTree(chat);
 
     mes['swipe_id'] = mes['swipes']?.length;
     //Delete chat after mesId
@@ -9852,7 +9852,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             //Everything after end will be pruned from the tree.
             let end = chat.length - 1;
             //Save the chat to the chatTree.
-            await chatTree.saveChatToTree(chat, { start:0, end: end });
+            await tree.saveChatToTree(chat, { start:0, end: end });
         }
     }
 
@@ -9880,7 +9880,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         if (power_user.enable_chat_tree) {
             //Get chat after the swipe.
-            let stick = await chatTree.getStick(chat, mesId);
+            let stick = await tree.getStick(chat, mesId);
 
             //When editing user messages, the stick's length is zero.
             //Extensions may exist that alter swipes. Until swipes are deprecated they must be prioritized over the branch.
@@ -10381,7 +10381,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
 
     chat_file_for_del = getCurrentChatDetails()?.sessionName;
 
@@ -10502,7 +10502,7 @@ export async function closeCurrentChat() {
         await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
         await clearChat();
         chat.length = 0;
-        chatTree.setChatTree({});
+        tree.setChatTree({});
         resetSelectedGroup();
         setCharacterId(undefined);
         setCharacterName('');

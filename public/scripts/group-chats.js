@@ -88,7 +88,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { chatTree, Tree } from './chat-tree.js';
+import { tree, Tree } from './chat-tree.js';
 
 export {
     selected_group,
@@ -308,7 +308,7 @@ export async function getGroupChat(groupId, reload = false) {
     } else if (Array.isArray(data) && data.length) {
         chat.splice(0, chat.length, ...data);
         chat.forEach(ensureMessageMediaIsArray);
-        chatTree.setChatTree(treeData);
+        tree.setChatTree(treeData);
         chatElement.find('.mes').remove();
         await printMessages();
     }
@@ -635,7 +635,7 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force, chatTree:chatTree }),
+        body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force, chatTree:tree }),
     });
 
     if (!response.ok) {
@@ -2021,7 +2021,7 @@ export async function openGroupById(groupId) {
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
             chat.length = 0;
-            chatTree.setChatTree({});
+            tree.setChatTree({});
             await getGroupChat(groupId);
             return true;
         }
@@ -2124,7 +2124,7 @@ export async function createNewGroupChat(groupId) {
 
     await clearChat();
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
     const newChatName = humanizedDateTime();
     group.chats.push(newChatName);
     group.chat_id = newChatName;
@@ -2192,7 +2192,7 @@ export async function openGroupChat(groupId, chatId) {
 
     await clearChat();
     chat.length = 0;
-    chatTree.setChatTree({});
+    tree.setChatTree({});
     group.chat_id = chatId;
     group['date_last_chat'] = Date.now();
     updateChatMetadata({}, true);

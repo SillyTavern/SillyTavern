@@ -57,7 +57,7 @@ import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
-import { chatTree } from './chat-tree.js';
+import { tree } from './chat-tree.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -1864,7 +1864,7 @@ export function preserveNeutralChat() {
         return;
     }
 
-    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chatTree:chatTree.chatTree, chat_metadata }));
+    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chatTree:tree.chatTree, chat_metadata }));
 }
 
 export function restoreNeutralChat() {
@@ -1881,7 +1881,7 @@ export function restoreNeutralChat() {
     chat.splice(0, chat.length, ...neutralChatData);
     updateChatMetadata(neutralChatMetadata, true);
     if (power_user.enable_chat_tree) {
-        chatTree.setChatTree(neutralChatTree);
+        tree.setChatTree(neutralChatTree);
     }
     sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
 }

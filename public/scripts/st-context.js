@@ -101,13 +101,13 @@ import { ChatCompletionService, TextCompletionService } from './custom-request.j
 import { ConnectionManagerRequestService } from './extensions/shared.js';
 import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
-import { chatTree } from './chat-tree.js';
+import { tree } from './chat-tree.js';
 
 export function getContext() {
     return {
         accountStorage,
         chat,
-        chatTree,
+        tree,
         characters,
         groups,
         name1,

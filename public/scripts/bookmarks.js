@@ -39,7 +39,7 @@ import {
     getUniqueName,
     isTrueBoolean,
 } from './utils.js';
-import { chatTree } from './chat-tree.js';
+import { tree } from './chat-tree.js';
 
 const bookmarkNameToken = 'Checkpoint #';
 
@@ -373,7 +373,7 @@ export async function convertSoloToGroupChat() {
     const createChatResponse = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat], chatTree: chatTree.chatTree }),
+        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat], chatTree: tree.chatTree }),
     });
 
     if (!createChatResponse.ok) {
