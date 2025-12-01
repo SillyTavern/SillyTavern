@@ -1,5 +1,6 @@
 /**
  * Common debounce timeout values to use with `debounce` calls.
+ * @readonly
  * @enum {number}
  */
 export const debounce_timeout = {
@@ -68,8 +69,8 @@ export const COMETAPI_IGNORE_PATTERNS = [
 ];
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const MEDIA_SOURCE = {
     API: 'api',
@@ -79,8 +80,8 @@ export const MEDIA_SOURCE = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const MEDIA_DISPLAY = {
     LIST: 'list',
@@ -88,8 +89,8 @@ export const MEDIA_DISPLAY = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const IMAGE_OVERSWIPE = {
     GENERATE: 'generate',
@@ -119,8 +120,8 @@ export const MEDIA_TYPE = {
 
 /**
  * Bitwise flag-style media request types.
- * @enum {number}
  * @readonly
+ * @enum {number}
  */
 export const MEDIA_REQUEST_TYPE = {
     IMAGE: 0b001,
@@ -130,8 +131,8 @@ export const MEDIA_REQUEST_TYPE = {
 
 /**
  * Scroll behavior options when appending media to messages.
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const SCROLL_BEHAVIOR = {
     NONE: 'none',
@@ -140,8 +141,8 @@ export const SCROLL_BEHAVIOR = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const OVERSWIPE_BEHAVIOR = {
     /** The overswipe right chevron will not be displayed. */
@@ -157,7 +158,8 @@ export const OVERSWIPE_BEHAVIOR = {
 };
 
 /**
- * @type {{readonly LEFT: 'left', readonly RIGHT: 'right'}}
+ * @readonly
+ * @enum {string}
  */
 export const SWIPE_DIRECTION = {
     LEFT: 'left',
@@ -165,7 +167,8 @@ export const SWIPE_DIRECTION = {
 };
 
 /**
- * @type {{readonly DELETE: 'delete', readonly KEYBOARD: 'keyboard', readonly BACK: 'back', readonly AUTO_SWIPE: 'auto_swipe'}}
+ * @readonly
+ * @enum {string}
  */
 export const SWIPE_SOURCE = {
     DELETE: 'delete',
@@ -175,8 +178,8 @@ export const SWIPE_SOURCE = {
 };
 
 /**
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const SWIPE_STATE = {
     NONE: 'none',

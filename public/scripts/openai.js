@@ -184,6 +184,7 @@ export const chat_completion_sources = {
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
     ELECTRONHUB: 'electronhub',
+    CHUTES: 'chutes',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',
@@ -239,6 +240,13 @@ export const reasoning_effort_types = {
     max: 'max',
 };
 
+export const verbosity_levels = {
+    auto: 'auto',
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+};
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -286,6 +294,8 @@ export const settingsToUpdate = {
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
+    chutes_model: ['#model_chutes_select', 'chutes_model', false, true],
+    chutes_sort_models: ['#chutes_sort_models', 'chutes_sort_models', false, true],
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
@@ -310,7 +320,6 @@ export const settingsToUpdate = {
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
-    wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
     send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false, false],
     impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false, false],
@@ -331,26 +340,26 @@ export const settingsToUpdate = {
     proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
-    claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true, false],
-    use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true, false],
+    use_sysprompt: ['#use_sysprompt', 'use_sysprompt', true, false],
     vertexai_auth_mode: ['#vertexai_auth_mode', 'vertexai_auth_mode', false, true],
     vertexai_region: ['#vertexai_region', 'vertexai_region', false, true],
     vertexai_express_project_id: ['#vertexai_express_project_id', 'vertexai_express_project_id', false, true],
     squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true, false],
-    image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
+    media_inlining: ['#openai_media_inlining', 'media_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
-    video_inlining: ['#openai_video_inlining', 'video_inlining', true, false],
-    audio_inlining: ['#openai_audio_inlining', 'audio_inlining', true, false],
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
+    verbosity: ['#openai_verbosity', 'verbosity', false, false],
     enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true, false],
     seed: ['#seed_openai', 'seed', false, false],
     n: ['#n_openai', 'n', false, false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true, true],
     request_images: ['#openai_request_images', 'request_images', true, false],
+    request_image_aspect_ratio: ['#request_image_aspect_ratio', 'request_image_aspect_ratio', false, false],
+    request_image_resolution: ['#request_image_resolution', 'request_image_resolution', false, false],
     azure_base_url: ['#azure_base_url', 'azure_base_url', false, true],
     azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
     azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
@@ -371,7 +380,6 @@ const default_settings = {
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
-    wrap_in_quotes: false,
     ...chatCompletionDefaultPrompts,
     ...promptManagerDefaultPromptOrders,
     send_if_empty: '',
@@ -395,6 +403,8 @@ const default_settings = {
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
+    chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
+    chutes_sort_models: 'alphabetically',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     electronhub_model: 'gpt-4o-mini',
     electronhub_sort_models: 'alphabetically',
@@ -432,16 +442,13 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     assistant_impersonation: '',
-    claude_use_sysprompt: false,
-    use_makersuite_sysprompt: true,
+    use_sysprompt: false,
     vertexai_auth_mode: 'express',
     vertexai_region: 'us-central1',
     vertexai_express_project_id: '',
     squash_system_messages: false,
-    image_inlining: true,
+    media_inlining: true,
     inline_image_quality: 'auto',
-    video_inlining: true,
-    audio_inlining: true,
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
@@ -450,8 +457,11 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: reasoning_effort_types.auto,
+    verbosity: verbosity_levels.auto,
     enable_web_search: false,
     request_images: false,
+    request_image_aspect_ratio: '',
+    request_image_resolution: '',
     seed: -1,
     n: 1,
     bind_preset_to_connection: true,
@@ -552,8 +562,6 @@ function setOpenAIMessages(chat) {
         // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');
 
-        // Apply the "wrap in quotes" option
-        if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const media = chat[j]?.extra?.media;
         const mediaDisplay = getMediaDisplay(chat[j]);
@@ -1117,60 +1125,48 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Bias
     if (bias && bias.trim().length) await addToChatCompletion('bias');
 
-    // Tavern Extras - Summary
-    if (prompts.has('summary')) {
-        const summary = prompts.get('summary');
-
-        if (summary.position) {
-            const message = await Message.fromPromptAsync(summary);
-            chatCompletion.insert(message, 'main', summary.position);
+    const injectToMain = async (/** @type {Prompt} */ prompt, /** @type {string|number} */ position) => {
+        if (chatCompletion.has('main')) {
+            const message = await Message.fromPromptAsync(prompt);
+            chatCompletion.insert(message, 'main', position);
+        } else {
+            // Convert the relative prompt to an injection and place it relative to main prompt
+            // Keeping prompts in the same order bucket will squash them together during in-chat injection
+            const indexOfMain = absolutePrompts.findIndex(p => p.identifier === 'main');
+            if (indexOfMain >= 0) {
+                const main = absolutePrompts[indexOfMain];
+                const promptCopy = new Prompt(prompt);
+                promptCopy.role = main.role;
+                promptCopy.injection_position = main.injection_position;
+                promptCopy.injection_depth = main.injection_depth;
+                promptCopy.injection_order = main.injection_order;
+                const newIndex = position === 'end' ? indexOfMain + 1 : indexOfMain;
+                absolutePrompts.splice(newIndex, 0, promptCopy);
+            }
         }
-    }
+    };
 
-    // Authors Note
-    if (prompts.has('authorsNote')) {
-        const authorsNote = prompts.get('authorsNote');
+    const knownPrompts = [
+        'summary',
+        'authorsNote',
+        'vectorsMemory',
+        'vectorsDataBank',
+        'smartContext',
+    ];
 
-        if (authorsNote.position) {
-            const message = await Message.fromPromptAsync(authorsNote);
-            chatCompletion.insert(message, 'main', authorsNote.position);
-        }
-    }
-
-    // Vectors Memory
-    if (prompts.has('vectorsMemory')) {
-        const vectorsMemory = prompts.get('vectorsMemory');
-
-        if (vectorsMemory.position) {
-            const message = await Message.fromPromptAsync(vectorsMemory);
-            chatCompletion.insert(message, 'main', vectorsMemory.position);
-        }
-    }
-
-    // Vectors Data Bank
-    if (prompts.has('vectorsDataBank')) {
-        const vectorsDataBank = prompts.get('vectorsDataBank');
-
-        if (vectorsDataBank.position) {
-            const message = await Message.fromPromptAsync(vectorsDataBank);
-            chatCompletion.insert(message, 'main', vectorsDataBank.position);
-        }
-    }
-
-    // Smart Context (ChromaDB)
-    if (prompts.has('smartContext')) {
-        const smartContext = prompts.get('smartContext');
-
-        if (smartContext.position) {
-            const message = await Message.fromPromptAsync(smartContext);
-            chatCompletion.insert(message, 'main', smartContext.position);
+    // Known relative extension prompts
+    for (const key of knownPrompts) {
+        if (prompts.has(key)) {
+            const prompt = prompts.get(key);
+            if (prompt.position) {
+                await injectToMain(prompt, prompt.position);
+            }
         }
     }
 
     // Other relative extension prompts
     for (const prompt of prompts.collection.filter(p => p.extension && p.position)) {
-        const message = await Message.fromPromptAsync(prompt);
-        chatCompletion.insert(message, 'main', prompt.position);
+        await injectToMain(prompt, prompt.position);
     }
 
     // Pre-allocation of tokens for tool data
@@ -1601,6 +1597,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.siliconflow_model;
         case chat_completion_sources.ELECTRONHUB:
             return oai_settings.electronhub_model;
+        case chat_completion_sources.CHUTES:
+            return oai_settings.chutes_model;
         case chat_completion_sources.NANOGPT:
             return oai_settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
@@ -1726,6 +1724,72 @@ function calculateElectronHubCost() {
     $('#electronhub_max_prompt_cost').text(cost);
 }
 
+function getChutesModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.pricing?.input;
+    const outputPrice = model.pricing?.output;
+
+    let price = 'Unknown';
+    if (inputPrice !== undefined && outputPrice !== undefined) {
+        // Check if both prices are 0 (free model)
+        if (inputPrice === 0 && outputPrice === 0) {
+            price = 'Free';
+        } else {
+            price = `$${inputPrice}/$${outputPrice} in/out Mtoken`;
+        }
+    }
+
+    const contextLength = model.context_length || model.max_model_len || 'Unknown';
+    const visionIcon = model.input_modalities?.includes('image') ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.supported_features?.includes('reasoning') ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.supported_features?.includes('structured_outputs') ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports function tools"></i>' : '';
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(model.id)}</strong> | ${contextLength} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
+}
+
+function calculateChutesCost() {
+    if (oai_settings.chat_completion_source !== chat_completion_sources.CHUTES) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = model_list.find(x => x.id === oai_settings.chutes_model);
+
+    if (model?.pricing) {
+        const outputPrice = model.pricing?.output;
+        const inputPrice = model.pricing?.input;
+
+        if (outputPrice !== undefined && inputPrice !== undefined) {
+            const outputCost = Number(outputPrice / 1000000);
+            const inputCost = Number(inputPrice / 1000000);
+            const outputTokens = oai_settings.openai_max_tokens;
+            const inputTokens = (oai_settings.openai_max_context - outputTokens);
+            const totalCost = (outputCost * outputTokens) + (inputCost * inputTokens);
+            if (!isNaN(totalCost)) {
+                cost = '$' + totalCost.toFixed(4);
+            }
+        }
+    }
+
+    $('#chutes_max_prompt_cost').text(cost);
+}
+
 function saveModelList(data) {
     model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
@@ -1821,6 +1885,27 @@ function saveModelList(data) {
         }
 
         $('#model_electronhub_select').val(oai_settings.electronhub_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
+        model_list = model_list.filter(model => !model.id.toLowerCase().includes('affine'));
+
+        model_list = chutesSortBy(model_list, oai_settings.chutes_sort_models);
+
+        $('#model_chutes_select').empty();
+
+        for (const model of model_list) {
+            const option = $('<option>').val(model.id).text(model.id);
+            option.attr('data-model', JSON.stringify(model));
+            $('#model_chutes_select').append(option);
+        }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.chutes_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.chutes_model)) {
+            oai_settings.chutes_model = model_list[0].id;
+        }
+
+        $('#model_chutes_select').val(oai_settings.chutes_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -2092,6 +2177,24 @@ function openRouterGroupByVendor(array) {
     }, new Map());
 }
 
+function chutesSortBy(data, property = 'alphabetically') {
+    return data.sort((a, b) => {
+        if (property === 'context_length') {
+            return b.context_length - a.context_length;
+        } else if (property === 'pricing.input') {
+            const aPrice = parseFloat(a.pricing?.input || 0);
+            const bPrice = parseFloat(b.pricing?.input || 0);
+            return aPrice - bPrice;
+        } else if (property === 'pricing.output') {
+            const aPrice = parseFloat(a.pricing?.output || 0);
+            const bPrice = parseFloat(b.pricing?.output || 0);
+            return aPrice - bPrice;
+        } else {
+            return a?.id && b?.id && a.id.localeCompare(b.id);
+        }
+    });
+}
+
 function appendElectronHubOptions(model_list, groupModels = false) {
     const appendOption = (model, parent = null) => {
         (parent || $('#model_electronhub_select')).append(
@@ -2210,6 +2313,7 @@ function getReasoningEffort() {
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
+        chat_completion_sources.CHUTES,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
@@ -2246,6 +2350,15 @@ function getReasoningEffort() {
     }
 
     return reasoningEffort;
+}
+
+function getVerbosity() {
+    if (oai_settings.verbosity === verbosity_levels.auto) {
+        return undefined;
+    }
+
+    // TODO: Adjust verbosity based on model capabilities
+    return oai_settings.verbosity;
 }
 
 /**
@@ -2285,6 +2398,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
     const isAimlapi = oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI;
     const isElectronHub = oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB;
+    const isChutes = oai_settings.chat_completion_source == chat_completion_sources.CHUTES;
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
@@ -2299,7 +2413,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isAzureOpenAI || isCustom || isXAI || isAimlapi || isMoonshot);
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CUSTOM];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.ELECTRONHUB, chat_completion_sources.CHUTES, chat_completion_sources.CUSTOM];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -2334,7 +2448,10 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         'reasoning_effort': getReasoningEffort(),
         'enable_web_search': Boolean(oai_settings.enable_web_search),
         'request_images': Boolean(oai_settings.request_images),
+        'request_image_resolution': String(oai_settings.request_image_resolution),
+        'request_image_aspect_ratio': String(oai_settings.request_image_aspect_ratio),
         'custom_prompt_post_processing': oai_settings.custom_prompt_post_processing,
+        'verbosity': getVerbosity(),
     };
 
     if (isAzureOpenAI) {
@@ -2364,7 +2481,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi)) {
+    if (useLogprobs && (isOAI || isAzureOpenAI || isCustom || isDeepSeek || isXAI || isAimlapi || isChutes)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -2381,7 +2498,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     if (isClaude) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
+        generate_data['use_sysprompt'] = oai_settings.use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
         if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
@@ -2408,7 +2525,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         const stopStringsLimit = 5;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
+        generate_data['use_sysprompt'] = oai_settings.use_sysprompt;
         if (isVertexAI) {
             generate_data['vertexai_auth_mode'] = oai_settings.vertexai_auth_mode;
             generate_data['vertexai_region'] = oai_settings.vertexai_region;
@@ -2489,6 +2606,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     // https://docs.electronhub.ai/api-reference/chat/completions
     if (isElectronHub) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
+    }
+
+    if (isChutes) {
+        generate_data['min_p'] = Number(oai_settings.min_p_openai);
+        generate_data['top_k'] = oai_settings.top_k_openai > 0 ? Number(oai_settings.top_k_openai) : undefined;
+        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
+        generate_data['seed'] = oai_settings.seed >= 0 ? oai_settings.seed : undefined;
+        generate_data['stop'] = getCustomStoppingStrings();
     }
 
     // https://docs.z.ai/api-reference/llm/chat-completion
@@ -2694,7 +2819,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -2725,11 +2850,16 @@ function parseChatCompletionLogprobs(data) {
     }
 
     switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.AIMLAPI:
+            return Object.keys(data?.choices?.[0]?.logprobs ?? {}).includes('content')
+                ? parseOpenAIChatLogprobs(data.choices[0]?.logprobs)
+                : parseOpenAITextLogprobs(data.choices[0]?.logprobs);
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.AZURE_OPENAI:
         case chat_completion_sources.DEEPSEEK:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
+        case chat_completion_sources.CHUTES:
             if (!data.choices?.length) {
                 return null;
             }
@@ -3302,7 +3432,6 @@ class MessageCollection {
  *
  */
 export class ChatCompletion {
-
     /**
      * Combines consecutive system messages into one if they have no name attached.
      * @returns {Promise<void>}
@@ -3656,6 +3785,40 @@ export class ChatCompletion {
 }
 
 /**
+ * Migrate old Chat Completion settings to new format.
+ * @param {ChatCompletionSettings} settings Settings to migrate
+ */
+function migrateChatCompletionSettings(settings) {
+    const migrateMap = [
+        { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
+        { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
+        { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
+        { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
+        { oldKey: 'image_inlining', oldValue: false, newKey: 'media_inlining', newValue: false },
+        { oldKey: 'image_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'video_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'audio_inlining', oldValue: true, newKey: 'media_inlining', newValue: true },
+        { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
+        { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
+        { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
+    ];
+
+    for (const migration of migrateMap) {
+        if (Object.hasOwn(settings, migration.oldKey)) {
+            const shouldMigrate = migration.oldValue instanceof RegExp
+                ? migration.oldValue.test(settings[migration.oldKey])
+                : settings[migration.oldKey] === migration.oldValue;
+            if (shouldMigrate) {
+                settings[migration.newKey] = migration.newValue;
+            }
+            if (migration.oldKey !== migration.newKey) {
+                delete settings[migration.oldKey];
+            }
+        }
+    }
+}
+
+/**
  * Load OpenAI settings from backend data
  * @param {any} data Settings data from backend
  * @param {ChatCompletionSettings} settings Saved settings from backend
@@ -3679,23 +3842,7 @@ function loadOpenAISettings(data, settings) {
     });
     openai_setting_names = settingNames;
 
-    const migrateMap = [
-        { oldKey: 'names_in_completion', oldValue: true, newKey: 'names_behavior', newValue: character_names_behavior.COMPLETION },
-        { oldKey: 'chat_completion_source', oldValue: 'palm', newKey: 'chat_completion_source', newValue: chat_completion_sources.MAKERSUITE },
-        { oldKey: 'custom_prompt_post_processing', oldValue: custom_prompt_post_processing_types.CLAUDE, newKey: 'custom_prompt_post_processing', newValue: custom_prompt_post_processing_types.MERGE },
-        { oldKey: 'ai21_model', oldValue: /^j2-/, newKey: 'ai21_model', newValue: 'jamba-large' },
-    ];
-
-    for (const migration of migrateMap) {
-        if (Object.hasOwn(settings, migration.oldKey)) {
-            const shouldMigrate = migration.oldValue instanceof RegExp
-                ? migration.oldValue.test(settings[migration.oldKey])
-                : settings[migration.oldKey] === migration.oldValue;
-            if (shouldMigrate) {
-                settings[migration.newKey] = migration.newValue;
-            }
-        }
-    }
+    migrateChatCompletionSettings(settings);
 
     for (const key of Object.keys(default_settings)) {
         oai_settings[key] = settings[key] ?? default_settings[key];
@@ -4331,15 +4478,7 @@ function onSettingsPresetChange() {
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
-    // Migrate old settings
-    if (preset.names_in_completion === true && preset.names_behavior === undefined) {
-        preset.names_behavior = character_names_behavior.COMPLETION;
-    }
-
-    // Claude: Assistant Impersonation Prefill = Inherit from Assistant Prefill
-    if (preset.assistant_prefill !== undefined && preset.assistant_impersonation === undefined) {
-        preset.assistant_impersonation = preset.assistant_prefill;
-    }
+    migrateChatCompletionSettings(preset);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input', { source: 'preset' });
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
@@ -4647,6 +4786,26 @@ function getFireworksMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the Chutes model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getChutesMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
+    }
+    return max_8k;
+}
+
+/**
  * Get the maximum context size for the ElectronHub model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -4751,11 +4910,6 @@ async function onModelChange() {
             console.debug('Null MistralAI model selected. Ignoring.');
             return;
         }
-        // Upgrade old mistral models to new naming scheme
-        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
-        if (value === 'mistral-medium' || value === 'mistral-small') {
-            value = value + '-latest';
-        }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
         $('#model_mistralai_select').val(oai_settings.mistralai_model);
@@ -4796,6 +4950,15 @@ async function onModelChange() {
         }
         console.log('ElectronHub model changed to', value);
         oai_settings.electronhub_model = value;
+    }
+
+    if ($(this).is('#model_chutes_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Chutes model selected. Ignoring.');
+            return;
+        }
+        console.log('Chutes model changed to', value);
+        oai_settings.chutes_model = value;
     }
 
     if ($(this).is('#model_nanogpt_select')) {
@@ -5063,6 +5226,17 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
+        const maxContext = getChutesMaxContext(oai_settings.chutes_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+
+        calculateChutesCost();
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         const maxContext = getElectronHubMaxContext(oai_settings.electronhub_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5220,6 +5394,10 @@ async function onOpenrouterModelSortChange() {
     await getStatusOpen();
 }
 
+async function onChutesModelSortChange() {
+    await getStatusOpen();
+}
+
 async function onElectronHubModelSortChange() {
     await getStatusOpen();
 }
@@ -5266,6 +5444,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: false },
+        [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5337,6 +5516,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         $('#model_groq_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
+        $('#model_chutes_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
         $('#model_siliconflow_select').trigger('change');
@@ -5448,7 +5630,7 @@ export function isImageInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.image_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5535,6 +5717,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
+        case chat_completion_sources.CHUTES:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.chutes_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
@@ -5563,7 +5747,7 @@ export function isVideoInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.video_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5596,7 +5780,7 @@ export function isAudioInliningSupported() {
         return false;
     }
 
-    if (!oai_settings.audio_inlining) {
+    if (!oai_settings.media_inlining) {
         return false;
     }
 
@@ -5965,6 +6149,7 @@ export function initOpenAI() {
         $('#openai_max_context_counter').val(`${$(this).val()}`);
         calculateOpenRouterCost();
         calculateElectronHubCost();
+        calculateChutesCost();
         saveSettingsDebounced();
     });
 
@@ -5972,6 +6157,7 @@ export function initOpenAI() {
         oai_settings.openai_max_tokens = Number($(this).val());
         calculateOpenRouterCost();
         calculateElectronHubCost();
+        calculateChutesCost();
         saveSettingsDebounced();
     });
 
@@ -5980,18 +6166,8 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#wrap_in_quotes').on('change', function () {
-        oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#claude_use_sysprompt').on('change', function () {
-        oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#use_makersuite_sysprompt').on('change', function () {
-        oai_settings.use_makersuite_sysprompt = !!$('#use_makersuite_sysprompt').prop('checked');
+    $('#use_sysprompt').on('change', function () {
+        oai_settings.use_sysprompt = !!$('#use_sysprompt').prop('checked');
         saveSettingsDebounced();
     });
 
@@ -6181,6 +6357,11 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#chutes_sort_models').on('input', function () {
+        oai_settings.chutes_sort_models = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#electronhub_group_models').on('input', function () {
         oai_settings.electronhub_group_models = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -6191,26 +6372,14 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openai_image_inlining').on('input', function () {
-        oai_settings.image_inlining = !!$(this).prop('checked');
+    $('#openai_media_inlining').on('input', function () {
+        oai_settings.media_inlining = !!$(this).prop('checked');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
     $('#openai_inline_image_quality').on('input', function () {
         oai_settings.inline_image_quality = String($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $('#openai_video_inlining').on('input', function () {
-        oai_settings.video_inlining = !!$(this).prop('checked');
-        updateFeatureSupportFlags();
-        saveSettingsDebounced();
-    });
-
-    $('#openai_audio_inlining').on('input', function () {
-        oai_settings.audio_inlining = !!$(this).prop('checked');
-        updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
 
@@ -6336,6 +6505,11 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#openai_verbosity').on('input', function () {
+        oai_settings.verbosity = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#openai_enable_web_search').on('input', function () {
         oai_settings.enable_web_search = !!$(this).prop('checked');
         calculateOpenRouterCost();
@@ -6344,6 +6518,16 @@ export function initOpenAI() {
 
     $('#openai_request_images').on('input', function () {
         oai_settings.request_images = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#request_image_resolution').on('input', function () {
+        oai_settings.request_image_resolution = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#request_image_aspect_ratio').on('input', function () {
+        oai_settings.request_image_aspect_ratio = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -6375,6 +6559,14 @@ export function initOpenAI() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getElectronHubModelTemplate,
+            matcher: textValueMatcher,
+        });
+        $('#model_chutes_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getChutesModelTemplate,
             matcher: textValueMatcher,
         });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
@@ -6427,6 +6619,7 @@ export function initOpenAI() {
     $('#model_openrouter_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
+    $('#chutes_sort_models').on('change', onChutesModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);
     $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
@@ -6434,6 +6627,7 @@ export function initOpenAI() {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
+    $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);

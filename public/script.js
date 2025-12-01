@@ -1431,7 +1431,7 @@ export async function printMessages() {
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
 }
 
-function scrollOnMediaLoad() {
+export function scrollOnMediaLoad() {
     const started = Date.now();
     const media = chatElement.find('.mes_block img, .mes_block video, .mes_block audio').toArray();
     let mediaLoaded = 0;
@@ -3473,7 +3473,7 @@ class StreamingProcessor {
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
             return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
         }
-        saveChatDebounced();
+        await saveChatConditional();
 
         playMessageSound();
     }
@@ -5928,6 +5928,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.COHERE:
                 case chat_completion_sources.XAI:
                 case chat_completion_sources.ELECTRONHUB:
+                case chat_completion_sources.CHUTES:
                 case chat_completion_sources.AZURE_OPENAI:
                 case chat_completion_sources.ZAI:
                 default:
@@ -6409,14 +6410,30 @@ export function ensureSwipes(message) {
         updated = true;
     }
 
+    /** @type {() => SwipeInfo} */
+    const createSwipeInfo = () => ({
+        send_date: message.send_date,
+        gen_started: message.gen_started,
+        gen_finished: message.gen_finished,
+        extra: {},
+    });
+
     if (!Array.isArray(message.swipe_info)) {
-        message.swipe_info = message.swipes.map(_ => ({
-            send_date: message.send_date,
-            gen_started: message.gen_started,
-            gen_finished: message.gen_finished,
-            extra: structuredClone(message.extra) ?? {},
-        }));
+        message.swipe_info = message.swipes.map(_ => createSwipeInfo());
         updated = true;
+    }
+
+    for (let i = 0; i < message.swipes.length; i++) {
+        if (typeof message.swipes[i] !== 'string') {
+            updated = true;
+            console.warn('The message had a swipe that is not a string. It has has been set to \'\'.', message);
+            message.swipes[i] = '';
+        }
+        if (!message.swipe_info[i] || typeof message.swipe_info[i] !== 'object') {
+            updated = true;
+            console.warn('The message had missing or invalid swipe_info for a swipe. It has been backfilled.', message);
+            message.swipe_info[i] = createSwipeInfo();
+        }
     }
 
     return updated;
@@ -9426,7 +9443,7 @@ function formatSwipeCounter(current, total) {
 /**
  * Handles the swipe event.
  * @param {SwipeEvent} event Event.
- * @param {'left'|'right'} direction The direction to swipe.
+ * @param {SWIPE_DIRECTION} direction The direction to swipe.
  * @param {object} params Additional parameters.
  * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
  * @param {boolean} [params.repeated] Is the swipe event repeated.

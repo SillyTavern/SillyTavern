@@ -11,6 +11,7 @@ import {
     GEMINI_SAFETY,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
     ZAI_ENDPOINT,
@@ -67,6 +68,7 @@ const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
+const API_CHUTES = 'https://llm.chutes.ai/v1';
 const API_ELECTRONHUB = 'https://api.electronhub.ai/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
@@ -158,11 +160,12 @@ async function sendClaudeRequest(request, response) {
         const additionalHeaders = {};
         const betaHeaders = ['output-128k-2025-02-19'];
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
-        const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
+        const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model);
         const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5)/.test(request.body.model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5)/.test(request.body.model);
+        const useVerbosity = /^claude-(opus-4-5)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
@@ -268,6 +271,13 @@ async function sendClaudeRequest(request, response) {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
         }
 
+        // Verbosity = 'effort' (same values as OpenAI)
+        if (useVerbosity && request.body.verbosity) {
+            betaHeaders.push('effort-2025-11-24');
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = request.body.verbosity;
+        }
+
         if (betaHeaders.length) {
             additionalHeaders['anthropic-beta'] = betaHeaders.join(',');
         }
@@ -358,6 +368,8 @@ async function sendMakerSuiteRequest(request, response) {
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
     const includeReasoning = Boolean(request.body.include_reasoning);
+    const aspectRatio = String(request.body.request_image_aspect_ratio);
+    const imageSize = String(request.body.request_image_resolution);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -388,6 +400,7 @@ async function sendMakerSuiteRequest(request, response) {
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
+        const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -402,22 +415,29 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
+        const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
+            if (enableImageConfig) {
+                generationConfig.imageConfig = {};
+                if (imageSize && isImageSizeModel(model)) {
+                    generationConfig.imageConfig.imageSize = imageSize;
+                }
+                if (aspectRatio) {
+                    generationConfig.imageConfig.aspectRatio = aspectRatio;
+                }
+            }
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_makersuite_sysprompt;
+        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_sysprompt;
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
-        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
-            tools.push({ google_search: {} });
-        }
-
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
             const functionDeclarations = [];
+            const customTools = [];
             for (const tool of request.body.tools) {
                 if (tool.type === 'function') {
                     if (tool.function.parameters?.$schema) {
@@ -427,9 +447,24 @@ async function sendMakerSuiteRequest(request, response) {
                         delete tool.function.parameters;
                     }
                     functionDeclarations.push(tool.function);
+                } else if (tool[tool.type]) {
+                    customTools.push({ [tool.type]: tool[tool.type] });
                 }
             }
-            tools.push({ function_declarations: functionDeclarations });
+            if (functionDeclarations.length > 0) {
+                tools.push({ function_declarations: functionDeclarations });
+            }
+            // Custom tools are only supported when no function calling is present
+            if (functionDeclarations.length === 0 && customTools.length > 0) {
+                tools.push(...customTools);
+            }
+        }
+
+        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
+            // Tool use with function calling is unsupported
+            if (!tools.some(t => t.function_declarations)) {
+                tools.push({ google_search: {} });
+            }
         }
 
         if (isThinkingConfigModel(model)) {
@@ -461,6 +496,34 @@ async function sendMakerSuiteRequest(request, response) {
 
         if (tools.length) {
             body.tools = tools;
+
+            const toolChoice = request.body.tool_choice;
+            let functionCallingConfig;
+
+            // Translate OpenAI's `tool_choice` to Gemini's `functionCallingConfig`
+            if (typeof toolChoice === 'string') {
+                switch (toolChoice) {
+                    case 'none':
+                        functionCallingConfig = { mode: 'NONE' };
+                        break;
+                    case 'required':
+                        functionCallingConfig = { mode: 'ANY' };
+                        break;
+                    case 'auto':
+                        functionCallingConfig = { mode: 'AUTO' };
+                        break;
+                }
+            } else if (typeof toolChoice === 'object' && toolChoice?.function?.name) {
+                // Force a specific function call
+                functionCallingConfig = {
+                    mode: 'ANY',
+                    allowedFunctionNames: [toolChoice.function.name],
+                };
+            }
+
+            if (functionCallingConfig) {
+                body.toolConfig = { functionCallingConfig };
+            }
         }
 
         return body;
@@ -1293,6 +1356,108 @@ async function sendElectronHubRequest(request, response) {
 }
 
 /**
+ * Sends a request to Chutes.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendChutesRequest(request, response) {
+    const apiUrl = API_CHUTES;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+    if (!apiKey) {
+        console.warn('Chutes key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'repetition_penalty': request.body.repetition_penalty,
+            'min_p': request.body.min_p,
+            'top_p': request.body.top_p,
+            'top_k': request.body.top_k,
+            'seed': request.body.seed,
+            'stop': request.body.stop,
+            'reasoning_effort': request.body.reasoning_effort,
+            'logit_bias': request.body.logit_bias,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('Chutes request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('Chutes returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('Chutes response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    }
+    catch (error) {
+        console.error('Error communicating with Chutes: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * Sends a chat completion request to Azure OpenAI.
  * @param {express.Request} request Express request object (contains request.body with all generate_data)
  * @param {express.Response} response Express response object
@@ -1417,6 +1582,10 @@ router.post('/status', async function (request, statusResponse) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
         apiUrl = API_COHERE_V1;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
+        headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHUTES) {
+        apiUrl = API_CHUTES;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
         apiUrl = API_ELECTRONHUB;
@@ -1609,6 +1778,22 @@ router.post('/status', async function (request, statusResponse) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
             }
 
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHUTES && Array.isArray(data?.data)) {
+                data.data = data.data.map(model => {
+                    if (model.pricing?.prompt !== undefined && model.pricing?.completion !== undefined) {
+                        return {
+                            ...model,
+                            pricing: {
+                                ...model.pricing,
+                                input: model.pricing.prompt,
+                                output: model.pricing.completion,
+                            },
+                        };
+                    }
+                    return model;
+                });
+            }
+
             statusResponse.send(data);
 
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE && Array.isArray(data?.models)) {
@@ -1769,6 +1954,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AIMLAPI: return sendAimlapiRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.CHUTES: return sendChutesRequest(request, response);
         case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return sendElectronHubRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return sendAzureOpenAIRequest(request, response);
     }
@@ -1833,6 +2019,10 @@ router.post('/generate', function (request, response) {
 
         if (request.body.reasoning_effort) {
             bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
+        }
+
+        if (request.body.verbosity) {
+            bodyParams['verbosity'] = request.body.verbosity;
         }
 
         if (request.body.json_schema) {
@@ -1951,8 +2141,7 @@ router.post('/generate', function (request, response) {
                 'ttl': cacheTTL,
             };
         }
-    }
-    else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
         apiUrl = API_POLLINATIONS;
         apiKey = 'NONE';
         headers = {
@@ -2014,6 +2203,12 @@ router.post('/generate', function (request, response) {
     if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
             bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+        }
+    }
+
+    if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+        if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            bodyParams['verbosity'] = request.body.verbosity;
         }
     }
 
@@ -2235,6 +2430,37 @@ multimodalModels.post('/electronhub', async (_req, res) => {
         /** @type {any} */
         const data = await response.json();
         const multimodalModels = data.data.filter(m => m.metadata?.vision).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/chutes', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://llm.chutes.ai/v1/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        const data = await response.json();
+
+        const modelsData = /** @type {{object: string, data: Array<{id: string, input_modalities?: string[]}>}} */ (data);
+        const multimodalModels = modelsData.data
+            .filter(m => m.input_modalities?.includes('image'))
+            .map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
