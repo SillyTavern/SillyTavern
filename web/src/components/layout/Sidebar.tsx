@@ -1,0 +1,131 @@
+import { useEffect } from 'react';
+import { X, Search, Plus, MessageSquare } from 'lucide-react';
+import { useCharacterStore } from '../../stores/characterStore';
+import { Avatar, Button, Input } from '../ui';
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
+    useCharacterStore();
+
+  useEffect(() => {
+    fetchCharacters();
+  }, [fetchCharacters]);
+
+  const handleCharacterSelect = (name: string) => {
+    selectCharacter(name);
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Overlay (Mobile) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50
+          w-72 bg-[var(--color-bg-secondary)]
+          border-r border-[var(--color-border)]
+          flex flex-col
+          transform transition-transform duration-200 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Sidebar Header */}
+        <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--color-border)] safe-top">
+          <h2 className="font-semibold text-[var(--color-text-primary)]">Characters</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="lg:hidden p-2"
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </Button>
+        </div>
+
+        {/* Search */}
+        <div className="p-3 border-b border-[var(--color-border)]">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
+            />
+            <Input
+              type="search"
+              placeholder="Search characters..."
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Character List */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-primary)]" />
+            </div>
+          ) : characters.length === 0 ? (
+            <div className="text-center py-8 px-4">
+              <MessageSquare size={32} className="mx-auto text-[var(--color-text-secondary)] mb-2" />
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                No characters found
+              </p>
+            </div>
+          ) : (
+            <ul className="py-2">
+              {characters.map((character) => (
+                <li key={character.name}>
+                  <button
+                    onClick={() => handleCharacterSelect(character.name)}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3
+                      transition-colors
+                      ${
+                        selectedCharacter?.name === character.name
+                          ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
+                          : 'hover:bg-[var(--color-bg-tertiary)]'
+                      }
+                    `}
+                  >
+                    <Avatar src={character.avatar} alt={character.name} size="md" />
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                        {character.name}
+                      </p>
+                      {character.description && (
+                        <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                          {character.description}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* New Character Button */}
+        <div className="p-3 border-t border-[var(--color-border)] safe-bottom">
+          <Button variant="secondary" className="w-full">
+            <Plus size={18} className="mr-2" />
+            New Character
+          </Button>
+        </div>
+      </aside>
+    </>
+  );
+}
