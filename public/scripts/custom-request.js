@@ -278,7 +278,7 @@ export class TextCompletionService {
 
     /**
      * Process and send a text completion request with optional preset & instruct
-     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} custom
+     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} requestData
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {string?} [options.instructName] - Name of instruct preset for message formatting
@@ -288,13 +288,15 @@ export class TextCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(custom, options = {}, extractData = true, signal = null) {
+    static async processRequest(requestData, options = {}, extractData = true, signal = null) {
         const { presetName, instructName } = options;
-        let requestData = { ...custom };
-        const prompt = custom.prompt;
+
+        // remove any undefined params in given request data
+        requestData = this.createRequestData(requestData);
 
         /** @type {InstructSettings | undefined} */
         let instructPreset;
+        const prompt = requestData.prompt;
         // Handle instruct formatting if requested
         if (Array.isArray(prompt) && instructName) {
             const instructPresetManager = getPresetManager('instruct');
@@ -320,8 +322,8 @@ export class TextCompletionService {
             if (presetManager) {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
-                    // Convert preset to payload and merge with custom parameters
-                    requestData = this.presetToGeneratePayload(preset, requestData);
+                    // Convert preset to payload and merge with custom data
+                    requestData = this.presetToGeneratePayload(preset, {}, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -330,12 +332,10 @@ export class TextCompletionService {
             }
         }
 
-        // @ts-ignore
-        const data = this.createRequestData(requestData);
+        const response = await this.sendRequest(requestData, extractData, signal);
 
-        const response = await this.sendRequest(data, extractData, signal);
         // Remove stopping strings from the end
-        if (!data.stream && extractData) {
+        if (!requestData.stream && extractData) {
             /** @type {ExtractedData} */
             // @ts-ignore
             const extractedData = response;
@@ -394,16 +394,17 @@ export class TextCompletionService {
      * Converts a preset to a valid text completion payload.
      * Only supports temperature.
      * @param {Object} preset - The preset configuration
-     * @param {Object} customPreset - Additional parameters to override preset values
+     * @param {Object} overridePreset - Additional parameters to override preset values
+     * @param {Object} overridePayload - Additional parameters to override payload values
      * @returns {Object} - Formatted payload for text completion API
      */
-    static presetToGeneratePayload(preset, customPreset = {}) {
+    static presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
 
-        // Merge preset with custom parameters
-        preset = { ...preset, ...customPreset };
+        // apply preset overrides
+        preset = { ...preset, ...overridePreset };
 
         // Convert a few fields from preset to settings
         preset.temp = preset.temp >= 0 ? Number(preset.temp) : undefined;
@@ -416,20 +417,11 @@ export class TextCompletionService {
             settings[key] = value;
         }
 
-        // neither type nor api_type are in setting_names, but it is necessary or TC requests fail.
-        settings.type = preset.api_type;
-
         // convert to a generation payload
         const payload = createTextGenGenerationData(settings, preset.prompt, preset.genamt);
 
-        // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined) {
-                delete payload[key];
-            }
-        });
-
-        return payload;
+        // apply overrides
+        return this.createRequestData({ ...payload, ...overridePayload });
     }
 }
 
@@ -551,7 +543,7 @@ export class ChatCompletionService {
 
     /**
      * Process and send a chat completion request with optional preset
-     * @param {ChatCompletionPayload} custom
+     * @param {ChatCompletionPayload} requestData - payload data, overriding preset if given
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {boolean} [extractData=true] - Whether to extract structured data from response
@@ -559,9 +551,9 @@ export class ChatCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(custom, options, extractData = true, signal = null) {
+    static async processRequest(requestData, options, extractData = true, signal = null) {
         const { presetName } = options;
-        let requestData = { ...custom };
+        requestData = this.createRequestData(requestData);
 
         // Apply generation preset if specified
         if (presetName) {
@@ -570,7 +562,7 @@ export class ChatCompletionService {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    requestData = await this.presetToGeneratePayload(preset, requestData);
+                    requestData = await this.presetToGeneratePayload(preset, {}, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -579,25 +571,24 @@ export class ChatCompletionService {
             }
         }
 
-        const data = this.createRequestData(requestData);
-
-        return await this.sendRequest(data, extractData, signal);
+        return await this.sendRequest(requestData, extractData, signal);
     }
 
     /**
      * Converts a preset to a valid chat completion payload
      * Only supports temperature.
      * @param {Object} preset - The preset configuration
-     * @param {Object} customParams - Additional parameters to override preset values
+     * @param {Object} overridePreset - Additional parameters to override preset values
+     * @param {Object} overridePayload - Additional parameters to override payload values
      * @returns {Promise<any>} - Formatted payload for chat completion API
      */
-    static async presetToGeneratePayload(preset, customParams = {}) {
+    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
 
-        // Merge preset with custom parameters
-        preset = { ...preset, ...customParams };
+        // apply preset overrides
+        preset = { ...preset, ...overridePreset };
 
         // Fix a few fields before converting to settings
         preset.temperature = preset.temperature >= 0 ? Number(preset.temperature) : undefined;
@@ -612,16 +603,10 @@ export class ChatCompletionService {
         }
 
         // Convert from settings to generation payload
-        const data = await createGenerationParameters(settings, 'quiet', preset.messages);
+        const data = await createGenerationParameters(settings, 'quiet', preset.prompts);
         const payload = data.generate_data;
 
-        // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined) {
-                delete payload[key];
-            }
-        });
-
-        return payload;
+        // apply overrides
+        return this.createRequestData({ ...payload, ...overridePayload });
     }
 }
