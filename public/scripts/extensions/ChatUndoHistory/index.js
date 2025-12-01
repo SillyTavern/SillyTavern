@@ -26,22 +26,22 @@ class ChatHistory {
     }
     /**
      * Resets chatHistory, and set's the first entry.
-     * @param {boolean} toast toast that the has been cleared.
+     * @param {boolean} showToast toast that the has been cleared.
      */
-    async resetChatSnapshots(toast){
+    async resetChatSnapshots(showToast){
         this.chatHistory.length = 0;
         //The history interval size can be safely updated.
         this.fullHistoryInterval = extension_settings[extensionName]?.chunk_size ?? defaultChunkSize;
 
         this.saveChatSnapshot(false);
-        toast && toastr.warning(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+        showToast && toastr.warning(t`Success, You now have ${this.chatHistory.length} saved chats.`);
     }
 
     /**
      * Save a copy of chatData to chatHistory.
-     * @param {boolean} toast toast that the chat has saved.
+     * @param {boolean} showToast toast that the chat has saved.
      */
-    async saveChatSnapshot(toast){
+    async saveChatSnapshot(showToast){
         const t1 = performance.now();
         const max_chunks = extension_settings[extensionName]?.max_chunks ?? defaultMaxHistoryChunks;
         const max_history = max_chunks * this.fullHistoryInterval;
@@ -49,19 +49,19 @@ class ChatHistory {
 
         //Enforce the maximum chat length.
         if (Array.isArray(this.chatData) && this.chatData.length >= max_length) {
-            toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - max_length} messages longer than your max chat length limit (${max_length}). (Check Settings.)`);
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - max_length} messages longer than your max chat length limit (${max_length}). (Check Settings.)`);
             return;
         }
 
         //Max chunks cannot be less than zero.
         if (0 >= max_chunks) {
-            toast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History Chunks'`, t`You cannot save the chat because your Max Chunks is set to ${max_chunks}. (Check Settings.)`);
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History Chunks'`, t`You cannot save the chat because your Max Chunks is set to ${max_chunks}. (Check Settings.)`);
             return;
         }
 
         //Only save changed chats.
         if (this.fullHistoryInterval !== 1 && lodash.isEqual(this.chatData, this.getChatSnapshot(this.chatHistoryIndex))) {
-            toast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`);
+            showToast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`);
             return;
         }
 
@@ -91,7 +91,7 @@ class ChatHistory {
         }
 
         this.chatHistory.push(resultingChat);
-        toast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+        showToast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
         console.debug(`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
