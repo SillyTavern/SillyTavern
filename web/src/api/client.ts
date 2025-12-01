@@ -246,10 +246,10 @@ export const api = {
     });
   },
 
-  // Create a new chat file
+  // Create a new chat file name (without .jsonl extension - backend adds it)
   async createChat(characterName: string): Promise<string> {
     const timestamp = Date.now();
-    const fileName = `${characterName} - ${new Date(timestamp).toISOString().split('T')[0]}@${timestamp}.jsonl`;
+    const fileName = `${characterName} - ${new Date(timestamp).toISOString().split('T')[0]}@${timestamp}`;
     return fileName;
   },
 };

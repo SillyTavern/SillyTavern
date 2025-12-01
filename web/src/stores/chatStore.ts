@@ -178,7 +178,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const chats = await api.getChats(characterName);
       const chatFiles: ChatFile[] = chats.map((chat) => ({
-        fileName: chat.file_name,
+        // Strip .jsonl extension - backend adds it when loading/saving
+        fileName: chat.file_name?.replace(/\.jsonl$/, '') || chat.file_name,
         fileSize: chat.file_size,
         lastMessage: chat.last_mes,
       }));
