@@ -183,7 +183,7 @@ export const snapshotEvents = [
     event_types.MESSAGE_REASONING_DELETED,
     event_types.MESSAGE_SWIPE_DELETED ];
 
-jQuery(async () => {
+(async () => {
     await addButtons();
     await addSettings();
-});
+})();
