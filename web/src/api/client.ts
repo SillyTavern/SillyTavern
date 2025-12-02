@@ -238,7 +238,19 @@ export const api = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chatData: any[]
   ): Promise<void> {
-    await apiRequest('/api/chats/save', {
+    // First, call get to ensure the chat directory exists (backend creates it if not)
+    await apiRequest('/api/chats/get', {
+      method: 'POST',
+      body: JSON.stringify({
+        file_name: '__ensure_dir__',
+        avatar_url: avatarUrl,
+      }),
+    }).catch(() => {
+      // Ignore errors - we just want to ensure directory exists
+    });
+
+    // Now save the chat
+    const result = await apiRequest<{ result?: string; message?: string }>('/api/chats/save', {
       method: 'POST',
       body: JSON.stringify({
         avatar_url: avatarUrl,
@@ -246,6 +258,13 @@ export const api = {
         chat: chatData,
       }),
     });
+
+    console.log('[API] Save result:', result);
+
+    // Check if save actually succeeded
+    if (result && typeof result === 'object' && 'message' in result) {
+      throw new Error(result.message || 'Save failed');
+    }
   },
 
   // Create a new chat file name (without .jsonl extension - backend adds it)
