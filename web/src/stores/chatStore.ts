@@ -366,5 +366,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  clearChat: () => set({ messages: [], currentChatFile: null }),
+  clearChat: () => set({ messages: [], chatFiles: [], currentChatFile: null }),
 }));

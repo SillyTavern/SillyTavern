@@ -7,7 +7,7 @@ import { ChatInput } from './ChatInput';
 
 export function ChatView() {
   const { selectedCharacter } = useCharacterStore();
-  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles } = useChatStore();
+  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
 
@@ -18,20 +18,13 @@ export function ChatView() {
     if (!selectedCharacter) return;
     if (lastCharacterRef.current === selectedCharacter.avatar) return;
 
+    // Clear old chat state before loading new character
+    clearChat();
     lastCharacterRef.current = selectedCharacter.avatar;
 
-    // Check for existing chats and load the most recent one, or start new
-    const loadOrCreateChat = async () => {
-      try {
-        await fetchChatFiles(selectedCharacter.avatar);
-        // fetchChatFiles updates chatFiles state, we check it after
-      } catch {
-        // Start fresh on error
-        startNewChat(selectedCharacter);
-      }
-    };
-    loadOrCreateChat();
-  }, [selectedCharacter, fetchChatFiles, startNewChat]);
+    // Fetch chat files for new character
+    fetchChatFiles(selectedCharacter.avatar);
+  }, [selectedCharacter, fetchChatFiles, clearChat]);
 
   // When chat files are loaded, load the most recent or start new
   useEffect(() => {
