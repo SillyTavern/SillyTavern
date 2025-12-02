@@ -187,18 +187,42 @@ export const api = {
     });
   },
 
-  async createCharacter(data: CharacterCreateData): Promise<string> {
+  async createCharacter(data: CharacterCreateData, avatarFile?: File): Promise<string> {
     // Returns avatar filename like "CharacterName.png" as plain text
     const token = await getCsrfToken();
-    const response = await fetch('/api/characters/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': token,
-      },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    });
+
+    let response: Response;
+
+    if (avatarFile) {
+      // Use multipart form data when uploading an image
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      response = await fetch('/api/characters/create', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': token,
+        },
+        credentials: 'include',
+        body: formData,
+      });
+    } else {
+      // JSON body when no image
+      response = await fetch('/api/characters/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': token,
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Failed to create character' }));
@@ -216,18 +240,41 @@ export const api = {
     });
   },
 
-  async editCharacter(data: CharacterEditData): Promise<void> {
+  async editCharacter(data: CharacterEditData, avatarFile?: File): Promise<void> {
     // Backend returns plain text "OK", not JSON
     const token = await getCsrfToken();
-    const response = await fetch('/api/characters/edit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': token,
-      },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    });
+
+    let response: Response;
+
+    if (avatarFile) {
+      // Use multipart form data when uploading an image
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      response = await fetch('/api/characters/edit', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': token,
+        },
+        credentials: 'include',
+        body: formData,
+      });
+    } else {
+      response = await fetch('/api/characters/edit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': token,
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
-import { Modal, Button, Input, TextArea } from '../ui';
+import { Modal, Button, Input, TextArea, ImageUpload } from '../ui';
 
 interface CharacterCreationProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface CharacterCreationProps {
 export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreationProps) {
   const { createCharacter, isCreating, error, clearError } = useCharacterStore();
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,20 +38,24 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
       return;
     }
 
-    const avatarUrl = await createCharacter({
-      ch_name: formData.name.trim(),
-      description: formData.description.trim(),
-      personality: formData.personality.trim(),
-      first_mes: formData.firstMessage.trim(),
-      scenario: formData.scenario.trim(),
-      mes_example: formData.exampleMessages.trim(),
-      creator_notes: formData.creatorNotes.trim(),
-      creator: formData.creator.trim(),
-      tags: formData.tags.trim(),
-    });
+    const avatarUrl = await createCharacter(
+      {
+        ch_name: formData.name.trim(),
+        description: formData.description.trim(),
+        personality: formData.personality.trim(),
+        first_mes: formData.firstMessage.trim(),
+        scenario: formData.scenario.trim(),
+        mes_example: formData.exampleMessages.trim(),
+        creator_notes: formData.creatorNotes.trim(),
+        creator: formData.creator.trim(),
+        tags: formData.tags.trim(),
+      },
+      avatarFile || undefined
+    );
 
     if (avatarUrl) {
       // Reset form
+      setAvatarFile(null);
       setFormData({
         name: '',
         description: '',
@@ -75,6 +80,12 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Create Character" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Avatar Upload */}
+        <ImageUpload
+          onImageSelect={setAvatarFile}
+          label="Avatar"
+        />
+
         {/* Name - Required */}
         <Input
           label="Name *"

@@ -12,8 +12,8 @@ interface CharacterState {
   // Actions
   fetchCharacters: () => Promise<void>;
   selectCharacter: (avatar: string) => Promise<void>;
-  createCharacter: (data: CharacterCreateData) => Promise<string | null>;
-  updateCharacter: (data: CharacterEditData) => Promise<boolean>;
+  createCharacter: (data: CharacterCreateData, avatarFile?: File) => Promise<string | null>;
+  updateCharacter: (data: CharacterEditData, avatarFile?: File) => Promise<boolean>;
   deleteCharacter: (avatar: string) => Promise<boolean>;
   clearSelection: () => void;
   clearError: () => void;
@@ -75,10 +75,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
 
   clearSelection: () => set({ selectedCharacter: null }),
 
-  createCharacter: async (data: CharacterCreateData) => {
+  createCharacter: async (data: CharacterCreateData, avatarFile?: File) => {
     set({ isCreating: true, error: null });
     try {
-      const avatarUrl = await api.createCharacter(data);
+      const avatarUrl = await api.createCharacter(data, avatarFile);
       // Refresh the character list
       await get().fetchCharacters();
       set({ isCreating: false });
@@ -92,10 +92,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     }
   },
 
-  updateCharacter: async (data: CharacterEditData) => {
+  updateCharacter: async (data: CharacterEditData, avatarFile?: File) => {
     set({ isEditing: true, error: null });
     try {
-      await api.editCharacter(data);
+      await api.editCharacter(data, avatarFile);
       // Refresh the character list and selected character
       await get().fetchCharacters();
       // Re-select to get updated data

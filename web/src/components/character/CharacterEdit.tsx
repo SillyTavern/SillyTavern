@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
 import type { CharacterInfo } from '../../api/client';
-import { Modal, Button, Input, TextArea } from '../ui';
+import { Modal, Button, Input, TextArea, ImageUpload } from '../ui';
 
 interface CharacterEditProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface CharacterEditProps {
 export function CharacterEdit({ isOpen, onClose, character, onSaved }: CharacterEditProps) {
   const { updateCharacter, isEditing, error, clearError } = useCharacterStore();
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -25,9 +26,12 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
     tags: '',
   });
 
+  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+
   // Populate form when character changes or modal opens
   useEffect(() => {
     if (isOpen && character) {
+      setAvatarFile(null); // Reset file selection
       setFormData({
         name: character.name || '',
         description: character.description || character.data?.description || '',
@@ -56,20 +60,23 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
       return;
     }
 
-    const success = await updateCharacter({
-      avatar_url: character.avatar,
-      ch_name: formData.name.trim(),
-      description: formData.description.trim(),
-      personality: formData.personality.trim(),
-      first_mes: formData.firstMessage.trim(),
-      scenario: formData.scenario.trim(),
-      mes_example: formData.exampleMessages.trim(),
-      creator_notes: formData.creatorNotes.trim(),
-      creator: formData.creator.trim(),
-      tags: formData.tags.trim(),
-      chat: character.create_date, // Preserve existing
-      create_date: character.create_date, // Preserve existing
-    });
+    const success = await updateCharacter(
+      {
+        avatar_url: character.avatar,
+        ch_name: formData.name.trim(),
+        description: formData.description.trim(),
+        personality: formData.personality.trim(),
+        first_mes: formData.firstMessage.trim(),
+        scenario: formData.scenario.trim(),
+        mes_example: formData.exampleMessages.trim(),
+        creator_notes: formData.creatorNotes.trim(),
+        creator: formData.creator.trim(),
+        tags: formData.tags.trim(),
+        chat: character.create_date, // Preserve existing
+        create_date: character.create_date, // Preserve existing
+      },
+      avatarFile || undefined
+    );
 
     if (success) {
       onClose();
@@ -85,6 +92,13 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={`Edit ${character.name}`} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Avatar Upload */}
+        <ImageUpload
+          currentImage={getAvatarUrl(character.avatar)}
+          onImageSelect={setAvatarFile}
+          label="Avatar"
+        />
+
         {/* Name - Required */}
         <Input
           label="Name *"
