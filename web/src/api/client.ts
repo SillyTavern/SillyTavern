@@ -250,20 +250,21 @@ export const api = {
     });
 
     // Now save the chat
-    const result = await apiRequest<{ result?: string; message?: string }>('/api/chats/save', {
+    const result = await apiRequest<{ result?: string; message?: string; error?: string }>('/api/chats/save', {
       method: 'POST',
       body: JSON.stringify({
         avatar_url: avatarUrl,
         file_name: fileName,
         chat: chatData,
+        force: true, // Bypass integrity check
       }),
     });
 
     console.log('[API] Save result:', result);
 
     // Check if save actually succeeded
-    if (result && typeof result === 'object' && 'message' in result) {
-      throw new Error(result.message || 'Save failed');
+    if (result && typeof result === 'object' && ('message' in result || 'error' in result)) {
+      throw new Error(result.message || result.error || 'Save failed');
     }
   },
 
