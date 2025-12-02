@@ -1524,6 +1524,7 @@ export function replaceMacrosInList(str) {
 /**
  * Build the generation parameter object for an text completion request
  * @param {TextCompletionSettings} settings Text completion settings to use
+ * @param {string} model Model to use
  * @param {string} finalPrompt The final prompt to send
  * @param {number} maxTokens Max allowed generation tokens
  * @param {boolean} isImpersonate Whether this is for an impersonation
@@ -1532,7 +1533,10 @@ export function replaceMacrosInList(str) {
  * @param {string} type Request type (impersonate, quiet, continue, etc)
  * @returns {object} Final generation parameters object appropriate for the text completion source
  */
-export function createTextGenGenerationData(settings, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
+export function createTextGenGenerationData(settings, model, finalPrompt = null, maxTokens = null, isImpersonate = false, isContinue = false, cfgValues = null, type = 'quiet') {
+    settings = settings ?? textgenerationwebui_settings;
+    model = model ?? getTextGenModel(settings);
+
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported(settings);
     const { banned_tokens, banned_strings } = getCustomTokenBans(settings);
@@ -1544,7 +1548,7 @@ export function createTextGenGenerationData(settings, finalPrompt = null, maxTok
 
     let params = {
         'prompt': finalPrompt,
-        'model': getTextGenModel(settings),
+        'model': model,
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? getLogprobsNumber(settings.type) : undefined,
@@ -1782,7 +1786,8 @@ export function createTextGenGenerationData(settings, finalPrompt = null, maxTok
 }
 
 export async function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
-    const params = createTextGenGenerationData(textgenerationwebui_settings, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type);
+    const model = getTextGenModel(textgenerationwebui_settings);
+    const params = createTextGenGenerationData(textgenerationwebui_settings, model, finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type);
     await eventSource.emit(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
     return params;
 }

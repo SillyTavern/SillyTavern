@@ -407,7 +407,7 @@ export class TextCompletionService {
         }
 
         // convert to a generation payload
-        const payload = createTextGenGenerationData(settings, overridePayload.prompt, preset.genamt);
+        const payload = createTextGenGenerationData(settings, overridePayload.model, overridePayload.prompt, preset.genamt);
 
         // apply overrides
         return this.createRequestData({ ...payload, ...overridePayload });
