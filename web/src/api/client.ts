@@ -217,10 +217,22 @@ export const api = {
   },
 
   async editCharacter(data: CharacterEditData): Promise<void> {
-    await apiRequest('/api/characters/edit', {
+    // Backend returns plain text "OK", not JSON
+    const token = await getCsrfToken();
+    const response = await fetch('/api/characters/edit', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token,
+      },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP ${response.status}`);
+    }
   },
 
   // Chat endpoints - use avatar filename directly for consistency
