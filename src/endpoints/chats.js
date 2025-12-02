@@ -445,7 +445,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
         throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
     }
     tryWriteFileSync(filePath, jsonlData);
-    getBackupFunction(handle)(directoryName, backupDirectory, chatData);
+    getBackupFunction(handle)(directoryName, backupDirectory, jsonlData);
 }
 
 router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
