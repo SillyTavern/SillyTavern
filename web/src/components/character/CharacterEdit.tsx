@@ -26,7 +26,7 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
     tags: '',
   });
 
-  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   // Populate form when character changes or modal opens
   useEffect(() => {

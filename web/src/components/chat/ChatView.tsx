@@ -11,7 +11,7 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
 
-  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   // Load chat when character changes
   useEffect(() => {

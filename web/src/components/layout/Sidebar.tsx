@@ -29,8 +29,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     onClose();
   };
 
-  // Build avatar URL from filename
-  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  // Build avatar URL from filename - uses SillyTavern's thumbnail system
+  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   return (
     <>

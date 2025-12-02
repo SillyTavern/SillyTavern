@@ -16,7 +16,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { selectedCharacter } = useCharacterStore();
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   return (
     <header className="h-14 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] flex items-center px-4 gap-3 safe-top">
