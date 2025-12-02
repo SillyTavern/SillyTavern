@@ -7294,8 +7294,8 @@ export async function openCharacterChat(file_name) {
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
 
-export function changeMainAPI() {
-    const selectedVal = $('#main_api').val();
+export function changeMainAPI(api = null) {
+    const selectedVal = api ?? $('#main_api').val();
     //console.log(selectedVal);
     const apiElements = {
         'koboldhorde': {
