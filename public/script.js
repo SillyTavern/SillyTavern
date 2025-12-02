@@ -281,6 +281,7 @@ import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { tree, spliceStickToChat, Tree } from './scripts/chat-tree.js';
 import { AudioPlayer } from './scripts/audio-player.js';
+import { migrateChatTreePopup } from './scripts/chat-tree-migrate.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -730,6 +731,7 @@ async function firstLoadInit() {
     await hideLoader();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
+    await migrateChatTreePopup();
 }
 
 async function fixViewport() {
