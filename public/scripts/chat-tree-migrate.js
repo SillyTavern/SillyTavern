@@ -67,7 +67,7 @@ export async function migrateChatTreePopup() {
     if (!hasSeenNotice) {
         const result = await Popup.show.confirm(
             t`Warning: Clicking yes MAY ERASE your chat trees. Take a backup now.`,
-            t`Your chatTree files must be migrated. Please see https://github.com/SillyTavern/SillyTavern/pull/4573 for more information.`,
+            t`Your chatTree files must be migrated. Please see https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3600547058 for more information.`,
         );
         if (result) {
             await migrate();
