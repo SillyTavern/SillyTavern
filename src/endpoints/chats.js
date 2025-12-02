@@ -441,7 +441,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
-    if (doIntegrityCheck && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
+    if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
         throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
     }
     tryWriteFileSync(filePath, jsonlData);
