@@ -416,7 +416,7 @@ export class TextCompletionService {
         }
 
         // convert to a generation payload
-        const payload = createTextGenGenerationData(settings, preset.prompt, preset.genamt);
+        const payload = createTextGenGenerationData(settings, overridePayload.prompt, preset.genamt);
 
         // apply overrides
         return this.createRequestData({ ...payload, ...overridePayload });
@@ -600,7 +600,7 @@ export class ChatCompletionService {
         }
 
         // Convert from settings to generation payload
-        const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', preset.prompts);
+        const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', overridePayload.messages);
         const payload = data.generate_data;
 
         // apply overrides
