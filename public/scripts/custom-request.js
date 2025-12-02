@@ -408,10 +408,6 @@ export class TextCompletionService {
         // apply preset overrides
         preset = { ...preset, ...overridePreset };
 
-        // Convert a few fields from preset to settings
-        preset.temp = preset.temp >= 0 ? Number(preset.temp) : undefined;
-        preset.min_p = preset.min_p >= 0 ? Number(preset.min_p) : undefined;
-
         // Only take fields from the preset specified in setting_names to use as TextCompletionSettings
         const settings = structuredClone(textgenerationwebui_settings);
         for (const [key, value] of Object.entries(preset)) {
@@ -592,8 +588,7 @@ export class ChatCompletionService {
         // apply preset overrides
         preset = { ...preset, ...overridePreset };
 
-        // Fix a few fields before converting to settings
-        preset.temperature = preset.temperature >= 0 ? Number(preset.temperature) : undefined;
+        // Fix any fields before converting to settings
         preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
         // Convert from preset to ChatCompletionSettings
