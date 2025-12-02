@@ -2303,10 +2303,12 @@ function getAimlapiModelTemplate(option) {
 /**
  * Get the reasoning effort from chat completion settings
  * @param {ChatCompletionSettings} settings Chat completion settings
+ * @param {string} model Model name (optional, used for ElectronHub)
  * @returns {string} Reasoning effort, if present
  */
-function getReasoningEffort(settings = null) {
+function getReasoningEffort(settings = null, model = null) {
     settings = settings ?? oai_settings;
+    model = model ?? getChatCompletionModel(settings);
 
     // These sources expect the effort as string.
     const reasoningEffortSources = [
@@ -2332,7 +2334,7 @@ function getReasoningEffort(settings = null) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(getChatCompletionModel(settings))
+                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
@@ -2347,7 +2349,7 @@ function getReasoningEffort(settings = null) {
     // Check if the resolved effort supported by the model
     if (settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
         if (Array.isArray(model_list) && reasoningEffort) {
-            const currentModel = model_list.find(m => m.id === settings.electronhub_model);
+            const currentModel = model_list.find(m => m.id === model);
             const supportedEfforts = currentModel?.metadata?.supported_reasoning_efforts;
             if (Array.isArray(supportedEfforts) && supportedEfforts.includes(reasoningEffort)) {
                 return reasoningEffort;
@@ -2496,7 +2498,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'char_name': name2,
         'group_names': getGroupNames(),
         'include_reasoning': Boolean(settings.show_thoughts),
-        'reasoning_effort': getReasoningEffort(settings),
+        'reasoning_effort': getReasoningEffort(settings, model),
         'enable_web_search': Boolean(settings.enable_web_search),
         'request_images': Boolean(settings.request_images),
         'request_image_resolution': String(settings.request_image_resolution),
