@@ -56,8 +56,9 @@ export class Tree {
         }
 
         const startTime = performance.now();
+        const partialChat = chat.slice(0, end + 1);
         // Traverse the tree following the chat's path.
-        for (const chatMessage of chat.slice(0, end + 1)) { //This will cause all branches after end to be deleted.
+        for (const chatMessage of partialChat) { //This will cause all branches after end to be deleted.
             console.assert(typeof branch !== 'undefined', 'The branch must exist.');
 
             //Default to the first swipe.
