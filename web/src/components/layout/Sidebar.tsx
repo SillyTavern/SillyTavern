@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Search, Plus, MessageSquare } from 'lucide-react';
+import { X, Search, Plus, MessageSquare, Users, ChevronLeft } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { Avatar, Button, Input } from '../ui';
 import { CharacterCreation } from '../character/CharacterCreation';
@@ -11,6 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCharacterList, setShowCharacterList] = useState(false);
   const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
     useCharacterStore();
 
@@ -18,19 +19,30 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     fetchCharacters();
   }, [fetchCharacters]);
 
+  // When a character is selected, hide the list (show portrait)
+  useEffect(() => {
+    if (selectedCharacter) {
+      setShowCharacterList(false);
+    }
+  }, [selectedCharacter]);
+
   const handleCharacterCreated = (avatarUrl: string) => {
-    // Select the newly created character
     selectCharacter(avatarUrl);
+    setShowCharacterList(false);
     onClose();
   };
 
   const handleCharacterSelect = (avatar: string) => {
     selectCharacter(avatar);
+    setShowCharacterList(false);
     onClose();
   };
 
   // Build avatar URL from filename - uses SillyTavern's thumbnail system
   const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
+
+  // Determine what to show: character portrait or character list
+  const showPortrait = selectedCharacter && !showCharacterList;
 
   return (
     <>
@@ -53,93 +65,178 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {/* Sidebar Header */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--color-border)] safe-top">
-          <h2 className="font-semibold text-[var(--color-text-primary)]">Characters</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="lg:hidden p-2"
-            aria-label="Close sidebar"
-          >
-            <X size={20} />
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="p-3 border-b border-[var(--color-border)]">
-          <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
-            />
-            <Input
-              type="search"
-              placeholder="Search characters..."
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {/* Character List */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-primary)]" />
+        {showPortrait ? (
+          /* Character Portrait View */
+          <>
+            {/* Header with switch button */}
+            <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--color-border)] safe-top">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCharacterList(true)}
+                className="p-2 -ml-2"
+                aria-label="Switch character"
+              >
+                <Users size={20} />
+              </Button>
+              <h2 className="font-semibold text-[var(--color-text-primary)] truncate flex-1 text-center px-2">
+                {selectedCharacter.name}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="lg:hidden p-2 -mr-2"
+                aria-label="Close sidebar"
+              >
+                <X size={20} />
+              </Button>
             </div>
-          ) : characters.length === 0 ? (
-            <div className="text-center py-8 px-4">
-              <MessageSquare size={32} className="mx-auto text-[var(--color-text-secondary)] mb-2" />
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                No characters found
-              </p>
-            </div>
-          ) : (
-            <ul className="py-2">
-              {characters.map((character) => (
-                <li key={character.avatar}>
-                  <button
-                    onClick={() => handleCharacterSelect(character.avatar)}
-                    className={`
-                      w-full flex items-center gap-3 px-4 py-3
-                      transition-colors
-                      ${
-                        selectedCharacter?.avatar === character.avatar
-                          ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
-                          : 'hover:bg-[var(--color-bg-tertiary)]'
-                      }
-                    `}
-                  >
-                    <Avatar src={getAvatarUrl(character.avatar)} alt={character.name} size="md" />
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
-                        {character.name}
-                      </p>
-                      {character.description && (
-                        <p className="text-xs text-[var(--color-text-secondary)] truncate">
-                          {character.description}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
 
-        {/* New Character Button */}
-        <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus size={18} className="mr-2" />
-            New Character
-          </Button>
-        </div>
+            {/* Full Character Portrait */}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+              <div className="w-full max-w-[240px] aspect-[2/3] rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)]">
+                <img
+                  src={getAvatarUrl(selectedCharacter.avatar)}
+                  alt={selectedCharacter.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to placeholder on error
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+
+              {/* Character Info */}
+              <div className="mt-4 text-center w-full px-2">
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                  {selectedCharacter.name}
+                </h3>
+                {selectedCharacter.description && (
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-2 line-clamp-3">
+                    {selectedCharacter.description}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Switch Character Button */}
+            <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => setShowCharacterList(true)}
+              >
+                <Users size={18} className="mr-2" />
+                Switch Character
+              </Button>
+            </div>
+          </>
+        ) : (
+          /* Character List View */
+          <>
+            {/* Sidebar Header */}
+            <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--color-border)] safe-top">
+              {selectedCharacter ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCharacterList(false)}
+                  className="p-2 -ml-2"
+                  aria-label="Back to character"
+                >
+                  <ChevronLeft size={20} />
+                </Button>
+              ) : (
+                <div className="w-9" />
+              )}
+              <h2 className="font-semibold text-[var(--color-text-primary)]">Characters</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="lg:hidden p-2 -mr-2"
+                aria-label="Close sidebar"
+              >
+                <X size={20} />
+              </Button>
+            </div>
+
+            {/* Search */}
+            <div className="p-3 border-b border-[var(--color-border)]">
+              <div className="relative">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
+                />
+                <Input
+                  type="search"
+                  placeholder="Search characters..."
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Character List */}
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-primary)]" />
+                </div>
+              ) : characters.length === 0 ? (
+                <div className="text-center py-8 px-4">
+                  <MessageSquare size={32} className="mx-auto text-[var(--color-text-secondary)] mb-2" />
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    No characters found
+                  </p>
+                </div>
+              ) : (
+                <ul className="py-2">
+                  {characters.map((character) => (
+                    <li key={character.avatar}>
+                      <button
+                        onClick={() => handleCharacterSelect(character.avatar)}
+                        className={`
+                          w-full flex items-center gap-3 px-4 py-3
+                          transition-colors
+                          ${
+                            selectedCharacter?.avatar === character.avatar
+                              ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
+                              : 'hover:bg-[var(--color-bg-tertiary)]'
+                          }
+                        `}
+                      >
+                        <Avatar src={getAvatarUrl(character.avatar)} alt={character.name} size="md" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                            {character.name}
+                          </p>
+                          {character.description && (
+                            <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                              {character.description}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* New Character Button */}
+            <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus size={18} className="mr-2" />
+                New Character
+              </Button>
+            </div>
+          </>
+        )}
       </aside>
 
       {/* Character Creation Modal */}
