@@ -182,12 +182,25 @@ export const api = {
   },
 
   async createCharacter(data: CharacterCreateData): Promise<string> {
-    // Returns avatar filename like "CharacterName.png"
-    const result = await apiRequest<string>('/api/characters/create', {
+    // Returns avatar filename like "CharacterName.png" as plain text
+    const token = await getCsrfToken();
+    const response = await fetch('/api/characters/create', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token,
+      },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
-    return result;
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to create character' }));
+      throw new Error(error.error || error.message || `HTTP ${response.status}`);
+    }
+
+    // Backend returns plain text (avatar filename), not JSON
+    return response.text();
   },
 
   async deleteCharacter(avatarUrl: string, deleteChats: boolean = true): Promise<void> {
