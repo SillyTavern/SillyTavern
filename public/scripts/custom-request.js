@@ -230,43 +230,34 @@ export class TextCompletionService {
                         message.role === 'user',
                         message.role === 'system',
                         undefined,
-                        name1,
-                        name2,
+                        name1,  // for macros
+                        name2,  // for macros
                         undefined,
                         instructPreset,
                     );
                 }
 
                 // Add prompt formatting for the last message.
+                // e.g. "<|im_start|>assistant"
                 if (isLastMessage) {
-                    if (!prefillActive) { // e.g. "<|im_start|>user:"
-                        messageContent += formatInstructModePrompt(  // used for formatting the last line
-                            message.name ?? message.role,
-                            false,  // not an impersonation
-                            undefined,  // no prompt bias
-                            name1,
-                            name2,
-                            true,
-                            false,
-                            instructPreset,
-                        );
-                    } else { // e.g. "<|im_start|>assistant: Hello, my name is"
-                        const overriddenInstructPreset = structuredClone(instructPreset);
-                        messageContent = formatInstructModePrompt(  // used for formatting the last line
-                            message.name ?? message.role,
-                            false,  // not an impersonation
-                            message.content,  // the last message is the prompt bias
-                            name1,
-                            name2,
-                            true,
-                            false,
-                            overriddenInstructPreset,
-                        );
+                    let last_line = formatInstructModePrompt(
+                        'assistant',  // for sequences using {{name}}
+                        false,  // not an impersonation
+                        prefillActive ? message.content : undefined,  // if using prefill, last message is the prefill
+                        name1,  // for macros
+                        name2,  // for macros
+                        true,   // quiet
+                        false,
+                        instructPreset,
+                    );
 
-                        // remove newline after prefill if it's not in the prefill itself
-                        if (messageContent.endsWith('\n') && !message.content.endsWith('\n')) {
-                            messageContent = messageContent.slice(0, -1);
+                    if (prefillActive) {  // content is the prefilled message
+                        if (last_line.endsWith('\n') && !message.content.endsWith('\n')) {
+                            last_line = last_line.slice(0, -1);  // remove newline after prefill if it's not in the prefill itself
                         }
+                        messageContent = last_line;
+                    } else {  // append last line to content (e.g. "<|im_start|>assistant:")
+                        messageContent += last_line;
                     }
                 }
             }
