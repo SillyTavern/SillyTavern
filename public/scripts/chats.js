@@ -1880,7 +1880,7 @@ export function restoreNeutralChat() {
     const { chat: neutralChatData, chatTree: neutralChatTree, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
     chat.splice(0, chat.length, ...neutralChatData);
     updateChatMetadata(neutralChatMetadata, true);
-    if (power_user.enable_chat_tree) {
+    if (tree.toggled()) {
         tree.setChatTree(neutralChatTree);
     }
     sessionStorage.removeItem(NEUTRAL_CHAT_KEY);

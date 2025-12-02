@@ -43,7 +43,7 @@ async function migrate() {
             count += await searchCharacter(char, null);
         }
         accountStorage.setItem(key, 'true');
-        toastr.success(`Up to ${count} characters have been migrated, check the server's console for logs for more information.`);
+        toastr.success(t`Up to ${count} characters have been migrated, check the server's console for logs for more information.`);
         await Popup.show.text(
             t`Success!`,
             t`Up to ${count} characters have been migrated, check the console for logs. After confirming you have not lost data, you can delete the files ending in '.migrated' from the chatTree folder.`,

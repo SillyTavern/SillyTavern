@@ -1,35 +1,105 @@
 import { chat } from '../script.js';
 import { eventSource, event_types } from './events.js';
+import { t } from './i18n.js';
+import { Popup } from './popup.js';
 import { power_user } from './power-user.js';
+import { accountStorage } from './util/AccountStorage.js';
+
+// https://codegolf.stackexchange.com/a/141220 console.log((f=_=>eval(`try{-~f()}catch(e){}`))())
+// The stack limit differs per browser, 3000 is safe.
+export const stackLimit = 3000;
+export const warnInterval = 10;
+export const warnLimit = stackLimit - 100;
+
+const limitKey = 'chatTreeStackLimitNoticeShown';
+
+let seenLimitToast = false;
+
+//Show the notice once per chat.
+eventSource.on(event_types.CHAT_CHANGED, ()=> {
+    seenLimitToast = false;
+});
 
 export class Tree {
     /**
      *
      * @param {ChatTree} tree The initial chatTree.
-     * @param {boolean} active If true, the MESSAGE_SWIPE_DELETED event will effect the tree.
+     * @param {boolean} active If true, events will effect the tree.
      */
     constructor(tree = {}, active = true) {
         /** @type {ChatTree} */
         this.chatTree = tree;
+        this.active = active;
 
-        if (active) {
+        if (this.active) {
             eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, newSwipeId }) => {
-                if (power_user.enable_chat_tree) {
+                if (this.enabled()) {
                     messageId = Number(messageId);
                     swipeId = Number(swipeId);
                     newSwipeId = Number(newSwipeId);
                     await this.deleteBranch(chat, messageId, swipeId, newSwipeId);
                 }
             });
+            //Warn the user if the chatTree will be disabled soon.
+            eventSource.on(event_types.MESSAGE_SENT, () => this.handleMessage.call(this));
+            eventSource.on(event_types.MESSAGE_RECEIVED, () => this.handleMessage.call(this));
         }
     }
+
+    /**
+     * Show the limit popups once.
+     */
+    limitPopup() {
+        let seenLimitPopup = accountStorage.getItem(limitKey);
+        if (!seenLimitToast) {
+            toastr.error(t`'Swiping on all messages' has been disabled.`,`The message limit of ${stackLimit} has been reached.`);
+            seenLimitToast = true;
+        }
+        if (!seenLimitPopup) {
+            Popup.show.text(t`Swiping on all messages has been disabled due to the browser stack limit.`, t`Your old branches still exist. you may delete messages, or fork the chat to access them. If you encounter this limit often, let us know.`);
+            seenLimitPopup = 'true';
+            accountStorage.setItem(limitKey, seenLimitPopup);
+        }
+    }
+    /**
+     * Warn the user before showing a popup.
+     */
+    handleMessage() {
+        if (this.active && this.toggled()) {
+            if (chat.length >= stackLimit) {
+                this.limitPopup();
+            }
+            //Show the warn limit once every 10 messages.
+            else if (chat.length >= warnLimit && (chat.length % warnInterval == 0)) {
+                toastr.warning(t`Soon, only the last message will be swipeable.`,t`You are nearing the 'Show Swipes for all messages' limit of ${stackLimit}.`);
+            }
+        }
+    }
+
+    /**
+     * Returns power_user.enable_chat_tree if this is an active chatTree.
+     * See renameGroupMember.
+     * @returns {boolean}
+     */
+    toggled() {
+        return !this.active || power_user.enable_chat_tree;
+    }
+    /**
+     * Returns true if the the chatTree is enabled, or it's not active.
+     * @returns {boolean}
+     */
+    enabled() {
+        return !this.active || ( this.toggled() && chat.length <= stackLimit);
+    }
+
     /**
      * Sets the chatTree if (power_user.enable_chat_tree == true).
      * @param {ChatTree} newTree
      * @returns {ChatTree}
      */
     setChatTree(newTree) {
-        if (power_user.enable_chat_tree) {
+        //This is allowed regardless of the stackLimit.
+        if (this.toggled()) {
             this.chatTree = newTree;
             return this.chatTree;
         }

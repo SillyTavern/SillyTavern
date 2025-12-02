@@ -7027,7 +7027,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
         ? chat.slice(0, Number(mesId) + 1)
         : chat.slice();
 
-    if (power_user.enable_chat_tree) {
+    if (tree.enabled()) {
         await tree.saveChatToTree(chat);
     }
 
@@ -7892,7 +7892,7 @@ export async function messageEdit(editMessageId) {
     updateEditArrowClasses();
 
     //Add a fork button if chat tree is enabled.
-    if (power_user.enable_chat_tree && swipeState != SWIPE_STATE.EDITING) {
+    if (tree.enabled() && swipeState != SWIPE_STATE.EDITING) {
         //Only add one.
         if (messageBlock.find('.mes_edit_fork').length == 0) {
             addBranchButton(messageBlock);
@@ -8827,7 +8827,7 @@ export function isMessageSwipeable(messageId, message = undefined) {
         ((messageId > (this_edit_mes_id ?? -1)) && (swipeState != SWIPE_STATE.EDITING)) &&
 
         //If the chat tree is not enabled and
-        ((power_user?.enable_chat_tree === true) ||
+        ((tree.enabled()) ||
         //If the message is the last message, and it exists.
         (messageId == chat.length - 1) &&
         (message &&
@@ -8872,7 +8872,7 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     else if (!message?.is_user && !message?.is_system) return OVERSWIPE_BEHAVIOR.REGENERATE;
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
     //If the chat_tree is enabled, more messages can be swiped.
-    else if (power_user?.enable_chat_tree == true) {
+    else if (tree.enabled()) {
         //User messages allow for an edit before triggering a new generation.
         if (message?.is_user) return OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
     }
@@ -9818,7 +9818,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //If swipe_id has changed, or the source is being deleted.
         if (newSwipeId !== originalSwipeId || source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK) {
             //Update the chat.
-            await syncWithSwipeId(mesId);
+            await saveToTree();
             await loadFromSwipeId(mesId, newSwipeId);
             //Transition to the new chat.
             await animateSwipe();
@@ -9848,14 +9848,13 @@ export async function swipe(event, direction, { source, repeated, message = chat
     }
 
     /**
-     * Saves to the chatTree.
+     * Saves to the chatTree if it's enabled.
      *
-     * @param {number} mesId
      */
-    async function syncWithSwipeId(mesId){
+    async function saveToTree(){
         //Do not save deleted messages.
         //Do not save when swiping back from a failed generation.
-        if (power_user.enable_chat_tree && !(source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK)) {
+        if (tree.enabled() && !(source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK)) {
             //Everything after end will be pruned from the tree.
             let end = chat.length - 1;
             //Save the chat to the chatTree.
@@ -9885,7 +9884,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         }
 
 
-        if (power_user.enable_chat_tree) {
+        if (tree.enabled()) {
             //Get chat after the swipe.
             let stick = await tree.getStick(chat, mesId);
 
@@ -10051,7 +10050,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         }
 
         //Swap in updated messages.
-        if (power_user.enable_chat_tree) {
+        if (tree.enabled()) {
             await redisplayChat(chat, mesId + 1);
         }
 
@@ -10148,7 +10147,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             newSwipeId = chat[mesId]['swipes'].length;
 
             //Do not load a new swipe, instead generate a new mesage.
-            await syncWithSwipeId(mesId);
+            await saveToTree();
             //Update the swipe_id.
             chat[mesId]['swipe_id'] = newSwipeId;
 
@@ -10162,7 +10161,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 return;
             }
             //Allow edits to user messages before generation. Else trigger a swipe generation.
-            else if (overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE && power_user.enable_chat_tree) {
+            else if (overswipe == OVERSWIPE_BEHAVIOR.EDIT_GENERATE && tree.enabled()) {
                 await swipeGenerate();
                 await endSwipe();
                 return;
@@ -11752,7 +11751,7 @@ jQuery(async function () {
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
         let canDeleteSwipe;
         //If the chatTree is enabled, then old swipes and user swipes can be deleted.
-        if (power_user.enable_chat_tree) {
+        if (tree.enabled()) {
             canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && swipesArray.length > 1 && selectedSwipe !== undefined;
         }
         else {
