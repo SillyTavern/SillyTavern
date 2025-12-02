@@ -1,8 +1,10 @@
-import { Menu, Settings, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Settings, LogOut, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCharacterStore } from '../../stores/characterStore';
 import { Avatar, Button } from '../ui';
+import { CharacterEdit } from '../character/CharacterEdit';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -12,6 +14,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuthStore();
   const { selectedCharacter } = useCharacterStore();
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const getAvatarUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
 
@@ -33,11 +36,20 @@ export function Header({ onMenuClick }: HeaderProps) {
         {selectedCharacter ? (
           <>
             <Avatar src={getAvatarUrl(selectedCharacter.avatar)} alt={selectedCharacter.name} size="sm" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h1 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
                 {selectedCharacter.name}
               </h1>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2"
+              aria-label="Edit character"
+              onClick={() => setShowEditModal(true)}
+            >
+              <Pencil size={18} />
+            </Button>
           </>
         ) : (
           <h1 className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -70,6 +82,15 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Avatar size="sm" alt={currentUser.name} />
         )}
       </div>
+
+      {/* Character Edit Modal */}
+      {selectedCharacter && (
+        <CharacterEdit
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          character={selectedCharacter}
+        />
+      )}
     </header>
   );
 }

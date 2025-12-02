@@ -86,6 +86,12 @@ export interface CharacterCreateData {
   tags?: string;
 }
 
+export interface CharacterEditData extends CharacterCreateData {
+  avatar_url: string;
+  chat?: string;
+  create_date?: string;
+}
+
 export const api = {
   // Auth endpoints
   async getUsers(): Promise<UserInfo[]> {
@@ -207,6 +213,13 @@ export const api = {
     await apiRequest('/api/characters/delete', {
       method: 'POST',
       body: JSON.stringify({ avatar_url: avatarUrl, delete_chats: deleteChats }),
+    });
+  },
+
+  async editCharacter(data: CharacterEditData): Promise<void> {
+    await apiRequest('/api/characters/edit', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 

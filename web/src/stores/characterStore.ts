@@ -1,17 +1,19 @@
 import { create } from 'zustand';
-import { api, type CharacterInfo, type CharacterCreateData } from '../api/client';
+import { api, type CharacterInfo, type CharacterCreateData, type CharacterEditData } from '../api/client';
 
 interface CharacterState {
   characters: CharacterInfo[];
   selectedCharacter: CharacterInfo | null;
   isLoading: boolean;
   isCreating: boolean;
+  isEditing: boolean;
   error: string | null;
 
   // Actions
   fetchCharacters: () => Promise<void>;
   selectCharacter: (avatar: string) => Promise<void>;
   createCharacter: (data: CharacterCreateData) => Promise<string | null>;
+  updateCharacter: (data: CharacterEditData) => Promise<boolean>;
   deleteCharacter: (avatar: string) => Promise<boolean>;
   clearSelection: () => void;
   clearError: () => void;
@@ -22,6 +24,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   selectedCharacter: null,
   isLoading: false,
   isCreating: false,
+  isEditing: false,
   error: null,
 
   fetchCharacters: async () => {
@@ -86,6 +89,29 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         error: error instanceof Error ? error.message : 'Failed to create character',
       });
       return null;
+    }
+  },
+
+  updateCharacter: async (data: CharacterEditData) => {
+    set({ isEditing: true, error: null });
+    try {
+      await api.editCharacter(data);
+      // Refresh the character list and selected character
+      await get().fetchCharacters();
+      // Re-select to get updated data
+      const { selectedCharacter } = get();
+      if (selectedCharacter?.avatar === data.avatar_url) {
+        const updatedCharacter = await api.getCharacter(data.avatar_url);
+        set({ selectedCharacter: updatedCharacter });
+      }
+      set({ isEditing: false });
+      return true;
+    } catch (error) {
+      set({
+        isEditing: false,
+        error: error instanceof Error ? error.message : 'Failed to update character',
+      });
+      return false;
     }
   },
 
