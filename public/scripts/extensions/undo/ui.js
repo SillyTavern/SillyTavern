@@ -34,7 +34,7 @@ export async function addSettings() {
     const settingsHtml = await renderExtensionTemplateAsync(extensionName, 'settings');
 
     //Places the settings layout.
-    $('#extensions_settings2').prepend(settingsHtml);
+    $('#undo_container').append(settingsHtml);
 
     //Creates sliders.
     const maxChunksElement = new RangeInput('max_chunks', 'Max Undo History Chunks.', { defaultValue: defaultMaxHistoryChunks }).create();
@@ -68,7 +68,7 @@ export async function addSettings() {
         //Toggle on.
         if (enabled) { source.on(event, eventFunction); }
         //Toggle off.
-        else { source.removeListener(event, eventFunction); }
+        else { source.off(event, eventFunction); }
     };
 
     const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction($(document), 'keydown', enabled, processUndoHotkey);
