@@ -105,7 +105,7 @@ function getDelay(s) {
 /**
  * Parses the stream data and returns the parsed data and the chunk to be sent.
  * @param {object} json The JSON data.
- * @returns {AsyncGenerator<{data: object, chunk: string}>} The parsed data and the chunk to be sent.
+ * @returns {AsyncGenerator<{data: object, chunk: string, reasoning?: boolean}>} The parsed data and the chunk to be sent.
  */
 async function* parseStreamData(json) {
     // Cohere
@@ -128,6 +128,19 @@ async function* parseStreamData(json) {
                 yield {
                     data: { ...json, delta: { text: str } },
                     chunk: str,
+                };
+            }
+        }
+        return;
+    }
+    else if (typeof json.delta === 'object' && typeof json.delta.thinking === 'string') {
+        if (json.delta.thinking.length > 0) {
+            for (let i = 0; i < json.delta.thinking.length; i++) {
+                const str = json.delta.thinking[i];
+                yield {
+                    data: { ...json, delta: { thinking: str } },
+                    chunk: str,
+                    reasoning: true,
                 };
             }
         }
@@ -159,9 +172,11 @@ async function* parseStreamData(json) {
                             candidateClone.content.parts[j].text = str;
                             candidateClone.content.parts = [candidateClone.content.parts[j]];
                             const candidates = [candidateClone];
+                            const reasoning = json.candidates[i].content.parts[j].thought ?? false;
                             yield {
                                 data: { ...json, candidates },
                                 chunk: str,
+                                reasoning,
                             };
                         }
                     }
@@ -270,6 +285,22 @@ async function* parseStreamData(json) {
                     };
                 }
                 return;
+            }
+            else if (Array.isArray(json.choices[0].delta.content) && json.choices[0].delta.content.length > 0) {
+                if (Array.isArray(json.choices[0].delta.content[0].thinking) && typeof json.choices[0].delta.content[0].thinking[0].text === 'string') {
+                    for (let j = 0; j < json.choices[0].delta.content[0].thinking[0].text.length; j++) {
+                        const str = json.choices[0].delta.content[0].thinking[0].text[j];
+                        const choiceClone = structuredClone(json.choices[0]);
+                        choiceClone.delta.content[0].thinking[0].text = str;
+                        const choices = [choiceClone];
+                        yield {
+                            data: { ...json, choices },
+                            chunk: str,
+                            reasoning: true,
+                        };
+                    }
+                    return;
+                }
             }
         }
         else if (typeof json.choices[0].message === 'object') {
