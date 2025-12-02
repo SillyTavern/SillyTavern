@@ -26,8 +26,8 @@ interface ChatState {
   error: string | null;
 
   // Actions
-  fetchChatFiles: (characterName: string) => Promise<void>;
-  loadChat: (characterName: string, fileName: string) => Promise<void>;
+  fetchChatFiles: (avatarUrl: string) => Promise<void>;
+  loadChat: (avatarUrl: string, fileName: string) => Promise<void>;
   startNewChat: (character: CharacterInfo) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
   sendMessage: (content: string, character: CharacterInfo) => Promise<void>;
@@ -173,12 +173,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isSending: false,
   error: null,
 
-  fetchChatFiles: async (characterName: string) => {
+  fetchChatFiles: async (avatarUrl: string) => {
     set({ isLoading: true, error: null });
     try {
-      const chats = await api.getChats(characterName);
-      console.log('[Chat] Fetched chat files for', characterName, ':', chats);
-      const chatFiles: ChatFile[] = (Array.isArray(chats) ? chats : []).map((chat) => ({
+      const chats = await api.getChats(avatarUrl);
+      console.log('[Chat] Fetched chat files for', avatarUrl, ':', chats);
+      const chatFiles: ChatFile[] = chats.map((chat) => ({
         // Strip .jsonl extension - backend adds it when loading/saving
         fileName: chat.file_name?.replace(/\.jsonl$/, '') || chat.file_name,
         fileSize: chat.file_size,
@@ -194,11 +194,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  loadChat: async (characterName: string, fileName: string) => {
-    console.log('[Chat] Loading chat:', characterName, fileName);
+  loadChat: async (avatarUrl: string, fileName: string) => {
+    console.log('[Chat] Loading chat:', avatarUrl, fileName);
     set({ isLoading: true, error: null, currentChatFile: fileName });
     try {
-      const rawMessages = await api.getChatMessages(characterName, fileName);
+      const rawMessages = await api.getChatMessages(avatarUrl, fileName);
       console.log('[Chat] Loaded messages:', rawMessages?.length || 0);
       const messages: ChatMessage[] = rawMessages.map((msg) => ({
         id: generateId(),
@@ -348,9 +348,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             })),
           ];
 
-          console.log('[Chat] Saving to:', character.name, currentChatFile);
+          console.log('[Chat] Saving to:', character.avatar, currentChatFile);
           try {
-            await api.saveChat(character.name, currentChatFile, chatData);
+            await api.saveChat(character.avatar, currentChatFile, chatData);
             console.log('[Chat] Save successful');
           } catch (err) {
             console.error('[Chat] Failed to save:', err);

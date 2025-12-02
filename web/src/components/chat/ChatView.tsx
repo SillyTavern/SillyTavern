@@ -23,7 +23,7 @@ export function ChatView() {
     // Check for existing chats and load the most recent one, or start new
     const loadOrCreateChat = async () => {
       try {
-        await fetchChatFiles(selectedCharacter.name);
+        await fetchChatFiles(selectedCharacter.avatar);
         // fetchChatFiles updates chatFiles state, we check it after
       } catch {
         // Start fresh on error
@@ -41,7 +41,7 @@ export function ChatView() {
 
     if (chatFiles.length > 0) {
       // Load most recent chat
-      loadChat(selectedCharacter.name, chatFiles[0].fileName);
+      loadChat(selectedCharacter.avatar, chatFiles[0].fileName);
     } else if (messages.length === 0) {
       // Start new chat with first_mes only if no messages loaded
       startNewChat(selectedCharacter);

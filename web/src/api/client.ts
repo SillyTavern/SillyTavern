@@ -168,24 +168,26 @@ export const api = {
     });
   },
 
-  // Chat endpoints
-  async getChats(characterName: string): Promise<{ file_name: string; file_size: number; last_mes: string }[]> {
-    return apiRequest('/api/characters/chats', {
+  // Chat endpoints - use avatar filename directly for consistency
+  async getChats(avatarUrl: string): Promise<{ file_name: string; file_size: number; last_mes: string }[]> {
+    const result = await apiRequest('/api/characters/chats', {
       method: 'POST',
-      body: JSON.stringify({ avatar_url: `${characterName}.png` }),
+      body: JSON.stringify({ avatar_url: avatarUrl }),
     });
+    // Backend returns { error: true } if no chats, otherwise returns array
+    return Array.isArray(result) ? result : [];
   },
 
-  async getChatMessages(characterName: string, fileName: string): Promise<ChatMessage[]> {
-    const response = await apiRequest<{ messages: ChatMessage[] }>('/api/chats/get', {
+  async getChatMessages(avatarUrl: string, fileName: string): Promise<ChatMessage[]> {
+    const response = await apiRequest<ChatMessage[]>('/api/chats/get', {
       method: 'POST',
       body: JSON.stringify({
-        ch_name: characterName,
         file_name: fileName,
-        avatar_url: `${characterName}.png`,
+        avatar_url: avatarUrl,
       }),
     });
-    return response.messages || [];
+    // Backend returns array directly, skip first element (header)
+    return Array.isArray(response) ? response.slice(1) : [];
   },
 
   // Generate message with full context
@@ -231,7 +233,7 @@ export const api = {
 
   // Save chat to backend
   async saveChat(
-    characterName: string,
+    avatarUrl: string,
     fileName: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chatData: any[]
@@ -239,7 +241,7 @@ export const api = {
     await apiRequest('/api/chats/save', {
       method: 'POST',
       body: JSON.stringify({
-        avatar_url: `${characterName}.png`,
+        avatar_url: avatarUrl,
         file_name: fileName,
         chat: chatData,
       }),
