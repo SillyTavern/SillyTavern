@@ -845,7 +845,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                     message.content = `${names.userName}: ${message.content}`;
                 }
             }
-            if (message.role === 'system' && !['example_assistant', 'example_user'].includes(message.name)) {
+            if (message.role === 'system' && message.name && !['example_assistant', 'example_user'].includes(message.name)) {
                 if (!message.content.startsWith(`${message.name}: `)) {
                     message.content = `${message.name}: ${message.content}`;
                 }
