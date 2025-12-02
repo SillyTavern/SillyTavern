@@ -70,9 +70,9 @@ export function ChatView() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
             <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center mb-4">
