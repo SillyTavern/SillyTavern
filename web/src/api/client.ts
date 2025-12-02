@@ -56,6 +56,7 @@ export interface CharacterInfo {
   personality?: string;
   first_mes?: string;
   scenario?: string;
+  mes_example?: string;
   create_date?: string;
   date_added?: number;
   date_last_chat?: number;
@@ -71,6 +72,18 @@ export interface CharacterInfo {
     creator_notes?: string;
     creator?: string;
   };
+}
+
+export interface CharacterCreateData {
+  ch_name: string;
+  description?: string;
+  personality?: string;
+  first_mes?: string;
+  scenario?: string;
+  mes_example?: string;
+  creator_notes?: string;
+  creator?: string;
+  tags?: string;
 }
 
 export const api = {
@@ -165,6 +178,22 @@ export const api = {
     return apiRequest('/api/characters/get', {
       method: 'POST',
       body: JSON.stringify({ avatar_url: avatarUrl }),
+    });
+  },
+
+  async createCharacter(data: CharacterCreateData): Promise<string> {
+    // Returns avatar filename like "CharacterName.png"
+    const result = await apiRequest<string>('/api/characters/create', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return result;
+  },
+
+  async deleteCharacter(avatarUrl: string, deleteChats: boolean = true): Promise<void> {
+    await apiRequest('/api/characters/delete', {
+      method: 'POST',
+      body: JSON.stringify({ avatar_url: avatarUrl, delete_chats: deleteChats }),
     });
   },
 

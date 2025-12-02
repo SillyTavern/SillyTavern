@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Search, Plus, MessageSquare } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { Avatar, Button, Input } from '../ui';
+import { CharacterCreation } from '../character/CharacterCreation';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,12 +10,19 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
     useCharacterStore();
 
   useEffect(() => {
     fetchCharacters();
   }, [fetchCharacters]);
+
+  const handleCharacterCreated = (avatarUrl: string) => {
+    // Select the newly created character
+    selectCharacter(avatarUrl);
+    onClose();
+  };
 
   const handleCharacterSelect = (avatar: string) => {
     selectCharacter(avatar);
@@ -123,12 +131,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* New Character Button */}
         <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
-          <Button variant="secondary" className="w-full">
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => setShowCreateModal(true)}
+          >
             <Plus size={18} className="mr-2" />
             New Character
           </Button>
         </div>
       </aside>
+
+      {/* Character Creation Modal */}
+      <CharacterCreation
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={handleCharacterCreated}
+      />
     </>
   );
 }

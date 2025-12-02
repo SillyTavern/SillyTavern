@@ -1,22 +1,27 @@
 import { create } from 'zustand';
-import { api, type CharacterInfo } from '../api/client';
+import { api, type CharacterInfo, type CharacterCreateData } from '../api/client';
 
 interface CharacterState {
   characters: CharacterInfo[];
   selectedCharacter: CharacterInfo | null;
   isLoading: boolean;
+  isCreating: boolean;
   error: string | null;
 
   // Actions
   fetchCharacters: () => Promise<void>;
   selectCharacter: (avatar: string) => Promise<void>;
+  createCharacter: (data: CharacterCreateData) => Promise<string | null>;
+  deleteCharacter: (avatar: string) => Promise<boolean>;
   clearSelection: () => void;
+  clearError: () => void;
 }
 
 export const useCharacterStore = create<CharacterState>((set, get) => ({
   characters: [],
   selectedCharacter: null,
   isLoading: false,
+  isCreating: false,
   error: null,
 
   fetchCharacters: async () => {
@@ -66,4 +71,44 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   },
 
   clearSelection: () => set({ selectedCharacter: null }),
+
+  createCharacter: async (data: CharacterCreateData) => {
+    set({ isCreating: true, error: null });
+    try {
+      const avatarUrl = await api.createCharacter(data);
+      // Refresh the character list
+      await get().fetchCharacters();
+      set({ isCreating: false });
+      return avatarUrl;
+    } catch (error) {
+      set({
+        isCreating: false,
+        error: error instanceof Error ? error.message : 'Failed to create character',
+      });
+      return null;
+    }
+  },
+
+  deleteCharacter: async (avatar: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.deleteCharacter(avatar);
+      // Clear selection if deleting the selected character
+      const { selectedCharacter } = get();
+      if (selectedCharacter?.avatar === avatar) {
+        set({ selectedCharacter: null });
+      }
+      // Refresh the character list
+      await get().fetchCharacters();
+      return true;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to delete character',
+      });
+      return false;
+    }
+  },
+
+  clearError: () => set({ error: null }),
 }));
