@@ -80,7 +80,7 @@ class ChatHistory {
         let resultingChat;
         //Save the full history.
         if (fullChatOffset === 0) {
-            resultingChat = structuredClone(this.chatData);
+            resultingChat = this.chatData;
         }
         //Save the history diff.
         else {
@@ -90,7 +90,7 @@ class ChatHistory {
             resultingChat = diff(recentFullChat, this.chatData);
         }
 
-        this.chatHistory.push(resultingChat);
+        this.chatHistory.push(structuredClone(resultingChat));
         showToast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
         console.debug(`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
@@ -101,10 +101,10 @@ class ChatHistory {
      * @returns
      */
     getChatSnapshot(index) {
-        let chat;
+        let resultingChat;
         // Return the full snapshot.
         if ((index % this.fullHistoryInterval) == 0) {
-            chat = this.chatHistory[index];
+            resultingChat = this.chatHistory[index];
         }
         //Create the full snapshot.
         else {
@@ -115,9 +115,9 @@ class ChatHistory {
             const chatDiff = this.chatHistory[index];
 
             //Return the resulting full history snapshot.
-            chat = applyDiff(recentFullChat, chatDiff);
+            resultingChat = applyDiff(structuredClone(recentFullChat), chatDiff);
         }
-        return structuredClone(chat);
+        return structuredClone(resultingChat);
     }
 
     /**
