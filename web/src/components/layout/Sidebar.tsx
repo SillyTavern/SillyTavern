@@ -38,8 +38,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     onClose();
   };
 
-  // Build avatar URL from filename - uses SillyTavern's thumbnail system
-  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
+  // Thumbnail URL for small avatars in list (96x144)
+  const getThumbnailUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
+
+  // Full-size image URL for portrait view
+  const getFullImageUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
 
   // Determine what to show: character portrait or character list
   const showPortrait = selectedCharacter && !showCharacterList;
@@ -97,7 +100,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
               <div className="w-full max-w-[240px] aspect-[2/3] rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)]">
                 <img
-                  src={getAvatarUrl(selectedCharacter.avatar)}
+                  src={getFullImageUrl(selectedCharacter.avatar)}
                   alt={selectedCharacter.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -206,7 +209,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           }
                         `}
                       >
-                        <Avatar src={getAvatarUrl(character.avatar)} alt={character.name} size="md" />
+                        <Avatar src={getThumbnailUrl(character.avatar)} alt={character.name} size="md" />
                         <div className="flex-1 min-w-0 text-left">
                           <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
                             {character.name}
