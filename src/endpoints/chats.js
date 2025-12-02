@@ -20,6 +20,7 @@ import {
     tryReadFileSync,
     tryDeleteFile,
     pickFirstObjectFromJsonFile,
+    humanFileSize,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -435,7 +436,7 @@ class IntegrityMismatch extends Error {
  * @param {string} backupDirectory Passed to backupChat.
  */
 export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, directoryName, backupDirectory) {
-    const jsonlData = chatData?.map(JSON.stringify).join('\n')
+    const jsonlData = chatData?.map(JSON.stringify).join('\n');
 
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
@@ -497,15 +498,15 @@ export function getChatData(chatFilePath, treeFilePath) {
     chatData[0] ??= {};
     //Migrate the tree from the old formats.
     if (!isNaN(treeData.tree?.branch_id) || !isNaN(treeData?.branch_id))
-        {
-            chatData[0].tree ??= treeData?.tree ?? treeData;
-            fs.copyFileSync(treeFilePath, `${treeFilePath}.migrated`);
-            const jsonlData = chatData?.map(JSON.stringify).join('\n')
-            tryWriteFileSync(chatFilePath, jsonlData);
-            fs.unlinkSync(treeFilePath);
-            console.warn(`Your data chatTree data has been migrated from ${treeFilePath} into ${chatFilePath}.`)
-            console.warn(`Once you have confirmed the migration, you can delete the backup at (${treeFilePath}.migrated})`)
-        }
+    {
+        chatData[0].tree ??= treeData?.tree ?? treeData;
+        fs.copyFileSync(treeFilePath, `${treeFilePath}.migrated`);
+        const jsonlData = chatData?.map(JSON.stringify).join('\n');
+        tryWriteFileSync(chatFilePath, jsonlData);
+        fs.unlinkSync(treeFilePath);
+        console.warn(`Your data chatTree data has been migrated from ${treeFilePath} into ${chatFilePath}.`);
+        console.warn(`Once you have confirmed the migration, you can delete the backup at (${treeFilePath}.migrated})`);
+    }
     return chatData;
 }
 
@@ -582,7 +583,7 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error(`The chat file was not deleted: '${error}'`);
+            console.error('The chat file was not deleted.\'');
             return response.sendStatus(400);
         }
     } catch (error) {
@@ -802,7 +803,7 @@ router.post('/group/delete', (request, response) => {
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error(`The chat file was not deleted: '${error}'`);
+            console.error('The group chat file was not deleted.\'');
             return response.sendStatus(400);
         }
     } catch (error) {
@@ -821,8 +822,6 @@ router.post('/group/save', async function (request, response) {
         const handle = request.user.profile.handle;
         const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
         const chatData = request.body?.chat;
-        const doIntegrityCheck = (checkIntegrity && !request.body.force);
-        const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
         if (chatData) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
@@ -868,15 +867,18 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
+            const groupTreesDir = path.join(request.user.directories.groupChatTrees);
             chatFiles = targetGroup.chats
                 .map(chatId => {
                     const filePath = path.join(groupChatsDir, `${chatId}.jsonl`);
+                    const oldTreePath = path.join(groupTreesDir, `${chatId}.json`); //Deprecated.
                     if (!fs.existsSync(filePath)) return null;
                     const stats = fs.statSync(filePath);
                     return {
                         file_name: chatId,
                         file_size: formatBytes(stats.size),
                         path: filePath,
+                        oldTreePath, //Deprecated.
                     };
                 })
                 .filter(x => x);
@@ -884,6 +886,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             // Regular character chat directory
             const character_name = avatar_url.replace('.png', '');
             const directoryPath = path.join(request.user.directories.chats, character_name);
+            const treeDirectoryPath = path.join(request.user.directories.chatTrees, character_name); //Deprecated.
 
             if (!fs.existsSync(directoryPath)) {
                 return response.send([]);
@@ -893,11 +896,13 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 .filter(file => file.endsWith('.jsonl'))
                 .map(fileName => {
                     const filePath = path.join(directoryPath, fileName);
+                    const oldTreePath = path.join(treeDirectoryPath, `${path.parse(fileName).name}.json`);
                     const stats = fs.statSync(filePath);
                     return {
                         file_name: fileName,
                         file_size: formatBytes(stats.size),
                         path: filePath,
+                        oldTreePath, //Deprecated
                     };
                 });
         }
@@ -906,33 +911,20 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
         // Search logic
         for (const chatFile of chatFiles) {
-
-            const chatData = getChatData(chatFile.path)
-            const data = fs.readFileSync(chatFile.path, 'utf8');
-            const messages = data.split('\n')
-                .map(line => { try { return JSON.parse(line); } catch (_) { return null; } })
-                .filter(x => x && typeof x.mes === 'string');
+            const data = getChatData(chatFile.path, chatFile.oldTreePath);
+            const messages = data.filter(x => x && typeof x.mes === 'string');
 
             if (query && messages.length === 0) {
                 continue;
             }
 
 
-            let treeData;
-            let metadata;
+            let treeSize;
 
-            // Remove chat file header if present
-            if (Array.isArray(chatFile) && chatFile.length && Object.hasOwn(chatFile[0], 'chat_metadata')) {
-                metadata = messages?.[0]?.chat_metadata ?? {};
-
-                const tree = chatFile[0]?.tree;
-                const hasTree = (tree && Object.keys(tree).length > 0);
-                (messages[0]?.tree ?? {}, false);
-
-                //Recursively update the chatTree
-                await temporaryTree.updateMessages(updateMessage, newName);
-                treeData = temporaryTree.chatTree;
-                chatFile.shift();
+            // Check if the chat file has a tree.
+            if (Array.isArray(data) && data.length && Object.hasOwn(data[0], 'tree')) {
+                const tree = data[0]?.tree;
+                treeSize = humanFileSize(JSON.stringify(tree).length);
             }
 
 
@@ -947,6 +939,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                     message_count: messages.length,
                     last_mes: lastMesDate,
                     preview_message: getPreviewMessage(messages),
+                    treeSize,
                 });
                 continue;
             }
@@ -963,6 +956,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                     message_count: messages.length,
                     last_mes: lastMesDate,
                     preview_message: getPreviewMessage(messages),
+                    treeSize,
                 });
             }
         }
