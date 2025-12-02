@@ -48,6 +48,7 @@ declare global {
         user_name: 'unused';
         /** @deprecated For backward compatibility ONLY */
         character_name: 'unused';
+        tree?: ChatTree;
     }
 
     interface ChatMetadata {

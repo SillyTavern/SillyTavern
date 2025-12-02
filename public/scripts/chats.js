@@ -2149,6 +2149,8 @@ export function initChatUtilities() {
             chat_metadata: chat_metadata,
             user_name: 'unused',
             character_name: 'unused',
+            //Only set the tree if it exists.
+            ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
         };
         const chatToSave = [
             chatHeader,

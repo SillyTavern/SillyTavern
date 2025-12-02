@@ -308,6 +308,8 @@ export async function convertSoloToGroupChat() {
         chat_metadata: metadata,
         user_name: 'unused',
         character_name: 'unused',
+        //Only set the tree if it exists.
+        ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
     };
     /** @type {Omit<Group, 'id'>} */
     const groupCreateModel = {

@@ -28,17 +28,16 @@ const throttleInterval = Number(getConfigValue('backups.chat.throttleInterval', 
 const checkIntegrity = !!getConfigValue('backups.chat.checkIntegrity', true, 'boolean');
 
 export const CHAT_BACKUPS_PREFIX = 'chat_';
-export const CHAT_TREES_BACKUPS_PREFIX = 'chatTree_';
 
 /**
  * Saves a chat to the backups directory.
  * @param {string} name The name of the chat.
  * @param {string} directory The user's backup directory.
  * @param {string} data The serialized chat to save.
- * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX or CHAT_TREES_BACKUPS_PREFIX.
+ * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
  * @returns
  */
-function backupChat(name, directory,  data, backupPrefix) {
+function backupChat(name, directory,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
         if (!isBackupEnabled) {
             return;
@@ -309,38 +308,6 @@ function importRisuChat(userName, characterName, jsonData) {
 }
 
 /**
- * Reads the first line of a file asynchronously.
- * @param {string} filePath Path to the file
- * @returns {Promise<string>} The first line of the file
- */
-function readFirstLine(filePath) {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    const rl = readline.createInterface({ input: stream });
-    return new Promise((resolve, reject) => {
-        let resolved = false;
-        rl.on('line', line => {
-            resolved = true;
-            rl.close();
-            stream.close();
-            resolve(line);
-        });
-
-        rl.on('error', error => {
-            resolved = true;
-            reject(error);
-        });
-
-        // Handle empty files
-        stream.on('end', () => {
-            if (!resolved) {
-                resolved = true;
-                resolve('');
-            }
-        });
-    });
-}
-
-/**
  * Checks if the chat being saved has the same integrity as the one being loaded.
  * @param {string} filePath Path to the chat or chatTree file
  * @param {string} integritySlug Integrity slug
@@ -353,18 +320,9 @@ async function checkChatIntegrity(filePath, integritySlug) {
     }
     let chatIntegrity;
     //Assume filepath is a standard chat.
-    if (path.extname(filePath) == '.jsonl') {
-        // Parse the first line of the chat file as JSON
-        const firstLine = await readFirstLine(filePath);
-        const jsonData = tryParse(firstLine);
-        chatIntegrity = jsonData?.chat_metadata?.integrity;
-    }
-    //Assume filepath is a chatTree.
-    else if (path.extname(filePath) == '.json') {
-        //The metadata should be at the start of the file, this assumes that metadata will always come before tree.
-        const data = await pickFirstObjectFromJsonFile(filePath, ['metadata', 'integrity']);
-        chatIntegrity = data?.value;
-    }
+    // Parse the first line of the chat file as JSON
+    const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
+    chatIntegrity = data?.value;
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
@@ -469,21 +427,24 @@ class IntegrityMismatch extends Error {
 
 /**
  *
- * @param {string} data The serialized data no save.
+ * @param {object} chatData The serialized data no save.
  * @param {string} filePath Target file path for the data.
- * @param {string|undefined} integritySlug If undefined, the chat's integrity will not be checked.
+ * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
  * @param {string} handle The users handle, passed to getBackupFunction.
  * @param {string} directoryName Passed to backupChat.
  * @param {string} backupDirectory Passed to backupChat.
- * @param {string} backupPrefix Passed to backupChat.
  */
-export async function trySaveChat(data, filePath, integritySlug, handle, directoryName, backupDirectory, backupPrefix) {
+export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, directoryName, backupDirectory) {
+    const jsonlData = chatData?.map(JSON.stringify).join('\n')
 
-    if (integritySlug && !await checkChatIntegrity(filePath, integritySlug)) {
-        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${integritySlug}"`);
+    const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
+    const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
+
+    if (doIntegrityCheck && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
+        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
     }
-    tryWriteFileSync(filePath, data);
-    getBackupFunction(handle)(directoryName, backupDirectory, data, backupPrefix);
+    tryWriteFileSync(filePath, jsonlData);
+    getBackupFunction(handle)(directoryName, backupDirectory, chatData);
 }
 
 router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
@@ -491,27 +452,15 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         const handle = request.user.profile.handle;
         const directoryName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body?.chat;
-        const chatTreeData = request.body?.chatTree;
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(request.user.directories.chats, directoryName, sanitize(chatFileName));
-        const treeFileName = `${String(request.body.file_name)}.json`;
-        const treeDirectoryPath = path.join(request.user.directories.chatTrees, directoryName);
-        const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
-        const doIntegrityCheck = (checkIntegrity && !request.body.force);
-        const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
-        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.integrity : undefined;
 
 
         if (chatData) {
-            const jsonlData = chatData?.map(JSON.stringify).join('\n');
-            await trySaveChat(jsonlData, chatFilePath, chatIntegritySlug, handle, directoryName, request.user.directories.backups, CHAT_BACKUPS_PREFIX);
-        }
-        if (!isNaN(chatTreeData?.['tree']?.['branch_id'])) {
-            const chatTreeString = JSON.stringify(chatTreeData);
-            await trySaveChat(chatTreeString, treeFilePath, treeIntegritySlug, handle, directoryName, request.user.directories.chatTreeBackups, CHAT_TREES_BACKUPS_PREFIX);
+            await trySaveChat(chatData, chatFilePath, request.body.force, handle, directoryName, request.user.directories.backups);
+            return response.send({ ok: true });
         }
 
-        return response.send({ ok: true });
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
             console.error(error.message);
@@ -525,29 +474,39 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 /**
  * Gets the chat and tree data as objects. If not found, they will be empty.
  * @param {string} chatFilePath The full chat file path.
- * @param {string} treeFilePath The full tree file path.
- * @returns {{chatData:Array, chatTreeData:object}}
+ * @returns {Array}
  */
 export function getChatData(chatFilePath, treeFilePath) {
-    let jsonData = [];
-    let jsonTreeData = {};
+    let chatData = [];
+    let treeData = {};
 
-    const chatData = tryReadFileSync(chatFilePath) ?? '';
-    if (chatData.length > 0) {
-        const lines = chatData.split('\n');
+    const chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    if (chatJSON.length > 0) {
+        const lines = chatJSON.split('\n');
         // Iterate through the array of strings and parse each line as JSON
-        jsonData = lines.map(line => tryParse(line)).filter(x => x);
+        chatData = lines.map(line => tryParse(line)).filter(x => x);
     } else {
         console.warn(`File not found: ${chatFilePath}. The chat does not exist.`);
     }
-    const treeData = tryReadFileSync(treeFilePath);
+    const treeJSON = tryReadFileSync(treeFilePath);
     //Attempt to load the chatTree.
-    if (treeData) {
-        jsonTreeData = tryParse(treeData);
-    } else {
-        console.warn(`File not found: ${treeFilePath}. The chatTree does not exist.`);
+    if (treeJSON) {
+        console.warn(`Legacy chatTree file found: ${treeFilePath}. It will be migrated.`);
+        treeData = tryParse(treeJSON);
     }
-    return { chatData:jsonData, chatTreeData:jsonTreeData };
+    chatData[0] ??= {};
+    //Migrate the tree from the old formats.
+    if (!isNaN(treeData.tree?.branch_id) || !isNaN(treeData?.branch_id))
+        {
+            chatData[0].tree ??= treeData?.tree ?? treeData;
+            fs.copyFileSync(treeFilePath, `${treeFilePath}.migrated`);
+            const jsonlData = chatData?.map(JSON.stringify).join('\n')
+            tryWriteFileSync(chatFilePath, jsonlData);
+            fs.unlinkSync(treeFilePath);
+            console.warn(`Your data chatTree data has been migrated from ${treeFilePath} into ${chatFilePath}.`)
+            console.warn(`Once you have confirmed the migration, you can delete the backup at (${treeFilePath}.migrated})`)
+        }
+    return chatData;
 }
 
 router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
@@ -589,39 +548,19 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         const pathToFolder = request.body.is_group
             ? request.user.directories.groupChats
             : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
-
-        const pathToTreeFolder = request.body.is_group
-            ? request.user.directories.groupChatTrees
-            : path.join(request.user.directories.chatTrees, String(request.body.avatar_url).replace('.png', ''));
         const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
         const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
-
-        const pathToOriginalTreeFile = path.format({ ...path.parse(path.join(pathToTreeFolder, sanitize(request.body.original_file))), base: '', ext: '.json' });
-        const pathToRenamedTreeFile = path.format({ ...path.parse(path.join(pathToTreeFolder, sanitize(request.body.renamed_file))), base: '', ext: '.json' });
-
         const sanitizedFileName = path.parse(pathToRenamedFile).name;
         console.debug('Old chat name', pathToOriginalFile);
         console.debug('New chat name', pathToRenamedFile);
 
         if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
-            console.error('Either Source or Destination chat files are not available');
+            console.error('Either Source or Destination files are not available');
             return response.status(400).send({ error: true });
         }
 
         fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
         fs.unlinkSync(pathToOriginalFile);
-
-        if (fs.existsSync(pathToOriginalTreeFile)) {
-            if (!fs.existsSync(pathToRenamedTreeFile)) {
-                fs.copyFileSync(pathToOriginalTreeFile, pathToRenamedTreeFile);
-                fs.unlinkSync(pathToOriginalTreeFile);
-            } else {
-                let errorMessage = `The chat was saved to ${pathToOriginalFile}, but the the destination tree file path is not available.\nTry fixing the path then trigger a swipe.\nOr manually rename ${pathToOriginalTreeFile} to ${pathToRenamedTreeFile}`;
-                console.error(errorMessage);
-                return response.status(400).send({ error: true, message:errorMessage });
-            }
-        }
-
         console.info('Successfully renamed chat file.');
         return response.send({ ok: true, sanitizedFileName });
     } catch (error) {
@@ -639,14 +578,11 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const chatFileName = String(request.body.chatfile);
         const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
-        const treeFilePath = path.format({ ...path.parse(path.join(request.user.directories.chatTrees, dirName, sanitize(chatFileName))), base: '', ext: '.json' });
-        //Return success if either file was deleted.
-        const treeDeleted = tryDeleteFile(chatFilePath);
-        const chatDeleted = tryDeleteFile(treeFilePath);
-        if (treeDeleted || chatDeleted) {
+        //Return success if the file was delted.
+        if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error(`Both chat files were not deleted: '${chatFilePath}' and '${treeFilePath}'`);
+            console.error(`The chat file was not deleted: '${error}'`);
             return response.sendStatus(400);
         }
     } catch (error) {
@@ -853,22 +789,25 @@ router.post('/group/get', (request, response) => {
 });
 
 router.post('/group/delete', (request, response) => {
-    if (!request.body || !request.body.id) {
-        return response.sendStatus(400);
-    }
+    try {
+        if (!request.body || !request.body.id) {
+            return response.sendStatus(400);
+        }
 
-    const id = request.body.id;
-    const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
-    const treeFilePath = path.join(request.user.directories.groupChatTrees, `${id}.json`);
 
-    //Return success if either file was deleted.
-    const treeDeleted = tryDeleteFile(chatFilePath);
-    const chatDeleted = tryDeleteFile(treeFilePath);
-    if (treeDeleted || chatDeleted) {
-        return response.send({ ok: true });
-    } else {
-        console.error(`Both chat files were not deleted: '${chatFilePath}' and '${treeFilePath}'`);
-        return response.sendStatus(400);
+        const id = request.body.id;
+        const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+
+        //Return success if the file was delted.
+        if (tryDeleteFile(chatFilePath)) {
+            return response.send({ ok: true });
+        } else {
+            console.error(`The chat file was not deleted: '${error}'`);
+            return response.sendStatus(400);
+        }
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
     }
 });
 
@@ -881,25 +820,14 @@ router.post('/group/save', async function (request, response) {
         const id = request.body.id;
         const handle = request.user.profile.handle;
         const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
-        const treeFilePath = path.join(request.user.directories.groupChatTrees, sanitize(`${id}.json`));
         const chatData = request.body?.chat;
-        const chatTreeData = request.body?.chatTree;
-
         const doIntegrityCheck = (checkIntegrity && !request.body.force);
         const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
-        const treeIntegritySlug = doIntegrityCheck ? chatTreeData?.metadata?.integrity : undefined;
-
 
         if (chatData) {
-            const jsonlData = chatData?.map(JSON.stringify).join('\n');
-            await trySaveChat(jsonlData, chatFilePath, chatIntegritySlug, handle, String(id), request.user.directories.backups, CHAT_BACKUPS_PREFIX);
+            await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
+            return response.send({ ok: true });
         }
-        if (!isNaN(chatTreeData?.['tree']?.['branch_id'])) {
-            const chatTreeString = JSON.stringify(chatTreeData);
-            await trySaveChat(chatTreeString, treeFilePath, treeIntegritySlug, handle, String(id), request.user.directories.chatTreeBackups, CHAT_TREES_BACKUPS_PREFIX);
-        }
-
-        return response.send({ ok: true });
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
             console.error(error.message);
@@ -978,6 +906,8 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
         // Search logic
         for (const chatFile of chatFiles) {
+
+            const chatData = getChatData(chatFile.path)
             const data = fs.readFileSync(chatFile.path, 'utf8');
             const messages = data.split('\n')
                 .map(line => { try { return JSON.parse(line); } catch (_) { return null; } })
@@ -986,6 +916,25 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             if (query && messages.length === 0) {
                 continue;
             }
+
+
+            let treeData;
+            let metadata;
+
+            // Remove chat file header if present
+            if (Array.isArray(chatFile) && chatFile.length && Object.hasOwn(chatFile[0], 'chat_metadata')) {
+                metadata = messages?.[0]?.chat_metadata ?? {};
+
+                const tree = chatFile[0]?.tree;
+                const hasTree = (tree && Object.keys(tree).length > 0);
+                (messages[0]?.tree ?? {}, false);
+
+                //Recursively update the chatTree
+                await temporaryTree.updateMessages(updateMessage, newName);
+                treeData = temporaryTree.chatTree;
+                chatFile.shift();
+            }
+
 
             const lastMessage = messages[messages.length - 1];
             const lastMesDate = lastMessage?.send_date || new Date(fs.statSync(chatFile.path).mtimeMs).toISOString();

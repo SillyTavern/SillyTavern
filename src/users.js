@@ -84,7 +84,6 @@ const STORAGE_KEYS = {
  * @property {string} groupChats - The directory where the group chats are stored
  * @property {string} groupChatTrees - The directory where the group chat trees are stored
  * @property {string} backups - The directory where the backups are stored
- * @property {string} chatTreeBackups - The directory where the chat tree backups are stored
  * @property {string} characters - The directory where the characters are stored
  * @property {string} backgrounds - The directory where the backgrounds are stored
  * @property {string} novelAI_Settings - The directory where the NovelAI settings are stored

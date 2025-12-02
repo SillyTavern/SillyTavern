@@ -6910,7 +6910,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
             });
 
             if (getChatResponse.ok) {
-                const { chatData:currentChat, chatTreeData:currentChatTree } = await getChatResponse.json();
+                const currentChat = await getChatResponse.json();
 
                 function rename(message) {
                     if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
@@ -6926,12 +6926,16 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                 for (const message of currentChat) {
                     rename(message);
                 }
-                //The oldest versions may not have metadata.
-                let tree = currentChatTree?.['tree'] ?? currentChatTree;
-                const temporaryTree = new Tree(tree, false);
 
-                //Recursively update the chatTree
-                await temporaryTree.updateMessages(rename, newName);
+                let tree = currentChat[0]?.['tree'];
+                if (tree) {
+                    const temporaryTree = new Tree(tree, false);
+
+                    //Recursively update the chatTree
+                    await temporaryTree.updateMessages(rename, newName);
+
+                    currentChat[0].tree = temporaryTree;
+                }
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
@@ -6942,7 +6946,6 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                         ch_name: newName,
                         file_name: fileNameWithoutExtension,
                         chat: currentChat,
-                        chatTree: currentChatTree,
                         avatar_url: newAvatar,
                     }),
                     cache: 'no-cache',
@@ -7022,22 +7025,18 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
         ? chat.slice(0, Number(mesId) + 1)
         : chat.slice();
 
+    if (power_user.enable_chat_tree) {
+        await tree.saveChatToTree(chat);
+    }
+
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: metadata,
         user_name: 'unused',
         character_name: 'unused',
+        //Only set the tree if it exists.
+        ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
     };
-
-
-    let chatTreeToSave;
-    if (power_user.enable_chat_tree) {
-        await tree.saveChatToTree(chat);
-        chatTreeToSave = {
-            metadata: metadata,
-            tree: tree.chatTree,
-        };
-    }
 
     try {
         const result = await fetch('/api/chats/save', {
@@ -7048,7 +7047,6 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
                 ch_name: characters[this_chid].name,
                 file_name: fileName,
                 chat: [chatHeader, ...trimmedChat],
-                chatTree: chatTreeToSave,
                 avatar_url: characters[this_chid].avatar,
                 force: force,
             }),
@@ -7259,7 +7257,7 @@ export async function getChat() {
             dataType: 'json',
             contentType: 'application/json',
         });
-        const { chatData, chatTreeData } = response;
+        const chatData = response;
 
         if (chatData[0] !== undefined) {
             chat.splice(0, chat.length, ...chatData);
@@ -7267,17 +7265,16 @@ export async function getChat() {
 
             chat.shift();
             chat.forEach(ensureMessageMediaIsArray);
+
+            let tree = chatData[0]?.tree;
+            //Load the chatTree.
+            tree.setChatTree(tree ?? {});
         }
         if (!chat_metadata['integrity']) {
             chat_metadata['integrity'] = uuidv4();
         }
         await getChatResult();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
-
-        //The tree may not have metadata.
-        let tree = chatTreeData?.['tree'] ?? chatTreeData;
-        //Load the chatTree.
-        tree.setChatTree(tree ?? {});
 
         // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
@@ -8087,6 +8084,7 @@ async function messageEditDone(div) {
 export async function getChatsFromFiles(data, isGroupChat) {
     const context = getContext();
     let chat_dict = {};
+    let chatTree_dict = {};
     let chat_list = Object.values(data).sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 
     let chat_promise = chat_list.map(({ file_name }) => {
@@ -8112,8 +8110,10 @@ export async function getChatsFromFiles(data, isGroupChat) {
                     return res();
                     // continue;
                 }
-                // eslint-disable-next-line no-unused-vars
-                const { chatData:currentChat, chatTreeData:currentChatTree } = await chatResponse.json();
+
+                const currentChat = await chatResponse.json();
+
+                chatTree_dict[file_name] = currentChat[0]?.tree ?? {};
 
                 if (!isGroupChat) {
                     // remove the first message, which is metadata, only for individual chats
@@ -8131,7 +8131,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
 
     await Promise.all(chat_promise);
 
-    return chat_dict;
+    return { chat_dict, chatTree_dict };
 }
 
 /**

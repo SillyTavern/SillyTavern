@@ -1517,6 +1517,7 @@ export function tryDeleteFile(filePath) {
         console.info(`Deleted file: ${filePath}`);
         return true;
     } else {
+        console.error(`File not found '${filePath}'`);
         return false;
     }
 }
