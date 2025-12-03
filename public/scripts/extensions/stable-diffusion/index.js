@@ -2907,16 +2907,10 @@ async function generatePrompt(quietPrompt) {
  */
 async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator, signal) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
-    const isCharChat = this_chid !== undefined && !selected_group;
-    const ignoreNoCharForSwipe = initiator === initiators.swipe && isCharChat;
-
-    const skipCharPrefix = !ignoreNoCharForSwipe && noCharPrefix.includes(generationType);
-
-    const prefix = skipCharPrefix
+    const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
-
-    const negativePrefix = skipCharPrefix
+    const negativePrefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.negative_prompt
         : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
 

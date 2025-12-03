@@ -193,7 +193,6 @@ const settings = {
     negative_prompt: '',
     grammar_string: '',
     json_schema: null,
-    json_schema_allow_empty: false,
     banned_tokens: '',
     global_banned_tokens: '',
     send_banned_tokens: true,
@@ -312,7 +311,6 @@ export const setting_names = [
     'min_keep',
     'generic_model',
     'extensions',
-    'json_schema_allow_empty',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -1080,7 +1078,7 @@ export function initTextGenSettings() {
  * @returns void
  */
 function showSamplerControls(apiType = null) {
-    $('#textgenerationwebui_api-settings [data-tg-samplers], #textgenerationwebui_api [data-tg-samplers]').each(function(idx, elem) {
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function(idx, elem) {
         const typeSpecificControlled = $(elem).data('tg-type') !== undefined;
 
         if (!typeSpecificControlled) $(this).show();
@@ -1093,7 +1091,7 @@ function showSamplerControls(apiType = null) {
 
     if (!samplersActivatedManually?.length || !prioritizeManualSamplerSelect) return;
 
-    $('#textgenerationwebui_api-settings [data-tg-samplers], #textgenerationwebui_api [data-tg-samplers]').each(function() {
+    $('#textgenerationwebui_api-settings [data-tg-samplers]').each(function() {
         const tgSamplers = $(this).attr('data-tg-samplers').split(',').map(x => x.trim()).filter(str => str !== '');
 
         for (const tgSampler of tgSamplers) {
@@ -1154,12 +1152,6 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
-    if ('json_schema' === setting) {
-        settings.json_schema = value ?? null;
-        $('#tabby_json_schema').val(value ? JSON.stringify(settings.json_schema, null, 2) : '');
-        return;
-    }
-
     if (value === null || value === undefined) {
         return;
     }
@@ -1197,6 +1189,12 @@ function setSettingByName(setting, value, trigger) {
 
     if ('logit_bias' === setting) {
         settings.logit_bias = Array.isArray(value) ? value : [];
+        return;
+    }
+
+    if ('json_schema' === setting) {
+        settings.json_schema = value ?? null;
+        $('#tabby_json_schema').val(value ? JSON.stringify(settings.json_schema, null, 2) : '');
         return;
     }
 
@@ -1508,11 +1506,6 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
-    const jsonSchema = isObject(settings.json_schema)
-        ? settings.json_schema_allow_empty
-            ? settings.json_schema
-            : Object.keys(settings.json_schema).length > 0 ? settings.json_schema : undefined
-        : undefined;
 
     let params = {
         'prompt': finalPrompt,
@@ -1604,7 +1597,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string || undefined,
-        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? jsonSchema : undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(settings.type) && settings.json_schema ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'repeat_last_n': settings.rep_pen_range,
@@ -1646,7 +1639,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'skip_special_tokens': settings.skip_special_tokens,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
         'guided_grammar': settings.grammar_string || undefined,
-        'guided_json': jsonSchema || undefined,
+        'guided_json': settings.json_schema || undefined,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
         'dynatemp_min': dynatemp ? settings.min_temp : undefined,
@@ -1741,7 +1734,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
 
     // Grammar conflicts with with json_schema
     if ([LLAMACPP, APHRODITE].includes(settings.type)) {
-        if (jsonSchema) {
+        if (settings.json_schema && isObject(settings.json_schema)) {
             delete params.grammar_string;
             delete params.grammar;
             delete params.guided_grammar;
