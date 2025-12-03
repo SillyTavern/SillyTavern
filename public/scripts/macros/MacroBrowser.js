@@ -4,7 +4,7 @@
  */
 
 import { MacroRegistry, MacroCategory } from './engine/MacroRegistry.js';
-import { performFuzzySearch, power_user } from '../power-user.js';
+import { performFuzzySearch } from '../power-user.js';
 
 /** @typedef {import('./engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
 /** @typedef {import('./engine/MacroRegistry.js').MacroValueType} MacroValueType */
@@ -305,12 +305,8 @@ export class MacroBrowser {
  * @returns {string} HTML string for help content
  */
 export function getMacrosHelp() {
-    if (power_user.experimental_macro_engine) {
-        // Return a placeholder that will be replaced with the browser
-        return '<div class="macroHelp"><i class="fa-solid fa-spinner fa-spin"></i> Loading macro documentation...</div>';
-    }
-    // Fall back to static - will be handled by the template
-    return null;
+    // Return a placeholder that will be replaced with the browser
+    return '<div class="macroHelp"><i class="fa-solid fa-spinner fa-spin"></i> Loading macro documentation...</div>';
 }
 
 /**

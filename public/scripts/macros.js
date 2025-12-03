@@ -6,7 +6,7 @@ import { getInstructMacros } from './instruct-mode.js';
 import { getVariableMacros } from './variables.js';
 import { isMobile } from './RossAscends-mods.js';
 import { inject_ids } from './constants.js';
-import { initRegisterMacros, MacroCategory, macros as macroSystem } from './macros/macro-system.js';
+import { initRegisterMacros, macros as macroSystem } from './macros/macro-system.js';
 import { power_user } from './power-user.js';
 
 /**
@@ -201,8 +201,8 @@ export class MacrosParser {
             value = this.sanitizeMacroValue(value);
         }
 
+        MacrosParser.#registerMacroInNewEngine(key, value, description);
         if (power_user.experimental_macro_engine) {
-            MacrosParser.#registerMacroInNewEngine(key, value, description);
             return;
         }
 
@@ -713,11 +713,10 @@ export function initMacros() {
         function initLastGenerationType() {
             let lastGenerationType = '';
 
-            macroSystem.register('lastGenerationType', {
-                category: MacroCategory.STATE,
-                description: 'Returns the type of the last generation (e.g., "normal", "swipe", "continue", "impersonate", "quiet").',
-                handler: () => lastGenerationType,
-            });
+            MacrosParser.registerMacro('lastGenerationType',
+                () => lastGenerationType,
+                'Returns the type of the last generation (e.g., "normal", "swipe", "continue", "impersonate", "quiet").',
+            );
 
             eventSource.on(event_types.GENERATION_STARTED, (type, _params, isDryRun) => {
                 if (isDryRun) return;
@@ -729,11 +728,10 @@ export function initMacros() {
             });
         }
 
-        macroSystem.register('isMobile', {
-            category: MacroCategory.STATE,
-            description: 'Returns "true" if the user is on a mobile device, "false" otherwise.',
-            handler: () => String(isMobile()),
-        });
+        MacrosParser.registerMacro('isMobile',
+            () => String(isMobile()),
+            'Returns "true" if the user is on a mobile device, "false" otherwise.',
+        );
         initLastGenerationType();
     }
 

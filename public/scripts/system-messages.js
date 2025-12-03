@@ -6,7 +6,6 @@ import { getSlashCommandsHelp } from './slash-commands.js';
 import { SlashCommandBrowser } from './slash-commands/SlashCommandBrowser.js';
 import { MacroBrowser, getMacrosHelp } from './macros/MacroBrowser.js';
 import { renderTemplateAsync } from './templates.js';
-import { power_user } from './power-user.js';
 
 /** @type {Record<string, ChatMessage>} */
 export const system_messages = {};
@@ -61,7 +60,7 @@ export async function initSystemMessages() {
         }),
         /** @type {ChatMessage} */
         macros: lodash.merge(structuredClone(defaultMessage), {
-            mes: await renderTemplateAsync('macros'),
+            mes: '',
         }),
         /** @type {ChatMessage} */
         welcome: lodash.merge(structuredClone(defaultMessage), {
@@ -137,7 +136,7 @@ export function getSystemMessageByType(type, text, extra = {}) {
         newMessage.mes = getSlashCommandsHelp();
     }
 
-    if (type === system_message_types.MACROS && power_user.experimental_macro_engine) {
+    if (type === system_message_types.MACROS) {
         newMessage.mes = getMacrosHelp();
     }
 
@@ -170,7 +169,7 @@ export function sendSystemMessage(type, text, extra = {}) {
         browser.search.focus();
     }
 
-    if (type === system_message_types.MACROS && power_user.experimental_macro_engine) {
+    if (type === system_message_types.MACROS) {
         const browser = new MacroBrowser();
         const spinner = document.querySelector('#chat .last_mes .custom-macroHelp');
         if (spinner) {

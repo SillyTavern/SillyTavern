@@ -15,15 +15,12 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
 import { EnhancedMacroAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
-import { MacrosParser } from '../macros.js';
 import { macros as macroSystem } from '../macros/macro-system.js';
-import { t } from '../i18n.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -500,35 +497,12 @@ export class SlashCommandParser {
                 const identifier = macro.name.replace(/[\s:}]+$/, '').trim();
 
                 // Use enhanced macro autocomplete when experimental engine is enabled
-                if (power_user.experimental_macro_engine) {
-                    const options = this.#buildEnhancedMacroOptions(context);
-                    const result = new AutoCompleteNameResult(
-                        identifier,
-                        macro.start + 2,
-                        options,
-                        false,
-                    );
-                    return result;
-                }
-
-                // Legacy: fetch from macros.html and MacrosParser
-                const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
-                const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
-                    li.querySelector('tt').textContent.slice(2, -2).replace(/^([^\s:]+[\s:]+).*$/, '$1'),
-                    li.querySelector('tt').textContent,
-                    (li.querySelector('tt').remove(),li.innerHTML),
-                ));
-                for (const macro of MacrosParser) {
-                    if (options.find(it => it.name === macro.key)) continue;
-                    options.push(new MacroAutoCompleteOption(macro.key, `{{${macro.key}}}`, macro.description || t`No description provided`));
-                }
+                const options = this.#buildEnhancedMacroOptions(context);
                 const result = new AutoCompleteNameResult(
-                    macro.name,
+                    identifier,
                     macro.start + 2,
                     options,
                     false,
-                    ()=>`No matching macros for "{{${result.name}}}"`,
-                    ()=>'No macros found.',
                 );
                 return result;
             }
