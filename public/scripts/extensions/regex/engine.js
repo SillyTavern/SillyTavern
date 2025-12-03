@@ -339,7 +339,7 @@ export function getRegexedString(rawString, placement, { characterOverride, isMa
         return finalString;
     }
 
-    const allRegex = getRegexScripts({ allowedOnly: true }, characterOverride);
+    const allRegex = getRegexScripts({ allowedOnly: true });
     allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
