@@ -137,6 +137,7 @@ const claude_100k_max = 99000;
 const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
+const mistral_max_temp = 1.5;
 const openrouter_website_model = 'OR_Website';
 const openai_max_stop_strings = 4;
 
@@ -5143,8 +5144,8 @@ async function onModelChange() {
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+        oai_settings.temp_openai = Math.min(mistral_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', mistral_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
