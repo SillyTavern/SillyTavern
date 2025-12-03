@@ -21,7 +21,7 @@ export const SCRIPT_TYPES = {
 export const SCRIPT_TYPE_UNKNOWN = -1;
 
 /**
- * @typedef {import('../../char-data.js').RegexScriptData & { _type?: number }} RegexScript
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
  */
 
 /**
@@ -35,45 +35,46 @@ export const SCRIPT_TYPE_UNKNOWN = -1;
 const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
 
 /**
- * Manages the compiled regex cache with LRU eviction and type-aware pruning.
+ * Manages the compiled regex cache with LRU eviction.
  */
-class RegexCache {
+export class RegexProvider {
+    /** @type {Map<string, RegExp>} */
     #cache = new Map();
+    /** @type {number} */
     #maxSize = 500;
 
+    static instance = new RegexProvider();
+
     /**
-     * Gets a cached regex entry.
-     * @param {string} regexString The regex string to look up
-     * @returns {RegExp | undefined} The cached entry or undefined
+     * Gets a regex instance by its string representation.
+     * @param {string} regexString The regex string to retrieve
+     * @returns {RegExp?} Compiled regex or null if invalid
      */
     get(regexString) {
-        const regex = this.#cache.get(regexString);
-        if (regex) {
-            // LRU: Move to end by re-inserting
-            this.#cache.delete(regexString);
-            this.#cache.set(regexString, regex);
+        const regex = this.#cache.has(regexString)
+            ? this.#cache.get(regexString)
+            : regexFromString(regexString);
 
-            // Clone the regex if it is stateful (global or sticky) to avoid lastIndex issues
-            if (regex.global || regex.sticky) {
-                return new RegExp(regex.source, regex.flags);
-            }
+        if (!regex) {
+            return null;
         }
-        return regex;
-    }
 
-    /**
-     * Sets a cache entry.
-     * @param {string} regexString The regex string to cache
-     * @param {RegExp} regex The compiled regex
-     */
-    set(regexString, regex) {
+        // LRU: Move to end by re-inserting
+        this.#cache.delete(regexString);
+        this.#cache.set(regexString, regex);
+
         // Evict oldest if at capacity
         if (this.#cache.size >= this.#maxSize) {
             const firstKey = this.#cache.keys().next().value;
             this.#cache.delete(firstKey);
         }
 
-        this.#cache.set(regexString, regex);
+        // Reset lastIndex for global/sticky regexes
+        if (regex.global || regex.sticky) {
+            regex.lastIndex = 0;
+        }
+
+        return regex;
     }
 
     /**
@@ -84,100 +85,14 @@ class RegexCache {
     }
 }
 
-// Cache for regex scripts to avoid rebuilding the array on every call
-let scriptsCacheAll = null;
-let scriptsCacheAllowed = null;
-// Cache for compiled RegExp objects
-const regexCache = new RegexCache();
-
-// Context tracking for cache invalidation
-let lastContext = {
-    chid: undefined,
-    characterRef: undefined,
-    presetApi: null,
-    presetName: null,
-};
-
-/**
- * Invalidates the scripts cache
- */
-export function invalidateScriptsCache() {
-    scriptsCacheAll = null;
-    scriptsCacheAllowed = null;
-}
-
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
  *
  * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
  */
-export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, characterOverride = null) {
-    // Check for context changes (character switch, preset change, character data update)
-    let currentChid = this_chid;
-
-    // Dynamic Character Loading for Group Chats
-    if (characterOverride) {
-        const overrideId = characters.findIndex(c => c.avatar === characterOverride);
-        if (overrideId !== -1) {
-            currentChid = String(overrideId);
-        }
-    }
-
-    const currentCharacterRef = characters?.[currentChid];
-    const currentPresetApi = getCurrentPresetAPI();
-    const currentPresetName = getCurrentPresetName();
-
-    // If we are overriding, we bypass the standard cache invalidation logic based on this_chid
-    // because we are temporarily looking at another character's context.
-    // However, we still need to ensure we aren't returning cached scripts for the WRONG character.
-    // So if an override is present, we might want to skip the main cache or use a temporary one.
-    // For simplicity and safety in this fix, if an override is present, we fetch fresh (or use a separate strategy).
-    // But wait, getScriptsByType uses this_chid. We need to pass the override down or temporarily mock this_chid?
-    // No, getScriptsByType should also accept the chid.
-
-    // Let's refactor getScriptsByType to accept an optional chid.
-
-    if (
-        !characterOverride && (
-            currentChid !== lastContext.chid ||
-            currentCharacterRef !== lastContext.characterRef ||
-            currentPresetApi !== lastContext.presetApi ||
-            currentPresetName !== lastContext.presetName
-        )
-    ) {
-        invalidateScriptsCache();
-        lastContext = {
-            chid: currentChid,
-            characterRef: currentCharacterRef,
-            presetApi: currentPresetApi,
-            presetName: currentPresetName,
-        };
-    }
-
-    // If override is present, we don't use the global cache variables `scriptsCacheAll` / `scriptsCacheAllowed`
-    // because they are meant for the "currently selected character" context.
-    if (characterOverride) {
-        return [...Object.values(SCRIPT_TYPES).flatMap(type => {
-            return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
-        })];
-    }
-
-    if (options.allowedOnly) {
-        if (!scriptsCacheAllowed) {
-            scriptsCacheAllowed = [...Object.values(SCRIPT_TYPES).flatMap(type => {
-                return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
-            })];
-        }
-        return scriptsCacheAllowed;
-    }
-
-    if (!scriptsCacheAll) {
-        scriptsCacheAll = [...Object.values(SCRIPT_TYPES).flatMap(type => {
-            return getScriptsByType(type, options, currentChid).map(s => ({ ...s, _type: type }));
-        })];
-    }
-    return scriptsCacheAll;
+export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
+    return [...Object.values(SCRIPT_TYPES).flatMap(type => getScriptsByType(type, options))];
 }
 
 /**
@@ -186,17 +101,17 @@ export function getRegexScripts(options = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, cha
  * @param {GetRegexScriptsOptions} options Options for retrieving the regex scripts
  * @returns {RegexScript[]} An array of regex scripts for the specified type.
  */
-export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS, targetChid = this_chid) {
+export function getScriptsByType(scriptType, { allowedOnly } = DEFAULT_GET_REGEX_SCRIPTS_OPTIONS) {
     switch (scriptType) {
         case SCRIPT_TYPE_UNKNOWN:
             return [];
         case SCRIPT_TYPES.GLOBAL:
             return extension_settings.regex ?? [];
         case SCRIPT_TYPES.SCOPED: {
-            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[targetChid]?.avatar)) {
+            if (allowedOnly && !extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar)) {
                 return [];
             }
-            const scopedScripts = characters[targetChid]?.data?.extensions?.regex_scripts;
+            const scopedScripts = characters[this_chid]?.data?.extensions?.regex_scripts;
             return Array.isArray(scopedScripts) ? scopedScripts : [];
         }
         case SCRIPT_TYPES.PRESET: {
@@ -223,17 +138,14 @@ export async function saveScriptsByType(scripts, scriptType) {
     switch (scriptType) {
         case SCRIPT_TYPES.GLOBAL:
             extension_settings.regex = scripts;
-            invalidateScriptsCache();
             saveSettingsDebounced();
             break;
         case SCRIPT_TYPES.SCOPED:
             await writeExtensionField(this_chid, 'regex_scripts', scripts);
-            invalidateScriptsCache();
             break;
         case SCRIPT_TYPES.PRESET: {
             const presetManager = getPresetManager();
             await presetManager.writePresetExtensionField({ path: 'regex_scripts', value: scripts });
-            invalidateScriptsCache();
             break;
         }
         default:
@@ -266,7 +178,6 @@ export function allowScopedScripts(character) {
     }
     if (!extension_settings.character_allowed_regex.includes(avatar)) {
         extension_settings.character_allowed_regex.push(avatar);
-        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -287,7 +198,6 @@ export function disallowScopedScripts(character) {
     const index = extension_settings.character_allowed_regex.indexOf(avatar);
     if (index !== -1) {
         extension_settings.character_allowed_regex.splice(index, 1);
-        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -320,7 +230,6 @@ export function allowPresetScripts(apiId, presetName) {
     }
     if (!extension_settings.preset_allowed_regex[apiId].includes(presetName)) {
         extension_settings.preset_allowed_regex[apiId].push(presetName);
-        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -341,7 +250,6 @@ export function disallowPresetScripts(apiId, presetName) {
     const index = extension_settings.preset_allowed_regex[apiId].indexOf(presetName);
     if (index !== -1) {
         extension_settings.preset_allowed_regex[apiId].splice(index, 1);
-        invalidateScriptsCache();
         saveSettingsDebounced();
     }
 }
@@ -496,15 +404,7 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
         }
     };
     const regexString = getRegexString();
-
-    let findRegex = regexCache.get(regexString);
-
-    if (!findRegex) {
-        findRegex = regexFromString(regexString);
-        if (findRegex) {
-            regexCache.set(regexString, findRegex);
-        }
-    }
+    const findRegex = RegexProvider.instance.get(regexString);
 
     // The user skill issued. Return with nothing.
     if (!findRegex) {
