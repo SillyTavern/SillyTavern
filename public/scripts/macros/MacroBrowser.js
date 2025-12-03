@@ -45,9 +45,6 @@ export class MacroBrowser {
     /** @type {Map<string, HTMLElement>} */
     itemMap = new Map();
 
-    /** @type {MutationObserver} */
-    mo;
-
     /** @type {boolean} */
     isSorted = false;
 
@@ -144,17 +141,6 @@ export class MacroBrowser {
 
         root.appendChild(container);
         parent.appendChild(root);
-
-        // Setup mutation observer for cleanup
-        this.mo = new MutationObserver(muts => {
-            if (muts.find(mut => Array.from(mut.removedNodes).find(it => it === this.dom || it.contains(this.dom)))) {
-                this.mo.disconnect();
-                window.removeEventListener('keydown', this.boundKeyHandler);
-            }
-        });
-        this.mo.observe(document.querySelector('#chat'), { childList: true, subtree: true });
-        this.boundKeyHandler = this.#handleKeyDown.bind(this);
-        window.addEventListener('keydown', this.boundKeyHandler);
 
         return root;
     }
