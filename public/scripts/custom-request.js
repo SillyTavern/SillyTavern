@@ -590,6 +590,12 @@ export class ChatCompletionService {
             settings[settingToUpdate[1]] = value;
         }
 
+        // Ensure api-url is properly applied for all sources that accept it
+        ['custom_url', 'vertexai_region', 'zai_endpoint'].forEach(field => {
+            // The order is: connection profile => CC preset => CC settings
+            overridePayload[field] = overridePayload[field] || settings[field] || oai_settings[field];
+        });
+
         // Convert from settings to generation payload
         const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', overridePayload.messages);
         const payload = data.generate_data;
