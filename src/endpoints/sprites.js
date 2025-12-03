@@ -101,7 +101,7 @@ export function importRisuSprites(directories, data) {
             }
 
             const filename = label + '.png';
-            const pathToFile = path.join(spritesPath, filename);
+            const pathToFile = path.join(spritesPath, sanitize(filename));
             writeFileAtomicSync(pathToFile, fileBase64, { encoding: 'base64' });
         }
 
@@ -224,7 +224,7 @@ router.post('/upload-zip', async (request, response) => {
             }
 
             // Write sprite buffer to disk
-            const pathToSprite = path.join(spritesPath, filename);
+            const pathToSprite = path.join(spritesPath, sanitize(filename));
             writeFileAtomicSync(pathToSprite, buffer);
         }
 
@@ -277,7 +277,7 @@ router.post('/upload', async (request, response) => {
 
         const filename = spriteName + path.parse(file.originalname).ext;
         const spritePath = path.join(file.destination, file.filename);
-        const pathToFile = path.join(spritesPath, filename);
+        const pathToFile = path.join(spritesPath, sanitize(filename));
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);
         // Remove uploaded file
