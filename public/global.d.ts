@@ -6,6 +6,7 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
+import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
 
 declare global {
     // Custom types
@@ -15,6 +16,47 @@ declare global {
     type ChatCompletionSettings = typeof oai_settings;
     type TextCompletionSettings = typeof textgenerationwebui_settings;
     type MessageTimestamp = string | number | Date;
+    type Character = import('./scripts/char-data').v1CharData;
+    type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+
+    interface Group {
+        id: string;
+        name: string;
+        members: string[];
+        disabled_members: string[];
+        chat_id: string;
+        chats: string[];
+        generation_mode?: number;
+        generation_mode_join_prefix?: string;
+        generation_mode_join_suffix?: string;
+        activation_strategy?: number;
+        auto_mode_delay?: number;
+        allow_self_responses?: boolean;
+        avatar_url?: string;
+        hideMutedSprites?: boolean;
+        fav?: boolean;
+    }
+
+    interface ChatFile extends Array<ChatMessage> {
+        [index: number]: ChatMessage;
+        0?: ChatHeader;
+    }
+
+    interface ChatHeader {
+        chat_metadata: ChatMetadata;
+        /** @deprecated For backward compatibility ONLY */
+        user_name: 'unused';
+        /** @deprecated For backward compatibility ONLY */
+        character_name: 'unused';
+    }
+
+    interface ChatMetadata {
+        tainted?: boolean;
+        integrity?: string;
+        scenario?: string;
+        persona?: string;
+        [key: string]: any;
+    }
 
     interface ChatMessage {
         name?: string;
@@ -28,12 +70,20 @@ declare global {
         force_avatar?: string;
         original_avatar?: string;
         swipes?: string[];
-        swipe_info?: Record<string, any>;
+        swipe_info?: SwipeInfo[];
         swipe_id?: number;
-        extra?: ChatMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+        extra?: ChatMessageExtra;
     };
 
-    interface ChatMessageExtra {
+    interface SwipeInfo {
+        send_date?: MessageTimestamp;
+        gen_started?: MessageTimestamp;
+        gen_finished?: MessageTimestamp;
+        extra?: ChatMessageExtra;
+    }
+
+    interface BaseMessageExtra {
+        gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;
         memory?: string;
@@ -43,6 +93,9 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        /** When false, the message cannot be swiped. */
+        swipeable?: boolean;
+        overswipe_behavior?: OVERSWIPE_BEHAVIOR;
         files?: FileAttachment[];
         inline_image?: boolean;
         media_display?: string;
@@ -165,4 +218,6 @@ declare global {
             rgba: string;
         }
     };
+
+    type SwipeEvent = JQuery.TriggeredEvent<any, any, HTMLElement, HTMLElement>;
 }

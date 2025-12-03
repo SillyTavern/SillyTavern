@@ -196,6 +196,7 @@ export const CHAT_COMPLETION_SOURCES = {
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
+    CHUTES: 'chutes',
     ELECTRONHUB: 'electronhub',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
@@ -452,6 +453,8 @@ export const AZURE_OPENAI_KEYS = [
     'tool_choice',
     'reasoning_effort',
 ];
+
+export const OPENAI_VERBOSITY_MODELS = /^gpt-5/;
 
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',

@@ -132,3 +132,23 @@
         overflow-y: hidden;
     }
 }
+
+@keyframes slide {
+    0% {
+        transform: translateX(var(--slide-mes-x-start, 0px));
+    }
+
+    100% {
+        transform: translateX(var(--slide-mes-x-end, 0px));
+    }
+}
+
+@-webkit-keyframes slide {
+    0% {
+        transform: translateX(var(--slide-mes-x-start, 0px));
+    }
+
+    100% {
+        transform: translateX(var(--slide-mes-x-end, 0px));
+    }
+}

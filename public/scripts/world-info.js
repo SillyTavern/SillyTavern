@@ -4845,6 +4845,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
+        const curScanState = scanState;
         scanState = nextScanState;
         if (scanState) {
             const text = successfulNewEntriesForRecursion
@@ -4856,6 +4857,45 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         } else {
             logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
+
+        // Fire an event after each scan loop, so extensions can hook into the current scanning state
+        const args = {
+            state: {
+                current: curScanState,
+                next: scanState,
+                loopCount: count,
+            },
+            new: {
+                all: newEntries,
+                successful: successfulNewEntries,
+            },
+            activated: {
+                entries: allActivatedEntries,
+                text: allActivatedText,
+            },
+            sortedEntries,
+            recursionDelay: {
+                availableLevels: availableRecursionDelayLevels,
+                currentLevel: currentRecursionDelayLevel,
+            },
+            budget: {
+                current: budget,
+                overflowed: token_budget_overflowed,
+            },
+            timedEffects,
+        };
+        await eventSource.emit(event_types.WORLDINFO_SCAN_DONE, args);
+
+        // Some fields are allowed to be changed by listeners, those will be handled here manually. They can be updated via changed the args from the listeners.
+        // Any array provided directly can be modified by updating it's elements, adding or removing elements. This has to be done consistently.
+        if (args.state.next !== scanState) {
+            logNextState('[WI] Scan state changed from', scanState, 'to', args.state.next);
+            scanState = args.state.next;
+        }
+        allActivatedText = args.activated.text;
+        currentRecursionDelayLevel = args.recursionDelay.currentLevel;
+        budget = args.budget.current;
+        token_budget_overflowed = args.budget.overflowed;
     }
 
     console.debug('[WI] --- BUILDING PROMPT ---');

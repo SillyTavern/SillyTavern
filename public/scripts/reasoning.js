@@ -51,8 +51,8 @@ const UI = {
 
 /**
  * Enum representing the type of the reasoning for a message (where it came from)
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const ReasoningType = {
     Model: 'model',
@@ -125,6 +125,7 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.MOONSHOT:
                 case chat_completion_sources.COMETAPI:
+                case chat_completion_sources.CHUTES:
                 case chat_completion_sources.ELECTRONHUB:
                 case chat_completion_sources.NANOGPT:
                 case chat_completion_sources.SILICONFLOW:
@@ -186,8 +187,8 @@ export function updateReasoningUI(messageIdOrElement, { reset = false } = {}) {
 
 /**
  * Enum for representing the state of reasoning
- * @enum {string}
  * @readonly
+ * @enum {string}
  */
 export const ReasoningState = {
     None: 'none',

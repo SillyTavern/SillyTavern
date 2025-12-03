@@ -57,10 +57,14 @@ import {
     hideSwipeButtons,
     deleteMessage,
     refreshSwipeButtons,
+    swipe,
     isSwipingAllowed,
+    swipeState,
     ensureMessageMediaIsArray,
     getMediaDisplay,
     getMediaIndex,
+    scrollChatToBottom,
+    scrollOnMediaLoad,
 } from '../script.js';
 import {
     extension_settings,
@@ -215,13 +219,17 @@ export function getContext() {
         ensureMessageMediaIsArray,
         getMediaDisplay,
         getMediaIndex,
+        scrollChatToBottom,
+        scrollOnMediaLoad,
         swipe: {
             left: swipe_left,
             right: swipe_right,
+            to: swipe,
             show: showSwipeButtons,
             hide: hideSwipeButtons,
             refresh: refreshSwipeButtons,
-            isAllowed: () => isSwipingAllowed,
+            isAllowed: isSwipingAllowed,
+            state: () => swipeState,
         },
         variables: {
             local: {
