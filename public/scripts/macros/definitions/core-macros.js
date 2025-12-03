@@ -24,7 +24,7 @@ export function registerCoreMacros() {
                 defaultValue: '1',
                 type: MacroValueType.INTEGER,
                 description: 'Number of spaces to insert.',
-            }
+            },
         ],
         description: 'Returns one or more spaces. One space by default, more if the count argument is specified.',
         returns: 'One or more spaces.',
@@ -42,7 +42,7 @@ export function registerCoreMacros() {
                 defaultValue: '1',
                 type: MacroValueType.INTEGER,
                 description: 'Number of newlines to insert.',
-            }
+            },
         ],
         description: 'Inserts one or more newlines. One newline by default, more if the count argument is specified.',
         returns: 'One or more \\n.',
