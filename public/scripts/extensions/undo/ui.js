@@ -68,10 +68,16 @@ export async function addSettings() {
         //Toggle on.
         if (enabled) { source.on(event, eventFunction); }
         //Toggle off.
-        else { source.off(event, eventFunction); }
+        else { source.removeListener(event, eventFunction); }
     };
 
-    const toggleUndoHotkey = (_, enabled, __) => toggleEventFunction($(document), 'keydown', enabled, processUndoHotkey);
+    const toggleUndoHotkey = (_, enabled, __) => {
+        //Toggle on.
+        if (enabled) { document.addEventListener('keydown', processUndoHotkey); }
+        //Toggle off.
+        else { document.removeEventListener('keydown', processUndoHotkey); }
+    };
+
     const toggleUndoHotkeyElement = new ToggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
