@@ -176,11 +176,10 @@ class MacroRegistry {
      */
     registerMacro(name, options) {
         // Extract name early for error logging
-        const macroName = typeof name === 'string' ? name.trim() : String(name);
+        name = typeof name === 'string' ? name.trim() : String(name);
 
         try {
-            if (typeof name !== 'string' || !name.trim()) throw new Error('Macro name must be a non-empty string');
-            name = name.trim();
+            if (typeof name !== 'string' || !name) throw new Error('Macro name must be a non-empty string');
             if (!options || typeof options !== 'object') throw new Error(`Macro "${name}" options must be a non-null object.`);
 
             const {
@@ -397,8 +396,8 @@ class MacroRegistry {
             return definition;
         } catch (error) {
             logMacroRegisterError({
-                message: `Failed to register macro "${macroName}". The macro will not be available.`,
-                macroName,
+                message: `Failed to register macro "${name}". The macro will not be available.`,
+                macroName: name,
                 error,
             });
             return null;
