@@ -64,21 +64,24 @@ export function registerEnvMacros() {
         handler: ({ env }) => env.character.charInstruction ?? '',
     });
 
-    MacroRegistry.registerMacro('description', {
+    MacroRegistry.registerMacro('charDescription', {
+        aliases: [{ alias: 'description' }],
         category: MacroCategory.CHARACTER,
         description: 'The character\'s description.',
         returns: 'Character description.',
         handler: ({ env }) => env.character.description ?? '',
     });
 
-    MacroRegistry.registerMacro('personality', {
+    MacroRegistry.registerMacro('charPersonality', {
+        aliases: [{ alias: 'personality' }],
         category: MacroCategory.CHARACTER,
         description: 'The character\'s personality.',
         returns: 'Character personality.',
         handler: ({ env }) => env.character.personality ?? '',
     });
 
-    MacroRegistry.registerMacro('scenario', {
+    MacroRegistry.registerMacro('charScenario', {
+        aliases: [{ alias: 'scenario' }],
         category: MacroCategory.CHARACTER,
         description: 'The character\'s scenario.',
         returns: 'Character scenario.',
@@ -129,7 +132,8 @@ export function registerEnvMacros() {
         handler: ({ env }) => env.character.charDepthPrompt ?? '',
     });
 
-    MacroRegistry.registerMacro('creatorNotes', {
+    MacroRegistry.registerMacro('charCreatorNotes', {
+        aliases: [{ alias: 'creatorNotes' }],
         category: MacroCategory.CHARACTER,
         description: 'Creator notes from the character card.',
         returns: 'Creator notes.',

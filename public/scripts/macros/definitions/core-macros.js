@@ -101,6 +101,7 @@ export function registerCoreMacros() {
 
     // Comment macro: {{// ...}} -> '' (consumes any arguments)
     MacroRegistry.registerMacro('//', {
+        aliases: [{ alias: 'comment' }],
         category: MacroCategory.UTILITY,
         list: true,         // We consume any arguments as if this is a list, but we'll ignore them in the handler anyway
         strictArgs: false,  // and we also always remove it, even if the parsing might say it's invalid

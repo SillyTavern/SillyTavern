@@ -82,7 +82,8 @@ export function registerTimeMacros() {
         handler: ({ unnamedArgs: [format] }) => moment().format(format),
     });
 
-    MacroRegistry.registerMacro('idle_duration', {
+    MacroRegistry.registerMacro('idleDuration', {
+        aliases: [{ alias: 'idle_duration', visible: false }],
         category: MacroCategory.TIME,
         description: 'Human-readable duration since the last user message.',
         returns: 'Human-readable duration since the last user message.',
