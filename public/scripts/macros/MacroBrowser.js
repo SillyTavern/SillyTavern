@@ -669,8 +669,8 @@ export function renderMacroDetails(macro, options = {}) {
             if (!visible) {
                 const hiddenBadge = document.createElement('span');
                 hiddenBadge.classList.add('macro-alias-hidden-badge');
-                hiddenBadge.textContent = '(hidden)';
-                hiddenBadge.title = 'This alias is not shown in documentation or autocomplete';
+                hiddenBadge.textContent = '(deprecated)';
+                hiddenBadge.title = 'This alias is deprecated and will not be shown in documentation or autocomplete';
                 li.appendChild(hiddenBadge);
             }
 
