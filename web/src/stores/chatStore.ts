@@ -343,6 +343,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const emotion = parseEmotion(responseText);
         const cleanedContent = stripEmotionTag(responseText);
 
+        console.log('[Chat] Raw response (first 150 chars):', responseText.substring(0, 150));
+        console.log('[Chat] Parsed emotion:', emotion);
+
         // Update message with parsed emotion and cleaned content
         set((state) => ({
           messages: state.messages.map((msg) =>
