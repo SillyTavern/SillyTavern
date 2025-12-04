@@ -46,12 +46,12 @@ export async function addSettings() {
     undoOptions.append(lengthElement);
 
     //Toggles visibility of undo_buttons and undo_save_options.
-    const menuVisibility = (_, value) => {$('#undo_buttons').toggle(!value);};
-    const saveVisibility = (_, value) => $('#undo_save_options').toggle(!value);
+    const menuVisibility = (_, value) => {$('#undo_buttons').toggle(value);};
+    const saveVisibility = (_, value) => $('#undo_save_options').toggle(value);
 
     //Setting that toggles menuVisibility and saveVisibility.
-    const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Hide the Undo/Redo Buttons from the Options Menu.', { defaultValue: false, callback: menuVisibility }).create();
-    const toggleSaveElement = new ToggleInput('show_save_button', 'Hide the Save/Reset Buttons from the Options Menu.', { defaultValue: true, callback: saveVisibility }).create();
+    const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
+    const toggleSaveElement = new ToggleInput('show_save_button', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
 
     async function processUndoHotkey(event) {
         if (!isInputElementInFocus()) {
