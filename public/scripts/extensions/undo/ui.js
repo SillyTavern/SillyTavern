@@ -138,6 +138,7 @@ class RangeInput {
         this.step = step;
         this.defaultValue = defaultValue;
         this.element = undefined;
+        this.dataStore = dataStore;
     }
     create() {
         let html = `<div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
@@ -152,7 +153,7 @@ class RangeInput {
 
         const onSliderElementInput = () => {
             const value = Number(sliderInput.val());
-            extension_settings[extensionName][this.id] = value;
+            this.dataStore[this.id] = value;
             textInput.val(value);
             saveSettingsDebounced();
             this.callback(this.id, value);
@@ -160,13 +161,13 @@ class RangeInput {
 
         const onTextElementInput = () => {
             const value = Number(textInput.val());
-            extension_settings[extensionName][this.id] = value;
+            this.dataStore[this.id] = value;
             sliderInput.val(value);
             saveSettingsDebounced();
             this.callback(this.id, value);
         };
 
-        const value = extension_settings[extensionName]?.[this.id] ?? this.defaultValue;
+        const value = this.dataStore?.[this.id] ?? this.defaultValue;
         sliderInput.val(value);
         textInput.val(value);
         sliderInput.on('input', onSliderElementInput);
@@ -189,6 +190,7 @@ class ToggleInput {
         this.title = title;
         this.defaultValue = defaultValue;
         this.element = undefined;
+        this.dataStore = dataStore;
     }
     create() {
         let html = `<label class="checkbox_label" for="${this.category}_${this.id}">
@@ -201,11 +203,11 @@ class ToggleInput {
 
         const onElementInput = () => {
             const value = buttonInput.prop('checked');
-            extension_settings[extensionName][this.id] = value;
+            this.dataStore[this.id] = value;
             saveSettingsDebounced();
             this.callback(this.id, value);
         };
-        const value = extension_settings[extensionName]?.[this.id] ?? this.defaultValue;
+        const value = this.dataStore?.[this.id] ?? this.defaultValue;
         buttonInput.prop('checked', value);
         buttonInput.on('input', onElementInput);
 
