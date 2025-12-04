@@ -5,10 +5,32 @@ import type { Emotion } from '../utils/emotions';
 // Cache sprite paths by character name
 const spriteCache = new Map<string, SpriteInfo[]>();
 
-export function useCharacterSprites(characterName: string | undefined) {
+/**
+ * Extract the actual character name from avatar filename.
+ * SillyTavern sometimes prefixes avatar filenames with "default_"
+ * but the sprite folder uses the actual character name.
+ */
+function extractCharacterName(avatarName: string | undefined): string | undefined {
+  if (!avatarName) return undefined;
+
+  // Remove file extension first
+  let name = avatarName.replace(/\.[^/.]+$/, '');
+
+  // Remove "default_" prefix if present
+  if (name.startsWith('default_')) {
+    name = name.substring(8); // Remove "default_" (8 characters)
+  }
+
+  return name;
+}
+
+export function useCharacterSprites(avatarFilename: string | undefined) {
   const [sprites, setSprites] = useState<SpriteInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Extract actual character name from avatar filename
+  const characterName = extractCharacterName(avatarFilename);
 
   useEffect(() => {
     if (!characterName) {

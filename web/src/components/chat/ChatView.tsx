@@ -19,11 +19,8 @@ export function ChatView() {
   // Track failed expression images to avoid infinite retry loops
   const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
 
-  // Get character name from avatar filename for sprite lookup
-  const characterName = selectedCharacter?.avatar?.replace(/\.[^/.]+$/, '');
-
-  // Fetch actual sprite paths from API
-  const { getSpritePath } = useCharacterSprites(characterName);
+  // Fetch actual sprite paths from API (hook extracts character name from avatar filename)
+  const { getSpritePath } = useCharacterSprites(selectedCharacter?.avatar);
 
   // Get the latest character message's emotion for the portrait
   const latestEmotion = useMemo(() => {
