@@ -8,7 +8,8 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, RegexProvider, runRegexScript, saveScriptsByType, SCRIPT_TYPE_UNKNOWN, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+// Import `invalidateScriptsCache` to refresh script list caches after UI-level modifications
+import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, invalidateScriptsCache, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, RegexProvider, runRegexScript, saveScriptsByType, SCRIPT_TYPE_UNKNOWN, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 import { getPresetManager } from '../../preset-manager.js';
@@ -540,6 +541,12 @@ async function saveRegexScript(regexScript, existingScriptIndex, scriptType, sav
         array.push(regexScript);
     }
 
+    // Global scripts use `extension_settings.regex` and are persisted via `saveSettingsDebounced`.
+    // Invalidate caches here so subsequent UI requests read the latest global script list.
+    if (scriptType === SCRIPT_TYPES.GLOBAL) {
+        invalidateScriptsCache();
+    }
+
     if (scriptType === SCRIPT_TYPES.SCOPED) {
         await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
         allowScopedScripts(characters?.[this_chid]);
@@ -583,7 +590,8 @@ async function deleteRegexScript(id, scriptType, saveSettings = true) {
 
         switch (scriptType) {
             case SCRIPT_TYPES.GLOBAL:
-                // will be handled by saveSettingsDebounced
+                // Global list is saved by `saveSettingsDebounced`; invalidate caches to reflect deletions
+                invalidateScriptsCache();
                 break;
             case SCRIPT_TYPES.SCOPED:
                 await saveScriptsByType(array, SCRIPT_TYPES.SCOPED);
@@ -744,9 +752,14 @@ async function loadRegexScripts() {
         $(container).append(scriptHtml);
     }
 
-    getScriptsByType(SCRIPT_TYPES.GLOBAL).forEach((script, index) => renderScript('#saved_regex_scripts', script, SCRIPT_TYPES.GLOBAL, index));
-    getScriptsByType(SCRIPT_TYPES.SCOPED).forEach((script, index) => renderScript('#saved_scoped_scripts', script, SCRIPT_TYPES.SCOPED, index));
-    getScriptsByType(SCRIPT_TYPES.PRESET).forEach((script, index) => renderScript('#saved_preset_scripts', script, SCRIPT_TYPES.PRESET, index));
+    // Prefetch arrays once to avoid repeated calls and ensure consistent ordering
+    const globals = getScriptsByType(SCRIPT_TYPES.GLOBAL);
+    const scoped = getScriptsByType(SCRIPT_TYPES.SCOPED);
+    const preset = getScriptsByType(SCRIPT_TYPES.PRESET);
+
+    globals.forEach((script, index) => renderScript('#saved_regex_scripts', script, SCRIPT_TYPES.GLOBAL, index));
+    scoped.forEach((script, index) => renderScript('#saved_scoped_scripts', script, SCRIPT_TYPES.SCOPED, index));
+    preset.forEach((script, index) => renderScript('#saved_preset_scripts', script, SCRIPT_TYPES.PRESET, index));
 
     $('#regex_scoped_toggle').prop('checked', isScopedScriptsAllowed(characters?.[this_chid]));
     $('#regex_preset_toggle').prop('checked', isPresetScriptsAllowed(getCurrentPresetAPI(), getCurrentPresetName()));
@@ -1064,15 +1077,21 @@ function populateDebuggerRuleList(container) {
         return;
     }
 
+    // Build membership sets per type to categorize without relying on transient `_type` fields.
+    // Rationale: engine no longer annotates scripts; this avoids extra object copies
+    // and keeps categorization consistent with source-of-truth lists.
     const globalScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.GLOBAL).map(s => s.id));
     const scopedScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.SCOPED).map(s => s.id));
     const presetScriptIds = new Set(getScriptsByType(SCRIPT_TYPES.PRESET).map(s => s.id));
+
     const globalScripts = [];
     const scopedScripts = [];
     const presetScripts = [];
 
+    // Categorize scripts by membership in each list (GLOBAL/SCOPED/PRESET)
+    // Deep copy each script for UI editing and attach a stable `type` derived from membership.
     allScripts.forEach(script => {
-        const scriptCopy = structuredClone(script); // Use structuredClone for deep copy
+        const scriptCopy = structuredClone(script); // deep copy for UI editing
         if (globalScriptIds.has(script.id)) {
             // @ts-ignore
             scriptCopy.type = SCRIPT_TYPES.GLOBAL;
