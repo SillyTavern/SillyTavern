@@ -1,22 +1,28 @@
 <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-        <b data-i18n='Chat Undo History (ctrl - z)'>Chat Undo History (ctrl - z)</b>
+        <b data-i18n="Chat Undo History (ctrl - z)">Chat Undo History (ctrl - z)</b>
         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
         <div id="undo_toggles" class="flex-container"></div>
         <div class="margin-bot-10px"></div>
-        <b data-i18n='⚠️ Warning: Increasing these can significantly impact RAM usage on large chats.'>⚠️ Warning: Increasing these can significantly impact RAM usage on large chats. </b>
+        <b data-i18n="⚠️ Warning: Increasing these can significantly impact RAM usage on large chats.">
+            ⚠️ Warning: Increasing these can significantly impact RAM usage on large chats.
+        </b>
         <div id="undo_options" class="flex-container"></div>
-        <div class="inline-drawer" id=undo-advanced-drawer style="margin: 2em;">
-            <div class="inline-drawer-toggle inline-drawer-header" style="color: red;">
-                <b data-i18n='Toggle snapshot events (Advanced)'>Toggle snapshot events (Advanced)</b>
+        <div class="inline-drawer" id="undo-advanced-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b data-i18n="Toggle snapshot events (Advanced)">
+                    Toggle snapshot events (Advanced)
+                </b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
-            <div id=undo-advanced-content class="inline-drawer-content" style="display: none;">
+            <div id="undo-advanced-content" class="inline-drawer-content">
                 <div id="undo_advanced_options" class=""></div>
-                <b data-i18n='These events will determine which actions are saved to your "undo history".'>These events will determine which actions are saved to your "undo history". </b>
-                <div id=undo_events class="inline-drawer"></div>
+                <b data-i18n='These events will determine which actions are saved to your "undo history".'>
+                    These events will determine which actions are saved to your "undo history".
+                </b>
+                <div id="undo_events" class="inline-drawer"></div>
             </div>
         </div>
         <div class="margin-bot-10px"></div>

@@ -4,6 +4,7 @@
     "requires": [],
     "optional": [],
     "js": "index.js",
+    "css": "style.css",
     "version": "0.0.1",
     "homePage": "https://github.com/SillyTavern/SillyTavern"
 }

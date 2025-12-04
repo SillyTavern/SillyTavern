@@ -1,0 +1,12 @@
+#undo_buttons,
+#undo_save_options {
+    display: flex;
+}
+
+#undo-advanced-drawer {
+    margin: 2em;
+}
+
+#undo-advanced-drawer>.inline-drawer-header {
+    color: red;
+}
