@@ -12,6 +12,7 @@ export function ChatView() {
   const lastCharacterRef = useRef<string | null>(null);
 
   const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
+  const getFullImageUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
 
   // Load chat when character changes
   useEffect(() => {
@@ -71,6 +72,26 @@ export function ChatView() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {/* Mobile Character Portrait - visible only on mobile */}
+      <div className="lg:hidden h-[30vh] min-h-[150px] max-h-[250px] relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden">
+        <img
+          src={getFullImageUrl(selectedCharacter.avatar)}
+          alt={selectedCharacter.name}
+          className="w-full h-full object-cover object-top"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
+        {/* Character name overlay */}
+        <div className="absolute bottom-2 left-4 right-4">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] drop-shadow-lg">
+            {selectedCharacter.name}
+          </h2>
+        </div>
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {messages.length === 0 ? (
