@@ -167,8 +167,11 @@ export function getExpressionUrl(
   // Expression images are stored in /characters/[name]/[emotion].png
   // Extract character name from avatar filename (e.g., "Seraphina.png" -> "Seraphina")
   const characterName = characterAvatar.replace(/\.[^/.]+$/, '');
+  const url = `/characters/${encodeURIComponent(characterName)}/${emotion}.png`;
 
-  return `/characters/${encodeURIComponent(characterName)}/${emotion}.png`;
+  console.log('[Expression] Avatar:', characterAvatar, '-> Name:', characterName, '-> URL:', url);
+
+  return url;
 }
 
 /**
