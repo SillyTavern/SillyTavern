@@ -41,7 +41,7 @@ export class RegexProvider {
     /** @type {Map<string, RegExp>} */
     #cache = new Map();
     /** @type {number} */
-    #maxSize = 500;
+    #maxSize = 1000;
 
     static instance = new RegexProvider();
 
@@ -51,7 +51,8 @@ export class RegexProvider {
      * @returns {RegExp?} Compiled regex or null if invalid
      */
     get(regexString) {
-        const regex = this.#cache.has(regexString)
+        const isCached = this.#cache.has(regexString);
+        const regex = isCached
             ? this.#cache.get(regexString)
             : regexFromString(regexString);
 
@@ -59,14 +60,17 @@ export class RegexProvider {
             return null;
         }
 
-        // LRU: Move to end by re-inserting
-        this.#cache.delete(regexString);
-        this.#cache.set(regexString, regex);
-
-        // Evict oldest if at capacity
-        if (this.#cache.size >= this.#maxSize) {
-            const firstKey = this.#cache.keys().next().value;
-            this.#cache.delete(firstKey);
+        if (isCached) {
+            // LRU: Move to end by re-inserting
+            this.#cache.delete(regexString);
+            this.#cache.set(regexString, regex);
+        } else {
+            // Evict oldest if at capacity
+            if (this.#cache.size >= this.#maxSize) {
+                const firstKey = this.#cache.keys().next().value;
+                this.#cache.delete(firstKey);
+            }
+            this.#cache.set(regexString, regex);
         }
 
         // Reset lastIndex for global/sticky regexes
