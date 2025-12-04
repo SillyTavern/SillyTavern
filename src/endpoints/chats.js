@@ -365,7 +365,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @typedef {Object} ChatInfo
  * @property {string} [file_id] - The name of the chat file (without extension)
  * @property {string} [file_name] - The name of the chat file (with extension)
- * @property {string} [file_size] - The size of the chat file
+ * @property {string} [file_size] - The size of the chat file in a human-readable format
  * @property {number} [chat_items] - The number of chat items in the file
  * @property {string} [mes] - The last message in the chat
  * @property {number} [last_mes] - The timestamp of the last message
@@ -383,12 +383,11 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
     return new Promise(async (res) => {
         const parsedPath = path.parse(pathToFile);
         const stats = await fs.promises.stat(pathToFile);
-        const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
         const chatData = {
             file_id: parsedPath.name,
             file_name: parsedPath.base,
-            file_size: fileSizeInKB,
+            file_size: formatBytes(stats.size),
             chat_items: 0,
             mes: '[The chat is empty]',
             last_mes: stats.mtimeMs,

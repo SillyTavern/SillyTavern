@@ -190,16 +190,11 @@ export function getHexString(length) {
 
 /**
  * Formats a byte size into a human-readable string with units
- * @param {number} bytes - The size in bytes to format
+ * @param {number} numBytes - The size in bytes to format
  * @returns {string} The formatted string (e.g., "1.5 MB")
  */
-export function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+export function formatBytes(numBytes) {
+    return bytes.format(numBytes) ?? '';
 }
 
 /**
