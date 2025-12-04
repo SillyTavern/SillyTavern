@@ -4,7 +4,7 @@ import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { Avatar, Button, Input } from '../ui';
 import { CharacterCreation } from '../character/CharacterCreation';
-import { getExpressionUrl, type Emotion } from '../../utils/emotions';
+import { getExpressionUrl, getDefaultAvatarUrl, type Emotion } from '../../utils/emotions';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCharacterList, setShowCharacterList] = useState(false);
+  const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
   const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
     useCharacterStore();
   const { messages } = useChatStore();
@@ -33,6 +34,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   useEffect(() => {
     if (selectedCharacter) {
       setShowCharacterList(false);
+      // Reset failed expressions for new character
+      setFailedExpressions(new Set());
     }
   }, [selectedCharacter]);
 
@@ -52,8 +55,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const getThumbnailUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   // Full-size image URL for portrait view (with expression support)
-  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) =>
-    getExpressionUrl(avatar, emotion ?? null);
+  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) => {
+    const expressionKey = `${avatar}-${emotion}`;
+    if (emotion && failedExpressions.has(expressionKey)) {
+      return getDefaultAvatarUrl(avatar);
+    }
+    return getExpressionUrl(avatar, emotion ?? null);
+  };
 
   // Determine what to show: character portrait or character list
   const showPortrait = selectedCharacter && !showCharacterList;
@@ -114,11 +122,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
                   alt={selectedCharacter.name}
                   className="w-full h-full object-cover transition-opacity duration-300"
-                  onError={(e) => {
-                    // Fall back to default avatar if expression image fails
-                    const fallbackUrl = getFullImageUrl(selectedCharacter.avatar, null);
-                    if (e.currentTarget.src !== fallbackUrl) {
-                      e.currentTarget.src = fallbackUrl;
+                  onError={() => {
+                    // Mark this expression as failed so we use fallback next time
+                    if (latestEmotion) {
+                      const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;
+                      setFailedExpressions((prev) => new Set(prev).add(expressionKey));
                     }
                   }}
                 />

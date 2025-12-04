@@ -152,6 +152,14 @@ export function stripEmotionTag(content: string): string {
 }
 
 /**
+ * Get the default avatar URL (used for neutral or fallback)
+ */
+export function getDefaultAvatarUrl(characterAvatar: string): string {
+  // Use the characters endpoint which serves the avatar file directly
+  return `/characters/${encodeURIComponent(characterAvatar)}`;
+}
+
+/**
  * Get expression image URL for a character and emotion
  * Falls back to main avatar if expression not available
  */
@@ -160,8 +168,7 @@ export function getExpressionUrl(
   emotion: Emotion | null
 ): string {
   if (!emotion || emotion === 'neutral') {
-    // Use main avatar for neutral
-    return `/characters/${encodeURIComponent(characterAvatar)}`;
+    return getDefaultAvatarUrl(characterAvatar);
   }
 
   // Expression images are stored in /characters/[name]/[emotion].png

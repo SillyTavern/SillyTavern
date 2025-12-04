@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
@@ -7,6 +7,7 @@ import { ChatInput } from './ChatInput';
 import {
   getExpressionUrl,
   getExpressionThumbnailUrl,
+  getDefaultAvatarUrl,
   type Emotion,
 } from '../../utils/emotions';
 
@@ -15,6 +16,8 @@ export function ChatView() {
   const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
+  // Track failed expression images to avoid infinite retry loops
+  const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
 
   // Get the latest character message's emotion for the portrait
   const latestEmotion = useMemo(() => {
@@ -25,8 +28,15 @@ export function ChatView() {
 
   const getAvatarUrl = (avatar: string, emotion?: Emotion | null) =>
     getExpressionThumbnailUrl(avatar, emotion ?? null);
-  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) =>
-    getExpressionUrl(avatar, emotion ?? null);
+
+  // Get the full image URL, falling back to default if the expression previously failed
+  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) => {
+    const expressionKey = `${avatar}-${emotion}`;
+    if (emotion && failedExpressions.has(expressionKey)) {
+      return getDefaultAvatarUrl(avatar);
+    }
+    return getExpressionUrl(avatar, emotion ?? null);
+  };
 
   // Load chat when character changes
   useEffect(() => {
@@ -36,6 +46,8 @@ export function ChatView() {
     // Clear old chat state before loading new character
     clearChat();
     lastCharacterRef.current = selectedCharacter.avatar;
+    // Reset failed expressions for new character
+    setFailedExpressions(new Set());
 
     // Fetch chat files for new character
     fetchChatFiles(selectedCharacter.avatar);
@@ -92,11 +104,11 @@ export function ChatView() {
           src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
           alt={selectedCharacter.name}
           className="w-full h-full object-cover object-top transition-opacity duration-300"
-          onError={(e) => {
-            // Fall back to default avatar if expression image fails
-            const fallbackUrl = getFullImageUrl(selectedCharacter.avatar, null);
-            if (e.currentTarget.src !== fallbackUrl) {
-              e.currentTarget.src = fallbackUrl;
+          onError={() => {
+            // Mark this expression as failed so we use fallback next time
+            if (latestEmotion) {
+              const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;
+              setFailedExpressions((prev) => new Set(prev).add(expressionKey));
             }
           }}
         />
