@@ -300,7 +300,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         if (!hasOpenAI && hasClaude) {
           // User has Claude but not OpenAI, auto-switch
           console.log('[Chat] Auto-switching to Claude since OpenAI is not configured');
-          useSettingsStore.setState({ activeProvider: 'claude', activeModel: 'claude-3-5-sonnet-20241022' });
+          useSettingsStore.setState({ activeProvider: 'claude', activeModel: 'claude-sonnet-4-20250514' });
         }
       }
 

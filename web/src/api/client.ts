@@ -422,11 +422,11 @@ export const SECRET_KEYS = {
 
 export const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', secretKey: SECRET_KEYS.OPENAI, models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-  { id: 'claude', name: 'Claude', secretKey: SECRET_KEYS.CLAUDE, models: ['claude-sonnet-4-5-20250929', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'] },
+  { id: 'claude', name: 'Claude', secretKey: SECRET_KEYS.CLAUDE, models: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'] },
   { id: 'makersuite', name: 'Google Gemini', secretKey: SECRET_KEYS.GOOGLE, models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'] },
   { id: 'mistralai', name: 'Mistral AI', secretKey: SECRET_KEYS.MISTRAL, models: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest'] },
   { id: 'groq', name: 'Groq', secretKey: SECRET_KEYS.GROQ, models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'] },
-  { id: 'openrouter', name: 'OpenRouter', secretKey: SECRET_KEYS.OPENROUTER, models: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-pro-1.5'] },
+  { id: 'openrouter', name: 'OpenRouter', secretKey: SECRET_KEYS.OPENROUTER, models: ['openai/gpt-4o', 'anthropic/claude-sonnet-4', 'google/gemini-pro-1.5'] },
 ] as const;
 
 export const settingsApi = {
