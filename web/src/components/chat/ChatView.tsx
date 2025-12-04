@@ -33,9 +33,13 @@ export function ChatView() {
   const getFullImageUrl = (avatar: string, emotion?: Emotion | null) => {
     const expressionKey = `${avatar}-${emotion}`;
     if (emotion && failedExpressions.has(expressionKey)) {
-      return getDefaultAvatarUrl(avatar);
+      const fallback = getDefaultAvatarUrl(avatar);
+      console.log('[Expression] Using fallback for failed expression:', { emotion, fallback });
+      return fallback;
     }
-    return getExpressionUrl(avatar, emotion ?? null);
+    const url = getExpressionUrl(avatar, emotion ?? null);
+    console.log('[Expression] Calculated URL:', { avatar, emotion, url });
+    return url;
   };
 
   // Load chat when character changes
@@ -101,10 +105,20 @@ export function ChatView() {
       {/* Mobile Character Portrait - visible only on mobile */}
       <div className="lg:hidden h-[30vh] min-h-[150px] max-h-[250px] relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden">
         <img
+          key={`${selectedCharacter.avatar}-${latestEmotion ?? 'neutral'}`}
           src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
           alt={selectedCharacter.name}
           className="w-full h-full object-cover object-top transition-opacity duration-300"
-          onError={() => {
+          onLoad={(e) => {
+            console.log('[Expression] Image loaded successfully:', e.currentTarget.src);
+          }}
+          onError={(e) => {
+            // Log detailed error info for debugging
+            console.log('[Expression] Image load FAILED:', {
+              attempted: e.currentTarget.src,
+              emotion: latestEmotion,
+              character: selectedCharacter.avatar,
+            });
             // Mark this expression as failed so we use fallback next time
             if (latestEmotion) {
               const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;

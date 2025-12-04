@@ -119,10 +119,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
               <div className="w-full max-w-[240px] aspect-[2/3] rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)]">
                 <img
+                  key={`${selectedCharacter.avatar}-${latestEmotion ?? 'neutral'}`}
                   src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
                   alt={selectedCharacter.name}
                   className="w-full h-full object-cover transition-opacity duration-300"
-                  onError={() => {
+                  onLoad={(e) => {
+                    console.log('[Sidebar Expression] Image loaded:', e.currentTarget.src);
+                  }}
+                  onError={(e) => {
+                    console.log('[Sidebar Expression] Image FAILED:', e.currentTarget.src);
                     // Mark this expression as failed so we use fallback next time
                     if (latestEmotion) {
                       const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;
