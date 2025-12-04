@@ -78,7 +78,7 @@ export async function addSettings() {
         else { document.removeEventListener('keydown', processUndoHotkey); }
     };
 
-    const toggleUndoHotkeyElement = new ToggleInput('toggle_ctrl_z', 'Enable the ctrl-z/ctrl-Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
+    const toggleUndoHotkeyElement = new ToggleInput('toggle_ctrl_z', 'Enable the Ctrl+Z/Ctrl+Shift+Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
