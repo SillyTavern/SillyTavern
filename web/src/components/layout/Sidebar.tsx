@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { X, Search, Plus, MessageSquare, Users, ChevronLeft } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
+import { useChatStore } from '../../stores/chatStore';
 import { Avatar, Button, Input } from '../ui';
 import { CharacterCreation } from '../character/CharacterCreation';
+import { getExpressionUrl, type Emotion } from '../../utils/emotions';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,6 +16,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showCharacterList, setShowCharacterList] = useState(false);
   const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
     useCharacterStore();
+  const { messages } = useChatStore();
+
+  // Get the latest character message's emotion for the portrait
+  const latestEmotion = useMemo(() => {
+    const characterMessages = messages.filter((m) => !m.isUser && !m.isSystem);
+    if (characterMessages.length === 0) return null;
+    return (characterMessages[characterMessages.length - 1] as { emotion?: Emotion | null }).emotion ?? null;
+  }, [messages]);
 
   useEffect(() => {
     fetchCharacters();
@@ -41,8 +51,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   // Thumbnail URL for small avatars in list (96x144)
   const getThumbnailUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
-  // Full-size image URL for portrait view
-  const getFullImageUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  // Full-size image URL for portrait view (with expression support)
+  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) =>
+    getExpressionUrl(avatar, emotion ?? null);
 
   // Determine what to show: character portrait or character list
   const showPortrait = selectedCharacter && !showCharacterList;
@@ -100,12 +111,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
               <div className="w-full max-w-[240px] aspect-[2/3] rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)]">
                 <img
-                  src={getFullImageUrl(selectedCharacter.avatar)}
+                  src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
                   alt={selectedCharacter.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-opacity duration-300"
                   onError={(e) => {
-                    // Fallback to placeholder on error
-                    e.currentTarget.style.display = 'none';
+                    // Fall back to default avatar if expression image fails
+                    const fallbackUrl = getFullImageUrl(selectedCharacter.avatar, null);
+                    if (e.currentTarget.src !== fallbackUrl) {
+                      e.currentTarget.src = fallbackUrl;
+                    }
                   }}
                 />
               </div>
@@ -115,6 +129,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                   {selectedCharacter.name}
                 </h3>
+                {latestEmotion && (
+                  <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] capitalize">
+                    {latestEmotion}
+                  </span>
+                )}
                 {selectedCharacter.description && (
                   <p className="text-sm text-[var(--color-text-secondary)] mt-2 line-clamp-3">
                     {selectedCharacter.description}

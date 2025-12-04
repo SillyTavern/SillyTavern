@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, type CharacterInfo } from '../api/client';
 import { useSettingsStore } from './settingsStore';
+import { parseEmotion, stripEmotionTag, type Emotion } from '../utils/emotions';
 
 interface ChatMessage {
   id: string;
@@ -9,6 +10,7 @@ interface ChatMessage {
   isSystem: boolean;
   content: string;
   timestamp: number;
+  emotion?: Emotion | null;
 }
 
 interface ChatFile {
@@ -145,10 +147,25 @@ function buildConversationContext(
     .filter(Boolean)
     .join('\n\n');
 
+  // Emotion tag instruction
+  const emotionInstruction = `
+IMPORTANT: Begin each response with an emotion tag that reflects your current emotional state. Use this exact format: [emotion:TAG]
+
+Available emotions: neutral, happy, sad, angry, surprised, thinking, embarrassed, worried, excited, confused, loving, smug
+
+Example: [emotion:happy] I'm so glad you asked about that!
+
+Choose the emotion that best matches how ${character.name} would feel based on the conversation context.`.trim();
+
   if (systemPrompt) {
     context.push({
       role: 'system',
-      content: `You are ${character.name}. Stay in character.\n\n${systemPrompt}`,
+      content: `You are ${character.name}. Stay in character.\n\n${systemPrompt}\n\n${emotionInstruction}`,
+    });
+  } else {
+    context.push({
+      role: 'system',
+      content: `You are ${character.name}. Stay in character.\n\n${emotionInstruction}`,
     });
   }
 
@@ -321,6 +338,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ),
           }));
         }
+
+        // Parse emotion and strip tag from final response
+        const emotion = parseEmotion(responseText);
+        const cleanedContent = stripEmotionTag(responseText);
+
+        // Update message with parsed emotion and cleaned content
+        set((state) => ({
+          messages: state.messages.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, content: cleanedContent, emotion }
+              : msg
+          ),
+        }));
 
         // Save chat to backend
         const { currentChatFile } = get();

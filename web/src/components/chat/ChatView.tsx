@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import {
+  getExpressionUrl,
+  getExpressionThumbnailUrl,
+  type Emotion,
+} from '../../utils/emotions';
 
 export function ChatView() {
   const { selectedCharacter } = useCharacterStore();
@@ -11,8 +16,17 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
 
-  const getAvatarUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
-  const getFullImageUrl = (avatar: string) => `/characters/${encodeURIComponent(avatar)}`;
+  // Get the latest character message's emotion for the portrait
+  const latestEmotion = useMemo(() => {
+    const characterMessages = messages.filter((m) => !m.isUser && !m.isSystem);
+    if (characterMessages.length === 0) return null;
+    return characterMessages[characterMessages.length - 1].emotion ?? null;
+  }, [messages]);
+
+  const getAvatarUrl = (avatar: string, emotion?: Emotion | null) =>
+    getExpressionThumbnailUrl(avatar, emotion ?? null);
+  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) =>
+    getExpressionUrl(avatar, emotion ?? null);
 
   // Load chat when character changes
   useEffect(() => {
@@ -75,20 +89,29 @@ export function ChatView() {
       {/* Mobile Character Portrait - visible only on mobile */}
       <div className="lg:hidden h-[30vh] min-h-[150px] max-h-[250px] relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden">
         <img
-          src={getFullImageUrl(selectedCharacter.avatar)}
+          src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
           alt={selectedCharacter.name}
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-cover object-top transition-opacity duration-300"
           onError={(e) => {
-            e.currentTarget.style.display = 'none';
+            // Fall back to default avatar if expression image fails
+            const fallbackUrl = getFullImageUrl(selectedCharacter.avatar, null);
+            if (e.currentTarget.src !== fallbackUrl) {
+              e.currentTarget.src = fallbackUrl;
+            }
           }}
         />
         {/* Gradient overlay for text readability */}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
-        {/* Character name overlay */}
-        <div className="absolute bottom-2 left-4 right-4">
+        {/* Character name and emotion overlay */}
+        <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] drop-shadow-lg">
             {selectedCharacter.name}
           </h2>
+          {latestEmotion && (
+            <span className="text-xs px-2 py-1 rounded-full bg-black/30 text-white/80 backdrop-blur-sm capitalize">
+              {latestEmotion}
+            </span>
+          )}
         </div>
       </div>
 
@@ -118,7 +141,7 @@ export function ChatView() {
                 avatar={
                   message.isUser
                     ? undefined
-                    : getAvatarUrl(selectedCharacter.avatar)
+                    : getAvatarUrl(selectedCharacter.avatar, message.emotion)
                 }
                 timestamp={message.timestamp}
               />
