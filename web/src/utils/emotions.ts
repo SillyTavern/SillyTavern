@@ -124,11 +124,11 @@ export function getExpressionUrl(
     return `/characters/${encodeURIComponent(characterAvatar)}`;
   }
 
-  // Expression images are stored in /characters/[name]/expressions/[emotion].png
+  // Expression images are stored in /characters/[name]/[emotion].png
   // Extract character name from avatar filename (e.g., "Seraphina.png" -> "Seraphina")
   const characterName = characterAvatar.replace(/\.[^/.]+$/, '');
 
-  return `/characters/${encodeURIComponent(characterName)}/expressions/${emotion}.png`;
+  return `/characters/${encodeURIComponent(characterName)}/${emotion}.png`;
 }
 
 /**
@@ -144,5 +144,5 @@ export function getExpressionThumbnailUrl(
 
   // For expressions, we use the full-size path since thumbnails may not exist
   const characterName = characterAvatar.replace(/\.[^/.]+$/, '');
-  return `/characters/${encodeURIComponent(characterName)}/expressions/${emotion}.png`;
+  return `/characters/${encodeURIComponent(characterName)}/${emotion}.png`;
 }
