@@ -182,6 +182,7 @@ export const snapshotEvents = [
     event_types.MESSAGE_REASONING_EDITED,
     event_types.MESSAGE_REASONING_DELETED,
     event_types.MESSAGE_SWIPE_DELETED ];
+    //If an event without 'message_' in the name is added, some UI code must be changed.
 
 (async () => {
     await addButtons();

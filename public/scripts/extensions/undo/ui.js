@@ -53,6 +53,28 @@ export async function addSettings() {
     const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
     const toggleSaveElement = new ToggleInput('show_save_button', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
 
+    //Clicks all the toggles.
+    const toggleExtension = (_, enabled) => {
+        const buttons = [`#${extensionName}_show_menu_buttons`, `#${extensionName}_show_save_button`, `#${extensionName}_toggle_ctrl_z`];
+        for (const snapShotEvent of snapshotEvents) {
+            buttons.push(`#${extensionName}_${snapShotEvent}`);
+        }
+        // @ts-ignore
+        $(buttons.join(', ')).filter(function() { return this.checked == enabled; }).trigger('click');
+        //Needed? chatHistory.chatHistory.length = 0
+    };
+
+    //When any setting is toggled, show the extension as enabled.
+    eventSource.on(`extension_${extensionName}`, (setting, value) => {
+        if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z'].includes(setting) || setting.includes('message_')) && value) {
+            // @ts-ignore
+            $(`#${extensionName}_toggle_extension`)[0].checked = false;
+            extension_settings[extensionName].toggle_extension = true;
+        }
+    });
+
+    const disableExtension = new ToggleInput('toggle_extension', 'Disables the extension.', { defaultValue: false, callback: toggleExtension, runCallbackOnLoad: false }).create();
+
     async function processUndoHotkey(event) {
         if (!isInputElementInFocus()) {
             if ((event.ctrlKey || event.metaKey) && !event.altKey) {
@@ -63,13 +85,6 @@ export async function addSettings() {
             }
         }
     }
-
-    const toggleEventFunction = (source, event, enabled, eventFunction) => {
-        //Toggle on.
-        if (enabled) { source.on(event, eventFunction); }
-        //Toggle off.
-        else { source.removeListener(event, eventFunction); }
-    };
 
     const toggleUndoHotkey = (_, enabled, __) => {
         //Toggle on.
@@ -82,6 +97,7 @@ export async function addSettings() {
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
+    undoToggles.append(disableExtension);
     undoToggles.append(toggleMenuElement);
     undoToggles.append(toggleSaveElement);
     undoToggles.append(toggleUndoHotkeyElement);
@@ -113,12 +129,20 @@ export async function addSettings() {
     undoAdvanced.append(debounceSlider);
     undoAdvanced.append(chunkSizeElement);
 
+    const toggleEventFunction = (source, event, enabled, eventFunction) => {
+        //Toggle on.
+        if (enabled) { source.on(event, eventFunction); }
+        //Toggle off.
+        else { source.removeListener(event, eventFunction); }
+    };
+
+
     //Allow each event to be separately toggled.
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
         const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, getDebounced);
-        const toggleSnapshotEvent = new ToggleInput(snapShotEvent, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
+        const toggleSnapshotEvent = new ToggleInput(`${snapShotEvent}`, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
         eventToggles.append(toggleSnapshotEvent);
     }
 }
@@ -151,20 +175,22 @@ class RangeInput {
         const sliderInput = this.element.find(`#${this.category}_${this.id}`);
         const textInput = this.element.find(`#${this.category}_${this.id}_value`);
 
-        const onSliderElementInput = () => {
+        const onSliderElementInput = async () => {
             const value = Number(sliderInput.val());
             this.dataStore[this.id] = value;
             textInput.val(value);
             saveSettingsDebounced();
             this.callback(this.id, value);
+            await eventSource.emit(`extension_${extensionName}`, this.id, value);
         };
 
-        const onTextElementInput = () => {
+        const onTextElementInput = async () => {
             const value = Number(textInput.val());
             this.dataStore[this.id] = value;
             sliderInput.val(value);
             saveSettingsDebounced();
             this.callback(this.id, value);
+            await eventSource.emit(`extension_${extensionName}`, this.id, value);
         };
 
         const value = this.dataStore?.[this.id] ?? this.defaultValue;
@@ -201,11 +227,12 @@ class ToggleInput {
 
         const buttonInput = this.element.find(`#${this.category}_${this.id}`);
 
-        const onElementInput = () => {
+        const onElementInput = async () => {
             const value = buttonInput.prop('checked');
             this.dataStore[this.id] = value;
             saveSettingsDebounced();
             this.callback(this.id, value);
+            await eventSource.emit(`extension_${extensionName}`, this.id, value);
         };
         const value = this.dataStore?.[this.id] ?? this.defaultValue;
         buttonInput.prop('checked', value);
