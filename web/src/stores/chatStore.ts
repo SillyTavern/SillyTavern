@@ -151,9 +151,9 @@ function buildConversationContext(
   const emotionInstruction = `
 IMPORTANT: Begin each response with an emotion tag that reflects your current emotional state. Use this exact format: [emotion:TAG]
 
-Available emotions: neutral, happy, sad, angry, surprised, thinking, embarrassed, worried, excited, confused, loving, smug
+Available emotions: neutral, joy, sadness, anger, surprise, fear, love, excitement, confusion, embarrassment, curiosity, amusement
 
-Example: [emotion:happy] I'm so glad you asked about that!
+Example: [emotion:joy] I'm so glad you asked about that!
 
 Choose the emotion that best matches how ${character.name} would feel based on the conversation context.`.trim();
 

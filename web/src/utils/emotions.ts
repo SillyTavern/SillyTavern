@@ -1,18 +1,19 @@
 // Emotion types for character expressions
+// Uses GoEmotions-compatible naming for expression files
 
 export const EMOTIONS = [
   'neutral',
-  'happy',
-  'sad',
-  'angry',
-  'surprised',
-  'thinking',
-  'embarrassed',
-  'worried',
-  'excited',
-  'confused',
-  'loving',
-  'smug',
+  'joy',
+  'sadness',
+  'anger',
+  'surprise',
+  'fear',
+  'love',
+  'excitement',
+  'confusion',
+  'embarrassment',
+  'curiosity',
+  'amusement',
 ] as const;
 
 export type Emotion = (typeof EMOTIONS)[number];
@@ -30,78 +31,117 @@ export function parseEmotion(content: string): Emotion | null {
 
   const emotionStr = match[1].toLowerCase();
 
-  // Map common variants to our emotion types
+  // Map various emotion words to our file-compatible emotion names
   const emotionMap: Record<string, Emotion> = {
-    // Direct matches
+    // Direct matches (file names)
     neutral: 'neutral',
-    happy: 'happy',
-    sad: 'sad',
-    angry: 'angry',
-    surprised: 'surprised',
-    thinking: 'thinking',
-    embarrassed: 'embarrassed',
-    worried: 'worried',
-    excited: 'excited',
-    confused: 'confused',
-    loving: 'loving',
-    smug: 'smug',
-    // Variants
-    joy: 'happy',
-    joyful: 'happy',
-    cheerful: 'happy',
-    pleased: 'happy',
-    content: 'happy',
-    delighted: 'happy',
-    unhappy: 'sad',
-    depressed: 'sad',
-    melancholy: 'sad',
-    upset: 'sad',
-    tearful: 'sad',
-    crying: 'sad',
-    mad: 'angry',
-    furious: 'angry',
-    annoyed: 'angry',
-    irritated: 'angry',
-    frustrated: 'angry',
-    shock: 'surprised',
-    shocked: 'surprised',
-    astonished: 'surprised',
-    amazed: 'surprised',
-    startled: 'surprised',
-    ponder: 'thinking',
-    pondering: 'thinking',
-    thoughtful: 'thinking',
-    contemplating: 'thinking',
-    curious: 'thinking',
-    shy: 'embarrassed',
-    flustered: 'embarrassed',
-    blushing: 'embarrassed',
-    nervous: 'worried',
-    anxious: 'worried',
-    concerned: 'worried',
-    scared: 'worried',
-    afraid: 'worried',
-    fear: 'worried',
-    thrilled: 'excited',
-    enthusiastic: 'excited',
-    eager: 'excited',
-    energetic: 'excited',
-    puzzled: 'confused',
-    bewildered: 'confused',
-    perplexed: 'confused',
-    lost: 'confused',
-    love: 'loving',
-    affectionate: 'loving',
-    adoring: 'loving',
-    romantic: 'loving',
-    flirty: 'loving',
-    proud: 'smug',
-    confident: 'smug',
-    sarcastic: 'smug',
-    teasing: 'smug',
+    joy: 'joy',
+    sadness: 'sadness',
+    anger: 'anger',
+    surprise: 'surprise',
+    fear: 'fear',
+    love: 'love',
+    excitement: 'excitement',
+    confusion: 'confusion',
+    embarrassment: 'embarrassment',
+    curiosity: 'curiosity',
+    amusement: 'amusement',
+
+    // Common variants -> joy
+    happy: 'joy',
+    joyful: 'joy',
+    cheerful: 'joy',
+    pleased: 'joy',
+    content: 'joy',
+    delighted: 'joy',
+    glad: 'joy',
+    elated: 'joy',
+
+    // Common variants -> sadness
+    sad: 'sadness',
+    unhappy: 'sadness',
+    depressed: 'sadness',
+    melancholy: 'sadness',
+    upset: 'sadness',
+    tearful: 'sadness',
+    crying: 'sadness',
+    grief: 'sadness',
+    disappointed: 'sadness',
+
+    // Common variants -> anger
+    angry: 'anger',
+    mad: 'anger',
+    furious: 'anger',
+    annoyed: 'anger',
+    irritated: 'anger',
+    frustrated: 'anger',
+    rage: 'anger',
+    annoyance: 'anger',
+
+    // Common variants -> surprise
+    surprised: 'surprise',
+    shock: 'surprise',
+    shocked: 'surprise',
+    astonished: 'surprise',
+    amazed: 'surprise',
+    startled: 'surprise',
+
+    // Common variants -> fear
+    scared: 'fear',
+    afraid: 'fear',
+    terrified: 'fear',
+    nervous: 'fear',
+    anxious: 'fear',
+    worried: 'fear',
+    nervousness: 'fear',
+
+    // Common variants -> love
+    loving: 'love',
+    affectionate: 'love',
+    adoring: 'love',
+    romantic: 'love',
+    flirty: 'love',
+    caring: 'love',
+    desire: 'love',
+
+    // Common variants -> excitement
+    excited: 'excitement',
+    thrilled: 'excitement',
+    enthusiastic: 'excitement',
+    eager: 'excitement',
+    energetic: 'excitement',
+
+    // Common variants -> confusion
+    confused: 'confusion',
+    puzzled: 'confusion',
+    bewildered: 'confusion',
+    perplexed: 'confusion',
+    lost: 'confusion',
+
+    // Common variants -> embarrassment
+    embarrassed: 'embarrassment',
+    shy: 'embarrassment',
+    flustered: 'embarrassment',
+    blushing: 'embarrassment',
+
+    // Common variants -> curiosity
+    curious: 'curiosity',
+    interested: 'curiosity',
+    intrigued: 'curiosity',
+    thinking: 'curiosity',
+    pondering: 'curiosity',
+    thoughtful: 'curiosity',
+
+    // Common variants -> amusement
+    amused: 'amusement',
+    laughing: 'amusement',
+    playful: 'amusement',
+    teasing: 'amusement',
+    smug: 'amusement',
+    proud: 'amusement',
   };
 
-  return emotionMap[emotionStr] || 'neutral';
+  return emotionMap[emotionStr] || null;
 }
 
 /**
