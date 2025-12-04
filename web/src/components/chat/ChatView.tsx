@@ -1,11 +1,11 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { useCharacterSprites } from '../../hooks/useCharacterSprites';
 import {
-  getExpressionUrl,
   getExpressionThumbnailUrl,
   getDefaultAvatarUrl,
   type Emotion,
@@ -19,6 +19,12 @@ export function ChatView() {
   // Track failed expression images to avoid infinite retry loops
   const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
 
+  // Get character name from avatar filename for sprite lookup
+  const characterName = selectedCharacter?.avatar?.replace(/\.[^/.]+$/, '');
+
+  // Fetch actual sprite paths from API
+  const { getSpritePath } = useCharacterSprites(characterName);
+
   // Get the latest character message's emotion for the portrait
   const latestEmotion = useMemo(() => {
     const characterMessages = messages.filter((m) => !m.isUser && !m.isSystem);
@@ -26,21 +32,49 @@ export function ChatView() {
     return characterMessages[characterMessages.length - 1].emotion ?? null;
   }, [messages]);
 
-  const getAvatarUrl = (avatar: string, emotion?: Emotion | null) =>
-    getExpressionThumbnailUrl(avatar, emotion ?? null);
+  const getAvatarUrl = useCallback(
+    (avatar: string, emotion?: Emotion | null) => {
+      // Try to use actual sprite path from API first
+      if (emotion) {
+        const spritePath = getSpritePath(emotion);
+        if (spritePath) {
+          return spritePath;
+        }
+      }
+      // Fall back to thumbnail for default/neutral
+      return getExpressionThumbnailUrl(avatar, emotion ?? null);
+    },
+    [getSpritePath]
+  );
 
-  // Get the full image URL, falling back to default if the expression previously failed
-  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) => {
-    const expressionKey = `${avatar}-${emotion}`;
-    if (emotion && failedExpressions.has(expressionKey)) {
+  // Get the full image URL using actual sprite paths from API
+  const getFullImageUrl = useCallback(
+    (avatar: string, emotion?: Emotion | null) => {
+      const expressionKey = `${avatar}-${emotion}`;
+
+      // Check if this expression previously failed
+      if (emotion && failedExpressions.has(expressionKey)) {
+        const fallback = getDefaultAvatarUrl(avatar);
+        console.log('[Expression] Using fallback for failed expression:', { emotion, fallback });
+        return fallback;
+      }
+
+      // Try to use actual sprite path from API
+      if (emotion) {
+        const spritePath = getSpritePath(emotion);
+        if (spritePath) {
+          console.log('[Expression] Using API sprite path:', { emotion, path: spritePath });
+          return spritePath;
+        }
+      }
+
+      // Fall back to default avatar
       const fallback = getDefaultAvatarUrl(avatar);
-      console.log('[Expression] Using fallback for failed expression:', { emotion, fallback });
+      console.log('[Expression] No sprite found, using default:', { avatar, emotion, fallback });
       return fallback;
-    }
-    const url = getExpressionUrl(avatar, emotion ?? null);
-    console.log('[Expression] Calculated URL:', { avatar, emotion, url });
-    return url;
-  };
+    },
+    [getSpritePath, failedExpressions]
+  );
 
   // Load chat when character changes
   useEffect(() => {

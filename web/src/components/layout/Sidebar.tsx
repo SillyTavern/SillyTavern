@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { X, Search, Plus, MessageSquare, Users, ChevronLeft } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { Avatar, Button, Input } from '../ui';
 import { CharacterCreation } from '../character/CharacterCreation';
-import { getExpressionUrl, getDefaultAvatarUrl, type Emotion } from '../../utils/emotions';
+import { useCharacterSprites } from '../../hooks/useCharacterSprites';
+import { getDefaultAvatarUrl, type Emotion } from '../../utils/emotions';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -18,6 +19,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
     useCharacterStore();
   const { messages } = useChatStore();
+
+  // Get character name from avatar filename for sprite lookup
+  const characterName = selectedCharacter?.avatar?.replace(/\.[^/.]+$/, '');
+
+  // Fetch actual sprite paths from API
+  const { getSpritePath } = useCharacterSprites(characterName);
 
   // Get the latest character message's emotion for the portrait
   const latestEmotion = useMemo(() => {
@@ -55,13 +62,33 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const getThumbnailUrl = (avatar: string) => `/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}`;
 
   // Full-size image URL for portrait view (with expression support)
-  const getFullImageUrl = (avatar: string, emotion?: Emotion | null) => {
-    const expressionKey = `${avatar}-${emotion}`;
-    if (emotion && failedExpressions.has(expressionKey)) {
-      return getDefaultAvatarUrl(avatar);
-    }
-    return getExpressionUrl(avatar, emotion ?? null);
-  };
+  const getFullImageUrl = useCallback(
+    (avatar: string, emotion?: Emotion | null) => {
+      const expressionKey = `${avatar}-${emotion}`;
+
+      // Check if this expression previously failed
+      if (emotion && failedExpressions.has(expressionKey)) {
+        const fallback = getDefaultAvatarUrl(avatar);
+        console.log('[Sidebar Expression] Using fallback:', { emotion, fallback });
+        return fallback;
+      }
+
+      // Try to use actual sprite path from API
+      if (emotion) {
+        const spritePath = getSpritePath(emotion);
+        if (spritePath) {
+          console.log('[Sidebar Expression] Using API sprite path:', { emotion, path: spritePath });
+          return spritePath;
+        }
+      }
+
+      // Fall back to default avatar
+      const fallback = getDefaultAvatarUrl(avatar);
+      console.log('[Sidebar Expression] No sprite found, using default:', { avatar, emotion, fallback });
+      return fallback;
+    },
+    [getSpritePath, failedExpressions]
+  );
 
   // Determine what to show: character portrait or character list
   const showPortrait = selectedCharacter && !showCharacterList;
