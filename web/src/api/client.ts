@@ -464,3 +464,50 @@ export const settingsApi = {
     });
   },
 };
+
+// Sprites/Expressions API
+export interface SpriteInfo {
+  label: string;
+  path: string;
+}
+
+export const spritesApi = {
+  // Get all sprites for a character
+  async getSprites(characterName: string): Promise<SpriteInfo[]> {
+    return apiRequest(`/api/sprites/get?name=${encodeURIComponent(characterName)}`, {
+      method: 'GET',
+    });
+  },
+
+  // Upload a single sprite
+  async uploadSprite(characterName: string, label: string, file: File): Promise<{ ok: boolean }> {
+    const token = await getCsrfToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', characterName);
+    formData.append('label', label);
+
+    const response = await fetch('/api/sprites/upload', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': token,
+      },
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload sprite: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  // Delete a sprite
+  async deleteSprite(characterName: string, label: string): Promise<void> {
+    await apiRequest('/api/sprites/delete', {
+      method: 'POST',
+      body: JSON.stringify({ name: characterName, label }),
+    });
+  },
+};

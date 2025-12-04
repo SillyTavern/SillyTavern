@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
-import { Modal, Button, Input, TextArea, ImageUpload } from '../ui';
+import { Modal, Button, Input, TextArea, ImageUpload, ExpressionUpload } from '../ui';
+import { spritesApi } from '../../api/client';
+import type { Emotion } from '../../utils/emotions';
 
 interface CharacterCreationProps {
   isOpen: boolean;
@@ -12,6 +14,8 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
   const { createCharacter, isCreating, error, clearError } = useCharacterStore();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [expressionFiles, setExpressionFiles] = useState<Map<Emotion, File>>(new Map());
+  const [isUploadingExpressions, setIsUploadingExpressions] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -54,8 +58,26 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
     );
 
     if (avatarUrl) {
+      // Upload expression images if any
+      if (expressionFiles.size > 0) {
+        setIsUploadingExpressions(true);
+        try {
+          const characterName = formData.name.trim();
+          await Promise.all(
+            Array.from(expressionFiles.entries()).map(([emotion, file]) =>
+              spritesApi.uploadSprite(characterName, emotion, file)
+            )
+          );
+        } catch (err) {
+          console.error('Failed to upload expressions:', err);
+        } finally {
+          setIsUploadingExpressions(false);
+        }
+      }
+
       // Reset form
       setAvatarFile(null);
+      setExpressionFiles(new Map());
       setFormData({
         name: '',
         description: '',
@@ -132,6 +154,9 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
           rows={2}
         />
 
+        {/* Expression Images */}
+        <ExpressionUpload onExpressionsChange={setExpressionFiles} />
+
         {/* Collapsible Advanced Section */}
         <details className="group">
           <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] py-2">
@@ -195,11 +220,11 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
           <Button
             type="submit"
             variant="primary"
-            isLoading={isCreating}
+            isLoading={isCreating || isUploadingExpressions}
             disabled={!formData.name.trim()}
             className="flex-1"
           >
-            Create Character
+            {isUploadingExpressions ? 'Uploading Expressions...' : 'Create Character'}
           </Button>
         </div>
       </form>

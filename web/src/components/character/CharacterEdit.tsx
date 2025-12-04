@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
-import type { CharacterInfo } from '../../api/client';
-import { Modal, Button, Input, TextArea, ImageUpload } from '../ui';
+import { spritesApi, type CharacterInfo } from '../../api/client';
+import { Modal, Button, Input, TextArea, ImageUpload, ExpressionUpload } from '../ui';
+import type { Emotion } from '../../utils/emotions';
 
 interface CharacterEditProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
   const { updateCharacter, isEditing, error, clearError } = useCharacterStore();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [expressionFiles, setExpressionFiles] = useState<Map<Emotion, File>>(new Map());
+  const [isUploadingExpressions, setIsUploadingExpressions] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -79,6 +82,23 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
     );
 
     if (success) {
+      // Upload expression images if any
+      if (expressionFiles.size > 0) {
+        setIsUploadingExpressions(true);
+        try {
+          const characterName = character.name;
+          await Promise.all(
+            Array.from(expressionFiles.entries()).map(([emotion, file]) =>
+              spritesApi.uploadSprite(characterName, emotion, file)
+            )
+          );
+        } catch (err) {
+          console.error('Failed to upload expressions:', err);
+        } finally {
+          setIsUploadingExpressions(false);
+        }
+      }
+
       onClose();
       onSaved?.();
     }
@@ -145,6 +165,12 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
           rows={2}
         />
 
+        {/* Expression Images */}
+        <ExpressionUpload
+          characterName={character.name}
+          onExpressionsChange={setExpressionFiles}
+        />
+
         {/* Collapsible Advanced Section */}
         <details className="group">
           <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] py-2">
@@ -208,11 +234,11 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
           <Button
             type="submit"
             variant="primary"
-            isLoading={isEditing}
+            isLoading={isEditing || isUploadingExpressions}
             disabled={!formData.name.trim()}
             className="flex-1"
           >
-            Save Changes
+            {isUploadingExpressions ? 'Uploading Expressions...' : 'Save Changes'}
           </Button>
         </div>
       </form>
