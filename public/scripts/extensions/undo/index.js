@@ -7,7 +7,7 @@ import { applyDiff, diff, lodash } from '/lib.js';
 export const extensionName = 'undo';
 export const defaultChunkSize = 20;
 export const defaultMaxHistoryChunks = 20;
-export const defaultMaxChatLength = 512;
+export const defaultMaxChatLength = 500;
 
 class ChatHistory {
     /**

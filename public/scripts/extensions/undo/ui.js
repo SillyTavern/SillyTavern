@@ -127,7 +127,7 @@ export async function addSettings() {
  * Creates a range input.
  */
 class RangeInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 100, defaultValue = 1000, runCallbackOnLoad = true } = {}) {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 10, defaultValue = 1000, runCallbackOnLoad = true } = {}) {
         this.category = category;
         this.id = id;
         this.title = title;
