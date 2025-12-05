@@ -47,6 +47,8 @@ class ChatHistory {
         const max_history = max_chunks * this.fullHistoryInterval;
         const max_length = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
+        toastr && toastr.clear();
+
         //Enforce the maximum chat length.
         if (Array.isArray(this.chatData) && this.chatData.length >= max_length) {
             showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - max_length} messages longer than your max chat length limit (${max_length}). (Check Settings.)`);
@@ -151,11 +153,13 @@ class ChatHistory {
             if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
+            toastr.clear();
             toastr.success(`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`);
 
             saveChatDebounced();
         }
         else {
+            toastr.clear();
             toastr.error(`Chat ${index + 1}/${this.chatHistory.length} does not exist!`);
         }
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
