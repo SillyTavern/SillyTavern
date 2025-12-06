@@ -1,4 +1,5 @@
 // https://github.com/transformation-dev/blueprint/blob/master/packages/cloudflare-do-utils/src/apply-delta.js
+// Originally written by Larry Maccherone.
 
 /* eslint-disable no-param-reassign */
 function innerApplyDelta(obj, delta) {
@@ -13,7 +14,7 @@ function innerApplyDelta(obj, delta) {
             } else {
                 delete obj[key];
             }
-        } else if (typeof(delta[key]) === 'object') {
+        } else if (typeof(delta[key]) === 'object' && delta[key] !== null) {
             obj[key] = innerApplyDelta(obj[key] ?? {}, delta[key]);
         } else {
             obj[key] = delta[key];
@@ -22,7 +23,11 @@ function innerApplyDelta(obj, delta) {
     return obj;
 }
 
+/**
+ * This function is only intended for use in ChatHistory until it gets fixed upstream.
+ * applyDelta has known issues, Don't use it.
+ * https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2595634539
+ */
 export function applyDelta(obj, delta) {
-    Object.freeze(obj.prototype); // This doesn't seem to hurt, but I'm not sure if it prevents prototype pollution
     return innerApplyDelta(obj, delta);
 }
