@@ -7,14 +7,14 @@ function innerApplyDelta(obj, delta) {
         const key = keys[i];
         if (Array.isArray(delta[key]) || delta[key] instanceof Set || delta[key] instanceof Map) {
             obj[key] = delta[key];
-        } else if (delta[key] instanceof Object) {
-            obj[key] = innerApplyDelta(obj[key] ?? {}, delta[key]);
         } else if (delta[key] === undefined) {
             if (Array.isArray(obj)) {
                 obj.splice(Number(key), 1);
             } else {
                 delete obj[key];
             }
+        } else if (typeof(delta[key]) === 'object') {
+            obj[key] = innerApplyDelta(obj[key] ?? {}, delta[key]);
         } else {
             obj[key] = delta[key];
         }
