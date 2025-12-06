@@ -180,7 +180,7 @@ class ChatHistory {
     async loadChatSnapshot(offset) {
         const t1 = performance.now();
         const index = this.chatHistoryIndex + offset;
-        const maximumChatLength = extension_settings[extensionName]?.max_length ?? 512;
+        const maximumChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
         //Don't overwrite chats that are longer than maximumChatLength.
         if (chat.length >= maximumChatLength) {
