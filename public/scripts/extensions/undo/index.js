@@ -45,7 +45,7 @@ class ChatHistory {
         const offsetId = fullChatIndex + offset;
         const offsetChatDiff = this.chatHistory[offsetId];
         if (typeof(offsetChatDiff) == 'object') {
-            return applyDelta(structuredClone(fullChat), offsetChatDiff);
+            return applyDelta(structuredClone(fullChat), structuredClone(offsetChatDiff));
         }
     }
 
