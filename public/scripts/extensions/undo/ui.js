@@ -134,77 +134,37 @@ export async function addSettings() {
     await addSettingsSliders();
     await addSettingsAdvancedToggles();
 }
+
+/**
+ * Boilerplate.
+ */
+class UserInput {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, runCallbackOnLoad = true } = {}) {
         this.id = id;
         this.title = title;
-        this.callback = callback;
-        this.runCallbackOnLoad = runCallbackOnLoad;
-        this.min = min;
-        this.max = max;
-        this.step = step;
-        this.defaultValue = defaultValue;
-        this.element = undefined;
         this.dataStore = dataStore;
-    }
-    create() {
-        let html = `<div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
-    <span data-i18n="${this.title}">${this.title}</span>
-    <input class="neo-range-slider" type="range" id="${this.category}_${this.id}" name="${this.category}_${this.min}" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
-    <input class="neo-range-input" type="number" id="${this.category}_${this.id}_value" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
-</div>`;
-        this.element = $(html);
-
-        const sliderInput = this.element.find(`#${this.category}_${this.id}`);
-        const textInput = this.element.find(`#${this.category}_${this.id}_value`);
-
-        const onSliderElementInput = async () => {
-            const value = Number(sliderInput.val());
-            this.dataStore[this.id] = value;
-            textInput.val(value);
-            saveSettingsDebounced();
-            this.callback(this.id, value);
-            await eventSource.emit(`extension_${extensionName}`, this.id, value);
-        };
-
-        const onTextElementInput = async () => {
-            const value = Number(textInput.val());
-            this.dataStore[this.id] = value;
-            sliderInput.val(value);
-            saveSettingsDebounced();
-            this.callback(this.id, value);
-            await eventSource.emit(`extension_${extensionName}`, this.id, value);
-        };
-
-        const value = this.dataStore?.[this.id] ?? this.defaultValue;
-        sliderInput.val(value);
-        textInput.val(value);
-        sliderInput.on('input', onSliderElementInput);
-        textInput.on('input', onTextElementInput);
-
-        this.runCallbackOnLoad && this.callback(this.id, value);
-        return this.element;
+        this.callback = callback;
+        this.category = category;
+        this.runCallbackOnLoad = runCallbackOnLoad;
+        this.element = undefined;
     }
 }
+
 
 /**
  * Creates a toggle button.
  */
-class ToggleInput {
+class ToggleInput extends UserInput {
     constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true, runCallbackOnLoad = true } = {}) {
-        this.category = category;
-        this.id = id;
-        this.callback = callback;
-        this.runCallbackOnLoad = runCallbackOnLoad;
-        this.title = title;
-        this.defaultValue = defaultValue;
-        this.element = undefined;
-        this.dataStore = dataStore;
-    }
-    create() {
-        let html = `<label class="checkbox_label" for="${this.category}_${this.id}">
+        super(id, title, { dataStore, callback, category, runCallbackOnLoad });
+        this.defaultValue = defaultValue;        this.element = undefined;
+        this.html = `<label class="checkbox_label" for="${this.category}_${this.id}">
     <input id="${this.category}_${this.id}" type="checkbox" class="checkbox">
     <span data-i18n="${this.title}">${this.title}</span>
 </label>`;
-        this.element = $(html);
+    }
+    create() {
+        this.element = $(this.html);
 
         const buttonInput = this.element.find(`#${this.category}_${this.id}`);
 
@@ -218,6 +178,56 @@ class ToggleInput {
         const value = this.dataStore?.[this.id] ?? this.defaultValue;
         buttonInput.prop('checked', value);
         buttonInput.on('input', onElementInput);
+
+        this.runCallbackOnLoad && this.callback(this.id, value);
+        return this.element;
+    }
+}
+
+/**
+ * Creates a range input.
+ */
+class RangeInput extends UserInput {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = 1000, runCallbackOnLoad = true, min = 0, max = 10000, step = 10 } = {}) {
+        super(id, title, { dataStore, callback, category, runCallbackOnLoad });
+        this.defaultValue = defaultValue;
+        this.min = min;
+        this.max = max;
+        this.step = step;
+        this.element = undefined;
+        this.html = `<div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+    <span data-i18n="${this.title}">${this.title}</span>
+    <input class="neo-range-slider" type="range" id="${this.category}_${this.id}" name="${this.category}_${this.min}" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
+    <input class="neo-range-input" type="number" id="${this.category}_${this.id}_value" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
+</div>`;
+    }
+    create() {
+        this.element = $(this.html);
+
+        const sliderInput = this.element.find(`#${this.category}_${this.id}`);
+        const textInput = this.element.find(`#${this.category}_${this.id}_value`);
+
+        const handleInput = async (mainInput, syncedInput) => {
+            const value = Number(mainInput.val());
+            this.dataStore[this.id] = value;
+            syncedInput?.val(value);
+            saveSettingsDebounced();
+            this.callback(this.id, value);
+            await eventSource.emit(`extension_${extensionName}`, this.id, value);
+        };
+        const onSliderElementInput = async () => {
+            handleInput(sliderInput, textInput);
+        };
+
+        const onTextElementInput = async () => {
+            handleInput(textInput, sliderInput);
+        };
+
+        const value = this.dataStore?.[this.id] ?? this.defaultValue;
+        sliderInput.val(value);
+        textInput.val(value);
+        sliderInput.on('input', onSliderElementInput);
+        textInput.on('input', onTextElementInput);
 
         this.runCallbackOnLoad && this.callback(this.id, value);
         return this.element;
