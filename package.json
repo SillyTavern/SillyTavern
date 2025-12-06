@@ -28,7 +28,6 @@
         "@jimp/wasm-webp": "^1.6.0",
         "@mozilla/readability": "^0.6.0",
         "@popperjs/core": "^2.11.8",
-        "@transformation-dev/deep-object-diff-apply": "^0.8.0",
         "@zeldafan0225/ai_horde": "^5.2.0",
         "archiver": "^7.0.1",
         "bing-translate-api": "^4.1.0",

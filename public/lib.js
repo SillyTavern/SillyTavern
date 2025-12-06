@@ -127,5 +127,4 @@ export {
     chalk,
     yaml,
     diff,
-    applyDiff,
 };
