@@ -70,12 +70,12 @@ class ChatHistory {
 
 
         //The current indexChat will be replaced with it's diff.
-        const previousChat = this.indexChat();
-        const previousChatDiff = diff(structuredClone(newChatData), previousChat);
+        const currentChat = this.indexChat();
+        const currentChatDiff = structuredClone(diff(newChatData, currentChat));
 
-        this.chatHistory[this.chatHistoryIndex] = previousChatDiff;
+        this.chatHistory[this.chatHistoryIndex] = currentChatDiff;
 
-        //This shifts the relative positions. i.e., nextChat is now indexChat.
+        //This shifts the relative positions. e.g., nextChat is now indexChat, currentChat is now the previous chat..
         this.chatHistoryIndex += offset;
 
         //If the nextChat (now indexChat) as changed, then it's adjacentChat must be updated.
@@ -106,7 +106,7 @@ class ChatHistory {
         const offsetChat = this.adjacentChat(offset, fullChat);
         if (typeof(offsetChat) == 'object') {
             //Create a diff from the newChatData and offsetChat, overwrite the old diff.
-            const updatedPreviousDiff = diff(structuredClone(newChatData), offsetChat);
+            const updatedPreviousDiff = structuredClone(diff(newChatData, offsetChat));
             this.chatHistory[this.chatHistoryIndex - offset] = updatedPreviousDiff;
             return offsetChat;
         }
