@@ -4,10 +4,12 @@ import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
 import { diff, lodash } from '/lib.js';
 import { applyDelta } from './applyDelta.js';
+import { debounce_timeout } from '/scripts/constants.js';
 
 export const extensionName = 'undo';
 export const defaultMaxHistoryLength = 10000;
 export const defaultMaxChatLength = 500;
+export const defaultSaveDebounceDuration = debounce_timeout.short;
 
 class ChatHistory {
     /**

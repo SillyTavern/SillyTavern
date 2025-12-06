@@ -1,6 +1,5 @@
-import { chatHistory, defaultMaxChatLength, defaultMaxHistoryLength, extensionName, snapshotEvents } from './index.js';
+import { chatHistory, defaultMaxChatLength, defaultMaxHistoryLength, defaultSaveDebounceDuration, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
-import { debounce_timeout } from '/scripts/constants.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
 import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 
@@ -103,28 +102,11 @@ export async function addSettings() {
     undoToggles.append(toggleSaveElement);
     undoToggles.append(toggleUndoHotkeyElement);
 
-    const undoAdvanced = $('#undo_advanced_options');
-
     //Debounce duration.
-    let saveChatSnapshotDebounced;
-    function setDebounced(id, value) {
-        //This is not awaited so performance is less impacted.
-        if (value > 0) {
-            saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), value ?? debounce_timeout.short);
-        } else {
-            saveChatSnapshotDebounced = () => chatHistory.saveChatSnapshot(false);
-        }
-    }
-    setDebounced(undefined, extension_settings[extensionName]?.debounce_duration ?? debounce_timeout.short);
-    function getDebounced(_, source) {
-        //Needed to prevent redundant saves. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2571515880
-        if (source !== 'undo') { return saveChatSnapshotDebounced(); }
-    }
-
-    const debounceSlider = new RangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 10, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
+    //Needed to prevent redundant saves. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2571515880
+    let saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), extension_settings[extensionName]?.debounce_duration ?? defaultSaveDebounceDuration);
 
 
-    undoAdvanced.append(debounceSlider);
     const toggleEventFunction = (source, event, enabled, eventFunction) => {
         //Toggle on.
         if (enabled) { source.on(event, eventFunction); }
@@ -137,7 +119,7 @@ export async function addSettings() {
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
         //This will be called while each toggle is being created.
-        const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, getDebounced);
+        const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, saveChatSnapshotDebounced);
         const toggleSnapshotEvent = new ToggleInput(`${snapShotEvent}`, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
         eventToggles.append(toggleSnapshotEvent);
     }
