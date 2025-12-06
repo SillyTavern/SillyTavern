@@ -136,7 +136,7 @@ class ChatHistory {
         toastr && toastr.clear();
 
         //Enforce the maximum chat length.
-        if (Array.isArray(this.chatData) && this.chatData.length >= maxChatLength) {
+        if (Array.isArray(this.chatData) && this.chatData.length > maxChatLength) {
             showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`);
             return;
         }
@@ -183,7 +183,7 @@ class ChatHistory {
         const maximumChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
         //Don't overwrite chats that are longer than maximumChatLength.
-        if (chat.length >= maximumChatLength) {
+        if (chat.length > maximumChatLength) {
             toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
             return;
         }
