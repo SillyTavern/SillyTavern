@@ -2,7 +2,8 @@ import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebou
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
 import { addButtons, addSettings } from './ui.js';
-import { applyDiff, diff, lodash } from '/lib.js';
+import { diff, lodash } from '/lib.js';
+import { applyDelta } from './applyDelta.js';
 
 export const extensionName = 'undo';
 export const defaultChunkSize = 20;
@@ -117,7 +118,7 @@ class ChatHistory {
             const chatDiff = this.chatHistory[index];
 
             //Return the resulting full history snapshot.
-            resultingChat = applyDiff(structuredClone(recentFullChat), chatDiff);
+            resultingChat = applyDelta(structuredClone(recentFullChat), chatDiff);
         }
         return structuredClone(resultingChat);
     }

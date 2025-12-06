@@ -24,7 +24,6 @@ import chalk from 'chalk';
 import yaml from 'yaml';
 //ChatUndoHistory https://github.com/SillyTavern/SillyTavern/pull/4819#issuecomment-3588157446
 import { diff } from 'deep-object-diff';
-import { applyDiff } from '@transformation-dev/deep-object-diff-apply';
 
 /**
  * Expose the libraries to the 'window' object.
