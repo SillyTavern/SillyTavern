@@ -69,7 +69,7 @@ export async function addSettings() {
         if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z'].includes(setting) || setting.includes('message_')) && value) {
             // @ts-ignore
             $(`#${extensionName}_toggle_extension`)[0].checked = false;
-            extension_settings[extensionName].toggle_extension = true;
+            extension_settings[extensionName].toggle_extension = false;
         }
     });
 
