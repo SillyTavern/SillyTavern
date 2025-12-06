@@ -1,7 +1,7 @@
 import { DOMPurify } from '../lib.js';
 
 import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
-import { chat_completion_sources, custom_prompt_post_processing_types, model_list, oai_settings } from './openai.js';
+import { chat_completion_sources, custom_prompt_post_processing_types, getChatCompletionModel, model_list, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
@@ -589,66 +589,42 @@ export class ToolManager {
 
     /**
      * Checks if tool calling is supported for the current settings and generation type.
+     * @param {ChatCompletionSettings} settings Optional chat completion settings
+     * @param {string} model Optional model name
      * @returns {boolean} Whether tool calling is supported for the given type
      */
-    static isToolCallingSupported() {
-        if (main_api !== 'openai' || !oai_settings.function_calling) {
+    static isToolCallingSupported(settings = null, model = null) {
+        settings = settings ?? oai_settings;
+        model = model ?? getChatCompletionModel(settings);
+
+        if (main_api !== 'openai' || !settings.function_calling) {
             return false;
         }
 
         // Post-processing will forcefully remove past tool calls from the prompt, making them useless
         const { NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS } = custom_prompt_post_processing_types;
         const allowedPromptPostProcessing = [NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS];
-        if (!allowedPromptPostProcessing.includes(oai_settings.custom_prompt_post_processing)) {
+        if (!allowedPromptPostProcessing.includes(settings.custom_prompt_post_processing)) {
             return false;
         }
 
-        if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.pollinations_model);
-            if (currentModel) {
-                return currentModel.tools;
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.fireworks_model);
-            if (currentModel) {
-                return currentModel.supports_tools;
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.openrouter_model);
-            if (Array.isArray(currentModel?.supported_parameters)) {
-                return currentModel.supported_parameters.includes('tools');
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.mistralai_model);
-            if (currentModel && currentModel.capabilities) {
-                return currentModel.capabilities.function_calling;
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.AIMLAPI && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.aimlapi_model);
-            if (Array.isArray(currentModel?.features)) {
-                return currentModel.features.includes('openai/chat-completion.function');
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.CHUTES && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.chutes_model);
-            if (currentModel) {
-                return currentModel.supported_features?.includes('tools');
-            }
-        }
-
-        if (oai_settings.chat_completion_source === chat_completion_sources.ELECTRONHUB && Array.isArray(model_list)) {
-            const currentModel = model_list.find(model => model.id === oai_settings.electronhub_model);
-            if (currentModel) {
-                return currentModel.metadata?.function_call;
+        const currentModel = Array.isArray(model_list) ? model_list.find(m => m.id === model) : null;
+        if (currentModel) {
+            switch (settings.chat_completion_source) {
+                case chat_completion_sources.POLLINATIONS:
+                    return currentModel.tools;
+                case chat_completion_sources.FIREWORKS:
+                    return currentModel.supports_tools;
+                case chat_completion_sources.OPENROUTER:
+                    return currentModel.supported_parameters?.includes('tools');
+                case chat_completion_sources.MISTRALAI:
+                    return currentModel.capabilities?.function_calling;
+                case chat_completion_sources.AIMLAPI:
+                    return currentModel.features?.includes('openai/chat-completion.function');
+                case chat_completion_sources.CHUTES:
+                    return currentModel.supported_features?.includes('tools');
+                case chat_completion_sources.ELECTRONHUB:
+                    return currentModel.metadata?.function_call;
             }
         }
 
@@ -676,17 +652,21 @@ export class ToolManager {
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
         ];
-        return supportedSources.includes(oai_settings.chat_completion_source);
+        return supportedSources.includes(settings.chat_completion_source);
     }
 
     /**
      * Checks if tool calls can be performed for the current settings and generation type.
      * @param {string} type Generation type
+     * @param {ChatCompletionSettings} settings Optional chat completion settings
+     * @param {string} model Optional model name
      * @returns {boolean} Whether tool calls can be performed for the given type
      */
-    static canPerformToolCalls(type) {
+    static canPerformToolCalls(type, settings = null, model = null) {
+        settings = settings ?? oai_settings;
+        model = model ?? getChatCompletionModel(settings);
         const noToolCallTypes = ['impersonate', 'quiet', 'continue'];
-        const isSupported = ToolManager.isToolCallingSupported();
+        const isSupported = ToolManager.isToolCallingSupported(settings, model);
         return isSupported && !noToolCallTypes.includes(type);
     }
 
