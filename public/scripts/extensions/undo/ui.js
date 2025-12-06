@@ -39,7 +39,7 @@ export async function addSettings() {
     //Creates sliders.
     //MaxChatHistory will apply next time a save occurs.
     const maxHistoryElement = new RangeInput('max_history', 'Max Undo History.', { defaultValue: defaultMaxHistoryLength }).create();
-    const lengthElement = new RangeInput('max_length', 'Max chat length', { defaultValue: defaultMaxChatLength }).create();
+    const lengthElement = new RangeInput('max_length', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
