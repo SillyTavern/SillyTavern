@@ -6,7 +6,7 @@ import { debounce, isInputElementInFocus } from '/scripts/utils.js';
 /**
  * Displays buttons in the options menu.
  */
-export async function addButtons() {
+export async function addOptionsButtons() {
     //Creates the buttons.
     const buttonsHtml = await renderExtensionTemplateAsync(extensionName, 'buttons');
 
@@ -24,27 +24,7 @@ export async function addButtons() {
     $(document).on('click', '#option_undo_discard', async () => await chatHistory.resetChatSnapshots(true));
 }
 
-/**
- * Creates the settings UI.
- */
-export async function addSettings() {
-
-    //Creates the settings layout.
-    const settingsHtml = await renderExtensionTemplateAsync(extensionName, 'settings');
-
-    //Places the settings layout.
-    $('#undo_container').append(settingsHtml);
-
-    //Creates sliders.
-    //MaxChatHistory will apply next time a save occurs.
-    const maxHistoryElement = new RangeInput('max_history', 'Max Undo History.', { defaultValue: defaultMaxHistoryLength }).create();
-    const lengthElement = new RangeInput('max_length', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
-
-    //Places the sliders.
-    const undoOptions = $('#undo_options');
-    undoOptions.append(maxHistoryElement);
-    undoOptions.append(lengthElement);
-
+export async function addSettingsToggles() {
     //Toggles visibility of undo_buttons and undo_save_options.
     const menuVisibility = (_, value) => {$('#undo_buttons').toggle(value);};
     const saveVisibility = (_, value) => $('#undo_save_options').toggle(value);
@@ -102,6 +82,22 @@ export async function addSettings() {
     undoToggles.append(toggleSaveElement);
     undoToggles.append(toggleUndoHotkeyElement);
 
+}
+
+export async function addSettingsSliders() {
+    //Creates sliders.
+    //MaxChatHistory will apply next time a save occurs.
+    const maxHistoryElement = new RangeInput('max_history', 'Max Undo History.', { defaultValue: defaultMaxHistoryLength }).create();
+    const lengthElement = new RangeInput('max_length', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
+
+    //Places the sliders.
+    const undoOptions = $('#undo_options');
+    undoOptions.append(maxHistoryElement);
+    undoOptions.append(lengthElement);
+
+}
+
+export async function addSettingsAdvancedToggles() {
     //Debounce duration.
     //Needed to prevent redundant saves. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2571515880
     let saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), extension_settings[extensionName]?.debounce_duration ?? defaultSaveDebounceDuration);
@@ -114,7 +110,6 @@ export async function addSettings() {
         else { source.removeListener(event, eventFunction); }
     };
 
-
     //Allow each event to be separately toggled.
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
@@ -124,13 +119,21 @@ export async function addSettings() {
         eventToggles.append(toggleSnapshotEvent);
     }
 }
-
 /**
- * Creates a range input.
+ * Creates the settings UI.
  */
-class RangeInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, min = 0, max = 10000, step = 10, defaultValue = 1000, runCallbackOnLoad = true } = {}) {
-        this.category = category;
+export async function addSettings() {
+
+    //Creates the settings layout.
+    const settingsHtml = await renderExtensionTemplateAsync(extensionName, 'settings');
+
+    //Places the settings layout.
+    $('#undo_container').append(settingsHtml);
+
+    await addSettingsToggles();
+    await addSettingsSliders();
+    await addSettingsAdvancedToggles();
+}
         this.id = id;
         this.title = title;
         this.callback = callback;

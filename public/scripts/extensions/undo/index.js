@@ -1,7 +1,7 @@
 import { chat, clearChat, event_types, eventSource, printMessages, saveChatDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { t } from '/scripts/i18n.js';
-import { addButtons, addSettings } from './ui.js';
+import { addOptionsButtons, addSettings } from './ui.js';
 import { diff, lodash } from '/lib.js';
 import { applyDelta } from './applyDelta.js';
 import { debounce_timeout } from '/scripts/constants.js';
@@ -240,6 +240,6 @@ export const snapshotEvents = [
     //If an event without 'message_' in the name is added, some UI code must be changed.
 
 (async () => {
-    await addButtons();
+    await addOptionsButtons();
     await addSettings();
 })();
