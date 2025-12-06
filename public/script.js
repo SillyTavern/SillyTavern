@@ -282,6 +282,7 @@ import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { tree, spliceStickToChat, Tree } from './scripts/chat-tree.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 import { migrateChatTreePopup } from './scripts/chat-tree-migrate.js';
+import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -8208,7 +8209,7 @@ export async function displayPastChats(hightlightNames = []) {
     });
 
     // Define the search input listener
-    $('#select_chat_search').on('input', function () {
+    $('#select_chat_search').off('input').on('input', function () {
         const searchQuery = $(this).val();
         debouncedDisplay(searchQuery);
     });
@@ -8218,6 +8219,8 @@ export async function displayPastChats(hightlightNames = []) {
         const textSearchElement = $('#select_chat_search');
         textSearchElement.trigger('click').trigger('focus').trigger('select');
     }, 200);
+
+    addChatBackupsBrowser();
 }
 
 async function displayChats(searchQuery, currentChat, displayName, avatarImg, selected_group, highlightNames) {
@@ -9064,7 +9067,7 @@ export async function saveChatConditional() {
  * @param {boolean} [options.refresh] Whether to refresh the group chat list after import
  * @returns {Promise<string[]>} List of imported file names.
  */
-async function importCharacterChat(formData, { refresh = true } = {}) {
+export async function importCharacterChat(formData, { refresh = true } = {}) {
     const fetchResult = await fetch('/api/chats/import', {
         method: 'POST',
         body: formData,

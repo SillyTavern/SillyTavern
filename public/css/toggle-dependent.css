@@ -477,12 +477,9 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
     display: none !important;
 }
 
-#smooth_streaming:not(:checked)~#smooth_streaming_speed_control {
+#smooth_streaming_control:has(#smooth_streaming:not(:checked))~#smooth_streaming_speed_control,
+#smooth_streaming_control:has(#smooth_streaming:not(:checked))~#smooth_streaming_no_think_control {
     display: none;
-}
-
-#smooth_streaming:checked~#smooth_streaming_speed_control {
-    display: block;
 }
 
 .mdhotkey_icon {

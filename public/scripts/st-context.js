@@ -99,7 +99,7 @@ import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariabl
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
 import { ConnectionManagerRequestService } from './extensions/shared.js';
-import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
+import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
 import { tree } from './chat-tree.js';
 
@@ -261,6 +261,7 @@ export function getContext() {
         ConnectionManagerRequestService,
         updateReasoningUI,
         parseReasoningFromString,
+        getReasoningTemplateByName,
         unshallowCharacter,
         unshallowGroupMembers,
         openThirdPartyExtensionMenu,

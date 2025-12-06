@@ -5029,22 +5029,28 @@
                                     <small data-i18n="Clean-Up">Clean-Up</small>
                                 </div>
                             </div>
-                            <label class="checkbox_label flexWrap" for="smooth_streaming">
+                            <label id="smooth_streaming_control" class="checkbox_label" for="smooth_streaming">
                                 <input id="smooth_streaming" type="checkbox" />
                                 <div class="flex-container alignItemsBaseline">
                                     <small data-i18n="Smooth Streaming">
                                         Smooth Streaming
                                     </small>
                                 </div>
-                                <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
-                                    <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
-                                    <div class="slider_hint">
-                                        <span data-i18n="Slow">Slow</span>
-                                        <span></span>
-                                        <span data-i18n="Fast">Fast</span>
-                                    </div>
-                                </div>
                             </label>
+                            <label id="smooth_streaming_no_think_control" class="checkbox_label" for="smooth_streaming_no_think" title="Bypass smooth streaming in reasoning blocks." data-i18n="[title]Bypass smooth streaming in reasoning blocks.">
+                                <input id="smooth_streaming_no_think" type="checkbox" />
+                                <small data-i18n="Exclude 'Thinking...'">
+                                    Exclude 'Thinking...'
+                                </small>
+                            </label>
+                            <div id="smooth_streaming_speed_control" class="wide100p">
+                                <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
+                                <div class="slider_hint">
+                                    <span data-i18n="Slow">Slow</span>
+                                    <span></span>
+                                    <span data-i18n="Fast">Fast</span>
+                                </div>
+                            </div>
                             <label class="checkbox_label" for="stream_fade_in" title="Fade in streamed text when it appears, instead of it just popping in." data-i18n="[title]Fade in streamed text when it appears, instead of it just popping in">
                                 <input id="stream_fade_in" type="checkbox" />
                                 <small data-i18n="Stream Fade-In">Stream Fade-In</small>

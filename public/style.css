@@ -14,6 +14,7 @@
 @import url(css/data-maid.css);
 @import url(css/secrets.css);
 @import url(css/backgrounds.css);
+@import url(css/chat-backups.css);
 
 :root {
     interpolate-size: allow-keywords;
