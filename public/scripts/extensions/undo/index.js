@@ -81,7 +81,7 @@ class ChatHistory {
         //If the nextChat (now indexChat) as changed, then it's adjacentChat must be updated.
         if (typeof(nextChat) !== 'undefined' && !(nextChat === newChatData)) {
             //If the offset diff does not exist, this will do nothing.
-            this.updateOffset(newChatData, 1, nextChat);
+            this.updateOffset(newChatData, offset, nextChat);
         }
         //Write the newChatData, both diffs are based upon this.
         this.chatHistory[this.chatHistoryIndex] = newChatData;
