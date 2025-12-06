@@ -6,129 +6,178 @@ import { diff, lodash } from '/lib.js';
 import { applyDelta } from './applyDelta.js';
 
 export const extensionName = 'undo';
-export const defaultChunkSize = 20;
-export const defaultMaxHistoryChunks = 20;
+export const defaultMaxHistoryLength = 10000;
 export const defaultMaxChatLength = 500;
 
 class ChatHistory {
     /**
-     *
+     * ChatHistory is meant to store an undo history, it's inefficient for most other purposes.
+     * A read or write to the chatHistory scales at O(n) where n="distance from chatHistoryIndex".
+     * Here, the offset is always 1.
+     * During normal usage, The memory use of chatHistory will be 2*chat, regardless of how many undo history entries are stored.
+     * In comparison, storing full copies of the chat would require much higher memory usage (historyLength*chat), but would scale at O(1).
+     * Much lower memory use is easily worth the slightly higher read/write time.
      * @param {ChatMessage[]} chatData or ChatTree.
      */
     constructor(chatData) {
         //chatTree or chat.
         this.chatData = chatData;
+        /** @type {ChatMessage[][]|object[]} Only the chat at indexChat is a chatMessage[], the rest are diffs. */
         this.chatHistory = [];
+        /** This should only be set by stepIndex. */
         this.chatHistoryIndex = 0;
-        this.fullHistoryInterval = extension_settings[extensionName]?.chunk_size ?? defaultChunkSize;
+        /** @type {() => ChatMessage[]} Chat, or chatTree at the current Index */
+        this.indexChat = () => {return this.chatHistory[this.chatHistoryIndex];};
 
         //Reset chatHistory when the chat has changed.
         eventSource.on(event_types.CHAT_CHANGED,  async () => await this.resetChatSnapshots(false));
     }
+    /**
+     * Regenerates the full chat of an adjacent diff.
+     * @param {-1|1} offset index -1 or +1.
+     * @param {object} [fullChat=this.indexChat()] this.indexChat() by default.
+     * @param {number} [fullChatIndex=this.indexChat()] The id of fullChat, chatHistoryIndex by default.
+     * @returns {object} The full chat at the offset, or nothing.
+     */
+    adjacentChat(offset = 1, fullChat = this.indexChat(), fullChatIndex = this.chatHistoryIndex) {
+        const offsetId = fullChatIndex + offset;
+        const offsetChatDiff = this.chatHistory[offsetId];
+        if (typeof(offsetChatDiff) == 'object') {
+            return applyDelta(structuredClone(fullChat), offsetChatDiff);
+        }
+    }
+
+    /**
+     * Steps, moving chatHistoryIndex. forwards or backwards.
+     * In chatHistory, the chat at chatHistoryIndex is the only full copy.
+     * When chatHistoryIndex moves, the adjacent diffs are recreated on the new index.
+     * Returns the chat at offset, if it exists.
+     * @param {-1|1} offset index -1 or +1.
+     * @param {ChatMessage[]} newChatData This defaults to the chat at offset.
+     * @returns {object} The new chat at offset.
+     */
+    stepIndex(offset = 1, newChatData = undefined) {
+
+        //The next chat over must also be updated, it's based on the chat that's about to be written.
+        const nextChat = this.adjacentChat(offset);
+        newChatData ??= nextChat;
+        if (typeof(newChatData) !== 'object') {
+            //The diffs cannot be based upon nothing.
+            throw new Error(`Cannot step! Offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the newChatData doesn't exist.`);
+        }
+
+
+        //The current indexChat will be replaced with it's diff.
+        const previousChat = this.indexChat();
+        const previousChatDiff = diff(structuredClone(newChatData), previousChat);
+
+        this.chatHistory[this.chatHistoryIndex] = previousChatDiff;
+
+        //This shifts the relative positions. i.e., nextChat is now indexChat.
+        this.chatHistoryIndex += offset;
+
+        //If the nextChat (now indexChat) as changed, then it's adjacentChat must be updated.
+        if (typeof(nextChat) !== 'undefined' && !(nextChat === newChatData)) {
+            //If the offset diff does not exist, this will do nothing.
+            this.updateOffset(newChatData, 1, nextChat);
+        }
+        //Write the newChatData, both diffs are based upon this.
+        this.chatHistory[this.chatHistoryIndex] = newChatData;
+        return newChatData;
+    }
+
+    /**
+     * Updates the previous or next chat with the newChatData, if it exists.
+     * This does not update chatHistoryIndex or the indexChat.
+     * Using this function without updating indexChat leaves the offsetChat ungettable.
+     * @param {object} newChatData The offset diffs will be created against newChatData.
+     * @param {-1|1} offset index -1 or +1.
+     * @param {object} fullChat The full chat that the diff was originally created from.
+     * @returns {object} The full chat at the offset, or nothing.
+     */
+    updateOffset(newChatData, offset = 1, fullChat = this.indexChat()) {
+        if (typeof(fullChat) !== 'object') {
+            throw new Error(`The chat offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the fullChat it was created with does not exist.`);
+        }
+
+        //Create the offsetChat from by updating the fullChat with the diff.
+        const offsetChat = this.adjacentChat(offset, fullChat);
+        if (typeof(offsetChat) == 'object') {
+            //Create a diff from the newChatData and offsetChat, overwrite the old diff.
+            const updatedPreviousDiff = diff(structuredClone(newChatData), offsetChat);
+            this.chatHistory[this.chatHistoryIndex - offset] = updatedPreviousDiff;
+            return offsetChat;
+        }
+    }
+
     /**
      * Resets chatHistory, and set's the first entry.
      * @param {boolean} showToast toast that the has been cleared.
      */
     async resetChatSnapshots(showToast){
         this.chatHistory.length = 0;
-        //The history interval size can be safely updated.
-        this.fullHistoryInterval = extension_settings[extensionName]?.chunk_size ?? defaultChunkSize;
+        this.chatHistoryIndex = 0;
 
-        this.saveChatSnapshot(false);
+        this.chatHistory = [structuredClone(this.chatData)];
         showToast && toastr.warning(t`Success, You now have ${this.chatHistory.length} saved chats.`);
     }
 
     /**
-     * Save a copy of chatData to chatHistory.
+     * Save a copy of chatData to chatHistory to chatHistoryIndex + 1.
      * @param {boolean} showToast toast that the chat has saved.
      */
     async saveChatSnapshot(showToast){
         const t1 = performance.now();
-        const max_chunks = extension_settings[extensionName]?.max_chunks ?? defaultMaxHistoryChunks;
-        const max_history = max_chunks * this.fullHistoryInterval;
-        const max_length = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
+        const maxChatHistory = extension_settings[extensionName]?.max_history ?? defaultMaxHistoryLength;
+        const maxChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
         toastr && toastr.clear();
 
         //Enforce the maximum chat length.
-        if (Array.isArray(this.chatData) && this.chatData.length >= max_length) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - max_length} messages longer than your max chat length limit (${max_length}). (Check Settings.)`);
+        if (Array.isArray(this.chatData) && this.chatData.length >= maxChatLength) {
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`);
             return;
         }
 
-        //Max chunks cannot be less than zero.
-        if (0 >= max_chunks) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History Chunks'`, t`You cannot save the chat because your Max Chunks is set to ${max_chunks}. (Check Settings.)`);
+        //Max history cannot be less than zero.
+        if (0 >= maxChatHistory) {
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History'`, t`You cannot save the chat because your Max Undo History is set to ${maxChatHistory}. (Check Settings.)`);
             return;
         }
+
+        //Currently a full chat.
+        const previousChat = this.indexChat();
 
         //Only save changed chats.
-        if (this.fullHistoryInterval !== 1 && lodash.isEqual(this.chatData, this.getChatSnapshot(this.chatHistoryIndex))) {
+        if (lodash.isEqual(this.chatData, previousChat)) {
             showToast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`);
             return;
         }
 
         //Overwrite history that has been undone.
+        //e.g. If you undo, then start typing, you cannot redo.
         this.chatHistory.splice(this.chatHistoryIndex + 1);
 
-        //Enforce max_history in intervals.
-        if ((this.chatHistoryIndex % this.fullHistoryInterval) === 0) {
-            this.chatHistory.splice(0, this.chatHistory.length - max_history);
-        }
+        //Enforce maxChatHistory.
+        this.chatHistory.splice(0, this.chatHistory.length - maxChatHistory);
 
-        //Set the index to the new location.
-        this.chatHistoryIndex = this.chatHistory.length;
-        const fullChatOffset = (this.chatHistoryIndex % this.fullHistoryInterval);
-
-        let resultingChat;
         //Save the full history.
-        if (fullChatOffset === 0) {
-            resultingChat = this.chatData;
-        }
-        //Save the history diff.
-        else {
-            //The most recent full chat snapshot.
-            const recentFullChat = this.chatHistory[this.chatHistoryIndex - fullChatOffset];
-            //Save a partial history.
-            resultingChat = diff(recentFullChat, this.chatData);
-        }
+        const currentChat = structuredClone(this.chatData);
+        //Save the chat, and replace the previous chat with a diff.
+        this.stepIndex(1, currentChat);
 
-        this.chatHistory.push(structuredClone(resultingChat));
         showToast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
         console.debug(`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
     /**
-     * Returns the full chat history at index.
-     * @param {number} index
+     * Load the previous or next snapshot.
+     * @param {-1|1} offset index -1 or +1.
      * @returns
      */
-    getChatSnapshot(index) {
-        let resultingChat;
-        // Return the full snapshot.
-        if ((index % this.fullHistoryInterval) == 0) {
-            resultingChat = this.chatHistory[index];
-        }
-        //Create the full snapshot.
-        else {
-            //The most recent full history snapshot.
-            const recentFullChatIndex = (index - (index % this.fullHistoryInterval));
-            const recentFullChat = this.chatHistory[recentFullChatIndex];
-
-            const chatDiff = this.chatHistory[index];
-
-            //Return the resulting full history snapshot.
-            resultingChat = applyDelta(structuredClone(recentFullChat), chatDiff);
-        }
-        return structuredClone(resultingChat);
-    }
-
-    /**
-     * Load a chat from chatHistory.
-     * @param {number} index The chatHistory index to load.
-     */
-    async loadChatSnapshot(index) {
+    async loadChatSnapshot(offset) {
         const t1 = performance.now();
+        const index = this.chatHistoryIndex + offset;
         const maximumChatLength = extension_settings[extensionName]?.max_length ?? 512;
 
         //Don't overwrite chats that are longer than maximumChatLength.
@@ -138,9 +187,8 @@ class ChatHistory {
         }
 
         if (typeof(this.chatHistory[index]) !== 'undefined') {
-            this.chatHistoryIndex = index;
 
-            const newChat = this.getChatSnapshot(this.chatHistoryIndex);
+            const newChat = this.stepIndex(offset);
             const oldChatLength = chat.length;
 
             //Replace the chat.
@@ -154,7 +202,7 @@ class ChatHistory {
             if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
-            toastr.clear();
+            toastr.clear(); //Remove the previous toast to prevent buildup.
             toastr.success(`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`);
 
             saveChatDebounced();
@@ -166,10 +214,10 @@ class ChatHistory {
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
     async loadPreviousSnapshot() {
-        await this.loadChatSnapshot(this.chatHistoryIndex - 1);
+        await this.loadChatSnapshot(-1);
     }
     async loadNextSnapshot() {
-        await this.loadChatSnapshot(this.chatHistoryIndex + 1);
+        await this.loadChatSnapshot(1);
     }
 }
 
@@ -177,7 +225,7 @@ export const chatHistory = new ChatHistory(chat);
 
 //Snapshot the chat when a message is modified.
 export const snapshotEvents = [
-    // event_types.MESSAGE_SWIPE_ENDED, //Redundant? MESSAGE_RECEIVED is emitted after swipe generate.
+    // event_types.MESSAGE_SWIPE_ENDED, //Redundant. MESSAGE_RECEIVED is emitted after swipe generate.
     event_types.MESSAGE_SENT,
     event_types.MESSAGE_RECEIVED,
     event_types.MESSAGE_EDITED,

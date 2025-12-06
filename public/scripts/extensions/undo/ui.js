@@ -1,4 +1,4 @@
-import { chatHistory, defaultChunkSize as defaultChunkSize, defaultMaxChatLength, defaultMaxHistoryChunks, extensionName, snapshotEvents } from './index.js';
+import { chatHistory, defaultMaxChatLength, defaultMaxHistoryLength, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { debounce_timeout } from '/scripts/constants.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
@@ -37,12 +37,13 @@ export async function addSettings() {
     $('#undo_container').append(settingsHtml);
 
     //Creates sliders.
-    const maxChunksElement = new RangeInput('max_chunks', 'Max Undo History Chunks.', { defaultValue: defaultMaxHistoryChunks }).create();
+    //MaxChatHistory will apply next time a save occurs.
+    const maxHistoryElement = new RangeInput('max_history', 'Max Undo History.', { defaultValue: defaultMaxHistoryLength }).create();
     const lengthElement = new RangeInput('max_length', 'Max chat length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
-    undoOptions.append(maxChunksElement);
+    undoOptions.append(maxHistoryElement);
     undoOptions.append(lengthElement);
 
     //Toggles visibility of undo_buttons and undo_save_options.
@@ -122,13 +123,8 @@ export async function addSettings() {
 
     const debounceSlider = new RangeInput('debounce_duration', 'Snapshot Debounce Duration in Milliseconds. Higher will take snapshots more often. (The Save button is not debounced.)', { min: 0, max: 10000, step: 10, defaultValue: debounce_timeout.short, callback: setDebounced }).create();
 
-    //Resetting the chatHistory is necassary to update chunk_size.
-    const resetDebounced = debounce(() => chatHistory.resetChatSnapshots(true), debounce_timeout.short);
-    const chunkSizeElement = new RangeInput('chunk_size', 'History Chunk Size. ⚠️ This will ERASE your history! Higher will use more memory, lower will reduce performance.', { min: 1, max: 10000, step: 10, defaultValue: defaultChunkSize, callback: () => resetDebounced(), runCallbackOnLoad: false }).create();
 
     undoAdvanced.append(debounceSlider);
-    undoAdvanced.append(chunkSizeElement);
-
     const toggleEventFunction = (source, event, enabled, eventFunction) => {
         //Toggle on.
         if (enabled) { source.on(event, eventFunction); }
