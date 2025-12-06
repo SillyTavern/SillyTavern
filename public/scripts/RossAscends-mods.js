@@ -970,10 +970,10 @@ export function initRossMods() {
 
     function isModifiedKeyboardEvent(event) {
         return (event instanceof KeyboardEvent &&
-            event.shiftKey ||
+            (event.shiftKey ||
             event.ctrlKey ||
             event.altKey ||
-            event.metaKey);
+            event.metaKey));
     }
 
     $(document).on('keydown', async function (event) {
