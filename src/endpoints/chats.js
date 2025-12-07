@@ -343,6 +343,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @property {string} [mes] - The last message in the chat
  * @property {number} [last_mes] - The timestamp of the last message
  * @property {object} [chat_metadata] - Additional chat metadata
+ * @property {number?} [treeSize] - The size of the chatTree, if it exists.
  */
 
 /**
@@ -381,10 +382,15 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         let lastLine;
         let itemCounter = 0;
         rl.on('line', (line) => {
-            if (withMetadata && itemCounter === 0) {
+            if (itemCounter === 0) {
                 const jsonData = tryParse(line);
                 if (jsonData && _.isObjectLike(jsonData.chat_metadata)) {
-                    chatData.chat_metadata = jsonData.chat_metadata;
+                    if (Object.hasOwn(jsonData, 'tree')) {
+                        const tree = jsonData?.tree;
+                        chatData.treeSize = humanFileSize(JSON.stringify(tree).length);
+                    }
+
+                    if (withMetadata) chatData.chat_metadata = jsonData.chat_metadata;
                 }
             }
             itemCounter++;

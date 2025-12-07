@@ -8258,7 +8258,7 @@ async function displayChats(searchQuery, currentChat, displayName, avatarImg, se
             template.find('.PastChat_cross').attr('file_name', chat.file_name);
             template.find('.chat_messages_date').text(timestampToMoment(chat.last_mes).format('lll'));
 
-            //Display icon for chats with attached trees.
+            //Display icon for chats with an attached tree.
             if (chat.treeSize) {
                 template.find('.chat_messages_num').append(`[${chat.treeSize}🌲]`);
             }
