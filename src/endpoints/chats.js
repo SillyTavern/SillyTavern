@@ -584,7 +584,7 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const chatFileName = String(request.body.chatfile);
         const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
-        //Return success if the file was delted.
+        //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
@@ -923,7 +923,6 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 continue;
             }
 
-
             let treeSize;
 
             // Check if the chat file has a tree.
@@ -931,7 +930,6 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 const tree = data[0]?.tree;
                 treeSize = humanFileSize(JSON.stringify(tree).length);
             }
-
 
             const lastMessage = messages[messages.length - 1];
             const lastMesDate = lastMessage?.send_date || new Date(fs.statSync(chatFile.path).mtimeMs).toISOString();
