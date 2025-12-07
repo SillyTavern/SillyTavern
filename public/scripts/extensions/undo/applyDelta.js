@@ -6,6 +6,10 @@ function innerApplyDelta(obj, delta) {
     const keys = Object.keys(delta);
     for (let i = keys.length - 1; i >= 0; i--) {
         const key = keys[i];
+
+        //Prevent Prototype pollution. https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/Prototype_pollution
+        if (key === 'prototype' || key === '__proto__' || key === 'constructor') continue;
+
         if (Array.isArray(delta[key]) || delta[key] instanceof Set || delta[key] instanceof Map) {
             obj[key] = delta[key];
         } else if (delta[key] === undefined) {
