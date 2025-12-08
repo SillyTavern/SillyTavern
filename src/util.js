@@ -1481,7 +1481,7 @@ export function tryWriteFileSync(filePath, data) {
 /**
 * Attempts to read a file as utf8.
 * @param {string} filePath
-* @returns {string|void}
+* @returns {string|null}
 */
 export function tryReadFileSync(filePath) {
     try {
@@ -1491,6 +1491,7 @@ export function tryReadFileSync(filePath) {
     } catch (error) {
         console.error(`Error reading ${filePath}: ${error.message}`);
     }
+    return null;
 }
 
 /**
