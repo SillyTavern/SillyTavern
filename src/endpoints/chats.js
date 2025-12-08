@@ -438,7 +438,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
+        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${skipIntegrityCheck}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
