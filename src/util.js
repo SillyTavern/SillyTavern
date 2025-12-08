@@ -1464,6 +1464,7 @@ export function flattenSchema(schema, api) {
     delete flattenedSchema.$schema;
     return flattenedSchema;
 }
+
 /**
  * Writes to a file, creating it's parent directories if needed.
  * @param {string} filePath
