@@ -37,7 +37,7 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
  * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
  * @returns
  */
-function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
+function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
         if (!isBackupEnabled) { return; }
         if (!fs.existsSync(directory)) {
@@ -413,7 +413,7 @@ export const router = express.Router();
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
 class IntegrityMismatchError extends Error {
     constructor(...params) {
-    // Pass remaining arguments (including vendor specific ones) to parent constructor
+        // Pass remaining arguments (including vendor specific ones) to parent constructor
         super(...params);
         // Maintains proper stack trace for where our error was thrown (non-standard)
         if (Error.captureStackTrace) {
@@ -433,7 +433,7 @@ class IntegrityMismatchError extends Error {
  * @param {string} backupDirectory Passed to backupChat.
  */
 export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, cardName, backupDirectory) {
-    const jsonlData = chatData?.map(JSON.stringify).join('\n');
+    const jsonlData = chatData?.map(m => JSON.stringify(m)).join('\n');
 
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
@@ -465,7 +465,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' });
     }
 });
 
@@ -809,7 +809,7 @@ router.post('/group/save', async function (request, response) {
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' });
     }
 });
 
