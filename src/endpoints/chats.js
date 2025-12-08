@@ -411,13 +411,13 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
 export const router = express.Router();
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
-class IntegrityMismatch extends Error {
+class IntegrityMismatchError extends Error {
     constructor(...params) {
     // Pass remaining arguments (including vendor specific ones) to parent constructor
         super(...params);
         // Maintains proper stack trace for where our error was thrown (non-standard)
         if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, IntegrityMismatch);
+            Error.captureStackTrace(this, IntegrityMismatchError);
         }
         this.date = new Date();
     }
@@ -439,7 +439,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${chatIntegritySlug}".`);
+        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${chatIntegritySlug}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
@@ -460,7 +460,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
-        if (error instanceof IntegrityMismatch) {
+        if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
@@ -804,7 +804,7 @@ router.post('/group/save', async function (request, response) {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
-        if (error instanceof IntegrityMismatch) {
+        if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
