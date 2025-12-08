@@ -40,8 +40,9 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
  */
 function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
-        if (!isBackupEnabled) {
-            return;
+        if (!isBackupEnabled) { return; }
+        if (!fs.existsSync(directory)) {
+            console.error(`The chat couldn't be backed up because no directory exists at ${directory}!`);
         }
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -54,7 +55,6 @@ function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) 
             return;
         }
         removeOldBackups(directory, backupPrefix, maxTotalChatBackups);
-
     } catch (err) {
         console.error(`Could not backup chat for ${name}`, err);
     }
@@ -310,7 +310,7 @@ function importRisuChat(userName, characterName, jsonData) {
 
 /**
  * Checks if the chat being saved has the same integrity as the one being loaded.
- * @param {string} filePath Path to the chat or chatTree file
+ * @param {string} filePath Path to the chat file
  * @param {string} integritySlug Integrity slug
  * @returns {Promise<boolean>} Whether the chat is intact
  */
@@ -447,7 +447,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
+        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${chatIntegritySlug}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
@@ -461,19 +461,19 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(request.user.directories.chats, cardName, sanitize(chatFileName));
 
-
         if (chatData) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
             return response.send({ ok: true });
+        } else {
+            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
         }
-
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.send(error);
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
     }
 });
 
@@ -777,11 +777,10 @@ router.post('/group/delete', (request, response) => {
             return response.sendStatus(400);
         }
 
-
         const id = request.body.id;
         const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
-        //Return success if the file was delted.
+        //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
@@ -809,13 +808,16 @@ router.post('/group/save', async function (request, response) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
             return response.send({ ok: true });
         }
+        else {
+            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
+        }
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.send(error);
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
     }
 });
 
