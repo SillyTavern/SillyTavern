@@ -1692,7 +1692,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
 
-    if (settings.type === TABBY) {
+    if (settings.type === TABBY || settings.type === LLAMACPP) {
         params.n = canMultiSwipe ? settings.n : 1;
     }
 
