@@ -1978,7 +1978,7 @@ export async function extractTextFromOffice(blob) {
         try {
             const result = await fetch('/api/plugins/office/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;

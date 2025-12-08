@@ -594,7 +594,7 @@ jQuery(async function () {
             const options = Array.from(dropdown.options);
             const response = await fetch(url, {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
             if (!response.ok) {
                 return;

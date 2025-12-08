@@ -1209,3 +1209,22 @@ export function embedOpenRouterMedia(messages) {
         }
     }
 }
+
+/**
+ * Adds a dummy reasoning_content field to messages with tool calls for DeepSeek reasoner.
+ * @param {object[]} messages Array of messages
+ * @returns {void}
+ */
+export function addReasoningContentToToolCalls(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.tool_calls) || 'reasoning_content' in message) {
+            continue;
+        }
+
+        message.reasoning_content = '';
+    }
+}

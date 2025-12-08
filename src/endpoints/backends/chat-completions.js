@@ -44,6 +44,7 @@ import {
     PROMPT_PROCESSING_TYPE,
     addAssistantPrefix,
     embedOpenRouterMedia,
+    addReasoningContentToToolCalls,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -980,6 +981,10 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
+
+        if (/-reasoner/.test(request.body.model)) {
+            addReasoningContentToToolCalls(processedMessages);
+        }
 
         const requestBody = {
             'messages': processedMessages,
