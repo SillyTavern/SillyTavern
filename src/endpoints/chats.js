@@ -32,13 +32,13 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
 
 /**
  * Saves a chat to the backups directory.
- * @param {string} name The name of the chat.
  * @param {string} directory The user's backup directory.
+ * @param {string} name The name of the chat.
  * @param {string} data The serialized chat to save.
  * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
  * @returns
  */
-function backupChat(name, directory,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
+function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
         if (!isBackupEnabled) {
             return;
@@ -437,10 +437,10 @@ class IntegrityMismatch extends Error {
  * @param {string} filePath Target file path for the data.
  * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
  * @param {string} handle The users handle, passed to getBackupFunction.
- * @param {string} directoryName Passed to backupChat.
+ * @param {string} cardName Passed to backupChat.
  * @param {string} backupDirectory Passed to backupChat.
  */
-export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, directoryName, backupDirectory) {
+export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, cardName, backupDirectory) {
     const jsonlData = chatData?.map(JSON.stringify).join('\n');
 
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
@@ -450,20 +450,20 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
         throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected UUID was "${skipIntegrityCheck}"`);
     }
     tryWriteFileSync(filePath, jsonlData);
-    getBackupFunction(handle)(directoryName, backupDirectory, jsonlData);
+    getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
 }
 
 router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const handle = request.user.profile.handle;
-        const directoryName = String(request.body.avatar_url).replace('.png', '');
+        const cardName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body?.chat;
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
-        const chatFilePath = path.join(request.user.directories.chats, directoryName, sanitize(chatFileName));
+        const chatFilePath = path.join(request.user.directories.chats, cardName, sanitize(chatFileName));
 
 
         if (chatData) {
-            await trySaveChat(chatData, chatFilePath, request.body.force, handle, directoryName, request.user.directories.backups);
+            await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
             return response.send({ ok: true });
         }
 
