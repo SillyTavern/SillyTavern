@@ -80,9 +80,7 @@ const STORAGE_KEYS = {
  * @property {string} userImages - The directory where the images are stored
  * @property {string} groups - The directory where the groups are stored
  * @property {string} chats - The directory where the chats are stored
- * @property {string} chatTrees - The directory where the chat trees are stored
  * @property {string} groupChats - The directory where the group chats are stored
- * @property {string} groupChatTrees - The directory where the group chat trees are stored
  * @property {string} backups - The directory where the backups are stored
  * @property {string} characters - The directory where the characters are stored
  * @property {string} backgrounds - The directory where the backgrounds are stored

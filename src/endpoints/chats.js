@@ -478,13 +478,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 });
 
 /**
- * Gets the chat and tree data as objects. If not found, they will be empty.
+ * Gets the chat as an object.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Array}
+ * @returns {Array}} If the chatFilePath cannot be read, this will return [].
  */
-export function getChatData(chatFilePath, treeFilePath) {
+export function getChatData(chatFilePath) {
     let chatData = [];
-    let treeData = {};
 
     const chatJSON = tryReadFileSync(chatFilePath) ?? '';
     if (chatJSON.length > 0) {
@@ -494,24 +493,7 @@ export function getChatData(chatFilePath, treeFilePath) {
     } else {
         console.warn(`File not found: ${chatFilePath}. The chat does not exist.`);
     }
-    const treeJSON = tryReadFileSync(treeFilePath);
-    //Attempt to load the chatTree.
-    if (treeJSON) {
-        console.warn(`Legacy chatTree file found: ${treeFilePath}. It will be migrated.`);
-        treeData = tryParse(treeJSON);
-    }
-    chatData[0] ??= {};
-    //Migrate the tree from the old formats.
-    if (!isNaN(treeData.tree?.branch_id) || !isNaN(treeData?.branch_id))
-    {
-        chatData[0].tree ??= treeData?.tree ?? treeData;
-        fs.copyFileSync(treeFilePath, `${treeFilePath}.migrated`);
-        const jsonlData = chatData?.map(JSON.stringify).join('\n');
-        tryWriteFileSync(chatFilePath, jsonlData);
-        fs.unlinkSync(treeFilePath);
-        console.warn(`Your data chatTree data has been migrated from ${treeFilePath} into ${chatFilePath}.`);
-        console.warn(`Once you have confirmed the migration, you can delete the backup at (${treeFilePath}.migrated})`);
-    }
+
     return chatData;
 }
 
@@ -519,7 +501,6 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
-        const treeDirectoryPath = path.join(request.user.directories.chatTrees, dirName);
         const chatDirExists = fs.existsSync(directoryPath);
 
         //if no chat dir for the character is found, make one with the character name
@@ -535,10 +516,7 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(directoryPath, sanitize(chatFileName));
 
-        const treeFileName = `${String(request.body.file_name)}.json`;
-        const treeFilePath = path.join(treeDirectoryPath, sanitize(treeFileName));
-
-        return response.send(getChatData(chatFilePath, treeFilePath));
+        return response.send(getChatData(chatFilePath));
     } catch (error) {
         console.error(error);
         return response.send({});
@@ -588,7 +566,7 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error('The chat file was not deleted.\'');
+            console.error('The chat file was not deleted.');
             return response.sendStatus(400);
         }
     } catch (error) {
@@ -789,9 +767,8 @@ router.post('/group/get', (request, response) => {
 
     const id = request.body.id;
     const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
-    const treeFilePath = path.join(request.user.directories.groupChatTrees, `${id}.json`);
 
-    return response.send(getChatData(chatFilePath, treeFilePath));
+    return response.send(getChatData(chatFilePath));
 });
 
 router.post('/group/delete', (request, response) => {
@@ -872,18 +849,15 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
-            const groupTreesDir = path.join(request.user.directories.groupChatTrees);
             chatFiles = targetGroup.chats
                 .map(chatId => {
                     const filePath = path.join(groupChatsDir, `${chatId}.jsonl`);
-                    const oldTreePath = path.join(groupTreesDir, `${chatId}.json`); //Deprecated.
                     if (!fs.existsSync(filePath)) return null;
                     const stats = fs.statSync(filePath);
                     return {
                         file_name: chatId,
                         file_size: formatBytes(stats.size),
                         path: filePath,
-                        oldTreePath, //Deprecated.
                     };
                 })
                 .filter(x => x);
@@ -891,7 +865,6 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             // Regular character chat directory
             const character_name = avatar_url.replace('.png', '');
             const directoryPath = path.join(request.user.directories.chats, character_name);
-            const treeDirectoryPath = path.join(request.user.directories.chatTrees, character_name); //Deprecated.
 
             if (!fs.existsSync(directoryPath)) {
                 return response.send([]);
@@ -901,13 +874,11 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 .filter(file => file.endsWith('.jsonl'))
                 .map(fileName => {
                     const filePath = path.join(directoryPath, fileName);
-                    const oldTreePath = path.join(treeDirectoryPath, `${path.parse(fileName).name}.json`);
                     const stats = fs.statSync(filePath);
                     return {
                         file_name: fileName,
                         file_size: formatBytes(stats.size),
                         path: filePath,
-                        oldTreePath, //Deprecated
                     };
                 });
         }
@@ -916,7 +887,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
         // Search logic
         for (const chatFile of chatFiles) {
-            const data = getChatData(chatFile.path, chatFile.oldTreePath);
+            const data = getChatData(chatFile.path);
             const messages = data.filter(x => x && typeof x.mes === 'string');
 
             if (query && messages.length === 0) {
@@ -924,7 +895,6 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             }
 
             let treeSize;
-
             // Check if the chat file has a tree.
             if (Array.isArray(data) && data.length && Object.hasOwn(data[0], 'tree')) {
                 const tree = data[0]?.tree;
