@@ -39,8 +39,9 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
  */
 function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
-        if (!isBackupEnabled || !fs.existsSync(directory)) {
-            return;
+        if (!isBackupEnabled) { return; }
+        if (!fs.existsSync(directory)) {
+            console.error(`The chat couldn't be backed up because no directory exists at ${directory}!`);
         }
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
