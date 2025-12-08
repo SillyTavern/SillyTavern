@@ -1,6 +1,9 @@
 import { power_user } from './power-user.js';
 import { delay } from './utils.js';
 
+// Symbol for not primary swipe error
+const NOT_PRIMARY = Symbol('not_primary_swipe');
+
 /**
  * A stream which handles Server-Sent Events from a binary ReadableStream like you get from the fetch API.
  */
@@ -183,6 +186,10 @@ async function* parseStreamData(json) {
     }
     // llama.cpp?
     else if (typeof json.content === 'string' && json.content.length > 0 && json.object !== 'chat.completion.chunk') {
+        const isNotPrimary = json?.index > 0;
+        if (isNotPrimary) {
+            throw new Error('Not a primary swipe', { cause: NOT_PRIMARY });
+        }
         for (let i = 0; i < json.content.length; i++) {
             const str = json.content[i];
             yield {
@@ -196,7 +203,7 @@ async function* parseStreamData(json) {
     else if (Array.isArray(json.choices)) {
         const isNotPrimary = json?.choices?.[0]?.index > 0;
         if (isNotPrimary || json.choices.length === 0) {
-            throw new Error('Not a primary swipe');
+            throw new Error('Not a primary swipe', { cause: NOT_PRIMARY });
         }
 
         if (typeof json.choices[0].text === 'string' && json.choices[0].text.length > 0) {
@@ -322,7 +329,9 @@ export class SmoothEventSourceStream extends EventSourceStream {
                         lastStr = parsed.chunk;
                     }
                 } catch (error) {
-                    console.debug('Smooth Streaming parsing error', error);
+                    if (error instanceof Error && error.cause !== NOT_PRIMARY) {
+                        console.debug('Smooth Streaming parsing error', error);
+                    }
                     controller.enqueue(event);
                 }
             },

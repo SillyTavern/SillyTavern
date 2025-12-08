@@ -1279,6 +1279,10 @@ export async function generateTextGenWithStreaming(generate_data, signal) {
             if (data?.choices?.[0]?.index > 0) {
                 const swipeIndex = data.choices[0].index - 1;
                 swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+            } else if (data?.index > 0) {
+                // llama.cpp streaming swipe
+                const swipeIndex = data.index - 1;
+                swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.content;
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
