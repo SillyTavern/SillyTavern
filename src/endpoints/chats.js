@@ -318,6 +318,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
     if (!fs.existsSync(filePath)) {
         return true;
     }
+
     // Parse the first line of the chat file as JSON
     const firstLine = await readFirstLine(filePath);
     const jsonData = tryParse(firstLine);
@@ -325,9 +326,10 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
-        console.debug(`File ${filePath} does not have integrity metadata matching ${integritySlug}, The integrity validation has been skipped.`);
+        console.debug(`File ${filePath} does not have integrity metadata matching ${integritySlug}. The integrity validation has been skipped.`);
         return true;
     }
+
     // Check if the integrity matches
     return chatIntegrity === integritySlug;
 }
@@ -424,7 +426,7 @@ class IntegrityMismatchError extends Error {
 }
 
 /**
- *
+ * Tries to save the chat data to a file, performing an integrity check if required.
  * @param {Array} chatData The chat array to save.
  * @param {string} filePath Target file path for the data.
  * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
@@ -439,7 +441,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${chatIntegritySlug}".`);
+        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
