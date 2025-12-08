@@ -319,15 +319,13 @@ async function checkChatIntegrity(filePath, integritySlug) {
     if (!fs.existsSync(filePath)) {
         return true;
     }
-    let chatIntegrity;
-    //Assume filepath is a standard chat.
-    // Parse the first line of the chat file as JSON
+    // Parse the first part of the file  to find it's integrity slug.
     const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
-    chatIntegrity = data?.value;
+    const chatIntegrity = data?.value;
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
-        console.warn(`File ${filePath} does not have integrity metadata matching ${integritySlug}, It will be overwritten.`);
+        console.debug(`File ${filePath} does not have integrity metadata matching ${integritySlug}, The integrity validation has been skipped.`);
         return true;
     }
     // Check if the integrity matches
@@ -433,7 +431,7 @@ class IntegrityMismatch extends Error {
 
 /**
  *
- * @param {object} chatData The serialized data no save.
+ * @param {Array} chatData The chat array to save.
  * @param {string} filePath Target file path for the data.
  * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
  * @param {string} handle The users handle, passed to getBackupFunction.
@@ -457,15 +455,15 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
     try {
         const handle = request.user.profile.handle;
         const cardName = String(request.body.avatar_url).replace('.png', '');
-        const chatData = request.body?.chat;
+        const chatData = request.body.chat;
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(request.user.directories.chats, cardName, sanitize(chatFileName));
 
-        if (chatData) {
+        if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
             return response.send({ ok: true });
         } else {
-            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
+            return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
@@ -802,14 +800,14 @@ router.post('/group/save', async function (request, response) {
         const id = request.body.id;
         const handle = request.user.profile.handle;
         const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
-        const chatData = request.body?.chat;
+        const chatData = request.body.chat;
 
-        if (chatData) {
+        if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
             return response.send({ ok: true });
         }
         else {
-            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
+            return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
