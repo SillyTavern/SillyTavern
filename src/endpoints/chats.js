@@ -462,7 +462,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.send(error);
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
     }
 });
 
@@ -803,7 +803,7 @@ router.post('/group/save', async function (request, response) {
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.send(error);
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
     }
 });
 
