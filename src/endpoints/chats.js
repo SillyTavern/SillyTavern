@@ -326,7 +326,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
-        console.debug(`File ${filePath} does not have integrity metadata matching ${integritySlug}. The integrity validation has been skipped.`);
+        console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
         return true;
     }
 
