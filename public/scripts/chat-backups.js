@@ -179,7 +179,7 @@ class BackupsBrowser {
             backupInfo.classList.add('chatBackupsListItemInfo');
             backupInfo.textContent = `${timestampToMoment(backup.last_mes).format('lll')} (${backup.file_size}, ${backup.chat_items} 💬)`;
 
-            //Display icon for backup with an attached tree.
+            //Display icon for backups with an attached tree.
             if (backup.treeSize) {
                 backupInfo.textContent += (`[${backup.treeSize}🌲]`);
             }
