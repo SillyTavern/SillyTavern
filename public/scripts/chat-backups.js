@@ -181,7 +181,7 @@ class BackupsBrowser {
 
             //Display icon for backup with an attached tree.
             if (backup.treeSize) {
-                backupInfo.textContent+=(`[${backup.treeSize}🌲]`);
+                backupInfo.textContent += (`[${backup.treeSize}🌲]`);
             }
 
             const actionsList = document.createElement('div');
