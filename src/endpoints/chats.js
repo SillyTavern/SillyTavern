@@ -38,7 +38,7 @@ export const CHAT_BACKUPS_PREFIX = 'chat_';
  * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
  * @returns
  */
-function backupChat(directory, name,  data, backupPrefix = CHAT_BACKUPS_PREFIX) {
+function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
         if (!isBackupEnabled) { return; }
         if (!fs.existsSync(directory)) {
@@ -325,9 +325,10 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
-        console.debug(`File ${filePath} does not have integrity metadata matching ${integritySlug}, The integrity validation has been skipped.`);
+        console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
         return true;
     }
+
     // Check if the integrity matches
     return chatIntegrity === integritySlug;
 }
@@ -417,20 +418,20 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
 export const router = express.Router();
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
-class IntegrityMismatch extends Error {
+class IntegrityMismatchError extends Error {
     constructor(...params) {
-    // Pass remaining arguments (including vendor specific ones) to parent constructor
+        // Pass remaining arguments (including vendor specific ones) to parent constructor
         super(...params);
         // Maintains proper stack trace for where our error was thrown (non-standard)
         if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, IntegrityMismatch);
+            Error.captureStackTrace(this, IntegrityMismatchError);
         }
         this.date = new Date();
     }
 }
 
 /**
- *
+ * Tries to save the chat data to a file, performing an integrity check if required.
  * @param {Array} chatData The chat array to save.
  * @param {string} filePath Target file path for the data.
  * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
@@ -439,13 +440,13 @@ class IntegrityMismatch extends Error {
  * @param {string} backupDirectory Passed to backupChat.
  */
 export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, cardName, backupDirectory) {
-    const jsonlData = chatData?.map(JSON.stringify).join('\n');
+    const jsonlData = chatData?.map(m => JSON.stringify(m)).join('\n');
 
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatch(`Chat integrity check failed for "${filePath}" The expected integrity slug was "${chatIntegritySlug}".`);
+        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
@@ -466,12 +467,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
-        if (error instanceof IntegrityMismatch) {
+        if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' });
     }
 });
 
@@ -489,7 +490,7 @@ export function getChatData(chatFilePath) {
         // Iterate through the array of strings and parse each line as JSON
         chatData = lines.map(line => tryParse(line)).filter(x => x);
     } else {
-        console.warn(`File not found: ${chatFilePath}. The chat does not exist.`);
+        console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
     }
 
     return chatData;
@@ -810,12 +811,12 @@ router.post('/group/save', async function (request, response) {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
-        if (error instanceof IntegrityMismatch) {
+        if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
         }
         console.error(error);
-        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' } );
+        return response.status(500).send({ error: 'An error has occurred, see the console logs for more information.' });
     }
 });
 
