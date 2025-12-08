@@ -7269,9 +7269,9 @@ export async function getChat() {
             chat.shift();
             chat.forEach(ensureMessageMediaIsArray);
 
-            let tree = chatData[0]?.tree;
+            const treeData = chatData[0]?.tree;
             //Load the chatTree.
-            tree.setChatTree(tree ?? {});
+            tree.setChatTree(treeData ?? {});
         }
         if (!chat_metadata['integrity']) {
             chat_metadata['integrity'] = uuidv4();
