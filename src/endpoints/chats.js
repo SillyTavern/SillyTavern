@@ -455,6 +455,8 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         if (chatData) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
             return response.send({ ok: true });
+        } else {
+            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
         }
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
@@ -796,6 +798,9 @@ router.post('/group/save', async function (request, response) {
         if (chatData) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
             return response.send({ ok: true });
+        }
+        else {
+            return response.status(400).send({ error: 'The request\'s body.chat is empty.' });
         }
     } catch (error) {
         if (error instanceof IntegrityMismatch) {
