@@ -483,7 +483,7 @@ export function getChatData(chatFilePath) {
         // Iterate through the array of strings and parse each line as JSON
         chatData = lines.map(line => tryParse(line)).filter(x => x);
     } else {
-        console.warn(`File not found: ${chatFilePath}. The chat does not exist.`);
+        console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
     }
 
     return chatData;
