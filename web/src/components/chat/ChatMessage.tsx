@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from 'react';
+import { Pencil, Check, X } from 'lucide-react';
 import { Avatar } from '../ui';
 
 interface ChatMessageProps {
@@ -7,6 +9,9 @@ interface ChatMessageProps {
   isSystem?: boolean;
   avatar?: string;
   timestamp?: number;
+  isEditable?: boolean;
+  onEdit?: (newContent: string) => void;
+  disabled?: boolean;
 }
 
 export function ChatMessage({
@@ -16,7 +21,55 @@ export function ChatMessage({
   isSystem,
   avatar,
   timestamp,
+  isEditable,
+  onEdit,
+  disabled,
 }: ChatMessageProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(content);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus and select text when entering edit mode
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, [isEditing]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [editContent, isEditing]);
+
+  const handleStartEdit = () => {
+    setEditContent(content);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(content);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (editContent.trim() && editContent !== content) {
+      onEdit?.(editContent.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleCancelEdit();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    }
+  };
   if (isSystem) {
     return (
       <div className="flex justify-center my-4">
@@ -29,7 +82,7 @@ export function ChatMessage({
 
   return (
     <div
-      className={`flex gap-3 px-4 py-3 ${
+      className={`flex gap-3 px-4 py-3 group ${
         isUser ? 'flex-row-reverse' : 'flex-row'
       }`}
     >
@@ -54,17 +107,61 @@ export function ChatMessage({
           )}
         </div>
 
-        <div
-          className={`
-            px-4 py-2 rounded-2xl
-            ${
-              isUser
-                ? 'bg-[var(--color-primary)] text-white rounded-br-md'
-                : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-bl-md'
-            }
-          `}
-        >
-          <div className="text-sm whitespace-pre-wrap break-words">{content}</div>
+        <div className="flex items-start gap-2">
+          {/* Edit button - show on left for user messages */}
+          {isEditable && isUser && !isEditing && (
+            <button
+              onClick={handleStartEdit}
+              disabled={disabled}
+              className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              title="Edit message"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+
+          <div
+            className={`
+              px-4 py-2 rounded-2xl
+              ${
+                isUser
+                  ? 'bg-[var(--color-primary)] text-white rounded-br-md'
+                  : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-bl-md'
+              }
+              ${isEditing ? 'w-full' : ''}
+            `}
+          >
+            {isEditing ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  ref={textareaRef}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full bg-transparent text-sm resize-none outline-none min-h-[60px] text-white"
+                  placeholder="Enter your message..."
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                    title="Cancel (Esc)"
+                  >
+                    <X size={14} />
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                    title="Save and regenerate (Enter)"
+                  >
+                    <Check size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm whitespace-pre-wrap break-words">{content}</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

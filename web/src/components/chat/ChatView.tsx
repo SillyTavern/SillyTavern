@@ -13,7 +13,7 @@ import {
 
 export function ChatView() {
   const { selectedCharacter } = useCharacterStore();
-  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat } = useChatStore();
+  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat, editMessageAndRegenerate } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
   // Track failed expression images to avoid infinite retry loops
@@ -27,6 +27,12 @@ export function ChatView() {
     const characterMessages = messages.filter((m) => !m.isUser && !m.isSystem);
     if (characterMessages.length === 0) return null;
     return characterMessages[characterMessages.length - 1].emotion ?? null;
+  }, [messages]);
+
+  // Find the last user message ID for edit functionality
+  const lastUserMessageId = useMemo(() => {
+    const userMessages = messages.filter((m) => m.isUser);
+    return userMessages.length > 0 ? userMessages[userMessages.length - 1].id : null;
   }, [messages]);
 
   const getAvatarUrl = useCallback(
@@ -201,6 +207,9 @@ export function ChatView() {
                     : getAvatarUrl(selectedCharacter.avatar, message.emotion)
                 }
                 timestamp={message.timestamp}
+                isEditable={message.id === lastUserMessageId}
+                onEdit={(newContent) => editMessageAndRegenerate(message.id, newContent, selectedCharacter)}
+                disabled={isSending}
               />
             ))}
 

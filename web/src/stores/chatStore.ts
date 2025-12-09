@@ -33,6 +33,7 @@ interface ChatState {
   startNewChat: (character: CharacterInfo) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
   sendMessage: (content: string, character: CharacterInfo) => Promise<void>;
+  editMessageAndRegenerate: (messageId: string, newContent: string, character: CharacterInfo) => Promise<void>;
   clearChat: () => void;
 }
 
@@ -394,6 +395,113 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to send message' });
+    } finally {
+      set({ isSending: false });
+    }
+  },
+
+  editMessageAndRegenerate: async (messageId: string, newContent: string, character: CharacterInfo) => {
+    const { messages } = get();
+
+    // Find the message index
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Update the message and remove all messages after it
+    const updatedMessages = messages.slice(0, messageIndex + 1).map((msg) =>
+      msg.id === messageId ? { ...msg, content: newContent } : msg
+    );
+
+    set({ messages: updatedMessages, isSending: true, error: null });
+
+    try {
+      // Build conversation context with the edited message
+      const context = buildConversationContext(updatedMessages, character);
+
+      // Get AI provider settings
+      const { activeProvider, activeModel, secrets } = useSettingsStore.getState();
+
+      let finalProvider = activeProvider;
+      let finalModel = activeModel;
+
+      // Auto-switch provider if needed
+      if (!activeProvider || activeProvider === 'openai') {
+        const hasOpenAI = Array.isArray(secrets['api_key_openai']) && secrets['api_key_openai'].length > 0;
+        const hasClaude = Array.isArray(secrets['api_key_claude']) && secrets['api_key_claude'].length > 0;
+
+        if (!hasOpenAI && hasClaude) {
+          finalProvider = 'claude';
+          finalModel = 'claude-sonnet-4-20250514';
+          useSettingsStore.setState({ activeProvider: finalProvider, activeModel: finalModel });
+        }
+      }
+
+      // Generate new response
+      const stream = await api.generateMessage(context, character.name, finalProvider, finalModel);
+
+      if (stream) {
+        // Add initial AI message placeholder
+        const aiMessageId = generateId();
+        set((state) => ({
+          messages: [
+            ...state.messages,
+            {
+              id: aiMessageId,
+              name: character.name,
+              isUser: false,
+              isSystem: false,
+              content: '',
+              timestamp: Date.now(),
+            },
+          ],
+        }));
+
+        // Stream the response
+        let responseText = '';
+        for await (const token of parseSSEStream(stream)) {
+          responseText += token;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === aiMessageId ? { ...msg, content: responseText } : msg
+            ),
+          }));
+        }
+
+        // Parse emotion and strip tag
+        const emotion = parseEmotion(responseText);
+        const cleanedContent = stripEmotionTag(responseText);
+
+        set((state) => ({
+          messages: state.messages.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, content: cleanedContent, emotion }
+              : msg
+          ),
+        }));
+
+        // Save chat
+        const { currentChatFile } = get();
+        if (currentChatFile) {
+          const allMessages = get().messages;
+          const chatData = [
+            {
+              user_name: 'You',
+              character_name: character.name,
+              create_date: new Date().toISOString(),
+            },
+            ...allMessages.map((msg) => ({
+              name: msg.name,
+              is_user: msg.isUser,
+              is_system: msg.isSystem,
+              mes: msg.content,
+              send_date: msg.timestamp,
+            })),
+          ];
+          await api.saveChat(character.avatar, currentChatFile, chatData);
+        }
+      }
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to regenerate response' });
     } finally {
       set({ isSending: false });
     }
