@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Pencil, Check, X } from 'lucide-react';
 import { Avatar } from '../ui';
 
@@ -12,6 +12,110 @@ interface ChatMessageProps {
   isEditable?: boolean;
   onEdit?: (newContent: string) => void;
   disabled?: boolean;
+}
+
+interface TextSegment {
+  type: 'dialogue' | 'action' | 'thought';
+  content: string;
+}
+
+/**
+ * Parse message content to separate dialogue from actions/thoughts
+ * Actions are wrapped in *asterisks* or _underscores_
+ * Thoughts can be in {{curly braces}} or (parentheses for inner thoughts)
+ */
+function parseMessageContent(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  // Match *action*, _action_, {{thought}}, or regular text
+  // Using a regex that captures asterisk/underscore wrapped text as actions
+  const regex = /(\*[^*]+\*|_[^_]+_|\{\{[^}]+\}\})/g;
+
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add any text before this match as dialogue
+    if (match.index > lastIndex) {
+      const dialogueText = text.slice(lastIndex, match.index);
+      if (dialogueText) {
+        segments.push({ type: 'dialogue', content: dialogueText });
+      }
+    }
+
+    // Determine if it's an action or thought
+    const matchedText = match[0];
+    if (matchedText.startsWith('{{') && matchedText.endsWith('}}')) {
+      // Thought in curly braces - remove the braces
+      segments.push({
+        type: 'thought',
+        content: matchedText.slice(2, -2)
+      });
+    } else {
+      // Action in asterisks or underscores - remove the markers
+      segments.push({
+        type: 'action',
+        content: matchedText.slice(1, -1)
+      });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add any remaining text as dialogue
+  if (lastIndex < text.length) {
+    segments.push({ type: 'dialogue', content: text.slice(lastIndex) });
+  }
+
+  // If no segments were created, return the whole text as dialogue
+  if (segments.length === 0) {
+    segments.push({ type: 'dialogue', content: text });
+  }
+
+  return segments;
+}
+
+/**
+ * Render parsed message segments with appropriate styling
+ */
+function FormattedContent({ content, isUser }: { content: string; isUser: boolean }) {
+  const segments = useMemo(() => parseMessageContent(content), [content]);
+
+  return (
+    <>
+      {segments.map((segment, index) => {
+        if (segment.type === 'action') {
+          return (
+            <span
+              key={index}
+              className={`italic ${
+                isUser
+                  ? 'text-white/70'
+                  : 'text-amber-400/90'
+              }`}
+            >
+              {segment.content}
+            </span>
+          );
+        }
+        if (segment.type === 'thought') {
+          return (
+            <span
+              key={index}
+              className={`italic ${
+                isUser
+                  ? 'text-white/60'
+                  : 'text-purple-400/80'
+              }`}
+            >
+              {segment.content}
+            </span>
+          );
+        }
+        // Dialogue - default styling
+        return <span key={index}>{segment.content}</span>;
+      })}
+    </>
+  );
 }
 
 export function ChatMessage({
@@ -159,7 +263,9 @@ export function ChatMessage({
                 </div>
               </div>
             ) : (
-              <div className="text-sm whitespace-pre-wrap break-words">{content}</div>
+              <div className="text-sm whitespace-pre-wrap break-words">
+                <FormattedContent content={content} isUser={isUser} />
+              </div>
             )}
           </div>
         </div>
