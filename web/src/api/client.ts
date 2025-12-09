@@ -483,9 +483,13 @@ export const spritesApi = {
   async uploadSprite(characterName: string, label: string, file: File): Promise<{ ok: boolean }> {
     const token = await getCsrfToken();
     const formData = new FormData();
-    formData.append('file', file);
+    // Field names must match what SillyTavern server expects:
+    // - 'name': character/folder name
+    // - 'label': expression label (e.g., 'joy', 'sadness')
+    // - 'avatar': the image file (NOT 'file')
     formData.append('name', characterName);
     formData.append('label', label);
+    formData.append('avatar', file);
 
     console.log('[Sprites] Uploading:', { characterName, label, fileName: file.name });
 
