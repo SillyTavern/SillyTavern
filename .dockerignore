@@ -16,7 +16,6 @@ access.log
 /colab
 .gemini
 /docker/config
-/docker/user
 /docker/extensions
 /docker/data
 /docker/plugins
