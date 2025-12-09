@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { spritesApi, type CharacterInfo } from '../../api/client';
 import { Modal, Button, Input, TextArea, ImageUpload, ExpressionUpload } from '../ui';
-import type { Emotion } from '../../utils/emotions';
 
 interface CharacterEditProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ export function CharacterEdit({ isOpen, onClose, character, onSaved }: Character
   const { updateCharacter, isEditing, error, clearError } = useCharacterStore();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [expressionFiles, setExpressionFiles] = useState<Map<Emotion, File>>(new Map());
+  const [expressionFiles, setExpressionFiles] = useState<Map<string, File>>(new Map());
   const [isUploadingExpressions, setIsUploadingExpressions] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

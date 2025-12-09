@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { spritesApi, type SpriteInfo } from '../api/client';
-import type { Emotion } from '../utils/emotions';
 
 // Cache sprite paths by character name
 const spriteCache = new Map<string, SpriteInfo[]>();
@@ -68,9 +67,14 @@ export function useCharacterSprites(avatarFilename: string | undefined) {
       });
   }, [characterName]);
 
-  // Get the path for a specific emotion
+  // Get available emotion labels from sprites
+  const availableEmotions = useMemo(() => {
+    return sprites.map((s) => s.label);
+  }, [sprites]);
+
+  // Get the path for a specific emotion (string-based, open-ended)
   const getSpritePath = useCallback(
-    (emotion: Emotion | null): string | null => {
+    (emotion: string | null): string | null => {
       if (!emotion || sprites.length === 0) return null;
       const sprite = sprites.find((s) => s.label === emotion);
       return sprite?.path ?? null;
@@ -80,7 +84,7 @@ export function useCharacterSprites(avatarFilename: string | undefined) {
 
   // Check if a sprite exists for an emotion
   const hasSprite = useCallback(
-    (emotion: Emotion): boolean => {
+    (emotion: string): boolean => {
       return sprites.some((s) => s.label === emotion);
     },
     [sprites]
@@ -91,12 +95,35 @@ export function useCharacterSprites(avatarFilename: string | undefined) {
     spriteCache.delete(name);
   }, []);
 
+  // Refresh sprites from API (invalidate cache and refetch)
+  const refreshSprites = useCallback(() => {
+    if (characterName) {
+      spriteCache.delete(characterName);
+      setIsLoading(true);
+      spritesApi
+        .getSprites(characterName)
+        .then((result) => {
+          const spriteList = Array.isArray(result) ? result : [];
+          spriteCache.set(characterName, spriteList);
+          setSprites(spriteList);
+        })
+        .catch((err) => {
+          setError(err.message);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [characterName]);
+
   return {
     sprites,
+    availableEmotions,
     isLoading,
     error,
     getSpritePath,
     hasSprite,
     invalidateCache,
+    refreshSprites,
   };
 }

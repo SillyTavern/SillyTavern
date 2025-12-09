@@ -35,9 +35,9 @@ interface ChatState {
   startNewChat: (character: CharacterInfo) => Promise<void>;
   startNewGroupChat: (characters: CharacterInfo[]) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
-  sendMessage: (content: string, character: CharacterInfo) => Promise<void>;
+  sendMessage: (content: string, character: CharacterInfo, availableEmotions?: string[]) => Promise<void>;
   sendGroupMessage: (content: string, characters: CharacterInfo[]) => Promise<void>;
-  editMessageAndRegenerate: (messageId: string, newContent: string, character: CharacterInfo) => Promise<void>;
+  editMessageAndRegenerate: (messageId: string, newContent: string, character: CharacterInfo, availableEmotions?: string[]) => Promise<void>;
   clearChat: () => void;
 }
 
@@ -139,7 +139,8 @@ async function* parseSSEStream(
 // Build conversation context for AI
 function buildConversationContext(
   messages: ChatMessage[],
-  character: CharacterInfo
+  character: CharacterInfo,
+  availableEmotions?: string[]
 ): { role: 'user' | 'assistant' | 'system'; content: string }[] {
   const context: { role: 'user' | 'assistant' | 'system'; content: string }[] = [];
 
@@ -152,11 +153,15 @@ function buildConversationContext(
     .filter(Boolean)
     .join('\n\n');
 
-  // Emotion tag instruction
+  // Emotion tag instruction - use available emotions if provided, otherwise give guidance
+  const emotionList = availableEmotions && availableEmotions.length > 0
+    ? availableEmotions.join(', ')
+    : 'neutral (or any emotion that fits the moment)';
+
   const emotionInstruction = `
 IMPORTANT: Begin each response with an emotion tag that reflects your current emotional state. Use this exact format: [emotion:TAG]
 
-Available emotions: neutral, joy, sadness, anger, surprise, fear, love, excitement, confusion, embarrassment, curiosity, amusement
+Available emotions for this character: ${emotionList}
 
 Example: [emotion:joy] I'm so glad you asked about that!
 
@@ -363,7 +368,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({ messages: [...state.messages, newMessage] }));
   },
 
-  sendMessage: async (content: string, character: CharacterInfo) => {
+  sendMessage: async (content: string, character: CharacterInfo, availableEmotions?: string[]) => {
     const { addMessage } = get();
 
     // Add user message
@@ -378,9 +383,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isSending: true, error: null });
 
     try {
-      // Build conversation context
+      // Build conversation context with available emotions
       const updatedMessages = get().messages;
-      const context = buildConversationContext(updatedMessages, character);
+      const context = buildConversationContext(updatedMessages, character, availableEmotions);
 
       // Get AI provider settings
       const { activeProvider, activeModel } = useSettingsStore.getState();
@@ -616,7 +621,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  editMessageAndRegenerate: async (messageId: string, newContent: string, character: CharacterInfo) => {
+  editMessageAndRegenerate: async (messageId: string, newContent: string, character: CharacterInfo, availableEmotions?: string[]) => {
     const { messages } = get();
 
     // Find the message index
@@ -631,8 +636,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ messages: updatedMessages, isSending: true, error: null });
 
     try {
-      // Build conversation context with the edited message
-      const context = buildConversationContext(updatedMessages, character);
+      // Build conversation context with the edited message and available emotions
+      const context = buildConversationContext(updatedMessages, character, availableEmotions);
 
       // Get AI provider settings
       const { activeProvider, activeModel, secrets } = useSettingsStore.getState();

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { Modal, Button, Input, TextArea, ImageUpload, ExpressionUpload } from '../ui';
 import { spritesApi } from '../../api/client';
-import type { Emotion } from '../../utils/emotions';
 
 interface CharacterCreationProps {
   isOpen: boolean;
@@ -14,7 +13,7 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
   const { createCharacter, isCreating, error, clearError } = useCharacterStore();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [expressionFiles, setExpressionFiles] = useState<Map<Emotion, File>>(new Map());
+  const [expressionFiles, setExpressionFiles] = useState<Map<string, File>>(new Map());
   const [isUploadingExpressions, setIsUploadingExpressions] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

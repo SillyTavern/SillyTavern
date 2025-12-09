@@ -1,7 +1,8 @@
 // Emotion types for character expressions
-// Uses GoEmotions-compatible naming for expression files
+// Now supports any string emotion - not restricted to a predefined list
 
-export const EMOTIONS = [
+// Default emotions for suggestions/UI hints
+export const DEFAULT_EMOTIONS = [
   'neutral',
   'joy',
   'sadness',
@@ -16,132 +17,143 @@ export const EMOTIONS = [
   'amusement',
 ] as const;
 
-export type Emotion = (typeof EMOTIONS)[number];
+// Emotion is now any string - characters can have any emotions they want
+export type Emotion = string;
 
 // Regex to match emotion tags like [emotion:happy] or [mood:sad]
 const EMOTION_TAG_REGEX = /\[(?:emotion|mood|expression|feeling):\s*(\w+)\]/i;
 
 /**
  * Parse emotion tag from message content
- * Returns the emotion if found, or null
+ * Returns the raw emotion string if found, or null
+ * The caller should check if this emotion exists in the character's sprites
  */
-export function parseEmotion(content: string): Emotion | null {
+export function parseEmotion(content: string): string | null {
   const match = content.match(EMOTION_TAG_REGEX);
   if (!match) return null;
 
-  const emotionStr = match[1].toLowerCase();
+  // Return the raw emotion string, normalized to lowercase
+  return match[1].toLowerCase();
+}
 
-  // Map various emotion words to our file-compatible emotion names
-  const emotionMap: Record<string, Emotion> = {
-    // Direct matches (file names)
-    neutral: 'neutral',
-    joy: 'joy',
-    sadness: 'sadness',
-    anger: 'anger',
-    surprise: 'surprise',
-    fear: 'fear',
-    love: 'love',
-    excitement: 'excitement',
-    confusion: 'confusion',
-    embarrassment: 'embarrassment',
-    curiosity: 'curiosity',
-    amusement: 'amusement',
+/**
+ * Try to map a parsed emotion to one that exists in the available sprites
+ * Falls back to the original if no mapping exists
+ */
+export function mapEmotionToAvailable(
+  emotion: string,
+  availableEmotions: string[]
+): string | null {
+  // Direct match
+  if (availableEmotions.includes(emotion)) {
+    return emotion;
+  }
 
-    // Common variants -> joy
-    happy: 'joy',
-    joyful: 'joy',
-    cheerful: 'joy',
-    pleased: 'joy',
-    content: 'joy',
-    delighted: 'joy',
-    glad: 'joy',
-    elated: 'joy',
+  // Common aliases - try to find a match
+  const aliases: Record<string, string[]> = {
+    // joy variants
+    happy: ['joy', 'happiness', 'cheerful', 'pleased'],
+    joyful: ['joy', 'happy', 'cheerful'],
+    cheerful: ['joy', 'happy'],
+    pleased: ['joy', 'happy', 'content'],
+    content: ['joy', 'happy', 'pleased'],
+    delighted: ['joy', 'happy', 'excited'],
+    glad: ['joy', 'happy'],
+    elated: ['joy', 'excited', 'happy'],
 
-    // Common variants -> sadness
-    sad: 'sadness',
-    unhappy: 'sadness',
-    depressed: 'sadness',
-    melancholy: 'sadness',
-    upset: 'sadness',
-    tearful: 'sadness',
-    crying: 'sadness',
-    grief: 'sadness',
-    disappointed: 'sadness',
+    // sadness variants
+    sad: ['sadness', 'unhappy', 'melancholy'],
+    unhappy: ['sadness', 'sad', 'disappointed'],
+    depressed: ['sadness', 'sad', 'melancholy'],
+    melancholy: ['sadness', 'sad'],
+    upset: ['sadness', 'sad', 'angry'],
+    tearful: ['sadness', 'crying', 'sad'],
+    crying: ['sadness', 'tearful', 'sad'],
+    grief: ['sadness', 'crying', 'sad'],
+    disappointed: ['sadness', 'sad', 'unhappy'],
 
-    // Common variants -> anger
-    angry: 'anger',
-    mad: 'anger',
-    furious: 'anger',
-    annoyed: 'anger',
-    irritated: 'anger',
-    frustrated: 'anger',
-    rage: 'anger',
-    annoyance: 'anger',
+    // anger variants
+    angry: ['anger', 'mad', 'furious'],
+    mad: ['anger', 'angry', 'furious'],
+    furious: ['anger', 'angry', 'rage'],
+    annoyed: ['anger', 'irritated', 'frustrated'],
+    irritated: ['anger', 'annoyed', 'frustrated'],
+    frustrated: ['anger', 'annoyed', 'irritated'],
+    rage: ['anger', 'furious', 'angry'],
 
-    // Common variants -> surprise
-    surprised: 'surprise',
-    shock: 'surprise',
-    shocked: 'surprise',
-    astonished: 'surprise',
-    amazed: 'surprise',
-    startled: 'surprise',
+    // surprise variants
+    surprised: ['surprise', 'shocked', 'amazed'],
+    shock: ['surprise', 'shocked', 'startled'],
+    shocked: ['surprise', 'shock', 'startled'],
+    astonished: ['surprise', 'amazed', 'shocked'],
+    amazed: ['surprise', 'astonished', 'excited'],
+    startled: ['surprise', 'shocked', 'scared'],
 
-    // Common variants -> fear
-    scared: 'fear',
-    afraid: 'fear',
-    terrified: 'fear',
-    nervous: 'fear',
-    anxious: 'fear',
-    worried: 'fear',
-    nervousness: 'fear',
+    // fear variants
+    scared: ['fear', 'afraid', 'terrified'],
+    afraid: ['fear', 'scared', 'nervous'],
+    terrified: ['fear', 'scared', 'afraid'],
+    nervous: ['fear', 'anxious', 'worried'],
+    anxious: ['fear', 'nervous', 'worried'],
+    worried: ['fear', 'anxious', 'nervous'],
 
-    // Common variants -> love
-    loving: 'love',
-    affectionate: 'love',
-    adoring: 'love',
-    romantic: 'love',
-    flirty: 'love',
-    caring: 'love',
-    desire: 'love',
+    // love variants
+    loving: ['love', 'affectionate', 'caring'],
+    affectionate: ['love', 'loving', 'caring'],
+    adoring: ['love', 'loving', 'affectionate'],
+    romantic: ['love', 'flirty', 'affectionate'],
+    flirty: ['love', 'romantic', 'playful'],
+    caring: ['love', 'affectionate', 'kind'],
 
-    // Common variants -> excitement
-    excited: 'excitement',
-    thrilled: 'excitement',
-    enthusiastic: 'excitement',
-    eager: 'excitement',
-    energetic: 'excitement',
+    // excitement variants
+    excited: ['excitement', 'thrilled', 'eager'],
+    thrilled: ['excitement', 'excited', 'happy'],
+    enthusiastic: ['excitement', 'excited', 'eager'],
+    eager: ['excitement', 'excited', 'enthusiastic'],
+    energetic: ['excitement', 'excited', 'happy'],
 
-    // Common variants -> confusion
-    confused: 'confusion',
-    puzzled: 'confusion',
-    bewildered: 'confusion',
-    perplexed: 'confusion',
-    lost: 'confusion',
+    // confusion variants
+    confused: ['confusion', 'puzzled', 'bewildered'],
+    puzzled: ['confusion', 'confused', 'thinking'],
+    bewildered: ['confusion', 'confused', 'lost'],
+    perplexed: ['confusion', 'confused', 'puzzled'],
+    lost: ['confusion', 'confused', 'bewildered'],
 
-    // Common variants -> embarrassment
-    embarrassed: 'embarrassment',
-    shy: 'embarrassment',
-    flustered: 'embarrassment',
-    blushing: 'embarrassment',
+    // embarrassment variants
+    embarrassed: ['embarrassment', 'shy', 'flustered'],
+    shy: ['embarrassment', 'embarrassed', 'nervous'],
+    flustered: ['embarrassment', 'embarrassed', 'nervous'],
+    blushing: ['embarrassment', 'shy', 'flustered'],
 
-    // Common variants -> curiosity
-    curious: 'curiosity',
-    interested: 'curiosity',
-    intrigued: 'curiosity',
-    thinking: 'curiosity',
-    pondering: 'curiosity',
-    thoughtful: 'curiosity',
+    // curiosity variants
+    curious: ['curiosity', 'interested', 'intrigued'],
+    interested: ['curiosity', 'curious', 'intrigued'],
+    intrigued: ['curiosity', 'curious', 'interested'],
+    thinking: ['curiosity', 'thoughtful', 'pondering'],
+    pondering: ['curiosity', 'thinking', 'thoughtful'],
+    thoughtful: ['curiosity', 'thinking', 'pondering'],
 
-    // Common variants -> amusement
-    amused: 'amusement',
-    laughing: 'amusement',
-    playful: 'amusement',
-    teasing: 'amusement',
-    smug: 'amusement',
-    proud: 'amusement',
+    // amusement variants
+    amused: ['amusement', 'laughing', 'playful'],
+    laughing: ['amusement', 'amused', 'happy'],
+    playful: ['amusement', 'amused', 'happy'],
+    teasing: ['amusement', 'playful', 'smug'],
+    smug: ['amusement', 'proud', 'confident'],
+    proud: ['amusement', 'smug', 'confident'],
   };
 
-  return emotionMap[emotionStr] || null;
+  // Check aliases
+  const possibleMatches = aliases[emotion];
+  if (possibleMatches) {
+    for (const candidate of possibleMatches) {
+      if (availableEmotions.includes(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  // No match found - return null to use default/neutral
+  return null;
 }
 
 /**

@@ -20,7 +20,7 @@ export function ChatView() {
   const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
 
   // Fetch actual sprite paths from API (hook extracts character name from avatar filename)
-  const { getSpritePath } = useCharacterSprites(selectedCharacter?.avatar);
+  const { getSpritePath, availableEmotions } = useCharacterSprites(selectedCharacter?.avatar);
 
   // Get the latest character message's emotion for the portrait
   const latestEmotion = useMemo(() => {
@@ -123,7 +123,7 @@ export function ChatView() {
     if (isGroupChatMode && groupChatCharacters.length >= 2) {
       sendGroupMessage(content, groupChatCharacters);
     } else if (selectedCharacter) {
-      sendMessage(content, selectedCharacter);
+      sendMessage(content, selectedCharacter, availableEmotions);
     }
   };
 
@@ -259,7 +259,7 @@ export function ChatView() {
                   isEditable={!isGroupChatMode && message.id === lastUserMessageId}
                   onEdit={(newContent) => {
                     if (selectedCharacter) {
-                      editMessageAndRegenerate(message.id, newContent, selectedCharacter);
+                      editMessageAndRegenerate(message.id, newContent, selectedCharacter, availableEmotions);
                     }
                   }}
                   disabled={isSending}
