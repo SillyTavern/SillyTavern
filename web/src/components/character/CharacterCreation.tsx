@@ -63,13 +63,19 @@ export function CharacterCreation({ isOpen, onClose, onCreated }: CharacterCreat
         setIsUploadingExpressions(true);
         try {
           const characterName = formData.name.trim();
-          await Promise.all(
+          console.log('[CharacterCreation] Uploading expressions for:', characterName);
+          const results = await Promise.allSettled(
             Array.from(expressionFiles.entries()).map(([emotion, file]) =>
               spritesApi.uploadSprite(characterName, emotion, file)
             )
           );
+          // Log any failures
+          const failures = results.filter((r) => r.status === 'rejected');
+          if (failures.length > 0) {
+            console.error('[CharacterCreation] Some expression uploads failed:', failures);
+          }
         } catch (err) {
-          console.error('Failed to upload expressions:', err);
+          console.error('[CharacterCreation] Failed to upload expressions:', err);
         } finally {
           setIsUploadingExpressions(false);
         }

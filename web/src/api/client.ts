@@ -487,6 +487,8 @@ export const spritesApi = {
     formData.append('name', characterName);
     formData.append('label', label);
 
+    console.log('[Sprites] Uploading:', { characterName, label, fileName: file.name });
+
     const response = await fetch('/api/sprites/upload', {
       method: 'POST',
       headers: {
@@ -497,10 +499,14 @@ export const spritesApi = {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to upload sprite: ${response.status}`);
+      const errorText = await response.text();
+      console.error('[Sprites] Upload failed:', { status: response.status, error: errorText });
+      throw new Error(`Failed to upload sprite: ${response.status} - ${errorText}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('[Sprites] Upload success:', result);
+    return result;
   },
 
   // Delete a sprite
