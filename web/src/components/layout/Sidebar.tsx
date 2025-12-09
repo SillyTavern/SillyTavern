@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { X, Search, Plus, MessageSquare, Users, ChevronLeft } from 'lucide-react';
+import { X, Search, Plus, MessageSquare, Users, ChevronLeft, UserPlus, Check } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { Avatar, Button, Input } from '../ui';
@@ -16,9 +16,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCharacterList, setShowCharacterList] = useState(false);
   const [failedExpressions, setFailedExpressions] = useState<Set<string>>(new Set());
-  const { characters, selectedCharacter, isLoading, fetchCharacters, selectCharacter } =
-    useCharacterStore();
-  const { messages } = useChatStore();
+  const [isGroupSelectMode, setIsGroupSelectMode] = useState(false);
+  const {
+    characters,
+    selectedCharacter,
+    isLoading,
+    fetchCharacters,
+    selectCharacter,
+    groupChatCharacters,
+    toggleGroupChatCharacter,
+    startGroupChat,
+    exitGroupChat,
+    isCharacterInGroup,
+  } = useCharacterStore();
+  const { messages, startNewGroupChat } = useChatStore();
 
   // Fetch actual sprite paths from API (hook extracts character name from avatar filename)
   const { getSpritePath } = useCharacterSprites(selectedCharacter?.avatar);
@@ -196,7 +207,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <>
             {/* Sidebar Header */}
             <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--color-border)] safe-top">
-              {selectedCharacter ? (
+              {selectedCharacter && !isGroupSelectMode ? (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -206,19 +217,48 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 >
                   <ChevronLeft size={20} />
                 </Button>
+              ) : isGroupSelectMode ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsGroupSelectMode(false);
+                    exitGroupChat();
+                  }}
+                  className="p-2 -ml-2"
+                  aria-label="Cancel group selection"
+                >
+                  <X size={20} />
+                </Button>
               ) : (
                 <div className="w-9" />
               )}
-              <h2 className="font-semibold text-[var(--color-text-primary)]">Characters</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="lg:hidden p-2 -mr-2"
-                aria-label="Close sidebar"
-              >
-                <X size={20} />
-              </Button>
+              <h2 className="font-semibold text-[var(--color-text-primary)]">
+                {isGroupSelectMode ? `Group Chat (${groupChatCharacters.length})` : 'Characters'}
+              </h2>
+              <div className="flex items-center gap-1">
+                {!isGroupSelectMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsGroupSelectMode(true)}
+                    className="p-2"
+                    aria-label="Start group chat"
+                    title="Group Chat"
+                  >
+                    <UserPlus size={20} />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="lg:hidden p-2 -mr-2"
+                  aria-label="Close sidebar"
+                >
+                  <X size={20} />
+                </Button>
+              </div>
             </div>
 
             {/* Search */}
@@ -251,48 +291,93 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
               ) : (
                 <ul className="py-2">
-                  {characters.map((character) => (
-                    <li key={character.avatar}>
-                      <button
-                        onClick={() => handleCharacterSelect(character.avatar)}
-                        className={`
-                          w-full flex items-center gap-3 px-4 py-3
-                          transition-colors
-                          ${
-                            selectedCharacter?.avatar === character.avatar
-                              ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
-                              : 'hover:bg-[var(--color-bg-tertiary)]'
-                          }
-                        `}
-                      >
-                        <Avatar src={getThumbnailUrl(character.avatar)} alt={character.name} size="md" />
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
-                            {character.name}
-                          </p>
-                          {character.description && (
-                            <p className="text-xs text-[var(--color-text-secondary)] truncate">
-                              {character.description}
-                            </p>
+                  {characters.map((character) => {
+                    const isInGroup = isCharacterInGroup(character.avatar);
+                    return (
+                      <li key={character.avatar}>
+                        <button
+                          onClick={() => {
+                            if (isGroupSelectMode) {
+                              toggleGroupChatCharacter(character.avatar);
+                            } else {
+                              handleCharacterSelect(character.avatar);
+                            }
+                          }}
+                          className={`
+                            w-full flex items-center gap-3 px-4 py-3
+                            transition-colors
+                            ${
+                              isGroupSelectMode && isInGroup
+                                ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
+                                : selectedCharacter?.avatar === character.avatar && !isGroupSelectMode
+                                  ? 'bg-[var(--color-primary)]/20 border-l-2 border-[var(--color-primary)]'
+                                  : 'hover:bg-[var(--color-bg-tertiary)]'
+                            }
+                          `}
+                        >
+                          {/* Checkbox for group select mode */}
+                          {isGroupSelectMode && (
+                            <div
+                              className={`
+                                w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
+                                ${
+                                  isInGroup
+                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)]'
+                                    : 'border-[var(--color-text-secondary)]'
+                                }
+                              `}
+                            >
+                              {isInGroup && <Check size={14} className="text-white" />}
+                            </div>
                           )}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
+                          <Avatar src={getThumbnailUrl(character.avatar)} alt={character.name} size="md" />
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                              {character.name}
+                            </p>
+                            {character.description && (
+                              <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                                {character.description}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
 
-            {/* New Character Button */}
+            {/* Footer Buttons */}
             <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <Plus size={18} className="mr-2" />
-                New Character
-              </Button>
+              {isGroupSelectMode ? (
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => {
+                    if (groupChatCharacters.length >= 2) {
+                      startGroupChat();
+                      startNewGroupChat(groupChatCharacters);
+                      setIsGroupSelectMode(false);
+                      onClose();
+                    }
+                  }}
+                  disabled={groupChatCharacters.length < 2}
+                >
+                  <Users size={18} className="mr-2" />
+                  Start Group Chat ({groupChatCharacters.length}/2+)
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  <Plus size={18} className="mr-2" />
+                  New Character
+                </Button>
+              )}
             </div>
           </>
         )}

@@ -11,6 +11,8 @@ interface ChatMessage {
   content: string;
   timestamp: number;
   emotion?: Emotion | null;
+  // For group chat - track which character's avatar to use
+  characterAvatar?: string;
 }
 
 interface ChatFile {
@@ -31,8 +33,10 @@ interface ChatState {
   fetchChatFiles: (avatarUrl: string) => Promise<void>;
   loadChat: (avatarUrl: string, fileName: string) => Promise<void>;
   startNewChat: (character: CharacterInfo) => Promise<void>;
+  startNewGroupChat: (characters: CharacterInfo[]) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
   sendMessage: (content: string, character: CharacterInfo) => Promise<void>;
+  sendGroupMessage: (content: string, characters: CharacterInfo[]) => Promise<void>;
   editMessageAndRegenerate: (messageId: string, newContent: string, character: CharacterInfo) => Promise<void>;
   clearChat: () => void;
 }
@@ -183,6 +187,58 @@ Choose the emotion that best matches how ${character.name} would feel based on t
   return context;
 }
 
+// Build conversation context for group chat AI
+function buildGroupConversationContext(
+  messages: ChatMessage[],
+  characters: CharacterInfo[],
+  currentCharacter: CharacterInfo
+): { role: 'user' | 'assistant' | 'system'; content: string }[] {
+  const context: { role: 'user' | 'assistant' | 'system'; content: string }[] = [];
+
+  // Build character descriptions for all participants
+  const characterDescriptions = characters.map((char) => {
+    const details = [
+      char.description && `Description: ${char.description}`,
+      char.personality && `Personality: ${char.personality}`,
+    ].filter(Boolean).join(' ');
+    return `- ${char.name}: ${details || 'A character in the conversation'}`;
+  }).join('\n');
+
+  // System prompt for group chat
+  const systemPrompt = `This is a group chat with multiple characters. You are playing ${currentCharacter.name}.
+
+Characters in this conversation:
+${characterDescriptions}
+
+${currentCharacter.scenario ? `Current scenario: ${currentCharacter.scenario}\n` : ''}
+IMPORTANT:
+- Stay in character as ${currentCharacter.name}
+- React naturally to what other characters and the user say
+- Begin your response with an emotion tag: [emotion:TAG]
+- Available emotions: neutral, joy, sadness, anger, surprise, fear, love, excitement, confusion, embarrassment, curiosity, amusement
+- You may interact with or respond to other characters, not just the user`;
+
+  context.push({ role: 'system', content: systemPrompt });
+
+  // Add conversation history with character names for context
+  const recentMessages = messages.slice(-30); // More context for group chats
+  for (const msg of recentMessages) {
+    if (msg.isSystem) continue;
+
+    // For group chats, include the speaker's name in the content
+    const contentWithName = msg.isUser
+      ? msg.content
+      : `[${msg.name}]: ${msg.content}`;
+
+    context.push({
+      role: msg.isUser ? 'user' : 'assistant',
+      content: contentWithName,
+    });
+  }
+
+  return context;
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   chatFiles: [],
@@ -247,11 +303,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isSystem: false,
         content: character.first_mes,
         timestamp: Date.now(),
+        characterAvatar: character.avatar,
       });
     }
 
     const fileName = await api.createChat(character.name);
     console.log('[Chat] Starting new chat, fileName:', fileName);
+    set({
+      messages,
+      currentChatFile: fileName,
+      error: null,
+    });
+  },
+
+  startNewGroupChat: async (characters: CharacterInfo[]) => {
+    const messages: ChatMessage[] = [];
+
+    // Add a system message about the group chat
+    messages.push({
+      id: generateId(),
+      name: 'System',
+      isUser: false,
+      isSystem: true,
+      content: `Group chat started with ${characters.map(c => c.name).join(', ')}`,
+      timestamp: Date.now(),
+    });
+
+    // Add first messages from each character that has one
+    for (const character of characters) {
+      if (character.first_mes) {
+        messages.push({
+          id: generateId(),
+          name: character.name,
+          isUser: false,
+          isSystem: false,
+          content: character.first_mes,
+          timestamp: Date.now() + characters.indexOf(character), // Slight offset for ordering
+          characterAvatar: character.avatar,
+        });
+      }
+    }
+
+    // Create chat file with combined character names
+    const groupName = `Group_${characters.map(c => c.name).join('_')}`;
+    const fileName = await api.createChat(groupName);
+    console.log('[Chat] Starting new group chat, fileName:', fileName);
     set({
       messages,
       currentChatFile: fileName,
@@ -395,6 +491,126 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to send message' });
+    } finally {
+      set({ isSending: false });
+    }
+  },
+
+  sendGroupMessage: async (content: string, characters: CharacterInfo[]) => {
+    const { addMessage } = get();
+
+    // Add user message
+    addMessage({
+      name: 'You',
+      isUser: true,
+      isSystem: false,
+      content,
+      timestamp: Date.now(),
+    });
+
+    set({ isSending: true, error: null });
+
+    try {
+      // Get AI provider settings
+      const { activeProvider, activeModel, secrets } = useSettingsStore.getState();
+
+      let finalProvider = activeProvider;
+      let finalModel = activeModel;
+
+      // Auto-switch provider if needed
+      if (!activeProvider || activeProvider === 'openai') {
+        const hasOpenAI = Array.isArray(secrets['api_key_openai']) && secrets['api_key_openai'].length > 0;
+        const hasClaude = Array.isArray(secrets['api_key_claude']) && secrets['api_key_claude'].length > 0;
+
+        if (!hasOpenAI && hasClaude) {
+          finalProvider = 'claude';
+          finalModel = 'claude-sonnet-4-20250514';
+          useSettingsStore.setState({ activeProvider: finalProvider, activeModel: finalModel });
+        }
+      }
+
+      // Generate response from each character in sequence
+      for (const character of characters) {
+        const updatedMessages = get().messages;
+        const context = buildGroupConversationContext(updatedMessages, characters, character);
+
+        console.log(`[GroupChat] Generating response for ${character.name}`);
+
+        const stream = await api.generateMessage(context, character.name, finalProvider, finalModel);
+
+        if (stream) {
+          // Add AI message placeholder for this character
+          const aiMessageId = generateId();
+          set((state) => ({
+            messages: [
+              ...state.messages,
+              {
+                id: aiMessageId,
+                name: character.name,
+                isUser: false,
+                isSystem: false,
+                content: '',
+                timestamp: Date.now(),
+                characterAvatar: character.avatar,
+              },
+            ],
+          }));
+
+          // Stream the response
+          let responseText = '';
+          for await (const token of parseSSEStream(stream)) {
+            responseText += token;
+            set((state) => ({
+              messages: state.messages.map((msg) =>
+                msg.id === aiMessageId ? { ...msg, content: responseText } : msg
+              ),
+            }));
+          }
+
+          // Parse emotion and strip tag
+          const emotion = parseEmotion(responseText);
+          const cleanedContent = stripEmotionTag(responseText);
+
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, content: cleanedContent, emotion }
+                : msg
+            ),
+          }));
+        }
+      }
+
+      // Save group chat
+      const { currentChatFile } = get();
+      if (currentChatFile) {
+        const allMessages = get().messages;
+        const chatData = [
+          {
+            user_name: 'You',
+            character_name: characters.map(c => c.name).join(', '),
+            create_date: new Date().toISOString(),
+            is_group_chat: true,
+          },
+          ...allMessages.map((msg) => ({
+            name: msg.name,
+            is_user: msg.isUser,
+            is_system: msg.isSystem,
+            mes: msg.content,
+            send_date: msg.timestamp,
+            character_avatar: msg.characterAvatar,
+          })),
+        ];
+
+        try {
+          // Use first character's avatar for saving (group chats need special handling)
+          await api.saveChat(characters[0].avatar, currentChatFile, chatData);
+        } catch (err) {
+          console.error('[GroupChat] Failed to save:', err);
+        }
+      }
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to send group message' });
     } finally {
       set({ isSending: false });
     }

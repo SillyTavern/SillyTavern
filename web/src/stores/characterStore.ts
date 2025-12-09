@@ -4,6 +4,9 @@ import { api, type CharacterInfo, type CharacterCreateData, type CharacterEditDa
 interface CharacterState {
   characters: CharacterInfo[];
   selectedCharacter: CharacterInfo | null;
+  // Group chat support
+  groupChatCharacters: CharacterInfo[];
+  isGroupChatMode: boolean;
   isLoading: boolean;
   isCreating: boolean;
   isEditing: boolean;
@@ -17,11 +20,18 @@ interface CharacterState {
   deleteCharacter: (avatar: string) => Promise<boolean>;
   clearSelection: () => void;
   clearError: () => void;
+  // Group chat actions
+  toggleGroupChatCharacter: (avatar: string) => Promise<void>;
+  startGroupChat: () => void;
+  exitGroupChat: () => void;
+  isCharacterInGroup: (avatar: string) => boolean;
 }
 
 export const useCharacterStore = create<CharacterState>((set, get) => ({
   characters: [],
   selectedCharacter: null,
+  groupChatCharacters: [],
+  isGroupChatMode: false,
   isLoading: false,
   isCreating: false,
   isEditing: false,
@@ -137,4 +147,58 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  // Group chat actions
+  toggleGroupChatCharacter: async (avatar: string) => {
+    const { characters, groupChatCharacters } = get();
+    const isInGroup = groupChatCharacters.some((c) => c.avatar === avatar);
+
+    if (isInGroup) {
+      // Remove from group
+      set({
+        groupChatCharacters: groupChatCharacters.filter((c) => c.avatar !== avatar),
+      });
+    } else {
+      // Add to group - fetch full character data if needed
+      let character = characters.find((c) => c.avatar === avatar);
+      if (!character) return;
+
+      if (!character.first_mes) {
+        try {
+          const fullCharacter = await api.getCharacter(avatar);
+          character = { ...character, ...fullCharacter };
+        } catch (error) {
+          set({ error: error instanceof Error ? error.message : 'Failed to load character' });
+          return;
+        }
+      }
+
+      set({
+        groupChatCharacters: [...groupChatCharacters, character],
+      });
+    }
+  },
+
+  startGroupChat: () => {
+    const { groupChatCharacters } = get();
+    if (groupChatCharacters.length < 2) {
+      set({ error: 'Select at least 2 characters for group chat' });
+      return;
+    }
+    set({
+      isGroupChatMode: true,
+      selectedCharacter: null, // Clear single character selection
+    });
+  },
+
+  exitGroupChat: () => {
+    set({
+      isGroupChatMode: false,
+      groupChatCharacters: [],
+    });
+  },
+
+  isCharacterInGroup: (avatar: string) => {
+    return get().groupChatCharacters.some((c) => c.avatar === avatar);
+  },
 }));

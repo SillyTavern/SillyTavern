@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Users } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from './ChatMessage';
@@ -12,8 +12,8 @@ import {
 } from '../../utils/emotions';
 
 export function ChatView() {
-  const { selectedCharacter } = useCharacterStore();
-  const { messages, isSending, error, sendMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat, editMessageAndRegenerate } = useChatStore();
+  const { selectedCharacter, isGroupChatMode, groupChatCharacters, exitGroupChat } = useCharacterStore();
+  const { messages, isSending, error, sendMessage, sendGroupMessage, startNewChat, fetchChatFiles, loadChat, chatFiles, clearChat, editMessageAndRegenerate } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCharacterRef = useRef<string | null>(null);
   // Track failed expression images to avoid infinite retry loops
@@ -37,6 +37,10 @@ export function ChatView() {
 
   const getAvatarUrl = useCallback(
     (avatar: string, emotion?: Emotion | null) => {
+      // For group chat, use default avatar URL directly
+      if (isGroupChatMode) {
+        return getDefaultAvatarUrl(avatar);
+      }
       // Try to use actual sprite path from API first
       if (emotion) {
         const spritePath = getSpritePath(emotion);
@@ -47,7 +51,7 @@ export function ChatView() {
       // Fall back to thumbnail for default/neutral
       return getExpressionThumbnailUrl(avatar, emotion ?? null);
     },
-    [getSpritePath]
+    [getSpritePath, isGroupChatMode]
   );
 
   // Get the full image URL using actual sprite paths from API
@@ -116,13 +120,15 @@ export function ChatView() {
   }, [messages]);
 
   const handleSend = (content: string) => {
-    if (selectedCharacter) {
+    if (isGroupChatMode && groupChatCharacters.length >= 2) {
+      sendGroupMessage(content, groupChatCharacters);
+    } else if (selectedCharacter) {
       sendMessage(content, selectedCharacter);
     }
   };
 
-  // No character selected
-  if (!selectedCharacter) {
+  // No character selected and not in group chat mode
+  if (!selectedCharacter && !isGroupChatMode) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
         <MessageSquare size={64} className="text-[var(--color-text-secondary)] mb-4" />
@@ -137,81 +143,129 @@ export function ChatView() {
     );
   }
 
+  // Determine the display name and placeholder for input
+  const displayName = isGroupChatMode
+    ? groupChatCharacters.map((c) => c.name).join(', ')
+    : selectedCharacter?.name ?? '';
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Mobile Character Portrait - visible only on mobile */}
-      <div className="lg:hidden h-[30vh] min-h-[150px] max-h-[250px] relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden">
-        <img
-          key={`${selectedCharacter.avatar}-${latestEmotion ?? 'neutral'}`}
-          src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
-          alt={selectedCharacter.name}
-          className="w-full h-full object-cover object-top transition-opacity duration-300"
-          onLoad={(e) => {
-            console.log('[Expression] Image loaded successfully:', e.currentTarget.src);
-          }}
-          onError={(e) => {
-            // Log detailed error info for debugging
-            console.log('[Expression] Image load FAILED:', {
-              attempted: e.currentTarget.src,
-              emotion: latestEmotion,
-              character: selectedCharacter.avatar,
-            });
-            // Mark this expression as failed so we use fallback next time
-            if (latestEmotion) {
-              const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;
-              setFailedExpressions((prev) => new Set(prev).add(expressionKey));
-            }
-          }}
-        />
-        {/* Gradient overlay for text readability */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
-        {/* Character name and emotion overlay */}
-        <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] drop-shadow-lg">
-            {selectedCharacter.name}
-          </h2>
-          {latestEmotion && (
-            <span className="text-xs px-2 py-1 rounded-full bg-black/30 text-white/80 backdrop-blur-sm capitalize">
-              {latestEmotion}
-            </span>
-          )}
+      {/* Mobile Header - visible only on mobile */}
+      {isGroupChatMode ? (
+        /* Group Chat Header */
+        <div className="lg:hidden h-20 relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center">
+              <Users size={24} className="text-[var(--color-primary)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] truncate">
+                Group Chat
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                {groupChatCharacters.map((c) => c.name).join(', ')}
+              </p>
+            </div>
+            <button
+              onClick={exitGroupChat}
+              className="text-xs px-3 py-1.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
+            >
+              Exit
+            </button>
+          </div>
         </div>
-      </div>
+      ) : selectedCharacter ? (
+        /* Single Character Portrait */
+        <div className="lg:hidden h-[30vh] min-h-[150px] max-h-[250px] relative bg-gradient-to-b from-[var(--color-bg-tertiary)] to-[var(--color-bg-primary)] overflow-hidden">
+          <img
+            key={`${selectedCharacter.avatar}-${latestEmotion ?? 'neutral'}`}
+            src={getFullImageUrl(selectedCharacter.avatar, latestEmotion)}
+            alt={selectedCharacter.name}
+            className="w-full h-full object-cover object-top transition-opacity duration-300"
+            onLoad={(e) => {
+              console.log('[Expression] Image loaded successfully:', e.currentTarget.src);
+            }}
+            onError={(e) => {
+              // Log detailed error info for debugging
+              console.log('[Expression] Image load FAILED:', {
+                attempted: e.currentTarget.src,
+                emotion: latestEmotion,
+                character: selectedCharacter.avatar,
+              });
+              // Mark this expression as failed so we use fallback next time
+              if (latestEmotion) {
+                const expressionKey = `${selectedCharacter.avatar}-${latestEmotion}`;
+                setFailedExpressions((prev) => new Set(prev).add(expressionKey));
+              }
+            }}
+          />
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
+          {/* Character name and emotion overlay */}
+          <div className="absolute bottom-2 left-4 right-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] drop-shadow-lg">
+              {selectedCharacter.name}
+            </h2>
+            {latestEmotion && (
+              <span className="text-xs px-2 py-1 rounded-full bg-black/30 text-white/80 backdrop-blur-sm capitalize">
+                {latestEmotion}
+              </span>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {/* Messages Area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
             <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center mb-4">
-              <MessageSquare size={32} className="text-[var(--color-text-secondary)]" />
+              {isGroupChatMode ? (
+                <Users size={32} className="text-[var(--color-text-secondary)]" />
+              ) : (
+                <MessageSquare size={32} className="text-[var(--color-text-secondary)]" />
+              )}
             </div>
             <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
               Start a conversation
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
-              Send a message to begin chatting with {selectedCharacter.name}
+              {isGroupChatMode
+                ? `Send a message to chat with ${displayName}`
+                : `Send a message to begin chatting with ${displayName}`}
             </p>
           </div>
         ) : (
           <div className="py-4">
-            {messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                name={message.name}
-                content={message.content}
-                isUser={message.isUser}
-                isSystem={message.isSystem}
-                avatar={
-                  message.isUser
-                    ? undefined
-                    : getAvatarUrl(selectedCharacter.avatar, message.emotion)
-                }
-                timestamp={message.timestamp}
-                isEditable={message.id === lastUserMessageId}
-                onEdit={(newContent) => editMessageAndRegenerate(message.id, newContent, selectedCharacter)}
-                disabled={isSending}
-              />
-            ))}
+            {messages.map((message) => {
+              // Get the avatar URL for this message
+              const messageAvatar = message.isUser
+                ? undefined
+                : isGroupChatMode && message.characterAvatar
+                  ? getAvatarUrl(message.characterAvatar, message.emotion)
+                  : selectedCharacter
+                    ? getAvatarUrl(selectedCharacter.avatar, message.emotion)
+                    : undefined;
+
+              return (
+                <ChatMessage
+                  key={message.id}
+                  name={message.name}
+                  content={message.content}
+                  isUser={message.isUser}
+                  isSystem={message.isSystem}
+                  avatar={messageAvatar}
+                  timestamp={message.timestamp}
+                  isEditable={!isGroupChatMode && message.id === lastUserMessageId}
+                  onEdit={(newContent) => {
+                    if (selectedCharacter) {
+                      editMessageAndRegenerate(message.id, newContent, selectedCharacter);
+                    }
+                  }}
+                  disabled={isSending}
+                />
+              );
+            })}
 
             {/* Error display */}
             {error && (
@@ -248,7 +302,7 @@ export function ChatView() {
       <ChatInput
         onSend={handleSend}
         disabled={isSending}
-        placeholder={`Message ${selectedCharacter.name}...`}
+        placeholder={isGroupChatMode ? `Message the group...` : `Message ${displayName}...`}
       />
     </div>
   );
