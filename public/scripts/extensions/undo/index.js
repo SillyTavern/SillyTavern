@@ -65,7 +65,7 @@ class ChatHistory {
         newChatData ??= nextChat;
         if (typeof(newChatData) !== 'object') {
             //The diffs cannot be based upon nothing.
-            throw new Error(`Cannot step! Offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the newChatData doesn't exist.`);
+            throw new Error(t`Cannot step! Offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the newChatData doesn't exist.`);
         }
 
 
@@ -99,7 +99,7 @@ class ChatHistory {
      */
     updateOffset(newChatData, offset = 1, fullChat = this.indexChat()) {
         if (typeof(fullChat) !== 'object') {
-            throw new Error(`The chat offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the fullChat it was created with does not exist.`);
+            throw new Error(t`The chat offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the fullChat it was created with does not exist.`);
         }
 
         //Create the offsetChat from by updating the fullChat with the diff.
@@ -169,7 +169,7 @@ class ChatHistory {
         this.stepIndex(1, currentChat);
 
         showToast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
-        console.debug(`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
+        console.debug(t`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
     /**
@@ -205,13 +205,13 @@ class ChatHistory {
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
             toastr.clear(); //Remove the previous toast to prevent buildup.
-            toastr.success(`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`);
+            toastr.success(t`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`);
 
             saveChatDebounced();
         }
         else {
             toastr.clear();
-            toastr.error(`Chat ${index + 1}/${this.chatHistory.length} does not exist!`);
+            toastr.error(t`Chat ${index + 1}/${this.chatHistory.length} does not exist!`);
         }
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
