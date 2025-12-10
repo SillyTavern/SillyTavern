@@ -643,7 +643,7 @@ export async function pingServer() {
     try {
         const result = await fetch('api/ping', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!result.ok) {
@@ -5872,7 +5872,7 @@ export function extractMessageFromData(data, activeApi = null) {
             case 'koboldhorde':
                 return data.text;
             case 'textgenerationwebui':
-                return data.choices?.[0]?.text ?? data.choices?.[0]?.message?.content ?? data.content ?? data.response ?? '';
+                return data.choices?.[0]?.text ?? data.choices?.[0]?.message?.content ?? data.content ?? data.response ?? data[0]?.content ?? '';
             case 'novel':
                 return data.output;
             case 'openai':
@@ -5959,6 +5959,22 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
+    if (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.LLAMACPP) {
+        if (!Array.isArray(data)) {
+            return swipes;
+        }
+
+        const multiSwipeCount = data.length - 1;
+        if (multiSwipeCount <= 0) {
+            return swipes;
+        }
+
+        for (let i = 1; i < data.length; i++) {
+            const text = data?.[i]?.content ?? '';
+            swipes.push(text);
+        }
+    }
+
     if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [textgen_types.MANCER, textgen_types.VLLM, textgen_types.APHRODITE, textgen_types.TABBY, textgen_types.INFERMATICAI].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
@@ -5972,18 +5988,18 @@ function extractMultiSwipes(data, type) {
 
         for (let i = 1; i < data.choices.length; i++) {
             const text = data?.choices[i]?.message?.content ?? data?.choices[i]?.text ?? '';
-            const cleanedText = cleanUpMessage({
-                getMessage: text,
-                isImpersonate: false,
-                isContinue: false,
-                displayIncompleteSentences: false,
-            });
-
-            swipes.push(cleanedText);
+            swipes.push(text);
         }
     }
 
-    return swipes;
+    const cleanedSwipes = swipes.map(text => cleanUpMessage({
+        getMessage: text,
+        isImpersonate: false,
+        isContinue: false,
+        displayIncompleteSentences: false,
+    }));
+
+    return cleanedSwipes;
 }
 
 /**

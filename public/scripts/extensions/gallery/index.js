@@ -159,7 +159,7 @@ async function getGalleryFolders() {
     try {
         const response = await fetch('/api/images/folders', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {

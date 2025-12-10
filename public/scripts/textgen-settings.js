@@ -1284,11 +1284,15 @@ export async function generateTextGenWithStreaming(generate_data, signal) {
             if (data?.choices?.[0]?.index > 0) {
                 const swipeIndex = data.choices[0].index - 1;
                 swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+            } else if (data?.index > 0) {
+                // llama.cpp streaming swipe
+                const swipeIndex = data.index - 1;
+                swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.content;
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
                 logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs || data?.completion_probabilities);
-                state.reasoning += data?.choices?.[0]?.reasoning ?? '';
+                state.reasoning += data?.choices?.[0]?.reasoning ?? data?.choices?.[0]?.thinking ?? '';
             }
 
             yield { text, swipes, logprobs, toolCalls, state };
@@ -1724,7 +1728,7 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
         params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
 
-    if (settings.type === TABBY) {
+    if (settings.type === TABBY || settings.type === LLAMACPP) {
         params.n = canMultiSwipe ? settings.n : 1;
     }
 

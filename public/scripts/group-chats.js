@@ -752,7 +752,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 async function getGroups() {
     const response = await fetch('/api/groups/all', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (response.ok) {

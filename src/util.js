@@ -8,6 +8,7 @@ import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import readline from 'node:readline';
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
@@ -19,6 +20,7 @@ import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
 import { serverDirectory } from './server-directory.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
 
 /**
@@ -1461,6 +1463,84 @@ export function flattenSchema(schema, api) {
     const flattenedSchema = resolve(schemaCopy);
     delete flattenedSchema.$schema;
     return flattenedSchema;
+}
+
+/**
+ * Writes to a file, creating it's parent directories if needed.
+ * @param {string} filePath
+ * @param {string} data
+ */
+export function tryWriteFileSync(filePath, data) {
+    const directory = path.dirname(filePath);
+    //Ensure the directory exists.
+    if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+    }
+    writeFileAtomicSync(filePath, data, 'utf8');
+}
+
+/**
+* Attempts to read a file as utf8.
+* @param {string} filePath
+* @returns {string|null}
+*/
+export function tryReadFileSync(filePath) {
+    try {
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (error) {
+        console.error(`Error reading ${filePath}: ${error.message}`);
+    }
+    return null;
+}
+
+/**
+* Attempts to delete a file.
+* @param {string} filePath Target file.
+* @returns {boolean} Returns true if the file was found and deleted.
+*/
+export function tryDeleteFile(filePath) {
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.info(`Deleted file: ${filePath}`);
+        return true;
+    } else {
+        console.error(`File not found '${filePath}'`);
+        return false;
+    }
+}
+
+/**
+ * Reads the first line of a file asynchronously.
+ * @param {string} filePath Path to the file
+ * @returns {Promise<string>} The first line of the file
+ */
+export function readFirstLine(filePath) {
+    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream });
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        rl.on('line', line => {
+            resolved = true;
+            rl.close();
+            stream.close();
+            resolve(line);
+        });
+
+        rl.on('error', error => {
+            resolved = true;
+            reject(error);
+        });
+
+        // Handle empty files
+        stream.on('end', () => {
+            if (!resolved) {
+                resolved = true;
+                resolve('');
+            }
+        });
+    });
 }
 
 /**

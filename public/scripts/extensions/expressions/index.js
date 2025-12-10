@@ -1414,7 +1414,7 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
             if (extension_settings.expressions.api == EXPRESSION_API.local) {
                 const apiResult = await fetch('/api/extra/classify/labels', {
                     method: 'POST',
-                    headers: getRequestHeaders(),
+                    headers: getRequestHeaders({ omitContentType: true }),
                 });
 
                 if (apiResult.ok) {

@@ -101,6 +101,8 @@ export function extractReasoningFromData(data, {
             switch (textGenType ?? textgenerationwebui_settings.type) {
                 case textgen_types.OPENROUTER:
                     return data?.choices?.[0]?.reasoning ?? '';
+                case textgen_types.OLLAMA:
+                    return data?.thinking ?? '';
             }
             break;
 
