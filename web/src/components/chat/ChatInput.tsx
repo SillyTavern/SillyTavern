@@ -43,7 +43,7 @@ export function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 safe-bottom"
+      className="border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 pb-4 input-safe-bottom"
     >
       <div className="flex items-end gap-2">
         {/* Attachment Button */}

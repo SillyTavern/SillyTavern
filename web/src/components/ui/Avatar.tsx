@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 
 interface AvatarProps {
@@ -10,6 +10,11 @@ interface AvatarProps {
 
 export function Avatar({ src, alt, size = 'md', className = '' }: AvatarProps) {
   const [error, setError] = useState(false);
+
+  // Reset error state when src changes
+  useEffect(() => {
+    setError(false);
+  }, [src]);
 
   const sizes = {
     sm: 'w-8 h-8',

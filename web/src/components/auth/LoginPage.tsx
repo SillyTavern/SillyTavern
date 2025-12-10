@@ -33,30 +33,33 @@ export function LoginPage() {
     checkRegistration();
   }, [fetchUsers, checkRegistration]);
 
-  const handleUserSelect = (handle: string) => {
-    setSelectedUser(handle);
-    setPassword('');
-    setShowPasswordField(true);
-    clearError();
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
 
-    const success = await login(selectedUser, password || undefined);
+    const success = await login(selectedUser, password || '');
     if (success) {
       navigate('/');
     }
   };
 
-  const handleQuickLogin = async (handle: string) => {
-    const success = await login(handle);
+  const handleUserClick = async (user: typeof availableUsers[0]) => {
+    // If user has a password, show the password form
+    if (user.password) {
+      setSelectedUser(user.handle);
+      setPassword('');
+      setShowPasswordField(true);
+      clearError();
+      return;
+    }
+
+    // No password required, try to log in directly
+    const success = await login(user.handle, '');
     if (success) {
       navigate('/');
     } else {
-      // If quick login fails, show password field
-      setSelectedUser(handle);
+      // If login fails, show password field anyway
+      setSelectedUser(user.handle);
       setShowPasswordField(true);
     }
   };
@@ -98,11 +101,7 @@ export function LoginPage() {
                 {availableUsers.map((user) => (
                   <button
                     key={user.handle}
-                    onClick={() =>
-                      showPasswordField
-                        ? handleUserSelect(user.handle)
-                        : handleQuickLogin(user.handle)
-                    }
+                    onClick={() => handleUserClick(user)}
                     className={`
                       flex flex-col items-center p-4 rounded-lg transition-all
                       ${
@@ -113,7 +112,7 @@ export function LoginPage() {
                     `}
                   >
                     <Avatar
-                      src={user.avatar ? `/api/users/avatars/${user.avatar}` : undefined}
+                      src={user.avatar || undefined}
                       size="lg"
                       className="mb-2"
                     />
