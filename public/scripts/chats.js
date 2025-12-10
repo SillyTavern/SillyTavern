@@ -2398,12 +2398,12 @@ export function initChatUtilities() {
 
         // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
         const dataTransfer = new DataTransfer();
-        for (let i = 0; i < files.length; i++) {
-            dataTransfer.items.add(files[i]);
+        for (const file of fileInput.files) {
+            dataTransfer.items.add(file);
         }
 
         // Preserve existing non-duplicate files in the input
-        for (const file of fileInput.files) {
+        for (const file of files) {
             if (!Array.from(dataTransfer.files).some(f => isSameFile(f, file))) {
                 dataTransfer.items.add(file);
             }
