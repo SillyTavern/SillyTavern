@@ -1,4 +1,4 @@
-import { chatHistory, defaultMaxChatLength, defaultMaxUndoSnapshots, defaultSaveDebounceDuration, extensionName, snapshotEvents } from './index.js';
+import { chatHistory, defaultMaxChatLength, defaultMaxUndoSnapshots, defaultSaveDebounceDuration, defaultShowToasts, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
 import { debounce, isInputElementInFocus } from '/scripts/utils.js';
@@ -32,10 +32,11 @@ export async function addSettingsToggles() {
     //Setting that toggles menuVisibility and saveVisibility.
     const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
     const toggleSaveElement = new ToggleInput('show_save_button', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
+    const toggleToastsElement = new ToggleInput('show_toasts', 'Show toasts on Undo/Redo.', { defaultValue: defaultShowToasts }).create();
 
     //Clicks all the toggles.
     const toggleExtension = (_, enabled) => {
-        const buttons = [`#${extensionName}_show_menu_buttons`, `#${extensionName}_show_save_button`, `#${extensionName}_toggle_ctrl_z`];
+        const buttons = [`#${extensionName}_show_menu_buttons`, `#${extensionName}_show_save_button`, `#${extensionName}_toggle_ctrl_z`, `#${extensionName}_show_toasts`];
         for (const snapShotEvent of snapshotEvents) {
             buttons.push(`#${extensionName}_${snapShotEvent}`);
         }
@@ -46,7 +47,7 @@ export async function addSettingsToggles() {
 
     //When any setting is toggled, show the extension as enabled.
     eventSource.on(`extension_${extensionName}`, (setting, value) => {
-        if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z'].includes(setting) || setting.includes('message_')) && value) {
+        if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z', 'show_toasts'].includes(setting) || setting.includes('message_')) && value) {
             // @ts-ignore
             $(`#${extensionName}_enable_extension`)[0].checked = true;
             extension_settings[extensionName].enable_extension = true;
@@ -81,6 +82,7 @@ export async function addSettingsToggles() {
     undoToggles.append(enableExtension);
     undoToggles.append(toggleMenuElement);
     undoToggles.append(toggleSaveElement);
+    undoToggles.append(toggleToastsElement);
     undoToggles.append(toggleUndoHotkeyElement);
 
 }

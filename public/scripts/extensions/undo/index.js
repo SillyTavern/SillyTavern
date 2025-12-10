@@ -10,6 +10,7 @@ export const extensionName = 'undo';
 export const defaultMaxUndoSnapshots = 10000;
 export const defaultMaxChatLength = 500;
 export const defaultSaveDebounceDuration = debounce_timeout.short;
+export const defaultShowToasts = true;
 
 class ChatHistory {
     /**
@@ -178,6 +179,7 @@ class ChatHistory {
      */
     async loadChatSnapshot(offset) {
         const t1 = performance.now();
+        const showUndoToast = (extension_settings[extensionName]?.show_toasts ?? defaultShowToasts);
         const index = this.chatHistoryIndex + offset;
         const maximumChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
@@ -203,12 +205,12 @@ class ChatHistory {
             if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
-            toastr.success(t`Snapshot ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`, t`Success.`, { preventDuplicates: true });
+            showUndoToast && toastr.success(t`Snapshot ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`, t`Success.`, { preventDuplicates: true });
 
             saveChatDebounced();
         }
         else {
-            toastr.error(t`Snapshot ${index + 1}/${this.chatHistory.length} does not exist!`, t`The snapshot cannot be loaded.`, { preventDuplicates: true });
+            showUndoToast && toastr.error(t`Snapshot ${index + 1}/${this.chatHistory.length} does not exist!`, t`The snapshot cannot be loaded.`, { preventDuplicates: true });
         }
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
