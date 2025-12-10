@@ -1520,24 +1520,31 @@ export function tryDeleteFile(filePath) {
 }
 
 /**
-* Reads a file until a 'stack' matches or the maxChunks limit.
-* This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
-* This is only optimized to check the beginning the file.
-* @param {string} filePath - Path to the file to read
-* @param {Array} match - Location of target object.
-* @param {number} maxChunks - Maximum number of chunks to read (default: 4)
-* @param {number} chunkSize - Size of each chunk in bytes (default: 16KB)
-* @returns {Promise<Object|undefined>} - The object match or undefined
-*/
+ * Reads a file until a 'stack' matches or the maxChunks limit.
+ * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
+ * This is only optimized to check the beginning the file.
+ * If the json files has newlines (jsonl), only the first line will be read.
+ * I cannot use the steam-json's jsonl parser because it reads the entire line.
+ * https://github.com/uhop/stream-json/blob/07f034a6/src/jsonl/parser.js#L63
+ * @param {string} filePath - Path to the file to read
+ * @param {Array} match - Location of target object.
+ * @param {number} maxChunks - Maximum number of chunks to read (default: 4)
+ * @param {number} chunkSize - Size of each chunk in bytes (default: 16KB)
+ * @returns {Promise<Object|undefined>} - The object match or undefined
+ */
 export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4, chunkSize = 16 * 1024) {
     return new Promise((resolve, reject) => {
         let pipeline = null;
+        let readStream = null;
         let resolved = false;
         let chunksRead = 0;
 
         const cleanup = () => {
             if (!resolved) {
                 resolved = true;
+                if (readStream) {
+                    readStream.unpipe();
+                }
                 if (pipeline) {
                     pipeline.destroy();
                 }
@@ -1552,13 +1559,19 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
         };
         try {
 
-            const readStream = fs.createReadStream(filePath,{ highWaterMark: chunkSize });
+            readStream = fs.createReadStream(filePath,{ highWaterMark: chunkSize });
 
             // Track chunks read
             readStream.on('data', (chunk) => {
                 chunksRead++;
                 if (chunksRead >= maxChunks && !resolved) {
                     resolveAndCleanup(null); // Chunk limit reached
+                    return;
+                }
+                // If a newline is found, stop and return null.
+                if (chunk.includes('\n') && !resolved) {
+                    resolveAndCleanup(null);
+                    return;
                 }
             });
             pipeline = chain([

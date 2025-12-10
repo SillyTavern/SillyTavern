@@ -319,9 +319,17 @@ async function checkChatIntegrity(filePath, integritySlug) {
     if (!fs.existsSync(filePath)) {
         return true;
     }
-    // Parse the first part of the file  to find it's integrity slug.
-    const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
-    const chatIntegrity = data?.value;
+    let chatIntegrity;
+    try {
+        // Parse the first part of the file  to find it's integrity slug.
+        const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
+        chatIntegrity = data?.value;
+    } catch (err) {
+        if (err.message === 'Parser cannot parse input: unexpected characters') {
+            console.debug(`${filePath} Is not valid json.`);
+        }
+        throw new Error(err);
+    }
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
