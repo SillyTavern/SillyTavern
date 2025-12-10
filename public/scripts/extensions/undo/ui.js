@@ -40,7 +40,7 @@ export async function addSettingsToggles() {
             buttons.push(`#${extensionName}_${snapShotEvent}`);
         }
         // @ts-ignore
-        $(buttons.join(', ')).filter(function() { return this.checked == enabled; }).trigger('click');
+        $(buttons.join(', ')).filter(function() { return this.checked !== enabled; }).trigger('click');
         //Needed? chatHistory.chatHistory.length = 0
     };
 
@@ -48,12 +48,13 @@ export async function addSettingsToggles() {
     eventSource.on(`extension_${extensionName}`, (setting, value) => {
         if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z'].includes(setting) || setting.includes('message_')) && value) {
             // @ts-ignore
-            $(`#${extensionName}_toggle_extension`)[0].checked = false;
-            extension_settings[extensionName].toggle_extension = false;
+            $(`#${extensionName}_enable_extension`)[0].checked = true;
+            extension_settings[extensionName].enable_extension = true;
+            saveSettingsDebounced();
         }
     });
 
-    const disableExtension = new ToggleInput('toggle_extension', 'Disables the extension.', { defaultValue: false, callback: toggleExtension, runCallbackOnLoad: false }).create();
+    const enableExtension = new ToggleInput('enable_extension', 'Enable the extension.', { defaultValue: true, callback: toggleExtension, runCallbackOnLoad: false }).create();
 
     async function processUndoHotkey(event) {
         if (!isInputElementInFocus()) {
@@ -77,7 +78,7 @@ export async function addSettingsToggles() {
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
-    undoToggles.append(disableExtension);
+    undoToggles.append(enableExtension);
     undoToggles.append(toggleMenuElement);
     undoToggles.append(toggleSaveElement);
     undoToggles.append(toggleUndoHotkeyElement);
