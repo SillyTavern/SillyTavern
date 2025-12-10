@@ -1,4 +1,4 @@
-import { chatHistory, defaultMaxChatLength, defaultMaxHistoryLength, defaultSaveDebounceDuration, extensionName, snapshotEvents } from './index.js';
+import { chatHistory, defaultMaxChatLength, defaultMaxUndoSnapshots, defaultSaveDebounceDuration, extensionName, snapshotEvents } from './index.js';
 import { eventSource, saveSettingsDebounced } from '/script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '/scripts/extensions.js';
 import { debounce, isInputElementInFocus } from '/scripts/utils.js';
@@ -88,12 +88,12 @@ export async function addSettingsToggles() {
 export async function addSettingsSliders() {
     //Creates sliders.
     //MaxChatHistory will apply next time a save occurs.
-    const maxHistoryElement = new RangeInput('max_history', 'Max Undo History.', { defaultValue: defaultMaxHistoryLength }).create();
+    const maxSnapshotsElement = new RangeInput('max_snapshots', 'Max Undo Snapshots', { defaultValue: defaultMaxUndoSnapshots }).create();
     const lengthElement = new RangeInput('max_length', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
-    undoOptions.append(maxHistoryElement);
+    undoOptions.append(maxSnapshotsElement);
     undoOptions.append(lengthElement);
 
 }
