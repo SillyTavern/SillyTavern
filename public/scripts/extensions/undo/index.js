@@ -121,7 +121,7 @@ class ChatHistory {
         this.chatHistoryIndex = 0;
 
         this.chatHistory = [structuredClone(this.chatData)];
-        showToast && toastr.warning(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+        showToast && toastr.warning(t`You now have ${this.chatHistory.length} saved chats.`, t`Success.`, { preventDuplicates: true });
     }
 
     /**
@@ -133,17 +133,16 @@ class ChatHistory {
         const maxChatHistory = extension_settings[extensionName]?.max_history ?? defaultMaxHistoryLength;
         const maxChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
 
-        toastr && toastr.clear();
 
         //Enforce the maximum chat length.
         if (Array.isArray(this.chatData) && this.chatData.length > maxChatLength) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`);
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
         //Max history cannot be less than zero.
         if (0 >= maxChatHistory) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History'`, t`You cannot save the chat because your Max Undo History is set to ${maxChatHistory}. (Check Settings.)`);
+            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo History'`, t`You cannot save the chat because your Max Undo History is set to ${maxChatHistory}. (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
@@ -152,7 +151,7 @@ class ChatHistory {
 
         //Only save changed chats.
         if (lodash.isEqual(this.chatData, previousChat)) {
-            showToast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`);
+            showToast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} saved chats.`, t`Warning.`, { preventDuplicates: true });
             return;
         }
 
@@ -168,7 +167,7 @@ class ChatHistory {
         //Save the chat, and replace the previous chat with a diff.
         this.stepIndex(1, currentChat);
 
-        showToast && toastr.success(t`Success, You now have ${this.chatHistory.length} saved chats.`);
+        showToast && toastr.success(t`You now have ${this.chatHistory.length} saved chats.`, t`Success.`, { preventDuplicates: true });
         console.debug(t`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
@@ -184,7 +183,7 @@ class ChatHistory {
 
         //Don't overwrite chats that are longer than maximumChatLength.
         if (chat.length > maximumChatLength) {
-            toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`);
+            toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
@@ -204,14 +203,12 @@ class ChatHistory {
             if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
-            toastr.clear(); //Remove the previous toast to prevent buildup.
-            toastr.success(t`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`);
+            toastr.success(t`Chat ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`, t`Success.`, { preventDuplicates: true });
 
             saveChatDebounced();
         }
         else {
-            toastr.clear();
-            toastr.error(t`Chat ${index + 1}/${this.chatHistory.length} does not exist!`);
+            toastr.error(t`Chat ${index + 1}/${this.chatHistory.length} does not exist!`, t`The snapshot cannot be loaded.`, { preventDuplicates: true });
         }
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
