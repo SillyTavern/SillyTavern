@@ -1570,7 +1570,7 @@ async function loadSamplers() {
 async function loadHordeSamplers() {
     const result = await fetch('/api/horde/sd-samplers', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1866,7 +1866,7 @@ async function loadFalaiModels() {
 
     const result = await fetch('/api/sd/falai/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1885,7 +1885,7 @@ async function loadXAIModels() {
 async function loadPollinationsModels() {
     const result = await fetch('/api/sd/pollinations/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1903,7 +1903,7 @@ async function loadTogetherAIModels() {
 
     const result = await fetch('/api/sd/together/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1921,7 +1921,7 @@ async function loadChutesModels() {
 
     const result = await fetch('/api/sd/chutes/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1942,7 +1942,7 @@ async function loadElectronHubModels() {
 
     const result = await fetch('/api/sd/electronhub/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     function getModelName(model) {
@@ -1975,7 +1975,7 @@ async function loadNanoGPTModels() {
 
     const result = await fetch('/api/sd/nanogpt/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (result.ok) {
@@ -1988,7 +1988,7 @@ async function loadNanoGPTModels() {
 async function loadHordeModels() {
     const result = await fetch('/api/horde/sd-models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
 
@@ -2122,7 +2122,7 @@ async function loadAimlapiModels() {
 
     const result = await fetch('/api/sd/aimlapi/models', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (!result.ok) {

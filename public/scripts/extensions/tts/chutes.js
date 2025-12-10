@@ -32,7 +32,7 @@ class ChutesTtsProvider {
             </div>
             <div>
                 <label for="chutes_tts_speed">Speed <span id="chutes_tts_speed_output"></span></label>
-                <input type="range" id="chutes_tts_speed" value="1" min="0.25" max="4" step="0.05">
+                <input type="range" id="chutes_tts_speed" value="1" min="0.25" max="3" step="0.05">
             </div>
         </div>`;
         return html;
@@ -54,7 +54,7 @@ class ChutesTtsProvider {
 
     onSettingsChange() {
         this.settings.model = $('#chutes_tts_model').val();
-        this.settings.speed = $('#chutes_tts_speed').val();
+        this.settings.speed = Number($('#chutes_tts_speed').val());
         saveTtsProviderSettings();
     }
 
@@ -82,11 +82,11 @@ class ChutesTtsProvider {
         await this.checkReady();
 
         $('#chutes_tts_model').on('change', () => this.onSettingsChange());
-        $('#chutes_tts_speed').on('input', function () {
-            const value = $(this).val();
+        $('#chutes_tts_speed').on('input', () => {
+            const value = $('#chutes_tts_speed').val();
             $('#chutes_tts_speed_output').text(String(value));
+            this.onSettingsChange();
         });
-        $('#chutes_tts_speed').on('change', () => this.onSettingsChange());
     }
 
     async checkReady() {

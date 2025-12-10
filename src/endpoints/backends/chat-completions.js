@@ -44,6 +44,8 @@ import {
     PROMPT_PROCESSING_TYPE,
     addAssistantPrefix,
     embedOpenRouterMedia,
+    addReasoningContentToToolCalls,
+    cachingSystemPromptForOpenRouterClaude,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -980,6 +982,10 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
+
+        if (/-reasoner/.test(request.body.model)) {
+            addReasoningContentToToolCalls(processedMessages);
+        }
 
         const requestBody = {
             'messages': processedMessages,
@@ -2036,13 +2042,21 @@ router.post('/generate', function (request, response) {
             };
         }
 
+        const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
         const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
         const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         if (Array.isArray(request.body.messages)) {
             embedOpenRouterMedia(request.body.messages);
-            if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
-                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+
+            if (isClaude3or4) {
+                if (enableSystemPromptCache) {
+                    cachingSystemPromptForOpenRouterClaude(request.body.messages, cacheTTL);
+                }
+
+                if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0) {
+                    cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+                }
             }
         }
 

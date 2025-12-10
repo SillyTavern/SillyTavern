@@ -452,6 +452,7 @@ router.post('/chutes/generate-voice', async (request, response) => {
         const requestBody = {
             text: request.body.input,
             voice: request.body.voice || 'af_heart',
+            speed: request.body.speed || 1,
         };
 
         console.debug('Chutes TTS request', requestBody);

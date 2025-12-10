@@ -44,7 +44,8 @@ async function parseOllamaStream(jsonStream, request, response) {
                     break;
                 }
                 const text = json.response || '';
-                const chunk = { choices: [{ text }] };
+                const thinking = json.thinking || '';
+                const chunk = { choices: [{ text, thinking }] };
                 response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                 partialData = '';
             }
