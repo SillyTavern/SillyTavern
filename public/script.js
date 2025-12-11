@@ -9873,7 +9873,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         //Do not save when swiping back from a failed generation.
         if (tree.enabled() && !(source == SWIPE_SOURCE.DELETE || source == SWIPE_SOURCE.BACK)) {
             //Everything after end will be pruned from the tree.
-            let end = chat.length - 1;
+            const end = chat.length - 1;
             //Save the chat to the chatTree.
             await tree.saveChatToTree(chat, { start:0, end: end });
         }
