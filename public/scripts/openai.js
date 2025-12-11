@@ -7,6 +7,7 @@ import { Fuse, DOMPurify } from '../lib.js';
 
 import {
     abortStatusCheck,
+    cancelStatusCheck,
     characters,
     event_types,
     eventSource,
@@ -6349,6 +6350,7 @@ export function initOpenAI() {
     });
 
     $('#chat_completion_source').on('change', function () {
+        cancelStatusCheck('Chat Completion source changed');
         model_list = [];
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();

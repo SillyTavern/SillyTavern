@@ -744,7 +744,7 @@ function initStandaloneMode() {
     }
 }
 
-function cancelStatusCheck(reason = 'Manually cancelled status check') {
+export function cancelStatusCheck(reason = 'Manually cancelled status check') {
     abortStatusCheck?.abort(new AbortReason(reason));
     abortStatusCheck = new AbortController();
     setOnlineStatus('no_connection');
