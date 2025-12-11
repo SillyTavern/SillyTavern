@@ -1333,6 +1333,10 @@ body.hideAllSwipeButtons :is(.swipe_left, .swipe_right),
     /* With display:none, the swipes-counter div wil collapse, shifting the chevron. */
     visibility: hidden;
     /* Interactivity has limited availability https://caniuse.com/?search=interactivity */
+    @supports (interactivity: inert) {
+        interactivity: inert;
+    }
+    pointer-events: none;
 }
 
 .ui-settings {
