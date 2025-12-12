@@ -568,8 +568,8 @@ function setOpenAIMessages(chat) {
         const mediaDisplay = getMediaDisplay(chat[j]);
         const mediaIndex = getMediaIndex(chat[j]);
         const invocations = chat[j]?.extra?.tool_invocations;
-        const thoughtSignatures = chat[j]?.extra?.thoughtSignatures;
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'thoughtSignatures': thoughtSignatures };
+        const thought_signatures = chat[j]?.extra?.thought_signatures;
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'thought_signatures': thought_signatures };
         j++;
     }
 
@@ -2779,7 +2779,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [], thoughtSignatures: {} };
+            const state = { reasoning: '', images: [], thought_signatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2855,7 +2855,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         const parts = data?.candidates?.[0]?.content?.parts || [];
         parts.forEach((part, index) => {
             if (part.thoughtSignature) {
-                state.thoughtSignatures[index] = part.thoughtSignature;
+                state.thought_signatures[index] = part.thoughtSignature;
             }
         });
         return data?.candidates?.[0]?.content?.parts?.filter(x => !x.thought)?.map(x => x.text)?.[0] || '';
@@ -2883,7 +2883,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
         reasoningDetails.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                state.thoughtSignatures[detail.index ?? 0] = detail.data;
+                state.thought_signatures[detail.index ?? 0] = detail.data;
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
@@ -3125,7 +3125,7 @@ class Message {
     /** @type {object} */
     tool_call = null;
     /** @type {Object.<number, string>} */
-    thoughtSignatures = null;
+    thought_signatures = null;
 
     /**
      * @constructor
@@ -3381,8 +3381,8 @@ class Message {
     static async fromPromptAsync(prompt) {
         const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
         // Preserve thought signatures for models that support multi-turn context
-        if (prompt.thoughtSignatures) {
-            message.thoughtSignatures = prompt.thoughtSignatures;
+        if (prompt.thought_signatures) {
+            message.thought_signatures = prompt.thought_signatures;
         }
         return message;
     }
@@ -3432,7 +3432,7 @@ class MessageCollection {
                     ...(message.name && { name: message.name }),
                     ...(message.tool_calls && { tool_calls: message.tool_calls }),
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
-                    ...(message.thoughtSignatures && { thoughtSignatures: message.thoughtSignatures }),
+                    ...(message.thought_signatures && { thought_signatures: message.thought_signatures }),
                 });
             }
             return acc;

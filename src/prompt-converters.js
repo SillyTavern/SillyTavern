@@ -552,7 +552,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         // Inject stored thought signatures or fall back to bypass magic for Gemini 3
         if (/gemini-3/.test(model) || /gemini-2\.5/.test(model)) {
             const skipSignatureMagic = 'skip_thought_signature_validator';
-            const storedSignatures = message.thoughtSignatures || {};
+            const storedSignatures = message.thought_signatures || {};
 
             parts.forEach((part, partIndex) => {
                 // Check if we have a stored signature for this part index
