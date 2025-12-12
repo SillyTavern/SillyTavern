@@ -1246,7 +1246,7 @@ body .panelControlBar {
     font-size: 20px;
     cursor: pointer;
     align-self: center;
-    pointer-events: all;
+    pointer-events: auto;
 }
 
 .swipe_left {
@@ -1275,6 +1275,7 @@ body .panelControlBar {
     justify-content: center;
     margin-bottom: var(--swipeCounterMargin);
     height: var(--swipeCounterHeight);
+    pointer-events: auto;
 }
 
 
