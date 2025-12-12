@@ -2779,7 +2779,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [] };
+            const state = { reasoning: '', images: [], thoughtSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2851,6 +2851,13 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         if (show_thoughts) {
             state.reasoning += (data?.candidates?.[0]?.content?.parts?.filter(x => x.thought)?.map(x => x.text)?.[0] || '');
         }
+        // Extract thought signatures from streaming chunks (typically in final chunk)
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        parts.forEach((part, index) => {
+            if (part.thoughtSignature) {
+                state.thoughtSignatures[index] = part.thoughtSignature;
+            }
+        });
         return data?.candidates?.[0]?.content?.parts?.filter(x => !x.thought)?.map(x => x.text)?.[0] || '';
     } else if (chat_completion_source === chat_completion_sources.COHERE) {
         return data?.delta?.message?.content?.text || data?.delta?.message?.tool_plan || '';

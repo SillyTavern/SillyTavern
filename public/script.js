@@ -3266,6 +3266,8 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
         /** @type {string[]} */
         this.images = [];
+        /** @type {Object.<number, string>} */
+        this.thoughtSignatures = {};
     }
 
     /**
@@ -3459,6 +3461,12 @@ class StreamingProcessor {
             appendMediaToMessage(message, $(this.messageDom));
         }
 
+        // Store thought signatures for Gemini multi-turn context
+        if (this.thoughtSignatures && Object.keys(this.thoughtSignatures).length > 0) {
+            message.extra = message.extra || {};
+            message.extra.thoughtSignatures = this.thoughtSignatures;
+        }
+
         this.markUIGenStopped();
 
         if (this.type !== 'impersonate') {
@@ -3553,6 +3561,10 @@ class StreamingProcessor {
                 // Get the updated reasoning string into the handler
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
                 this.images = state?.images ?? [];
+                // Accumulate thought signatures from streaming chunks (Gemini sends in final chunk)
+                if (state?.thoughtSignatures && Object.keys(state.thoughtSignatures).length > 0) {
+                    this.thoughtSignatures = { ...this.thoughtSignatures, ...state.thoughtSignatures };
+                }
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
