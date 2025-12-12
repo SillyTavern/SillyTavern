@@ -434,7 +434,7 @@ class PromptManager {
         this.tokenHandler = this.tokenHandler || new TokenHandler(() => { throw new Error('Token handler not set'); });
         this.serviceSettings = serviceSettings;
         this.containerElement = document.getElementById(this.configuration.containerIdentifier);
-
+        window.promptManager = serviceSettings;
         if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = { id: this.configuration.promptOrder.dummyId };
 
         this.sanitizeServiceSettings();
@@ -2144,6 +2144,7 @@ const promptManagerDefaultPromptOrder = [
         'enabled': true,
     },
 ];
+
 
 export {
     PromptManager,
