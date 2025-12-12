@@ -3380,7 +3380,7 @@ class Message {
      */
     static async fromPromptAsync(prompt) {
         const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
-        // Preserve thought signatures for Gemini multi-turn context
+        // Preserve thought signatures for models that support multi-turn context
         if (prompt.thoughtSignatures) {
             message.thoughtSignatures = prompt.thoughtSignatures;
         }

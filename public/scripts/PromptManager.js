@@ -163,7 +163,7 @@ class Prompt {
     marker;
 
     /**
-     * Thought signatures for Gemini multi-turn context (assistant messages only).
+     * Thought signatures for models that support multi-turn context (assistant messages only).
      * @type {Object.<number, string>}
      */
     thoughtSignatures;
@@ -184,7 +184,7 @@ class Prompt {
      * @param {string[]} [param0.injection_trigger] - The generation type trigger for the prompt injection.
      * @param {boolean} [param0.forbid_overrides] - Indicates if the prompt should not be overridden.
      * @param {boolean} [param0.extension] - Prompt is added by an extension.
-     * @param {Object.<number, string>} [param0.thoughtSignatures] - Thought signatures for Gemini multi-turn context.
+     * @param {Object.<number, string>} [param0.thoughtSignatures] - Thought signatures for models that support multi-turn context.
      */
     constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order, injection_trigger, thoughtSignatures } = {}) {
         this.identifier = identifier;

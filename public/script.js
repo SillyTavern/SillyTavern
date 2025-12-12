@@ -3461,7 +3461,7 @@ class StreamingProcessor {
             appendMediaToMessage(message, $(this.messageDom));
         }
 
-        // Store thought signatures for Gemini multi-turn context
+        // Store thought signatures for models that support multi-turn context
         if (this.thoughtSignatures && Object.keys(this.thoughtSignatures).length > 0) {
             message.extra = message.extra || {};
             message.extra.thoughtSignatures = this.thoughtSignatures;
@@ -6270,7 +6270,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-            // Store thought signatures for Gemini multi-turn context
+            // Store thought signatures for models that support multi-turn context
             if (Object.keys(thoughtSignatures).length > 0) {
                 chat[chat.length - 1]['extra']['thoughtSignatures'] = thoughtSignatures;
             }
@@ -6298,7 +6298,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-        // Store thought signatures for Gemini multi-turn context
+        // Store thought signatures for models that support multi-turn context
         if (Object.keys(thoughtSignatures).length > 0) {
             chat[chat.length - 1]['extra']['thoughtSignatures'] = thoughtSignatures;
         }
@@ -6322,7 +6322,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
-        // Store thought signatures for Gemini multi-turn context (append mode - merge with existing)
+        // Store thought signatures for models that support multi-turn context (append mode - merge with existing)
         if (Object.keys(thoughtSignatures).length > 0) {
             chat[chat.length - 1]['extra']['thoughtSignatures'] = {
                 ...(chat[chat.length - 1]['extra']['thoughtSignatures'] || {}),
@@ -6351,7 +6351,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-        // Store thought signatures for Gemini multi-turn context
+        // Store thought signatures for models that support multi-turn context
         if (Object.keys(thoughtSignatures).length > 0) {
             chat[chat.length - 1]['extra']['thoughtSignatures'] = thoughtSignatures;
         }
