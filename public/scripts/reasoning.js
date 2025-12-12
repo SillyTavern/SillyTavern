@@ -170,11 +170,6 @@ export function extractThoughtSignaturesFromData(data, {
         return {};
     }
 
-    // Backend extracts signatures into a top-level field for non-streaming (direct Gemini)
-    if (data?.thoughtSignatures && typeof data.thoughtSignatures === 'object') {
-        return data.thoughtSignatures;
-    }
-
     /** @type {Object.<number, string>} */
     const signatures = {};
 
