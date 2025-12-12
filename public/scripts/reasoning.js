@@ -157,23 +157,38 @@ export function extractThoughtSignaturesFromData(data, {
     mainApi = null,
     chatCompletionSource = null,
 } = {}) {
-    // Only Gemini models (MakerSuite/VertexAI) use thought signatures
+    // Only Gemini models use thought signatures (via MakerSuite/VertexAI or OpenRouter)
     if ((mainApi ?? main_api) !== 'openai') {
         return {};
     }
 
     const source = chatCompletionSource ?? oai_settings.chat_completion_source;
-    if (source !== chat_completion_sources.MAKERSUITE && source !== chat_completion_sources.VERTEXAI) {
+    const isGemini = source === chat_completion_sources.MAKERSUITE || source === chat_completion_sources.VERTEXAI;
+    const isOpenRouter = source === chat_completion_sources.OPENROUTER;
+
+    if (!isGemini && !isOpenRouter) {
         return {};
     }
 
-    // Backend extracts signatures into a top-level field for non-streaming
+    // Backend extracts signatures into a top-level field for non-streaming (direct Gemini)
     if (data?.thoughtSignatures && typeof data.thoughtSignatures === 'object') {
         return data.thoughtSignatures;
     }
 
-    // Fallback: Extract from responseContent.parts if available
+    /** @type {Object.<number, string>} */
     const signatures = {};
+
+    // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
+    if (isOpenRouter && data?.choices?.[0]?.message?.reasoning_details) {
+        data.choices[0].message.reasoning_details.forEach((detail) => {
+            if (detail.type === 'reasoning.encrypted' && detail.data) {
+                signatures[detail.index ?? 0] = detail.data;
+            }
+        });
+        return signatures;
+    }
+
+    // Direct Gemini format: Extract from responseContent.parts if available
     if (data?.responseContent?.parts) {
         data.responseContent.parts.forEach((part, index) => {
             if (part.thoughtSignature) {

@@ -2879,6 +2879,13 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         if (show_thoughts) {
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
         }
+        // Extract thought signatures from OpenRouter streaming (reasoning_details in delta)
+        const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
+        reasoningDetails.forEach((detail) => {
+            if (detail.type === 'reasoning.encrypted' && detail.data) {
+                state.thoughtSignatures[detail.index ?? 0] = detail.data;
+            }
+        });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
     } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES].includes(chat_completion_source)) {
         if (show_thoughts) {
