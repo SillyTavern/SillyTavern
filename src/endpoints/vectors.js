@@ -29,6 +29,7 @@ const SOURCES = [
     'nomicai',
     'cohere',
     'ollama',
+    'bananabread',
     'llamacpp',
     'vllm',
     'webllm',
@@ -70,6 +71,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return getVertexVector(text, sourceSettings.model, sourceSettings.request);
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
+        case 'bananabread':
         case 'llamacpp':
             return getLlamaCppVector(text, sourceSettings.apiUrl, directories);
         case 'vllm':
@@ -132,6 +134,7 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
             case 'cohere':
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
                 break;
+            case 'bananabread':
             case 'llamacpp':
                 results.push(...await getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
                 break;
@@ -186,6 +189,7 @@ function getSourceSettings(source, request) {
             return {
                 model: String(request.body.model),
             };
+        case 'bananabread':
         case 'llamacpp':
             return {
                 apiUrl: String(request.body.apiUrl),
