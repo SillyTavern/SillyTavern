@@ -36,6 +36,9 @@ export async function addSettingsToggles() {
 
     //Clicks all the toggles.
     const toggleExtension = (_, enabled) => {
+        if (enabled) chatHistory.resetChatSnapshots(true);
+        else (chatHistory.chatHistory = []);
+
         const buttons = [`#${extensionName}_showMenuButtons`, `#${extensionName}_showSaveButtons`, `#${extensionName}_enableCtrlZ`, `#${extensionName}_showToasts`];
         for (const snapShotEvent of snapshotEvents) {
             buttons.push(`#${extensionName}_${snapShotEvent}`);
