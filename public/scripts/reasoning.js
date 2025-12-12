@@ -1335,6 +1335,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
  * @property {string} reasoning Reasoning block
  * @property {number} reasoning_duration Duration of the reasoning block
  * @property {string} reasoning_type Type of reasoning block
+ * @property {Object.<number, string>} thought_signatures Map of part index to thought signature
  */
 export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     if (!power_user.reasoning.auto_parse) {
