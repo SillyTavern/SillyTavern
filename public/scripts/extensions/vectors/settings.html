@@ -10,6 +10,7 @@
                     Vectorization Source
                 </label>
                 <select id="vectors_source" class="text_pole">
+                    <option value="bananabread">BananaBread</option>
                     <option value="chutes">Chutes</option>
                     <option value="cohere">Cohere</option>
                     <option value="electronhub">Electron Hub</option>
@@ -99,6 +100,14 @@
             <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
                 <span data-i18n="The server MUST be started with the --embedding flag to use this feature!">
                     The server MUST be started with the <code>--embedding</code> flag to use this feature!
+                </span>
+                <i data-i18n="Hint: Set the URL in the API connection settings.">
+                    Hint: Set the URL in the API connection settings.
+                </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="bananabread_vectorsModel">
+                <span>
+                    BananaBread is a custom embedding server compatible with llama.cpp.
                 </span>
                 <i data-i18n="Hint: Set the URL in the API connection settings.">
                     Hint: Set the URL in the API connection settings.
