@@ -638,6 +638,16 @@ async function sendMakerSuiteRequest(request, response) {
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
             console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
+            // Extract thought signatures from response parts for multi-turn context preservation
+            const thoughtSignatures = {};
+            if (responseContent?.parts) {
+                responseContent.parts.forEach((part, index) => {
+                    if (part.thoughtSignature) {
+                        thoughtSignatures[index] = part.thoughtSignature;
+                    }
+                });
+            }
+
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
                 let message = `${apiName} Candidate text empty`;
@@ -645,8 +655,8 @@ async function sendMakerSuiteRequest(request, response) {
                 return response.send({ error: { message } });
             }
 
-            // Wrap it back to OAI format
-            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent };
+            // Wrap it back to OAI format, include thoughtSignatures for frontend storage
+            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent, thoughtSignatures };
             return response.send(reply);
         }
     } catch (error) {

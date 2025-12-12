@@ -549,16 +549,31 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         });
 
         // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
-        if (/gemini-3/.test(model)) {
+        // Inject stored thought signatures or fall back to bypass magic for Gemini 3
+        if (/gemini-3/.test(model) || /gemini-2\.5/.test(model)) {
             const skipSignatureMagic = 'skip_thought_signature_validator';
-            parts.filter(p => p.functionCall).forEach(p => {
-                p.thoughtSignature = skipSignatureMagic;
+            const storedSignatures = message.thoughtSignatures || {};
+
+            parts.forEach((part, partIndex) => {
+                // Check if we have a stored signature for this part index
+                const storedSig = storedSignatures[partIndex];
+
+                if (storedSig) {
+                    // Use the real stored signature
+                    part.thoughtSignature = storedSig;
+                } else if (/gemini-3/.test(model)) {
+                    // Gemini 3: Fall back to bypass magic for function calls (mandatory) and images
+                    if (part.functionCall) {
+                        part.thoughtSignature = skipSignatureMagic;
+                    }
+                    if (/-image/.test(model) && message.role === 'model') {
+                        if (typeof part.text === 'string' || part.inlineData) {
+                            part.thoughtSignature = skipSignatureMagic;
+                        }
+                    }
+                }
+                // Gemini 2.5 without stored signatures: signatures are optional, no bypass needed
             });
-            if (/-image/.test(model) && message.role === 'model') {
-                parts.filter(p => typeof p.text === 'string' || p.inlineData).forEach(p => {
-                    p.thoughtSignature = skipSignatureMagic;
-                });
-            }
         }
 
         // merge consecutive messages with the same role

@@ -568,7 +568,8 @@ function setOpenAIMessages(chat) {
         const mediaDisplay = getMediaDisplay(chat[j]);
         const mediaIndex = getMediaIndex(chat[j]);
         const invocations = chat[j]?.extra?.tool_invocations;
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations };
+        const thoughtSignatures = chat[j]?.extra?.thoughtSignatures;
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'thoughtSignatures': thoughtSignatures };
         j++;
     }
 
@@ -3109,6 +3110,8 @@ class Message {
     name;
     /** @type {object} */
     tool_call = null;
+    /** @type {Object.<number, string>} */
+    thoughtSignatures = null;
 
     /**
      * @constructor
@@ -3361,8 +3364,13 @@ class Message {
      * @param {Object} prompt - The prompt object.
      * @returns {Promise<Message>} A new instance of Message.
      */
-    static fromPromptAsync(prompt) {
-        return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+    static async fromPromptAsync(prompt) {
+        const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+        // Preserve thought signatures for Gemini multi-turn context
+        if (prompt.thoughtSignatures) {
+            message.thoughtSignatures = prompt.thoughtSignatures;
+        }
+        return message;
     }
 
     /**
@@ -3410,6 +3418,7 @@ class MessageCollection {
                     ...(message.name && { name: message.name }),
                     ...(message.tool_calls && { tool_calls: message.tool_calls }),
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
+                    ...(message.thoughtSignatures && { thoughtSignatures: message.thoughtSignatures }),
                 });
             }
             return acc;
@@ -5119,7 +5128,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-3-pro-image')) {
             $('#openai_max_context').attr('max', max_64k);
-        }  else if (value.includes('gemini-3-pro') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
+        } else if (value.includes('gemini-3-pro') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.0-pro') || value.includes('gemini-exp') || value.includes('gemini-2.5-flash') || value.includes('gemini-2.5-pro') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemma-3-27b-it')) {
             $('#openai_max_context').attr('max', max_128k);

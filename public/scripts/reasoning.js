@@ -145,6 +145,47 @@ export function extractReasoningFromData(data, {
 }
 
 /**
+ * Extracts thought signatures from Gemini API response data.
+ * These signatures are used to maintain reasoning context across multi-turn conversations.
+ * @param {object} data Response data
+ * @param {object} [options] Optional parameters
+ * @param {string|null} [options.mainApi] Override for main API
+ * @param {string|null} [options.chatCompletionSource] Override for chat completion source
+ * @returns {Object.<number, string>} Map of part index to thought signature string
+ */
+export function extractThoughtSignaturesFromData(data, {
+    mainApi = null,
+    chatCompletionSource = null,
+} = {}) {
+    // Only Gemini models (MakerSuite/VertexAI) use thought signatures
+    if ((mainApi ?? main_api) !== 'openai') {
+        return {};
+    }
+
+    const source = chatCompletionSource ?? oai_settings.chat_completion_source;
+    if (source !== chat_completion_sources.MAKERSUITE && source !== chat_completion_sources.VERTEXAI) {
+        return {};
+    }
+
+    // Backend extracts signatures into a top-level field for non-streaming
+    if (data?.thoughtSignatures && typeof data.thoughtSignatures === 'object') {
+        return data.thoughtSignatures;
+    }
+
+    // Fallback: Extract from responseContent.parts if available
+    const signatures = {};
+    if (data?.responseContent?.parts) {
+        data.responseContent.parts.forEach((part, index) => {
+            if (part.thoughtSignature) {
+                signatures[index] = part.thoughtSignature;
+            }
+        });
+    }
+
+    return signatures;
+}
+
+/**
  * Check if the model supports reasoning, but does not send back the reasoning
  * @returns {boolean} True if the model supports reasoning
  */
