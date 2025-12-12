@@ -30,13 +30,13 @@ export async function addSettingsToggles() {
     const saveVisibility = (_, value) => $('#undo_save_options').toggle(value);
 
     //Setting that toggles menuVisibility and saveVisibility.
-    const toggleMenuElement = new ToggleInput('show_menu_buttons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
-    const toggleSaveElement = new ToggleInput('show_save_button', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
-    const toggleToastsElement = new ToggleInput('show_toasts', 'Show toasts on Undo/Redo.', { defaultValue: defaultShowToasts }).create();
+    const toggleMenuElement = new ToggleInput('showMenuButtons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
+    const toggleSaveElement = new ToggleInput('showSaveButtons', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
+    const toggleToastsElement = new ToggleInput('showToasts', 'Show toasts on Undo/Redo.', { defaultValue: defaultShowToasts }).create();
 
     //Clicks all the toggles.
     const toggleExtension = (_, enabled) => {
-        const buttons = [`#${extensionName}_show_menu_buttons`, `#${extensionName}_show_save_button`, `#${extensionName}_toggle_ctrl_z`, `#${extensionName}_show_toasts`];
+        const buttons = [`#${extensionName}_showMenuButtons`, `#${extensionName}_showSaveButtons`, `#${extensionName}_enableCtrlZ`, `#${extensionName}_showToasts`];
         for (const snapShotEvent of snapshotEvents) {
             buttons.push(`#${extensionName}_${snapShotEvent}`);
         }
@@ -47,7 +47,7 @@ export async function addSettingsToggles() {
 
     //When any setting is toggled, show the extension as enabled.
     eventSource.on(`extension_${extensionName}`, (setting, value) => {
-        if ((['show_menu_buttons', 'show_save_button', 'toggle_ctrl_z', 'show_toasts'].includes(setting) || setting.includes('message_')) && value) {
+        if ((['showMenuButtons', 'showSaveButtons', 'enableCtrlZ', 'showToasts'].includes(setting) || setting.includes('message_')) && value) {
             // @ts-ignore
             $(`#${extensionName}_enable_extension`)[0].checked = true;
             extension_settings[extensionName].enable_extension = true;
@@ -75,7 +75,7 @@ export async function addSettingsToggles() {
         else { document.removeEventListener('keydown', processUndoHotkey); }
     };
 
-    const toggleUndoHotkeyElement = new ToggleInput('toggle_ctrl_z', 'Enable the Ctrl+Z/Ctrl+Shift+Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
+    const toggleUndoHotkeyElement = new ToggleInput('enableCtrlZ', 'Enable the Ctrl+Z/Ctrl+Shift+Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
@@ -90,8 +90,8 @@ export async function addSettingsToggles() {
 export async function addSettingsSliders() {
     //Creates sliders.
     //MaxChatHistory will apply next time a save occurs.
-    const maxSnapshotsElement = new RangeInput('max_snapshots', 'Max Undo Snapshots', { defaultValue: defaultMaxUndoSnapshots }).create();
-    const lengthElement = new RangeInput('max_length', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
+    const maxSnapshotsElement = new RangeInput('maxUndoSnapshots', 'Max Undo Snapshots', { defaultValue: defaultMaxUndoSnapshots }).create();
+    const lengthElement = new RangeInput('maxChatLength', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
 
     //Places the sliders.
     const undoOptions = $('#undo_options');

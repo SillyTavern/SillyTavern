@@ -21,8 +21,9 @@ class ChatHistory {
      * In comparison, storing full copies of the chat would require much higher memory usage (historyLength*chat), but would scale at O(1).
      * Much lower memory use is easily worth the slightly higher read/write time.
      * @param {ChatMessage[]} chatData or ChatTree.
+     * @param {object} settings Settings dict.
      */
-    constructor(chatData) {
+    constructor(chatData, settings) {
         //chatTree or chat.
         this.chatData = chatData;
         /** @type {ChatMessage[][]|object[]} Only the chat at indexChat is a chatMessage[], the rest are diffs. */
@@ -31,6 +32,7 @@ class ChatHistory {
         this.chatHistoryIndex = 0;
         /** @type {() => ChatMessage[]} Chat, or chatTree at the current Index */
         this.indexChat = () => {return this.chatHistory[this.chatHistoryIndex];};
+        this.settings = settings;
 
         //Reset chatHistory when the chat has changed.
         eventSource.on(event_types.CHAT_CHANGED,  async () => await this.resetChatSnapshots(false));
@@ -122,28 +124,28 @@ class ChatHistory {
         this.chatHistoryIndex = 0;
 
         this.chatHistory = [structuredClone(this.chatData)];
-        showToast && toastr.warning(t`You now have ${this.chatHistory.length} snapshots.`, t`Success.`, { preventDuplicates: true });
+        if (showToast) toastr.warning(t`You now have ${this.chatHistory.length} snapshots.`, t`Success.`, { preventDuplicates: true });
     }
 
     /**
      * Save a copy of chatData to chatHistory to chatHistoryIndex + 1.
      * @param {boolean} showToast toast that the chat has saved.
      */
-    async saveChatSnapshot(showToast){
+    async saveChatSnapshot(showToast = false){
         const t1 = performance.now();
-        const maxUndoSnapshots = extension_settings[extensionName]?.max_snapshots ?? defaultMaxUndoSnapshots;
-        const maxChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
+        const maxUndoSnapshots = this.settings?.maxUndoSnapshots ?? defaultMaxUndoSnapshots;
+        const maxChatLength = this.settings?.maxChatLength ?? defaultMaxChatLength;
 
 
         //Enforce the maximum chat length.
         if (Array.isArray(this.chatData) && this.chatData.length > maxChatLength) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`, { preventDuplicates: true });
+            if (showToast) toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot save the chat because it's ${this.chatData.length - maxChatLength} messages longer than your max chat length limit (${maxChatLength}). (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
         //Max history cannot be less than zero.
         if (0 >= maxUndoSnapshots) {
-            showToast && toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo Snapshots'`, t`You cannot save the chat because your Max Undo Snapshots is set to ${maxUndoSnapshots}. (Check Settings.)`, { preventDuplicates: true });
+            if (showToast) toastr.error(t`It's in 'Extensions > Chat Undo History > Max Undo Snapshots'`, t`You cannot save the chat because your Max Undo Snapshots is set to ${maxUndoSnapshots}. (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
@@ -152,7 +154,7 @@ class ChatHistory {
 
         //Only save changed chats.
         if (lodash.isEqual(this.chatData, previousChat)) {
-            showToast && toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} snapshots.`, t`Warning.`, { preventDuplicates: true });
+            if (showToast) toastr.warning(t`The chat is unchanged. You still have ${this.chatHistory.length} snapshots.`, t`Warning.`, { preventDuplicates: true });
             return;
         }
 
@@ -168,7 +170,7 @@ class ChatHistory {
         //Save the chat, and replace the previous chat with a diff.
         this.stepIndex(1, currentChat);
 
-        showToast && toastr.success(t`You now have ${this.chatHistory.length} snapshots.`, t`Success.`, { preventDuplicates: true });
+        if (showToast) toastr.success(t`You now have ${this.chatHistory.length} snapshots.`, t`Success.`, { preventDuplicates: true });
         console.debug(t`Saved a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
 
@@ -179,23 +181,23 @@ class ChatHistory {
      */
     async loadChatSnapshot(offset) {
         const t1 = performance.now();
-        const showUndoToast = (extension_settings[extensionName]?.show_toasts ?? defaultShowToasts);
+        const showUndoToast = (this.settings?.showToasts ?? defaultShowToasts);
         const index = this.chatHistoryIndex + offset;
-        const maximumChatLength = extension_settings[extensionName]?.max_length ?? defaultMaxChatLength;
+        const maximumChatLength = this.settings?.maxChatLength ?? defaultMaxChatLength;
 
         //Don't overwrite chats that are longer than maximumChatLength.
-        if (chat.length > maximumChatLength) {
-            toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${chat.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`, { preventDuplicates: true });
+        if (this.chatData.length > maximumChatLength) {
+            toastr.error(t`It's in 'Extensions > Chat Undo History > Max chat length'`, t`You cannot load the chat because it's ${this.chatData.length - maximumChatLength} messages longer than your max chat length limit (${maximumChatLength}). (Check Settings.)`, { preventDuplicates: true });
             return;
         }
 
         if (typeof(this.chatHistory[index]) !== 'undefined') {
 
             const newChat = this.stepIndex(offset);
-            const oldChatLength = chat.length;
+            const oldChatLength = this.chatData.length;
 
             //Replace the chat.
-            chat.splice(0, oldChatLength, ...newChat);
+            this.chatData.splice(0, oldChatLength, ...newChat);
 
             clearChat();
             printMessages();
@@ -205,12 +207,12 @@ class ChatHistory {
             if (newChat.length > oldChatLength) { await eventSource.emit(event_types.MESSAGE_RECEIVED, undefined, 'undo'); }
             if (newChat.length < oldChatLength) { await eventSource.emit(event_types.MESSAGE_DELETED, undefined, 'undo'); }
 
-            showUndoToast && toastr.success(t`Snapshot ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`, t`Success.`, { preventDuplicates: true });
+            if (showUndoToast) toastr.success(t`Snapshot ${this.chatHistoryIndex + 1}/${this.chatHistory.length} has been loaded.`, t`Success.`, { preventDuplicates: true });
 
             saveChatDebounced();
         }
         else {
-            showUndoToast && toastr.error(t`Snapshot ${index + 1}/${this.chatHistory.length} does not exist!`, t`The snapshot cannot be loaded.`, { preventDuplicates: true });
+            if (showUndoToast) toastr.error(t`Snapshot ${index + 1}/${this.chatHistory.length} does not exist!`, t`The snapshot cannot be loaded.`, { preventDuplicates: true });
         }
         console.debug(`Loaded a chat snapshot in ${(performance.now() - t1) / 1000} seconds.`);
     }
@@ -222,7 +224,7 @@ class ChatHistory {
     }
 }
 
-export const chatHistory = new ChatHistory(chat);
+export const chatHistory = new ChatHistory(chat, extension_settings[extensionName]);
 
 //Snapshot the chat when a message is modified.
 export const snapshotEvents = [
