@@ -1,5 +1,5 @@
 import path from 'node:path';
-import fs from 'node:fs';
+import fs, { accessSync, constants } from 'node:fs';
 import http2 from 'node:http2';
 import process from 'node:process';
 import { Readable } from 'node:stream';
@@ -1474,17 +1474,47 @@ export function flattenSchema(schema, api) {
 }
 
 /**
+ * Ensures that the target filepath is readable and writable.
+ * If it's not, this will display a user-friendly error.
+ * https://nodejs.org/api/fs.html#fsstatpath-options-callback
+ * Using fs.stat() to check for the existence of a file before calling fs.open(), fs.readFile(), or fs.writeFile() is not recommended. Instead, user code should open/read/write the file directly and handle the error raised if the file is not available.
+ * @param {string} filePath Target filepath.
+ */
+export function ensureAccess(filePath) {
+    try {
+        accessSync(filePath, constants.F_OK | constants.R_OK | constants.W_OK);
+    } catch (err) {
+        console.log(err);
+        console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
+    }
+}
+
+/**
  * Writes to a file, creating it's parent directories if needed.
  * @param {string} filePath
  * @param {string} data
  */
 export function tryWriteFileSync(filePath, data) {
     const directory = path.dirname(filePath);
-    //Ensure the directory exists.
-    if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
+    try {
+        //Ensure the directory exists.
+        if (!fs.existsSync(directory)) {
+            fs.mkdirSync(directory, { recursive: true });
+        }
     }
-    writeFileAtomicSync(filePath, data, 'utf8');
+    catch (error) {
+        console.log(`The directory at ${directory} is not readable and writable, please check it's permissions.`);
+        throw new Error(error);
+    }
+
+    try {
+        writeFileAtomicSync(filePath, data, 'utf8');
+        return true;
+    }
+    catch (error) {
+        console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
+        throw new Error(error);
+    }
 }
 
 /**
@@ -1498,7 +1528,8 @@ export function tryReadFileSync(filePath) {
             return fs.readFileSync(filePath, 'utf8');
         }
     } catch (error) {
-        console.error(`Error reading ${filePath}: ${error.message}`);
+        console.error(`Error reading ${filePath}, please check it's permissions.`);
+        throw new Error(error);
     }
     return null;
 }

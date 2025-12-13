@@ -21,6 +21,7 @@ import {
     tryDeleteFile,
     pickFirstObjectFromJsonFile,
     humanFileSize,
+    ensureAccess,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -320,8 +321,11 @@ async function checkChatIntegrity(filePath, integritySlug) {
         return true;
     }
     let chatIntegrity;
+    //This is needed for pickFirstObjectFromJsonFile.
+    ensureAccess(filePath);
+
     try {
-        // Parse the first part of the file  to find it's integrity slug.
+        // Parse the first part of the file to find it's integrity slug.
         const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
         chatIntegrity = data?.value;
     } catch (err) {
