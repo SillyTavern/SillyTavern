@@ -157,11 +157,11 @@ export function registerCoreMacros() {
         description: 'Picks a random item from a list. Will be re-rolled every time macros are resolved.',
         returns: 'Randomly selected item from the list.',
         exampleUsage: ['{{random::blonde::brown::red::black::blue}}'],
-        handler: ({ list, raw: rawListString }) => {
+        handler: ({ list }) => {
             // We let double-colon args be handled by the list argument parser
             // But for the ancient legacy comma separated list, we'll fall back to the raw argument and split via the old logic
             if (list.length === 1) {
-                list = rawListString
+                list = list[0]
                     .replace(/\\,/g, '##�COMMA�##')
                     .split(',')
                     .map(item => item.trim().replace(/##�COMMA�##/g, ','));
@@ -184,19 +184,18 @@ export function registerCoreMacros() {
         description: 'Picks a random item from a list, but keeps the choice stable for a given chat and macro position.',
         returns: 'Stable randomly selected item from the list.',
         exampleUsage: ['{{pick::blonde::brown::red::black::blue}}'],
-        handler: ({ list, raw: rawListString, range, env }) => {
+        handler: ({ list, range, env }) => {
             /** @type {string[]} */
-            let items = Array.isArray(list) ? [...list] : [];
 
             // Legacy comma-separated syntax: {{pick: a, b, c}}
-            if (items.length === 1 && typeof rawListString === 'string') {
-                items = rawListString
+            if (list.length === 1) {
+                list = list[0]
                     .replace(/\\,/g, '##�COMMA�##')
                     .split(',')
                     .map(item => item.trim().replace(/##�COMMA�##/g, ','));
             }
 
-            if (!items.length) {
+            if (!list.length) {
                 return '';
             }
 
@@ -210,8 +209,8 @@ export function registerCoreMacros() {
             const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
             const finalSeed = getStringHash(combinedSeedString);
             const rng = seedrandom(String(finalSeed));
-            const randomIndex = Math.floor(rng() * items.length);
-            return items[randomIndex];
+            const randomIndex = Math.floor(rng() * list.length);
+            return list[randomIndex];
         },
     });
 
