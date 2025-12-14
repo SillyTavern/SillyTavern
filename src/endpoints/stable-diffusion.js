@@ -621,12 +621,11 @@ comfyRunPod.post('/ping', async (request, response) => {
             headers: { 'Authorization': `Bearer ${key}` }
         });
         if (!result.ok) {
-            console.log(JSON.stringify(result));
             throw new Error('ComfyUI returned an error.');
         }
         const data = await result.json();
         if (data.workers.ready <= 0) {
-            console.log(`No workers reported as ready. ${result}`);
+            console.warn(`No workers reported as ready. ${result}`);
         }
 
         return response.sendStatus(200);
@@ -667,9 +666,6 @@ comfyRunPod.post('/generate', async (request, response) => {
             headers: { 'Authorization': `Bearer ${key}` },
             body: runpodPrompt,
         });
-        console.log(`prompt: ${JSON.stringify(runpodPrompt)}`);
-        console.log(`url: ${url}, key: ${key}`);
-        console.log(JSON.stringify(promptResult));
         if (!promptResult.ok) {
             const text = await promptResult.text();
             throw new Error('ComfyUI returned an error.', { cause: tryParse(text) });
