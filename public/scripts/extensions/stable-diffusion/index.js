@@ -3729,11 +3729,14 @@ async function generateAimlapiImage(prompt, signal) {
 }
 
 /**
- * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ * Generates an image in local ComfyUI or serverless runpod using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @param {string} basePath - ST server endpoint for the service. '/api/sd/comfy' for local, '/api/sd/comfyrunpod' for serverless.
+ * @param {string[]} placeholders - Array of substitutions to apply to the workflow.
+ * @param {string} url - The url of the service to call. Passed to ST server.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateComfyImageCommon(prompt, negativePrompt, signal, basePath, placeholders, url) {
@@ -3833,7 +3836,7 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
 }
 
 /**
- * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ * Generates an image using ComfyUI through serverless runpod endpoint using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
