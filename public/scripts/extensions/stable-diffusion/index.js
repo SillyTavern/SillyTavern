@@ -3738,19 +3738,8 @@ async function generateAimlapiImage(prompt, signal) {
  * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateComfyImage(prompt, negativePrompt, signal) {
-    const placeholders = [
-        'model',
-        'vae',
-        'sampler',
-        'scheduler',
-        'steps',
-        'scale',
-        'width',
-        'height',
-    ];
-
-    const workflowResponse = await fetch('/api/sd/comfy/workflow', {
+async function generateComfyImageCommon(prompt, negativePrompt, signal, basePath, placeholders, url) {
+    const workflowResponse = await fetch(`${basePath}/workflow`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -3804,12 +3793,12 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
     console.log(`{
         "prompt": ${workflow}
     }`);
-    const promptResult = await fetch('/api/sd/comfy/generate', {
+    const promptResult = await fetch(`${basePath}/generate`, {
         method: 'POST',
         headers: getRequestHeaders(),
         signal: signal,
         body: JSON.stringify({
-            url: extension_settings.sd.comfy_url,
+            url,
             prompt: `{
                 "prompt": ${workflow}
             }`,
@@ -3831,7 +3820,7 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
  * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateComfyRunPodImage(prompt, negativePrompt, signal) {
+async function generateComfyImage(prompt, negativePrompt, signal) {
     const placeholders = [
         'model',
         'vae',
@@ -3842,78 +3831,26 @@ async function generateComfyRunPodImage(prompt, negativePrompt, signal) {
         'width',
         'height',
     ];
+    return generateComfyImageCommon(prompt, negativePrompt, signal, '/api/sd/comfy', placeholders, extension_settings.sd.comfy_url);
+}
 
-    const workflowResponse = await fetch('/api/sd/comfyrunpod/workflow', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            file_name: extension_settings.sd.comfy_workflow,
-        }),
-    });
-    if (!workflowResponse.ok) {
-        const text = await workflowResponse.text();
-        toastr.error(`Failed to load workflow.\n\n${text}`);
-    }
-    let workflow = (await workflowResponse.json()).replaceAll('"%prompt%"', JSON.stringify(prompt));
-    workflow = workflow.replaceAll('"%negative_prompt%"', JSON.stringify(negativePrompt));
+/**
+ * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateComfyRunPodImage(prompt, negativePrompt, signal) {
+    const placeholders = [
+        'steps',
+        'scale',
+        'width',
+        'height',
+    ];
 
-    const seed = extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
-    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(seed));
-
-    const denoising_strength = extension_settings.sd.denoising_strength === undefined ? 1.0 : extension_settings.sd.denoising_strength;
-    workflow = workflow.replaceAll('"%denoise%"', JSON.stringify(denoising_strength));
-
-    const clip_skip = isNaN(extension_settings.sd.clip_skip) ? -1 : -extension_settings.sd.clip_skip;
-    workflow = workflow.replaceAll('"%clip_skip%"', JSON.stringify(clip_skip));
-
-    placeholders.forEach(ph => {
-        workflow = workflow.replaceAll(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
-    });
-    (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
-        workflow = workflow.replaceAll(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
-    });
-    if (/%user_avatar%/gi.test(workflow)) {
-        const response = await fetch(getUserAvatarUrl());
-        if (response.ok) {
-            const avatarBlob = await response.blob();
-            const avatarBase64DataUrl = await getBase64Async(avatarBlob);
-            const avatarBase64 = avatarBase64DataUrl.split(',')[1];
-            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(avatarBase64));
-        } else {
-            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
-        }
-    }
-    if (/%char_avatar%/gi.test(workflow)) {
-        const response = await fetch(getCharacterAvatarUrl());
-        if (response.ok) {
-            const avatarBlob = await response.blob();
-            const avatarBase64DataUrl = await getBase64Async(avatarBlob);
-            const avatarBase64 = avatarBase64DataUrl.split(',')[1];
-            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(avatarBase64));
-        } else {
-            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
-        }
-    }
-    console.log(`{
-        "prompt": ${workflow}
-    }`);
-    const promptResult = await fetch('/api/sd/comfyrunpod/generate', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        signal: signal,
-        body: JSON.stringify({
-            url: extension_settings.sd.comfy_runpod_url,
-            prompt: `{
-                "prompt": ${workflow}
-            }`,
-        }),
-    });
-    if (!promptResult.ok) {
-        const text = await promptResult.text();
-        throw new Error(text);
-    }
-    const { format, data } = await promptResult.json();
-    return { format, data };
+    return generateComfyImageCommon(prompt, negativePrompt, signal, '/api/sd/comfyrunpod', placeholders, extension_settings.sd.comfy_runpod_url);
 }
 
 /**
