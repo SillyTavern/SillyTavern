@@ -3040,7 +3040,6 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         }
 
         if (!result.data) {
-            console.log(JSON.stringify(result));
             throw new Error('Endpoint did not return image data.');
         }
     } catch (err) {
