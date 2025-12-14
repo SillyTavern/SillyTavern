@@ -1757,8 +1757,6 @@ async function loadModels() {
             break;
         case sources.comfy_runpod:
             models = await loadComfyRunPodModels();
-        case sources.comfy_runpod:
-            models = [{ value: '', text: t`N/A` }];
             break;
         case sources.togetherai:
             models = await loadTogetherAIModels();
