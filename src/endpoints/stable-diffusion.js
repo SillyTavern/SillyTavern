@@ -618,7 +618,7 @@ comfyRunPod.post('/ping', async (request, response) => {
 
         const result = await fetch(url, {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${key}` }
+            headers: { 'Authorization': `Bearer ${key}` },
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -658,7 +658,7 @@ comfyRunPod.post('/generate', async (request, response) => {
             controller.abort();
         });
         const workflow = JSON.parse(request.body.prompt).prompt;
-        const wrappedWorkflow = {input:{workflow:workflow}};
+        const wrappedWorkflow = { input: { workflow: workflow } };
         const runpodPrompt = JSON.stringify(wrappedWorkflow);
 
         const promptResult = await fetch(url, {
@@ -678,7 +678,7 @@ comfyRunPod.post('/generate', async (request, response) => {
         while (true) {
             const result = await fetch(statusUrl, {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${key}` }
+                headers: { 'Authorization': `Bearer ${key}` },
             });
             if (!result.ok) {
                 throw new Error('ComfyUI returned an error.');
@@ -694,7 +694,7 @@ comfyRunPod.post('/generate', async (request, response) => {
             await delay(500);
         }
         const format = path.extname(item.filename).slice(1).toLowerCase() || 'png';
-        return response.send({ format: format, data: item.data });        
+        return response.send({ format: format, data: item.data });
     } catch (error) {
         console.error('ComfyUI error:', error);
         response.status(500).send(error.message);

@@ -1896,7 +1896,7 @@ async function loadBflModels() {
 async function loadComfyRunPodModels() {
     $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.RUNPOD]);
     return [
-        { value: '', text: 'N/A' }
+        { value: '', text: 'N/A' },
     ];
 }
 
