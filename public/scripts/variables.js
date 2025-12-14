@@ -575,7 +575,7 @@ export function evalBoolean(rule, a, b) {
         case 'neq':
             return aString !== bString;
         default:
-            throw new Error(`Unknown boolean comparison rule for type number. Accepted: in, nin, eq, neq. Provided: ${rule}`);
+            throw new Error(`Unknown boolean comparison rule for type string. Accepted: in, nin, eq, neq. Provided: ${rule}`);
     }
 }
 
