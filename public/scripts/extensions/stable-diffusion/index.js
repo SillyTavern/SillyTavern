@@ -4383,9 +4383,10 @@ function isValidState() {
         case sources.aimlapi:
             return secret_state[SECRET_KEYS.AIMLAPI];
         case sources.comfy:
-            return true;
+            return !!extension_settings.sd.comfy_url;
         case sources.comfy_runpod:
-            return true;
+            return !!extension_settings.sd.comfy_runpod_url &&
+            secret_state[SECRET_KEYS.RUNPOD];
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
