@@ -1027,6 +1027,51 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
 }
 
 /**
+ * Adds cache_control to the system prompt for OpenRouter Claude requests.
+ *
+ * @param {object[]} messages Array of messages
+ * @param {string} ttl TTL value
+ */
+export function cachingSystemPromptForOpenRouterClaude(messages, ttl) {
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return;
+    }
+
+    // Find the first system message
+    const systemMessage = messages.find(msg => msg.role === 'system');
+    if (!systemMessage) {
+        return;
+    }
+
+    // Check if it already has cache_control (at message level)
+    if (systemMessage.cache_control) {
+        return;
+    }
+
+    if (Array.isArray(systemMessage.content)) {
+        const hasExistingCacheControl = systemMessage.content.some(part => part?.cache_control);
+        if (hasExistingCacheControl) {
+            return;
+        }
+
+        for (let i = systemMessage.content.length - 1; i >= 0; i--) {
+            if (systemMessage.content[i]?.type === 'text') {
+                systemMessage.content[i].cache_control = { type: 'ephemeral', ttl };
+                return;
+            }
+        }
+    } else if (typeof systemMessage.content === 'string') {
+        systemMessage.content = [
+            {
+                type: 'text',
+                text: systemMessage.content,
+                cache_control: { type: 'ephemeral', ttl },
+            },
+        ];
+    }
+}
+
+/**
  * Calculate the Claude budget tokens for a given reasoning effort.
  * @param {number} maxTokens Maximum tokens
  * @param {string} reasoningEffort Reasoning effort
@@ -1207,5 +1252,24 @@ export function embedOpenRouterMedia(messages) {
                 delete contentPart.audio_url;
             }
         }
+    }
+}
+
+/**
+ * Adds a dummy reasoning_content field to messages with tool calls for DeepSeek reasoner.
+ * @param {object[]} messages Array of messages
+ * @returns {void}
+ */
+export function addReasoningContentToToolCalls(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.tool_calls) || 'reasoning_content' in message) {
+            continue;
+        }
+
+        message.reasoning_content = '';
     }
 }

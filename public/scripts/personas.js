@@ -234,7 +234,7 @@ function addMissingPersonas(avatarsList) {
 export async function getUserAvatars(doRender = true, openPageAt = '') {
     const response = await fetch('/api/avatars/get', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
     if (response.ok) {
         const allEntities = await response.json();

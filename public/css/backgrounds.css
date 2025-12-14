@@ -84,14 +84,6 @@
     gap: 5px;
 }
 
-#bg-scrollable-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0 5px 15px;
-    position: relative;
-}
-
 #bg_menu_content,
 #bg_custom_content {
     display: grid;
@@ -300,4 +292,81 @@
 .bg_example:hover .BGSampleTitle,
 .bg_example:focus-within .BGSampleTitle {
     opacity: 1;
+}
+
+#bg_tabs {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: hidden;
+    gap: 5px;
+}
+
+#bg_tabs .bg_tabs_list {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    background: none;
+    border: none;
+    margin: 5px 0;
+    padding: 0;
+    padding-right: 4em;
+    position: relative;
+}
+
+#bg_tabs .bg_tabs_list .bg_tab_button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 8em;
+    list-style: none;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 0;
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0 !important;
+    filter: none;
+    opacity: 0.8;
+    transition: opacity var(--animation-duration-2x);
+}
+
+#bg_tabs .bg_tabs_list .bg_tab_button:hover {
+    opacity: 1;
+}
+
+#bg_tabs .bg_tabs_list .bg_tab_button.ui-tabs-active {
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 33%, var(--SmartThemeBlurTintColor) 66%);
+}
+
+#bg_tabs.ui-widget-content {
+    border: none !important;
+}
+
+#bg_tabs .bg_tabs_list::before,
+#bg_tabs .bg_tabs_list::after {
+    display: none;
+}
+
+#bg_tabs .bg_tabs_list .bg_tab_button a {
+    width: 100%;
+    height: 100%;
+    padding: 3px 5px;
+    cursor: pointer;
+    color: var(--SmartThemeBodyColor);
+}
+
+#bg_tabs .bg_tab_panel {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+#bg_custom_content:not(:empty)~#bg_chat_hint {
+    display: none;
 }

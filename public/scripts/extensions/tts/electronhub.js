@@ -187,7 +187,7 @@ class ElectronHubTtsProvider {
         try {
             const response = await fetch('/api/openai/electronhub/models', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${await response.text()}`);

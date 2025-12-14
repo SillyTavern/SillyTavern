@@ -19,6 +19,7 @@ const interactableSelectors = [
     '.stscript_btn', // STscript buttons in the chat bar
     '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
     '.avatar_load_preview', // Char display avatar selection
+    '.bg_tabs_list .bg_tab_button', // Background tabs
 ];
 
 if (CSS.supports('selector(:has(*))')) {

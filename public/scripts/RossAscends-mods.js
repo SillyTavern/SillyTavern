@@ -559,6 +559,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.CHUTES] && oai_settings.chat_completion_source == chat_completion_sources.CHUTES)
                     || (secret_state[SECRET_KEYS.SILICONFLOW] && oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW)
                     || (secret_state[SECRET_KEYS.ELECTRONHUB] && oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
@@ -1131,10 +1132,10 @@ export function initRossMods() {
 
     function isModifiedKeyboardEvent(event) {
         return (event instanceof KeyboardEvent &&
-            event.shiftKey ||
+            (event.shiftKey ||
             event.ctrlKey ||
             event.altKey ||
-            event.metaKey);
+            event.metaKey));
     }
 
     $(document).on('keydown', async function (event) {
@@ -1274,7 +1275,8 @@ export function initRossMods() {
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
                 $('.swipe_left:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
@@ -1288,7 +1290,8 @@ export function initRossMods() {
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
                 $('.swipe_right:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;

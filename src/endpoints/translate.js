@@ -1,10 +1,8 @@
-import { createRequire } from 'node:module';
-
 import fetch from 'node-fetch';
 import express from 'express';
 import { translate as bingTranslate } from 'bing-translate-api';
-import iconv from 'iconv-lite';
 import urlJoin from 'url-join';
+import { Translator } from 'google-translate-api-x';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getConfigValue, uuidv4 } from '../util.js';
@@ -14,30 +12,6 @@ const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
 const LINGVA_DEFAULT = 'https://lingva.ml/api/v1';
 
 export const router = express.Router();
-
-/**
- * Get the Google Translate API client.
- * @returns {import('google-translate-api-browser')} Google Translate API client
- */
-function getGoogleTranslateClient() {
-    const require = createRequire(import.meta.url);
-    const googleTranslateApi = require('google-translate-api-browser');
-    return googleTranslateApi;
-}
-
-/**
- * Tries to decode an ArrayBuffer to a string using iconv-lite for UTF-8.
- * @param {ArrayBuffer} buffer ArrayBuffer
- * @returns {string} Decoded string
- */
-function decodeBuffer(buffer) {
-    try {
-        return iconv.decode(Buffer.from(buffer), 'utf-8');
-    } catch (error) {
-        console.error('Failed to decode buffer:', error);
-        return Buffer.from(buffer).toString('utf-8');
-    }
-}
 
 router.post('/libre', async (request, response) => {
     try {
@@ -101,8 +75,8 @@ router.post('/libre', async (request, response) => {
 
 router.post('/google', async (request, response) => {
     try {
-        const text = request.body.text;
-        const lang = request.body.lang;
+        const text = String(request.body.text ?? '');
+        const lang = String(request.body.lang ?? '');
 
         if (!text || !lang) {
             return response.sendStatus(400);
@@ -110,18 +84,8 @@ router.post('/google', async (request, response) => {
 
         console.debug('Input text: ' + text);
 
-        const { generateRequestUrl, normaliseResponse } = getGoogleTranslateClient();
-        const requestUrl = generateRequestUrl(text, { to: lang });
-        const result = await fetch(requestUrl);
-
-        if (!result.ok) {
-            console.warn('Google Translate error: ', result.statusText);
-            return response.sendStatus(500);
-        }
-
-        const buffer = await result.arrayBuffer();
-        const translateResponse = normaliseResponse(JSON.parse(decodeBuffer(buffer)));
-        const translatedText = translateResponse.text;
+        const translator = new Translator({ to: lang });
+        const translatedText = await translator.translate(text).then(result => result.text);
 
         response.setHeader('Content-Type', 'text/plain; charset=utf-8');
         console.debug('Translated text: ' + translatedText);

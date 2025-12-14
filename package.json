@@ -49,7 +49,6 @@
         "express": "^4.21.0",
         "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
-        "google-translate-api-browser": "^3.0.1",
         "google-translate-api-x": "^10.7.2",
         "handlebars": "^4.7.8",
         "helmet": "^8.1.0",
@@ -165,6 +164,7 @@
         "@types/yauzl": "^2.10.3",
         "eslint": "^8.57.1",
         "eslint-plugin-jest": "^27.9.0",
-        "eslint-plugin-jsdoc": "^48.10.0"
+        "eslint-plugin-jsdoc": "^48.10.0",
+        "eslint-plugin-playwright": "^2.3.0"
     }
 }
