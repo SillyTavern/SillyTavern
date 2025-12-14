@@ -541,6 +541,27 @@ export function encodeStyleTags(text) {
 }
 
 /**
+ * Handles <local>...</local> tag processing based on context.
+ * - `stripLocalTagsForDisplay`: Removes only the <local> and </local> tags, keeping inner content visible to the user.
+ * - `stripLocalTagsForPrompt`: Removes the entire <local>...</local> block so it's not sent to the LLM.
+ * @param {string} text - The message content.
+ * @param {boolean} enabled - Whether to strip local tags or blocks.
+ * @returns {string} - The processed message text for the given context.
+ * @author https://github.com/route-404-gh/
+ */
+export function stripLocalTagsForDisplay(text, enabled) {
+    if (!enabled) return text;
+    return text.replace(/<local>([\s\S]*?)<\/local>/gi, '$1');
+}
+
+export function stripLocalTagsForPrompt(text, enabled) {
+    if (!enabled) return text;
+    // <local> with optional attrs/whitespace, any content, </local>, plus trailing space/newline
+    const re = /<\s*local\b[^>]*>[\s\S]*?<\s*\/\s*local\s*>\s*/gi;
+    return text.replace(re, '');
+  }
+
+/**
  * Sanitizes custom style tags in the message text to prevent DOM pollution.
  * @param {string} text Message text
  * @param {object} options Options object

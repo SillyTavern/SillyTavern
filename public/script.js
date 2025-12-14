@@ -245,7 +245,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks,  stripLocalTagsForDisplay,  stripLocalTagsForPrompt } from './scripts/chats.js';
 import { getPresetManager, initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
@@ -1652,6 +1652,9 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         }
     }
 
+    // —— strip <local>…</local> tags from display (keep inner text) ——  
+    mes = stripLocalTagsForDisplay(mes, power_user.hide_local_tags);
+    
     mesForShowdownParse = mes;
 
     // Force isSystem = false on comment messages so they get formatted properly
@@ -4874,6 +4877,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const eventData = { prompt: finalPrompt, dryRun: dryRun };
     await eventSource.emit(event_types.GENERATE_AFTER_COMBINE_PROMPTS, eventData);
     finalPrompt = eventData.prompt;
+    
+    // strip ALL <local>…</local> blocks if the user has that toggle on
+    finalPrompt = stripLocalTagsForPrompt(finalPrompt, power_user.hide_local_tags)
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
@@ -4932,6 +4938,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 messages: oaiMessages,
                 messageExamples: oaiMessageExamples,
             }, dryRun);
+
+            // if the toggle is on, strip all <local>…</local> from each content
+            prompt = prompt.map(m => ({
+            ...m,
+            content: stripLocalTagsForPrompt(m.content, power_user.hide_local_tags)
+            }));
+        
+            
             generate_data = { prompt: prompt };
 
             // TODO: move these side-effects somewhere else, so this switch-case solely sets generate_data

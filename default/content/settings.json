@@ -191,6 +191,7 @@
         "custom_stopping_strings_macro": true,
         "fuzzy_search": true,
         "encode_tags": false,
+        "hide_local_tags": false,
         "enableLabMode": false,
         "enableZenSliders": false,
         "ui_mode": 1,
