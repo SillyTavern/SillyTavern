@@ -165,11 +165,11 @@ thumbnails:
   # * "jpg": best compression with adjustable quality, no transparency
   # * "png": preserves transparency but increases filesize by about 100%
   # Changing this only affects new thumbnails. To recreate the old ones, clear out /thumbnails folder in your user data.
-  format: "jpg"
+  format: "png"
   # JPG thumbnail quality (0-100)
-  quality: 95
+  quality: 100
   # Maximum thumbnail dimensions per type [width, height]
-  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+  dimensions: { 'bg': [240, 135], 'avatar': [864, 1280], 'persona': [96, 144] }
 
 # PERFORMANCE-RELATED CONFIGURATION
 performance:
