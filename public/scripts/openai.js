@@ -3714,6 +3714,8 @@ export class ChatCompletion {
      */
     getChat() {
         const chat = [];
+        const includeThoughtSignatures = isThinkingSignaturesSupported();
+
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 chat.push(...item.getChat());
@@ -3724,6 +3726,7 @@ export class ChatCompletion {
                     ...(item.name ? { name: item.name } : {}),
                     ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
+                    ...(includeThoughtSignatures && item.thought_signatures ? { thought_signatures: item.thought_signatures } : {}),
                 };
                 chat.push(message);
             } else {
@@ -5887,6 +5890,19 @@ export function isAudioInliningSupported() {
         default:
             return false;
     }
+}
+
+/**
+ * Check if the model supports thought signatures (thinking process)
+ * @returns {boolean} True if thought signatures should be included in the request
+ */
+export function isThinkingSignaturesSupported() {
+    // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
+    const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source);
+    // Need a more crunchy check for OpenRouter: look for Gemini models with "thinking" in the name
+    const isOpenRouterGeminiThinking = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER &&
+        /gemini.*thinking/i.test(oai_settings.openrouter_model);
+    return isGoogle || isOpenRouterGeminiThinking;
 }
 
 /**
