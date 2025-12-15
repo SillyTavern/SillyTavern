@@ -1573,11 +1573,11 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
         const cleanup = () => {
             if (!resolved) {
                 resolved = true;
-                if (readStream) {
-                    readStream.unpipe();
-                }
                 if (pipeline) {
                     pipeline.destroy();
+                }
+                else if (readStream) {
+                    readStream.unpipe();
                 }
             }
         };
