@@ -25,6 +25,7 @@ interface CharacterState {
   startGroupChat: () => void;
   exitGroupChat: () => void;
   isCharacterInGroup: (avatar: string) => boolean;
+  setGroupChatCharacters: (avatars: string[]) => Promise<void>;
 }
 
 export const useCharacterStore = create<CharacterState>((set, get) => ({
@@ -200,5 +201,32 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
 
   isCharacterInGroup: (avatar: string) => {
     return get().groupChatCharacters.some((c) => c.avatar === avatar);
+  },
+
+  setGroupChatCharacters: async (avatars: string[]) => {
+    const { characters } = get();
+    const groupCharacters: CharacterInfo[] = [];
+
+    for (const avatar of avatars) {
+      let character = characters.find((c) => c.avatar === avatar);
+      if (character) {
+        // Fetch full data if needed
+        if (!character.first_mes) {
+          try {
+            const fullCharacter = await api.getCharacter(avatar);
+            character = { ...character, ...fullCharacter };
+          } catch {
+            // Use what we have
+          }
+        }
+        groupCharacters.push(character);
+      }
+    }
+
+    set({
+      groupChatCharacters: groupCharacters,
+      isGroupChatMode: true,
+      selectedCharacter: null,
+    });
   },
 }));

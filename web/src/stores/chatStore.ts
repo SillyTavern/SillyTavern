@@ -21,9 +21,36 @@ interface ChatFile {
   lastMessage: string;
 }
 
+export interface GroupChatInfo {
+  fileName: string;
+  characterNames: string[];
+  characterAvatars: string[];
+  lastMessage: string;
+  createdAt: number;
+}
+
+// Local storage key for group chat metadata
+const GROUP_CHATS_KEY = 'sillytavern_group_chats';
+
+// Load group chats from localStorage
+function loadGroupChatsFromStorage(): GroupChatInfo[] {
+  try {
+    const stored = localStorage.getItem(GROUP_CHATS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Save group chats to localStorage
+function saveGroupChatsToStorage(groupChats: GroupChatInfo[]) {
+  localStorage.setItem(GROUP_CHATS_KEY, JSON.stringify(groupChats));
+}
+
 interface ChatState {
   messages: ChatMessage[];
   chatFiles: ChatFile[];
+  groupChats: GroupChatInfo[];
   currentChatFile: string | null;
   isLoading: boolean;
   isSending: boolean;
@@ -32,6 +59,7 @@ interface ChatState {
   // Actions
   fetchChatFiles: (avatarUrl: string) => Promise<void>;
   loadChat: (avatarUrl: string, fileName: string) => Promise<void>;
+  loadGroupChat: (groupChat: GroupChatInfo) => Promise<void>;
   startNewChat: (character: CharacterInfo) => Promise<void>;
   startNewGroupChat: (characters: CharacterInfo[]) => Promise<void>;
   addMessage: (message: Omit<ChatMessage, 'id'>) => void;
@@ -39,6 +67,8 @@ interface ChatState {
   sendGroupMessage: (content: string, characters: CharacterInfo[]) => Promise<void>;
   editMessageAndRegenerate: (messageId: string, newContent: string, character: CharacterInfo, availableEmotions?: string[]) => Promise<void>;
   clearChat: () => void;
+  refreshGroupChats: () => void;
+  deleteGroupChat: (fileName: string) => void;
 }
 
 let messageIdCounter = 0;
@@ -247,10 +277,22 @@ IMPORTANT:
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   chatFiles: [],
+  groupChats: loadGroupChatsFromStorage(),
   currentChatFile: null,
   isLoading: false,
   isSending: false,
   error: null,
+
+  refreshGroupChats: () => {
+    set({ groupChats: loadGroupChatsFromStorage() });
+  },
+
+  deleteGroupChat: (fileName: string) => {
+    const { groupChats } = get();
+    const updated = groupChats.filter((g) => g.fileName !== fileName);
+    saveGroupChatsToStorage(updated);
+    set({ groupChats: updated });
+  },
 
   fetchChatFiles: async (avatarUrl: string) => {
     set({ isLoading: true, error: null });
@@ -321,6 +363,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
+  loadGroupChat: async (groupChat: GroupChatInfo) => {
+    console.log('[GroupChat] Loading group chat:', groupChat.fileName);
+    set({ isLoading: true, error: null, currentChatFile: groupChat.fileName });
+    try {
+      // Load from first character's avatar (where it's stored)
+      const rawMessages = await api.getChatMessages(groupChat.characterAvatars[0], groupChat.fileName);
+      console.log('[GroupChat] Loaded messages:', rawMessages?.length || 0);
+      const messages: ChatMessage[] = rawMessages.map((msg) => ({
+        id: generateId(),
+        name: msg.name,
+        isUser: msg.is_user,
+        isSystem: msg.is_system,
+        content: msg.mes,
+        timestamp: msg.send_date,
+        characterAvatar: msg.character_avatar,
+      }));
+      set({ messages, isLoading: false });
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to load group chat',
+      });
+    }
+  },
+
   startNewGroupChat: async (characters: CharacterInfo[]) => {
     const messages: ChatMessage[] = [];
 
@@ -353,9 +420,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const groupName = `Group_${characters.map(c => c.name).join('_')}`;
     const fileName = await api.createChat(groupName);
     console.log('[Chat] Starting new group chat, fileName:', fileName);
+
+    // Save group chat metadata to localStorage
+    const { groupChats } = get();
+    const newGroupChat: GroupChatInfo = {
+      fileName,
+      characterNames: characters.map((c) => c.name),
+      characterAvatars: characters.map((c) => c.avatar),
+      lastMessage: messages[messages.length - 1]?.content || '',
+      createdAt: Date.now(),
+    };
+    const updatedGroupChats = [...groupChats, newGroupChat];
+    saveGroupChatsToStorage(updatedGroupChats);
+
     set({
       messages,
       currentChatFile: fileName,
+      groupChats: updatedGroupChats,
       error: null,
     });
   },

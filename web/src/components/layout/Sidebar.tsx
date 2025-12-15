@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { X, Search, Plus, MessageSquare, Users, ChevronLeft, UserPlus, Check } from 'lucide-react';
+import { X, Search, Plus, MessageSquare, Users, ChevronLeft, UserPlus, Check, Trash2 } from 'lucide-react';
 import { useCharacterStore } from '../../stores/characterStore';
-import { useChatStore } from '../../stores/chatStore';
+import { useChatStore, type GroupChatInfo } from '../../stores/chatStore';
 import { Avatar, Button, Input } from '../ui';
 import { CharacterCreation } from '../character/CharacterCreation';
 import { useCharacterSprites } from '../../hooks/useCharacterSprites';
@@ -28,8 +28,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     startGroupChat,
     exitGroupChat,
     isCharacterInGroup,
+    setGroupChatCharacters,
   } = useCharacterStore();
-  const { messages, startNewGroupChat } = useChatStore();
+  const { messages, startNewGroupChat, groupChats, loadGroupChat, deleteGroupChat } = useChatStore();
+  const [showGroupChats, setShowGroupChats] = useState(false);
 
   // Fetch actual sprite paths from API (hook extracts character name from avatar filename)
   const { getSpritePath } = useCharacterSprites(selectedCharacter?.avatar);
@@ -64,6 +66,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     selectCharacter(avatar);
     setShowCharacterList(false);
     onClose();
+  };
+
+  const handleGroupChatSelect = async (groupChat: GroupChatInfo) => {
+    // Set up group chat mode with the characters from the saved group chat
+    await setGroupChatCharacters(groupChat.characterAvatars);
+    loadGroupChat(groupChat);
+    setShowGroupChats(false);
+    setShowCharacterList(false);
+    onClose();
+  };
+
+  const handleDeleteGroupChat = (e: React.MouseEvent, fileName: string) => {
+    e.stopPropagation();
+    if (confirm('Delete this group chat?')) {
+      deleteGroupChat(fileName);
+    }
   };
 
   // Thumbnail URL for small avatars in list (96x144)
@@ -348,6 +366,56 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </ul>
               )}
             </div>
+
+            {/* Group Chats Section */}
+            {groupChats.length > 0 && !isGroupSelectMode && (
+              <div className="border-t border-[var(--color-border)]">
+                <button
+                  onClick={() => setShowGroupChats(!showGroupChats)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]"
+                >
+                  <span className="flex items-center gap-2">
+                    <Users size={16} />
+                    Group Chats ({groupChats.length})
+                  </span>
+                  <ChevronLeft
+                    size={16}
+                    className={`transform transition-transform ${showGroupChats ? '-rotate-90' : ''}`}
+                  />
+                </button>
+                {showGroupChats && (
+                  <ul className="pb-2">
+                    {groupChats.map((groupChat) => (
+                      <li key={groupChat.fileName}>
+                        <button
+                          onClick={() => handleGroupChatSelect(groupChat)}
+                          className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[var(--color-bg-tertiary)] group"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 flex items-center justify-center flex-shrink-0">
+                            <Users size={18} className="text-[var(--color-primary)]" />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                              {groupChat.characterNames.join(', ')}
+                            </p>
+                            <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                              {groupChat.lastMessage || 'No messages yet'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteGroupChat(e, groupChat.fileName)}
+                            className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Delete group chat"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {/* Footer Buttons */}
             <div className="p-3 pb-4 border-t border-[var(--color-border)] input-safe-bottom">

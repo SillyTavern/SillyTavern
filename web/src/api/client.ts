@@ -396,6 +396,7 @@ interface ChatMessage {
   is_system: boolean;
   mes: string;
   send_date: number;
+  character_avatar?: string; // For group chats
 }
 
 // Settings types
