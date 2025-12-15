@@ -90,6 +90,7 @@ const sources = {
     falai: 'falai',
     xai: 'xai',
     google: 'google',
+    zai: 'zai',
 };
 
 const initiators = {
@@ -1323,6 +1324,7 @@ async function onModelChange() {
         sources.xai,
         sources.google,
         sources.chutes,
+        sources.zai,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1547,10 +1549,16 @@ async function loadSamplers() {
         case sources.bfl:
             samplers = ['N/A'];
             break;
+        case sources.falai:
+            samplers = ['N/A'];
+            break;
         case sources.xai:
             samplers = ['N/A'];
             break;
         case sources.google:
+            samplers = ['N/A'];
+            break;
+        case sources.zai:
             samplers = ['N/A'];
             break;
     }
@@ -1757,6 +1765,9 @@ async function loadModels() {
             break;
         case sources.google:
             models = await loadGoogleModels();
+            break;
+        case sources.zai:
+            models = await loadZaiModels();
             break;
     }
 
@@ -2236,6 +2247,10 @@ async function loadGoogleModels() {
     ].map(name => ({ value: name, text: name }));
 }
 
+async function loadZaiModels() {
+    return ['cogview-4-250304'].map(name => ({ value: name, text: name }));
+}
+
 function loadNovelSchedulers() {
     return ['karras', 'native', 'exponential', 'polyexponential'];
 }
@@ -2325,6 +2340,9 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.google:
+            schedulers = ['N/A'];
+            break;
+        case sources.zai:
             schedulers = ['N/A'];
             break;
     }
@@ -2428,6 +2446,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.google:
+            vaes = ['N/A'];
+            break;
+        case sources.zai:
             vaes = ['N/A'];
             break;
     }
@@ -2569,7 +2590,7 @@ function processReply(str) {
     str = str.normalize('NFD');
 
     // Strip out non-alphanumeric characters barring model syntax exceptions
-    str = str.replace(/[^a-zA-Z0-9.,:_(){}<>[\]\-'|#]+/g, ' ');
+    str = str.replace(/[^a-zA-Z0-9.,:_(){}<>[\]/\-'|#]+/g, ' ');
 
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
@@ -3024,6 +3045,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.google:
                 result = await generateGoogleImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.zai:
+                result = await generateZaiImage(prefixedPrompt, signal);
                 break;
         }
 
@@ -4094,6 +4118,47 @@ async function generateGoogleImage(prompt, negativePrompt, signal) {
     }
 }
 
+/**
+ * Generates an image using the Z.AI API.
+ * @param {string} prompt The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
+ */
+async function generateZaiImage(prompt, signal) {
+    // Round width and height to nearest multiple of 16, and clamp to 512-2048 range
+    let width = clamp(Math.round(extension_settings.sd.width / 16) * 16, 512, 2048);
+    let height = clamp(Math.round(extension_settings.sd.height / 16) * 16, 512, 2048);
+
+    // Make sure the pixel count does not exceed 2^21px
+    while ((width * height) > Math.pow(2, 21)) {
+        if (width >= height) {
+            width -= 16;
+        } else {
+            height -= 16;
+        }
+    }
+
+    const result = await fetch('/api/sd/zai/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            model: extension_settings.sd.model,
+            quality: extension_settings.sd.openai_quality,
+            size: `${width}x${height}`,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data.format, data: data.image };
+    }
+
+    const text = await result.text();
+    throw new Error(text);
+}
+
 async function onComfyOpenWorkflowEditorClick() {
     let workflow = await (await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
@@ -4400,6 +4465,10 @@ function isValidState() {
             return secret_state[SECRET_KEYS.XAI];
         case sources.google:
             return secret_state[SECRET_KEYS.MAKERSUITE] || secret_state[SECRET_KEYS.VERTEXAI] || secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT];
+        case sources.zai:
+            return secret_state[SECRET_KEYS.ZAI];
+        default:
+            return false;
     }
 }
 

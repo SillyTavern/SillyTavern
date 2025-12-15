@@ -91,6 +91,7 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'zai') {
             key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            bodyParams.max_tokens = 4096; // default is 1024
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
