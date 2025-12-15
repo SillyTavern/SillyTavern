@@ -3384,8 +3384,7 @@ class Message {
      * @returns {Promise<Message>} A new instance of Message.
      */
     static async fromPromptAsync(prompt) {
-        const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
-        return message;
+        return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
     }
 
     /**
@@ -3715,7 +3714,6 @@ export class ChatCompletion {
      */
     getChat() {
         const chat = [];
-
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 chat.push(...item.getChat());

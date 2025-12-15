@@ -174,7 +174,7 @@ export function extractThoughtSignaturesFromData(data, {
     const signatures = {};
 
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
-    if (isOpenRouter && data?.choices?.[0]?.message?.reasoning_details) {
+    if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
         data.choices[0].message.reasoning_details.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
                 signatures[detail.index ?? 0] = detail.data;
@@ -184,7 +184,7 @@ export function extractThoughtSignaturesFromData(data, {
     }
 
     // Direct Gemini format: Extract from responseContent.parts if available
-    if (data?.responseContent?.parts) {
+    if (isGemini && Array.isArray(data?.responseContent?.parts)) {
         data.responseContent.parts.forEach((part, index) => {
             if (part.thoughtSignature) {
                 signatures[index] = part.thoughtSignature;
