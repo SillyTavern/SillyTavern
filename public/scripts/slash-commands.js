@@ -5613,13 +5613,15 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     );
     return ac;
 }
-/**@type {HTMLTextAreaElement} */
-const sendTextarea = document.querySelector('#send_textarea');
-setSlashCommandAutoComplete(sendTextarea);
-sendTextarea.addEventListener('input', () => {
-    if (sendTextarea.value[0] == '/') {
-        sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
-    } else {
-        sendTextarea.style.fontFamily = null;
-    }
-});
+
+export async function initSlashCommandAutoComplete() {
+    const sendTextarea = /** @type {HTMLTextAreaElement} */ (document.querySelector('#send_textarea'));
+    setSlashCommandAutoComplete(sendTextarea);
+    sendTextarea.addEventListener('input', () => {
+        if (sendTextarea.value && sendTextarea.value[0] == '/') {
+            sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
+        } else {
+            sendTextarea.style.fontFamily = null;
+        }
+    });
+}

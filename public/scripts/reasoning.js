@@ -4,7 +4,7 @@ import {
 import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
-import { MacrosParser } from './macros.js';
+import { macros, MacroCategory } from './macros/macro-system.js';
 import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { performFuzzySearch, power_user } from './power-user.js';
@@ -1000,9 +1000,21 @@ function registerReasoningSlashCommands() {
 }
 
 function registerReasoningMacros() {
-    MacrosParser.registerMacro('reasoningPrefix', () => power_user.reasoning.prefix, t`Reasoning Prefix`);
-    MacrosParser.registerMacro('reasoningSuffix', () => power_user.reasoning.suffix, t`Reasoning Suffix`);
-    MacrosParser.registerMacro('reasoningSeparator', () => power_user.reasoning.separator, t`Reasoning Separator`);
+    macros.register('reasoningPrefix', {
+        category: MacroCategory.PROMPTS,
+        description: t`The prefix string used before reasoning blocks`,
+        handler: () => power_user.reasoning.prefix,
+    });
+    macros.register('reasoningSuffix', {
+        category: MacroCategory.PROMPTS,
+        description: t`The suffix string used after reasoning blocks`,
+        handler: () => power_user.reasoning.suffix,
+    });
+    macros.register('reasoningSeparator', {
+        category: MacroCategory.PROMPTS,
+        description: t`The separator between thinking content and response`,
+        handler: () => power_user.reasoning.separator,
+    });
 }
 
 function setReasoningEventHandlers() {

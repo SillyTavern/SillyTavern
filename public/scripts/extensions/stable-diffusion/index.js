@@ -57,9 +57,11 @@ import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValu
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
-import { MacrosParser } from '../../macros.js';
+import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { t, translate } from '../../i18n.js';
 import { oai_settings } from '../../openai.js';
+import { power_user } from '/scripts/power-user.js';
+import { MacrosParser } from '/scripts/macros.js';
 
 export { MODULE_NAME };
 
@@ -5145,6 +5147,25 @@ jQuery(async () => {
         return isNegative ? negativePrompt : characterPrompt;
     };
 
-    MacrosParser.registerMacro('charPrefix', () => getMacroValue({ isNegative: false }), t`Character's positive positive Image Generation prompt prefix`);
-    MacrosParser.registerMacro('charNegativePrefix', () => getMacroValue({ isNegative: true }), t`Character's negative Image Generation prompt prefix`);
+    if (power_user.experimental_macro_engine) {
+        macros.register('charPrefix', {
+            category: MacroCategory.PROMPTS,
+            description: t`Character's positive Image Generation prompt prefix`,
+            handler: () => getMacroValue({ isNegative: false }),
+        });
+        macros.register('charNegativePrefix', {
+            category: MacroCategory.PROMPTS,
+            description: t`Character's negative Image Generation prompt prefix`,
+            handler: () => getMacroValue({ isNegative: true }),
+        });
+    } else {
+        MacrosParser.registerMacro('charPrefix',
+            () => getMacroValue({ isNegative: false }),
+            t`Character's positive Image Generation prompt prefix`,
+        );
+        MacrosParser.registerMacro('charNegativePrefix',
+            () => getMacroValue({ isNegative: true }),
+            t`Character's negative Image Generation prompt prefix`,
+        );
+    }
 });
