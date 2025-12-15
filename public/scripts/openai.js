@@ -568,8 +568,8 @@ function setOpenAIMessages(chat) {
         const mediaDisplay = getMediaDisplay(chat[j]);
         const mediaIndex = getMediaIndex(chat[j]);
         const invocations = chat[j]?.extra?.tool_invocations;
-        const thought_signatures = chat[j]?.extra?.thought_signatures;
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'thought_signatures': thought_signatures };
+        const thoughtSignatures = chat[j]?.extra?.thought_signatures;
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'thoughtSignatures': thoughtSignatures };
         j++;
     }
 
@@ -864,6 +864,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const videoInlining = isVideoInliningSupported();
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
+    const includeThoughtSignatures = isThinkingSignaturesSupported();
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -930,6 +931,10 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             }
 
             continue;
+        }
+
+        if (includeThoughtSignatures && chatPrompt.thoughtSignatures) {
+            chatMessage.thought_signatures = chatPrompt.thoughtSignatures;
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
@@ -2779,7 +2784,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [], thought_signatures: {} };
+            const state = { reasoning: '', images: [], thoughtSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2855,7 +2860,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         const parts = data?.candidates?.[0]?.content?.parts || [];
         parts.forEach((part, index) => {
             if (part.thoughtSignature) {
-                state.thought_signatures[index] = part.thoughtSignature;
+                state.thoughtSignatures[index] = part.thoughtSignature;
             }
         });
         return data?.candidates?.[0]?.content?.parts?.filter(x => !x.thought)?.map(x => x.text)?.[0] || '';
@@ -2883,7 +2888,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
         reasoningDetails.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                state.thought_signatures[detail.index ?? 0] = detail.data;
+                state.thoughtSignatures[detail.index ?? 0] = detail.data;
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
@@ -3380,10 +3385,6 @@ class Message {
      */
     static async fromPromptAsync(prompt) {
         const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
-        // Preserve thought signatures for models that support multi-turn context
-        if (prompt.thought_signatures) {
-            message.thought_signatures = prompt.thought_signatures;
-        }
         return message;
     }
 
@@ -3714,7 +3715,6 @@ export class ChatCompletion {
      */
     getChat() {
         const chat = [];
-        const includeThoughtSignatures = isThinkingSignaturesSupported();
 
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
@@ -3726,7 +3726,7 @@ export class ChatCompletion {
                     ...(item.name ? { name: item.name } : {}),
                     ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
-                    ...(includeThoughtSignatures && item.thought_signatures ? { thought_signatures: item.thought_signatures } : {}),
+                    ...(item.thought_signatures ? { thought_signatures: item.thought_signatures } : {}),
                 };
                 chat.push(message);
             } else {
@@ -5894,14 +5894,15 @@ export function isAudioInliningSupported() {
 
 /**
  * Check if the model supports thought signatures (thinking process)
+ * @param {ChatCompletionSettings} settings Settings object to use
  * @returns {boolean} True if thought signatures should be included in the request
  */
-export function isThinkingSignaturesSupported() {
+export function isThinkingSignaturesSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
-    const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source);
+    const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
     // Need a more crunchy check for OpenRouter: look for Gemini models with "thinking" in the name
-    const isOpenRouterGeminiThinking = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER &&
-        /gemini.*thinking/i.test(oai_settings.openrouter_model);
+    const isOpenRouterGeminiThinking = settings.chat_completion_source === chat_completion_sources.OPENROUTER &&
+        /gemini.*thinking/i.test(settings.openrouter_model);
     return isGoogle || isOpenRouterGeminiThinking;
 }
 
