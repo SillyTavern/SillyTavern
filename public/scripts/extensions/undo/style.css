@@ -10,3 +10,27 @@
 #undo-advanced-drawer>.inline-drawer-header {
     color: red;
 }
+
+
+/* Show that the buttons have no effect when the extension is disabled. */
+/* Apply style when the extension is disabled. */
+#undo_container:has(#undo_enable_extension:not(:checked))
+/* To all toggles and sliders that are not undo_enable_extension */
+:is(.undo_toggle:not(:has(#undo_enable_extension)), .undo_slider) {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
+
+@keyframes pulse-fade {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Apply style when the extension is disabled. */
+#undo_container:has(#undo_enable_extension:not(:checked))
+/* To undo_enable_extension */
+.undo_toggle:has(#undo_enable_extension) {
+    animation: pulse-fade 2s infinite;
+}

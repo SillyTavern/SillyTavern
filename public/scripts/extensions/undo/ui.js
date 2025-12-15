@@ -24,41 +24,36 @@ export async function addOptionsButtons() {
     $(document).on('click', '#option_undo_discard', async () => await chatHistory.resetChatSnapshots(true));
 }
 
-export async function addSettingsToggles() {
+export async function addSettingsToggles(toggles) {
     //Toggles visibility of undo_buttons and undo_save_options.
     const menuVisibility = (_, value) => {$('#undo_buttons').toggle(value);};
     const saveVisibility = (_, value) => $('#undo_save_options').toggle(value);
 
-    //Setting that toggles menuVisibility and saveVisibility.
-    const toggleMenuElement = new ToggleInput('showMenuButtons', 'Show Undo/Redo in ☰', { defaultValue: true, callback: menuVisibility }).create();
-    const toggleSaveElement = new ToggleInput('showSaveButtons', 'Show Save/Reset in ☰', { defaultValue: false, callback: saveVisibility }).create();
-    const toggleToastsElement = new ToggleInput('showToasts', 'Show toasts on Undo/Redo.', { defaultValue: defaultShowToasts }).create();
 
     //Clicks all the toggles.
     const toggleExtension = (_, enabled) => {
         if (enabled) chatHistory.resetChatSnapshots(true);
         else (chatHistory.chatHistory = []);
-
-        const buttons = [`#${extensionName}_showMenuButtons`, `#${extensionName}_showSaveButtons`, `#${extensionName}_enableCtrlZ`, `#${extensionName}_showToasts`];
-        for (const snapShotEvent of snapshotEvents) {
-            buttons.push(`#${extensionName}_${snapShotEvent}`);
-        }
-        // @ts-ignore
-        $(buttons.join(', ')).filter(function() { return this.checked !== enabled; }).trigger('click');
-        //Needed? chatHistory.chatHistory.length = 0
+        //On disabled, toggle all buttons off.
+        if (!enabled) toggles.forEach((toggle) => toggle.toggle(enabled) );
+        //On enabled, reset all buttons.
+        if (enabled) toggles.forEach((toggle) => toggle.reset() );
     };
 
-    //When any setting is toggled, show the extension as enabled.
+    //When a setting is toggled, the enableExtension button may need to be enabled or disabled.
     eventSource.on(`extension_${extensionName}`, (setting, value) => {
-        if ((['showMenuButtons', 'showSaveButtons', 'enableCtrlZ', 'showToasts'].includes(setting) || setting.includes('message_')) && value) {
-            // @ts-ignore
-            $(`#${extensionName}_enable_extension`)[0].checked = true;
-            extension_settings[extensionName].enable_extension = true;
-            saveSettingsDebounced();
+        if ((['showMenuButtons', 'showSaveButtons', 'enableCtrlZ', 'showToasts'].includes(setting) || setting.includes('message_'))) {
+            //When any setting is toggled, show the extension as enabled.
+            if (value) {
+                enableExtension.set(value);
+            }
+            //Or, If all settings are disabled, show the extension as disabled.
+            else if (!(toggles.map((toggle) => toggle.toggled())).some((enabled) => { return enabled; })) {
+                enableExtension.set(value);
+            }
         }
     });
 
-    const enableExtension = new ToggleInput('enable_extension', 'Enable the extension.', { defaultValue: true, callback: toggleExtension, runCallbackOnLoad: false }).create();
 
     async function processUndoHotkey(event) {
         if (!isInputElementInFocus()) {
@@ -71,39 +66,37 @@ export async function addSettingsToggles() {
         }
     }
 
-    const toggleUndoHotkey = (_, enabled, __) => {
+    const toggleUndoHotkeyEvent = (_, enabled, __) => {
         //Toggle on.
         if (enabled) { document.addEventListener('keydown', processUndoHotkey); }
         //Toggle off.
         else { document.removeEventListener('keydown', processUndoHotkey); }
     };
 
-    const toggleUndoHotkeyElement = new ToggleInput('enableCtrlZ', 'Enable the Ctrl+Z/Ctrl+Shift+Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkey }).create();
 
     //Places the settings.
     const undoToggles = $('#undo_toggles');
-    undoToggles.append(enableExtension);
-    undoToggles.append(toggleMenuElement);
-    undoToggles.append(toggleSaveElement);
-    undoToggles.append(toggleToastsElement);
-    undoToggles.append(toggleUndoHotkeyElement);
-
+    //Setting that toggles menuVisibility and saveVisibility.
+    const enableExtension = new ToggleInput('enable_extension', 'Enable the extension.', { parent: undoToggles, defaultValue: false, callback: toggleExtension, runCallbackOnLoad: false });
+    const toggleMenu = new ToggleInput('showMenuButtons', 'Show Undo/Redo in ☰', { parent: undoToggles, defaultValue: true, callback: menuVisibility });
+    const toggleSave = new ToggleInput('showSaveButtons', 'Show Save/Reset in ☰', { parent: undoToggles, defaultValue: false, callback: saveVisibility });
+    const toggleToasts = new ToggleInput('showToasts', 'Show toasts on Undo/Redo.', { parent: undoToggles, defaultValue: defaultShowToasts });
+    const toggleUndoHotkey = new ToggleInput('enableCtrlZ', 'Enable the Ctrl+Z/Ctrl+Shift+Z hotkeys.', { defaultValue: false, callback: toggleUndoHotkeyEvent });
+    toggles.push(toggleMenu, toggleSave, toggleToasts, toggleUndoHotkey);
 }
 
-export async function addSettingsSliders() {
+export async function addSettingsSliders(sliders) {
     //Creates sliders.
-    //MaxChatHistory will apply next time a save occurs.
-    const maxSnapshotsElement = new RangeInput('maxUndoSnapshots', 'Max Undo Snapshots', { defaultValue: defaultMaxUndoSnapshots }).create();
-    const lengthElement = new RangeInput('maxChatLength', 'Max Chat Length', { defaultValue: defaultMaxChatLength }).create();
+    //maxUndoSnapshots will apply next time a save occurs.
 
     //Places the sliders.
     const undoOptions = $('#undo_options');
-    undoOptions.append(maxSnapshotsElement);
-    undoOptions.append(lengthElement);
-
+    const maxSnapshots = new RangeInput('maxUndoSnapshots', 'Max Undo Snapshots', { parent: undoOptions, defaultValue: defaultMaxUndoSnapshots });
+    const maxLength = new RangeInput('maxChatLength', 'Max Chat Length', { parent: undoOptions, defaultValue: defaultMaxChatLength });
+    sliders = [maxSnapshots, maxLength];
 }
 
-export async function addSettingsAdvancedToggles() {
+export async function addSettingsAdvancedToggles(toggles) {
     //Debounce duration.
     //Needed to prevent redundant saves. https://github.com/SillyTavern/SillyTavern/pull/4819#discussion_r2571515880
     let saveChatSnapshotDebounced = debounce(() => chatHistory.saveChatSnapshot(false), extension_settings[extensionName]?.debounce_duration ?? defaultSaveDebounceDuration);
@@ -119,10 +112,10 @@ export async function addSettingsAdvancedToggles() {
     //Allow each event to be separately toggled.
     const eventToggles = $('#undo_events');
     for (const snapShotEvent of snapshotEvents) {
-        //This will be called while each toggle is being created.
+        //This will be called as each toggle is created.
         const toggleSnapshot = (id, enabled, _) => toggleEventFunction(eventSource, id, enabled, saveChatSnapshotDebounced);
-        const toggleSnapshotEvent = new ToggleInput(`${snapShotEvent}`, `Toggles saving the '${snapShotEvent}' event.`, { defaultValue: true, callback: toggleSnapshot }).create();
-        eventToggles.append(toggleSnapshotEvent);
+        const toggleSnapshotEvent = new ToggleInput(`${snapShotEvent}`, `Toggles saving the '${snapShotEvent}' event.`, { parent: eventToggles, defaultValue: true, callback: toggleSnapshot });
+        toggles.push(toggleSnapshotEvent);
     }
 }
 /**
@@ -136,22 +129,26 @@ export async function addSettings() {
     //Places the settings layout.
     $('#undo_container').append(settingsHtml);
 
-    await addSettingsToggles();
-    await addSettingsSliders();
-    await addSettingsAdvancedToggles();
+    //This does not include the enableExtension toggle.
+    let toggles = [];
+    await addSettingsToggles(toggles);
+    let sliders = [];
+    await addSettingsSliders(sliders);
+    await addSettingsAdvancedToggles(toggles);
 }
 
 /**
  * Boilerplate.
  */
 class UserInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, runCallbackOnLoad = true } = {}) {
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, runCallbackOnLoad = true, parent = undefined } = {}) {
         this.id = id;
         this.title = title;
         this.dataStore = dataStore;
         this.callback = callback;
         this.category = category;
         this.runCallbackOnLoad = runCallbackOnLoad;
+        this.parent = parent;
         this.element = undefined;
     }
 }
@@ -161,32 +158,60 @@ class UserInput {
  * Creates a toggle button.
  */
 class ToggleInput extends UserInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true, runCallbackOnLoad = true } = {}) {
-        super(id, title, { dataStore, callback, category, runCallbackOnLoad });
-        this.defaultValue = defaultValue;        this.element = undefined;
-        this.html = `<label class="checkbox_label" for="${this.category}_${this.id}">
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = true, initialValue = false, runCallbackOnLoad = true, parent = undefined } = {}) {
+        super(id, title, { dataStore, callback, category, runCallbackOnLoad, parent });
+        this.defaultValue = defaultValue;
+        this.initialValue = initialValue; //The initial value before the extension has been disabled.
+        this.html = `<label class="undo_toggle checkbox_label" for="${this.category}_${this.id}">
     <input id="${this.category}_${this.id}" type="checkbox" class="checkbox">
     <span data-i18n="${this.title}">${this.title}</span>
 </label>`;
+        this.buttonElement = undefined;
+        this.element = this.create();
     }
     create() {
         this.element = $(this.html);
 
-        const buttonInput = this.element.find(`#${this.category}_${this.id}`);
+        const buttonElement = this.element.find(`#${this.category}_${this.id}`);
+        this.buttonElement = buttonElement;
 
         const onElementInput = async () => {
-            const value = buttonInput.prop('checked');
+            const value = buttonElement.prop('checked');
             this.dataStore[this.id] = value;
             saveSettingsDebounced();
             this.callback(this.id, value);
             await eventSource.emit(`extension_${extensionName}`, this.id, value);
         };
-        const value = this.dataStore?.[this.id] ?? this.defaultValue;
-        buttonInput.prop('checked', value);
-        buttonInput.on('input', onElementInput);
-
-        this.runCallbackOnLoad && this.callback(this.id, value);
+        const value = this.dataStore?.[this.id] ?? this.initialValue;
+        buttonElement.prop('checked', value);
+        buttonElement.on('input', onElementInput);
+        if(this.runCallbackOnLoad) this.callback(this.id, value);
+        if (this.parent) {this.parent.append(this.element);}
         return this.element;
+    }
+    toggled() { return this.buttonElement[0].checked; }
+    click() {return this.buttonElement.trigger('click'); }
+
+    //Toggles the button on or off.
+    toggle(enabled) {
+        if(this.toggled() !== enabled ) this.click();
+    }
+    //Sets the button without clicking it.
+    set(enabled) {
+        this.buttonElement[0].checked = enabled;
+        this.dataStore[this.id] = enabled;
+        saveSettingsDebounced();
+    }
+    //Sets the button to it's default state without clicking it.
+    setDefault() {
+        this.buttonElement[0].checked = this.defaultValue;
+        this.dataStore[this.id] = this.defaultValue;
+        saveSettingsDebounced();
+    }
+
+    //Toggles the button to it's default state.
+    reset() {
+        if(this.toggled() !== this.defaultValue ) this.click();
     }
 }
 
@@ -194,24 +219,28 @@ class ToggleInput extends UserInput {
  * Creates a range input.
  */
 class RangeInput extends UserInput {
-    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = 1000, runCallbackOnLoad = true, min = 0, max = 10000, step = 10 } = {}) {
-        super(id, title, { dataStore, callback, category, runCallbackOnLoad });
+    constructor( id, title, { dataStore = extension_settings[extensionName], callback = (id, value) => {}, category = extensionName, defaultValue = 1000, runCallbackOnLoad = true, min = 0, max = 10000, step = 10, parent = undefined } = {}) {
+        super(id, title, { dataStore, callback, category, runCallbackOnLoad, parent });
         this.defaultValue = defaultValue;
         this.min = min;
         this.max = max;
         this.step = step;
-        this.element = undefined;
-        this.html = `<div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+        this.html = `<div class="undo_slider alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
     <span data-i18n="${this.title}">${this.title}</span>
     <input class="neo-range-slider" type="range" id="${this.category}_${this.id}" name="${this.category}_${this.min}" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
     <input class="neo-range-input" type="number" id="${this.category}_${this.id}_value" min="${this.min}" max="${this.max}" step="${this.step}" value="${this.defaultValue}">
 </div>`;
+        this.sliderElement = undefined;
+        this.textElement = undefined;
+        this.element = this.create();
     }
     create() {
         this.element = $(this.html);
 
         const sliderInput = this.element.find(`#${this.category}_${this.id}`);
         const textInput = this.element.find(`#${this.category}_${this.id}_value`);
+        this.sliderInput = sliderInput;
+        this.textInput = textInput;
 
         const handleInput = async (mainInput, syncedInput) => {
             const value = Number(mainInput.val());
@@ -235,7 +264,8 @@ class RangeInput extends UserInput {
         sliderInput.on('input', onSliderElementInput);
         textInput.on('input', onTextElementInput);
 
-        this.runCallbackOnLoad && this.callback(this.id, value);
+        if(this.runCallbackOnLoad) this.callback(this.id, value);
+        if (this.parent) {this.parent.append(this.element);}
         return this.element;
     }
 }
