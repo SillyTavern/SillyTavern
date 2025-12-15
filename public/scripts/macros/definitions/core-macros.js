@@ -158,13 +158,9 @@ export function registerCoreMacros() {
         returns: 'Randomly selected item from the list.',
         exampleUsage: ['{{random::blonde::brown::red::black::blue}}'],
         handler: ({ list }) => {
-            // We let double-colon args be handled by the list argument parser
-            // But for the ancient legacy comma separated list, we'll fall back to the raw argument and split via the old logic
+            // Handle old legacy cases, where we have to split the list manually
             if (list.length === 1) {
-                list = list[0]
-                    .replace(/\\,/g, '##�COMMA�##')
-                    .split(',')
-                    .map(item => item.trim().replace(/##�COMMA�##/g, ','));
+                list = readSingleArgsRandomList(list[0]);
             }
 
             if (list.length === 0) {
@@ -185,14 +181,9 @@ export function registerCoreMacros() {
         returns: 'Stable randomly selected item from the list.',
         exampleUsage: ['{{pick::blonde::brown::red::black::blue}}'],
         handler: ({ list, range, env }) => {
-            /** @type {string[]} */
-
-            // Legacy comma-separated syntax: {{pick: a, b, c}}
+            // Handle old legacy cases, where we have to split the list manually
             if (list.length === 1) {
-                list = list[0]
-                    .replace(/\\,/g, '##�COMMA�##')
-                    .split(',')
-                    .map(item => item.trim().replace(/##�COMMA�##/g, ','));
+                list = readSingleArgsRandomList(list[0]);
             }
 
             if (!list.length) {
@@ -213,6 +204,21 @@ export function registerCoreMacros() {
             return list[randomIndex];
         },
     });
+
+    /** @param {string} listString @return {string[]} */
+    function readSingleArgsRandomList(listString) {
+        // If it contains double colons, those will have precedence over comma-seperated lists.
+        // This can only happen if the macro only had a single colon to introduce the list...
+        // like, {{random:a::b::c}}
+        if (listString.includes('::')) {
+            return listString.split('::').map((/** @type {string} */ item) => item.trim());
+        }
+        // Otherwise, we fall back and split by commas that may be present
+        return listString
+            .replace(/\\,/g, '##�COMMA�##')
+            .split(',')
+            .map((/** @type {string} */ item) => item.trim().replace(/##�COMMA�##/g, ','));
+    }
 
     // Banned words macro: {{banned "word"}}
     MacroRegistry.registerMacro('banned', {
