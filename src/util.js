@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs, { accessSync, constants } from 'node:fs';
 import http2 from 'node:http2';
 import process from 'node:process';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
@@ -1551,7 +1551,7 @@ export function tryDeleteFile(filePath) {
 }
 
 /**
- * Reads a file until a 'stack' matches or the maxChunks limit.
+ * Reads a file until a 'stack' matches or the maxChunks limit or a newline.
  * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
  * This is only optimized to check the beginning the file.
  * If the json files has newlines (jsonl), only the first line will be read.
@@ -1588,6 +1588,29 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
                 resolve(value);
             }
         };
+        // This cuts the chunk after \n and stops the stream after sending the rest down the pipeline.
+        const newlineTransform = new Transform({
+            transform(chunk, encoding, callback) {
+                if (!resolved) {
+                    if (chunk.includes('\n')) {
+                        // Find the position of the first newline
+                        const newlineIndex = chunk.indexOf('\n');
+                        // Cut the chunk at the newline position
+                        const modifiedChunk = chunk.slice(0, newlineIndex);
+                        // Push the modified chunk
+                        this.push(modifiedChunk);
+                        // Mark as resolved to stop processing
+                        resolveAndCleanup(null);
+                        return callback();
+                    } else {
+                        // No newline found, push the chunk as is
+                        this.push(chunk);
+                    }
+                }
+                callback();
+            },
+        });
+
         try {
 
             readStream = fs.createReadStream(filePath,{ highWaterMark: chunkSize });
@@ -1599,14 +1622,10 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
                     resolveAndCleanup(null); // Chunk limit reached
                     return;
                 }
-                // If a newline is found, stop and return null.
-                if (chunk.includes('\n') && !resolved) {
-                    resolveAndCleanup(null);
-                    return;
-                }
             });
             pipeline = chain([
                 readStream,
+                newlineTransform,
                 parser(),
                 // https://github.com/uhop/stream-json/wiki/Pick
                 pick({
