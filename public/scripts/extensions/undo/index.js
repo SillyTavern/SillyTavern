@@ -35,7 +35,9 @@ class ChatHistory {
         this.settings = settings;
 
         //Reset chatHistory when the chat has changed.
-        eventSource.on(event_types.CHAT_CHANGED,  async () => await this.resetChatSnapshots(false));
+        eventSource.on(event_types.CHAT_CHANGED,  async () => {
+            if (settings?.enable_extension) await this.resetChatSnapshots(false);
+        });
     }
     /**
      * Regenerates the full chat of an adjacent diff.
