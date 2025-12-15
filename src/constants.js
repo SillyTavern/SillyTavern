@@ -208,6 +208,7 @@ export const CHAT_COMPLETION_SOURCES = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    AIBADGR: 'aibadgr',
 };
 
 /**

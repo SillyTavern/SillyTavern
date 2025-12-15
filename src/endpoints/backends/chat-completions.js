@@ -79,6 +79,7 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_AIBADGR = 'https://aibadgr.com/api/v1';
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -1578,6 +1579,10 @@ router.post('/status', async function (request, statusResponse) {
         apiUrl = API_SILICONFLOW;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AIBADGR) {
+        apiUrl = API_AIBADGR;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.AIBADGR);
+        headers = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return statusResponse.status(400).send({ error: true });
@@ -1991,6 +1996,14 @@ router.post('/generate', function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
         apiUrl = API_SILICONFLOW;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+        headers = {};
+        bodyParams = {};
+        if (request.body.json_schema) {
+            setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AIBADGR) {
+        apiUrl = API_AIBADGR;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.AIBADGR);
         headers = {};
         bodyParams = {};
         if (request.body.json_schema) {
