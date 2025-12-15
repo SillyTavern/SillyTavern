@@ -259,7 +259,7 @@ class EdgeTtsProvider {
         try {
             const result = await fetch('/api/plugins/edge-tts/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
             return result.ok;
         } catch (e) {

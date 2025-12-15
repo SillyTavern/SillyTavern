@@ -1,6 +1,9 @@
 import { power_user } from './power-user.js';
 import { delay } from './utils.js';
 
+// Symbol for not primary swipe error
+const NOT_PRIMARY = Symbol('not_primary_swipe');
+
 /**
  * A stream which handles Server-Sent Events from a binary ReadableStream like you get from the fetch API.
  */
@@ -198,6 +201,10 @@ async function* parseStreamData(json) {
     }
     // llama.cpp?
     else if (typeof json.content === 'string' && json.content.length > 0 && json.object !== 'chat.completion.chunk') {
+        const isNotPrimary = json?.index > 0;
+        if (isNotPrimary) {
+            throw new Error('Not a primary swipe', { cause: NOT_PRIMARY });
+        }
         for (let i = 0; i < json.content.length; i++) {
             const str = json.content[i];
             yield {
@@ -211,7 +218,7 @@ async function* parseStreamData(json) {
     else if (Array.isArray(json.choices)) {
         const isNotPrimary = json?.choices?.[0]?.index > 0;
         if (isNotPrimary || json.choices.length === 0) {
-            throw new Error('Not a primary swipe');
+            throw new Error('Not a primary swipe', { cause: NOT_PRIMARY });
         }
 
         if (typeof json.choices[0].text === 'string' && json.choices[0].text.length > 0) {
@@ -223,6 +230,20 @@ async function* parseStreamData(json) {
                 yield {
                     data: { ...json, choices },
                     chunk: str,
+                };
+            }
+            return;
+        }
+        else if (typeof json.choices[0].thinking === 'string' && json.choices[0].thinking.length > 0) {
+            for (let j = 0; j < json.choices[0].thinking.length; j++) {
+                const str = json.choices[0].thinking[j];
+                const choiceClone = structuredClone(json.choices[0]);
+                choiceClone.thinking = str;
+                const choices = [choiceClone];
+                yield {
+                    data: { ...json, choices },
+                    chunk: str,
+                    reasoning: true,
                 };
             }
             return;
@@ -357,7 +378,9 @@ export class SmoothEventSourceStream extends EventSourceStream {
                         lastStr = parsed.chunk;
                     }
                 } catch (error) {
-                    console.debug('Smooth Streaming parsing error', error);
+                    if (error instanceof Error && error.cause !== NOT_PRIMARY) {
+                        console.debug('Smooth Streaming parsing error', error);
+                    }
                     controller.enqueue(event);
                 }
             },

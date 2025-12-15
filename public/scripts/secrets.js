@@ -268,7 +268,7 @@ function getActiveSecretLabel(key) {
 async function viewSecrets() {
     const response = await fetch('/api/secrets/view', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (response.status == 403) {
@@ -372,7 +372,7 @@ export async function readSecretState() {
     try {
         const response = await fetch('/api/secrets/read', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (response.ok) {
