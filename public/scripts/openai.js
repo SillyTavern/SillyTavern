@@ -195,6 +195,7 @@ export const chat_completion_sources = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    AIBADGR: 'aibadgr',
 };
 
 const character_names_behavior = {
@@ -308,6 +309,7 @@ export const settingsToUpdate = {
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
+    aibadgr_model: ['#model_aibadgr_select', 'aibadgr_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true, false],
@@ -409,6 +411,7 @@ const default_settings = {
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
+    aibadgr_model: 'premium',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1621,6 +1624,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.azure_openai_model;
         case chat_completion_sources.ZAI:
             return oai_settings.zai_model;
+        case chat_completion_sources.AIBADGR:
+            return oai_settings.aibadgr_model;
         default:
             console.error(`Unknown chat completion source: ${activeSource}`);
             return '';
@@ -4126,6 +4131,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         cometapi_model: settings.cometapi_model,
         zai_model: settings.zai_model,
         zai_endpoint: settings.zai_endpoint,
+        aibadgr_model: settings.aibadgr_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,

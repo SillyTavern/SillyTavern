@@ -70,6 +70,7 @@ export const SECRET_KEYS = {
     COMETAPI: 'api_key_cometapi',
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
+    AIBADGR: 'api_key_aibadgr',
 };
 
 const FRIENDLY_NAMES = {
@@ -128,6 +129,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
     [SECRET_KEYS.ZAI]: 'Z.AI',
     [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
+    [SECRET_KEYS.AIBADGR]: 'AI Badgr (Budget/Utility, OpenAI-compatible)',
 };
 
 const INPUT_MAP = {
@@ -169,6 +171,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
+    [SECRET_KEYS.AIBADGR]: '#api_key_aibadgr',
 };
 
 const getLabel = () => moment().format('L LT');
