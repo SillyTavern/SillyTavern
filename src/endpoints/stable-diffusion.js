@@ -1681,12 +1681,7 @@ zai.post('/generate', async (request, response) => {
         console.debug('Z.AI image response:', data);
 
         const url = data?.data?.[0]?.url;
-        if (!url) {
-            console.warn('Z.AI returned invalid data.');
-            return response.sendStatus(500);
-        }
-
-        if (!isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
+        if (!url || !isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
             console.warn('Z.AI returned an invalid image URL.');
             return response.sendStatus(500);
         }
