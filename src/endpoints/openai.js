@@ -246,54 +246,6 @@ router.post('/caption-image', async (request, response) => {
     }
 });
 
-router.post('/transcribe-audio', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
-
-        if (!key) {
-            console.warn('No OpenAI key found');
-            return response.sendStatus(400);
-        }
-
-        if (!request.file) {
-            console.warn('No audio file found');
-            return response.sendStatus(400);
-        }
-
-        const formData = new FormData();
-        console.info('Processing audio file', request.file.path);
-        formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
-        formData.append('model', request.body.model);
-
-        if (request.body.language) {
-            formData.append('language', request.body.language);
-        }
-
-        const result = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-                ...formData.getHeaders(),
-            },
-            body: formData,
-        });
-
-        if (!result.ok) {
-            const text = await result.text();
-            console.warn('OpenAI request failed', result.statusText, text);
-            return response.status(500).send(text);
-        }
-
-        fs.unlinkSync(request.file.path);
-        const data = await result.json();
-        console.debug('OpenAI transcription response', data);
-        return response.json(data);
-    } catch (error) {
-        console.error('OpenAI transcription failed', error);
-        response.status(500).send('Internal server error');
-    }
-});
-
 router.post('/generate-voice', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
@@ -696,3 +648,136 @@ custom.post('/generate-voice', async (request, response) => {
 });
 
 router.use('/custom', custom);
+
+/**
+ * Creates a transcribe-audio endpoint handler for a given provider.
+ * @param {object} config - Provider configuration
+ * @param {string} config.secretKey - The SECRET_KEYS enum value for the provider
+ * @param {string} config.apiUrl - The transcription API endpoint URL
+ * @param {string} config.providerName - Display name for logging
+ * @returns {import('express').RequestHandler} Express request handler
+ */
+function createTranscribeHandler({ secretKey, apiUrl, providerName }) {
+    return async (request, response) => {
+        try {
+            const key = readSecret(request.user.directories, secretKey);
+
+            if (!key) {
+                console.warn(`No ${providerName} key found`);
+                return response.sendStatus(400);
+            }
+
+            if (!request.file) {
+                console.warn('No audio file found');
+                return response.sendStatus(400);
+            }
+
+            console.info(`Processing audio file with ${providerName}`, request.file.path);
+            const formData = new FormData();
+            formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
+            formData.append('model', request.body.model);
+
+            if (request.body.language) {
+                formData.append('language', request.body.language);
+            }
+
+            const result = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    ...formData.getHeaders(),
+                },
+                body: formData,
+            });
+
+            if (!result.ok) {
+                const text = await result.text();
+                console.warn(`${providerName} request failed`, result.statusText, text);
+                return response.status(500).send(text);
+            }
+
+            fs.unlinkSync(request.file.path);
+            const data = await result.json();
+            console.debug(`${providerName} transcription response`, data);
+            return response.json(data);
+        } catch (error) {
+            console.error(`${providerName} transcription failed`, error);
+            response.status(500).send('Internal server error');
+        }
+    };
+}
+
+router.post('/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.OPENAI,
+    apiUrl: 'https://api.openai.com/v1/audio/transcriptions',
+    providerName: 'OpenAI',
+}));
+
+router.post('/groq/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.GROQ,
+    apiUrl: 'https://api.groq.com/openai/v1/audio/transcriptions',
+    providerName: 'Groq',
+}));
+
+router.post('/mistral/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.MISTRALAI,
+    apiUrl: 'https://api.mistral.ai/v1/audio/transcriptions',
+    providerName: 'MistralAI',
+}));
+
+router.post('/zai/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.ZAI,
+    apiUrl: 'https://api.z.ai/api/paas/v4/audio/transcriptions',
+    providerName: 'Z.AI',
+}));
+
+router.post('/chutes/transcribe-audio', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        if (!request.file) {
+            console.warn('No audio file found');
+            return response.sendStatus(400);
+        }
+
+        console.info('Processing audio file with Chutes', request.file.path);
+        const audioBase64 = fs.readFileSync(request.file.path).toString('base64');
+
+        const result = await fetch(`https://${request.body.model}.chutes.ai/transcribe`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                audio_b64: audioBase64,
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        fs.unlinkSync(request.file.path);
+        const data = await result.json();
+        console.debug('Chutes transcription response', data);
+
+        if (!Array.isArray(data)) {
+            console.warn('Chutes transcription response invalid', data);
+            return response.sendStatus(500);
+        }
+
+        const fullText = data.map(chunk => chunk.text || '').join('').trim();
+        return response.json({ text: fullText });
+    } catch (error) {
+        console.error('Chutes transcription failed', error);
+        response.status(500).send('Internal server error');
+    }
+});

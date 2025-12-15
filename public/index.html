@@ -42,6 +42,7 @@
     <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
     <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+    <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Scripts are loaded at the end of the body to improve page load speed -->
@@ -2942,6 +2943,11 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5.2">
+                                        <option value="gpt-5.2">gpt-5.2</option>
+                                        <option value="gpt-5.2-2025-12-11">gpt-5.2-2025-12-11</option>
+                                        <option value="gpt-5.2-chat-latest">gpt-5.2-chat-latest</option>
+                                    </optgroup>
                                     <optgroup label="GPT-5.1">
                                         <option value="gpt-5.1">gpt-5.1</option>
                                         <option value="gpt-5.1-2025-11-13">gpt-5.1-2025-11-13</option>
@@ -3788,6 +3794,8 @@
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
                                 <option value="glm-4.6">glm-4.6</option>
+                                <option value="glm-4.6v">glm-4.6v</option>
+                                <option value="glm-4.6v-flash">glm-4.6v-flash</option>
                                 <option value="glm-4.5v">glm-4.5v</option>
                                 <option value="glm-4.5">glm-4.5</option>
                                 <option value="glm-4.5-air">glm-4.5-air</option>
@@ -5250,6 +5258,11 @@
                                 <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding  and  characters in message text, allowing a subset of HTML markup as well as Markdown">
                                     <input id="encode_tags" type="checkbox" />
                                     <small data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</small>
+                                </label>
+                                <label class="checkbox_label" for="experimental_macro_engine" title="Experimental new Macro Engine.&NewLine;&NewLine;Allows nested macros to be resolved correctly and has a dedicated, logical replacement order.&NewLine;The new engine is designed to cleanly replace the old regex-based macro system.">
+                                    <input id="experimental_macro_engine" type="checkbox" />
+                                    <small data-i18n="Experimental Macro Engine">Experimental Macro Engine</small>
+                                    <i class="fa-solid fa-flask" title="Experimental feature. Currently in development to test." data-i18n="[title]Experimental feature. Currently in development to test."></i>
                                 </label>
                                 <label class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members." data-i18n="[title]Allow AI messages in groups to contain lines spoken by other group members">
                                     <input id="disable_group_trimming" type="checkbox" />

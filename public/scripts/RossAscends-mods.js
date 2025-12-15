@@ -1092,7 +1092,8 @@ export function initRossMods() {
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
                 $('.swipe_left:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
@@ -1106,7 +1107,8 @@ export function initRossMods() {
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
                 $('.swipe_right:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;

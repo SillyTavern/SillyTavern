@@ -24,6 +24,7 @@ import chalk from 'chalk';
 import yaml from 'yaml';
 //ChatUndoHistory https://github.com/SillyTavern/SillyTavern/pull/4819#issuecomment-3588157446
 import { diff } from 'deep-object-diff';
+import * as chevrotain from 'chevrotain';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -102,6 +103,7 @@ export default {
     slideToggle,
     chalk,
     yaml,
+    chevrotain,
 };
 
 export {
@@ -127,4 +129,5 @@ export {
     chalk,
     yaml,
     diff,
+    chevrotain,
 };
