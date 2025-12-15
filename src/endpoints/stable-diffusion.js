@@ -9,7 +9,7 @@ import FormData from 'form-data';
 import urlJoin from 'url-join';
 import _ from 'lodash';
 
-import { delay, getBasicAuthHeader, tryParse } from '../util.js';
+import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { AIMLAPI_HEADERS } from '../constants.js';
 
@@ -1654,7 +1654,7 @@ zai.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.debug('Z.AI request:', request.body);
+        console.debug('Z.AI image request:', request.body);
 
         const generateResponse = await fetch('https://api.z.ai/api/paas/v4/images/generations', {
             method: 'POST',
@@ -1678,10 +1678,16 @@ zai.post('/generate', async (request, response) => {
 
         /** @type {any} */
         const data = await generateResponse.json();
+        console.debug('Z.AI image response:', data);
 
         const url = data?.data?.[0]?.url;
         if (!url) {
             console.warn('Z.AI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        if (!isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
+            console.warn('Z.AI returned an invalid image URL.');
             return response.sendStatus(500);
         }
 
