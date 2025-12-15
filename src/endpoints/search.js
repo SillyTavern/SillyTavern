@@ -341,6 +341,52 @@ router.post('/serper', async (request, response) => {
     }
 });
 
+router.post('/zai', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+
+        if (!key) {
+            console.error('No Z.AI key found');
+            return response.sendStatus(400);
+        }
+
+        const { query } = request.body;
+
+        if (!query) {
+            console.error('No query provided for /zai');
+            return response.sendStatus(400);
+        }
+
+        console.debug('Z.AI web search query', query);
+
+        const result = await fetch('https://api.z.ai/api/paas/v4/web_search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+                // TODO: There's only one engine option for now
+                search_engine: 'search-prime',
+                search_query: query,
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.error('Z.AI request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('Z.AI web search response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/visit', async (request, response) => {
     try {
         const url = request.body.url;
