@@ -2295,7 +2295,6 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const isMoonshot = oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT;
     const isAzureOpenAI = oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI;
     const isZai = oai_settings.chat_completion_source == chat_completion_sources.ZAI;
-    const isAiBadgr = oai_settings.chat_completion_source == chat_completion_sources.AIBADGR;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
