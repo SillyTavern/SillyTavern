@@ -10,12 +10,10 @@ import {
     event_types,
     getCurrentChatId,
     getRequestHeaders,
-    hideSwipeButtons,
     name1,
     name2,
     reloadCurrentChat,
     saveSettingsDebounced,
-    showSwipeButtons,
     this_chid,
     saveChatConditional,
     chat_metadata,
@@ -27,6 +25,10 @@ import {
     getSystemMessageByType,
     printMessages,
     clearChat,
+    refreshSwipeButtons,
+    getMediaIndex,
+    getMediaDisplay,
+    chatElement,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -44,6 +46,8 @@ import {
     getFileText,
     getFileExtension,
     convertTextToBase64,
+    isSameFile,
+    clamp,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -53,6 +57,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -159,8 +164,7 @@ export async function hideChatMessageRange(start, end, unhide, nameFitler = null
     }
 
     // Reload swipes. Useful when a last message is hidden.
-    hideSwipeButtons();
-    showSwipeButtons();
+    refreshSwipeButtons();
 
     await saveChatConditional();
 }
@@ -189,62 +193,71 @@ export async function unhideChatMessage(messageId, _messageBlock) {
 
 /**
  * Adds a file attachment to the message.
- * @param {object} message Message object
+ * @param {ChatMessage} message Message object
  * @returns {Promise<void>} A promise that resolves when file is uploaded.
  */
 export async function populateFileAttachment(message, inputId = 'file_form_input') {
     try {
         if (!message) return;
-        if (!message.extra) message.extra = {};
+        if (!message.extra || typeof message.extra !== 'object') message.extra = {};
         const fileInput = document.getElementById(inputId);
         if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        if (!file) return;
 
-        const slug = getStringHash(file.name);
-        const fileNamePrefix = `${Date.now()}_${slug}`;
-        const fileBase64 = await getBase64Async(file);
-        let base64Data = fileBase64.split(',')[1];
-        const extension = getFileExtension(file);
+        for (const file of fileInput.files) {
+            const slug = getStringHash(file.name);
+            const fileNamePrefix = `${Date.now()}_${slug}`;
+            const fileBase64 = await getBase64Async(file);
+            let base64Data = fileBase64.split(',')[1];
+            const extension = getFileExtension(file);
 
-        // If file is image
-        if (file.type.startsWith('image/')) {
-            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.image = imageUrl;
-            message.extra.inline_image = true;
-        }
-        // If file is video
-        else if (file.type.startsWith('video/')) {
-            const videoUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.video = videoUrl;
-        } else {
-            const uniqueFileName = `${fileNamePrefix}.txt`;
-
-            if (isConvertible(file.type)) {
-                try {
-                    const converter = getConverter(file.type);
-                    const fileText = await converter(file);
-                    base64Data = convertTextToBase64(fileText);
-                } catch (error) {
-                    toastr.error(String(error), t`Could not convert file`);
-                    console.error('Could not convert file', error);
+            const mediaType = MEDIA_TYPE.getFromMime(file.type);
+            if (mediaType) {
+                const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                if (!Array.isArray(message.extra.media)) {
+                    message.extra.media = [];
                 }
+                /** @type {MediaAttachment} */
+                const mediaAttachment = {
+                    url: imageUrl,
+                    type: mediaType,
+                    title: file.name,
+                    source: MEDIA_SOURCE.UPLOAD,
+                };
+                message.extra.media.push(mediaAttachment);
+                message.extra.media_index = message.extra.media.length - 1;
+                message.extra.inline_image = true;
+            } else {
+                const uniqueFileName = `${fileNamePrefix}.txt`;
+
+                if (isConvertible(file.type)) {
+                    try {
+                        const converter = getConverter(file.type);
+                        const fileText = await converter(file);
+                        base64Data = convertTextToBase64(fileText);
+                    } catch (error) {
+                        toastr.error(String(error), t`Could not convert file`);
+                        console.error('Could not convert file', error);
+                    }
+                }
+
+                const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+
+                if (!fileUrl) {
+                    continue;
+                }
+
+                if (!Array.isArray(message.extra.files)) {
+                    message.extra.files = [];
+                }
+
+                message.extra.files.push({
+                    url: fileUrl,
+                    size: file.size,
+                    name: file.name,
+                    created: Date.now(),
+                });
             }
-
-            const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
-
-            if (!fileUrl) {
-                return;
-            }
-
-            message.extra.file = {
-                url: fileUrl,
-                size: file.size,
-                name: file.name,
-                created: Date.now(),
-            };
         }
-
     } catch (error) {
         console.error('Could not upload file', error);
         toastr.error(t`Either the file is corrupted or its format is not supported.`, t`Could not upload the file`);
@@ -316,16 +329,16 @@ export async function getFileAttachment(url) {
  */
 async function validateFile(file) {
     const fileText = await file.text();
-    const isImage = file.type.startsWith('image/');
+    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
     const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
-    if (!isImage && file.size > fileSizeLimit) {
+    if (!isMedia && file.size > fileSizeLimit) {
         toastr.error(t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`);
         return false;
     }
 
     // If file is binary
-    if (isBinary && !isImage && !isConvertible(file.type)) {
+    if (isBinary && !isMedia && !isConvertible(file.type)) {
         toastr.error(t`Binary files are not supported. Select a text file or image.`);
         return false;
     }
@@ -342,22 +355,28 @@ export function hasPendingFileAttachment() {
 
 /**
  * Displays file information in the message sending form.
- * @param {File} file File object
+ * @param {FileList} fileList File object
  * @returns {Promise<void>}
  */
-async function onFileAttach(file) {
-    if (!file) return;
+async function onFileAttach(fileList) {
+    if (!fileList || fileList.length === 0) return;
 
-    const isValid = await validateFile(file);
+    for (const file of fileList) {
+        const isValid = await validateFile(file);
 
-    // If file is binary
-    if (!isValid) {
-        $('#file_form').trigger('reset');
-        return;
+        // If file is binary
+        if (!isValid) {
+            toastr.warning(t`File ${file.name} is not supported.`);
+            $('#file_form').trigger('reset');
+            return;
+        }
     }
 
-    $('#file_form .file_name').text(file.name);
-    $('#file_form .file_size').text(humanFileSize(file.size));
+    const name = fileList.length === 1 ? fileList[0].name : t`${fileList.length} files selected`;
+    const size = [...fileList].reduce((acc, file) => acc + file.size, 0);
+    const title = [...fileList].map(x => x.name).join('\n');
+    $('#file_form .file_name').text(name).attr('title', title);
+    $('#file_form .file_size').text(humanFileSize(size)).attr('title', size);
     $('#file_form').removeClass('displayNone');
 
     // Reset form on chat change (if not on a welcome screen)
@@ -370,10 +389,17 @@ async function onFileAttach(file) {
 }
 
 /**
- * Deletes file from message.
+ * Deletes file from a message.
+ * @param {JQuery<HTMLElement>} messageBlock Message block element
  * @param {number} messageId Message ID
+ * @param {number} fileIndex File index
  */
-async function deleteMessageFile(messageId) {
+async function deleteMessageFile(messageBlock, messageId, fileIndex) {
+    if (isNaN(messageId) || isNaN(fileIndex)) {
+        console.warn('Invalid message ID or file index');
+        return;
+    }
+
     const confirm = await callGenericPopup('Are you sure you want to delete this file?', POPUP_TYPE.CONFIRM);
 
     if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
@@ -383,26 +409,49 @@ async function deleteMessageFile(messageId) {
 
     const message = chat[messageId];
 
-    if (!message?.extra?.file) {
-        console.debug('Message has no file');
+    if (!Array.isArray(message?.extra?.files)) {
+        console.debug('Message has no files');
         return;
     }
 
-    const url = message.extra.file.url;
+    if (fileIndex < 0 || fileIndex >= message.extra.files.length) {
+        console.warn('Invalid file index for message');
+        return;
+    }
 
-    delete message.extra.file;
-    $(`.mes[mesid="${messageId}"] .mes_file_container`).remove();
+    const url = message.extra.files[fileIndex]?.url;
+    message.extra.files.splice(fileIndex, 1);
+
     await saveChatConditional();
     await deleteFileFromServer(url);
-}
 
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
+}
 
 /**
  * Opens file from message in a modal.
  * @param {number} messageId Message ID
+ * @param {number} fileIndex File index
  */
-async function viewMessageFile(messageId) {
-    const messageFile = chat[messageId]?.extra?.file;
+async function viewMessageFile(messageId, fileIndex) {
+    if (isNaN(messageId) || isNaN(fileIndex)) {
+        console.warn('Invalid message ID or file index');
+        return;
+    }
+
+    const message = chat[messageId];
+
+    if (!Array.isArray(message?.extra?.files)) {
+        console.debug('Message has no files');
+        return;
+    }
+
+    if (fileIndex < 0 || fileIndex >= message.extra.files.length) {
+        console.warn('Invalid file index for message');
+        return;
+    }
+
+    const messageFile = message.extra.files[fileIndex];
 
     if (!messageFile) {
         console.debug('Message has no file or it is empty');
@@ -431,39 +480,51 @@ function embedMessageFile(messageId, messageBlock) {
         .on('change', parseAndUploadEmbed)
         .trigger('click');
 
-    async function parseAndUploadEmbed(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    async function parseAndUploadEmbed(/** @type {JQuery.ChangeEvent} */ e) {
+        if (!(e.target instanceof HTMLInputElement)) return;
+        if (!e.target.files.length) return;
 
-        const isValid = await validateFile(file);
+        for (const file of e.target.files) {
+            const isValid = await validateFile(file);
 
-        if (!isValid) {
-            $('#file_form').trigger('reset');
-            return;
+            if (!isValid) {
+                toastr.warning(t`File ${file.name} is not supported.`);
+                $('#file_form').trigger('reset');
+                return;
+            }
         }
 
         await populateFileAttachment(message, 'embed_file_input');
         await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
-        appendMediaToMessage(message, messageBlock);
+        appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
         await saveChatConditional();
     }
 }
 
 /**
  * Appends file content to the message text.
- * @param {object} message Message object
+ * @param {ChatMessage} message Message object
  * @param {string} messageText Message text
  * @returns {Promise<string>} Message text with file content appended.
  */
 export async function appendFileContent(message, messageText) {
-    if (message.extra?.file) {
-        const fileText = message.extra.file.text || (await getFileAttachment(message.extra.file.url));
-
-        if (fileText) {
-            const fileWrapped = `${fileText}\n\n`;
-            message.extra.fileLength = fileWrapped.length;
-            messageText = fileWrapped + messageText;
+    if (!message || !message.extra || typeof message.extra !== 'object') {
+        return messageText;
+    }
+    if (message.extra.fileLength >= 0) {
+        delete message.extra.fileLength;
+    }
+    if (Array.isArray(message.extra?.files) && message.extra.files.length > 0) {
+        const fileTexts = [];
+        for (const file of message.extra.files) {
+            const fileText = file.text || (await getFileAttachment(file.url));
+            if (fileText) {
+                fileTexts.push(fileText);
+            }
         }
+        const mergedFileTexts = fileTexts.join('\n\n') + '\n\n';
+        message.extra.fileLength = mergedFileTexts.length;
+        return mergedFileTexts + messageText;
     }
     return messageText;
 }
@@ -809,62 +870,128 @@ export function isExternalMediaAllowed() {
     return !power_user.forbid_external_media;
 }
 
-function expandMessageImage(event) {
-    const mesBlock = $(event.currentTarget).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
-    const imgSrc = message?.extra?.image;
-    const title = message?.extra?.title;
-
-    if (!imgSrc) {
+/**
+ * Expands the message media attachment.
+ * @param {number} messageId Message ID
+ * @param {number} mediaIndex Media index
+ * @returns {HTMLElement} Enlarged media element
+ */
+function expandMessageMedia(messageId, mediaIndex) {
+    if (isNaN(messageId) || isNaN(mediaIndex)) {
+        console.warn('Invalid message ID or media index');
         return;
     }
 
-    const img = document.createElement('img');
-    img.classList.add('img_enlarged');
-    img.src = imgSrc;
-    const imgHolder = document.createElement('div');
-    imgHolder.classList.add('img_enlarged_holder');
-    imgHolder.append(img);
-    const imgContainer = $('<div><pre><code class="img_enlarged_title"></code></pre></div>');
-    imgContainer.prepend(imgHolder);
-    imgContainer.addClass('img_enlarged_container');
+    /** @type {ChatMessage} */
+    const message = chat[messageId];
 
-    const codeTitle = imgContainer.find('.img_enlarged_title');
-    codeTitle.addClass('txt').text(title);
-    const titleEmpty = !title || title.trim().length === 0;
-    imgContainer.find('pre').toggle(!titleEmpty);
-    addCopyToCodeBlocks(imgContainer);
+    if (!Array.isArray(message?.extra?.media) || message.extra.media.length === 0) {
+        console.warn('Message has no media to expand');
+        return;
+    }
 
-    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
+    const mediaAttachment = message.extra.media[mediaIndex];
+    const title = mediaAttachment.title || message.extra.title || '';
+
+    if (!mediaAttachment) {
+        return;
+    }
+
+    if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+        console.warn('Audio media cannot be expanded');
+        return;
+    }
+
+    /**
+     * Gets the media element based on its type.
+     * @returns {HTMLElement} Media element
+     */
+    function getMediaElement() {
+        function getImageElement() {
+            const img = document.createElement('img');
+            img.src = mediaAttachment.url;
+            img.classList.add('img_enlarged');
+            return img;
+        }
+
+        function getVideoElement() {
+            const video = document.createElement('video');
+            video.src = mediaAttachment.url;
+            video.classList.add('img_enlarged');
+            video.controls = true;
+            video.autoplay = true;
+            return video;
+        }
+
+        switch (mediaAttachment.type) {
+            case MEDIA_TYPE.IMAGE:
+                return getImageElement();
+            case MEDIA_TYPE.VIDEO:
+                return getVideoElement();
+        }
+
+        console.warn('Unsupported media type for enlargement:', mediaAttachment.type);
+        return getImageElement();
+    }
+
+    const mediaElement = getMediaElement();
+    const mediaHolder = document.createElement('div');
+    mediaHolder.classList.add('img_enlarged_holder');
+    mediaHolder.append(mediaElement);
+    const mediaContainer = document.createElement('div');
+    mediaContainer.classList.add('img_enlarged_container');
+    mediaContainer.append(mediaHolder);
+
+    mediaElement.addEventListener('click', event => {
+        const shouldZoom = !mediaElement.classList.contains('zoomed') && mediaElement.nodeName === 'IMG';
+        mediaElement.classList.toggle('zoomed', shouldZoom);
+        event.stopPropagation();
+    });
+
+    if (title.trim().length > 0) {
+        const mediaTitlePre = document.createElement('pre');
+        const mediaTitleCode = document.createElement('code');
+        mediaTitleCode.classList.add('img_enlarged_title', 'txt');
+        mediaTitleCode.textContent = title;
+        mediaTitlePre.append(mediaTitleCode);
+        mediaTitleCode.addEventListener('click', event => {
+            event.stopPropagation();
+        });
+        mediaContainer.append(mediaTitlePre);
+        addCopyToCodeBlocks(mediaContainer);
+    }
+
+    const popup = new Popup(mediaContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
 
     popup.dlg.style.width = 'unset';
     popup.dlg.style.height = 'unset';
-
-    img.addEventListener('click', event => {
-        const shouldZoom = !img.classList.contains('zoomed');
-        img.classList.toggle('zoomed', shouldZoom);
-        event.stopPropagation();
-    });
-    codeTitle[0]?.addEventListener('click', event => {
-        event.stopPropagation();
-    });
-
-    popup.dlg.addEventListener('click', event => {
+    popup.dlg.addEventListener('click', () => {
         popup.completeCancelled();
     });
 
     popup.show();
-    return img;
+    return mediaElement;
 }
 
-function expandAndZoomMessageImage(event) {
-    expandMessageImage(event).click();
-}
+/**
+ * Deletes an image from a message.
+ * @param {number} messageId Message ID
+ * @param {number} mediaIndex Image index
+ * @param {JQuery<HTMLElement>} messageBlock Message block element
+ */
+async function deleteMessageMedia(messageId, mediaIndex, messageBlock) {
+    if (isNaN(messageId) || isNaN(mediaIndex)) {
+        console.warn('Invalid message ID or media index');
+        return;
+    }
 
-async function deleteMessageImage() {
-    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.TEXT, '', {
+    const deleteUrls = [];
+    const deleteFromServerId = 'delete_media_files_checkbox';
+    let deleteFromServer = true;
+
+    const value = await Popup.show.confirm(t`Delete media from message?`, t`This action can't be undone.`, {
         okButton: t`Delete one`,
+        cancelButton: false,
         customButtons: [
             {
                 text: t`Delete all`,
@@ -877,64 +1004,123 @@ async function deleteMessageImage() {
                 result: POPUP_RESULT.CANCELLED,
             },
         ],
+        customInputs: [
+            {
+                type: 'checkbox',
+                label: t`Also delete files from server`,
+                id: deleteFromServerId,
+                defaultState: true,
+            },
+        ],
+        onClose: (popup) => {
+            deleteFromServer = Boolean(popup.inputResults.get(deleteFromServerId) ?? false);
+        },
     });
 
     if (!value) {
         return;
     }
 
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
+    /** @type {ChatMessage} */
+    const message = chat[messageId];
 
-    let isLastImage = true;
-
-    if (Array.isArray(message.extra.image_swipes)) {
-        const indexOf = message.extra.image_swipes.indexOf(message.extra.image);
-        if (indexOf > -1) {
-            message.extra.image_swipes.splice(indexOf, 1);
-            isLastImage = message.extra.image_swipes.length === 0;
-            if (!isLastImage) {
-                const newIndex = Math.min(indexOf, message.extra.image_swipes.length - 1);
-                message.extra.image = message.extra.image_swipes[newIndex];
-            }
-        }
+    if (!Array.isArray(message?.extra?.media)) {
+        console.debug('Message has no media');
+        return;
     }
 
-    if (isLastImage || value === POPUP_RESULT.CUSTOM1) {
-        delete message.extra.image;
+    if (mediaIndex < 0 || mediaIndex >= message.extra.media.length) {
+        console.warn('Invalid media index for message');
+        return;
+    }
+
+    deleteUrls.push(message.extra.media[mediaIndex].url);
+    message.extra.media.splice(mediaIndex, 1);
+
+    if (message.extra.media_index === mediaIndex) {
+        const newIndex = mediaIndex > 0 ? mediaIndex - 1 : 0;
+        message.extra.media_index = clamp(newIndex, 0, message.extra.media.length - 1);
+    }
+
+    if (value === POPUP_RESULT.CUSTOM1) {
+        for (const media of message.extra.media) {
+            deleteUrls.push(media.url);
+        }
+        delete message.extra.media;
         delete message.extra.inline_image;
         delete message.extra.title;
         delete message.extra.append_title;
-        delete message.extra.image_swipes;
-        mesBlock.find('.mes_img_container').removeClass('img_extra');
-        mesBlock.find('.mes_img').attr('src', '');
-    } else {
-        appendMediaToMessage(message, mesBlock);
+    }
+
+    if (deleteFromServer) {
+        for (const url of deleteUrls) {
+            if (!url) continue;
+            await deleteMediaFromServer(url, true);
+        }
     }
 
     await saveChatConditional();
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
 }
 
-async function deleteMessageVideo() {
-    const confirm = await Popup.show.confirm(t`Delete video from message?`, t`This action can't be undone.`);
-    if (!confirm) {
+/**
+ * Switches the media display mode for a message.
+ * @param {number} messageId Message ID
+ * @param {JQuery<HTMLElement>} messageBlock Message block element
+ * @param {MEDIA_DISPLAY} targetDisplay Target display mode
+ */
+async function switchMessageMediaDisplay(messageId, messageBlock, targetDisplay) {
+    if (isNaN(messageId)) {
+        console.warn('Invalid message ID');
         return;
     }
 
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
+    /** @type {ChatMessage} */
+    const message = chat[messageId];
 
-    if (!message?.extra?.video) {
-        console.warn('Message has no video or it is empty');
+    if (!message) {
+        console.warn('Message not found for ID', messageId);
         return;
     }
 
-    delete message.extra.video;
-    mesBlock.find('.mes_video_container').remove();
+    if (!message.extra || typeof message.extra !== 'object') {
+        message.extra = {};
+    }
 
+    message.extra.media_display = targetDisplay;
     await saveChatConditional();
+    appendMediaToMessage(message, messageBlock, SCROLL_BEHAVIOR.KEEP);
+}
+
+/**
+ * Deletes media file from the server.
+ * @param {string} url Path to the media file on the server
+ * @param {boolean} [silent=false] If true, do not show error messages
+ * @returns {Promise<boolean>} True if media file was deleted, false otherwise.
+ */
+export async function deleteMediaFromServer(url, silent = false) {
+    try {
+        const result = await fetch('/api/images/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path: url }),
+        });
+
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
+        }
+
+        await eventSource.emit(event_types.MEDIA_ATTACHMENT_DELETED, url);
+        return true;
+    } catch (error) {
+        toastr.error(String(error), t`Could not delete image`);
+        console.error('Could not delete image', error);
+        return false;
+    }
 }
 
 /**
@@ -943,7 +1129,7 @@ async function deleteMessageVideo() {
  * @param {boolean} [silent=false] If true, do not show error messages
  * @returns {Promise<boolean>} True if file was deleted, false otherwise.
  */
-async function deleteFileFromServer(url, silent = false) {
+export async function deleteFileFromServer(url, silent = false) {
     try {
         const result = await fetch('/api/files/delete', {
             method: 'POST',
@@ -951,9 +1137,12 @@ async function deleteFileFromServer(url, silent = false) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok && !silent) {
-            const error = await result.text();
-            throw new Error(error);
+        if (!result.ok) {
+            if (!silent) {
+                const error = await result.text();
+                throw new Error(error);
+            }
+            return false;
         }
 
         await eventSource.emit(event_types.FILE_ATTACHMENT_DELETED, url);
@@ -1867,6 +2056,61 @@ export function addDOMPurifyHooks() {
     });
 }
 
+/**
+ * Switches an image to the next or previous one in the swipe list.
+ * @param {number} messageId Message ID
+ * @param {JQuery<HTMLElement>} element Message element
+ * @param {string} direction Swipe direction
+ * @returns {Promise<void>}
+ */
+async function onImageSwiped(messageId, element, direction) {
+    const animationClass = 'fa-fade';
+    const messageMedia = element.find('.mes_img, .mes_video');
+
+    // Current image is already animating
+    if (messageMedia.hasClass(animationClass)) {
+        return;
+    }
+
+    const message = chat[messageId];
+    const media = message?.extra?.media;
+
+    if (!message || !Array.isArray(media) || media.length === 0) {
+        console.warn('No media found in the message');
+        return;
+    }
+
+    const currentIndex = getMediaIndex(message);
+    const mediaDisplay = getMediaDisplay(message);
+
+    if (mediaDisplay !== MEDIA_DISPLAY.GALLERY) {
+        console.warn('Image swiping is only supported for gallery media display');
+        return;
+    }
+
+    await eventSource.emit(event_types.IMAGE_SWIPED, { message, element, direction });
+
+    if (media.length === 1) {
+        console.warn('Only one media item in the message, swiping is not applicable');
+        return;
+    }
+
+    // Switch to previous image or wrap around if at the beginning
+    if (direction === SWIPE_DIRECTION.LEFT) {
+        const newIndex = currentIndex === 0 ? media.length - 1 : currentIndex - 1;
+        message.extra.media_index = newIndex;
+    }
+
+    // Switch to next image or generate a new one if at the end
+    if (direction === SWIPE_DIRECTION.RIGHT) {
+        const newIndex = currentIndex === media.length - 1 ? 0 : currentIndex + 1;
+        message.extra.media_index = newIndex >= media.length ? 0 : newIndex;
+    }
+
+    await saveChatConditional();
+    appendMediaToMessage(message, element);
+}
+
 export function initChatUtilities() {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
@@ -1883,13 +2127,17 @@ export function initChatUtilities() {
     $(document).on('click', '.mes_file_delete', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await deleteMessageFile(messageId);
+        const fileBlock = $(this).closest('.mes_file_container');
+        const fileIndex = Number(fileBlock.attr('data-index'));
+        await deleteMessageFile(messageBlock, messageId, fileIndex);
     });
 
     $(document).on('click', '.mes_file_open', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await viewMessageFile(messageId);
+        const fileBlock = $(this).closest('.mes_file_container');
+        const fileIndex = Number(fileBlock.attr('data-index'));
+        await viewMessageFile(messageId, fileIndex);
     });
 
     $(document).on('click', '.assistant_note_export', async function () {
@@ -2054,16 +2302,55 @@ export function initChatUtilities() {
         openGlobalStylesPreferenceDialog();
     });
 
-    $(document).on('click', '.mes_img', expandMessageImage);
-    $(document).on('click', '.mes_img_enlarge', expandAndZoomMessageImage);
-    $(document).on('click', '.mes_img_delete', deleteMessageImage);
-    $(document).on('click', '.mes_video_delete', deleteMessageVideo);
+    /**
+     * Returns information about the closest media container.
+     * @returns {MediaContainerInfo} Information about the media container
+     * @typedef {object} MediaContainerInfo
+     * @property {JQuery<HTMLElement>} messageBlock The closest message block
+     * @property {number} messageId The message ID
+     * @property {JQuery<HTMLElement>} mediaBlock The closest media container block
+     * @property {number} mediaIndex The media index within the message
+     */
+    function getMediaContainerInfo(containerClass = '.mes_media_container') {
+        const messageBlock = $(this).closest('.mes');
+        const messageId = Number(messageBlock.attr('mesid'));
+        const mediaBlock = $(this).closest(containerClass);
+        const mediaIndex = Number(mediaBlock.attr('data-index'));
+        return { messageBlock, messageId, mediaBlock, mediaIndex };
+    }
+    chatElement.on('click', '.mes_img', async function () {
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
+        expandMessageMedia(messageId, mediaIndex);
+    });
+    chatElement.on('click', '.mes_media_enlarge', async function () {
+        const { messageId, mediaIndex } = getMediaContainerInfo.call(this);
+        expandMessageMedia(messageId, mediaIndex).click();
+    });
+    chatElement.on('click', '.mes_media_delete', async function () {
+        const { messageId, mediaIndex, messageBlock } = getMediaContainerInfo.call(this);
+        await deleteMessageMedia(messageId, mediaIndex, messageBlock);
+    });
+    chatElement.on('click', '.mes_media_list', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.GALLERY);
+    });
+    chatElement.on('click', '.mes_media_gallery', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await switchMessageMediaDisplay(messageId, messageBlock, MEDIA_DISPLAY.LIST);
+    });
+    chatElement.on('click', '.mes_img_swipe_left', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.LEFT);
+    });
+    chatElement.on('click', '.mes_img_swipe_right', async function () {
+        const { messageId, messageBlock } = getMediaContainerInfo.call(this);
+        await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.RIGHT);
+    });
 
     $('#file_form_input').on('change', async () => {
         const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        await onFileAttach(file);
+        await onFileAttach(fileInput.files);
     });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
@@ -2077,18 +2364,38 @@ export function initChatUtilities() {
         event.preventDefault();
         event.stopPropagation();
 
+        await handleFileAttach(Array.from(event.clipboardData.files));
+    });
+
+    new DragAndDropHandler('#form_sheld', async (files) => {
+        await handleFileAttach(files);
+    });
+
+    /**
+     * Common handler for file attachments.
+     * @param {File[]} files Files to attach
+     * @returns {Promise<void>}
+     */
+    async function handleFileAttach(files) {
         const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
 
         // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
         const dataTransfer = new DataTransfer();
-        for (let i = 0; i < event.clipboardData.files.length; i++) {
-            dataTransfer.items.add(event.clipboardData.files[i]);
+        for (let i = 0; i < files.length; i++) {
+            dataTransfer.items.add(files[i]);
+        }
+
+        // Preserve existing non-duplicate files in the input
+        for (const file of fileInput.files) {
+            if (!Array.from(dataTransfer.files).some(f => isSameFile(f, file))) {
+                dataTransfer.items.add(file);
+            }
         }
 
         fileInput.files = dataTransfer.files;
-        await onFileAttach(fileInput.files[0]);
-    });
+        await onFileAttach(fileInput.files);
+    }
 
     eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
 }

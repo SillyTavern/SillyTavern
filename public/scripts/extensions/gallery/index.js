@@ -18,6 +18,7 @@ import { DragAndDropHandler } from '../../dragdrop.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { t, translate } from '../../i18n.js';
 import { Popup } from '../../popup.js';
+import { deleteMediaFromServer } from '../../chats.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -163,21 +164,9 @@ async function getGalleryFolders() {
  * @param {string} url - The URL of the image to be deleted.
  */
 async function deleteGalleryItem(url) {
-    try {
-        const response = await fetch('/api/images/delete', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ path: url }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error. Status: ${response.status}`);
-        }
-
+    const isDeleted = await deleteMediaFromServer(url, false);
+    if (isDeleted){
         toastr.success(t`Image deleted successfully.`);
-    } catch (error) {
-        console.error('Failed to delete the image:', error);
-        toastr.error(t`Failed to delete the image. Check the console for details.`);
     }
 }
 

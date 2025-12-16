@@ -88,7 +88,7 @@ class CosyVoiceProvider {
         }
 
         // Set initial values from the settings
-        $('#tts_endpoint').val(this.settings.provider_endpoint);
+        $('#tts_endpoint').val(this.settings.provider_endpoint).on('change', this.onSettingsChange.bind(this));
 
 
         await this.checkReady();
@@ -102,7 +102,7 @@ class CosyVoiceProvider {
     }
 
     async onRefreshClick() {
-        return;
+        return await this.checkReady();
     }
 
     //#################//

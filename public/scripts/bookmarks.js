@@ -344,6 +344,7 @@ export async function convertSoloToGroupChat() {
 
         // Save group-chat marker
         if (index == 0) {
+            // @ts-ignore
             message.is_group = true;
         }
 

@@ -61,6 +61,8 @@ export const SECRET_KEYS = {
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
     AZURE_OPENAI: 'api_key_azure_openai',
+    ZAI: 'api_key_zai',
+    SILICONFLOW: 'api_key_siliconflow',
 };
 
 /**

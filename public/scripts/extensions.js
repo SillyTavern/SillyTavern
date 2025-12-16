@@ -10,10 +10,12 @@ import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { SimpleMutex } from './util/SimpleMutex.js';
 
 export {
     getContext,
     getApiUrl,
+    SimpleMutex as ModuleWorkerWrapper,
 };
 
 /** @type {string[]} */
@@ -122,31 +124,6 @@ export function renderExtensionTemplate(extensionName, templateId, templateData 
  */
 export function renderExtensionTemplateAsync(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
     return renderTemplateAsync(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
-}
-
-// Disables parallel updates
-export class ModuleWorkerWrapper {
-    constructor(callback) {
-        this.isBusy = false;
-        this.callback = callback;
-    }
-
-    // Called by the extension
-    async update(...args) {
-        // Don't touch me I'm busy...
-        if (this.isBusy) {
-            return;
-        }
-
-        // I'm free. Let's update!
-        try {
-            this.isBusy = true;
-            await this.callback(...args);
-        }
-        finally {
-            this.isBusy = false;
-        }
-    }
 }
 
 export const extension_settings = {

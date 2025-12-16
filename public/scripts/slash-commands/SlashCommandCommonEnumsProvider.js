@@ -40,6 +40,7 @@ export const enumIcons = {
     server: '🖥️',
     popup: '🗔',
     image: '🖼️',
+    video: '🎥',
     key: '🔑',
 
     true: '✔️',
@@ -260,6 +261,22 @@ export const commonEnumProviders = {
             ...allowIdAfter ? [new SlashCommandEnumValue(String(chat.length), '>> After Last Message >>', enumTypes.enum, '➕')] : [],
             ...allowVars ? commonEnumProviders.variables('all')(executor, scope) : [],
         ];
+    },
+
+    /**
+     * Media items attached to a specific message
+     * @returns {(executor:SlashCommandExecutor, scope:SlashCommandScope) => SlashCommandEnumValue[]}
+     */
+    messageMedia: () => (executor, _scope) => {
+        const messageId = Number(executor.namedArgumentList.find(it => ['mesId', 'id'].includes(it.name))?.value || '');
+        if (isNaN(messageId) || messageId === null || messageId < 0 || messageId >= chat.length) {
+            return [];
+        }
+        const message = chat[messageId];
+        if (!Array.isArray(message?.extra?.media)) {
+            return [];
+        }
+        return message.extra.media.map((media, index) => new SlashCommandEnumValue(index.toString(), media.title || message.extra.title || '[Untitled]', enumTypes.enum, enumIcons[media.type] || enumIcons.file));
     },
 
     /**

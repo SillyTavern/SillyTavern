@@ -10,6 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -119,18 +120,33 @@ async function wrapCaptionTemplate(caption) {
 
 /**
  * Appends caption to an existing message.
- * @param {Object} data Message data
+ * @param {ChatMessage} message Message data
+ * @param {number} mediaIndex Index of the image to caption
  * @returns {Promise<void>}
  */
-async function captionExistingMessage(data) {
-    if (!(data?.extra?.image)) {
+async function captionExistingMessage(message, mediaIndex) {
+    if (!Array.isArray(message?.extra?.media) || message.extra.media.length === 0) {
         return;
     }
 
-    const imageData = await fetch(data.extra.image);
+    if (mediaIndex === undefined || isNaN(mediaIndex) || mediaIndex < 0 || mediaIndex >= message.extra.media.length) {
+        mediaIndex = 0;
+    }
+
+    const mediaAttachment = message.extra.media[mediaIndex];
+
+    if (!mediaAttachment || !mediaAttachment.url || mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+        return;
+    }
+
+    if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+        throw new Error('Captioning videos is not supported for the current source.');
+    }
+
+    const imageData = await fetch(mediaAttachment.url);
     const blob = await imageData.blob();
-    const type = imageData.headers.get('Content-Type');
-    const file = new File([blob], 'image.png', { type });
+    const fileName = mediaAttachment.url.split('/').pop().split('?')[0] || 'image.jpg';
+    const file = new File([blob], fileName, { type: blob.type });
     const caption = await getCaptionForFile(file, null, true);
 
     if (!caption) {
@@ -140,17 +156,18 @@ async function captionExistingMessage(data) {
 
     const wrappedCaption = await wrapCaptionTemplate(caption);
 
-    const messageText = String(data.mes).trim();
+    const messageText = String(message.mes).trim();
 
     if (!messageText) {
-        data.extra.inline_image = false;
-        data.mes = wrappedCaption;
-        data.extra.title = wrappedCaption;
-    }
-    else {
-        data.extra.inline_image = true;
-        data.extra.append_title = true;
-        data.extra.title = wrappedCaption;
+        message.extra.inline_image = false;
+        message.mes = wrappedCaption;
+        mediaAttachment.title = wrappedCaption;
+        mediaAttachment.captioned = true;
+    } else {
+        message.extra.inline_image = true;
+        mediaAttachment.append_title = true;
+        mediaAttachment.title = wrappedCaption;
+        mediaAttachment.captioned = true;
     }
 }
 
@@ -158,19 +175,32 @@ async function captionExistingMessage(data) {
  * Sends a captioned message to the chat.
  * @param {string} caption Caption text
  * @param {string} image Image URL
+ * @param {string} mimeType Image MIME type
+ * @returns {Promise<void>}
  */
-async function sendCaptionedMessage(caption, image) {
+async function sendCaptionedMessage(caption, image, mimeType) {
     const messageText = await wrapCaptionTemplate(caption);
 
     const context = getContext();
+
+    /** @type {MediaAttachment} */
+    const mediaAttachment = {
+        url: image,
+        type: MEDIA_TYPE.getFromMime(mimeType) || MEDIA_TYPE.IMAGE,
+        title: messageText,
+        captioned: true,
+        source: MEDIA_SOURCE.CAPTIONED,
+    };
+    /** @type {ChatMessage} */
     const message = {
         name: context.name1,
         is_user: true,
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
-            image: image,
-            title: messageText,
+            media: [mediaAttachment],
+            media_display: MEDIA_DISPLAY.GALLERY,
+            media_index: 0,
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
@@ -285,7 +315,7 @@ async function captionMultimodal(base64Img, externalPrompt) {
     let prompt = externalPrompt || extension_settings.caption.prompt || PROMPT_DEFAULT;
 
     if (!externalPrompt && extension_settings.caption.prompt_ask) {
-        const customPrompt = await callGenericPopup('Enter a comment or question:', POPUP_TYPE.INPUT, prompt, { rows: 2 });
+        const customPrompt = await callGenericPopup('Enter a comment or question:', POPUP_TYPE.INPUT, prompt, { rows: 4 });
         if (!customPrompt) {
             throw new Error('User aborted the caption sending.');
         }
@@ -330,6 +360,10 @@ async function onSelectImage(e, prompt, quiet) {
  */
 async function getCaptionForFile(file, prompt, quiet) {
     try {
+        if (file.type.startsWith('video/') && !isVideoCaptioningAvailable()) {
+            throw new Error('Video captioning is not available for the current source.');
+        }
+
         setSpinnerIcon();
         const context = getContext();
         const fileData = await getBase64Async(await ensureImageFormatSupported(file));
@@ -338,13 +372,13 @@ async function getCaptionForFile(file, prompt, quiet) {
         const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
         if (!quiet) {
             const imagePath = await saveBase64AsFile(base64Data, context.name2, '', extension);
-            await sendCaptionedMessage(caption, imagePath);
+            await sendCaptionedMessage(caption, imagePath, file.type);
         }
         return caption;
     }
     catch (error) {
         const errorMessage = error.message || 'Unknown error';
-        toastr.error(errorMessage, 'Failed to caption image.');
+        toastr.error(errorMessage, 'Failed to caption');
         console.error(error);
         return '';
     }
@@ -365,15 +399,31 @@ function onRefineModeInput() {
  */
 async function captionCommandCallback(args, prompt) {
     const quiet = isTrueBoolean(args?.quiet);
-    const mesId = args?.mesId ?? args?.id;
+    const messageId = args?.mesId ?? args?.id;
+    const index = Number(args?.index ?? 0);
 
-    if (!isNaN(Number(mesId))) {
-        const message = getContext().chat[mesId];
-        if (message?.extra?.image) {
+    if (!isNaN(Number(messageId))) {
+        /** @type {ChatMessage} */
+        const message = getContext().chat[messageId];
+        if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
             try {
-                const fetchResult = await fetch(message.extra.image);
+                const mediaAttachment = message.extra.media[index] || message.extra.media[0];
+                if (!mediaAttachment || !mediaAttachment.url) {
+                    toastr.error('The specified message does not contain an image.');
+                    return '';
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+                    toastr.error('The specified media is an audio file. Captioning audio files is not supported.');
+                    return '';
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+                    toastr.error('The specified media is a video. Captioning videos is not supported for the current source.');
+                    return '';
+                }
+                const fetchResult = await fetch(mediaAttachment.url);
                 const blob = await fetchResult.blob();
-                const file = new File([blob], 'image.jpg', { type: blob.type });
+                const fileName = mediaAttachment.url.split('/').pop().split('?')[0] || 'image.jpg';
+                const file = new File([blob], fileName, { type: blob.type });
                 return await getCaptionForFile(file, prompt, quiet);
             } catch (error) {
                 toastr.error('Failed to get image from the message. Make sure the image is accessible.');
@@ -385,7 +435,7 @@ async function captionCommandCallback(args, prompt) {
     return new Promise(resolve => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
+        input.accept = 'image/*,video/*';
         input.onchange = async (e) => {
             const caption = await onSelectImage(e, prompt, quiet);
             resolve(caption);
@@ -393,6 +443,18 @@ async function captionCommandCallback(args, prompt) {
         input.oncancel = () => resolve('');
         input.click();
     });
+}
+
+/**
+ * Checks if video captioning is available for the current source.
+ * @returns {boolean} True if video captioning is supported for the current source.
+ */
+function isVideoCaptioningAvailable() {
+    if (extension_settings.caption.source !== 'multimodal') {
+        return false;
+    }
+
+    return ['google', 'vertexai'].includes(extension_settings.caption.multimodal_api);
 }
 
 jQuery(async function () {
@@ -442,6 +504,7 @@ jQuery(async function () {
                         'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
+                        'zai': SECRET_KEYS.ZAI,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -482,13 +545,17 @@ jQuery(async function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = '<input id="img_file" type="file" hidden accept="image/*">';
+        const imgInput = document.createElement('input');
+        imgInput.type = 'file';
+        imgInput.id = 'img_file';
+        imgInput.accept = 'image/*,video/*';
+        imgInput.hidden = true;
+        imgInput.addEventListener('change', (e) => onSelectImage(e, '', false));
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
-        $(imgForm).append(inputHtml);
-        $(imgForm).hide();
+        imgForm.appendChild(imgInput);
+        imgForm.hidden = true;
         $('#form_sheld').append(imgForm);
-        $('#img_file').on('change', (e) => onSelectImage(e.originalEvent, '', false));
     }
     async function switchMultimodalBlocks() {
         await addRemoteEndpointModels();
@@ -635,13 +702,33 @@ jQuery(async function () {
         saveSettingsDebounced();
     });
 
-    const onMessageEvent = async (index) => {
+    const onMessageEvent = async (/** @type {number} */ messageId) => {
         if (!extension_settings.caption.auto_mode) {
             return;
         }
 
-        const data = getContext().chat[index];
-        await captionExistingMessage(data);
+        const message = getContext().chat[messageId];
+        if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
+            for (let mediaIndex = 0; mediaIndex < message.extra.media.length; mediaIndex++) {
+                const mediaAttachment = message.extra.media[mediaIndex];
+                if (mediaAttachment.type === MEDIA_TYPE.VIDEO && !isVideoCaptioningAvailable()) {
+                    continue;
+                }
+                if (mediaAttachment.type === MEDIA_TYPE.AUDIO) {
+                    continue;
+                }
+                // Skip already captioned images and non-uploaded (generated, etc.) images
+                if (mediaAttachment.source !== MEDIA_SOURCE.UPLOAD || mediaAttachment.captioned) {
+                    continue;
+                }
+                try {
+                    await captionExistingMessage(message, mediaIndex);
+                } catch (e) {
+                    console.error(`Auto-captioning failed for message ID ${messageId}, media index ${mediaIndex}`, e);
+                    continue;
+                }
+            }
+        }
     };
 
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
@@ -650,19 +737,22 @@ jQuery(async function () {
     $(document).on('click', '.mes_img_caption', async function () {
         const animationClass = 'fa-fade';
         const messageBlock = $(this).closest('.mes');
-        const messageImg = messageBlock.find('.mes_img');
-        if (messageImg.hasClass(animationClass)) return;
-        messageImg.addClass(animationClass);
+        const mediaContainer = $(this).closest('.mes_media_container');
+        const messageMedia = mediaContainer.find('.mes_img, .mes_video');
+        if (messageMedia.hasClass(animationClass)) return;
+        messageMedia.addClass(animationClass);
         try {
-            const index = Number(messageBlock.attr('mesid'));
-            const data = getContext().chat[index];
-            await captionExistingMessage(data);
-            appendMediaToMessage(data, messageBlock, false);
+            const messageId = Number(messageBlock.attr('mesid'));
+            const mediaIndex = Number(mediaContainer.attr('data-index'));
+            const data = getContext().chat[messageId];
+            await captionExistingMessage(data, mediaIndex);
+            appendMediaToMessage(data, messageBlock, SCROLL_BEHAVIOR.KEEP);
             await saveChatConditional();
         } catch (e) {
             console.error('Message image recaption failed', e);
+            toastr.error(e.message || 'Unknown error', 'Failed to caption');
         } finally {
-            messageImg.removeClass(animationClass);
+            messageMedia.removeClass(animationClass);
         }
     });
 
@@ -679,6 +769,12 @@ jQuery(async function () {
                 description: 'get image from a message with this ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'index',
+                description: 'index of the image in the message to caption (starting from 0)',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messageMedia(),
             }),
         ],
         unnamedArgumentList: [
