@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getConfigValue, tryParse } from './util.js';
+import { getConfigValue, getStringHash, tryParse } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
@@ -549,18 +549,23 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         });
 
         // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
-        // Inject stored thought signatures or fall back to bypass magic for Gemini 3
+        // Inject stored thought signatures using content hash matching, or fall back to bypass magic for Gemini 3
         if (/gemini-3/.test(model) || /gemini-2\.5/.test(model)) {
             const skipSignatureMagic = 'skip_thought_signature_validator';
-            const storedSignatures = message.thought_signatures || {};
+            // thought_signatures is now an array of {hash, signature} pairs
+            const storedSignatures = Array.isArray(message.thought_signatures) ? message.thought_signatures : [];
 
-            parts.forEach((part, partIndex) => {
-                // Check if we have a stored signature for this part index
-                const storedSig = storedSignatures[partIndex];
+            parts.forEach((part) => {
+                // Calculate hash of this part's content
+                const content = part.text ?? (part.inlineData ? JSON.stringify(part.inlineData) : '');
+                const partHash = String(getStringHash(content));
 
-                if (storedSig) {
-                    // Use the real stored signature
-                    part.thoughtSignature = storedSig;
+                // Find a stored signature matching this hash
+                const matchingEntry = storedSignatures.find(entry => entry.hash === partHash);
+
+                if (matchingEntry) {
+                    // Use the matched stored signature
+                    part.thoughtSignature = matchingEntry.signature;
                 } else if (/gemini-3/.test(model)) {
                     // Gemini 3: Fall back to bypass magic for function calls (mandatory) and images
                     if (part.functionCall) {

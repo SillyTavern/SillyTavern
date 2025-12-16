@@ -16,7 +16,7 @@ import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { applyStreamFadeIn } from './util/stream-fadein.js';
-import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+import { copyText, escapeRegex, getStringHash, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
 
 /**
  * @typedef {object} ReasoningTemplate
@@ -147,11 +147,13 @@ export function extractReasoningFromData(data, {
 /**
  * Extracts thought signatures from Gemini API response data.
  * These signatures are used to maintain reasoning context across multi-turn conversations.
+ * Uses content hashing instead of indices to ensure signatures are correctly matched
+ * even if the order of parts changes during prompt reconstruction.
  * @param {object} data Response data
  * @param {object} [options] Optional parameters
  * @param {string|null} [options.mainApi] Override for main API
  * @param {string|null} [options.chatCompletionSource] Override for chat completion source
- * @returns {Object.<number, string>} Map of part index to thought signature string
+ * @returns {Array<{hash: string, signature: string}>} Array of hash+signature pairs
  */
 export function extractThoughtSignaturesFromData(data, {
     mainApi = null,
@@ -159,7 +161,7 @@ export function extractThoughtSignaturesFromData(data, {
 } = {}) {
     // Only Gemini models use thought signatures (via MakerSuite/VertexAI or OpenRouter)
     if ((mainApi ?? main_api) !== 'openai') {
-        return {};
+        return [];
     }
 
     const source = chatCompletionSource ?? oai_settings.chat_completion_source;
@@ -167,27 +169,38 @@ export function extractThoughtSignaturesFromData(data, {
     const isOpenRouter = source === chat_completion_sources.OPENROUTER;
 
     if (!isGemini && !isOpenRouter) {
-        return {};
+        return [];
     }
 
-    /** @type {Object.<number, string>} */
-    const signatures = {};
+    /** @type {Array<{hash: string, signature: string}>} */
+    const signatures = [];
 
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
+    // OpenRouter flattens the response, so we use a hash of the message content for all signatures
     if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
+        // Get the message content to use as the hash key
+        const messageContent = data?.choices?.[0]?.message?.content ?? '';
+        const contentHash = String(getStringHash(messageContent));
+
         data.choices[0].message.reasoning_details.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                signatures[detail.index ?? 0] = detail.data;
+                // Use the message content hash for all OpenRouter signatures
+                // This allows matching even when part indices shift
+                signatures.push({ hash: contentHash, signature: detail.data });
             }
         });
         return signatures;
     }
 
+
     // Direct Gemini format: Extract from responseContent.parts if available
     if (isGemini && Array.isArray(data?.responseContent?.parts)) {
-        data.responseContent.parts.forEach((part, index) => {
+        data.responseContent.parts.forEach((part) => {
             if (part.thoughtSignature) {
-                signatures[index] = part.thoughtSignature;
+                // Hash the content of this part to create a stable key
+                const content = part.text ?? (part.inlineData ? JSON.stringify(part.inlineData) : '');
+                const hash = String(getStringHash(content));
+                signatures.push({ hash: hash, signature: part.thoughtSignature });
             }
         });
     }
