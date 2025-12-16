@@ -55,5 +55,6 @@ public/scripts/extensions/third-party
 .env
 /StartDev.bat
 yarn.lock
+*.code-workspaceweb/
 *.code-workspace
 test-results/
