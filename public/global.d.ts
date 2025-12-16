@@ -7,6 +7,7 @@ import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
 import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
+import { ToolInvocation } from './scripts/tool-calling';
 
 declare global {
     // Custom types
@@ -91,7 +92,7 @@ declare global {
         memory?: string;
         display_text?: string;
         reasoning_display_text?: string;
-        tool_invocations?: any[];
+        tool_invocations?: ToolInvocation[];
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
