@@ -145,10 +145,8 @@ export function extractReasoningFromData(data, {
 }
 
 /**
- * Extracts thought signatures from Gemini API response data.
+ * Extracts encrypted reasoning signature from the response data.
  * These signatures are used to maintain reasoning context across multi-turn conversations.
- * Uses content hashing instead of indices to ensure signatures are correctly matched
- * even if the order of parts changes during prompt reconstruction.
  * @param {object} data Response data
  * @param {object} [options] Optional parameters
  * @param {string|null} [options.mainApi] Override for main API
