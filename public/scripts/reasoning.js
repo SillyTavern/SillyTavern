@@ -171,7 +171,6 @@ export function extractReasoningSignatureFromData(data, {
     }
 
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
-    // OpenRouter flattens the response, so we use a hash of the message content for all signatures
     if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
         data.choices[0].message.reasoning_details.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
