@@ -83,6 +83,8 @@ declare global {
     }
 
     interface BaseMessageExtra {
+        api?: string;
+        model?: string;
         gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;

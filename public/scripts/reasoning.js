@@ -16,7 +16,7 @@ import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { applyStreamFadeIn } from './util/stream-fadein.js';
-import { copyText, escapeRegex, getStringHash, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
 
 /**
  * @typedef {object} ReasoningTemplate
@@ -153,15 +153,15 @@ export function extractReasoningFromData(data, {
  * @param {object} [options] Optional parameters
  * @param {string|null} [options.mainApi] Override for main API
  * @param {string|null} [options.chatCompletionSource] Override for chat completion source
- * @returns {Array<{hash: string, signature: string}>} Array of hash+signature pairs
+ * @returns {string?} Encrypted signature of the reasoning text
  */
-export function extractThoughtSignaturesFromData(data, {
+export function extractReasoningSignatureFromData(data, {
     mainApi = null,
     chatCompletionSource = null,
 } = {}) {
     // Only Gemini models use thought signatures (via MakerSuite/VertexAI or OpenRouter)
     if ((mainApi ?? main_api) !== 'openai') {
-        return [];
+        return null;
     }
 
     const source = chatCompletionSource ?? oai_settings.chat_completion_source;
@@ -169,43 +169,29 @@ export function extractThoughtSignaturesFromData(data, {
     const isOpenRouter = source === chat_completion_sources.OPENROUTER;
 
     if (!isGemini && !isOpenRouter) {
-        return [];
+        return null;
     }
-
-    /** @type {Array<{hash: string, signature: string}>} */
-    const signatures = [];
 
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
     // OpenRouter flattens the response, so we use a hash of the message content for all signatures
     if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
-        // Get the message content to use as the hash key
-        const messageContent = data?.choices?.[0]?.message?.content ?? '';
-        const contentHash = String(getStringHash(messageContent));
-
         data.choices[0].message.reasoning_details.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                // Use the message content hash for all OpenRouter signatures
-                // This allows matching even when part indices shift
-                signatures.push({ hash: contentHash, signature: detail.data });
+                return detail.data;
             }
         });
-        return signatures;
     }
 
-
-    // Direct Gemini format: Extract from responseContent.parts if available
+    // Direct Gemini format: Extract from responseContent.parts if available (only text parts)
     if (isGemini && Array.isArray(data?.responseContent?.parts)) {
         data.responseContent.parts.forEach((part) => {
-            if (part.thoughtSignature) {
-                // Hash the content of this part to create a stable key
-                const content = part.text ?? (part.inlineData ? JSON.stringify(part.inlineData) : '');
-                const hash = String(getStringHash(content));
-                signatures.push({ hash: hash, signature: part.thoughtSignature });
+            if (part.thoughtSignature && typeof part.text === 'string') {
+                return part.thoughtSignature;
             }
         });
     }
 
-    return signatures;
+    return null;
 }
 
 /**
@@ -1348,7 +1334,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
  * @property {string} reasoning Reasoning block
  * @property {number} reasoning_duration Duration of the reasoning block
  * @property {string} reasoning_type Type of reasoning block
- * @property {Object.<number, string>} thought_signatures Map of part index to thought signature
+ * @property {string?} reasoning_signature Encrypted signature of the reasoning text
  */
 export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     if (!power_user.reasoning.auto_parse) {

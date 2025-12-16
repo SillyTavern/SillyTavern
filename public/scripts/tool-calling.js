@@ -19,6 +19,7 @@ import { isTrueBoolean } from './utils.js';
  * @property {string} name - The name of the tool.
  * @property {string} parameters - The parameters for the tool invocation.
  * @property {string} result - The result of the tool invocation.
+ * @property {string?} signature - The thought signature associated with the tool invocation.
  */
 
 /**
@@ -537,6 +538,9 @@ export class ToolManager {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
                             }
                             const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
+                            if (part.thoughtSignature) {
+                                targetToolCall.thoughtSignature = part.thoughtSignature;
+                            }
                             ToolManager.#applyToolCallDelta(targetToolCall, part.functionCall);
                         }
                     }
@@ -680,7 +684,7 @@ export class ToolManager {
         const isClaudeToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isClaudeToolCall) : c?.input && c?.name && c?.id;
         const isGoogleToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isGoogleToolCall) : c?.name && c?.args;
         const convertClaudeToolCall = c => ({ id: c.id, function: { name: c.name, arguments: c.input } });
-        const convertGoogleToolCall = (c) => ({ id: getRandomId(), function: { name: c.name, arguments: c.args } });
+        const convertGoogleToolCall = (c, signature = null) => ({ id: getRandomId(), function: { name: c.name, arguments: c.args }, signature });
 
         // Parsed tool calls from streaming data
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -689,7 +693,7 @@ export class ToolManager {
             }
 
             if (isGoogleToolCall(data[0])) {
-                return data[0].filter(x => x).map(convertGoogleToolCall);
+                return data[0].filter(x => x).map((c) => convertGoogleToolCall(c, c.thoughtSignature));
             }
 
             if (typeof data[0]?.[0]?.tool_calls === 'object') {
@@ -701,7 +705,7 @@ export class ToolManager {
 
         // Google AI Studio tool calls
         if (Array.isArray(data?.responseContent?.parts)) {
-            return data.responseContent.parts.filter(p => p.functionCall).map(p => convertGoogleToolCall(p.functionCall));
+            return data.responseContent.parts.filter(p => p.functionCall).map(p => convertGoogleToolCall(p.functionCall, p.thoughtSignature));
         }
 
         // Parsed tool calls from non-streaming data
@@ -792,6 +796,7 @@ export class ToolManager {
                 name,
                 parameters: stringify(parameters),
                 result: toolResult,
+                signature: toolCall.signature || null,
             };
             result.invocations.push(invocation);
         }

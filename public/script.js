@@ -267,7 +267,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractThoughtSignaturesFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -3266,8 +3266,8 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
         /** @type {string[]} */
         this.images = [];
-        /** @type {Object.<number, string>} */
-        this.thoughtSignatures = {};
+        /** @type {string?} */
+        this.reasoningSignature = null;
     }
 
     /**
@@ -3461,10 +3461,10 @@ class StreamingProcessor {
             appendMediaToMessage(message, $(this.messageDom));
         }
 
-        // Store thought signatures for models that support multi-turn context
-        if (this.thoughtSignatures && Object.keys(this.thoughtSignatures).length > 0) {
+        // Store reasoning signature for models that support multi-turn context
+        if (this.reasoningSignature) {
             message.extra = message.extra || {};
-            message.extra.thought_signatures = this.thoughtSignatures;
+            message.extra.reasoning_signature = this.reasoningSignature;
         }
 
         this.markUIGenStopped();
@@ -3561,10 +3561,7 @@ class StreamingProcessor {
                 // Get the updated reasoning string into the handler
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
                 this.images = state?.images ?? [];
-                // Accumulate thought signatures from streaming chunks (Gemini sends in final chunk)
-                if (state?.thoughtSignatures && Object.keys(state.thoughtSignatures).length > 0) {
-                    this.thoughtSignatures = { ...this.thoughtSignatures, ...state.thoughtSignatures };
-                }
+                this.reasoningSignature = state?.signature ?? null;
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
@@ -5127,7 +5124,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let title = extractTitleFromData(data);
         let reasoning = extractReasoningFromData(data);
         let imageUrls = extractImagesFromData(data);
-        const thoughtSignatures = extractThoughtSignaturesFromData(data);
+        const reasoningSignature = extractReasoningSignatureFromData(data);
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
@@ -5171,10 +5168,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, thoughtSignatures }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
             }
             else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, thoughtSignatures }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6223,18 +6220,17 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {string[]} [swipes] Extra swipes
  * @property {string} [reasoning] Message reasoning
  * @property {string[]} [imageUrls] Links to images
- * @property {Object.<number, string>} [thoughtSignatures] Map of part index to Gemini thought signature
+ * @property {string?} [reasoningSignature] Encrypted signature of the reasoning text
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], thoughtSignatures = {} }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
-        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls] = arguments;
-        thoughtSignatures = {};
+        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls, reasoningSignature] = arguments;
     }
 
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
@@ -6270,10 +6266,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-            // Store thought signatures for models that support multi-turn context
-            if (Object.keys(thoughtSignatures).length > 0) {
-                chat[chat.length - 1]['extra']['thought_signatures'] = thoughtSignatures;
-            }
+            chat[chat.length - 1]['extra']['reasoning_signature'] = reasoningSignature;
             await processImageAttachment(chat[chat.length - 1], { imageUrls });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -6298,10 +6291,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-        // Store thought signatures for models that support multi-turn context
-        if (Object.keys(thoughtSignatures).length > 0) {
-            chat[chat.length - 1]['extra']['thought_signatures'] = thoughtSignatures;
-        }
+        chat[chat.length - 1]['extra']['reasoning_signature'] = reasoningSignature;
         await processImageAttachment(chat[chat.length - 1], { imageUrls });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -6322,13 +6312,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
-        // Store thought signatures for models that support multi-turn context
-        if (Object.keys(thoughtSignatures).length > 0) {
-            chat[chat.length - 1]['extra']['thought_signatures'] = {
-                ...(chat[chat.length - 1]['extra']['thought_signatures'] || {}),
-                ...thoughtSignatures,
-            };
-        }
+        chat[chat.length - 1]['extra']['reasoning_signature'] = reasoningSignature;
         await processImageAttachment(chat[chat.length - 1], { imageUrls });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
@@ -6351,10 +6335,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
-        // Store thought signatures for models that support multi-turn context
-        if (Object.keys(thoughtSignatures).length > 0) {
-            chat[chat.length - 1]['extra']['thought_signatures'] = thoughtSignatures;
-        }
+        chat[chat.length - 1]['extra']['reasoning_signature'] = reasoningSignature;
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
