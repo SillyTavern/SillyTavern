@@ -172,11 +172,11 @@ export function extractReasoningSignatureFromData(data, {
 
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted" (exclude tool calls)
     if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
-        data.choices[0].message.reasoning_details.forEach((detail) => {
+        for (const detail of data.choices[0].message.reasoning_details) {
             if (!/^tool_/.test(detail.id) && detail.type === 'reasoning.encrypted' && detail.data) {
                 return detail.data;
             }
-        });
+        }
     }
 
     // Direct Gemini format: Extract from responseContent.parts if available (only text parts)
