@@ -79,6 +79,7 @@ GNU Affero General Public License for more details.**
 * Portions of CncAnon's TavernAITurbo mod used with permission
 * Visual Novel Mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Noto Sans font by Google (OFL license)
+* Lexer/Parser by Chevrotain (Apache-2.0 license) <https://github.com/chevrotain/chevrotain>
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 * Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)

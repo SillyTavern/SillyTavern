@@ -19,7 +19,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 import { t } from './i18n.js';
-import { MacrosParser } from './macros.js';
+import { macros, MacroCategory } from './macros/macro-system.js';
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 
@@ -581,7 +581,24 @@ export function initAuthorsNote() {
     }));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
-    MacrosParser.registerMacro('authorsNote', () => chat_metadata[metadata_keys.prompt] ?? '', t`The contents of the Author's Note`);
-    MacrosParser.registerMacro('charAuthorsNote', () => this_chid !== undefined ? (extension_settings.note.chara.find((e) => e.name === getCharaFilename())?.prompt ?? '') : '', t`The contents of the Character Author's Note`);
-    MacrosParser.registerMacro('defaultAuthorsNote', () => extension_settings.note.default ?? '', t`The contents of the Default Author's Note`);
+    registerAuthorsNoteMacros();
 }
+
+function registerAuthorsNoteMacros() {
+    macros.register('authorsNote', {
+        category: MacroCategory.PROMPTS,
+        description: t`The contents of the Author's Note`,
+        handler: () => chat_metadata[metadata_keys.prompt] ?? '',
+    });
+    macros.register('charAuthorsNote', {
+        category: MacroCategory.CHARACTER,
+        description: t`The contents of the Character Author's Note`,
+        handler: () => this_chid !== undefined ? (extension_settings.note.chara.find((e) => e.name === getCharaFilename())?.prompt ?? '') : '',
+    });
+    macros.register('defaultAuthorsNote', {
+        category: MacroCategory.PROMPTS,
+        description: t`The contents of the Default Author's Note`,
+        handler: () => extension_settings.note.default ?? '',
+    });
+}
+
