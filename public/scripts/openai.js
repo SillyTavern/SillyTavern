@@ -534,7 +534,7 @@ function setOpenAIMessages(chat) {
 
         // If this symbol flag is set, completely ignore the message.
         // This can be used to hide messages without affecting the number of messages in the chat.
-        if (chat[j].extra && typeof chat[j].extra === 'object' && Reflect.has(chat[j].extra, IGNORE_SYMBOL)) {
+        if (chat[j].extra?.[IGNORE_SYMBOL]) {
             j++;
             continue;
         }
@@ -5929,7 +5929,7 @@ export function isAudioInliningSupported() {
 export function isReasoningSignatureSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
     const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
-    // Need a more crunchy check for OpenRouter: look for Gemini models with "thinking" in the name
+    // Need a more crunchy check for OpenRouter: look for Gemini models
     const isOpenRouterGemini = settings.chat_completion_source === chat_completion_sources.OPENROUTER && /google\/gemini/i.test(settings.openrouter_model);
     return isGoogle || isOpenRouterGemini;
 }

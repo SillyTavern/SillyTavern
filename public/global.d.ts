@@ -6,7 +6,7 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
-import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
+import { IGNORE_SYMBOL, OVERSWIPE_BEHAVIOR } from './scripts/constants';
 import { ToolInvocation } from './scripts/tool-calling';
 
 declare global {
@@ -86,6 +86,7 @@ declare global {
     interface BaseMessageExtra {
         api?: string;
         model?: string;
+        type?: string;
         gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;
@@ -118,6 +119,8 @@ declare global {
         generationType?: number;
         /** @deprecated Use `MediaAttachment.negative` instead */
         negative?: string;
+        /** Will exclude this message from prompt processing */
+        [IGNORE_SYMBOL]?: boolean;
     }
 
     type MediaAttachment = MediaAttachmentProps & ImageGenerationAttachmentProps & ImageCaptionAttachmentProps;
