@@ -1303,3 +1303,63 @@ export function addReasoningContentToToolCalls(messages) {
         message.reasoning_content = '';
     }
 }
+
+/**
+ * Converts reasoning signatures to OpenRouter format.
+ * @param {object[]} messages Array of messages
+ * @param {string} model Model name
+ * @return {void}
+ */
+export function addOpenRouterSignatures(messages, model) {
+    const getFormatForModel = () => {
+        if (/google\/gemini/.test(model)) {
+            return 'google-gemini-v1';
+        }
+        if (/anthropic\/claude/.test(model)) {
+            return 'anthropic-claude-v1';
+        }
+        if (/openai\/gpt/.test(model)) {
+            return 'openai-responses-v1';
+        }
+        if (/x-ai\/grok/.test(model)) {
+            return 'xai-responses-v1';
+        }
+        return 'unknown';
+    };
+
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        const details = [];
+        const addDetail = (data, id) => {
+            if (typeof data !== 'string' || data.length === 0) {
+                return;
+            }
+            const detail = {
+                index: details.length,
+                id: id || `signature-${details.length}`,
+                type: 'reasoning.encrypted',
+                data: data,
+                format: getFormatForModel(),
+            };
+            details.push(detail);
+        };
+        if (typeof message.signature === 'string') {
+            addDetail(message.signature);
+            delete message.signature;
+        }
+        if (Array.isArray(message.tool_calls)) {
+            message.tool_calls.forEach((toolCall) => {
+                if (typeof toolCall.signature === 'string') {
+                    addDetail(toolCall.signature, toolCall.id);
+                    delete toolCall.signature;
+                }
+            });
+        }
+        if (details.length > 0) {
+            message.reasoning_details = details;
+        }
+    }
+}

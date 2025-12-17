@@ -419,9 +419,10 @@ export class ToolManager {
      * Utility function to parse tool calls from a parsed response.
      * @param {any[]} toolCalls The tool calls to update.
      * @param {any} parsed The parsed response from the OpenAI API.
+     * @param {object} toolSignatures Optional mapping of tool call IDs to thought signatures.
      * @returns {void}
      */
-    static parseToolCalls(toolCalls, parsed) {
+    static parseToolCalls(toolCalls, parsed, toolSignatures = {}) {
         if (!this.isToolCallingSupported()) {
             return;
         }
@@ -458,6 +459,11 @@ export class ToolManager {
                     const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
 
                     ToolManager.#applyToolCallDelta(targetToolCall, toolCallDelta);
+
+                    // Transfer thought signature if available
+                    if (Object.hasOwn(toolSignatures, targetToolCall.id)) {
+                        targetToolCall.signature = toolSignatures[targetToolCall.id];
+                    }
                 }
             }
         }
@@ -713,7 +719,17 @@ export class ToolManager {
             // Find a choice with 0-index
             const choice = data.choices.find(choice => choice.index === 0);
 
-            if (choice) {
+            if (choice && typeof choice.message === 'object' && Array.isArray(choice.message.tool_calls)) {
+                // Add OpenRouter signatures
+                if (Array.isArray(choice.message.reasoning_details) && Array.isArray(choice.message.tool_calls)) {
+                    for (const toolCall of choice.message.tool_calls) {
+                        const reasoningDetail = choice.message.reasoning_details.find(rd => rd.id === toolCall.id);
+                        if (reasoningDetail && reasoningDetail.type === 'reasoning.encrypted' && reasoningDetail.data) {
+                            toolCall.signature = reasoningDetail.data;
+                        }
+                    }
+                }
+
                 return choice.message.tool_calls;
             }
         }

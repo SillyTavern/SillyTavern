@@ -2803,7 +2803,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [], signature: '' };
+            const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2820,7 +2820,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                     text += getStreamingReply(parsed, state);
                 }
 
-                ToolManager.parseToolCalls(toolCalls, parsed);
+                ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
 
                 yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
             }
@@ -2907,7 +2907,11 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
         const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
         reasoningDetails.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                state.signature = detail.data;
+                if (/^tool_/.test(detail.id)) {
+                    state.toolSignatures[detail.id] = detail.data;
+                } else {
+                    state.signature = detail.data;
+                }
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
@@ -5926,10 +5930,8 @@ export function isReasoningSignatureSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
     const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
     // Need a more crunchy check for OpenRouter: look for Gemini models with "thinking" in the name
-    // Cohee: Disabled for now as I don't know how to prompt it back into the prompt.
-    // const isOpenRouterGeminiThinking = settings.chat_completion_source === chat_completion_sources.OPENROUTER && /gemini.*thinking/i.test(settings.openrouter_model);
-    const isOpenRouterGeminiThinking = false;
-    return isGoogle || isOpenRouterGeminiThinking;
+    const isOpenRouterGemini = settings.chat_completion_source === chat_completion_sources.OPENROUTER && /google\/gemini/i.test(settings.openrouter_model);
+    return isGoogle || isOpenRouterGemini;
 }
 
 /**

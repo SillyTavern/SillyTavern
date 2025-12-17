@@ -46,6 +46,7 @@ import {
     embedOpenRouterMedia,
     addReasoningContentToToolCalls,
     cachingSystemPromptForOpenRouterClaude,
+    addOpenRouterSignatures,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -2048,6 +2049,7 @@ router.post('/generate', async function (request, response) {
             const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
             if (Array.isArray(request.body.messages)) {
                 embedOpenRouterMedia(request.body.messages);
+                addOpenRouterSignatures(request.body.messages, request.body.model);
 
                 if (isClaude3or4) {
                     if (enableSystemPromptCache) {

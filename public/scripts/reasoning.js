@@ -173,7 +173,7 @@ export function extractReasoningSignatureFromData(data, {
     // OpenRouter format: reasoning_details array with type "reasoning.encrypted"
     if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
         data.choices[0].message.reasoning_details.forEach((detail) => {
-            if (detail.type === 'reasoning.encrypted' && detail.data) {
+            if (!/^tool_/.test(detail.id) && detail.type === 'reasoning.encrypted' && detail.data) {
                 return detail.data;
             }
         });
