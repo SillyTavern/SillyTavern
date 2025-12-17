@@ -25,6 +25,12 @@ export const PROMPT_PROCESSING_TYPE = {
     SINGLE: 'single',
 };
 
+// 'auto' is intentionally unmapped
+const GEMINI_MEDIA_RESOLUTION = {
+    low: 'media_resolution_low',
+    high: 'media_resolution_high',
+};
+
 /**
  * @typedef {object} PromptNames
  * @property {string} charName Character name
@@ -501,17 +507,27 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         //create the prompt parts
         const parts = [];
         message.content.forEach((part) => {
-            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType) => {
+            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType, /** @type {string?} */ detail = null) => {
                 if (url && url.startsWith('data:')) {
                     const [header, base64Data] = url.split(',');
                     const mimeType = header.match(/data:([^;]+)/)?.[1] || defaultMimeType;
+                    const mediaResolution = GEMINI_MEDIA_RESOLUTION[detail] || null;
 
-                    parts.push({
+                    const part = {
                         inlineData: {
                             mimeType: mimeType,
                             data: base64Data,
                         },
-                    });
+                    };
+
+                    // https://ai.google.dev/gemini-api/docs/gemini-3#media_resolution
+                    if (/gemini-3/.test(model) && mediaResolution) {
+                        part.mediaResolution = {
+                            level: mediaResolution,
+                        };
+                    }
+
+                    parts.push(part);
                 }
             };
 
@@ -539,10 +555,12 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                 });
             } else if (part.type === 'image_url') {
                 const imageUrl = part.image_url?.url;
-                addDataUrlPart(imageUrl, 'image/png');
+                const detail = part.image_url?.detail;
+                addDataUrlPart(imageUrl, 'image/png', detail);
             } else if (part.type === 'video_url') {
                 const videoUrl = part.video_url?.url;
-                addDataUrlPart(videoUrl, 'video/mp4');
+                const detail = part.video_url?.detail;
+                addDataUrlPart(videoUrl, 'video/mp4', detail);
             } else if (part.type === 'audio_url') {
                 const audioUrl = part.audio_url?.url;
                 addDataUrlPart(audioUrl, 'audio/mpeg');
@@ -584,7 +602,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                         contents[contents.length - 1].parts.push(part);
                     }
                 }
-                if (part.inlineData || part.functionCall || part.functionResponse || part.thoughtSignature) {
+                if (part.inlineData || part.functionCall || part.functionResponse || part.thoughtSignature || part.mediaResolution) {
                     contents[contents.length - 1].parts.push(part);
                 }
             });

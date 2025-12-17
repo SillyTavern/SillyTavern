@@ -1,0 +1,515 @@
+/**
+ * Macro System Styles
+ * Styles for the macro browser, documentation, and related UI components.
+ */
+
+/* =============================================================================
+   MACRO BROWSER
+   Dynamic documentation browser for macros, similar to SlashCommandBrowser.
+   ============================================================================= */
+
+.macroBrowser {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+/* -----------------------------------------------------------------------------
+   Toolbar (Search + Sort)
+   ----------------------------------------------------------------------------- */
+
+.macroBrowser .macro-toolbar {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.macroBrowser .macro-search-label {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    min-width: 200px;
+    white-space: nowrap;
+}
+
+.macroBrowser .macro-search-input {
+    flex: 1 1 auto;
+    min-width: 100px;
+}
+
+.macroBrowser .macro-sort-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.macroBrowser .macro-sort-btn.active {
+    background-color: var(--SmartThemeQuoteColor);
+}
+
+/* -----------------------------------------------------------------------------
+   Container (List + Details panels)
+   ----------------------------------------------------------------------------- */
+
+.macroBrowser .macro-container {
+    display: flex;
+    gap: 1em;
+    align-items: flex-start;
+    container-type: inline-size;
+}
+
+.macroBrowser .macro-list-panel {
+    flex: 1 1 60%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.macroBrowser .macro-details-panel {
+    flex: 0 0 40%;
+    position: sticky;
+    top: 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--SmartThemeBlurTintColor);
+    border-radius: 10px;
+    padding: 1em;
+}
+
+.macroBrowser .macro-details-placeholder {
+    opacity: 0.6;
+    text-align: center;
+    padding: 2em;
+}
+
+/* -----------------------------------------------------------------------------
+   Category Headers
+   ----------------------------------------------------------------------------- */
+
+.macroBrowser .macro-category-header {
+    font-weight: bold;
+    padding: 0.75em 0.5em 0.25em;
+    margin-top: 0.5em;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px 10px 0 0;
+    color: var(--SmartThemeQuoteColor);
+    position: sticky;
+    top: 0;
+    background: var(--SmartThemeChatTintColor);
+    z-index: 1;
+}
+
+.macroBrowser .macro-category-header:first-child {
+    margin-top: 0;
+}
+
+.macroBrowser .macro-category-header.isFiltered {
+    display: none;
+}
+
+/* -----------------------------------------------------------------------------
+   Macro List Items
+   Layout: [signature] [description (shrinks)] [source icon]
+   ----------------------------------------------------------------------------- */
+
+.macroBrowser .macro-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    min-width: 0; /* Allow children to shrink */
+}
+
+.macroBrowser .macro-item:hover {
+    background: var(--black30a);
+}
+
+.macroBrowser .macro-item.selected {
+    background: var(--SmartThemeQuoteColor);
+}
+
+.macroBrowser .macro-item.isFiltered {
+    display: none;
+}
+
+.macroBrowser .macro-signature {
+    padding: 0.2em 0;
+    font-family: var(--monoFontFamily);
+    font-size: 0.9em;
+    color: var(--SmartThemeQuoteColor);
+    flex: 0 1 auto; /* Can shrink, but prefers not to */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 3em; /* Minimum before fully hidden */
+}
+
+.macroBrowser .macro-desc-preview {
+    flex: 1 1 0; /* Shrinks first, starts at 0 basis */
+    opacity: 0.7;
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0; /* Allow shrinking to nothing */
+}
+
+.macroBrowser .macro-source {
+    flex: 0 0 auto; /* Never shrinks */
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.macroBrowser .macro-source.isExtension.isThirdParty {
+    color: #f0a030;
+}
+
+.macroBrowser .macro-source.isExtension.isCore {
+    color: #30a0f0;
+}
+
+.macroBrowser .macro-source.isCore:not(.isExtension) {
+    color: #50c050;
+}
+
+/* -----------------------------------------------------------------------------
+   Macro Details Panel
+   ----------------------------------------------------------------------------- */
+
+.macro-details .macro-details-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5em;
+    margin-bottom: 0.75em;
+}
+
+.macro-details .macro-details-name {
+    font-family: var(--monoFontFamily);
+    font-size: 1.1em;
+    color: var(--SmartThemeQuoteColor);
+    background: var(--black30a);
+    padding: 0.15em 0.4em 0.3em;
+    border-radius: 4px;
+    word-break: break-all;
+    display: inline-block; /* Shrink-wrap to content */
+}
+
+.macro-details .macro-details-header > .macro-source {
+    flex: 0 0 auto;
+    font-size: 1em;
+    margin-top: 0.15em; /* Align with name top padding */
+}
+
+.macro-details .macro-category-badge {
+    display: inline-block;
+    font-size: 0.75em;
+    padding: 0.2em 0.6em;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor) 50%, transparent);
+    color: var(--SmartThemeBodyColor);
+    margin-bottom: 0.75em;
+}
+
+.macro-details .macro-details-section {
+    margin-bottom: 1em;
+}
+
+.macro-details .macro-details-label {
+    font-weight: bold;
+    font-size: 0.85em;
+    opacity: 0.8;
+    margin-bottom: 0.25em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.macro-details .macro-details-text {
+    line-height: 1.4;
+}
+
+.macro-details .macro-returns-content {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    flex-wrap: wrap;
+}
+
+/* -----------------------------------------------------------------------------
+   Arguments List (in details panel)
+   ----------------------------------------------------------------------------- */
+
+.macro-details .macro-args-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.macro-details .macro-arg-item {
+    padding: 0.4em 0;
+    border-bottom: 1px solid var(--black30a);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+.macro-details .macro-arg-item:last-child {
+    border-bottom: none;
+}
+
+.macro-details .macro-arg-name {
+    font-family: var(--monoFontFamily);
+    font-weight: bold;
+    color: var(--SmartThemeQuoteColor);
+}
+
+.macro-details .macro-arg-type {
+    font-size: 0.75em;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    background: var(--black30a);
+    color: var(--SmartThemeEmColor);
+}
+
+.macro-details .macro-arg-required {
+    font-size: 0.8em;
+    color: var(--warning-color, #e8a97f);
+}
+
+.macro-details .macro-arg-desc {
+    flex: 1 1 100%;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.macro-details .macro-arg-sample {
+    font-size: 0.85em;
+    opacity: 0.6;
+    font-style: italic;
+}
+
+.macro-details .macro-arg-list-info {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+.macro-details .macro-example-list {
+    list-style: disc;
+    padding-left: 1.5em;
+    margin: 0.25em 0;
+}
+
+.macro-details .macro-example-list li {
+    padding: 0.2em 0;
+}
+
+.macro-details .macro-example-list code {
+    font-family: var(--monoFontFamily);
+    background: var(--black30a);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+/* Alias indicator icon in list items */
+.macro-details .macro-alias-indicator {
+    flex: 0 0 auto;
+    font-size: 0.8em;
+    opacity: 0.6;
+    margin-left: 0.5em;
+    transform: rotate(90deg);
+}
+
+.macro-details .macro-item.isAlias .macro-signature {
+    opacity: 0.85;
+}
+
+/* Alias of indicator in details panel */
+.macro-details .macro-alias-of {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.5em 0;
+    padding: 0.4em 0.6em;
+    background: var(--black30a);
+    border-radius: 4px;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.macro-details .macro-alias-of i {
+    transform: rotate(90deg);
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
+.macro-details .macro-alias-of code {
+    font-family: var(--monoFontFamily);
+    background: var(--black30a);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+}
+
+/* Aliases list in details panel */
+.macro-details .macro-alias-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.25em 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+
+.macro-details .macro-alias-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
+.macro-details .macro-alias-item code {
+    font-family: var(--monoFontFamily);
+    background: var(--black30a);
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+}
+
+.macro-details .macro-alias-item.isHidden {
+    opacity: 0.5;
+}
+
+.macro-details .macro-alias-item.isHidden code {
+    text-decoration: line-through;
+    text-decoration-style: dashed;
+}
+
+.macro-details .macro-alias-hidden-badge {
+    font-size: 0.75em;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+/* ============================================
+   Enhanced Macro Autocomplete Styles
+   ============================================ */
+
+/* Fix macro items in autocomplete list - override the grid display: contents */
+.autoComplete > .item.macro-ac-item {
+    display: flex !important;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5em;
+    grid-column: 1 / -1;
+    padding: 0.25em 0.5em;
+    min-height: 1.8em;
+}
+
+.autoComplete > .item.macro-ac-item > .type {
+    flex: 0 0 auto;
+    width: 2em;
+    text-align: center;
+}
+
+.autoComplete > .item.macro-ac-item > .specs {
+    flex: 0 0 auto;
+    max-width: 40%;
+}
+
+.autoComplete > .item.macro-ac-item > .specs > .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.autoComplete > .item.macro-ac-item > .stopgap {
+    flex: 0 0 0.5em;
+    display: block !important;
+}
+
+.autoComplete > .item.macro-ac-item > .help {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.autoComplete > .item.macro-ac-item > .help > .helpContent {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* Indicator icons (alias and source) at the end */
+.autoComplete > .item.macro-ac-item > .macro-ac-indicator {
+    flex: 0 0 auto;
+    font-size: 0.85em;
+    opacity: 0.6;
+    margin-left: auto;
+}
+
+.autoComplete > .item.macro-ac-item > .macro-ac-indicator:first-of-type {
+    margin-left: auto;
+}
+
+.autoComplete > .item.macro-ac-item > .macro-ac-indicator + .macro-ac-indicator {
+    margin-left: 0.25em;
+}
+
+/* Third-party source indicator */
+.autoComplete > .item.macro-ac-item > .macro-source.isThirdParty {
+    color: #F89406;
+}
+
+/* Current argument hint banner in details */
+.macro-ac-arg-hint {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.5em 0.75em;
+    background: linear-gradient(90deg, var(--ac-color-selectedBackground, var(--SmartThemeQuoteColor)), transparent);
+    border-left: 3px solid var(--ac-color-matchedText, var(--SmartThemeBorderColor));
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+}
+
+.macro-ac-arg-hint i {
+    color: var(--ac-color-matchedText, var(--SmartThemeBorderColor));
+    font-size: 0.8em;
+}
+
+.macro-ac-hint-type {
+    font-family: var(--monoFontFamily);
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--ac-color-hoveredBackground, var(--black30a));
+    border-radius: 3px;
+    margin-left: 0.25em;
+}
+
+.macro-ac-hint-desc {
+    opacity: 0.8;
+}
+
+.macro-ac-hint-sample {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+/* Details panel using MacroBrowser styles - just add autocomplete context adjustments */
+.autoComplete-details .macro-ac-details {
+    padding: 0.5em;
+}
+
+/* Highlight current argument in arguments list */
+.autoComplete-details .macro-arg-item.current {
+    background: var(--ac-color-selectedBackground, var(--SmartThemeQuoteColor));
+    padding: 0.25em 0.5em;
+    margin: 0 -0.5em;
+    border-radius: 4px;
+}

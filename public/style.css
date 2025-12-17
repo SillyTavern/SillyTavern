@@ -1246,6 +1246,7 @@ body .panelControlBar {
     font-size: 20px;
     cursor: pointer;
     align-self: center;
+    pointer-events: auto;
 }
 
 .swipe_left {
@@ -1258,6 +1259,7 @@ body .panelControlBar {
     position: absolute;
     right: 0;
     bottom: 0;
+    pointer-events: none;
 }
 
 .swipes-counter {
@@ -1273,6 +1275,7 @@ body .panelControlBar {
     justify-content: center;
     margin-bottom: var(--swipeCounterMargin);
     height: var(--swipeCounterHeight);
+    pointer-events: auto;
 }
 
 
@@ -1333,6 +1336,8 @@ body.hideAllSwipeButtons :is(.swipe_left, .swipe_right),
     /* With display:none, the swipes-counter div wil collapse, shifting the chevron. */
     visibility: hidden;
     /* Interactivity has limited availability https://caniuse.com/?search=interactivity */
+    interactivity: inert;
+    pointer-events: none;
 }
 
 .ui-settings {

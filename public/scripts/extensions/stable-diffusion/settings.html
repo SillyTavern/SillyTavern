@@ -57,6 +57,7 @@
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
                 <option value="xai">xAI (Grok)</option>
+                <option value="zai">Z.AI (CogView)</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -164,16 +165,19 @@
                     </div>
                 </div>
             </div>
-            <div data-sd-source="openai,aimlapi">
-                <div data-sd-model="dall-e-3" class="flex-container">
-                    <div class="flex1">
+            <div data-sd-source="zai">
+                <b>Will use Common API. Coding API is not supported!</b>
+            </div>
+            <div data-sd-source="openai,aimlapi,zai">
+                <div class="flex-container">
+                    <div data-sd-model="dall-e-3" class="flex1">
                         <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
                         <select id="sd_openai_style">
                             <option value="vivid">Vivid</option>
                             <option value="natural">Natural</option>
                         </select>
                     </div>
-                    <div class="flex1">
+                    <div data-sd-model="dall-e-3,cogview-4-250304" class="flex1">
                         <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
                         <select id="sd_openai_quality">
                             <option value="standard" data-i18n="Standard">Standard</option>

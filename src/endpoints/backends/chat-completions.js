@@ -401,7 +401,7 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-3-pro-image-preview',
         ];
 
-        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-pro/.test(m));
+        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3-(flash|pro)/.test(m));
         const isImageSizeModel = m => /^gemini-3/.test(m);
 
         const noSearchModels = [
