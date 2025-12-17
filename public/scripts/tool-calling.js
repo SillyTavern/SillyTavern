@@ -721,7 +721,7 @@ export class ToolManager {
 
             if (choice && typeof choice.message === 'object' && Array.isArray(choice.message.tool_calls)) {
                 // Add OpenRouter signatures
-                if (Array.isArray(choice.message.reasoning_details) && Array.isArray(choice.message.tool_calls)) {
+                if (Array.isArray(choice.message.reasoning_details)) {
                     for (const toolCall of choice.message.tool_calls) {
                         const reasoningDetail = choice.message.reasoning_details.find(rd => rd.id === toolCall.id);
                         if (reasoningDetail && reasoningDetail.type === 'reasoning.encrypted' && reasoningDetail.data) {
