@@ -3159,10 +3159,19 @@ export async function getExtensionPrompt(position = extension_prompt_types.IN_PR
     return values;
 }
 
-export function baseChatReplace(value, name1, name2) {
-    if (value !== undefined && value.length > 0) {
-        const _ = undefined;
-        value = substituteParams(value, name1, name2, _, _, false);
+/**
+ * Base chat replacement function for character card fields.
+ * 1. Substitutes macros using substituteParams.
+ * 2. Collapses newlines if enabled in power user settings.
+ * 3. Removes carriage return characters.
+ * @param {string} value Input string
+ * @param {string?} name1Override Override for name1
+ * @param {string?} name2Override Override for name2
+ * @returns {string} Processed string
+ */
+export function baseChatReplace(value, name1Override = null, name2Override = null) {
+    if (typeof value === 'string' && value.length > 0) {
+        value = substituteParams(value, { name1Override, name2Override, replaceCharacterCard: false });
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
@@ -3229,47 +3238,47 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
 
     /** @type {Record<string, () => string>} */
     const resolvers = {
-        persona: () => baseChatReplace(power_user.persona_description?.trim(), name1, name2),
+        persona: () => baseChatReplace(power_user.persona_description?.trim()),
         system: () => {
             if (!character) return '';
             const systemPrompt = chat_metadata['system_prompt'] || character.data?.system_prompt || '';
-            return power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim(), name1, name2) : '';
+            return power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim()) : '';
         },
         jailbreak: () => {
             if (!character) return '';
-            return power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), name1, name2) : '';
+            return power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim()) : '';
         },
         version: () => character?.data?.character_version ?? '',
         charDepthPrompt: () => {
             if (!character) return '';
-            return baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2);
+            return baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim());
         },
         creatorNotes: () => {
             if (!character) return '';
-            return baseChatReplace(character.data?.creator_notes?.trim(), name1, name2);
+            return baseChatReplace(character.data?.creator_notes?.trim());
         },
         // These four fields may be overridden by group cards
         description: () => {
             if (groupCardsLazy) return groupCardsLazy.description;
             if (!character) return '';
-            return baseChatReplace(character.description?.trim(), name1, name2);
+            return baseChatReplace(character.description?.trim());
         },
         personality: () => {
             if (groupCardsLazy) return groupCardsLazy.personality;
             if (!character) return '';
-            return baseChatReplace(character.personality?.trim(), name1, name2);
+            return baseChatReplace(character.personality?.trim());
         },
         scenario: () => {
             if (groupCardsLazy) return groupCardsLazy.scenario;
             if (!character) return '';
             const scenarioText = chat_metadata['scenario'] || character.scenario || '';
-            return baseChatReplace(scenarioText.trim(), name1, name2);
+            return baseChatReplace(scenarioText.trim());
         },
         mesExamples: () => {
             if (groupCardsLazy) return groupCardsLazy.mesExamples;
             if (!character) return '';
             const exampleDialog = chat_metadata['mes_example'] || character.mes_example || '';
-            return baseChatReplace(exampleDialog.trim(), name1, name2);
+            return baseChatReplace(exampleDialog.trim());
         },
     };
 
@@ -4404,7 +4413,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             continue;
         }
 
-        const formattedExample = baseChatReplace(exampleMessage, name1, name2);
+        const formattedExample = baseChatReplace(exampleMessage);
         const cleanedExample = parseMesExamples(formattedExample, isInstruct);
 
         // Insert depending on before or after position
@@ -4448,9 +4457,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (main_api !== 'openai') {
         if (power_user.sysprompt.enabled) {
             system = power_user.prefer_character_prompt && system
-                ? substituteParams(system, name1, name2, (power_user.sysprompt.content ?? ''))
-                : baseChatReplace(power_user.sysprompt.content, name1, name2);
-            system = isInstruct ? substituteParams(system, name1, name2, power_user.sysprompt.content) : system;
+                ? substituteParams(system, { original: power_user.sysprompt.content ?? '' })
+                : baseChatReplace(power_user.sysprompt.content);
+            system = isInstruct ? substituteParams(system, { original: power_user.sysprompt.content ?? '' }) : system;
         } else {
             // Nullify if it's not enabled
             system = '';
@@ -4508,8 +4517,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     if (main_api !== 'openai' && power_user.sysprompt.enabled) {
         jailbreak = power_user.prefer_character_jailbreak && jailbreak
-            ? substituteParams(jailbreak, name1, name2, (power_user.sysprompt.post_history ?? ''))
-            : baseChatReplace(power_user.sysprompt.post_history, name1, name2);
+            ? substituteParams(jailbreak, { original: power_user.sysprompt.post_history ?? '' })
+            : baseChatReplace(power_user.sysprompt.post_history);
 
         // Only inject the jb if there is one
         if (jailbreak) {

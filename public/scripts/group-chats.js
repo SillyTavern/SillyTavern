@@ -39,8 +39,6 @@ import {
     setCharacterName,
     setEditedMessageId,
     is_send_press,
-    name1,
-    name2,
     resetChatState,
     setSendButtonState,
     getCharacters,
@@ -459,7 +457,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
             continue;
         }
 
-        const depthPromptText = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, character.name) || '';
+        const depthPromptText = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), null, character.name) || '';
         const depthPromptDepth = character.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
         const depthPromptRole = character.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default;
 
@@ -517,7 +515,7 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
         if (!value) return '';
         value = value.replace(/<FIELDNAME>/gi, fieldName);
         value = trim ? value.trim() : value;
-        return baseChatReplace(value, name1, characterName);
+        return baseChatReplace(value, null, characterName);
     }
 
     /**
@@ -543,7 +541,7 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
     /**
      * Collects and joins field values from all group members
      * @param {string} fieldName Display name of the field
-     * @param {function(import('../script.js').Character): string} getter Function to get field value from character
+     * @param {function(Character): string} getter Function to get field value from character
      * @param {function(string): string} [preprocess] Optional preprocess function
      * @returns {string} Combined field values
      */
@@ -567,8 +565,8 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
     return createLazyFields({
         description: () => collectField('Description', c => c.description),
         personality: () => collectField('Personality', c => c.personality),
-        scenario: () => baseChatReplace(scenarioOverride?.trim(), name1, name2) || collectField('Scenario', c => c.scenario),
-        mesExamples: () => baseChatReplace(mesExamplesOverride?.trim(), name1, name2) ||
+        scenario: () => baseChatReplace(scenarioOverride?.trim()) || collectField('Scenario', c => c.scenario),
+        mesExamples: () => baseChatReplace(mesExamplesOverride?.trim()) ||
             collectField('Example Messages', c => c.mes_example, x => !x.startsWith('<START>') ? `<START>\n${x}` : x),
     });
 }
@@ -602,7 +600,7 @@ async function getFirstCharacterMessage(character) {
     mes['original_avatar'] = character.avatar;
     mes['extra'] = { 'gen_id': Date.now() * Math.random() * 1000000 };
     mes['mes'] = messageText
-        ? substituteParams(messageText.trim(), name1, character.name)
+        ? substituteParams(messageText.trim(), { name2Override: character.name })
         : '';
     mes['force_avatar'] =
         character.avatar != 'none'
