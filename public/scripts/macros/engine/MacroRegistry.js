@@ -1,6 +1,9 @@
 /** @typedef {import('chevrotain').CstNode} CstNode */
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
+/** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
+
+import { createEmptyFlags } from './MacroFlags.js';
 
 import { isFalseBoolean, isTrueBoolean } from '../../utils.js';
 import { MacroEngine } from './MacroEngine.js';
@@ -104,6 +107,7 @@ export const MacroValueType = Object.freeze({
  * @property {string[]} unnamedArgs - Unnamed positional arguments (both required and optional, up to the defined count).
  * @property {string[]|null} list - List arguments (after unnamed args), or null if list is not enabled.
  * @property {{ [key: string]: string }|null} namedArgs - Reserved for future named argument support.
+ * @property {MacroFlags} flags - Macro execution flags that were applied to this macro invocation.
  * @property {string} raw
  * @property {MacroEnv} env
  * @property {CstNode|null} cstNode
@@ -530,6 +534,7 @@ class MacroRegistry {
             unnamedArgs: unnamedArgsValues,
             list: listValues,
             namedArgs,
+            flags: call.flags,
             raw: call.rawInner,
             env: call.env,
             cstNode: call.cstNode,

@@ -25,7 +25,22 @@ const Tokens = {
         Start: createToken({ name: 'Macro.Start', pattern: /\{\{/ }),
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
-        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?#~/.$]/ }),
+        /**
+         * Macro execution flags - special symbols that modify macro resolution behavior.
+         * - `!` = immediate resolve (TBD)
+         * - `?` = delayed resolve (TBD)
+         * - `~` = re-evaluate (TBD)
+         * - `/` = closing block marker for scoped macros
+         * - `.` = variable shorthand (TBD)
+         * - `$` = variable shorthand alternative (TBD)
+         * - `#` = legacy handlebars flag (no-op)
+         */
+        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/.$]/ }),
+        /**
+         * Filter flag (`>`) - separate token because it changes parsing behavior.
+         * When present, `|` characters inside the macro are treated as filter/pipe operators.
+         */
+        FilterFlag: createToken({ name: 'Macro.FilterFlag', pattern: />/ }),
         DoubleSlash: createToken({ name: 'Macro.DoubleSlash', pattern: /\/\// }),
         Identifier: createToken({ name: 'Macro.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
@@ -84,6 +99,8 @@ const Def = {
             enter(Tokens.Macro.DoubleSlash, modes.macro_args),
 
             using(Tokens.Macro.Flags),
+            // Filter flag is separate because it affects parsing behavior for pipes
+            using(Tokens.Macro.FilterFlag),
 
             // We allow whitspaces inbetween flags or in front of the modifier
             using(Tokens.WhiteSpace),
@@ -160,7 +177,7 @@ class MacroLexer extends Lexer {
     /** @private */
     constructor() {
         super(MacroLexer.def, {
-            traceInitPerf: true,
+            // traceInitPerf: true,
         });
     }
 

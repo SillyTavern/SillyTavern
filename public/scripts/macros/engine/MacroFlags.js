@@ -1,0 +1,261 @@
+/**
+ * Macro Execution Flags - modifiers that change how macros are resolved at runtime.
+ *
+ * Flags are special symbols placed between the opening braces `{{` and the macro identifier.
+ * Example: `{{!user}}` - the `!` is an "immediate resolve" flag.
+ *
+ * Multiple flags can be combined: `{{!?myMacro}}` or `{{ ! ? myMacro }}`
+ */
+
+/**
+ * @typedef {Object} MacroFlags
+ * @property {boolean} immediate - Whether the immediate (`!`) flag is set.
+ * @property {boolean} delayed - Whether the delayed (`?`) flag is set.
+ * @property {boolean} reevaluate - Whether the re-evaluate (`~`) flag is set.
+ * @property {boolean} filter - Whether the filter (`>`) flag is set.
+ * @property {boolean} closingBlock - Whether the closing block (`/`) flag is set.
+ * @property {boolean} legacyHash - Whether the legacy hash (`#`) flag is set.
+ * @property {boolean} varDot - Whether the variable dot (`.`) flag is set.
+ * @property {boolean} varDollar - Whether the variable dollar (`$`) flag is set.
+ * @property {string[]} raw - The raw flag symbols in order of appearance.
+ */
+
+/**
+ * Enum of all recognized macro execution flags.
+ *
+ * @readonly
+ * @enum {string}
+ */
+export const MacroFlagType = Object.freeze({
+    /**
+     * Immediate resolve flag (`!`).
+     * This macro will be resolved first (in order of appearance) before "normal" macros.
+     * @status TBD - Not implemented in v1
+     */
+    IMMEDIATE: '!',
+
+    /**
+     * Delayed resolve flag (`?`).
+     * This macro will be resolved last (in order of appearance) after "normal" macros.
+     * @status TBD - Not implemented in v1
+     */
+    DELAYED: '?',
+
+    /**
+     * Re-evaluate flag (`~`).
+     * Marks a macro for potential re-evaluation.
+     * @status TBD - Not implemented in v1
+     */
+    REEVALUATE: '~',
+
+    /**
+     * Filter/pipe flag (`>`).
+     * Indicates that this macro should resolve `|` characters as output filters.
+     * @status Parsed - Filter feature not yet implemented
+     */
+    FILTER: '>',
+
+    /**
+     * Closing block flag (`/`).
+     * Marks this macro as the closing block of a scoped macro with the same identifier.
+     * A closing block macro does not support arguments itself.
+     * Example: `{{setvar::myvar}}long text{{/setvar}}`
+     * @status Parsed - Scoped macros not yet implemented
+     */
+    CLOSING_BLOCK: '/',
+
+    /**
+     * Legacy handlebars flag (`#`).
+     * A leftover from legacy handlebar-style templates like `{{#if ...}}`.
+     * Currently parsed but has no effect.
+     * @status Parsed - Legacy compatibility only
+     */
+    LEGACY_HASH: '#',
+
+    /**
+     * Variable shorthand flag (`.`).
+     * Shorthand for variable access: `{{.myvar}}` equivalent to `{{getvar::myvar}}`.
+     * @status TBD - Not implemented in v1
+     */
+    VAR_DOT: '.',
+
+    /**
+     * Variable shorthand flag (`$`).
+     * Alternative shorthand for variable access: `{{$myvar}}`.
+     * @status TBD - Not implemented in v1
+     */
+    VAR_DOLLAR: '$',
+});
+
+/**
+ * @typedef {Object} MacroFlagDefinition
+ * @property {MacroFlagType} type - The flag type enum value (also the symbol).
+ * @property {string} name - Human-readable name for the flag.
+ * @property {string} description - Description of what the flag does.
+ * @property {boolean} implemented - Whether this flag's behavior is implemented.
+ * @property {boolean} affectsParser - Whether this flag changes parsing behavior (e.g., filter flag).
+ */
+
+/**
+ * Definitions for all macro flags with metadata.
+ *
+ * @type {Map<string, MacroFlagDefinition>}
+ */
+export const MacroFlagDefinitions = new Map([
+    [MacroFlagType.IMMEDIATE, {
+        type: MacroFlagType.IMMEDIATE,
+        name: 'Immediate',
+        description: 'Resolve this macro before other macros in the same text.',
+        implemented: false,
+        affectsParser: false,
+    }],
+    [MacroFlagType.DELAYED, {
+        type: MacroFlagType.DELAYED,
+        name: 'Delayed',
+        description: 'Resolve this macro after other macros in the same text.',
+        implemented: false,
+        affectsParser: false,
+    }],
+    [MacroFlagType.REEVALUATE, {
+        type: MacroFlagType.REEVALUATE,
+        name: 'Re-evaluate',
+        description: 'Mark this macro for re-evaluation.',
+        implemented: false,
+        affectsParser: false,
+    }],
+    [MacroFlagType.FILTER, {
+        type: MacroFlagType.FILTER,
+        name: 'Filter',
+        description: 'Enable pipe-based output filters for this macro.',
+        implemented: false,
+        affectsParser: true, // Changes how `|` is parsed
+    }],
+    [MacroFlagType.CLOSING_BLOCK, {
+        type: MacroFlagType.CLOSING_BLOCK,
+        name: 'Closing Block',
+        description: 'Marks this as a closing block for a scoped macro.',
+        implemented: false,
+        affectsParser: false,
+    }],
+    [MacroFlagType.LEGACY_HASH, {
+        type: MacroFlagType.LEGACY_HASH,
+        name: 'Legacy Hash',
+        description: 'Legacy handlebars-style flag (no effect).',
+        implemented: true, // "Implemented" as no-op
+        affectsParser: false,
+    }],
+    [MacroFlagType.VAR_DOT, {
+        type: MacroFlagType.VAR_DOT,
+        name: 'Variable (dot)',
+        description: 'Shorthand for variable access using dot notation.',
+        implemented: false,
+        affectsParser: false,
+    }],
+    [MacroFlagType.VAR_DOLLAR, {
+        type: MacroFlagType.VAR_DOLLAR,
+        name: 'Variable (dollar)',
+        description: 'Shorthand for variable access using dollar notation.',
+        implemented: false,
+        affectsParser: false,
+    }],
+]);
+
+/**
+ * Set of all valid flag symbols for quick lookup.
+ *
+ * @type {Set<string>}
+ */
+export const ValidFlagSymbols = new Set(Object.values(MacroFlagType));
+
+/**
+ * Creates a default MacroFlags object with all flags set to false.
+ *
+ * @returns {MacroFlags}
+ */
+export function createEmptyFlags() {
+    return {
+        immediate: false,
+        delayed: false,
+        reevaluate: false,
+        filter: false,
+        closingBlock: false,
+        legacyHash: false,
+        varDot: false,
+        varDollar: false,
+        raw: [],
+    };
+}
+
+/**
+ * Parses an array of flag symbols into a MacroFlags object.
+ *
+ * @param {string[]} flagSymbols - Array of flag symbol strings (e.g., ['!', '?']).
+ * @returns {MacroFlags}
+ */
+export function parseFlags(flagSymbols) {
+    const flags = createEmptyFlags();
+
+    for (const symbol of flagSymbols) {
+        switch (symbol) {
+            case MacroFlagType.IMMEDIATE:
+                flags.immediate = true;
+                break;
+            case MacroFlagType.DELAYED:
+                flags.delayed = true;
+                break;
+            case MacroFlagType.REEVALUATE:
+                flags.reevaluate = true;
+                break;
+            case MacroFlagType.FILTER:
+                flags.filter = true;
+                break;
+            case MacroFlagType.CLOSING_BLOCK:
+                flags.closingBlock = true;
+                break;
+            case MacroFlagType.LEGACY_HASH:
+                flags.legacyHash = true;
+                break;
+            case MacroFlagType.VAR_DOT:
+                flags.varDot = true;
+                break;
+            case MacroFlagType.VAR_DOLLAR:
+                flags.varDollar = true;
+                break;
+            default:
+                console.warn(`Can't parse unknown macro flag: ${symbol}`);
+        }
+        flags.raw.push(symbol);
+    }
+
+    return flags;
+}
+
+/**
+ * Checks if a MacroFlags object has any flags set.
+ *
+ * @param {MacroFlags} flags - The flags object to check.
+ * @returns {boolean} True if at least one flag is set.
+ */
+export function hasAnyFlag(flags) {
+    return flags.raw.length > 0;
+}
+
+/**
+ * Gets the flag definition for a given symbol.
+ *
+ * @param {string} symbol - The flag symbol (e.g., '!').
+ * @returns {MacroFlagDefinition|undefined}
+ */
+export function getFlagDefinition(symbol) {
+    return MacroFlagDefinitions.get(symbol);
+}
+
+/**
+ * Checks if a given symbol is a valid macro flag.
+ *
+ * @param {string} symbol - The symbol to check.
+ * @returns {boolean}
+ */
+export function isValidFlag(symbol) {
+    return ValidFlagSymbols.has(symbol);
+}

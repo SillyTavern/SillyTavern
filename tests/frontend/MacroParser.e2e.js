@@ -556,6 +556,144 @@ This is the second line
 
         });
     });
+
+    test.describe('Macro Flags', () => {
+        // {{!user}}
+        test('should parse macro with single flag', async ({ page }) => {
+            const input = '{{!user}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '!',
+                'Macro.identifier': 'user',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{?delayed}}
+        test('should parse macro with delayed flag', async ({ page }) => {
+            const input = '{{?delayed}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '?',
+                'Macro.identifier': 'delayed',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{/closing}}
+        test('should parse macro with closing block flag', async ({ page }) => {
+            const input = '{{/closing}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '/',
+                'Macro.identifier': 'closing',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{>filtered}}
+        test('should parse macro with filter flag', async ({ page }) => {
+            const input = '{{>filtered}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '>',
+                'Macro.identifier': 'filtered',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{!?user}}
+        test('should parse macro with multiple flags', async ({ page }) => {
+            const input = '{{!?user}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': ['!', '?'],
+                'Macro.identifier': 'user',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{ ! > macro }}
+        test('should parse macro with flags and whitespace', async ({ page }) => {
+            const input = '{{ ! > macro }}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': ['!', '>'],
+                'Macro.identifier': 'macro',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{#legacy}}
+        test('should parse macro with legacy hash flag', async ({ page }) => {
+            const input = '{{#legacy}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '#',
+                'Macro.identifier': 'legacy',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{!setvar::value::test}}
+        test('should parse macro with flag and arguments', async ({ page }) => {
+            const input = '{{!setvar::value::test}}';
+            const macroCst = await runParser(page, input, {
+                flattenKeys: ['arguments.argument'],
+            });
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '!',
+                'Macro.identifier': 'setvar',
+                'arguments': {
+                    'separator': '::',
+                    'argument': ['value', 'test'],
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.myvar}} - variable shorthand
+        test('should parse macro with variable dot shorthand flag', async ({ page }) => {
+            const input = '{{.myvar}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '.',
+                'Macro.identifier': 'myvar',
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{$myvar}} - variable shorthand
+        test('should parse macro with variable dollar shorthand flag', async ({ page }) => {
+            const input = '{{$myvar}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'flags': '$',
+                'Macro.identifier': 'myvar',
+                'Macro.End': '}}',
+            });
+        });
+    });
 });
 
 /**

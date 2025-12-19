@@ -653,6 +653,35 @@ test.describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // {{>filtered}}
+        test('should support > filter flag as separate token', async ({ page }) => {
+            const input = '{{>filtered}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'filtered' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ ! > user }}
+        test('should support filter flag combined with other flags', async ({ page }) => {
+            const input = '{{ ! > user }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
         // {{ a shaaark }}
         test('should not capture single letter as flag, but as macro identifiers', async ({ page }) => {
             const input = '{{ a shaaark }}';

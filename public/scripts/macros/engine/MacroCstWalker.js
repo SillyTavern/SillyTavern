@@ -1,11 +1,15 @@
 /** @typedef {import('chevrotain').CstNode} CstNode */
 /** @typedef {import('chevrotain').IToken} IToken */
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
+/** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
+
+import { parseFlags, createEmptyFlags } from './MacroFlags.js';
 
 /**
  * @typedef {Object} MacroCall
  * @property {string} name
  * @property {string[]} args
+ * @property {MacroFlags} flags - Parsed macro execution flags.
  * @property {MacroEnv} env
  * @property {string} rawInner
  * @property {string} rawWithBraces
@@ -167,6 +171,11 @@ class MacroCstWalker {
         const identifierTokens = /** @type {IToken[]} */ (children['Macro.identifier'] || []);
         const name = identifierTokens[0]?.image || '';
 
+        // Extract flag tokens and parse them into a MacroFlags object
+        const flagTokens = /** @type {IToken[]} */ (children['flags'] || []);
+        const flagSymbols = flagTokens.map(token => token.image);
+        const flags = flagSymbols.length > 0 ? parseFlags(flagSymbols) : createEmptyFlags();
+
         const range = this.#getMacroRange(macroNode);
         const startToken = /** @type {IToken?} */ ((children['Macro.Start'] || [])[0]);
         const endToken = /** @type {IToken?} */ ((children['Macro.End'] || [])[0]);
@@ -223,6 +232,7 @@ class MacroCstWalker {
         const call = {
             name,
             args,
+            flags,
             rawInner,
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
             range,

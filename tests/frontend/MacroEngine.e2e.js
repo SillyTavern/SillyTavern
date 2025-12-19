@@ -678,6 +678,124 @@ test.describe('MacroEngine', () => {
             expect(warnings.some(w => w.includes('Macro "dyn"') && w.includes('unnamed arguments'))).toBeTruthy();
         });
     });
+
+    test.describe('Macro flags', () => {
+        test('should resolve macro with legacy hash flag (no effect)', async ({ page }) => {
+            // Legacy hash flag should be parsed but have no effect
+            const input = 'Hello {{#user}}!';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello User!');
+        });
+
+        test('should resolve macro with closing block flag (currently no effect)', async ({ page }) => {
+            // Closing block flag is parsed but scoped macros not yet implemented
+            // The macro should still try to resolve normally
+            const input = '{{/unknown}}';
+            const output = await evaluateWithEngine(page, input);
+            // Unknown macro with flag should be kept unchanged
+            expect(output).toBe('{{/unknown}}');
+        });
+
+        test('should pass flags to macro handler', async ({ page }) => {
+            // Register a test macro that returns its flags
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                MacroRegistry.unregisterMacro('test-flags');
+                MacroRegistry.registerMacro('test-flags', {
+                    description: 'Test macro that returns its flags.',
+                    handler: ({ flags }) => {
+                        const activeFlags = flags.raw.join(',') || 'none';
+                        return `[${activeFlags}]`;
+                    },
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+
+                return MacroEngine.evaluate('{{test-flags}} / {{!test-flags}} / {{!?test-flags}}', env);
+            });
+
+            expect(output).toBe('[none] / [!] / [!,?]');
+        });
+
+        test('should correctly identify individual flags in handler', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                MacroRegistry.unregisterMacro('test-flag-check');
+                MacroRegistry.registerMacro('test-flag-check', {
+                    description: 'Test macro that checks specific flags.',
+                    handler: ({ flags }) => {
+                        const parts = [];
+                        if (flags.immediate) parts.push('immediate');
+                        if (flags.delayed) parts.push('delayed');
+                        if (flags.filter) parts.push('filter');
+                        if (flags.closingBlock) parts.push('closingBlock');
+                        if (flags.legacyHash) parts.push('legacyHash');
+                        return parts.join('+') || 'noflags';
+                    },
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+
+                const results = [
+                    MacroEngine.evaluate('{{test-flag-check}}', env),
+                    MacroEngine.evaluate('{{!test-flag-check}}', env),
+                    MacroEngine.evaluate('{{?test-flag-check}}', env),
+                    MacroEngine.evaluate('{{>test-flag-check}}', env),
+                    MacroEngine.evaluate('{{/test-flag-check}}', env),
+                    MacroEngine.evaluate('{{#test-flag-check}}', env),
+                    MacroEngine.evaluate('{{!?>test-flag-check}}', env),
+                ];
+                return results.join(' | ');
+            });
+
+            expect(output).toBe('noflags | immediate | delayed | filter | closingBlock | legacyHash | immediate+delayed+filter');
+        });
+
+        test('should handle flags with arguments correctly', async ({ page }) => {
+            const input = '{{!reverse::hello}}';
+            const output = await evaluateWithEngine(page, input);
+            // The flag should not affect the macro resolution
+            expect(output).toBe('olleh');
+        });
+
+        test('should handle multiple flags with whitespace', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                MacroRegistry.unregisterMacro('test-flags-ws');
+                MacroRegistry.registerMacro('test-flags-ws', {
+                    description: 'Test macro for flags with whitespace.',
+                    handler: ({ flags }) => flags.raw.length.toString(),
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+
+                return MacroEngine.evaluate('{{ ! ? > test-flags-ws }}', env);
+            });
+
+            expect(output).toBe('3');
+        });
+    });
 });
 
 /**

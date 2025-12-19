@@ -11,6 +11,7 @@ import {
     renderMacroDetails,
 } from '../macros/MacroBrowser.js';
 import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
 
 /** @typedef {import('../macros/engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
 
@@ -20,6 +21,7 @@ import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js'
  * @property {string} fullText - The full macro text being typed (without {{ }}).
  * @property {number} cursorOffset - Cursor position within the macro text.
  * @property {string} identifier - The macro identifier (name).
+ * @property {string[]} flags - Array of flag symbols typed (e.g., ['!', '?']).
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
  */
@@ -211,25 +213,52 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 
 /**
  * Parses the macro text to determine current argument context.
- * @param {string} macroText - The text inside {{ }}, e.g., "roll::1d20" or "random::a::b".
+ * Handles leading whitespace and flags before the identifier.
+ *
+ * @param {string} macroText - The text inside {{ }}, e.g., "roll::1d20" or "!user" or "  description  ".
  * @param {number} cursorOffset - Cursor position within macroText.
  * @returns {MacroAutoCompleteContext}
  */
 export function parseMacroContext(macroText, cursorOffset) {
-    const parts = [];
-    let currentPart = '';
-    let partStart = 0;
     let i = 0;
 
+    // Skip leading whitespace
+    while (i < macroText.length && /\s/.test(macroText[i])) {
+        i++;
+    }
+
+    // Extract flags (special symbols before the identifier)
+    const flags = [];
     while (i < macroText.length) {
-        if (macroText[i] === ':' && macroText[i + 1] === ':') {
-            parts.push({ text: currentPart, start: partStart, end: i });
-            currentPart = '';
-            i += 2;
-            partStart = i;
-        } else {
-            currentPart += macroText[i];
+        const char = macroText[i];
+        if (ValidFlagSymbols.has(char)) {
+            flags.push(char);
             i++;
+            // Skip whitespace between flags
+            while (i < macroText.length && /\s/.test(macroText[i])) {
+                i++;
+            }
+        } else {
+            break;
+        }
+    }
+
+    // Now parse the identifier and arguments starting from position i
+    const remainingText = macroText.slice(i);
+    const parts = [];
+    let currentPart = '';
+    let partStart = i;
+    let j = 0;
+
+    while (j < remainingText.length) {
+        if (remainingText[j] === ':' && remainingText[j + 1] === ':') {
+            parts.push({ text: currentPart, start: partStart, end: i + j });
+            currentPart = '';
+            j += 2;
+            partStart = i + j;
+        } else {
+            currentPart += remainingText[j];
+            j++;
         }
     }
     // Push the last part
@@ -245,8 +274,13 @@ export function parseMacroContext(macroText, cursorOffset) {
         }
     }
 
+    // If cursor is in the flags/whitespace area before identifier, we're on the identifier
+    if (currentArgIndex === -1 && cursorOffset < (parts[0]?.start ?? 0)) {
+        currentArgIndex = -1;
+    }
+
     // If cursor is after all parts (at the end), we're in the last arg
-    if (currentArgIndex === -1 && cursorOffset >= parts[parts.length - 1].end) {
+    if (currentArgIndex === -1 && parts.length > 0 && cursorOffset >= parts[parts.length - 1].end) {
         currentArgIndex = parts.length - 1;
     }
 
@@ -254,6 +288,7 @@ export function parseMacroContext(macroText, cursorOffset) {
         fullText: macroText,
         cursorOffset,
         identifier: parts[0]?.text.trim() || '',
+        flags,
         args: parts.slice(1).map(p => p.text),
         currentArgIndex,
     };
