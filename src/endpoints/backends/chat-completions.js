@@ -1641,6 +1641,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
+            apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
