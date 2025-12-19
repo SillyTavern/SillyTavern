@@ -47,6 +47,7 @@ import {
     addReasoningContentToToolCalls,
     cachingSystemPromptForOpenRouterClaude,
     addOpenRouterSignatures,
+    cachingSystemPromptForOpenRouterGemini,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -2051,6 +2052,10 @@ router.post('/generate', async function (request, response) {
             const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
             const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
             const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
+
+            const isCacheableGemini = /google\/gemini-(2\.5-(pro|flash)|2\.0-flash|3-pro-preview)/i.test(request.body.model);
+            const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
+
             if (Array.isArray(request.body.messages)) {
                 embedOpenRouterMedia(request.body.messages);
                 addOpenRouterSignatures(request.body.messages, request.body.model);
@@ -2063,6 +2068,10 @@ router.post('/generate', async function (request, response) {
                     if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0) {
                         cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
                     }
+                }
+
+                if (isCacheableGemini && enableGeminiSystemPromptCache) {
+                    cachingSystemPromptForOpenRouterGemini(request.body.messages);
                 }
             }
 
