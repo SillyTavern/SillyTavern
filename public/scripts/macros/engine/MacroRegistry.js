@@ -34,6 +34,8 @@ export const MacroCategory = Object.freeze({
     STATE: 'state',
     /** Macros that don't fit in any of the other categories, but don't really need/deserve their own */
     MISC: 'misc',
+    /** Macros that are registered but not assigned to a category (any macro should have a category, so let the extension author know...) */
+    UNCATEGORIZED: 'uncategorized',
 });
 
 /**
@@ -57,7 +59,7 @@ export const MacroValueType = Object.freeze({
 /**
  * @typedef {Object} MacroDefinitionOptions
  * @property {MacroAliasDef[]} [aliases] - Alternative names for this macro. Each alias creates a lookup entry pointing to the same definition.
- * @property {MacroCategory|string} category - Category for grouping in documentation/autocomplete. Use MacroCategory enum values or a custom string.
+ * @property {MacroCategory|string} [category=MacroCategory.UNCATEGORIZED] - Category for grouping in documentation/autocomplete. Use MacroCategory enum values or a custom string.
  * @property {number|MacroUnnamedArgDef[]} [unnamedArgs=0] - Specifies the macro's unnamed positional arguments. Can be a number (all required) or an array of definitions (supports optional args). Optional args must be a suffix.
  * @property {boolean|MacroListSpec} [list] - Whether the macro allows a list of arguments (optional min and max values can be set). These arguments will be added AFTER the unnamed args.
  * @property {boolean} [strictArgs=true] - Whether the macro should be strict about its arguments.
@@ -212,8 +214,11 @@ class MacroRegistry {
                 }
             }
 
-            if (typeof rawCategory !== 'string' || !rawCategory.trim()) throw new Error(`Macro "${name}" options.category must be a non-empty string.`);
-            const category = rawCategory.trim();
+            /** @type {MacroCategory|string} */
+            let category = MacroCategory.UNCATEGORIZED;
+            if (typeof rawCategory === 'string' && rawCategory.trim()) {
+                category = rawCategory.trim();
+            }
 
             let minArgs = 0;
             let maxArgs = 0;
