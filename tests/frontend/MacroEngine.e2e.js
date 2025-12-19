@@ -395,7 +395,7 @@ test.describe('MacroEngine', () => {
     });
 
     test.describe('Arity errors', () => {
-        test('should not resolve newline when called with arguments', async ({ page }) => {
+        test('should not resolve macro without arguments when called with arguments', async ({ page }) => {
             /** @type {string[]} */
             const warnings = [];
             page.on('console', msg => {
@@ -404,14 +404,14 @@ test.describe('MacroEngine', () => {
                 }
             });
 
-            const input = 'Start {{newline::extra}} end.';
+            const input = 'Start {{char::extra}} end.';
             const output = await evaluateWithEngine(page, input);
 
             // Macro text should remain unchanged
             expect(output).toBe(input);
 
-            // Should have logged an arity warning for newline
-            expect(warnings.some(w => w.includes('Macro "newline"') && w.includes('unnamed arguments'))).toBeTruthy();
+            // Should have logged an arity warning for char
+            expect(warnings.some(w => w.includes('Macro "char"') && w.includes('unnamed arguments'))).toBeTruthy();
         });
 
         test('should not resolve reverse when called without arguments', async ({ page }) => {

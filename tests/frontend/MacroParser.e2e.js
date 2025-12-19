@@ -61,15 +61,15 @@ test.describe('MacroParser', () => {
                 expect(errors).toMatchObject(expectedErrors);
                 expect(errors[0].message).toMatch(expectedMessage);
             });
-            // {{§!#&blah}}
+            // {{§%€blah}}
             test('[Error] should throw an error for invalid identifier', async ({ page }) => {
-                const input = '{{§!#&blah}}';
+                const input = '{{§%€blah}}';
                 const { macroCst, errors } = await runParserAndGetErrors(page, input);
 
                 const expectedErrors = [
                     { name: 'NoViableAltException' },
                 ];
-                const expectedMessage = /Expecting: one of these possible Token sequences:(.*?)\[Macro\.Identifier\](.*?)but found: '!'/gs;
+                const expectedMessage = /Expecting: one of these possible Token sequences:(.*?)\[Macro\.Identifier\](.*?)but found: '§%€blah}}'/gs;
 
                 expect(macroCst).toBeUndefined();
                 expect(errors).toMatchObject(expectedErrors);
