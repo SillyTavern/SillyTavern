@@ -71,6 +71,7 @@ export const SECRET_KEYS = {
     COMETAPI: 'api_key_cometapi',
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
+    ELEVENLABS: 'api_key_elevenlabs',
 };
 
 const FRIENDLY_NAMES = {
@@ -130,6 +131,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
     [SECRET_KEYS.ZAI]: 'Z.AI',
     [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
+    [SECRET_KEYS.ELEVENLABS]: 'ElevenLabs TTS',
 };
 
 const INPUT_MAP = {
