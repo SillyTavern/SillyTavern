@@ -15,7 +15,8 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { EnhancedMacroAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import { EnhancedMacroAutoCompleteOption, MacroFlagAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import { MacroFlagDefinitions } from '../macros/engine/MacroFlags.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
@@ -543,13 +544,35 @@ export class SlashCommandParser {
 
     /**
      * Builds enhanced macro autocomplete options from the MacroRegistry.
+     * When in the flags area (before identifier), includes flag options.
      * When typing arguments (after ::), prioritizes the exact macro match.
      * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
-     * @returns {EnhancedMacroAutoCompleteOption[]}
+     * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption)[]}
      */
     #buildEnhancedMacroOptions(context) {
-        /** @type {EnhancedMacroAutoCompleteOption[]} */
+        /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption)[]} */
         const options = [];
+
+        // If cursor is in the flags area (before identifier starts), include flag options
+        if (context.isInFlagsArea) {
+            // If cursor is on a specific flag (just typed it), show that flag first
+            if (context.currentFlag) {
+                const currentFlagDef = MacroFlagDefinitions.get(context.currentFlag);
+                if (currentFlagDef) {
+                    const currentFlagOption = new MacroFlagAutoCompleteOption(currentFlagDef);
+                    // Mark as already typed - valueProvider returns empty so it doesn't re-insert
+                    currentFlagOption.valueProvider = () => '';
+                    options.push(currentFlagOption);
+                }
+            }
+
+            // Add all available flags that haven't been typed yet
+            for (const [symbol, flagDef] of MacroFlagDefinitions) {
+                if (!context.flags.includes(symbol)) {
+                    options.push(new MacroFlagAutoCompleteOption(flagDef));
+                }
+            }
+        }
 
         // Get all macros from the registry (excluding hidden aliases)
         const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });

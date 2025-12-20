@@ -23,6 +23,8 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @property {string} identifier - The macro identifier (name).
  * @property {number} identifierStart - Start position of the identifier within the macro text.
  * @property {string[]} flags - Array of flag symbols typed (e.g., ['!', '?']).
+ * @property {string|null} currentFlag - The flag symbol cursor is currently on (last typed flag), or null.
+ * @property {boolean} isInFlagsArea - Whether cursor is in the flags area (before identifier starts).
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
  */
@@ -213,6 +215,118 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Autocomplete option for macro execution flags.
+ * Shows flag symbol, name, and description.
+ */
+export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
+    /** @type {import('../macros/engine/MacroFlags.js').MacroFlagDefinition} */
+    #flagDef;
+
+    /**
+     * @param {import('../macros/engine/MacroFlags.js').MacroFlagDefinition} flagDef - The flag definition.
+     */
+    constructor(flagDef) {
+        // Use the flag symbol as the name, with a flag icon
+        super(flagDef.type, '🚩');
+        this.#flagDef = flagDef;
+    }
+
+    /** @returns {import('../macros/engine/MacroFlags.js').MacroFlagDefinition} */
+    get flagDefinition() {
+        return this.#flagDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this flag.
+     * Must include .name element with character spans for fuzzy highlighting compatibility.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = document.createElement('li');
+        li.classList.add('item', 'macro-flag-item');
+
+        // Type icon
+        const type = document.createElement('span');
+        type.classList.add('type', 'monospace');
+        type.textContent = '🚩';
+        li.append(type);
+
+        // Specs container (required for autocomplete structure)
+        const specs = document.createElement('span');
+        specs.classList.add('specs');
+
+        // Name element with character spans (required for fuzzy highlighting)
+        const nameEl = document.createElement('span');
+        nameEl.classList.add('name', 'monospace');
+        // Build name with individual character spans: "! FlagName"
+        const displayName = `${this.#flagDef.type} ${this.#flagDef.name}`;
+        for (const char of displayName) {
+            const span = document.createElement('span');
+            span.textContent = char;
+            nameEl.append(span);
+        }
+        specs.append(nameEl);
+        li.append(specs);
+
+        // Stopgap (spacer)
+        const stopgap = document.createElement('span');
+        stopgap.classList.add('stopgap');
+        li.append(stopgap);
+
+        // Help text (description)
+        const help = document.createElement('span');
+        help.classList.add('help');
+        const content = document.createElement('span');
+        content.classList.add('helpContent');
+        content.textContent = this.#flagDef.description + (this.#flagDef.implemented ? '' : ' (planned)');
+        help.append(content);
+        li.append(help);
+
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this flag.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-flag-details');
+
+        // Header with flag symbol and name
+        const header = document.createElement('h3');
+        header.classList.add('macro-flag-details-header');
+        header.innerHTML = `<code>${this.#flagDef.type}</code> ${this.#flagDef.name} Flag`;
+        details.append(header);
+
+        // Description
+        const desc = document.createElement('p');
+        desc.classList.add('macro-flag-details-desc');
+        desc.textContent = this.#flagDef.description;
+        details.append(desc);
+
+        // Status
+        const status = document.createElement('p');
+        status.classList.add('macro-flag-details-status');
+        status.innerHTML = `<strong>Status:</strong> ${this.#flagDef.implemented ? 'Implemented' : 'Planned for future release'}`;
+        details.append(status);
+
+        // Parser effect note
+        if (this.#flagDef.affectsParser) {
+            const parserNote = document.createElement('p');
+            parserNote.classList.add('macro-flag-details-note');
+            parserNote.innerHTML = '<em>This flag affects how the macro is parsed.</em>';
+            details.append(parserNote);
+        }
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
  * Parses the macro text to determine current argument context.
  * Handles leading whitespace and flags before the identifier.
  *
@@ -229,17 +343,30 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     // Extract flags (special symbols before the identifier)
+    // Track position after each flag to determine which flag cursor is on
     const flags = [];
+    const flagEndPositions = []; // Position right after each flag (before any whitespace)
     while (i < macroText.length) {
         const char = macroText[i];
         if (ValidFlagSymbols.has(char)) {
             flags.push(char);
             i++;
+            flagEndPositions.push(i); // Position right after this flag
             // Skip whitespace between flags
             while (i < macroText.length && /\s/.test(macroText[i])) {
                 i++;
             }
         } else {
+            break;
+        }
+    }
+
+    // Determine which flag cursor is currently on (if any)
+    // Cursor is "on" a flag if it's at or right after that flag's position
+    let currentFlag = null;
+    for (let idx = flags.length - 1; idx >= 0; idx--) {
+        if (cursorOffset >= flagEndPositions[idx] - 1 && cursorOffset <= flagEndPositions[idx]) {
+            currentFlag = flags[idx];
             break;
         }
     }
@@ -275,8 +402,12 @@ export function parseMacroContext(macroText, cursorOffset) {
         }
     }
 
+    // Determine if cursor is in the flags area (at or before identifier starts)
+    const identifierStartPos = parts[0]?.start ?? i;
+    const isInFlagsArea = cursorOffset <= identifierStartPos;
+
     // If cursor is in the flags/whitespace area before identifier, we're on the identifier
-    if (currentArgIndex === -1 && cursorOffset < (parts[0]?.start ?? 0)) {
+    if (currentArgIndex === -1 && isInFlagsArea) {
         currentArgIndex = -1;
     }
 
@@ -289,8 +420,10 @@ export function parseMacroContext(macroText, cursorOffset) {
         fullText: macroText,
         cursorOffset,
         identifier: parts[0]?.text.trim() || '',
-        identifierStart: parts[0]?.start ?? i,
+        identifierStart: identifierStartPos,
+        isInFlagsArea,
         flags,
+        currentFlag,
         args: parts.slice(1).map(p => p.text),
         currentArgIndex,
     };
