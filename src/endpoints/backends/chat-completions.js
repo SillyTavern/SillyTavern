@@ -45,9 +45,8 @@ import {
     addAssistantPrefix,
     embedOpenRouterMedia,
     addReasoningContentToToolCalls,
-    cachingSystemPromptForOpenRouterClaude,
+    cachingSystemPromptForOpenRouter,
     addOpenRouterSignatures,
-    cachingSystemPromptForOpenRouterGemini,
 } from '../../prompt-converters.js';
 
 import { readSecret, SECRET_KEYS } from '../secrets.js';
@@ -85,6 +84,58 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+
+/**
+ * Cache for cacheable (writing) OpenRouter model IDs.
+ * @type {string[]}
+ */
+const openRouterCacheableModels = [];
+
+/**
+ * Checks if an OpenRouter model supports prompt cache writing.
+ * Uses a cache to avoid repeated API calls.
+ * @param {string} modelId - The OpenRouter model ID
+ * @returns {Promise<boolean>} `true` if the model supports writing cache
+ */
+async function isOpenRouterModelCacheable(modelId) {
+    if (openRouterCacheableModels.includes(modelId)) {
+        return true;
+    }
+
+    try {
+        const response = await fetch(`${API_OPENROUTER}/models`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) {
+            console.warn(`OpenRouter models API returned ${response.status}: ${response.statusText}`);
+            return false;
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('OpenRouter API response format unexpected');
+            return false;
+        }
+
+        const model = data.data.find(m => m.id === modelId);
+        const supportsCache = model?.pricing?.input_cache_write != null;
+
+        if (supportsCache) {
+            openRouterCacheableModels.push(modelId);
+        }
+
+        return supportsCache;
+    } catch (error) {
+        console.warn(`Failed to check OpenRouter cache support for ${modelId}:`, error.message);
+        return false;
+    }
+}
 
 /**
  * Gets OpenRouter transforms based on the request.
@@ -2053,7 +2104,8 @@ router.post('/generate', async function (request, response) {
             const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4|haiku-4)/.test(request.body.model);
             const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
 
-            const isCacheableGemini = /google\/gemini-(2\.5-(pro|flash)|2\.0-flash|3-pro-preview)/i.test(request.body.model);
+            const isGemini = /google\/gemini/.test(request.body.model);
+            const isCacheableGemini = isGemini && await isOpenRouterModelCacheable(request.body.model);
             const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
 
             if (Array.isArray(request.body.messages)) {
@@ -2062,7 +2114,7 @@ router.post('/generate', async function (request, response) {
 
                 if (isClaude3or4) {
                     if (enableSystemPromptCache) {
-                        cachingSystemPromptForOpenRouterClaude(request.body.messages, cacheTTL);
+                        cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
                     }
 
                     if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0) {
@@ -2071,11 +2123,10 @@ router.post('/generate', async function (request, response) {
                 }
 
                 if (isCacheableGemini && enableGeminiSystemPromptCache) {
-                    cachingSystemPromptForOpenRouterGemini(request.body.messages);
+                    cachingSystemPromptForOpenRouter(request.body.messages);
                 }
             }
 
-            const isGemini = /google\/gemini/.test(request.body.model);
             if (isGemini) {
                 bodyParams['safety_settings'] = GEMINI_SAFETY;
             }
