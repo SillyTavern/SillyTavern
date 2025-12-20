@@ -21,6 +21,7 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @property {string} fullText - The full macro text being typed (without {{ }}).
  * @property {number} cursorOffset - Cursor position within the macro text.
  * @property {string} identifier - The macro identifier (name).
+ * @property {number} identifierStart - Start position of the identifier within the macro text.
  * @property {string[]} flags - Array of flag symbols typed (e.g., ['!', '?']).
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
@@ -288,6 +289,7 @@ export function parseMacroContext(macroText, cursorOffset) {
         fullText: macroText,
         cursorOffset,
         identifier: parts[0]?.text.trim() || '',
+        identifierStart: parts[0]?.start ?? i,
         flags,
         args: parts.slice(1).map(p => p.text),
         currentArgIndex,

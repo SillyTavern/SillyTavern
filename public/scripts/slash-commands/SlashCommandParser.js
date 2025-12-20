@@ -493,14 +493,17 @@ export class SlashCommandParser {
                 const macroContent = text.slice(macro.start + 2, macro.end - (text.slice(macro.end - 2, macro.end) === '}}' ? 2 : 0));
                 const context = parseMacroContext(macroContent, cursorInMacro);
 
-                // Extract just the identifier (strip trailing colons/whitespace/closing braces from macro.name)
-                const identifier = macro.name.replace(/[\s:}]+$/, '').trim();
+                // Use the identifier from context (handles whitespace and flags)
+                // Start position must be where the identifier actually begins (after whitespace/flags)
+                // so that the autocomplete range calculation works correctly
+                const identifier = context.identifier;
+                const identifierStartInText = macro.start + 2 + context.identifierStart;
 
                 // Use enhanced macro autocomplete when experimental engine is enabled
                 const options = this.#buildEnhancedMacroOptions(context);
                 const result = new AutoCompleteNameResult(
                     identifier,
-                    macro.start + 2,
+                    identifierStartInText,
                     options,
                     false,
                 );
@@ -1286,18 +1289,21 @@ export class SlashCommandParser {
     }
 
     indexMacros(offset, text) {
-        const re = /{{(?:((?:(?!}})[^\s:])+[\s:]*)((?:(?!}}).)*)(}}|}$|$))?/s;
-        let remaining = text;
-        let localOffset = 0;
-        while (remaining.length > 0 && re.test(remaining)) {
-            const match = re.exec(remaining);
+        // Simple regex to match macro boundaries: {{ followed by content until }} or end
+        // This captures both complete ({{...}}) and incomplete ({{...) macros
+        const re = /\{\{((?:(?!\}\}).)*?)(\}\}|$)/gs;
+
+        let match;
+        while ((match = re.exec(text)) !== null) {
+            const macroContent = match[1] || '';
+            // Use parseMacroContext to extract the identifier, which handles whitespace and flags
+            const context = parseMacroContext(macroContent, macroContent.length);
+
             this.macroIndex.push({
-                start: offset + localOffset + match.index,
-                end: offset + localOffset + match.index + (match[0]?.length ?? 0),
-                name: match[1] ?? '',
+                start: offset + match.index,
+                end: offset + match.index + match[0].length,
+                name: context.identifier,
             });
-            localOffset += match.index + (match[0]?.length ?? 0);
-            remaining = remaining.slice(match.index + (match[0]?.length ?? 0));
         }
     }
 }
