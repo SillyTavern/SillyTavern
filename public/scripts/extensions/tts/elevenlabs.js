@@ -43,7 +43,6 @@ class ElevenLabsTtsProvider {
                 <option value="eleven_multilingual_v1">Multilingual v1 (Old)</option>
                 <option value="eleven_turbo_v2">Turbo v2 (Old)</option>
             </select>
-            <input id="eleven_labs_connect" class="menu_button" type="button" value="Connect" />
             <label for="elevenlabs_tts_stability">Stability: <span id="elevenlabs_tts_stability_output"></span></label>
             <input id="elevenlabs_tts_stability" type="range" value="${this.defaultSettings.stability}" min="0" max="1" step="0.01" />
             <label for="elevenlabs_tts_similarity_boost">Similarity Boost: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
@@ -158,7 +157,6 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_speaker_boost').prop('checked', this.settings.speaker_boost);
         $('#elevenlabs_tts_speed').val(this.settings.speed);
         $('#elevenlabs_tts_model').val(this.settings.model);
-        $('#eleven_labs_connect').on('click', () => { this.onConnectClick(); });
         $('#elevenlabs_tts_similarity_boost').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_stability').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_style_exaggeration').on('input', this.onSettingsChange.bind(this));
@@ -186,10 +184,6 @@ class ElevenLabsTtsProvider {
     }
 
     async onRefreshClick() {
-        await this.fetchTtsVoiceObjects();
-    }
-
-    async onConnectClick() {
         await this.fetchTtsVoiceObjects();
     }
 
