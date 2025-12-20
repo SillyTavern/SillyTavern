@@ -1057,12 +1057,12 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
 }
 
 /**
- * Adds cache_control to the system prompt for OpenRouter Claude requests.
+ * Adds cache_control to the system prompt for OpenRouter requests.
  *
  * @param {object[]} messages Array of messages
- * @param {string} ttl TTL value
+ * @param {string} [ttl] TTL value (optional)
  */
-export function cachingSystemPromptForOpenRouterClaude(messages, ttl) {
+export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
     if (!Array.isArray(messages) || messages.length === 0) {
         return;
     }
@@ -1078,6 +1078,10 @@ export function cachingSystemPromptForOpenRouterClaude(messages, ttl) {
         return;
     }
 
+    const cacheControl = ttl
+        ? { type: 'ephemeral', ttl }
+        : { type: 'ephemeral' };
+
     if (Array.isArray(systemMessage.content)) {
         const hasExistingCacheControl = systemMessage.content.some(part => part?.cache_control);
         if (hasExistingCacheControl) {
@@ -1086,7 +1090,7 @@ export function cachingSystemPromptForOpenRouterClaude(messages, ttl) {
 
         for (let i = systemMessage.content.length - 1; i >= 0; i--) {
             if (systemMessage.content[i]?.type === 'text') {
-                systemMessage.content[i].cache_control = { type: 'ephemeral', ttl };
+                systemMessage.content[i].cache_control = cacheControl;
                 return;
             }
         }
@@ -1095,7 +1099,7 @@ export function cachingSystemPromptForOpenRouterClaude(messages, ttl) {
             {
                 type: 'text',
                 text: systemMessage.content,
-                cache_control: { type: 'ephemeral', ttl },
+                cache_control: cacheControl,
             },
         ];
     }
