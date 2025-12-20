@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import fs from 'node:fs';
 import express from 'express';
 import wavefile from 'wavefile';
 import fetch from 'node-fetch';
@@ -348,6 +349,48 @@ elevenlabs.post('/voices/add', async (req, res) => {
         }
 
         const responseJson = await response.json();
+        return res.json(responseJson);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+elevenlabs.post('/recognize', async (req, res) => {
+    try {
+        const apiKey = readSecret(req.user.directories, SECRET_KEYS.ELEVENLABS);
+        if (!apiKey) {
+            console.warn('ElevenLabs API key not found');
+            return res.sendStatus(400);
+        }
+
+        if (!req.file) {
+            console.warn('No audio file found');
+            return res.sendStatus(400);
+        }
+
+        console.info('Processing audio file with ElevenLabs', req.file.path);
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(req.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
+        formData.append('model_id', req.body.model);
+
+        const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+            method: 'POST',
+            headers: {
+                'xi-api-key': apiKey,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.warn(`ElevenLabs speech recognition failed: HTTP ${response.status} - ${text}`);
+            return res.sendStatus(500);
+        }
+
+        fs.unlinkSync(req.file.path);
+        const responseJson = await response.json();
+        console.debug('ElevenLabs speech recognition response:', responseJson);
         return res.json(responseJson);
     } catch (error) {
         console.error(error);
