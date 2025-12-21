@@ -328,7 +328,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine（OpenAI APIエンドポイントのパッケージングモード）",
     "Aphrodite API key": "アフロディーテAPIキー",
     "Aphrodite Model": "アフロディーテモデル",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp（出力サーバー）",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp（出力サーバー）",
     "Example: http://127.0.0.1:8080": "例: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "例: http://127.0.0.1:11434",
     "Ollama Model": "Ollamaモデル",

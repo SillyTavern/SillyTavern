@@ -330,7 +330,7 @@
   "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine",
   "Aphrodite API key": "คีย์ API ของ Aphrodite",
   "Aphrodite Model": "โมเดลของ Aphrodite",
-  "ggerganov/llama.cpp": "ggerganov/llama.cpp",
+  "ggml-org/llama.cpp": "ggml-org/llama.cpp",
   "Example: http://127.0.0.1:8080": "ตัวอย่าง: http://127.0.0.1:8080",
   "Example: http://127.0.0.1:11434": "ตัวอย่าง: http://127.0.0.1:11434",
   "Ollama Model": "โมเดลของ Ollama",

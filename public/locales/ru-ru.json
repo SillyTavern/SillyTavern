@@ -108,7 +108,7 @@
     "Register": "Зарегистрироваться",
     "TogetherAI Model": "Модель TogetherAI",
     "Example: http://127.0.0.1:5001": "Пример: http://127.0.0.1:5001",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp (сервер вывода)",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp (сервер вывода)",
     "Example: http://127.0.0.1:8080": "Пример: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "Пример: http://127.0.0.1:11434",
     "Ollama Model": "Модель Ollama",

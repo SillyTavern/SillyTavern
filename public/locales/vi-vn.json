@@ -326,7 +326,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine (Chế độ đóng gói cho Giao diện lập trình ứng dụng OpenAI)",
     "Aphrodite API key": "Key API Aphrodite",
     "Aphrodite Model": "Moddel cho Aphrodite",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp",
     "Example: http://127.0.0.1:8080": "Ví dụ: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "Ví dụ: http://127.0.0.1:11434",
     "Ollama Model": "Model Ollama",

@@ -326,7 +326,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine (Modo Wrapper para API OpenAI)",
     "Aphrodite API key": "Chave da API Aphrodite",
     "Aphrodite Model": "Modelo Afrodite",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp (Servidor de Saída)",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp (Servidor de Saída)",
     "Example: http://127.0.0.1:8080": "Exemplo: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "Exemplo: http://127.0.0.1:11434",
     "Ollama Model": "Modelo Ollama",

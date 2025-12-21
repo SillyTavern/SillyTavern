@@ -325,7 +325,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite 引擎",
     "Aphrodite API key": "Aphrodite API 金鑰",
     "Aphrodite Model": "Aphrodite 模型",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp",
     "Example: http://127.0.0.1:8080": "範例：http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "範例：http://127.0.0.1:11434",
     "Ollama Model": "Ollama 模型",

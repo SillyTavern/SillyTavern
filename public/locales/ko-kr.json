@@ -328,7 +328,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine (OpenAI API의 래퍼 모드)",
     "Aphrodite API key": "Aphrodite API 키",
     "Aphrodite Model": "Aphrodite 모델",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp (출력 서버)",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp (출력 서버)",
     "Example: http://127.0.0.1:8080": "예: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "예: http://127.0.0.1:11434",
     "Ollama Model": "Ollama 모델",

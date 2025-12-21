@@ -326,7 +326,7 @@
     "PygmalionAI/aphrodite-engine": "PygmalionAI/aphrodite-engine (OpenAI forritunargrensl)",
     "Aphrodite API key": "Aphrodite API lykill",
     "Aphrodite Model": "Afródíta fyrirmynd",
-    "ggerganov/llama.cpp": "ggerganov/llama.cpp (úttak þjónn)",
+    "ggml-org/llama.cpp": "ggml-org/llama.cpp (úttak þjónn)",
     "Example: http://127.0.0.1:8080": "Dæmi: http://127.0.0.1:8080",
     "Example: http://127.0.0.1:11434": "Dæmi: http://127.0.0.1:11434",
     "Ollama Model": "Ollama módel",
