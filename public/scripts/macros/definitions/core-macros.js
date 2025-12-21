@@ -59,11 +59,26 @@ export function registerCoreMacros() {
     });
 
     // {{trim}} -> macro will currently replace itself with itself. Trimming is handled in post-processing.
+    // Scoped: {{trim}}content{{/trim}} -> trims whitespace from content
     MacroRegistry.registerMacro('trim', {
         category: MacroCategory.UTILITY,
-        description: 'Trims all whitespaces around the trim macro.',
+        description: 'Trims whitespace. Non-scoped: trims around the macro (post-processing). Scoped: trims the content inside.',
+        unnamedArgs: [
+            {
+                name: 'content',
+                description: 'Content to trim (when used as scoped macro)',
+                optional: true,
+            },
+        ],
         returns: '',
-        handler: () => '{{trim}}',
+        handler: (env) => {
+            if (env.isScoped && env.unnamedArgs.length > 0) {
+                // Scoped usage: trim the content inside
+                return env.unnamedArgs[0].trim();
+            }
+            // Non-scoped: return marker for post-processing regex
+            return '{{trim}}';
+        },
     });
 
     // {{input}} -> current textarea content
