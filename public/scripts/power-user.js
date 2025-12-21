@@ -93,6 +93,7 @@ const avatar_styles = {
     RECTANGULAR: 1,
     SQUARE: 2,
     ROUNDED: 3,
+    HIDDEN: 4,
 };
 
 export const chat_styles = {
@@ -1036,6 +1037,7 @@ function applyAvatarStyle() {
     $('body').toggleClass('big-avatars', power_user.avatar_style === avatar_styles.RECTANGULAR);
     $('body').toggleClass('square-avatars', power_user.avatar_style === avatar_styles.SQUARE);
     $('body').toggleClass('rounded-avatars', power_user.avatar_style === avatar_styles.ROUNDED);
+    $('body').toggleClass('hidden-avatars', power_user.avatar_style === avatar_styles.HIDDEN);
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
 }
 
