@@ -1,9 +1,10 @@
 import { seedrandom, droll } from '../../../lib.js';
 import { chat_metadata, main_api, getMaxContextSize, extension_prompts, getCurrentChatId } from '../../../script.js';
-import { getStringHash } from '../../utils.js';
+import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
+import { createEmptyFlags } from '../engine/MacroFlags.js';
 
 /**
  * Registers SillyTavern's core built-in macros in the MacroRegistry.
@@ -78,6 +79,61 @@ export function registerCoreMacros() {
             }
             // Non-scoped: return marker for post-processing regex
             return '{{trim}}';
+        },
+    });
+
+    // {{if condition}}content{{/if}} -> conditional content
+    // Returns content if condition is truthy, empty string otherwise
+    // Condition can be a macro name (resolved automatically) or any value
+    MacroRegistry.registerMacro('if', {
+        category: MacroCategory.UTILITY,
+        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing. If the condition is a registered macro name (without braces), it will be resolved first.',
+        unnamedArgs: [
+            {
+                name: 'condition',
+                description: 'The condition to evaluate. Can be a macro name (auto-resolved) or a value. Falsy: empty string, "false", "off", "0".',
+            },
+            {
+                name: 'content',
+                description: 'The content to return if condition is truthy (typically provided as scoped content).',
+            },
+        ],
+        exampleUsage: [
+            '{{if description}}# Description\n{{description}}{{/if}}',
+            '{{if char}}Character: {{char}}{{/if}}',
+            '{{if {{getvar::showHeader}}}}# Header{{/if}}',
+        ],
+        returns: 'The content if condition is truthy, empty string otherwise.',
+        handler: (ctx) => {
+            let condition = ctx.unnamedArgs[0] ?? '';
+            const content = ctx.unnamedArgs[1] ?? '';
+
+            // Check if condition is a registered macro name (without braces)
+            // If so, resolve it first (only for macros that accept 0 required args)
+            const macroDef = MacroRegistry.getPrimaryMacro(condition);
+            if (macroDef && macroDef.minArgs === 0) {
+                // Call the handler directly (synchronously) with inherited env context
+                const resolved = macroDef.handler({
+                    name: condition,
+                    args: [],
+                    unnamedArgs: [],
+                    list: null,
+                    namedArgs: null,
+                    flags: createEmptyFlags(),
+                    isScoped: false,
+                    raw: `{{${condition}}}`,
+                    env: ctx.env, // Inherit environment from outer context
+                    cstNode: null,
+                    range: null,
+                    normalize: ctx.normalize,
+                });
+                condition = resolved ?? '';
+            }
+
+            // Check if condition is falsy: empty string or isFalseBoolean
+            const isFalsy = condition === '' || isFalseBoolean(condition);
+
+            return !isFalsy ? content : '';
         },
     });
 

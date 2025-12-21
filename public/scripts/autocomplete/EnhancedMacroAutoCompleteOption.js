@@ -181,7 +181,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 
         const argCount = this.#context.args.length;
         const maxArgs = this.#macro.maxArgs;
-        const minArgs = this.#macro.minArgs;
+        //const minArgs = this.#macro.minArgs;
         const hasList = this.#macro.list !== null;
 
         // Check for too many arguments (only if no list args)
@@ -189,14 +189,15 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
             return `Too many arguments: this macro accepts ${maxArgs === 0 ? 'no arguments' : `up to ${maxArgs} argument${maxArgs === 1 ? '' : 's'}`}, but ${argCount} provided.`;
         }
 
-        // Check for space-separated arg on macro that doesn't accept single arg
-        // Only warn if there's actual content after the space (not just whitespace)
+        // Check for space-separated arg on macro that doesn't support it
+        // Space-separated syntax provides 1 arg; with scoped content you can provide a 2nd arg
+        // So it's valid for macros with maxArgs <= 2 (or with list args)
         if (this.#context.hasSpaceArgContent) {
             if (maxArgs === 0) {
                 return 'This macro does not accept any arguments. Remove the space or use a different macro.';
             }
-            if (maxArgs > 1 || minArgs > 1) {
-                return `Space-separated syntax only works for single-argument macros. Use :: separators instead: {{${this.#macro.name}::arg1::arg2}}`;
+            if (!hasList && maxArgs > 2) {
+                return `Space-separated syntax only works for macros with up to 2 arguments. Use :: separators instead: {{${this.#macro.name}::arg1::arg2}}`;
             }
         }
 

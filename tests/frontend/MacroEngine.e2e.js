@@ -1097,6 +1097,154 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('middle[first][second]');
         });
     });
+
+    test.describe('{{if}} conditional macro', () => {
+        test.describe('with literal values', () => {
+            test('should return content when condition is truthy string', async ({ page }) => {
+                const input = '{{if::hello::shown}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+
+            test('should return empty when condition is empty string', async ({ page }) => {
+                const input = '{{if::::hidden}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('');
+            });
+
+            test('should return empty when condition is "false"', async ({ page }) => {
+                const input = '{{if::false::hidden}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('');
+            });
+
+            test('should return empty when condition is "off"', async ({ page }) => {
+                const input = '{{if::off::hidden}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('');
+            });
+
+            test('should return empty when condition is "0"', async ({ page }) => {
+                const input = '{{if::0::hidden}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('');
+            });
+
+            test('should return content when condition is "true"', async ({ page }) => {
+                const input = '{{if::true::shown}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+
+            test('should return content when condition is "1"', async ({ page }) => {
+                const input = '{{if::1::shown}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+        });
+
+        test.describe('with macro name resolution', () => {
+            test('should resolve macro name and return content when macro returns truthy', async ({ page }) => {
+                // {{char}} returns "Character" (set in test env)
+                const input = '{{if char}}Name: {{char}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Name: Character');
+            });
+
+            test('should resolve macro name and return empty when macro returns empty', async ({ page }) => {
+                // {{noop}} is a registered macro that always returns empty string
+                const input = '{{if noop}}should not show{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+
+            test('should not resolve non-existent macro names (treat as literal)', async ({ page }) => {
+                // "notamacro" is not registered, so it's truthy as a literal string
+                const input = '{{if::notamacro::shown}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+
+            test('should resolve user macro and show content', async ({ page }) => {
+                // {{user}} returns "User" (set in test env)
+                const input = '{{if user}}Hello {{user}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Hello User');
+            });
+        });
+
+        test.describe('with nested macros in condition', () => {
+            test('should evaluate nested macro in condition (truthy)', async ({ page }) => {
+                const input = '{{setvar::flag::yes}}{{if {{getvar::flag}}}}shown{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+
+            test('should evaluate nested macro in condition (falsy)', async ({ page }) => {
+                const input = '{{setvar::flag::}}{{if {{getvar::flag}}}}hidden{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+
+            test('should evaluate nested macro in condition (false string)', async ({ page }) => {
+                const input = '{{setvar::flag::false}}{{if {{getvar::flag}}}}hidden{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+        });
+
+        test.describe('scoped usage', () => {
+            test('should work with scoped content (truthy)', async ({ page }) => {
+                const input = '{{if yes}}This is the content{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('This is the content');
+            });
+
+            test('should work with scoped content (falsy)', async ({ page }) => {
+                const input = '{{if::}}This should not show{{/if}}[after]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[after]');
+            });
+
+            test('should handle macros inside scoped content', async ({ page }) => {
+                const input = '{{if yes}}Hello {{user}}!{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Hello User!');
+            });
+
+            test('should handle nested if macros', async ({ page }) => {
+                const input = '{{if yes}}outer{{if yes}}inner{{/if}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('outerinner');
+            });
+
+            test('should handle nested if with outer false', async ({ page }) => {
+                const input = '{{if::}}outer{{if yes}}inner{{/if}}{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+
+            test('should handle nested if with inner false', async ({ page }) => {
+                const input = '{{if yes}}outer{{if::}}inner{{/if}}end{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('outerend');
+            });
+        });
+
+        test.describe('with space-separated condition', () => {
+            test('should work with space-separated condition (truthy)', async ({ page }) => {
+                const input = '{{if something}}content{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('content');
+            });
+
+            test('should resolve macro name with space-separated syntax', async ({ page }) => {
+                const input = '{{if char}}{{char}} exists{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Character exists');
+            });
+        });
+    });
 });
 
 /**
