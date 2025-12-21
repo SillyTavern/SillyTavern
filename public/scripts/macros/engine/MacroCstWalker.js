@@ -112,6 +112,57 @@ class MacroCstWalker {
         return result;
     }
 
+    /**
+     * Finds unclosed scoped macros in a document CST.
+     * Used by autocomplete to suggest closing tags.
+     *
+     * @param {Object} options
+     * @param {string} options.text - The document text.
+     * @param {CstNode} options.cst - The parsed CST.
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>} - Array of unclosed macro info, innermost last.
+     */
+    findUnclosedScopes(options) {
+        const { text, cst } = options;
+
+        if (typeof text !== 'string' || !cst?.children) {
+            return [];
+        }
+
+        let items = this.#collectDocumentItems(cst);
+        // Don't process scoped macros - we want to find the raw opening/closing pairs
+        // Just extract macro info and find unmatched openers
+
+        /** @type {Array<{ name: string, startOffset: number, endOffset: number }>} */
+        const unclosedStack = [];
+
+        // Extract macro names and closing status
+        for (const item of items) {
+            if (item.type !== 'macro') continue;
+
+            const info = this.#extractMacroInfo(item.node);
+            if (!info) continue;
+
+            if (info.isClosing) {
+                // Closing tag - pop matching opener from stack
+                if (unclosedStack.length > 0 && unclosedStack[unclosedStack.length - 1].name === info.name) {
+                    unclosedStack.pop();
+                }
+                // If no matching opener, ignore (orphan closing tag)
+            } else {
+                // Opening tag - check if this macro can accept scoped content
+                if (this.#canAcceptScopedContent(item.node, info.name)) {
+                    unclosedStack.push({
+                        name: info.name,
+                        startOffset: item.startOffset,
+                        endOffset: item.endOffset,
+                    });
+                }
+            }
+        }
+
+        return unclosedStack;
+    }
+
     /** @typedef {{ type: 'plaintext', startOffset: number, endOffset: number, token: IToken }} DocumentItemPlaintext */
     /** @typedef {{ type: 'macro', startOffset: number, endOffset: number, node: CstNode, scopedContent?: { startOffset: number, endOffset: number, closingEndOffset: number }, keepRaw?: boolean }} DocumentItemMacro */
     /** @typedef {DocumentItemPlaintext | DocumentItemMacro} DocumentItem */

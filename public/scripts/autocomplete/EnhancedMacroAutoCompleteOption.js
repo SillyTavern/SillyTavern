@@ -27,6 +27,12 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @property {boolean} isInFlagsArea - Whether cursor is in the flags area (before identifier starts).
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
+ * @property {boolean} isTypingSeparator - Whether cursor is on a partial separator (single ':').
+ * @property {boolean} hasSpaceAfterIdentifier - Whether there's a space after the identifier (for space-separated args).
+ * @property {boolean} hasSpaceArgContent - Whether there's actual content after the space (not just whitespace).
+ * @property {number} separatorCount - Number of '::' separators found.
+ * @property {boolean} [isInScopedContent] - Whether cursor is in scoped content (after }} but before closing tag).
+ * @property {string} [scopedMacroName] - Name of the scoped macro if in scoped content.
  */
 
 export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
@@ -126,23 +132,115 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
     renderDetails() {
         const frag = document.createDocumentFragment();
 
+        // Check for arity warnings
+        const warning = this.#getArityWarning();
+        if (warning) {
+            const warningEl = this.#renderWarning(warning);
+            frag.append(warningEl);
+        }
+
+        // Show scoped content info banner if we're in scoped content
+        if (this.#context?.isInScopedContent) {
+            const scopedInfo = this.#renderScopedContentInfo();
+            if (scopedInfo) frag.append(scopedInfo);
+        }
+
         // Determine current argument index for highlighting
         const currentArgIndex = this.#context?.currentArgIndex ?? -1;
 
-        // Render argument hint banner if we're typing an argument
-        if (currentArgIndex >= 0) {
+        // Render argument hint banner if we're typing an argument (and no warning)
+        if (!warning && currentArgIndex >= 0) {
             const hint = this.#renderArgumentHint();
             if (hint) frag.append(hint);
         }
 
         // Reuse MacroBrowser's renderMacroDetails with options
-        const details = renderMacroDetails(this.#macro, { currentArgIndex });
+        // Don't highlight args if there's a warning
+        const details = renderMacroDetails(this.#macro, { currentArgIndex: warning ? -1 : currentArgIndex });
 
         // Add class for autocomplete-specific styling overrides
         details.classList.add('macro-ac-details');
         frag.append(details);
 
         return frag;
+    }
+
+    /**
+     * Checks for arity-related warnings based on the current context.
+     * @returns {string|null} Warning message, or null if no warning.
+     */
+    #getArityWarning() {
+        if (!this.#context) return null;
+
+        const argCount = this.#context.args.length;
+        const maxArgs = this.#macro.maxArgs;
+        const minArgs = this.#macro.minArgs;
+        const hasList = this.#macro.list !== null;
+
+        // Check for too many arguments (only if no list args)
+        if (!hasList && argCount > maxArgs) {
+            return `Too many arguments: this macro accepts ${maxArgs === 0 ? 'no arguments' : `up to ${maxArgs} argument${maxArgs === 1 ? '' : 's'}`}, but ${argCount} provided.`;
+        }
+
+        // Check for space-separated arg on macro that doesn't accept single arg
+        // Only warn if there's actual content after the space (not just whitespace)
+        if (this.#context.hasSpaceArgContent) {
+            if (maxArgs === 0) {
+                return 'This macro does not accept any arguments. Remove the space or use a different macro.';
+            }
+            if (maxArgs > 1 || minArgs > 1) {
+                return `Space-separated syntax only works for single-argument macros. Use :: separators instead: {{${this.#macro.name}::arg1::arg2}}`;
+            }
+        }
+
+        // Check if trying to add args to a no-arg macro via ::
+        if (this.#context.separatorCount > 0 && maxArgs === 0) {
+            return 'This macro does not accept any arguments.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Renders a warning banner.
+     * @param {string} message - The warning message.
+     * @returns {HTMLElement}
+     */
+    #renderWarning(message) {
+        const warning = document.createElement('div');
+        warning.classList.add('macro-ac-warning');
+
+        const icon = document.createElement('i');
+        icon.classList.add('fa-solid', 'fa-triangle-exclamation');
+        warning.append(icon);
+
+        const text = document.createElement('span');
+        text.textContent = message;
+        warning.append(text);
+
+        return warning;
+    }
+
+    /**
+     * Renders the scoped content info banner.
+     * Shows when cursor is inside scoped content of an unclosed macro.
+     * @returns {HTMLElement|null}
+     */
+    #renderScopedContentInfo() {
+        if (!this.#context?.isInScopedContent) return null;
+
+        const info = document.createElement('div');
+        info.classList.add('macro-ac-scoped-info');
+
+        const icon = document.createElement('i');
+        icon.classList.add('fa-solid', 'fa-layer-group');
+        info.append(icon);
+
+        const text = document.createElement('span');
+        text.innerHTML = `Typing <strong>scoped content</strong> for <code>{{${this.#context.scopedMacroName}}}</code>. Close with <code>{{/${this.#context.scopedMacroName}}}</code>`;
+        info.append(text);
+
+        return info;
     }
 
     /**
@@ -327,6 +425,122 @@ export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Autocomplete option for closing a scoped macro.
+ * Suggests {{/macroName}} to close an unclosed scoped macro.
+ */
+export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
+    /** @type {string} */
+    #macroName;
+
+    /**
+     * @param {string} macroName - The name of the macro to close.
+     */
+    constructor(macroName) {
+        // The closing tag is what we're suggesting - use /macroName as the name for matching
+        const closingTag = `/${macroName}`;
+        super(closingTag, '{/}');
+        this.#macroName = macroName;
+
+        // Custom valueProvider to return the correct replacement text
+        // The input is what the user typed (e.g., "/" or "/set" or "/setvar")
+        // We need to return just the part to insert (completing the closing tag)
+        this.valueProvider = (input) => {
+            // Return the rest of the closing tag name + }}
+            const fullClosing = `/${macroName}}}`;
+            if (fullClosing.startsWith(input)) {
+                return fullClosing.slice(input.length);
+            }
+            // Fallback: return full closing
+            return fullClosing;
+        };
+
+        // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
+        this.makeSelectable = true;
+
+        // Highest priority - closing tags should always appear at the very top
+        this.sortPriority = 1;
+    }
+
+    /** @returns {string} */
+    get macroName() {
+        return this.#macroName;
+    }
+
+    /**
+     * Renders the autocomplete list item for this closing tag.
+     * Uses the same structure as other macro options for consistent styling.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = document.createElement('li');
+        li.classList.add('item', 'macro-ac-item');
+
+        // Type icon (same column as other macros)
+        const type = document.createElement('span');
+        type.classList.add('type', 'monospace');
+        type.textContent = '{/}';
+        li.append(type);
+
+        // Specs container (for fuzzy highlight compatibility)
+        const specs = document.createElement('span');
+        specs.classList.add('specs');
+
+        // Name element with character spans
+        const nameEl = document.createElement('span');
+        nameEl.classList.add('name', 'monospace');
+        // Display full closing tag like other macros show full syntax
+        const displayName = `{{/${this.#macroName}}}`;
+        for (const char of displayName) {
+            const span = document.createElement('span');
+            span.textContent = char;
+            nameEl.append(span);
+        }
+        specs.append(nameEl);
+        li.append(specs);
+
+        // Stopgap (spacer for flex layout)
+        const stopgap = document.createElement('span');
+        stopgap.classList.add('stopgap');
+        li.append(stopgap);
+
+        // Help text (description)
+        const help = document.createElement('span');
+        help.classList.add('help');
+        const content = document.createElement('span');
+        content.classList.add('helpContent');
+        content.textContent = `Close the {{${this.#macroName}}} scoped macro.`;
+        help.append(content);
+        li.append(help);
+
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this closing tag.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-closing-tag-details');
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = `Close <code>{{${this.#macroName}}}</code>`;
+        details.append(header);
+
+        // Description
+        const desc = document.createElement('p');
+        desc.textContent = `Inserts the closing tag {{/${this.#macroName}}} to complete the scoped macro. The content between the opening and closing tags will be passed as the last argument.`;
+        details.append(desc);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
  * Parses the macro text to determine current argument context.
  * Handles leading whitespace and flags before the identifier.
  *
@@ -362,18 +576,23 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     // Determine which flag cursor is currently on (if any)
-    // Cursor is "on" a flag if it's at or right after that flag's position
+    // The "current" flag is the last one typed when cursor is still in the flags area
+    // This ensures the last typed flag shows at the top of the autocomplete list
     let currentFlag = null;
-    for (let idx = flags.length - 1; idx >= 0; idx--) {
-        if (cursorOffset >= flagEndPositions[idx] - 1 && cursorOffset <= flagEndPositions[idx]) {
-            currentFlag = flags[idx];
-            break;
+    if (flags.length > 0) {
+        // If cursor is at or after the last flag position but before identifier starts,
+        // the last flag is the "current" one (just typed)
+        const lastFlagEnd = flagEndPositions[flagEndPositions.length - 1];
+        if (cursorOffset >= lastFlagEnd - 1) {
+            currentFlag = flags[flags.length - 1];
         }
     }
 
     // Now parse the identifier and arguments starting from position i
     const remainingText = macroText.slice(i);
     const parts = [];
+    /** @type {{ start: number, end: number }[]} */
+    const separatorPositions = []; // Track positions of :: separators
     let currentPart = '';
     let partStart = i;
     let j = 0;
@@ -381,6 +600,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     while (j < remainingText.length) {
         if (remainingText[j] === ':' && remainingText[j + 1] === ':') {
             parts.push({ text: currentPart, start: partStart, end: i + j });
+            separatorPositions.push({ start: i + j, end: i + j + 2 });
             currentPart = '';
             j += 2;
             partStart = i + j;
@@ -392,39 +612,94 @@ export function parseMacroContext(macroText, cursorOffset) {
     // Push the last part
     parts.push({ text: currentPart, start: partStart, end: macroText.length });
 
-    // Determine which part the cursor is in
-    let currentArgIndex = -1;
-    for (let idx = 0; idx < parts.length; idx++) {
-        const part = parts[idx];
-        if (cursorOffset >= part.start && cursorOffset <= part.end) {
-            currentArgIndex = idx - 1; // -1 because first part is identifier
-            break;
-        }
-    }
-
     // Determine if cursor is in the flags area (at or before identifier starts)
     const identifierStartPos = parts[0]?.start ?? i;
     const isInFlagsArea = cursorOffset <= identifierStartPos;
 
-    // If cursor is in the flags/whitespace area before identifier, we're on the identifier
-    if (currentArgIndex === -1 && isInFlagsArea) {
+    // Check if cursor is on a partial separator (single ':' that might become '::')
+    const isTypingSeparator = remainingText.length > 0 &&
+        cursorOffset > identifierStartPos &&
+        macroText[cursorOffset - 1] === ':' &&
+        macroText[cursorOffset] !== ':' &&
+        (cursorOffset < 2 || macroText[cursorOffset - 2] !== ':');
+
+    // Parse identifier and space-separated argument from the first part
+    // "getvar myvar" -> identifier="getvar", spaceArg="myvar"
+    // "setvar " -> identifier="setvar", spaceArg="" (just whitespace, no content yet)
+    const firstPartText = parts[0]?.text || '';
+    const trimmedFirstPart = firstPartText.trimStart();
+    const firstSpaceInIdentifier = trimmedFirstPart.search(/\s/);
+
+    let identifierOnly;
+    let spaceArgText = '';
+    //let spaceArgStart = -1;
+    let hasSpaceAfterIdentifier = false;
+
+    if (firstSpaceInIdentifier > 0 && separatorPositions.length === 0) {
+        // There's whitespace inside the first part - split identifier from space-arg
+        identifierOnly = trimmedFirstPart.slice(0, firstSpaceInIdentifier);
+        const afterIdentifier = trimmedFirstPart.slice(firstSpaceInIdentifier);
+        // Check if there's actual content after the whitespace (not just spaces or ::)
+        const contentAfterSpace = afterIdentifier.trimStart();
+        hasSpaceAfterIdentifier = afterIdentifier.length > 0; // Has at least a space
+
+        if (contentAfterSpace.length > 0 && !contentAfterSpace.startsWith(':')) {
+            // There's actual argument content after the space
+            spaceArgText = contentAfterSpace;
+            //spaceArgStart = identifierStartPos + firstSpaceInIdentifier + (afterIdentifier.length - contentAfterSpace.length);
+        }
+    } else {
+        identifierOnly = trimmedFirstPart.trimEnd();
+    }
+
+    // Calculate identifier end position (for space-after-identifier detection)
+    const identifierEndPos = identifierStartPos + (firstPartText.length - firstPartText.trimStart().length) + identifierOnly.length;
+
+    // Determine which part the cursor is in
+    let currentArgIndex = -1;
+
+    // Only consider being in an argument if we've passed a separator
+    if (separatorPositions.length > 0) {
+        // Find which argument we're in based on separator positions
+        for (let sepIdx = 0; sepIdx < separatorPositions.length; sepIdx++) {
+            const sep = separatorPositions[sepIdx];
+            if (cursorOffset >= sep.end) {
+                // We're past this separator, so we're in at least this argument
+                currentArgIndex = sepIdx;
+            }
+        }
+    } else if (spaceArgText.length > 0 || (hasSpaceAfterIdentifier && cursorOffset > identifierEndPos)) {
+        // Space-separated arg: either has content, or cursor is past identifier+space
+        currentArgIndex = 0;
+    }
+
+    // If typing a separator, we're still on identifier/previous arg, not the next one
+    if (isTypingSeparator) {
         currentArgIndex = -1;
     }
 
-    // If cursor is after all parts (at the end), we're in the last arg
-    if (currentArgIndex === -1 && parts.length > 0 && cursorOffset >= parts[parts.length - 1].end) {
-        currentArgIndex = parts.length - 1;
+    // Clean identifier: strip trailing colons (for partial :: typing)
+    let cleanIdentifier = identifierOnly.replace(/:+$/, '');
+
+    // Build args array - include space-separated arg if present
+    let args = parts.slice(1).map(p => p.text);
+    if (spaceArgText.length > 0) {
+        args = [spaceArgText, ...args];
     }
 
     return {
         fullText: macroText,
         cursorOffset,
-        identifier: parts[0]?.text.trim() || '',
+        identifier: cleanIdentifier,
         identifierStart: identifierStartPos,
         isInFlagsArea,
         flags,
         currentFlag,
-        args: parts.slice(1).map(p => p.text),
+        args,
         currentArgIndex,
+        isTypingSeparator,
+        hasSpaceAfterIdentifier,
+        hasSpaceArgContent: spaceArgText.length > 0,
+        separatorCount: separatorPositions.length,
     };
 }

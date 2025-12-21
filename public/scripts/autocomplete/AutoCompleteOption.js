@@ -13,6 +13,12 @@ export class AutoCompleteOption {
     /** @type {(input:string)=>boolean} */ matchProvider;
     /** @type {(input:string)=>string} */ valueProvider;
     /** @type {boolean} */ makeSelectable = false;
+    /**
+     * Priority for sorting. Lower values = higher priority (sorted first).
+     * Default is 100 (normal priority). Use lower values for items that should appear at the top.
+     * @type {number}
+     */
+    sortPriority = 100;
 
 
     /**
