@@ -44,12 +44,13 @@ class ChatHistory {
      * @param {-1|1} offset index -1 or +1.
      * @param {object} [fullChat=this.indexChat()] this.indexChat() by default.
      * @param {number} [fullChatIndex=this.indexChat()] The id of fullChat, chatHistoryIndex by default.
-     * @returns {object} The full chat at the offset, or nothing.
+     * @returns {object?} The full chat at the offset, or undefined if offsetChatDiff does not exist.
      */
     adjacentChat(offset = 1, fullChat = this.indexChat(), fullChatIndex = this.chatHistoryIndex) {
         const offsetId = fullChatIndex + offset;
         const offsetChatDiff = this.chatHistory[offsetId];
-        if (typeof(offsetChatDiff) == 'object') {
+        //offsetChatDiff will may not exist. e.g., when writing a new chat.
+        if (typeof(offsetChatDiff) !== 'undefined') {
             return applyDelta(structuredClone(fullChat), structuredClone(offsetChatDiff));
         }
     }
@@ -68,7 +69,7 @@ class ChatHistory {
         //The next chat over must also be updated, it's based on the chat that's about to be written.
         const nextChat = this.adjacentChat(offset);
         newChatData ??= nextChat;
-        if (typeof(newChatData) !== 'object') {
+        if (typeof(newChatData) === 'undefined') {
             //The diffs cannot be based upon nothing.
             throw new Error(t`Cannot step! Offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the newChatData doesn't exist.`);
         }
@@ -100,16 +101,16 @@ class ChatHistory {
      * @param {object} newChatData The offset diffs will be created against newChatData.
      * @param {-1|1} offset index -1 or +1.
      * @param {object} fullChat The full chat that the diff was originally created from.
-     * @returns {object} The full chat at the offset, or nothing.
+     * @returns {object?} The full chat at the offset, or undefined if there's no adjacentChat.
      */
     updateOffset(newChatData, offset = 1, fullChat = this.indexChat()) {
-        if (typeof(fullChat) !== 'object') {
+        if (typeof(fullChat) === 'undefined') {
             throw new Error(t`The chat offset ${offset} from ${this.chatHistoryIndex} cannot be updated if the fullChat it was created with does not exist.`);
         }
 
         //Create the offsetChat from by updating the fullChat with the diff.
         const offsetChat = this.adjacentChat(offset, fullChat);
-        if (typeof(offsetChat) == 'object') {
+        if (typeof(offsetChat) !== 'undefined') {
             //Create a diff from the newChatData and offsetChat, overwrite the old diff.
             const updatedPreviousDiff = structuredClone(diff(newChatData, offsetChat));
             this.chatHistory[this.chatHistoryIndex - offset] = updatedPreviousDiff;
