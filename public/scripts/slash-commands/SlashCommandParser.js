@@ -496,10 +496,44 @@ export class SlashCommandParser {
                 const macroContent = text.slice(macro.start + 2, macro.end - (text.slice(macro.end - 2, macro.end) === '}}' ? 2 : 0));
                 const context = parseMacroContext(macroContent, cursorInMacro);
 
-                // Check if cursor is at/after the closing }} - if so, don't highlight args
+                // Check if cursor is at/after the closing }} - macro syntax is complete
                 const macroEndsBrackets = text.slice(macro.end - 2, macro.end) === '}}';
-                if (macroEndsBrackets && index >= macro.end - 1) {
-                    // Cursor is at or past the closing }}, clear arg highlighting
+                const isCursorAtClosing = macroEndsBrackets && index >= macro.end - 1;
+
+                if (isCursorAtClosing) {
+                    // Cursor is at the closing }} - check if this is an unclosed scoped macro
+                    const textUpToCursor = text.slice(0, index);
+                    const unclosedScopes = this.#findUnclosedScopes(textUpToCursor);
+
+                    if (unclosedScopes.length > 0) {
+                        const scopedMacro = unclosedScopes[unclosedScopes.length - 1];
+                        // Check if the current macro IS the unclosed scoped macro
+                        if (scopedMacro.startOffset === macro.start) {
+                            // Show scoped context - cursor is right at the end of the opening tag
+                            const scopedContext = {
+                                ...context,
+                                currentArgIndex: context.args.length, // Next arg (scoped content)
+                                isInScopedContent: true,
+                                scopedMacroName: scopedMacro.name,
+                            };
+
+                            const macroDef = macroSystem.registry.getPrimaryMacro(scopedMacro.name);
+                            if (macroDef) {
+                                const scopedOption = new EnhancedMacroAutoCompleteOption(macroDef, scopedContext);
+                                scopedOption.valueProvider = () => '';
+
+                                const result = new AutoCompleteNameResult(
+                                    scopedMacro.name,
+                                    macro.start + 2,
+                                    [scopedOption],
+                                    false,
+                                );
+                                return result;
+                            }
+                        }
+                    }
+
+                    // Not a scoped macro, just clear arg highlighting
                     context.currentArgIndex = -1;
                 }
 

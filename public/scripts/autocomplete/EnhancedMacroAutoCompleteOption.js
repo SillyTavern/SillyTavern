@@ -53,6 +53,13 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         this.#context = context;
         // nameOffset = 2 to skip the {{ prefix in the display (formatMacroSignature includes braces)
         this.nameOffset = 2;
+
+        // For macros that take no arguments, auto-complete with closing }}
+        const takesNoArgs = macro.minArgs === 0 && macro.maxArgs === 0 && macro.list === null;
+        if (takesNoArgs) {
+            this.valueProvider = () => `${macro.name}}}`;
+            this.makeSelectable = true; // Required when using valueProvider
+        }
     }
 
     /** @returns {MacroDefinition} */
@@ -315,6 +322,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 /**
  * Autocomplete option for macro execution flags.
  * Shows flag symbol, name, and description.
+ * Uses default AutoCompleteOption rendering for consistent styling.
  */
 export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
     /** @type {import('../macros/engine/MacroFlags.js').MacroFlagDefinition} */
@@ -325,6 +333,7 @@ export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
      */
     constructor(flagDef) {
         // Use the flag symbol as the name, with a flag icon
+        // Display name includes both symbol and name for clarity
         super(flagDef.type, '🚩');
         this.#flagDef = flagDef;
     }
@@ -336,50 +345,22 @@ export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
 
     /**
      * Renders the autocomplete list item for this flag.
-     * Must include .name element with character spans for fuzzy highlighting compatibility.
+     * Uses the same structure as other autocomplete options for consistent styling.
      * @returns {HTMLElement}
      */
     renderItem() {
-        const li = document.createElement('li');
-        li.classList.add('item', 'macro-flag-item');
-
-        // Type icon
-        const type = document.createElement('span');
-        type.classList.add('type', 'monospace');
-        type.textContent = '🚩';
-        li.append(type);
-
-        // Specs container (required for autocomplete structure)
-        const specs = document.createElement('span');
-        specs.classList.add('specs');
-
-        // Name element with character spans (required for fuzzy highlighting)
-        const nameEl = document.createElement('span');
-        nameEl.classList.add('name', 'monospace');
-        // Build name with individual character spans: "! FlagName"
-        const displayName = `${this.#flagDef.type} ${this.#flagDef.name}`;
-        for (const char of displayName) {
-            const span = document.createElement('span');
-            span.textContent = char;
-            nameEl.append(span);
-        }
-        specs.append(nameEl);
-        li.append(specs);
-
-        // Stopgap (spacer)
-        const stopgap = document.createElement('span');
-        stopgap.classList.add('stopgap');
-        li.append(stopgap);
-
-        // Help text (description)
-        const help = document.createElement('span');
-        help.classList.add('help');
-        const content = document.createElement('span');
-        content.classList.add('helpContent');
-        content.textContent = this.#flagDef.description + (this.#flagDef.implemented ? '' : ' (planned)');
-        help.append(content);
-        li.append(help);
-
+        // Use base class makeItem for consistent styling
+        const li = this.makeItem(
+            `${this.#flagDef.type} ${this.#flagDef.name}`, // Display: "? Optional"
+            '🚩',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'void', // returnType
+            this.#flagDef.description + (this.#flagDef.implemented ? '' : ' (planned)'), // helpString
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'flag');
         return li;
     }
 
@@ -438,7 +419,7 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     constructor(macroName) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
         const closingTag = `/${macroName}`;
-        super(closingTag, '{/}');
+        super(closingTag, '{/');
         this.#macroName = macroName;
 
         // Custom valueProvider to return the correct replacement text
@@ -478,7 +459,7 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         // Type icon (same column as other macros)
         const type = document.createElement('span');
         type.classList.add('type', 'monospace');
-        type.textContent = '{/}';
+        type.textContent = this.typeIcon;
         li.append(type);
 
         // Specs container (for fuzzy highlight compatibility)

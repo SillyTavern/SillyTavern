@@ -311,8 +311,8 @@ export class AutoComplete {
         this.name = this.parserResult.name.toLowerCase() ?? '';
 
         const isCursorInNamePart = this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0);
-        if (isForced || isInput) {
-            // if forced (ctrl+space) or user input...
+        if (isForced || isInput || isSelect) {
+            // if forced (ctrl+space) or user input or just selected an option...
             if (isCursorInNamePart) {
                 // ...and cursor is somewhere in the name part (including right behind the final char)
                 // -> show autocomplete for the (partial if cursor in the middle) name
