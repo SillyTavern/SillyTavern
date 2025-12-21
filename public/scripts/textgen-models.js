@@ -142,7 +142,7 @@ export async function loadTabbyModels(data) {
 
 export async function loadLlamaCppModels(data) {
     if (!Array.isArray(data)) {
-        console.error('Invalid LlamaCpp models data', data);
+        console.error('Invalid llama.cpp models data', data);
         return;
     }
 
