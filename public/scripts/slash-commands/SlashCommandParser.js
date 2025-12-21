@@ -16,7 +16,7 @@ import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNa
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { EnhancedMacroAutoCompleteOption, MacroFlagAutoCompleteOption, MacroClosingTagAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
-import { MacroFlagDefinitions } from '../macros/engine/MacroFlags.js';
+import { MacroFlagDefinitions, MacroFlagType } from '../macros/engine/MacroFlags.js';
 import { MacroParser } from '../macros/engine/MacroParser.js';
 import { MacroCstWalker } from '../macros/engine/MacroCstWalker.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
@@ -640,8 +640,15 @@ export class SlashCommandParser {
                     continue;
                 }
                 const flagOption = new MacroFlagAutoCompleteOption(flagDef);
+
+                // Define whether this flag is selectable (and at the top), based on being implemented, and closing actually being relevant
+                let isSelectable = flagDef.implemented;
+                if (flagDef.type === MacroFlagType.CLOSING_BLOCK && !unclosedScopes.length) isSelectable = false;
+                if (!isSelectable) {
+                    flagOption.valueProvider = () => '';
+                }
                 // Normal flag priority
-                flagOption.sortPriority = 10;
+                flagOption.sortPriority = isSelectable ? 10 : 12;
                 options.push(flagOption);
             }
         }
