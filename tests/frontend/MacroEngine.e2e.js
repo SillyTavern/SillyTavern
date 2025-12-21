@@ -687,13 +687,39 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('Hello User!');
         });
 
-        test('should resolve macro with closing block flag (currently no effect)', async ({ page }) => {
-            // Closing block flag is parsed but scoped macros not yet implemented
-            // The macro should still try to resolve normally
+        test('should keep unmatched closing block macro as raw text', async ({ page }) => {
+        // Closing block without matching opening should be kept as raw
             const input = '{{/unknown}}';
             const output = await evaluateWithEngine(page, input);
-            // Unknown macro with flag should be kept unchanged
             expect(output).toBe('{{/unknown}}');
+        });
+
+        test('should keep unmatched closing block macro for existing macro as raw text', async ({ page }) => {
+            // Closing block for a known macro (user) without matching opening should stay raw
+            const input = '{{/user}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{/user}}');
+        });
+
+        test('should keep unmatched closing block macro with arguments as raw text', async ({ page }) => {
+            // Closing block with arguments should stay raw (closing macros don't take args anyway)
+            const input = '{{/getvar::test}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{/getvar::test}}');
+        });
+
+        test('should keep closing macro raw when surrounded by other content', async ({ page }) => {
+            // Closing macro in middle of text should stay raw, other macros should resolve
+            const input = 'Hello {{user}}, this {{/char}} is raw, bye {{char}}!';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello User, this {{/char}} is raw, bye Character!');
+        });
+
+        test('should resolve scoped macro while keeping unrelated closing raw', async ({ page }) => {
+            // Scoped macro resolves normally, unrelated closing stays raw
+            const input = '{{setvar::x}}value{{/setvar}}{{/user}}{{getvar::x}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{/user}}value');
         });
 
         test('should pass flags to macro handler', async ({ page }) => {
@@ -755,14 +781,15 @@ test.describe('MacroEngine', () => {
                     MacroEngine.evaluate('{{!test-flag-check}}', env),
                     MacroEngine.evaluate('{{?test-flag-check}}', env),
                     MacroEngine.evaluate('{{>test-flag-check}}', env),
-                    MacroEngine.evaluate('{{/test-flag-check}}', env),
+                    // Note: {{/test-flag-check}} would stay raw (unmatched closing macro)
                     MacroEngine.evaluate('{{#test-flag-check}}', env),
                     MacroEngine.evaluate('{{!?>test-flag-check}}', env),
                 ];
                 return results.join(' | ');
             });
 
-            expect(output).toBe('noflags | immediate | delayed | filter | closingBlock | legacyHash | immediate+delayed+filter');
+            // Closing flag (/) is not tested here as standalone closing macros stay raw
+            expect(output).toBe('noflags | immediate | delayed | filter | legacyHash | immediate+delayed+filter');
         });
 
         test('should handle flags with arguments correctly', async ({ page }) => {
@@ -794,6 +821,280 @@ test.describe('MacroEngine', () => {
             });
 
             expect(output).toBe('3');
+        });
+    });
+
+    test.describe('Scoped macros', () => {
+        test('should merge scoped content as last unnamed argument', async ({ page }) => {
+            const input = '{{setvar::myvar}}Hello World{{/setvar}}{{getvar::myvar}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello World');
+        });
+
+        test('should be equivalent to inline argument syntax', async ({ page }) => {
+            const input1 = '{{setvar::myvar::test value}}{{getvar::myvar}}';
+            const input2 = '{{setvar::myvar}}test value{{/setvar}}{{getvar::myvar}}';
+
+            const output1 = await evaluateWithEngine(page, input1);
+            const output2 = await evaluateWithEngine(page, input2);
+
+            expect(output1).toBe(output2);
+        });
+
+        test('should resolve nested macros inside scoped content', async ({ page }) => {
+            const input = '{{setvar::myvar}}Hello {{user}}!{{/setvar}}{{getvar::myvar}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello User!');
+        });
+
+        test('should handle nested scoped macros with same name', async ({ page }) => {
+            // Outer scope sets 'outer', inner scope sets 'inner'
+            // Since setvar returns '', the inner macro contributes nothing to outer's content
+            const input = '{{setvar::outer}}before {{setvar::inner}}nested{{/setvar}} after{{/setvar}}{{getvar::outer}} | {{getvar::inner}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('before  after | nested'); // Note: double space where inner setvar was
+        });
+
+        test('should handle multiple independent scoped macros', async ({ page }) => {
+            const input = '{{setvar::a}}first{{/setvar}}{{setvar::b}}second{{/setvar}}[{{getvar::a}}][{{getvar::b}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[first][second]');
+        });
+
+        test('should keep unmatched closing tag as raw text', async ({ page }) => {
+            const input = 'Before {{/setvar}} After';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Before {{/setvar}} After');
+        });
+
+        test('should keep second closing tag as raw when already closed', async ({ page }) => {
+            const input = '{{setvar::myvar}}content{{/setvar}}{{/setvar}}{{getvar::myvar}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{/setvar}}content');
+        });
+
+        test('should work with empty scoped content', async ({ page }) => {
+            const input = '{{setvar::empty}}{{/setvar}}[{{getvar::empty}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[]');
+        });
+
+        test('should work with multi-line scoped content', async ({ page }) => {
+            const input = '{{setvar::multi}}Line 1\nLine 2\nLine 3{{/setvar}}{{getvar::multi}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Line 1\nLine 2\nLine 3');
+        });
+
+        test('should preserve plaintext around scoped macros', async ({ page }) => {
+            const input = 'Before {{setvar::x}}value{{/setvar}} After {{getvar::x}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Before  After value');
+        });
+
+        test('should handle deeply nested scoped macros', async ({ page }) => {
+            // Since setvar returns '', nested setvars contribute nothing to parent content
+            // l3 = "C", l2 = "B" + "" + "B" = "BB", l1 = "A" + "" + "A" = "AA"
+            const input = '{{setvar::l1}}A{{setvar::l2}}B{{setvar::l3}}C{{/setvar}}B{{/setvar}}A{{/setvar}}{{getvar::l1}}|{{getvar::l2}}|{{getvar::l3}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('AA|BB|C');
+        });
+
+        test('should handle scoped macro with existing arguments', async ({ page }) => {
+            // reverse takes 1 arg; scoped content becomes the only arg
+            const input = '{{reverse}}hello{{/reverse}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('olleh');
+        });
+
+        test('should not match closing tag for different macro name', async ({ page }) => {
+            // Opening setvar, closing getvar - should not match
+            const input = '{{setvar::x}}content{{/getvar}}{{getvar::x}}';
+            const output = await evaluateWithEngine(page, input);
+            // setvar without proper closing keeps looking, finds none, so it stays as is
+            // getvar closing has no opener, stays as raw
+            expect(output).toBe('{{setvar::x}}content{{/getvar}}');
+        });
+
+        test('should handle scoped content with special characters', async ({ page }) => {
+            const input = '{{setvar::special}}Hello { world } :: test{{/setvar}}{{getvar::special}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello { world } :: test');
+        });
+
+        test('should set isScoped to true for scoped macro invocation', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                MacroRegistry.unregisterMacro('test-isscoped');
+                MacroRegistry.registerMacro('test-isscoped', {
+                    description: 'Test macro that reports isScoped value.',
+                    unnamedArgs: [{ name: 'content', type: 'string', description: 'Content' }],
+                    handler: ({ isScoped }) => `isScoped:${isScoped}`,
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+                return MacroEngine.evaluate('{{test-isscoped}}content{{/test-isscoped}}', env);
+            });
+            expect(output).toBe('isScoped:true');
+        });
+
+        test('should set isScoped to false for inline argument syntax', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                MacroRegistry.unregisterMacro('test-isscoped');
+                MacroRegistry.registerMacro('test-isscoped', {
+                    description: 'Test macro that reports isScoped value.',
+                    unnamedArgs: [{ name: 'content', type: 'string', description: 'Content' }],
+                    handler: ({ isScoped }) => `isScoped:${isScoped}`,
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+                return MacroEngine.evaluate('{{test-isscoped::content}}', env);
+            });
+            expect(output).toBe('isScoped:false');
+        });
+
+        test('should keep scoped macro raw when macro accepts no arguments', async ({ page }) => {
+            // {{user}} takes no arguments, so {{user}}content{{/user}} should stay raw
+            // But content inside should still resolve
+            const input = '{{user}}Hello {{char}}!{{/user}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{user}}Hello Character!{{/user}}');
+        });
+
+        test('should keep scoped macro raw when argument count exceeds maximum', async ({ page }) => {
+            // setvar takes 2 args (name, value). With scoped content as 3rd arg, it exceeds max.
+            // When already at max args, scoped content would be extra - should stay raw
+            const input = '{{setvar::myvar::existing}}extra{{/setvar}}{{getvar::myvar}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('{{setvar::myvar::existing}}extra{{/setvar}}');
+        });
+
+        test('should keep scoped macro raw when argument count is below minimum', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                // Register a macro that requires exactly 3 arguments
+                MacroRegistry.unregisterMacro('test-3args');
+                MacroRegistry.registerMacro('test-3args', {
+                    description: 'Test macro requiring 3 arguments.',
+                    unnamedArgs: [
+                        { name: 'a', type: 'string', description: 'First' },
+                        { name: 'b', type: 'string', description: 'Second' },
+                        { name: 'c', type: 'string', description: 'Third' },
+                    ],
+                    handler: ({ unnamedArgs: [a, b, c] }) => `${a}-${b}-${c}`,
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+                // Only 2 args (1 inline + 1 scoped), but needs 3 - should stay raw
+                return MacroEngine.evaluate('{{test-3args::first}}second{{/test-3args}}', env);
+            });
+            expect(output).toBe('{{test-3args::first}}second{{/test-3args}}');
+        });
+
+        test('should evaluate inner macros before outer macro in scoped content', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroRegistry.js')} */
+                const { MacroRegistry } = await import('./scripts/macros/engine/MacroRegistry.js');
+
+                // Track evaluation order
+                const evalOrder = [];
+
+                MacroRegistry.unregisterMacro('test-outer');
+                MacroRegistry.registerMacro('test-outer', {
+                    description: 'Outer test macro.',
+                    unnamedArgs: [{ name: 'content', type: 'string', description: 'Content' }],
+                    handler: ({ unnamedArgs: [content] }) => {
+                        evalOrder.push('outer');
+                        return `[outer:${content}]`;
+                    },
+                });
+
+                MacroRegistry.unregisterMacro('test-inner');
+                MacroRegistry.registerMacro('test-inner', {
+                    description: 'Inner test macro.',
+                    handler: () => {
+                        evalOrder.push('inner');
+                        return 'INNER';
+                    },
+                });
+
+                const rawEnv = { content: '' };
+                const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+                const result = MacroEngine.evaluate('{{test-outer}}before {{test-inner}} after{{/test-outer}}', env);
+                return { result, order: evalOrder.join(',') };
+            });
+            expect(output.result).toBe('[outer:before INNER after]');
+            expect(output.order).toBe('inner,outer');
+        });
+
+        test('should handle scoped macro inside another scoped macro content', async ({ page }) => {
+            // Both scoped macros should resolve, inner first
+            const input = '{{setvar::outer}}A{{setvar::inner}}B{{/setvar}}C{{/setvar}}{{getvar::outer}}|{{getvar::inner}}';
+            const output = await evaluateWithEngine(page, input);
+            // inner = "B", outer = "A" + "" + "C" = "AC" (setvar returns empty string)
+            expect(output).toBe('AC|B');
+        });
+
+        test('should handle whitespace-only scoped content', async ({ page }) => {
+            const input = '{{setvar::ws}}   {{/setvar}}[{{getvar::ws}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[   ]');
+        });
+
+        test('should handle scoped macro at start of input', async ({ page }) => {
+            const input = '{{setvar::x}}value{{/setvar}}result:{{getvar::x}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('result:value');
+        });
+
+        test('should handle scoped macro at end of input', async ({ page }) => {
+            const input = 'prefix {{setvar::x}}value{{/setvar}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('prefix ');
+        });
+
+        test('should handle consecutive scoped macros', async ({ page }) => {
+            const input = '{{setvar::a}}1{{/setvar}}{{setvar::b}}2{{/setvar}}{{setvar::c}}3{{/setvar}}{{getvar::a}}{{getvar::b}}{{getvar::c}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('123');
+        });
+
+        test('should handle scoped macro with only macro content (no plaintext)', async ({ page }) => {
+            const input = '{{setvar::x}}{{user}}{{/setvar}}{{getvar::x}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('User');
+        });
+
+        test('should not match closing tag across different macro instances', async ({ page }) => {
+            // Two separate setvar macros - second closing should not match first opening
+            const input = '{{setvar::a}}first{{/setvar}}middle{{setvar::b}}second{{/setvar}}[{{getvar::a}}][{{getvar::b}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('middle[first][second]');
         });
     });
 });

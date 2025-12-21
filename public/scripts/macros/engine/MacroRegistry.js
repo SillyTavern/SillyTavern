@@ -108,6 +108,7 @@ export const MacroValueType = Object.freeze({
  * @property {string[]|null} list - List arguments (after unnamed args), or null if list is not enabled.
  * @property {{ [key: string]: string }|null} namedArgs - Reserved for future named argument support.
  * @property {MacroFlags} flags - Macro execution flags that were applied to this macro invocation.
+ * @property {boolean} isScoped - Whether this macro was invoked using scoped syntax (opening + closing tags).
  * @property {string} raw
  * @property {MacroEnv} env
  * @property {CstNode|null} cstNode
@@ -535,6 +536,7 @@ class MacroRegistry {
             list: listValues,
             namedArgs,
             flags: call.flags,
+            isScoped: call.isScoped,
             raw: call.rawInner,
             env: call.env,
             cstNode: call.cstNode,

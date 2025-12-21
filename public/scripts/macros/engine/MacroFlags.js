@@ -60,7 +60,7 @@ export const MacroFlagType = Object.freeze({
      * Marks this macro as the closing block of a scoped macro with the same identifier.
      * A closing block macro does not support arguments itself.
      * Example: `{{setvar::myvar}}long text{{/setvar}}`
-     * @status Parsed - Scoped macros not yet implemented
+     * @status Implemented - Content between opening and closing tags becomes the last unnamed argument
      */
     CLOSING_BLOCK: '/',
 
@@ -134,7 +134,7 @@ export const MacroFlagDefinitions = new Map([
         type: MacroFlagType.CLOSING_BLOCK,
         name: 'Closing Block',
         description: 'Marks this as a closing block for a scoped macro.',
-        implemented: false,
+        implemented: true,
         affectsParser: false,
     }],
     [MacroFlagType.LEGACY_HASH, {
