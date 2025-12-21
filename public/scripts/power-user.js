@@ -201,7 +201,6 @@ export const power_user = {
     timestamps_enabled: true,
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
-    hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
@@ -494,9 +493,18 @@ function switchMesIDDisplay() {
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
 }
 
+/** This function now migrates hideChatAvatars_enabled to avatar_style = avatar_styles.HIDDEN.
+ * @deprecated see applyAvatarStyle()
+ */
 function switchHideChatAvatars() {
-    $('body').toggleClass('hideChatAvatars', power_user.hideChatAvatars_enabled);
-    $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
+    if (power_user.hideChatAvatars_enabled) {
+        power_user.avatar_style = avatar_styles.HIDDEN;
+        power_user.hideChatAvatars_enabled = undefined;
+        applyAvatarStyle();
+        saveSettingsDebounced();
+    }
+    //This doesn't need to be immediately saved.
+    power_user.hideChatAvatars_enabled = undefined;
 }
 
 function switchMessageActions() {
@@ -1037,7 +1045,7 @@ function applyAvatarStyle() {
     $('body').toggleClass('big-avatars', power_user.avatar_style === avatar_styles.RECTANGULAR);
     $('body').toggleClass('square-avatars', power_user.avatar_style === avatar_styles.SQUARE);
     $('body').toggleClass('rounded-avatars', power_user.avatar_style === avatar_styles.ROUNDED);
-    $('body').toggleClass('hidden-avatars', power_user.avatar_style === avatar_styles.HIDDEN);
+    $('body').toggleClass('hideChatAvatars', power_user.avatar_style === avatar_styles.HIDDEN);
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
 }
 
@@ -1346,12 +1354,6 @@ function applyTheme(name) {
             },
         },
         {
-            key: 'hideChatAvatars_enabled',
-            action: () => {
-                switchHideChatAvatars();
-            },
-        },
-        {
             key: 'expand_message_actions',
             action: () => {
                 switchMessageActions();
@@ -1491,7 +1493,7 @@ export function applyPowerUserSettings() {
     switchTimestamps();
     switchIcons();
     switchMesIDDisplay();
-    switchHideChatAvatars();
+    switchHideChatAvatars(); //Deprecated. This now migrates.
     switchTokenCount();
     switchMessageActions();
     switchSwipeNumAllMessages();
@@ -1712,7 +1714,6 @@ export async function loadPowerUserSettings(settings, data) {
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
-    $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
@@ -2561,7 +2562,6 @@ function getThemeObject(name) {
         timestamp_model_icon: power_user.timestamp_model_icon,
 
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
-        hideChatAvatars_enabled: power_user.hideChatAvatars_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
         enableZenSliders: power_user.enableZenSliders,
@@ -3885,13 +3885,6 @@ jQuery(() => {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
         switchMesIDDisplay();
-        saveSettingsDebounced();
-    });
-
-    $('#hideChatAvatarsEnabled').on('input', function () {
-        const value = !!$(this).prop('checked');
-        power_user.hideChatAvatars_enabled = value;
-        switchHideChatAvatars();
         saveSettingsDebounced();
     });
 
