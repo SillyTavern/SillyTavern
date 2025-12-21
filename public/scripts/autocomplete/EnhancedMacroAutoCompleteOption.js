@@ -423,16 +423,10 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         this.#macroName = macroName;
 
         // Custom valueProvider to return the correct replacement text
-        // The input is what the user typed (e.g., "/" or "/set" or "/setvar")
-        // We need to return just the part to insert (completing the closing tag)
-        this.valueProvider = (input) => {
-            // Return the rest of the closing tag name + }}
-            const fullClosing = `/${macroName}}}`;
-            if (fullClosing.startsWith(input)) {
-                return fullClosing.slice(input.length);
-            }
-            // Fallback: return full closing
-            return fullClosing;
+        // Autocomplete REPLACES the typed identifier entirely, so return the full closing tag
+        this.valueProvider = () => {
+            // Return full closing tag content (without {{ since that's before the identifier)
+            return `/${macroName}}}`;
         };
 
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
@@ -539,10 +533,16 @@ export function parseMacroContext(macroText, cursorOffset) {
 
     // Extract flags (special symbols before the identifier)
     // Track position after each flag to determine which flag cursor is on
+    // Special case: `/` followed by identifier chars is a closing tag, not a flag
     const flags = [];
     const flagEndPositions = []; // Position right after each flag (before any whitespace)
     while (i < macroText.length) {
         const char = macroText[i];
+        // Check if this looks like a closing tag: `/` followed by an identifier character
+        if (char === '/' && i + 1 < macroText.length && /[a-zA-Z_]/.test(macroText[i + 1])) {
+            // This is a closing tag identifier, not a flag - stop parsing flags
+            break;
+        }
         if (ValidFlagSymbols.has(char)) {
             flags.push(char);
             i++;
