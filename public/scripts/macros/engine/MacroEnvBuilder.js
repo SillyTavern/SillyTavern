@@ -1,6 +1,7 @@
 import { name1, name2, characters, getCharacterCardFieldsLazy, getGeneratingModel } from '../../../script.js';
 import { groups, selected_group } from '../../../scripts/group-chats.js';
 import { logMacroGeneralError } from './MacroDiagnostics.js';
+import { getStringHash } from '/scripts/utils.js';
 /**
  * MacroEnvBuilder is responsible for constructing the MacroEnv object
  * that is passed to macro handlers.
@@ -83,6 +84,7 @@ class MacroEnvBuilder {
         /** @type {MacroEnv} */
         const env = {
             content: ctx.content,
+            contentHash: getStringHash(ctx.content),
             names: { user: '', char: '', group: '', groupNotMuted: '', notChar: '' },
             character: {},
             system: { model: '' },

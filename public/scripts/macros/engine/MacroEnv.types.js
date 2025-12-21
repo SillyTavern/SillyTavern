@@ -45,6 +45,7 @@
 /**
  * @typedef {Object} MacroEnv
  * @property {string} content - The full original input string that is being processed by the macro engine. This is the same value as substituteParams "content" and is provided so macros can build deterministic behavior based on the whole prompt when needed.
+ * @property {number} contentHash - A hash of the content string, used for caching and comparison.
  * @property {MacroEnvNames} names
  * @property {MacroEnvCharacter} character
  * @property {MacroEnvSystem} system

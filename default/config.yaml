@@ -287,6 +287,12 @@ claude:
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")
   apiVersion: 'v1beta'
+  # Enables caching of the system prompt (if supported). Only for OpenRouter.
+  # -- IMPORTANT! --
+  # Use only when the prompt before the chat history is static and doesn't change between requests
+  # (e.g {{random}} macro or lorebooks not as in-chat injections).
+  # Otherwise, you'll just waste money on cache misses.
+  enableSystemPromptCache: false
   # https://ai.google.dev/gemini-api/docs/imagen#imagen-configuration
   image:
     # Leave empty to use the API-default value.

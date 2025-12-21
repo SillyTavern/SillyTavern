@@ -1998,7 +1998,7 @@
                                                     <i class="icon-supported fa-solid fa-image" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-image" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
-                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter,zai">
                                                     <i class="icon-supported fa-solid fa-film" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-film" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
@@ -2013,7 +2013,7 @@
                                             <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long.</strong>
                                             <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB.</strong>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes,makersuite,vertexai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2108,8 +2108,14 @@
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
                                                 Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.
                                             </div>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai" data-i18n="Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.">
-                                                Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai">
+                                                <span data-i18n="Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.">
+                                                    Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.
+                                                </span>
+                                                <br>
+                                                <span data-i18n="Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.">
+                                                    Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -3195,6 +3201,7 @@
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                                        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
@@ -3367,6 +3374,7 @@
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                                        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
