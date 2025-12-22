@@ -786,7 +786,7 @@
     "Model Icon": "模型图标",
     "Show sequential message numbers in the chat log": "在聊天记录中显示消息楼层",
     "Message IDs": "显示消息楼层",
-    "Hide avatars in chat messages.": "在聊天记录中隐藏头像。",
+    "Hide avatars, only in chat messages.": "在聊天记录中隐藏头像。",
     "Hide Chat Avatars": "隐藏头像",
     "Show the number of tokens in each message in the chat log": "在聊天记录中显示每条消息的词符数",
     "Show Message Token Count": "显示消息词符数",

@@ -602,7 +602,7 @@
     "Model Icon": "顯示模型圖示",
     "Show sequential message numbers in the chat log": "在聊天記錄中顯示連續的訊息編號。",
     "Message IDs": "顯示訊息 ID",
-    "Hide avatars in chat messages.": "在聊天訊息中隱藏頭像",
+    "Hide avatars, only in chat messages.": "在聊天訊息中隱藏頭像",
     "Hide Chat Avatars": "隱藏聊天頭像",
     "Show the number of tokens in each message in the chat log": "在聊天記錄中顯示每條訊息中的符元數量",
     "Show Message Token Count": "顯示訊息符元數",

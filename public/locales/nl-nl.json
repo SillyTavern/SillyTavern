@@ -601,7 +601,7 @@
     "Model Icon": "Modelpictogram",
     "Show sequential message numbers in the chat log": "Toon opeenvolgende berichtnummers in het chatlogboek",
     "Message IDs": "Bericht-IDs",
-    "Hide avatars in chat messages.": "Verberg avatars in chatberichten.",
+    "Hide avatars, only in chat messages.": "Verberg avatars in chatberichten.",
     "Hide Chat Avatars": "Chatavatars verbergen",
     "Show the number of tokens in each message in the chat log": "Toon het aantal tokens in elk bericht in het chatlogboek",
     "Show Message Token Count": "Toon bericht token tellen",

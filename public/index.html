@@ -4767,7 +4767,7 @@
                         <div name="themeElements" class="flex-container flexFlowColumn flexNoGap">
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
-                                <div class="flex-container alignItemsBaseline">
+                                <div class="flex-container alignItemsBaseline" title="This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc." data-i18n="[title]This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc.">
                                     <span data-i18n="Avatar Style:">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
@@ -4777,6 +4777,10 @@
                                         <option value="4" data-i18n="Hidden">Hidden</option>
                                     </select>
                                 </div>
+                                <label for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars, only in chat messages. data-i18n="[title]Hide avatars, only in chat messages.>
+                                    <input id="hideChatAvatarsEnabled" type="checkbox" />
+                                    <small data-i18n="Hide Chat Avatars">Hide Chat Avatars</small>
+                                </label>
                                 <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Chat Style:">Chat Style:</span>
                                     <select id="chat_display" class="widthNatural flex1 margin0 text_pole">
@@ -4943,10 +4947,6 @@
                                 <label for="mesIDDisplayEnabled" class="checkbox_label" title="Show sequential message numbers in the chat log." data-i18n="[title]Show sequential message numbers in the chat log">
                                     <input id="mesIDDisplayEnabled" type="checkbox" />
                                     <small data-i18n="Message IDs">Message IDs</small>
-                                </label>
-                                <label for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars in chat messages." data-i18n="[title]Hide avatars in chat messages.">
-                                    <input id="hideChatAvatarsEnabled" type="checkbox" />
-                                    <small data-i18n="Hide Chat Avatars">Hide Chat Avatars</small>
                                 </label>
                                 <label for="messageTokensEnabled" class="checkbox_label" title="Show the number of tokens for each message in the chat log." data-i18n="[title]Show the number of tokens in each message in the chat log">
                                     <input id="messageTokensEnabled" type="checkbox" />

@@ -605,7 +605,7 @@
     "Model Icon": "أيقونة النموذج",
     "Show sequential message numbers in the chat log": "إظهار أرقام الرسائل التسلسلية في سجل الدردشة",
     "Message IDs": "معرفات الرسائل",
-    "Hide avatars in chat messages.": "إخفاء الصور الرمزية في رسائل الدردشة.",
+    "Hide avatars, only in chat messages.": "إخفاء الصور الرمزية في رسائل الدردشة.",
     "Hide Chat Avatars": "إخفاء الصور الرمزية للدردشة",
     "Show the number of tokens in each message in the chat log": "عرض عدد الرموز في كل رسالة في سجل الدردشة",
     "Show Message Token Count": "عرض عدد الرموز في الرسالة",

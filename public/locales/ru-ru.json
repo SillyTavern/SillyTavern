@@ -1045,7 +1045,7 @@
     "openai_inline_image_quality_high": "Высокое",
     "Assistant Impersonation Prefill": "Префилл для ассистента при перевоплощении",
     "Hide Chat Avatars": "Не показывать аватарки в чате",
-    "Hide avatars in chat messages.": "Скрыть аватарки сбоку от сообщений в чате",
+    "Hide avatars, only in chat messages.": "Скрыть аватарки сбоку от сообщений в чате",
     "Flat": "Стандартный",
     "Toggle character info panel": "Показать / скрыть инфо-панель",
     "(For Chat Completion and Instruct Mode)": "(для Chat Completion и режима Instruct)",
