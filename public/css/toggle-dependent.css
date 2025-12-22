@@ -57,6 +57,10 @@ body.rounded-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius-rounded) !important;
 }
 
+body.hidden-avatars .avatar {
+    display: none;
+}
+
 /*char list grid mode*/
 
 body.charListGrid #rm_print_characters_block {
