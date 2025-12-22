@@ -1487,21 +1487,66 @@ export class SlashCommandParser {
     }
 
     indexMacros(offset, text) {
-        // Simple regex to match macro boundaries: {{ followed by content until }} or end
-        // This captures both complete ({{...}}) and incomplete ({{...) macros
-        const re = /\{\{((?:(?!\}\}).)*?)(\}\}|$)/gs;
+        // Index all macros including nested ones
+        // We need to track brace depth to properly handle nested macros like {{reverse::Hey {{user}}}}
+        let i = 0;
+        while (i < text.length - 1) {
+            // Look for macro start {{
+            if (text[i] === '{' && text[i + 1] === '{') {
+                const macroStart = i;
+                i += 2; // Skip {{
 
-        let match;
-        while ((match = re.exec(text)) !== null) {
-            const macroContent = match[1] || '';
-            // Use parseMacroContext to extract the identifier, which handles whitespace and flags
-            const context = parseMacroContext(macroContent, macroContent.length);
+                // Find where this macro ends, tracking nested braces
+                let depth = 1;
+                let macroEnd = text.length; // Default to end if unclosed
 
-            this.macroIndex.push({
-                start: offset + match.index,
-                end: offset + match.index + match[0].length,
-                name: context.identifier,
-            });
+                while (i < text.length - 1 && depth > 0) {
+                    if (text[i] === '{' && text[i + 1] === '{') {
+                        // Nested macro start - recursively index it
+                        // The nested macro will be indexed in subsequent iterations
+                        depth++;
+                        i += 2;
+                    } else if (text[i] === '}' && text[i + 1] === '}') {
+                        depth--;
+                        if (depth === 0) {
+                            macroEnd = i + 2; // Include the closing }}
+                        }
+                        i += 2;
+                    } else {
+                        i++;
+                    }
+                }
+
+                // Extract macro content (between {{ and }} or end)
+                const contentEnd = macroEnd === text.length ? macroEnd : macroEnd - 2;
+                const macroContent = text.slice(macroStart + 2, contentEnd);
+
+                // Use parseMacroContext to extract the identifier
+                const context = parseMacroContext(macroContent, macroContent.length);
+
+                this.macroIndex.push({
+                    start: offset + macroStart,
+                    end: offset + macroEnd,
+                    name: context.identifier,
+                });
+
+                // Continue from where we left off (don't skip ahead)
+                // This ensures nested macros get their own index entries
+                i = macroStart + 2; // Move past the opening {{ to look for nested macros
+                // Skip to find nested {{ inside this macro's content
+                while (i < contentEnd) {
+                    if (text[i] === '{' && i + 1 < text.length && text[i + 1] === '{') {
+                        break; // Found nested macro, outer loop will handle it
+                    }
+                    i++;
+                }
+                if (i >= contentEnd) {
+                    // No nested macro found, skip to end of this macro
+                    i = macroEnd;
+                }
+            } else {
+                i++;
+            }
         }
     }
 }
