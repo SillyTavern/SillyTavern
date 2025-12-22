@@ -72,10 +72,10 @@ export function registerCoreMacros() {
             },
         ],
         returns: '',
-        handler: (env) => {
-            if (env.isScoped && env.unnamedArgs.length > 0) {
+        handler: ({ unnamedArgs: [content], isScoped }) => {
+            if (isScoped && content) {
                 // Scoped usage: trim the content inside
-                return env.unnamedArgs[0].trim();
+                return content.trim();
             }
             // Non-scoped: return marker for post-processing regex
             return '{{trim}}';
