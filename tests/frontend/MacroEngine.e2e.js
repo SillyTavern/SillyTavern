@@ -126,6 +126,38 @@ test.describe('MacroEngine', () => {
         });
     });
 
+    test.describe('Trim macro', () => {
+        test('should trim content inside scoped trim macro', async ({ page }) => {
+            const input = '{{trim}}  hello world  {{/trim}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('hello world');
+        });
+
+        test('should trim leading whitespace in scoped trim', async ({ page }) => {
+            const input = '{{trim}}\n\n  content{{/trim}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('content');
+        });
+
+        test('should trim trailing whitespace in scoped trim', async ({ page }) => {
+            const input = '{{trim}}content  \n\n{{/trim}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('content');
+        });
+
+        test('should handle scoped trim with macros inside', async ({ page }) => {
+            const input = '{{trim}}  Hello {{user}}  {{/trim}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Hello User');
+        });
+
+        test('should handle nested scoped trim', async ({ page }) => {
+            const input = '{{trim}}  outer {{trim}}  inner  {{/trim}} outer  {{/trim}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('outer inner outer');
+        });
+    });
+
     test.describe('Legacy compatibility', () => {
         test('should strip trim macro and surrounding newlines (legacy behavior)', async ({ page }) => {
             const input = 'foo\n\n{{trim}}\n\nbar';
