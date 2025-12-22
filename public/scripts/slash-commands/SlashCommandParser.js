@@ -547,6 +547,40 @@ export class SlashCommandParser {
                 // Use enhanced macro autocomplete when experimental engine is enabled
                 // Pass full text up to cursor for unclosed scope detection
                 const textUpToCursor = text.slice(0, index);
+
+                // Special case for {{if}} condition: use the condition text for matching/replacement
+                const isTypingIfCondition = context.identifier === 'if' && context.currentArgIndex === 0;
+                if (isTypingIfCondition) {
+                    // Get the typed condition text and calculate its start position
+                    const conditionText = context.args[0] || '';
+                    // Find where the condition argument starts in the macro text
+                    const separatorMatch = macroContent.match(/^.*?if\s*(?:::?)\s*/);
+                    const spaceMatch = macroContent.match(/^.*?if\s+/);
+                    let conditionStartOffset;
+                    if (separatorMatch) {
+                        conditionStartOffset = separatorMatch[0].length;
+                    } else if (spaceMatch) {
+                        conditionStartOffset = spaceMatch[0].length;
+                    } else {
+                        conditionStartOffset = context.identifierStart + identifier.length;
+                    }
+                    const conditionStartInText = macro.start + 2 + conditionStartOffset;
+
+                    // Build if-condition options using macroContent for padding calculation
+                    const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
+                    const options = this.#buildIfConditionOptions(context, allMacros, macroContent);
+
+                    const result = new AutoCompleteNameResult(
+                        conditionText,
+                        conditionStartInText,
+                        options,
+                        false,
+                        () => 'Use {{macro}} syntax for dynamic conditions',
+                        () => 'Enter a macro name or {{macro}} for the condition',
+                    );
+                    return result;
+                }
+
                 const options = this.#buildEnhancedMacroOptions(context, textUpToCursor);
                 const result = new AutoCompleteNameResult(
                     identifier,
@@ -731,6 +765,41 @@ export class SlashCommandParser {
             } else {
                 options.push(option);
             }
+        }
+
+        return options;
+    }
+
+    /**
+     * Builds autocomplete options for {{if}} condition - shows zero-arg macros as shorthand.
+     * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+     * @param {import('../macros/engine/MacroRegistry.js').MacroDefinition[]} allMacros
+     * @param {string} macroInnerText - The text inside the macro braces (e.g., "  if  pers" from "{{  if  pers").
+     * @returns {AutoCompleteOption[]}
+     */
+    #buildIfConditionOptions(context, allMacros, macroInnerText) {
+        /** @type {AutoCompleteOption[]} */
+        const options = [];
+
+        // Calculate padding from the original macro text for matching whitespace on completion
+        // e.g., "  if pers" -> leading padding = "  " (whitespace before 'if', used before '}}')
+        const leadingMatch = macroInnerText.match(/^(\s*)/);
+        const paddingAfter = leadingMatch ? leadingMatch[1] : '';
+
+        // Add zero-arg macros as condition shorthand options
+        for (const macro of allMacros) {
+            // Only include macros that require zero arguments (can be auto-resolved)
+            if (macro.minArgs !== 0) continue;
+
+            // Skip internal/utility macros that don't make sense as conditions
+            if (['else', 'noop', 'trim', '//'].includes(macro.name)) continue;
+
+            const option = new EnhancedMacroAutoCompleteOption(macro, {
+                noBraces: true,
+                paddingAfter,
+                closeWithBraces: true,
+            });
+            options.push(option);
         }
 
         return options;

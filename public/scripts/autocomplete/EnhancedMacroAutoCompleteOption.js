@@ -35,6 +35,13 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @property {string} [scopedMacroName] - Name of the scoped macro if in scoped content.
  */
 
+/**
+ * @typedef {Object} EnhancedMacroAutoCompleteOptions
+ * @property {boolean} [noBraces=false] - If true, display without {{ }} braces (for use as values, e.g., in {{if}} conditions).
+ * @property {string} [paddingAfter=''] - Whitespace to add before closing }} (for matching opening whitespace style).
+ * @property {boolean} [closeWithBraces=false] - If true, the completion will add }} to close the macro.
+ */
+
 export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
     /** @type {MacroDefinition} */
     #macro;
@@ -42,23 +49,52 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
     /** @type {MacroAutoCompleteContext|null} */
     #context = null;
 
+    /** @type {boolean} */
+    #noBraces = false;
+
+    /** @type {string} */
+    #paddingAfter = '';
+
     /**
      * @param {MacroDefinition} macro - The macro definition from MacroRegistry.
-     * @param {MacroAutoCompleteContext} [context] - Optional context for argument hints.
+     * @param {MacroAutoCompleteContext|EnhancedMacroAutoCompleteOptions|null} [contextOrOptions] - Context for argument hints, or options object.
      */
-    constructor(macro, context = null) {
+    constructor(macro, contextOrOptions = null) {
         // Use the macro name as the autocomplete key
         super(macro.name, enumIcons.macro);
         this.#macro = macro;
-        this.#context = context;
-        // nameOffset = 2 to skip the {{ prefix in the display (formatMacroSignature includes braces)
-        this.nameOffset = 2;
 
-        // For macros that take no arguments, auto-complete with closing }}
-        const takesNoArgs = macro.minArgs === 0 && macro.maxArgs === 0 && macro.list === null;
-        if (takesNoArgs) {
-            this.valueProvider = () => `${macro.name}}}`;
-            this.makeSelectable = true; // Required when using valueProvider
+        // Detect if second argument is context or options
+        // Context has 'identifier' property, options may have 'noBraces'
+        if (contextOrOptions && typeof contextOrOptions === 'object') {
+            if ('noBraces' in contextOrOptions || 'paddingAfter' in contextOrOptions || 'closeWithBraces' in contextOrOptions) {
+                // It's an options object
+                const options = /** @type {EnhancedMacroAutoCompleteOptions} */ (contextOrOptions);
+                this.#noBraces = options.noBraces ?? false;
+                this.#paddingAfter = options.paddingAfter ?? '';
+
+                // If noBraces mode with closeWithBraces, complete with name + padding + }}
+                if (options.closeWithBraces) {
+                    this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
+                    this.makeSelectable = true;
+                }
+            } else {
+                // It's a context object
+                this.#context = /** @type {MacroAutoCompleteContext} */ (contextOrOptions);
+            }
+        }
+
+        // nameOffset = 2 to skip the {{ prefix in the display (formatMacroSignature includes braces)
+        // When noBraces is true, nameOffset = 0 since we don't show braces
+        this.nameOffset = this.#noBraces ? 0 : 2;
+
+        // For macros that take no arguments, auto-complete with closing }} (unless already set by options)
+        if (!this.valueProvider) {
+            const takesNoArgs = macro.minArgs === 0 && macro.maxArgs === 0 && macro.list === null;
+            if (takesNoArgs) {
+                this.valueProvider = () => `${macro.name}}}`;
+                this.makeSelectable = true; // Required when using valueProvider
+            }
         }
     }
 
@@ -92,8 +128,9 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         const nameEl = document.createElement('span');
         nameEl.classList.add('name', 'monospace');
 
-        // Build signature with individual character spans (includes {{ }})
-        const sigText = formatMacroSignature(this.#macro);
+        // Build signature with individual character spans
+        // When noBraces is true, show just the macro name without {{ }}
+        const sigText = this.#noBraces ? this.#macro.name : formatMacroSignature(this.#macro);
         for (const char of sigText) {
             const span = document.createElement('span');
             span.textContent = char;
@@ -664,7 +701,8 @@ export function parseMacroContext(macroText, cursorOffset) {
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');
 
     // Build args array - include space-separated arg if present
-    let args = parts.slice(1).map(p => p.text);
+    // Trim args like the macro engine does
+    let args = parts.slice(1).map(p => p.text.trim());
     if (spaceArgText.length > 0) {
         args = [spaceArgText, ...args];
     }
