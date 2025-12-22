@@ -20,6 +20,7 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @typedef {Object} MacroAutoCompleteContext
  * @property {string} fullText - The full macro text being typed (without {{ }}).
  * @property {number} cursorOffset - Cursor position within the macro text.
+ * @property {string} paddingBefore - Padding before the macro identifier/flags.
  * @property {string} identifier - The macro identifier (name).
  * @property {number} identifierStart - Start position of the identifier within the macro text.
  * @property {string[]} flags - Array of flag symbols typed (e.g., ['!', '?']).
@@ -92,7 +93,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (!this.valueProvider) {
             const takesNoArgs = macro.minArgs === 0 && macro.maxArgs === 0 && macro.list === null;
             if (takesNoArgs) {
-                this.valueProvider = () => `${macro.name}}}`;
+                this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
                 this.makeSelectable = true; // Required when using valueProvider
             }
         }
@@ -697,6 +698,8 @@ export function parseMacroContext(macroText, cursorOffset) {
         currentArgIndex = -1;
     }
 
+    const leftPadding = macroText.match(/^\s+/)?.[0] ?? '';
+
     // Clean identifier: strip trailing colons (for partial :: typing)
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');
 
@@ -710,6 +713,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     return {
         fullText: macroText,
         cursorOffset,
+        paddingBefore: leftPadding,
         identifier: cleanIdentifier,
         identifierStart: identifierStartPos,
         isInFlagsArea,

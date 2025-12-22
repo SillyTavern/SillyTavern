@@ -28,6 +28,8 @@ import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} MacroAutoCompleteContext */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').EnhancedMacroAutoCompleteOptions} EnhancedMacroAutoCompleteOptions */
 
 /**
  * @enum {Number}
@@ -748,7 +750,15 @@ export class SlashCommandParser {
 
             // Only pass context to the macro that matches the identifier being typed
             // This ensures argument hints only show for the relevant macro
-            const macroContext = (isExactMatch || isAliasMatch) ? context : null;
+            /** @type {MacroAutoCompleteContext|EnhancedMacroAutoCompleteOptions|null} */
+            let macroContext = (isExactMatch || isAliasMatch) ? context : null;
+
+            // If no context, we pass some options for additional details though
+            if (!macroContext) {
+                macroContext = /** @type {EnhancedMacroAutoCompleteOptions} */ ({
+                    paddingAfter: context.paddingBefore, // Match whitespace before the macro - will only be used if the macro gets auto-closed
+                });
+            }
 
             const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
 
