@@ -76,7 +76,6 @@ const sources = {
     openai: 'openai',
     aimlapi: 'aimlapi',
     comfy: 'comfy',
-    comfy_runpod: 'comfy_runpod',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
     pollinations: 'pollinations',
@@ -88,6 +87,10 @@ const sources = {
     falai: 'falai',
     xai: 'xai',
     google: 'google',
+};
+const comfyTypes = {
+    standard: 'standard',
+    runpod_serverless: 'runpod_serverless',
 };
 
 const initiators = {
@@ -435,6 +438,10 @@ function toggleSourceControls() {
         const source = $(this).data('sd-source').split(',');
         $(this).toggle(source.includes(extension_settings.sd.source));
     });
+    $('.sd_settings [data-sd-comfy-type]').each(function () {
+        const source = $(this).data('sd-comfy-type').split(',');
+        $(this).toggle(source.includes(extension_settings.sd.comfy_type));
+    });
 }
 
 async function loadSettings() {
@@ -515,6 +522,7 @@ async function loadSettings() {
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
+    $('#sd_comfy_type').val(extension_settings.sd.comfy_type);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
@@ -1013,6 +1021,11 @@ async function onSourceChange() {
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
+}
+
+async function onComfyTypeChange() {
+    extension_settings.sd.comfy_type = $('#sd_comfy_type').find(':selected').val();
+    await onSourceChange();
 }
 
 function onFunctionToolInput() {
@@ -1553,9 +1566,6 @@ async function loadSamplers() {
         case sources.comfy:
             samplers = await loadComfySamplers();
             break;
-        case sources.comfy_runpod:
-            samplers = ['N/A'];
-            break;
         case sources.togetherai:
             samplers = ['N/A'];
             break;
@@ -1702,6 +1712,9 @@ async function loadNovelSamplers() {
 }
 
 async function loadComfySamplers() {
+    if (extension_settings.sd.comfy_type === comfyTypes.runpod_serverless) {
+        return ['N/A'];
+    }
     if (!extension_settings.sd.comfy_url) {
         return [];
     }
@@ -1754,9 +1767,6 @@ async function loadModels() {
             break;
         case sources.comfy:
             models = await loadComfyModels();
-            break;
-        case sources.comfy_runpod:
-            models = await loadComfyRunPodModels();
             break;
         case sources.togetherai:
             models = await loadTogetherAIModels();
@@ -1890,13 +1900,6 @@ async function loadBflModels() {
         { value: 'flux-pro-1.1', text: 'flux-pro-1.1' },
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
-    ];
-}
-
-async function loadComfyRunPodModels() {
-    $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.RUNPOD]);
-    return [
-        { value: '', text: 'N/A' },
     ];
 }
 
@@ -2257,6 +2260,12 @@ function loadNovelSchedulers() {
 }
 
 async function loadComfyModels() {
+    if (extension_settings.sd.comfy_type === comfyTypes.runpod_serverless) {
+        $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.RUNPOD]);
+        return [
+            { value: '', text: 'N/A' },
+        ];
+    }
     if (!extension_settings.sd.comfy_url) {
         return [];
     }
@@ -2316,9 +2325,6 @@ async function loadSchedulers() {
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
-        case sources.comfy_runpod:
-            schedulers = ['N/A'];
-            break;
         case sources.stability:
             schedulers = ['N/A'];
             break;
@@ -2360,6 +2366,9 @@ async function loadSchedulers() {
 }
 
 async function loadComfySchedulers() {
+    if (extension_settings.sd.comfy_type === comfyTypes.runpod_serverless) {
+        return ['N/A'];
+    }
     if (!extension_settings.sd.comfy_url) {
         return [];
     }
@@ -2418,9 +2427,6 @@ async function loadVaes() {
             break;
         case sources.comfy:
             vaes = await loadComfyVaes();
-            break;
-        case sources.comfy_runpod:
-            vaes = ['N/A'];
             break;
         case sources.stability:
             vaes = ['N/A'];
@@ -2487,6 +2493,9 @@ async function loadAutoVaes() {
 }
 
 async function loadComfyVaes() {
+    if (extension_settings.sd.comfy_type === comfyTypes.runpod_serverless) {
+        return ['N/A'];
+    }
     if (!extension_settings.sd.comfy_url) {
         return [];
     }
@@ -2509,7 +2518,7 @@ async function loadComfyVaes() {
 }
 
 async function loadComfyWorkflows() {
-    if (!extension_settings.sd.comfy_url) {
+    if (!extension_settings.sd.comfy_url || !extension_settings.sd.comfy_runpod_url) {
         return;
     }
 
@@ -3000,10 +3009,16 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 result = await generateAimlapiImage(prefixedPrompt, signal);
                 break;
             case sources.comfy:
-                result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
-                break;
-            case sources.comfy_runpod:
-                result = await generateComfyRunPodImage(prefixedPrompt, negativePrompt, signal);
+                switch (extension_settings.sd.comfy_type) {
+                    case comfyTypes.runpod_serverless:
+                        result = await generateComfyRunPodImage(prefixedPrompt, negativePrompt, signal);
+                        break;
+                    case comfyTypes.standard:
+                        // fallthrough
+                    default:
+                        result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
+                        break;
+                }
                 break;
             case sources.togetherai:
                 result = await generateTogetherAIImage(prefixedPrompt, negativePrompt, signal);
@@ -3740,7 +3755,7 @@ async function generateAimlapiImage(prompt, signal) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateComfyImageCommon(prompt, negativePrompt, signal, basePath, placeholders, url) {
-    const workflowResponse = await fetch(`${basePath}/workflow`, {
+    const workflowResponse = await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -4386,10 +4401,15 @@ function isValidState() {
         case sources.aimlapi:
             return secret_state[SECRET_KEYS.AIMLAPI];
         case sources.comfy:
-            return !!extension_settings.sd.comfy_url;
-        case sources.comfy_runpod:
-            return !!extension_settings.sd.comfy_runpod_url &&
-            secret_state[SECRET_KEYS.RUNPOD];
+            switch (extension_settings.sd.comfy_type) {
+                case comfyTypes.runpod_serverless:
+                    return !!extension_settings.sd.comfy_runpod_url &&
+                        secret_state[SECRET_KEYS.RUNPOD];
+                case comfyTypes.standard:
+                    //fallthrough
+                default:
+                    return !!extension_settings.sd.comfy_url;
+            }
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
@@ -5043,6 +5063,7 @@ jQuery(async () => {
     $('#sd_novel_decrisper').on('input', onNovelDecrisperInput);
     $('#sd_novel_variety_boost').on('input', onNovelVarietyBoostInput);
     $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
+    $('#sd_comfy_type').on('change', onComfyTypeChange);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_runpod_validate').on('click', validateComfyRunPodUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
