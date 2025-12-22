@@ -107,7 +107,7 @@ export function registerCoreMacros() {
         displayOverride: '{{if condition}}then{{else}}other{{/if}}',
         exampleUsage: [
             '{{if description}}# Description\n{{description}}{{/if}}',
-            'Version: {{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
+            '{{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
             '{{if !personality}}No personality defined{{/if}}',
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
