@@ -4,7 +4,7 @@ import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
-import { createEmptyFlags } from '../engine/MacroFlags.js';
+import { MacroEngine } from '../engine/MacroEngine.js';
 
 /**
  * Registers SillyTavern's core built-in macros in the MacroRegistry.
@@ -112,7 +112,7 @@ export function registerCoreMacros() {
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
         returns: 'The trimmed content if condition is truthy, trimmed else branch or empty string otherwise.',
-        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition, _], env, normalize }) => {
+        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], env }) => {
             // Check if the ORIGINAL condition (before macro resolution) starts with !
             // We use raw args to check this, as the resolved value might start with ! from a variable
             let inverted = false;
@@ -126,24 +126,9 @@ export function registerCoreMacros() {
             // If so, resolve it first (only for macros that accept 0 required args)
             const macroDef = MacroRegistry.getPrimaryMacro(condition);
             if (macroDef && macroDef.minArgs === 0) {
-                // Call the handler directly (synchronously) with inherited env context
-                const resolved = macroDef.handler({
-                    name: condition,
-                    args: [],
-                    unnamedArgs: [],
-                    list: null,
-                    namedArgs: null,
-                    flags: createEmptyFlags(),
-                    isScoped: false,
-                    raw: `{{${condition}}}`,
-                    rawOriginal: `{{${condition}}}`,
-                    rawArgs: [],
-                    env: env, // Inherit environment from outer context
-                    cstNode: null,
-                    range: null,
-                    normalize: normalize,
-                });
-                condition = resolved ?? '';
+                // Use MacroEngine.evaluate to properly resolve the macro with full context
+                // This ensures all handler args (cst, normalize, list, etc.) are correctly provided
+                condition = MacroEngine.evaluate(`{{${condition}}}`, env);
             }
 
             // Check if condition is falsy: empty string or isFalseBoolean
