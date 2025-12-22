@@ -82,12 +82,17 @@ export function registerCoreMacros() {
         },
     });
 
+    // Marker used by {{else}} to split content in {{if}} blocks
+    // Uses control characters to minimize collision with real content
+    const ELSE_MARKER = '\u0000\u001FELSE\u001F\u0000';
+
     // {{if condition}}content{{/if}} -> conditional content
-    // Returns content if condition is truthy, empty string otherwise
+    // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
+    // Returns trimmed content if condition is truthy, empty string otherwise
     // Condition can be a macro name (resolved automatically) or any value
     MacroRegistry.registerMacro('if', {
         category: MacroCategory.UTILITY,
-        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing. If the condition is a registered macro name (without braces), it will be resolved first.',
+        description: 'Conditional macro. Returns the trimmed content if the condition is truthy, otherwise returns nothing (or the trimmed else branch if present). If the condition is a registered macro name (without braces), it will be resolved first.',
         unnamedArgs: [
             {
                 name: 'condition',
@@ -95,19 +100,17 @@ export function registerCoreMacros() {
             },
             {
                 name: 'content',
-                description: 'The content to return if condition is truthy (typically provided as scoped content).',
+                description: 'The content to return if condition is truthy (typically provided as scoped content). May contain {{else}} to define an else branch. Both branches are trimmed.',
             },
         ],
+        displayOverride: '{{if condition}}then{{else}}other{{/if}}',
         exampleUsage: [
             '{{if description}}# Description\n{{description}}{{/if}}',
-            '{{if char}}Character: {{char}}{{/if}}',
+            'Version: {{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
-        returns: 'The content if condition is truthy, empty string otherwise.',
-        handler: (ctx) => {
-            let condition = ctx.unnamedArgs[0] ?? '';
-            const content = ctx.unnamedArgs[1] ?? '';
-
+        returns: 'The trimmed content if condition is truthy, trimmed else branch or empty string otherwise.',
+        handler: ({ unnamedArgs: [condition, content], env, normalize }) => {
             // Check if condition is a registered macro name (without braces)
             // If so, resolve it first (only for macros that accept 0 required args)
             const macroDef = MacroRegistry.getPrimaryMacro(condition);
@@ -122,10 +125,10 @@ export function registerCoreMacros() {
                     flags: createEmptyFlags(),
                     isScoped: false,
                     raw: `{{${condition}}}`,
-                    env: ctx.env, // Inherit environment from outer context
+                    env: env, // Inherit environment from outer context
                     cstNode: null,
                     range: null,
-                    normalize: ctx.normalize,
+                    normalize: normalize,
                 });
                 condition = resolved ?? '';
             }
@@ -133,8 +136,24 @@ export function registerCoreMacros() {
             // Check if condition is falsy: empty string or isFalseBoolean
             const isFalsy = condition === '' || isFalseBoolean(condition);
 
-            return !isFalsy ? content : '';
+            // Split content on else marker (if present) and trim both branches
+            const [thenBranch, elseBranch] = content.split(ELSE_MARKER);
+            const result = !isFalsy ? thenBranch : elseBranch;
+
+            return (result ?? '').trim();
         },
+    });
+
+    // {{else}} -> marker for else branch inside {{if}} blocks
+    // Only meaningful inside a scoped {{if}} macro
+    MacroRegistry.registerMacro('else', {
+        category: MacroCategory.UTILITY,
+        description: 'Marks the else branch inside a scoped {{if}} block. Only works inside {{if}}...{{/if}}. If used outside, returns an invisible marker.',
+        exampleUsage: [
+            '{{if condition}}true branch{{else}}false branch{{/if}}',
+        ],
+        returns: 'Invisible marker (consumed by the enclosing {{if}} macro).',
+        handler: () => ELSE_MARKER,
     });
 
     // {{input}} -> current textarea content

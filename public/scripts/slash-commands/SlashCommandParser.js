@@ -24,6 +24,7 @@ import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
 import { macros as macroSystem } from '../macros/macro-system.js';
+import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -635,7 +636,7 @@ export class SlashCommandParser {
      * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]}
      */
     #buildEnhancedMacroOptions(context, textUpToCursor = '') {
-    /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]} */
+        /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]} */
         const options = [];
 
         // Check for unclosed scoped macros and suggest closing tags first
@@ -645,6 +646,16 @@ export class SlashCommandParser {
             const innermostScope = unclosedScopes[unclosedScopes.length - 1];
             const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name);
             options.push(closingOption);
+
+            // If inside a scoped {{if}}, also suggest {{else}}
+            if (innermostScope.name === 'if') {
+                // TODO: TEsting
+                const macroDef = macroSystem.registry.getPrimaryMacro('else');
+                const elseOption = new EnhancedMacroAutoCompleteOption(macroDef);
+                elseOption.sortPriority = 2;
+                // const elseOption = new MacroElseAutoCompleteOption();
+                options.push(elseOption);
+            }
         }
 
         // If cursor is in the flags area (before identifier starts), include flag options
@@ -693,6 +704,9 @@ export class SlashCommandParser {
         // If we're typing arguments (after ::), only show the context to the matching macro
         const isTypingArgs = context.currentArgIndex >= 0;
 
+        // Check if we're inside a scoped {{if}} for {{else}} selectability
+        const isInsideScopedIf = unclosedScopes.some(scope => scope.name === 'if');
+
         for (const macro of allMacros) {
             // Check if this macro matches the typed identifier
             const isExactMatch = macro.name === context.identifier;
@@ -703,6 +717,13 @@ export class SlashCommandParser {
             const macroContext = (isExactMatch || isAliasMatch) ? context : null;
 
             const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
+
+            // {{else}} is only selectable inside a scoped {{if}} block
+            // Outside of {{if}}, it should appear in the list but not be tab-completable
+            if (macro.name === 'else' && !isInsideScopedIf) {
+                option.valueProvider = () => '';
+                option.makeSelectable = false;
+            }
 
             // When typing arguments, prioritize exact matches by putting them first
             if (isTypingArgs && (isExactMatch || isAliasMatch)) {

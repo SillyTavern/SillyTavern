@@ -1276,6 +1276,92 @@ test.describe('MacroEngine', () => {
                 expect(output).toBe('Character exists');
             });
         });
+
+        test.describe('with {{else}} branch', () => {
+            test('should return then-branch when condition is truthy', async ({ page }) => {
+                const input = '{{if yes}}then{{else}}else{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('then');
+            });
+
+            test('should return else-branch when condition is falsy', async ({ page }) => {
+                const input = '{{if::}}then{{else}}else{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('else');
+            });
+
+            test('should return else-branch when condition is "false"', async ({ page }) => {
+                const input = '{{if::false}}yes{{else}}no{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('no');
+            });
+
+            test('should handle macros in both branches', async ({ page }) => {
+                const input = '{{if yes}}Hello {{user}}{{else}}Goodbye {{char}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Hello User');
+            });
+
+            test('should handle macros in else branch when falsy', async ({ page }) => {
+                const input = '{{if::}}Hello {{user}}{{else}}Goodbye {{char}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Goodbye Character');
+            });
+
+            test('should handle nested if-else in then-branch', async ({ page }) => {
+                const input = '{{if yes}}outer-then{{if yes}}inner-then{{else}}inner-else{{/if}}{{else}}outer-else{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('outer-theninner-then');
+            });
+
+            test('should handle nested if-else in else-branch', async ({ page }) => {
+                const input = '{{if::}}outer-then{{else}}outer-else{{if yes}}inner-then{{else}}inner-else{{/if}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('outer-elseinner-then');
+            });
+
+            test('should handle deeply nested if-else', async ({ page }) => {
+                const input = '{{if::}}A{{else}}B{{if::}}C{{else}}D{{/if}}{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('BD');
+            });
+
+            test('should return empty else-branch if not provided', async ({ page }) => {
+                const input = '{{if::}}content{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+
+            test('should trim whitespace from branches', async ({ page }) => {
+                const input = '{{if yes}}  then  {{else}}  else  {{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('then');
+            });
+
+            test('should trim newlines from branches', async ({ page }) => {
+                const input = '{{if yes}}\n  then\n{{else}}\n  else\n{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('then');
+            });
+
+            test('should trim else branch when selected', async ({ page }) => {
+                const input = '{{if::}}\n  then\n{{else}}\n  else\n{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('else');
+            });
+
+            test('should resolve macro name in condition with else branch', async ({ page }) => {
+                const input = '{{if char}}Has char{{else}}No char{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Has char');
+            });
+
+            test('should handle empty macro returning else branch', async ({ page }) => {
+                const input = '{{if noop}}Has value{{else}}Empty{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Empty');
+            });
+        });
     });
 });
 
