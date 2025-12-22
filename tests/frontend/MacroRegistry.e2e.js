@@ -55,7 +55,7 @@ test.describe('MacroRegistry', () => {
             const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
             expect(registrationError).toBeTruthy();
             expect(registrationError?.text).toContain('Failed to register macro ""');
-            expect(registrationError?.errorMessage).toContain('Macro name must be a non-empty string');
+            expect(registrationError?.errorMessage).toContain('Must start with a letter, followed by word chars or hyphens.');
         });
 
         test('should reject invalid options object', async ({ page }) => {
@@ -188,6 +188,107 @@ test.describe('MacroRegistry', () => {
             expect(registrationError).toBeTruthy();
             expect(registrationError?.text).toContain('Failed to register macro "bad-desc"');
             expect(registrationError?.errorMessage).toContain('options.description must be a string');
+        });
+    });
+
+    test.describe('identifier validation', () => {
+        test('should accept valid identifier with letters only', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'validMacro',
+                options: {},
+            });
+            expect(result.registered).not.toBeNull();
+            expect(result.errors.length).toBe(0);
+        });
+
+        test('should accept valid identifier with hyphens', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'my-macro-name',
+                options: {},
+            });
+            expect(result.registered).not.toBeNull();
+            expect(result.errors.length).toBe(0);
+        });
+
+        test('should accept valid identifier with underscores', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'my_macro_name',
+                options: {},
+            });
+            expect(result.registered).not.toBeNull();
+            expect(result.errors.length).toBe(0);
+        });
+
+        test('should accept valid identifier with digits after first char', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'macro123',
+                options: {},
+            });
+            expect(result.registered).not.toBeNull();
+            expect(result.errors.length).toBe(0);
+        });
+
+        test('should reject identifier starting with digit', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: '123macro',
+                options: {},
+            });
+            expect(result.registered).toBeNull();
+            const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
+            expect(registrationError?.errorMessage).toContain('is invalid');
+        });
+
+        test('should reject identifier starting with hyphen', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: '-macro',
+                options: {},
+            });
+            expect(result.registered).toBeNull();
+            const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
+            expect(registrationError?.errorMessage).toContain('is invalid');
+        });
+
+        test('should reject identifier with special characters', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'macro@name',
+                options: {},
+            });
+            expect(result.registered).toBeNull();
+            const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
+            expect(registrationError?.errorMessage).toContain('is invalid');
+        });
+
+        test('should reject identifier with spaces', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'macro name',
+                options: {},
+            });
+            expect(result.registered).toBeNull();
+            const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
+            expect(registrationError?.errorMessage).toContain('is invalid');
+        });
+
+        test('should accept valid alias identifier', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'primaryMacro',
+                options: {
+                    aliases: [{ alias: 'valid-alias_123' }],
+                },
+            });
+            expect(result.registered).not.toBeNull();
+            expect(result.errors.length).toBe(0);
+        });
+
+        test('should reject invalid alias identifier', async ({ page }) => {
+            const result = await registerMacroAndCaptureErrors(page, {
+                macroName: 'primaryMacro2',
+                options: {
+                    aliases: [{ alias: '123-invalid' }],
+                },
+            });
+            expect(result.registered).toBeNull();
+            const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
+            expect(registrationError?.errorMessage).toContain('is invalid');
         });
     });
 });

@@ -3,7 +3,7 @@
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
-import { createEmptyFlags } from './MacroFlags.js';
+import { MACRO_IDENTIFIER_PATTERN } from './MacroLexer.js';
 
 import { isFalseBoolean, isTrueBoolean } from '../../utils.js';
 import { MacroEngine } from './MacroEngine.js';
@@ -186,7 +186,7 @@ class MacroRegistry {
         name = typeof name === 'string' ? name.trim() : String(name);
 
         try {
-            if (typeof name !== 'string' || !name) throw new Error('Macro name must be a non-empty string');
+            if (!isIdentifierValid(name)) throw new Error(`Macro name "${name}" is invalid. Must start with a letter, followed by word chars or hyphens.`);
             if (!options || typeof options !== 'object') throw new Error(`Macro "${name}" options must be a non-null object.`);
 
             const {
@@ -213,6 +213,7 @@ class MacroRegistry {
                     if (!aliasDef || typeof aliasDef !== 'object') throw new Error(`Macro "${name}" options.aliases[${i}] must be an object.`);
                     if (typeof aliasDef.alias !== 'string' || !aliasDef.alias.trim()) throw new Error(`Macro "${name}" options.aliases[${i}].alias must be a non-empty string.`);
                     const aliasName = aliasDef.alias.trim();
+                    if (!isIdentifierValid(aliasName)) throw new Error(`Macro "${name}" options.aliases[${i}].alias "${aliasName}" is invalid. Must start with a letter, followed by word chars or hyphens.`);
                     if (aliasName === name) throw new Error(`Macro "${name}" options.aliases[${i}].alias cannot be the same as the macro name.`);
                     const visible = aliasDef.visible !== false; // Default to true
                     aliases.push({ alias: aliasName, visible });
@@ -550,6 +551,20 @@ class MacroRegistry {
 }
 
 instance = MacroRegistry.instance;
+
+/**
+ * Validates a macro identifier.
+ *
+ * @param {string} name - The macro identifier to validate.
+ * @param {Object} [options] - Validation options.
+ * @param {boolean} [options.allowComment = true] - Whether return that the comment identifier '//' is valid.
+ * @returns {boolean} True if the identifier is valid, false otherwise.
+ */
+function isIdentifierValid(name, { allowComment = true } = {}) {
+    if (typeof name !== 'string' || !name.trim()) return false;
+    if (allowComment && name === '//') return true;
+    return MACRO_IDENTIFIER_PATTERN.test(name);
+}
 
 /**
  * Validates the arguments for a macro definition.
