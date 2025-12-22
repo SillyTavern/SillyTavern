@@ -88,15 +88,16 @@ export function registerCoreMacros() {
 
     // {{if condition}}content{{/if}} -> conditional content
     // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
+    // {{if !condition}}content{{/if}} -> inverted conditional (negated)
     // Returns trimmed content if condition is truthy, empty string otherwise
     // Condition can be a macro name (resolved automatically) or any value
     MacroRegistry.registerMacro('if', {
         category: MacroCategory.UTILITY,
-        description: 'Conditional macro. Returns the trimmed content if the condition is truthy, otherwise returns nothing (or the trimmed else branch if present). If the condition is a registered macro name (without braces), it will be resolved first.',
+        description: 'Conditional macro. Returns the trimmed content if the condition is truthy, otherwise returns nothing (or the trimmed else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first.',
         unnamedArgs: [
             {
                 name: 'condition',
-                description: 'The condition to evaluate. Can be a macro name (auto-resolved) or a value. Falsy: empty string, "false", "off", "0".',
+                description: 'The condition to evaluate. Prefix with ! to invert. Can be a macro name (auto-resolved) or a value. Falsy: empty string, "false", "off", "0".',
             },
             {
                 name: 'content',
@@ -107,10 +108,20 @@ export function registerCoreMacros() {
         exampleUsage: [
             '{{if description}}# Description\n{{description}}{{/if}}',
             'Version: {{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
+            '{{if !personality}}No personality defined{{/if}}',
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
         returns: 'The trimmed content if condition is truthy, trimmed else branch or empty string otherwise.',
-        handler: ({ unnamedArgs: [condition, content], env, normalize }) => {
+        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition, _], env, normalize }) => {
+            // Check if the ORIGINAL condition (before macro resolution) starts with !
+            // We use raw args to check this, as the resolved value might start with ! from a variable
+            let inverted = false;
+            if (/^\s*!/.test(rawCondition)) {
+                inverted = true;
+                // Strip the ! from the resolved condition if it was the prefix
+                condition = condition.replace(/^!/, '');
+            }
+
             // Check if condition is a registered macro name (without braces)
             // If so, resolve it first (only for macros that accept 0 required args)
             const macroDef = MacroRegistry.getPrimaryMacro(condition);
@@ -125,6 +136,8 @@ export function registerCoreMacros() {
                     flags: createEmptyFlags(),
                     isScoped: false,
                     raw: `{{${condition}}}`,
+                    rawOriginal: `{{${condition}}}`,
+                    rawArgs: [],
                     env: env, // Inherit environment from outer context
                     cstNode: null,
                     range: null,
@@ -134,7 +147,8 @@ export function registerCoreMacros() {
             }
 
             // Check if condition is falsy: empty string or isFalseBoolean
-            const isFalsy = condition === '' || isFalseBoolean(condition);
+            let isFalsy = condition === '' || isFalseBoolean(condition);
+            if (inverted) isFalsy = !isFalsy;
 
             // Split content on else marker (if present) and trim both branches
             const [thenBranch, elseBranch] = content.split(ELSE_MARKER);

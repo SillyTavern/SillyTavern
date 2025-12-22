@@ -109,7 +109,9 @@ export const MacroValueType = Object.freeze({
  * @property {{ [key: string]: string }|null} namedArgs - Reserved for future named argument support.
  * @property {MacroFlags} flags - Macro execution flags that were applied to this macro invocation.
  * @property {boolean} isScoped - Whether this macro was invoked using scoped syntax (opening + closing tags).
- * @property {string} raw
+ * @property {string} raw - The inner macro content with nested macros resolved.
+ * @property {string} rawOriginal - The original full macro text including braces, before any resolution.
+ * @property {string[]} rawArgs - The original arguments passed to the macro.
  * @property {MacroEnv} env
  * @property {CstNode|null} cstNode
  * @property {{ startOffset: number, endOffset: number }|null} range
@@ -539,6 +541,8 @@ class MacroRegistry {
             flags: call.flags,
             isScoped: call.isScoped,
             raw: call.rawInner,
+            rawOriginal: call.rawWithBraces,
+            rawArgs: call.rawArgs,
             env: call.env,
             cstNode: call.cstNode,
             range: call.range,

@@ -16,6 +16,7 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {MacroEnv} env
  * @property {string} rawInner
  * @property {string} rawWithBraces
+ * @property {string[]} rawArgs
  * @property {{ startOffset: number, endOffset: number }} range
  * @property {CstNode} cstNode
  */
@@ -258,6 +259,8 @@ class MacroCstWalker {
         const args = [];
         /** @type {({ value: string } & TokenRange)[]} */
         const evaluatedArguments = [];
+        /** @type {string[]} */
+        const rawArgs = [];
 
         for (const argNode of argumentNodes) {
             const argValue = this.#evaluateArgumentNode(argNode, context);
@@ -270,6 +273,8 @@ class MacroCstWalker {
                     ...location,
                 });
             }
+
+            rawArgs.push(location ? text.slice(location.startOffset, location.endOffset + 1) : '');
         }
 
         // If this macro has scoped content, evaluate it and append as the last argument
@@ -321,6 +326,7 @@ class MacroCstWalker {
             isScoped: scopedContent != null,
             rawInner,
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
+            rawArgs,
             range,
             cstNode: macroNode,
             env,

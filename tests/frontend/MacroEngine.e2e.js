@@ -1362,6 +1362,68 @@ test.describe('MacroEngine', () => {
                 expect(output).toBe('Empty');
             });
         });
+
+        test.describe('with inverted condition (!)', () => {
+            test('should invert truthy condition to falsy', async ({ page }) => {
+                const input = '{{if !yes}}shown{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+
+            test('should invert falsy condition to truthy', async ({ page }) => {
+                const input = '{{if !false}}shown{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('shown');
+            });
+
+            test('should invert empty string to truthy', async ({ page }) => {
+                const input = '{{if::!}}not shown{{else}}shown{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                // Note: "!" is not empty, so it's truthy - but this tests literal ! as value
+                expect(output).toBe('not shown');
+            });
+
+            test('should work with ! prefix and macro name', async ({ page }) => {
+                // noop returns empty string, so !noop should be truthy
+                const input = '{{if !noop}}No value{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('No value');
+            });
+
+            test('should work with ! prefix and truthy macro', async ({ page }) => {
+                // char returns "Character", so !char should be falsy
+                const input = '{{if !char}}No char{{else}}Has char{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Has char');
+            });
+
+            test('should work with ! prefix and nested macro', async ({ page }) => {
+                // Set a variable to empty, then check !{{getvar}}
+                const input = '{{setvar::emptyVar::}}{{if !{{getvar::emptyVar}}}}Empty var{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Empty var');
+            });
+
+            test('should NOT invert when ! comes from resolved value', async ({ page }) => {
+                // Set a variable starting with !, then check without ! prefix
+                // The ! in the value should NOT cause inversion
+                const input = '{{setvar::bangVar::!hello}}{{if {{getvar::bangVar}}}}Has value{{else}}No value{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Has value');
+            });
+
+            test('should work with else branch on inverted condition', async ({ page }) => {
+                const input = '{{if !yes}}then{{else}}else{{/if}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('else');
+            });
+
+            test('should work with separator syntax', async ({ page }) => {
+                const input = '{{if::!something}}shown{{/if}}[end]';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('[end]');
+            });
+        });
     });
 });
 
