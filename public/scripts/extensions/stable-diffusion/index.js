@@ -3012,9 +3012,10 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                         result = await generateComfyRunPodImage(prefixedPrompt, negativePrompt, signal);
                         break;
                     case comfyTypes.standard:
-                        // fallthrough
-                    default:
                         result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
+                        break;
+                    default:
+                        throw new Error('Unknown comfyUI server type.');
                         break;
                 }
                 break;
@@ -4404,9 +4405,9 @@ function isValidState() {
                     return !!extension_settings.sd.comfy_runpod_url &&
                         secret_state[SECRET_KEYS.COMFY_RUNPOD];
                 case comfyTypes.standard:
-                    //fallthrough
-                default:
                     return !!extension_settings.sd.comfy_url;
+                default:
+                    return false
             }
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
