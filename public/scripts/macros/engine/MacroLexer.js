@@ -190,7 +190,7 @@ class MacroLexer extends Lexer {
     /** @private */
     constructor() {
         super(MacroLexer.def, {
-            // traceInitPerf: true,
+            traceInitPerf: false,
         });
     }
 
