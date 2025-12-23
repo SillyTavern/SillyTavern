@@ -2263,7 +2263,7 @@ function loadNovelSchedulers() {
 
 async function loadComfyModels() {
     if (extension_settings.sd.comfy_type === comfyTypes.runpod_serverless) {
-        $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.RUNPOD]);
+        $('#sd_runpod_key').toggleClass('success', !!secret_state[SECRET_KEYS.COMFY_RUNPOD]);
         return [
             { value: '', text: 'N/A' },
         ];
@@ -4402,7 +4402,7 @@ function isValidState() {
             switch (extension_settings.sd.comfy_type) {
                 case comfyTypes.runpod_serverless:
                     return !!extension_settings.sd.comfy_runpod_url &&
-                        secret_state[SECRET_KEYS.RUNPOD];
+                        secret_state[SECRET_KEYS.COMFY_RUNPOD];
                 case comfyTypes.standard:
                     //fallthrough
                 default:

@@ -56,7 +56,7 @@ export const SECRET_KEYS = {
     NANOGPT: 'api_key_nanogpt',
     TAVILY: 'api_key_tavily',
     BFL: 'api_key_bfl',
-    RUNPOD: 'api_key_runpod',
+    COMFY_RUNPOD: 'api_key_comfy_runpod',
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
@@ -110,7 +110,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.CUSTOM_OPENAI_TTS]: 'Custom OpenAI TTS',
     [SECRET_KEYS.TAVILY]: 'Tavily',
     [SECRET_KEYS.BFL]: 'Black Forest Labs',
-    [SECRET_KEYS.RUNPOD]: 'ComfyUI RunPod',
+    [SECRET_KEYS.COMFY_RUNPOD]: 'ComfyUI RunPod',
     [SECRET_KEYS.SERPAPI]: 'SerpApi',
     [SECRET_KEYS.SERPER]: 'Serper',
     [SECRET_KEYS.FALAI]: 'FAL.AI',
@@ -171,7 +171,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
-    [SECRET_KEYS.RUNPOD]: '#api_key_runpod',
+    [SECRET_KEYS.COMFY_RUNPOD]: '#api_key_comfy_runpod',
 };
 
 const getLabel = () => moment().format('L LT');

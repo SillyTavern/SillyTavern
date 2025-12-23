@@ -607,7 +607,7 @@ const comfyRunPod = express.Router();
 
 comfyRunPod.post('/ping', async (request, response) => {
     try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.RUNPOD);
+        const key = readSecret(request.user.directories, SECRET_KEYS.COMFY_RUNPOD);
 
         if (!key) {
             console.warn('RunPod key not found.');
@@ -637,7 +637,7 @@ comfyRunPod.post('/ping', async (request, response) => {
 
 comfyRunPod.post('/generate', async (request, response) => {
     try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.RUNPOD);
+        const key = readSecret(request.user.directories, SECRET_KEYS.COMFY_RUNPOD);
 
         if (!key) {
             console.warn('RunPod key not found.');
