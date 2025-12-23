@@ -326,7 +326,7 @@ const defaultSettings = {
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
 
-    comfy_runpod_url: 'https://api.runpod.ai/v2/<your endpoint id>',
+    comfy_runpod_url: '',
 
     // Pollinations settings
     pollinations_enhance: false,
