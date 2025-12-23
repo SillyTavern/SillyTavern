@@ -3016,7 +3016,6 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                         break;
                     default:
                         throw new Error('Unknown comfyUI server type.');
-                        break;
                 }
                 break;
             case sources.togetherai:
@@ -4407,7 +4406,7 @@ function isValidState() {
                 case comfyTypes.standard:
                     return !!extension_settings.sd.comfy_url;
                 default:
-                    return false
+                    return false;
             }
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
