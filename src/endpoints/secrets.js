@@ -48,7 +48,7 @@ export const SECRET_KEYS = {
     ELECTRONHUB: 'api_key_electronhub',
     NANOGPT: 'api_key_nanogpt',
     BFL: 'api_key_bfl',
-    RUNPOD: 'api_key_comfy_runpod',
+    COMFY_RUNPOD: 'api_key_comfy_runpod',
     FALAI: 'api_key_falai',
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
