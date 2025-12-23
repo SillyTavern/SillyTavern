@@ -321,6 +321,8 @@ const defaultSettings = {
     styles: defaultStyles,
 
     // ComyUI settings
+    comfy_type: 'standard',
+
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
 

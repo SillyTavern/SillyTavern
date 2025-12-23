@@ -1294,9 +1294,6 @@ export async function loadExtensionSettings(settings, versionChanged, enableAuto
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
-    if (extension_settings.sd.source === 'comfy' && !extension_settings.sd.comfy_type) {
-        extension_settings.sd.comfy_type = 'standard';
-    }
 
     $('#extensions_url').val(extension_settings.apiUrl);
     $('#extensions_api_key').val(extension_settings.apiKey);
