@@ -188,7 +188,7 @@ class MacroRegistry {
         name = typeof name === 'string' ? name.trim() : String(name);
 
         try {
-            if (!isIdentifierValid(name)) throw new Error(`Macro name "${name}" is invalid. Must start with a letter, followed by word chars or hyphens.`);
+            if (!isIdentifierValid(name)) throw new Error(`Macro name "${name}" is invalid. Must start with a letter, followed by alphanumeric characters or hyphens.`);
             if (!options || typeof options !== 'object') throw new Error(`Macro "${name}" options must be a non-null object.`);
 
             const {
