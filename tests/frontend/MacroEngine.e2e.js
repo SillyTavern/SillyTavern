@@ -800,7 +800,7 @@ test.describe('MacroEngine', () => {
                         if (flags.delayed) parts.push('delayed');
                         if (flags.filter) parts.push('filter');
                         if (flags.closingBlock) parts.push('closingBlock');
-                        if (flags.legacyHash) parts.push('legacyHash');
+                        if (flags.preserveWhitespace) parts.push('preserveWhitespace');
                         return parts.join('+') || 'noflags';
                     },
                 });
@@ -821,7 +821,7 @@ test.describe('MacroEngine', () => {
             });
 
             // Closing flag (/) is not tested here as standalone closing macros stay raw
-            expect(output).toBe('noflags | immediate | delayed | filter | legacyHash | immediate+delayed+filter');
+            expect(output).toBe('noflags | immediate | delayed | filter | preserveWhitespace | immediate+delayed+filter');
         });
 
         test('should handle flags with arguments correctly', async ({ page }) => {
@@ -1092,8 +1092,14 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('AC|B');
         });
 
-        test('should handle whitespace-only scoped content', async ({ page }) => {
+        test('should auto-trim whitespace-only scoped content to empty', async ({ page }) => {
             const input = '{{setvar::ws}}   {{/setvar}}[{{getvar::ws}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[]');
+        });
+
+        test('should preserve whitespace-only scoped content with # flag', async ({ page }) => {
+            const input = '{{#setvar::ws}}   {{/setvar}}[{{getvar::ws}}]';
             const output = await evaluateWithEngine(page, input);
             expect(output).toBe('[   ]');
         });
@@ -1423,6 +1429,87 @@ test.describe('MacroEngine', () => {
                 const output = await evaluateWithEngine(page, input);
                 expect(output).toBe('[end]');
             });
+        });
+    });
+
+    test.describe('scoped content auto-trim', () => {
+        test('should auto-trim scoped content by default', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  content with whitespace  \n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[content with whitespace]');
+        });
+
+        test('should auto-trim leading newlines in scoped content', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n\n\ntext{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[text]');
+        });
+
+        test('should auto-trim trailing newlines in scoped content', async ({ page }) => {
+            const input = '{{setvar::myvar}}text\n\n\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[text]');
+        });
+
+        test('should preserve internal whitespace when auto-trimming', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  line1\n  line2  \n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[line1\n  line2]');
+        });
+
+        test('should preserve whitespace with # flag', async ({ page }) => {
+            const input = '{{#setvar::myvar}}\n  content  \n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[\n  content  \n]');
+        });
+
+        test('should preserve leading newlines with # flag', async ({ page }) => {
+            const input = '{{#setvar::myvar}}\n\ntext{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[\n\ntext]');
+        });
+
+        test('should preserve trailing newlines with # flag', async ({ page }) => {
+            const input = '{{#setvar::myvar}}text\n\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[text\n\n]');
+        });
+
+        test('should work with # flag and nested macros', async ({ page }) => {
+            const input = '{{#setvar::myvar}}\n  {{char}}  \n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[\n  Character  \n]');
+        });
+
+        test('should auto-trim with nested macros by default', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  {{char}}  \n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[Character]');
+        });
+
+        test('should auto-trim {{if}} scoped content', async ({ page }) => {
+            const input = '{{if yes}}\n  trimmed  \n{{/if}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('trimmed');
+        });
+
+        test('should preserve {{if}} whitespace with # flag', async ({ page }) => {
+            const input = '{{#if yes}}\n  preserved  \n{{/if}}';
+            const output = await evaluateWithEngine(page, input);
+            // With # flag, both outer content AND branch trimming is skipped
+            expect(output).toBe('\n  preserved  \n');
+        });
+
+        test('should auto-trim {{reverse}} scoped content', async ({ page }) => {
+            const input = '{{reverse}}\n  abc  \n{{/reverse}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('cba');
+        });
+
+        test('should preserve {{reverse}} whitespace with # flag', async ({ page }) => {
+            const input = '{{#reverse}}\n  abc  \n{{/reverse}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('\n  cba  \n');
         });
     });
 });

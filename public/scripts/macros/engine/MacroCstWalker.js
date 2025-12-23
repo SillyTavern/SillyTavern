@@ -283,7 +283,13 @@ class MacroCstWalker {
             if (scopedContent.startOffset > scopedContent.endOffset) {
                 args.push('');
             } else {
-                const scopedValue = this.#evaluateScopedContent(scopedContent, context);
+                let scopedValue = this.#evaluateScopedContent(scopedContent, context);
+
+                // Auto-trim scoped content unless the '#' (preserveWhitespace) flag is set
+                if (!flags.preserveWhitespace) {
+                    scopedValue = scopedValue.trim();
+                }
+
                 args.push(scopedValue);
 
                 // Add to evaluated arguments for rawInner reconstruction

@@ -60,10 +60,10 @@ export function registerCoreMacros() {
     });
 
     // {{trim}} -> macro will currently replace itself with itself. Trimming is handled in post-processing.
-    // Scoped: {{trim}}content{{/trim}} -> trims whitespace from content
+    // Scoped: {{trim}}content{{/trim}} -> trims whitespace from content (handled by engine auto-trim)
     MacroRegistry.registerMacro('trim', {
         category: MacroCategory.UTILITY,
-        description: 'Trims whitespace. Non-scoped: trims around the macro (post-processing). Scoped: trims the content inside.',
+        description: 'Trims whitespace. Non-scoped: trims newlines around the macro (post-processing). Scoped: returns the content (auto-trimmed by the engine).',
         unnamedArgs: [
             {
                 name: 'content',
@@ -73,10 +73,8 @@ export function registerCoreMacros() {
         ],
         returns: '',
         handler: ({ unnamedArgs: [content], isScoped }) => {
-            if (isScoped && content) {
-                // Scoped usage: trim the content inside
-                return content.trim();
-            }
+            // Scoped usage: return content (already auto-trimmed by the engine)
+            if (isScoped) return content ?? '';
             // Non-scoped: return marker for post-processing regex
             return '{{trim}}';
         },
@@ -89,11 +87,10 @@ export function registerCoreMacros() {
     // {{if condition}}content{{/if}} -> conditional content
     // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
     // {{if !condition}}content{{/if}} -> inverted conditional (negated)
-    // Returns trimmed content if condition is truthy, empty string otherwise
     // Condition can be a macro name (resolved automatically) or any value
     MacroRegistry.registerMacro('if', {
         category: MacroCategory.UTILITY,
-        description: 'Conditional macro. Returns the trimmed content if the condition is truthy, otherwise returns nothing (or the trimmed else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first.',
+        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing (or the else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first.',
         unnamedArgs: [
             {
                 name: 'condition',
@@ -101,7 +98,7 @@ export function registerCoreMacros() {
             },
             {
                 name: 'content',
-                description: 'The content to return if condition is truthy (typically provided as scoped content). May contain {{else}} to define an else branch. Both branches are trimmed.',
+                description: 'The content to return if condition is truthy (typically provided as scoped content). May contain {{else}} to define an else branch.',
             },
         ],
         displayOverride: '{{if condition}}then{{else}}other{{/if}}',
@@ -111,8 +108,8 @@ export function registerCoreMacros() {
             '{{if !personality}}No personality defined{{/if}}',
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
-        returns: 'The trimmed content if condition is truthy, trimmed else branch or empty string otherwise.',
-        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], env }) => {
+        returns: 'The content if condition is truthy, else branch or empty string otherwise.',
+        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env }) => {
             // Check if the ORIGINAL condition (before macro resolution) starts with !
             // We use raw args to check this, as the resolved value might start with ! from a variable
             let inverted = false;
@@ -135,10 +132,16 @@ export function registerCoreMacros() {
             let isFalsy = condition === '' || isFalseBoolean(condition);
             if (inverted) isFalsy = !isFalsy;
 
-            // Split content on else marker (if present) and trim both branches
+            // Split content on else marker (if present)
             const [thenBranch, elseBranch] = content.split(ELSE_MARKER);
             const result = !isFalsy ? thenBranch : elseBranch;
 
+            // Trim branches unless # flag is set (preserveWhitespace)
+            // The engine auto-trims the whole scoped content, but we still need to trim
+            // around the {{else}} marker since that's internal to this macro
+            if (flags.preserveWhitespace) {
+                return result ?? '';
+            }
             return (result ?? '').trim();
         },
     });

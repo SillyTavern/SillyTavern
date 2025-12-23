@@ -44,9 +44,9 @@ const Tokens = {
          * - `?` = delayed resolve (TBD)
          * - `~` = re-evaluate (TBD)
          * - `/` = closing block marker for scoped macros
+         * - `#` = preserve whitespace (don't auto-trim scoped content), also legacy handlebars compatibility
          * - `.` = variable shorthand (TBD)
          * - `$` = variable shorthand alternative (TBD)
-         * - `#` = legacy handlebars flag (no-op)
          */
         Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/.$]/ }),
         /**

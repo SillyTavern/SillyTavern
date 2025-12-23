@@ -14,7 +14,7 @@
  * @property {boolean} reevaluate - Whether the re-evaluate (`~`) flag is set.
  * @property {boolean} filter - Whether the filter (`>`) flag is set.
  * @property {boolean} closingBlock - Whether the closing block (`/`) flag is set.
- * @property {boolean} legacyHash - Whether the legacy hash (`#`) flag is set.
+ * @property {boolean} preserveWhitespace - Whether the preserve whitespace (`#`) flag is set.
  * @property {boolean} varDot - Whether the variable dot (`.`) flag is set.
  * @property {boolean} varDollar - Whether the variable dollar (`$`) flag is set.
  * @property {string[]} raw - The raw flag symbols in order of appearance.
@@ -65,12 +65,14 @@ export const MacroFlagType = Object.freeze({
     CLOSING_BLOCK: '/',
 
     /**
-     * Legacy handlebars flag (`#`).
-     * A leftover from legacy handlebar-style templates like `{{#if ...}}`.
-     * Currently parsed but has no effect.
-     * @status Parsed - Legacy compatibility only
+     * Preserve whitespace flag (`#`).
+     * Prevents automatic trimming of scoped content.
+     * By default, scoped macro content is trimmed. Use this flag to preserve leading/trailing whitespace.
+     * Also provides backwards compatibility with legacy handlebars-style syntax like `{{#if ...}}`.
+     * Example: `{{#setvar::myvar}}  content with spaces  {{/setvar}}`
+     * @status Implemented - Prevents auto-trim on scoped content
      */
-    LEGACY_HASH: '#',
+    PRESERVE_WHITESPACE: '#',
 
     /**
      * Variable shorthand flag (`.`).
@@ -137,11 +139,11 @@ export const MacroFlagDefinitions = new Map([
         implemented: true,
         affectsParser: false,
     }],
-    [MacroFlagType.LEGACY_HASH, {
-        type: MacroFlagType.LEGACY_HASH,
-        name: 'Legacy Hash',
-        description: 'Legacy handlebars-style flag (no effect).',
-        implemented: true, // "Implemented" as no-op
+    [MacroFlagType.PRESERVE_WHITESPACE, {
+        type: MacroFlagType.PRESERVE_WHITESPACE,
+        name: 'Preserve Whitespace',
+        description: 'Prevent automatic trimming of scoped content (legacy # syntax).',
+        implemented: true,
         affectsParser: false,
     }],
     [MacroFlagType.VAR_DOT, {
@@ -179,7 +181,7 @@ export function createEmptyFlags() {
         reevaluate: false,
         filter: false,
         closingBlock: false,
-        legacyHash: false,
+        preserveWhitespace: false,
         varDot: false,
         varDollar: false,
         raw: [],
@@ -212,8 +214,8 @@ export function parseFlags(flagSymbols) {
             case MacroFlagType.CLOSING_BLOCK:
                 flags.closingBlock = true;
                 break;
-            case MacroFlagType.LEGACY_HASH:
-                flags.legacyHash = true;
+            case MacroFlagType.PRESERVE_WHITESPACE:
+                flags.preserveWhitespace = true;
                 break;
             case MacroFlagType.VAR_DOT:
                 flags.varDot = true;
