@@ -2520,10 +2520,6 @@ async function loadComfyVaes() {
 }
 
 async function loadComfyWorkflows() {
-    if (!extension_settings.sd.comfy_url || !extension_settings.sd.comfy_runpod_url) {
-        return;
-    }
-
     try {
         $('#sd_comfy_workflow').empty();
         const result = await fetch('/api/sd/comfy/workflows', {
