@@ -25,6 +25,12 @@ export const PROMPT_PROCESSING_TYPE = {
     SINGLE: 'single',
 };
 
+// 'auto' is intentionally unmapped
+const GEMINI_MEDIA_RESOLUTION = {
+    low: 'media_resolution_low',
+    high: 'media_resolution_high',
+};
+
 /**
  * @typedef {object} PromptNames
  * @property {string} charName Character name
@@ -501,17 +507,27 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         //create the prompt parts
         const parts = [];
         message.content.forEach((part) => {
-            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType) => {
+            const addDataUrlPart = (/** @type {string} */ url, /** @type {string} */ defaultMimeType, /** @type {string?} */ detail = null) => {
                 if (url && url.startsWith('data:')) {
                     const [header, base64Data] = url.split(',');
                     const mimeType = header.match(/data:([^;]+)/)?.[1] || defaultMimeType;
+                    const mediaResolution = GEMINI_MEDIA_RESOLUTION[detail] || null;
 
-                    parts.push({
+                    const part = {
                         inlineData: {
                             mimeType: mimeType,
                             data: base64Data,
                         },
-                    });
+                    };
+
+                    // https://ai.google.dev/gemini-api/docs/gemini-3#media_resolution
+                    if (/gemini-3/.test(model) && mediaResolution) {
+                        part.mediaResolution = {
+                            level: mediaResolution,
+                        };
+                    }
+
+                    parts.push(part);
                 }
             };
 
@@ -532,16 +548,19 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                             name: toolCall.function.name,
                             args: tryParse(toolCall.function.arguments) ?? toolCall.function.arguments,
                         },
+                        ...(toolCall.signature ? { thoughtSignature: toolCall.signature } : {}),
                     });
 
                     toolNameMap[toolCall.id] = toolCall.function.name;
                 });
             } else if (part.type === 'image_url') {
                 const imageUrl = part.image_url?.url;
-                addDataUrlPart(imageUrl, 'image/png');
+                const detail = part.image_url?.detail;
+                addDataUrlPart(imageUrl, 'image/png', detail);
             } else if (part.type === 'video_url') {
                 const videoUrl = part.video_url?.url;
-                addDataUrlPart(videoUrl, 'video/mp4');
+                const detail = part.video_url?.detail;
+                addDataUrlPart(videoUrl, 'video/mp4', detail);
             } else if (part.type === 'audio_url') {
                 const audioUrl = part.audio_url?.url;
                 addDataUrlPart(audioUrl, 'audio/mpeg');
@@ -549,16 +568,27 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         });
 
         // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
-        if (/gemini-3/.test(model)) {
+        // Inject stored thought signatures, or fall back to bypass magic for Gemini 3
+        if (/gemini-3/.test(model) || /gemini-2\.5/.test(model)) {
             const skipSignatureMagic = 'skip_thought_signature_validator';
-            parts.filter(p => p.functionCall).forEach(p => {
-                p.thoughtSignature = skipSignatureMagic;
+            const textSignature = message.signature;
+
+            parts.forEach((part) => {
+                if (textSignature && typeof part.text === 'string') {
+                    part.thoughtSignature = textSignature;
+                } else if (/gemini-3/.test(model)) {
+                    // Gemini 3: Fall back to bypass magic for function calls (mandatory) and images
+                    if (part.functionCall && !part.thoughtSignature) {
+                        part.thoughtSignature = skipSignatureMagic;
+                    }
+                    if (/-image/.test(model) && message.role === 'model') {
+                        if (typeof part.text === 'string' || part.inlineData) {
+                            part.thoughtSignature = skipSignatureMagic;
+                        }
+                    }
+                }
+                // Gemini 2.5 without stored signatures: signatures are optional, no bypass needed
             });
-            if (/-image/.test(model) && message.role === 'model') {
-                parts.filter(p => typeof p.text === 'string' || p.inlineData).forEach(p => {
-                    p.thoughtSignature = skipSignatureMagic;
-                });
-            }
         }
 
         // merge consecutive messages with the same role
@@ -572,7 +602,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                         contents[contents.length - 1].parts.push(part);
                     }
                 }
-                if (part.inlineData || part.functionCall || part.functionResponse || part.thoughtSignature) {
+                if (part.inlineData || part.functionCall || part.functionResponse || part.thoughtSignature || part.mediaResolution) {
                     contents[contents.length - 1].parts.push(part);
                 }
             });
@@ -1027,6 +1057,55 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
 }
 
 /**
+ * Adds cache_control to the system prompt for OpenRouter requests.
+ *
+ * @param {object[]} messages Array of messages
+ * @param {string} [ttl] TTL value (optional)
+ */
+export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return;
+    }
+
+    // Find the first system message
+    const systemMessage = messages.find(msg => msg.role === 'system');
+    if (!systemMessage) {
+        return;
+    }
+
+    // Check if it already has cache_control (at message level)
+    if (systemMessage.cache_control) {
+        return;
+    }
+
+    const cacheControl = ttl
+        ? { type: 'ephemeral', ttl }
+        : { type: 'ephemeral' };
+
+    if (Array.isArray(systemMessage.content)) {
+        const hasExistingCacheControl = systemMessage.content.some(part => part?.cache_control);
+        if (hasExistingCacheControl) {
+            return;
+        }
+
+        for (let i = systemMessage.content.length - 1; i >= 0; i--) {
+            if (systemMessage.content[i]?.type === 'text') {
+                systemMessage.content[i].cache_control = cacheControl;
+                return;
+            }
+        }
+    } else if (typeof systemMessage.content === 'string') {
+        systemMessage.content = [
+            {
+                type: 'text',
+                text: systemMessage.content,
+                cache_control: cacheControl,
+            },
+        ];
+    }
+}
+
+/**
  * Calculate the Claude budget tokens for a given reasoning effort.
  * @param {number} maxTokens Maximum tokens
  * @param {string} reasoningEffort Reasoning effort
@@ -1070,7 +1149,7 @@ export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream) 
  * @param {number} maxTokens Maximum tokens
  * @param {string} reasoningEffort Reasoning effort
  * @param {string} model Model name
- * @returns {number?} Budget tokens
+ * @returns {number|string|null} Budget tokens
  */
 export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     function getFlashBudget() {
@@ -1155,15 +1234,61 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return budgetTokens;
     }
 
-    if (model.includes('flash-lite')) {
+    function getGemini3FlashBudget() {
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+                return 'minimal';
+            case REASONING_EFFORT.low:
+                return 'low';
+            case REASONING_EFFORT.medium:
+                return 'medium';
+            case REASONING_EFFORT.high:
+                return 'high';
+            case REASONING_EFFORT.max:
+                return 'high';
+        }
+
+        return null;
+    }
+
+    function getGemini3ProBudget() {
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+                return 'low';
+            case REASONING_EFFORT.low:
+                return 'low';
+            case REASONING_EFFORT.medium:
+                return 'low';
+            case REASONING_EFFORT.high:
+                return 'high';
+            case REASONING_EFFORT.max:
+                return 'high';
+        }
+
+        return null;
+    }
+
+    if (/gemini-3-pro/.test(model)) {
+        return getGemini3ProBudget();
+    }
+
+    if (/gemini-3-flash/.test(model) ) {
+        return getGemini3FlashBudget();
+    }
+
+    if (/flash-lite/.test(model)) {
         return getFlashLiteBudget();
     }
 
-    if (model.includes('flash')) {
+    if (/flash/.test(model)) {
         return getFlashBudget();
     }
 
-    if (model.includes('pro')) {
+    if (/pro/.test(model)) {
         return getProBudget();
     }
 
@@ -1206,6 +1331,85 @@ export function embedOpenRouterMedia(messages) {
 
                 delete contentPart.audio_url;
             }
+        }
+    }
+}
+
+/**
+ * Adds a dummy reasoning_content field to messages with tool calls for DeepSeek reasoner.
+ * @param {object[]} messages Array of messages
+ * @returns {void}
+ */
+export function addReasoningContentToToolCalls(messages) {
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        if (!Array.isArray(message.tool_calls) || 'reasoning_content' in message) {
+            continue;
+        }
+
+        message.reasoning_content = '';
+    }
+}
+
+/**
+ * Converts reasoning signatures to OpenRouter format.
+ * @param {object[]} messages Array of messages
+ * @param {string} model Model name
+ * @return {void}
+ */
+export function addOpenRouterSignatures(messages, model) {
+    const getFormatForModel = () => {
+        if (/google\/gemini/.test(model)) {
+            return 'google-gemini-v1';
+        }
+        if (/anthropic\/claude/.test(model)) {
+            return 'anthropic-claude-v1';
+        }
+        if (/openai\/gpt/.test(model)) {
+            return 'openai-responses-v1';
+        }
+        if (/x-ai\/grok/.test(model)) {
+            return 'xai-responses-v1';
+        }
+        return 'unknown';
+    };
+
+    if (!Array.isArray(messages)) {
+        return;
+    }
+
+    for (const message of messages) {
+        const details = [];
+        const addDetail = (data, id) => {
+            if (typeof data !== 'string' || data.length === 0) {
+                return;
+            }
+            const detail = {
+                index: details.length,
+                id: id || `signature-${details.length}`,
+                type: 'reasoning.encrypted',
+                data: data,
+                format: getFormatForModel(),
+            };
+            details.push(detail);
+        };
+        if (typeof message.signature === 'string') {
+            addDetail(message.signature);
+            delete message.signature;
+        }
+        if (Array.isArray(message.tool_calls)) {
+            message.tool_calls.forEach((toolCall) => {
+                if (typeof toolCall.signature === 'string') {
+                    addDetail(toolCall.signature, toolCall.id);
+                    delete toolCall.signature;
+                }
+            });
+        }
+        if (details.length > 0) {
+            message.reasoning_details = details;
         }
     }
 }

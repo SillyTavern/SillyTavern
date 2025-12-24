@@ -69,6 +69,7 @@ const settings = {
     vllm_model: '',
     webllm_model: '',
     google_model: 'text-embedding-005',
+    chutes_model: 'chutes-qwen-qwen3-embedding-8b',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -829,6 +830,9 @@ function getVectorsRequestBody(args = {}) {
             body.vertexai_region = oai_settings.vertexai_region;
             body.vertexai_express_project_id = oai_settings.vertexai_express_project_id;
             break;
+        case 'chutes':
+            body.model = extension_settings.vectors.chutes_model;
+            break;
         default:
             break;
     }
@@ -913,6 +917,7 @@ async function insertVectorItems(collectionId, items) {
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB] ||
+        settings.source === 'chutes' && !secret_state[SECRET_KEYS.CHUTES] ||
         settings.source === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
@@ -1127,6 +1132,7 @@ function toggleSettings() {
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
+    $('#chutes_vectorsModel').toggle(settings.source === 'chutes');
     $('#openrouter_vectorsModel').toggle(settings.source === 'openrouter');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
@@ -1147,14 +1153,51 @@ function toggleSettings() {
         case 'openrouter':
             loadOpenRouterModels();
             break;
+        case 'chutes':
+            loadChutesModels();
+            break;
     }
+}
+
+async function loadChutesModels() {
+    try {
+        const response = await fetch('/api/openai/chutes/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateChutesModelSelect(models);
+    } catch (err) {
+        console.warn('Chutes models fetch failed', err);
+        populateChutesModelSelect([]);
+    }
+}
+
+function populateChutesModelSelect(models) {
+    const select = $('#vectors_chutes_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.slug;
+        option.text = m.name;
+        select.append(option);
+    }
+    if (!settings.chutes_model && models.length) {
+        settings.chutes_model = models[0].slug;
+    }
+    $('#vectors_chutes_model').val(settings.chutes_model);
 }
 
 async function loadElectronHubModels() {
     try {
         const response = await fetch('/api/openai/electronhub/models', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -1193,7 +1236,7 @@ async function loadOpenRouterModels() {
     try {
         const response = await fetch('/api/openrouter/models/embedding', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -1627,6 +1670,11 @@ jQuery(async () => {
     });
     $('#vectors_electronhub_model').val(settings.electronhub_model).on('change', () => {
         settings.electronhub_model = String($('#vectors_electronhub_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_chutes_model').val(settings.chutes_model).on('change', () => {
+        settings.chutes_model = String($('#vectors_chutes_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

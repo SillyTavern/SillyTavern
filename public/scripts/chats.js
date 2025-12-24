@@ -10,7 +10,6 @@ import {
     event_types,
     getCurrentChatId,
     getRequestHeaders,
-    name1,
     name2,
     reloadCurrentChat,
     saveSettingsDebounced,
@@ -349,8 +348,7 @@ async function validateFile(file) {
 export function hasPendingFileAttachment() {
     const fileInput = document.getElementById('file_form_input');
     if (!(fileInput instanceof HTMLInputElement)) return false;
-    const file = fileInput.files[0];
-    return !!file;
+    return fileInput.files.length > 0;
 }
 
 /**
@@ -2140,13 +2138,15 @@ export function initChatUtilities() {
         await viewMessageFile(messageId, fileIndex);
     });
 
-    $(document).on('click', '.assistant_note_export', async function () {
+    $(document).on('click', '.assistant_note_export', async function (_e) {
+        /** @type {ChatHeader} */
+        const chatHeader = {
+            chat_metadata: chat_metadata,
+            user_name: 'unused',
+            character_name: 'unused',
+        };
         const chatToSave = [
-            {
-                user_name: name1,
-                character_name: name2,
-                chat_metadata: chat_metadata,
-            },
+            chatHeader,
             ...chat.filter(x => x?.extra?.type !== system_message_types.ASSISTANT_NOTE),
         ];
 
@@ -2182,9 +2182,31 @@ export function initChatUtilities() {
         fileInput.click();
     });
 
+    const fileInput = document.getElementById('file_form_input');
+
     // Do not change. #attachFile is added by extension.
     $(document).on('click', '#attachFile', function () {
-        $('#file_form_input').trigger('click');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+        const $fileInput = $(fileInput);
+
+        // Preserve existing files in DataTransfer
+        const dataTransfer = new DataTransfer();
+        for (const file of fileInput.files) {
+            dataTransfer.items.add(file);
+        }
+
+        $fileInput.off('change').on('change', async () => {
+            for (const file of fileInput.files) {
+                if (!Array.from(dataTransfer.files).some(f => isSameFile(f, file))) {
+                    dataTransfer.items.add(file);
+                }
+            }
+
+            fileInput.files = dataTransfer.files;
+            await onFileAttach(fileInput.files);
+        });
+
+        $fileInput.trigger('click');
     });
 
     // Do not change. #manageAttachments is added by extension.
@@ -2347,11 +2369,6 @@ export function initChatUtilities() {
         await onImageSwiped(messageId, messageBlock, SWIPE_DIRECTION.RIGHT);
     });
 
-    $('#file_form_input').on('change', async () => {
-        const fileInput = document.getElementById('file_form_input');
-        if (!(fileInput instanceof HTMLInputElement)) return;
-        await onFileAttach(fileInput.files);
-    });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
     });
@@ -2377,17 +2394,16 @@ export function initChatUtilities() {
      * @returns {Promise<void>}
      */
     async function handleFileAttach(files) {
-        const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
 
         // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
         const dataTransfer = new DataTransfer();
-        for (let i = 0; i < files.length; i++) {
-            dataTransfer.items.add(files[i]);
+        for (const file of fileInput.files) {
+            dataTransfer.items.add(file);
         }
 
         // Preserve existing non-duplicate files in the input
-        for (const file of fileInput.files) {
+        for (const file of files) {
             if (!Array.from(dataTransfer.files).some(f => isSameFile(f, file))) {
                 dataTransfer.items.add(file);
             }

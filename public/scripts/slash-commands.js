@@ -2552,6 +2552,7 @@ export function initDefaultSlashCommands() {
                 enumList: [
                     new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
                     new SlashCommandEnumValue('zai', 'Z.AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'zai')), 'Z'),
+                    new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
@@ -2579,13 +2580,13 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
             <div>
-                ${t`Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.`}
+                ${t`Set the API URL / server URL / endpoint for the currently selected API, including the port. If no argument is provided, it will return the current API url.`}
             </div>
             <div>
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible and Z.AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -4833,6 +4834,7 @@ function getModelOptions(quiet) {
         { id: 'aphrodite_model', api: 'textgenerationwebui', type: textgen_types.APHRODITE },
         { id: 'ollama_model', api: 'textgenerationwebui', type: textgen_types.OLLAMA },
         { id: 'tabby_model', api: 'textgenerationwebui', type: textgen_types.TABBY },
+        { id: 'llamacpp_model', api: 'textgenerationwebui', type: textgen_types.LLAMACPP },
         { id: 'featherless_model', api: 'textgenerationwebui', type: textgen_types.FEATHERLESS },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },
         { id: 'model_claude_select', api: 'openai', type: chat_completion_sources.CLAUDE },
@@ -4845,6 +4847,7 @@ function getModelOptions(quiet) {
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
+        { id: 'model_chutes_select', api: 'openai', type: chat_completion_sources.CHUTES },
         { id: 'model_siliconflow_select', api: 'openai', type: chat_completion_sources.SILICONFLOW },
         { id: 'model_electronhub_select', api: 'openai', type: chat_completion_sources.ELECTRONHUB },
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
@@ -5184,6 +5187,36 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
         }
 
         return oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    const isCurrentlyVertexAI = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI;
+    if (api === chat_completion_sources.VERTEXAI || (!api && isCurrentlyVertexAI)) {
+        const defaultRegion = 'us-central1';
+        const permittedValues = Array
+            .from(document.querySelectorAll('#vertexai_region_suggestions option'))
+            .map(e => e instanceof HTMLOptionElement ? e.value : '')
+            .filter(x => x);
+
+        if (!url) {
+            return oai_settings.vertexai_region || defaultRegion;
+        }
+
+        if (!permittedValues.includes(url)) {
+            !isQuiet && toastr.info(t`Generation requests may fail.`, t`Unknown VertexAI region '${url}'`);
+        }
+
+        if (!isCurrentlyVertexAI && autoConnect) {
+            toastr.warning(t`VertexAI is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        $('#vertexai_region').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return oai_settings.vertexai_region || defaultRegion;
     }
 
     // Special handling for Kobold Classic API
@@ -5581,13 +5614,15 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     );
     return ac;
 }
-/**@type {HTMLTextAreaElement} */
-const sendTextarea = document.querySelector('#send_textarea');
-setSlashCommandAutoComplete(sendTextarea);
-sendTextarea.addEventListener('input', () => {
-    if (sendTextarea.value[0] == '/') {
-        sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
-    } else {
-        sendTextarea.style.fontFamily = null;
-    }
-});
+
+export async function initSlashCommandAutoComplete() {
+    const sendTextarea = /** @type {HTMLTextAreaElement} */ (document.querySelector('#send_textarea'));
+    setSlashCommandAutoComplete(sendTextarea);
+    sendTextarea.addEventListener('input', () => {
+        if (sendTextarea.value && sendTextarea.value[0] == '/') {
+            sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
+        } else {
+            sendTextarea.style.fontFamily = null;
+        }
+    });
+}

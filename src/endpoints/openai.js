@@ -8,7 +8,7 @@ import express from 'express';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { AIMLAPI_HEADERS, OPENROUTER_HEADERS } from '../constants.js';
+import { AIMLAPI_HEADERS, OPENROUTER_HEADERS, ZAI_ENDPOINT } from '../constants.js';
 
 export const router = express.Router();
 
@@ -81,12 +81,17 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         }
 
+        if (request.body.api === 'chutes') {
+            key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+        }
+
         if (request.body.api === 'electronhub') {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
 
         if (request.body.api === 'zai') {
             key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            bodyParams.max_tokens = 4096; // default is 1024
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
@@ -177,12 +182,31 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://nano-gpt.com/api/v1/chat/completions';
         }
 
+        if (request.body.api === 'chutes') {
+            apiUrl = 'https://llm.chutes.ai/v1/chat/completions';
+        }
+
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'zai') {
-            apiUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+            apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING
+                ? 'https://api.z.ai/api/coding/paas/v4/chat/completions'
+                : 'https://api.z.ai/api/paas/v4/chat/completions';
+
+            // Handle video inlining for Z.AI
+            if (/data:video\/\w+;base64,/.test(request.body.image)) {
+                const message = body.messages.find(msg => Array.isArray(msg.content));
+                if (message) {
+                    const imgContent = message.content.find(c => c.type === 'image_url');
+                    if (imgContent) {
+                        imgContent.type = 'video_url';
+                        imgContent.video_url = imgContent.image_url;
+                        delete imgContent.image_url;
+                    }
+                }
+            }
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
@@ -234,54 +258,6 @@ router.post('/caption-image', async (request, response) => {
     }
     catch (error) {
         console.error(error);
-        response.status(500).send('Internal server error');
-    }
-});
-
-router.post('/transcribe-audio', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
-
-        if (!key) {
-            console.warn('No OpenAI key found');
-            return response.sendStatus(400);
-        }
-
-        if (!request.file) {
-            console.warn('No audio file found');
-            return response.sendStatus(400);
-        }
-
-        const formData = new FormData();
-        console.info('Processing audio file', request.file.path);
-        formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
-        formData.append('model', request.body.model);
-
-        if (request.body.language) {
-            formData.append('language', request.body.language);
-        }
-
-        const result = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-                ...formData.getHeaders(),
-            },
-            body: formData,
-        });
-
-        if (!result.ok) {
-            const text = await result.text();
-            console.warn('OpenAI request failed', result.statusText, text);
-            return response.status(500).send(text);
-        }
-
-        fs.unlinkSync(request.file.path);
-        const data = await result.json();
-        console.debug('OpenAI transcription response', data);
-        return response.json(data);
-    } catch (error) {
-        console.error('OpenAI transcription failed', error);
         response.status(500).send('Internal server error');
     }
 });
@@ -428,6 +404,85 @@ router.post('/electronhub/models', async (request, response) => {
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);
         response.status(500).send('Internal server error');
+    }
+});
+
+// Chutes TTS
+router.post('/chutes/generate-voice', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            text: request.body.input,
+            voice: request.body.voice || 'af_heart',
+            speed: request.body.speed || 1,
+        };
+
+        console.debug('Chutes TTS request', requestBody);
+
+        const result = await fetch('https://chutes-kokoro.chutes.ai/speak', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes TTS request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || 'audio/mpeg';
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', contentType);
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('Chutes TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.post('/chutes/models/embedding', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch('https://api.chutes.ai/chutes/?template=embedding&include_public=true&limit=999', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes embedding models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!Array.isArray(data?.items)) {
+            console.warn('Chutes embedding models response invalid', data);
+            return response.sendStatus(500);
+        }
+        return response.json(data.items);
+    } catch (error) {
+        console.error('Chutes embedding models fetch failed', error);
+        response.sendStatus(500);
     }
 });
 
@@ -609,3 +664,136 @@ custom.post('/generate-voice', async (request, response) => {
 });
 
 router.use('/custom', custom);
+
+/**
+ * Creates a transcribe-audio endpoint handler for a given provider.
+ * @param {object} config - Provider configuration
+ * @param {string} config.secretKey - The SECRET_KEYS enum value for the provider
+ * @param {string} config.apiUrl - The transcription API endpoint URL
+ * @param {string} config.providerName - Display name for logging
+ * @returns {import('express').RequestHandler} Express request handler
+ */
+function createTranscribeHandler({ secretKey, apiUrl, providerName }) {
+    return async (request, response) => {
+        try {
+            const key = readSecret(request.user.directories, secretKey);
+
+            if (!key) {
+                console.warn(`No ${providerName} key found`);
+                return response.sendStatus(400);
+            }
+
+            if (!request.file) {
+                console.warn('No audio file found');
+                return response.sendStatus(400);
+            }
+
+            console.info(`Processing audio file with ${providerName}`, request.file.path);
+            const formData = new FormData();
+            formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
+            formData.append('model', request.body.model);
+
+            if (request.body.language) {
+                formData.append('language', request.body.language);
+            }
+
+            const result = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    ...formData.getHeaders(),
+                },
+                body: formData,
+            });
+
+            if (!result.ok) {
+                const text = await result.text();
+                console.warn(`${providerName} request failed`, result.statusText, text);
+                return response.status(500).send(text);
+            }
+
+            fs.unlinkSync(request.file.path);
+            const data = await result.json();
+            console.debug(`${providerName} transcription response`, data);
+            return response.json(data);
+        } catch (error) {
+            console.error(`${providerName} transcription failed`, error);
+            response.status(500).send('Internal server error');
+        }
+    };
+}
+
+router.post('/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.OPENAI,
+    apiUrl: 'https://api.openai.com/v1/audio/transcriptions',
+    providerName: 'OpenAI',
+}));
+
+router.post('/groq/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.GROQ,
+    apiUrl: 'https://api.groq.com/openai/v1/audio/transcriptions',
+    providerName: 'Groq',
+}));
+
+router.post('/mistral/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.MISTRALAI,
+    apiUrl: 'https://api.mistral.ai/v1/audio/transcriptions',
+    providerName: 'MistralAI',
+}));
+
+router.post('/zai/transcribe-audio', createTranscribeHandler({
+    secretKey: SECRET_KEYS.ZAI,
+    apiUrl: 'https://api.z.ai/api/paas/v4/audio/transcriptions',
+    providerName: 'Z.AI',
+}));
+
+router.post('/chutes/transcribe-audio', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('No Chutes key found');
+            return response.sendStatus(400);
+        }
+
+        if (!request.file) {
+            console.warn('No audio file found');
+            return response.sendStatus(400);
+        }
+
+        console.info('Processing audio file with Chutes', request.file.path);
+        const audioBase64 = fs.readFileSync(request.file.path).toString('base64');
+
+        const result = await fetch(`https://${request.body.model}.chutes.ai/transcribe`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                audio_b64: audioBase64,
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        fs.unlinkSync(request.file.path);
+        const data = await result.json();
+        console.debug('Chutes transcription response', data);
+
+        if (!Array.isArray(data)) {
+            console.warn('Chutes transcription response invalid', data);
+            return response.sendStatus(500);
+        }
+
+        const fullText = data.map(chunk => chunk.text || '').join('').trim();
+        return response.json({ text: fullText });
+    } catch (error) {
+        console.error('Chutes transcription failed', error);
+        response.status(500).send('Internal server error');
+    }
+});

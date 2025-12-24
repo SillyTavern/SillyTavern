@@ -16,6 +16,11 @@
     user-select: none;
 }
 
+.select2-container .select2-selection.select2-selection--single.select2-selection--clearable .select2-selection__clear {
+    top: 0;
+    right: 25px;
+}
+
 .select2-container .select2-selection .select2-selection__clear {
     color: var(--SmartThemeBodyColor);
     font-size: 20px;

@@ -259,7 +259,7 @@ class MediaWikiScraper {
         try {
             const result = await fetch('/api/plugins/fandom/probe-mediawiki', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;
@@ -352,7 +352,7 @@ class FandomScraper {
         try {
             const result = await fetch('/api/plugins/fandom/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;

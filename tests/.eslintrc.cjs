@@ -2,10 +2,12 @@ module.exports = {
     root: true,
     plugins: [
         'jest',
+        'playwright',
     ],
     extends: [
         'eslint:recommended',
         'plugin:jest/recommended',
+        'plugin:playwright/recommended',
     ],
     env: {
         es6: true,
@@ -19,9 +21,10 @@ module.exports = {
     overrides: [
     ],
     ignorePatterns: [
+        '*.min.js',
+        'node_modules/**/*',
     ],
     globals: {
-        page: 'readonly',
     },
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
@@ -38,10 +41,14 @@ module.exports = {
         'space-infix-ops': 'error',
         'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
         'no-cond-assign': 'error',
+
+        // These rules should eventually be enabled.
+        'no-async-promise-executor': 'off',
+        'no-inner-declarations': 'off',
     },
     settings: {
         jest: {
-            version: '29.7.0',
+            version: 29,
         },
     },
 };

@@ -1,9 +1,9 @@
 import { getPresetManager } from './preset-manager.js';
-import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { getTextGenServer } from './textgen-settings.js';
+import { extractJsonFromData, extractMessageFromData, getGenerateUrl, getRequestHeaders, name1, name2 } from '../script.js';
+import { getTextGenServer, createTextGenGenerationData, setting_names, textgenerationwebui_settings } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
-import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences, names_behavior_types } from './instruct-mode.js';
-import { getStreamingReply, tryParseStreamingError } from './openai.js';
+import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
+import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate, oai_settings } from './openai.js';
 import EventSourceStream from './sse-stream.js';
 
 // #region Type Definitions
@@ -34,6 +34,7 @@ import EventSourceStream from './sse-stream.js';
 
 /**
  * @typedef {Object} ChatCompletionMessage
+ * @property {string} [name] - The name of the message author (optional)
  * @property {string} role - The role of the message author (e.g., "user", "assistant", "system")
  * @property {string} content - The content of the message
  */
@@ -125,7 +126,7 @@ export class TextCompletionService {
 
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw json;
+                throw new Error(String(json.error?.message || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -188,8 +189,87 @@ export class TextCompletionService {
     }
 
     /**
+    * Return a formatted prompt string given an array of messages, a chosen instruct preset, and instruct settings.
+    * @param {(ChatCompletionMessage & {ignoreInstruct?: boolean})[]} prompt An array of messages
+    * @param {InstructSettings|string} instructPreset Either the name of an instruct preset or the instruct preset object itself.
+    * @param {Partial<InstructSettings>} instructSettings Optional instruct settings
+    */
+    static constructPrompt(prompt, instructPreset, instructSettings) {
+        // InstructPreset may either be a name or itself a preset
+        if (typeof instructPreset === 'string') {
+            const instructPresetManager = getPresetManager('instruct');
+            instructPreset = instructPresetManager?.getCompletionPresetByName(instructPreset);
+        }
+
+        // Clone the preset to avoid modifying the original
+        instructPreset = structuredClone(instructPreset);
+        if (instructSettings) {  // apply any additional settings
+            Object.assign(instructPreset, instructSettings);
+        }
+
+        // Make the type check shut up. We 100% don't have a string here.
+        if (typeof instructPreset === 'string') {
+            return;
+        }
+
+        // Format messages using instruct formatting
+        const formattedMessages = [];
+        const prefillActive = prompt.length > 0 ? prompt[prompt.length - 1].role === 'assistant' : false;
+        for (const message of prompt) {
+            let messageContent = message.content;
+            if (!message.ignoreInstruct) {
+                const isLastMessage = message === prompt[prompt.length - 1];
+
+                // This complicated logic means:
+                // 1. If prefill is not active, format all messages
+                // 2. If prefill is active, format all messages except the last one
+                if (!isLastMessage || !prefillActive) {
+                    messageContent = formatInstructModeChat(
+                        message.name ?? message.role,
+                        message.content,
+                        message.role === 'user',
+                        message.role === 'system',
+                        undefined,
+                        name1,  // for macros
+                        name2,  // for macros
+                        undefined,
+                        instructPreset,
+                    );
+                }
+
+                // Add prompt formatting for the last message.
+                // e.g. "<|im_start|>assistant"
+                if (isLastMessage) {
+                    let last_line = formatInstructModePrompt(
+                        'assistant',  // for sequences using {{name}}
+                        false,  // not an impersonation
+                        prefillActive ? message.content : undefined,  // if using prefill, last message is the prefill
+                        name1,  // for macros
+                        name2,  // for macros
+                        true,   // quiet
+                        false,
+                        instructPreset,
+                    );
+
+                    if (prefillActive) {  // content is the prefilled message
+                        if (last_line.endsWith('\n') && !message.content.endsWith('\n')) {
+                            last_line = last_line.slice(0, -1);  // remove newline after prefill if it's not in the prefill itself
+                        }
+                        messageContent = last_line;
+                    } else {  // append last line to content (e.g. "<|im_start|>assistant:")
+                        messageContent += last_line;
+                    }
+                }
+            }
+            formattedMessages.push(messageContent);
+        }
+        return formattedMessages.join('');
+    }
+
+
+    /**
      * Process and send a text completion request with optional preset & instruct
-     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} custom
+     * @param {TextCompletionPayload} requestData
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {string?} [options.instructName] - Name of instruct preset for message formatting
@@ -199,15 +279,35 @@ export class TextCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(
-        custom,
-        options = {},
-        extractData = true,
-        signal = null,
-    ) {
+    static async processRequest(requestData, options = {}, extractData = true, signal = null) {
         const { presetName, instructName } = options;
-        let requestData = { ...custom };
-        const prompt = custom.prompt;
+
+        // remove any undefined params in given request data
+        requestData = this.createRequestData(requestData);
+
+        /** @type {InstructSettings | undefined} */
+        let instructPreset;
+        const prompt = requestData.prompt;
+        // Handle instruct formatting if requested
+        if (Array.isArray(prompt)) {
+            if (instructName) {
+                const instructPresetManager = getPresetManager('instruct');
+                instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
+                if (instructPreset) {
+                    requestData.prompt = this.constructPrompt(prompt, instructPreset, options.instructSettings);
+                    const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
+                    requestData.stop = stoppingStrings;
+                    requestData.stopping_strings = stoppingStrings;
+                } else {
+                    console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
+                    requestData.prompt = prompt.map(x => x.content).join('\n\n');
+                }
+            } else {
+                requestData.prompt = prompt.map(x => x.content).join('\n\n');
+            }
+        } else if (typeof prompt === 'string') {
+            requestData.prompt = prompt;
+        }
 
         // Apply generation preset if specified
         if (presetName) {
@@ -215,9 +315,8 @@ export class TextCompletionService {
             if (presetManager) {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
-                    // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
-                    requestData = { ...presetPayload, ...requestData };
+                    // Convert preset to payload and merge with custom data
+                    requestData = this.presetToGeneratePayload(preset, {}, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -226,99 +325,10 @@ export class TextCompletionService {
             }
         }
 
+        const response = await this.sendRequest(requestData, extractData, signal);
 
-        /** @type {InstructSettings | undefined} */
-        let instructPreset;
-        // Handle instruct formatting if requested
-        if (Array.isArray(prompt) && instructName) {
-            const instructPresetManager = getPresetManager('instruct');
-            instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
-            if (instructPreset) {
-                // Clone the preset to avoid modifying the original
-                instructPreset = structuredClone(instructPreset);
-                instructPreset.names_behavior = names_behavior_types.NONE;
-                if (options.instructSettings) {
-                    Object.assign(instructPreset, options.instructSettings);
-                }
-
-                // Format messages using instruct formatting
-                const formattedMessages = [];
-                const prefillActive = prompt.length > 0 ? prompt[prompt.length - 1].role === 'assistant' : false;
-                for (const message of prompt) {
-                    let messageContent = message.content;
-                    if (!message.ignoreInstruct) {
-                        const isLastMessage = message === prompt[prompt.length - 1];
-
-                        // This complicated logic means:
-                        // 1. If prefill is not active, format all messages
-                        // 2. If prefill is active, format all messages except the last one
-                        if (!isLastMessage || !prefillActive) {
-                            messageContent = formatInstructModeChat(
-                                message.role,
-                                message.content,
-                                message.role === 'user',
-                                message.role === 'system',
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                instructPreset,
-                            );
-                        }
-
-                        // Add prompt formatting for the last message.
-                        if (isLastMessage) {
-                            if (!prefillActive) { // e.g. "<|im_start|>user:"
-                                messageContent += formatInstructModePrompt(
-                                    undefined,
-                                    false,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    false,
-                                    false,
-                                    instructPreset,
-                                );
-                            } else { // e.g. "<|im_start|>assistant: Hello, my name is"
-                                const overriddenInstructPreset = structuredClone(instructPreset);
-                                overriddenInstructPreset.output_suffix = '';
-                                overriddenInstructPreset.wrap = false;
-                                messageContent = formatInstructModeChat(
-                                    message.role,
-                                    message.content,
-                                    false, // since it is assistant
-                                    false,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    undefined,
-                                    overriddenInstructPreset,
-                                );
-                            }
-                        }
-                    }
-                    formattedMessages.push(messageContent);
-                }
-                requestData.prompt = formattedMessages.join('');
-                const stoppingStrings = getInstructStoppingSequences({ customInstruct: instructPreset, useStopStrings: false });
-                requestData.stop = stoppingStrings;
-                requestData.stopping_strings = stoppingStrings;
-            } else {
-                console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
-                requestData.prompt = prompt.map(x => x.content).join('\n\n');
-            }
-        } else if (typeof prompt === 'string') {
-            requestData.prompt = prompt;
-        } else {
-            requestData.prompt = prompt.map(x => x.content).join('\n\n');
-        }
-
-        // @ts-ignore
-        const data = this.createRequestData(requestData);
-
-        const response = await this.sendRequest(data, extractData, signal);
         // Remove stopping strings from the end
-        if (!data.stream && extractData) {
+        if (!requestData.stream && extractData) {
             /** @type {ExtractedData} */
             // @ts-ignore
             const extractedData = response;
@@ -377,31 +387,30 @@ export class TextCompletionService {
      * Converts a preset to a valid text completion payload.
      * Only supports temperature.
      * @param {Object} preset - The preset configuration
-     * @param {Object} customPreset - Additional parameters to override preset values
+     * @param {Object} overridePreset - Additional parameters to override preset values
+     * @param {Object} overridePayload - Additional parameters to override payload values
      * @returns {Object} - Formatted payload for text completion API
      */
-    static presetToGeneratePayload(preset, customPreset = {}) {
+    static presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
 
-        // Merge preset with custom parameters
-        const settings = { ...preset, ...customPreset };
+        // apply preset overrides
+        preset = { ...preset, ...overridePreset };
 
-        // Initialize base payload with common parameters
-        let payload = {
-            'temperature': settings.temp >= 0 ? Number(settings.temp) : undefined,
-            'min_p': settings.min_p >= 0 ? Number(settings.min_p) : undefined,
-        };
+        // Only take fields from the preset specified in setting_names to use as TextCompletionSettings
+        const settings = structuredClone(textgenerationwebui_settings);
+        for (const [key, value] of Object.entries(preset)) {
+            if (!setting_names.includes(key)) continue;
+            settings[key] = value;
+        }
 
-        // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined) {
-                delete payload[key];
-            }
-        });
+        // convert to a generation payload
+        const payload = createTextGenGenerationData(settings, overridePayload.model, overridePayload.prompt, preset.genamt);
 
-        return payload;
+        // apply overrides
+        return this.createRequestData({ ...payload, ...overridePayload });
     }
 }
 
@@ -427,8 +436,7 @@ export class ChatCompletionService {
             reverse_proxy,
             proxy_password,
             custom_prompt_post_processing,
-            use_makersuite_sysprompt: true,
-            claude_use_sysprompt: true,
+            use_sysprompt: true,
             ...props,
         };
 
@@ -462,7 +470,7 @@ export class ChatCompletionService {
         if (!data.stream) {
             const json = await response.json();
             if (!response.ok || json.error) {
-                throw json;
+                throw new Error(String(json.error?.message || 'Response not OK'));
             }
 
             if (!extractData) {
@@ -524,7 +532,7 @@ export class ChatCompletionService {
 
     /**
      * Process and send a chat completion request with optional preset
-     * @param {ChatCompletionPayload} custom
+     * @param {ChatCompletionPayload} requestData - payload data, overriding preset if given
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {boolean} [extractData=true] - Whether to extract structured data from response
@@ -532,9 +540,9 @@ export class ChatCompletionService {
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async processRequest(custom, options, extractData = true, signal = null) {
+    static async processRequest(requestData, options, extractData = true, signal = null) {
         const { presetName } = options;
-        let requestData = { ...custom };
+        requestData = this.createRequestData(requestData);
 
         // Apply generation preset if specified
         if (presetName) {
@@ -543,8 +551,7 @@ export class ChatCompletionService {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    const presetPayload = this.presetToGeneratePayload(preset, {});
-                    requestData = { ...presetPayload, ...requestData };
+                    requestData = await this.presetToGeneratePayload(preset, {}, requestData);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -553,38 +560,47 @@ export class ChatCompletionService {
             }
         }
 
-        const data = this.createRequestData(requestData);
-
-        return await this.sendRequest(data, extractData, signal);
+        return await this.sendRequest(requestData, extractData, signal);
     }
 
     /**
      * Converts a preset to a valid chat completion payload
      * Only supports temperature.
      * @param {Object} preset - The preset configuration
-     * @param {Object} customParams - Additional parameters to override preset values
-     * @returns {Object} - Formatted payload for chat completion API
+     * @param {Object} overridePreset - Additional parameters to override preset values
+     * @param {Object} overridePayload - Additional parameters to override payload values
+     * @returns {Promise<any>} - Formatted payload for chat completion API
      */
-    static presetToGeneratePayload(preset, customParams = {}) {
+    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
 
-        // Merge preset with custom parameters
-        const settings = { ...preset, ...customParams };
+        // apply preset overrides
+        preset = { ...preset, ...overridePreset };
 
-        // Initialize base payload with common parameters
-        const payload = {
-            temperature: settings.temperature >= 0 ? Number(settings.temperature) : undefined,
-        };
+        // Fix any fields before converting to settings
+        preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
-        // Remove undefined values to avoid API errors
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined) {
-                delete payload[key];
-            }
+        // Convert from preset to ChatCompletionSettings
+        const settings = structuredClone(oai_settings);
+        for (const [key, value] of Object.entries(preset)) {
+            const settingToUpdate = settingsToUpdate[key];
+            if (!settingToUpdate) continue;
+            settings[settingToUpdate[1]] = value;
+        }
+
+        // Ensure api-url is properly applied for all sources that accept it
+        ['custom_url', 'vertexai_region', 'zai_endpoint'].forEach(field => {
+            // The order is: connection profile => CC preset => CC settings
+            overridePayload[field] = overridePayload[field] || settings[field] || oai_settings[field];
         });
 
-        return payload;
+        // Convert from settings to generation payload
+        const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', overridePayload.messages);
+        const payload = data.generate_data;
+
+        // apply overrides
+        return this.createRequestData({ ...payload, ...overridePayload });
     }
 }

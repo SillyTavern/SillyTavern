@@ -10,6 +10,7 @@
                     Vectorization Source
                 </label>
                 <select id="vectors_source" class="text_pole">
+                    <option value="chutes">Chutes</option>
                     <option value="cohere">Cohere</option>
                     <option value="electronhub">Electron Hub</option>
                     <option value="extras">Extras (deprecated)</option>
@@ -27,6 +28,15 @@
                     <option value="vllm">vLLM</option>
                     <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="chutes_vectorsModel">
+                <label for="vectors_chutes_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_chutes_model" class="text_pole"></select>
+                <i data-i18n="Hint: Set your Chutes API key in API Connections.">
+                    Hint: Set your Chutes API key in API Connections.
+                </i>
             </div>
             <div class="flex-container flexFlowColumn" id="electronhub_vectorsModel">
                 <label for="vectors_electronhub_model" data-i18n="Vectorization Model">

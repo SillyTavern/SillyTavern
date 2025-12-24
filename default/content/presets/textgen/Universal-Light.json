@@ -45,6 +45,7 @@
     "negative_prompt": "",
     "grammar_string": "",
     "json_schema": null,
+    "json_schema_allow_empty": false,
     "banned_tokens": "",
     "sampler_priority": [
         "repetition_penalty",

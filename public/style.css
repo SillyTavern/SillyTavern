@@ -14,6 +14,7 @@
 @import url(css/data-maid.css);
 @import url(css/secrets.css);
 @import url(css/backgrounds.css);
+@import url(css/chat-backups.css);
 
 :root {
     interpolate-size: allow-keywords;
@@ -677,11 +678,6 @@ small {
     margin: 0;
 }
 
-.mes.smallSysMes .swipe_right,
-.mes.smallSysMes .swipe_left {
-    display: none !important;
-}
-
 .mes.smallSysMes .mes_text {
     padding: 0 !important;
     text-align: center;
@@ -1230,6 +1226,14 @@ body .panelControlBar {
     --swipeCounterMargin: 5px;
 }
 
+/* https://stackoverflow.com/a/31819499 */
+/* This has much better performance than .transform on large chats*/
+.slide {
+    animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    -webkit-animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    will-change: transform;
+}
+
 .swipe_right,
 .swipe_left {
     width: 25px;
@@ -1242,6 +1246,7 @@ body .panelControlBar {
     font-size: 20px;
     cursor: pointer;
     align-self: center;
+    pointer-events: auto;
 }
 
 .swipe_left {
@@ -1254,9 +1259,11 @@ body .panelControlBar {
     position: absolute;
     right: 0;
     bottom: 0;
+    pointer-events: none;
 }
 
 .swipes-counter {
+    opacity: 0.3;
     color: var(--SmartThemeBodyColor);
     font-size: 12px;
     padding: 0 5px;
@@ -1268,16 +1275,14 @@ body .panelControlBar {
     justify-content: center;
     margin-bottom: var(--swipeCounterMargin);
     height: var(--swipeCounterHeight);
+    pointer-events: auto;
 }
 
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter {
-    visibility: hidden;
-}
 
 body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
-    opacity: 0.3 !important;
-    display: flex !important;
+    opacity: 0.3;
+    display: flex;
 }
 
 .swipe_left {
@@ -1288,6 +1293,51 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
 .swipe_right {
     right: 5px;
     align-self: center;
+    display: flex;
+}
+
+/* The last swipe must be highlighted */
+.last_swipe :is(.swipes-counter, .swipe_right) {
+    opacity: 0.7;
+    /* Doubled opacity needs a longer transition to match a non active arrow. */
+    /* (Duration * Active Opacity / Inactive Opacity * 2) */
+    transition-duration: calc(var(--animation-duration-2x) * 0.7/0.3);
+}
+
+.fade :is(.swipes-counter, .swipe_left, .swipe_right){
+    /* Fade in and out: */
+    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
+    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition: opacity calc(var(--animation-duration) * 2) ease-in;
+
+    /* Fade in. */
+    @supports (transition-behavior: allow-discrete) {
+        transition:
+            opacity var(--animation-duration-2x) ease-in,
+            display var(--animation-duration-2x) ease-in,
+            visibility var(--animation-duration-2x) ease-in;
+        transition-behavior: allow-discrete;
+    }
+}
+
+/* Hide all but the last message. */
+body:not(.swipeAllMessages) .mes:not(.last_mes) :is(.swipe_left, .swipe_right, .swipes-counter),
+/* Hide non-visible swipe_left. */
+.mes:not(.swipes_visible) .swipe_left,
+/* Only hide swipe_right if it's not visible, and not the last swipe. */
+.mes:not(.swipes_visible, .last_swipe) :is(.swipe_right),
+/* Hide all swipe buttons if .hideAllSwipeButtons. */
+body.hideAllSwipeButtons :is(.swipe_left, .swipe_right),
+.swipes-counter[hidden],
+.swipe_right[hidden],
+.swipe_left[hidden] {
+    /* Fade out */
+    opacity: 0 !important;
+    /* With display:none, the swipes-counter div wil collapse, shifting the chevron. */
+    visibility: hidden;
+    /* Interactivity has limited availability https://caniuse.com/?search=interactivity */
+    interactivity: inert;
+    pointer-events: none;
 }
 
 .ui-settings {
@@ -4445,11 +4495,12 @@ input[type="range"]::-webkit-slider-thumb {
     field-sizing: content;
 }
 
-body[data-generating="true"] #send_but,
-body[data-generating="true"] #mes_continue,
-body[data-generating="true"] #mes_impersonate,
-body[data-generating="true"] #chat .last_mes .mes_buttons,
-body[data-generating="true"] #chat .last_mes .mes_reasoning_actions {
+body:is([data-generating="true"], [data-swiping="true"]) :is(
+    #send_but,
+    #mes_continue,
+    #mes_impersonate,
+    #chat .last_mes .mes_buttons,
+    #chat .last_mes .mes_reasoning_actions) {
     display: none;
 }
 
@@ -5035,6 +5086,15 @@ a:hover {
     top: unset;
     bottom: 0;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* Pass-through pointer events to the swipe buttons only */
+.mes .mes_video_container .mes_img_swipes {
+    pointer-events: none;
+}
+
+.mes .mes_video_container .mes_img_swipes :is(.mes_img_swipe_left, .mes_img_swipe_right) {
+    pointer-events: auto;
 }
 
 .mes_img_swipes .right_menu_button,

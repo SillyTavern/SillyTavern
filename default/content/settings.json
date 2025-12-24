@@ -191,6 +191,7 @@
         "custom_stopping_strings_macro": true,
         "fuzzy_search": true,
         "encode_tags": false,
+        "experimental_macro_engine": false,
         "enableLabMode": false,
         "enableZenSliders": false,
         "ui_mode": 1,
@@ -463,7 +464,6 @@
         "stream_openai": true,
         "openai_max_context": 4095,
         "openai_max_tokens": 300,
-        "wrap_in_quotes": false,
         "prompts": [
             {
                 "name": "Main Prompt",
@@ -632,6 +632,8 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
-        "assistant_impersonation": ""
+        "assistant_impersonation": "",
+        "use_sysprompt": false,
+        "squash_system_messages": false
     }
 }

@@ -1,7 +1,7 @@
 import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
-import { oai_settings, proxies } from '../openai.js';
+import { oai_settings, proxies, ZAI_ENDPOINT } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
@@ -113,6 +113,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
         requestBody.custom_include_headers = oai_settings.custom_include_headers;
         requestBody.custom_include_body = oai_settings.custom_include_body;
         requestBody.custom_exclude_body = oai_settings.custom_exclude_body;
+    }
+
+    if (extension_settings.caption.multimodal_api === 'zai') {
+        requestBody.zai_endpoint = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
     function getEndpointUrl() {
@@ -257,6 +261,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Electron Hub API key is not set.');
     }
 
+    if (multimodalApi === 'chutes' && !secret_state[SECRET_KEYS.CHUTES]) {
+        throw new Error('Chutes API key is not set.');
+    }
+
     if (multimodalApi === 'zai' && !secret_state[SECRET_KEYS.ZAI]) {
         throw new Error('Z.AI API key is not set.');
     }
@@ -393,7 +401,7 @@ export class ConnectionManagerRequestService {
             throw new Error('Connection Manager is not available');
         }
 
-        const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        const profile = this.getProfile(profileId);
         const selectedApiMap = this.validateProfile(profile);
 
         try {
@@ -413,6 +421,8 @@ export class ConnectionManagerRequestService {
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
                         custom_url: profile['api-url'],
+                        vertexai_region: profile['api-url'],
+                        zai_endpoint: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
                         custom_prompt_post_processing: profile['prompt-post-processing'],
@@ -450,6 +460,38 @@ export class ConnectionManagerRequestService {
     }
 
     /**
+    * If using text completion, return a formatted prompt string given an array of messages, a given profile ID, and optional instruct settings.
+    * If using chat completion, simply return the given prompt as-is.
+    * @param {ChatCompletionMessage[]} prompt An array of prompt messages.
+    * @param {string} profileId ID of a given connection profile (from which to infer a completion preset).
+    * @param {InstructSettings} instructSettings optional instruct settings
+    */
+    static constructPrompt(prompt, profileId, instructSettings = null) {
+        const context = SillyTavern.getContext();
+        const profile = this.getProfile(profileId);
+        const selectedApiMap = this.validateProfile(profile);
+        const instructName = profile.instruct;
+
+        switch (selectedApiMap.selected) {
+            case 'openai': {
+                if (!selectedApiMap.source) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
+                }
+                return prompt;
+            }
+            case 'textgenerationwebui': {
+                if (!selectedApiMap.type) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
+                }
+                return context.TextCompletionService.constructPrompt(prompt, instructName, instructSettings);
+            }
+            default: {
+                throw new Error(`Unknown API type ${selectedApiMap.selected}`);
+            }
+        }
+    }
+
+    /**
      * Respects allowed types.
      * @returns {import('./connection-manager/index.js').ConnectionProfile[]}
      */
@@ -461,6 +503,18 @@ export class ConnectionManagerRequestService {
 
         const profiles = context.extensionSettings.connectionManager.profiles;
         return profiles.filter((p) => this.isProfileSupported(p));
+    }
+
+    /**
+     * Return profile data given the profile ID
+     * @param {string} profileId
+     * @returns {import('./connection-manager/index.js').ConnectionProfile?} [profile]
+     * @throws {Error}
+     */
+    static getProfile(profileId) {
+        const profile = SillyTavern.getContext().extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        if (!profile) throw new Error(`Profile not found (ID: ${profileId})`);
+        return profile;
     }
 
     /**

@@ -44,7 +44,8 @@ async function parseOllamaStream(jsonStream, request, response) {
                     break;
                 }
                 const text = json.response || '';
-                const chunk = { choices: [{ text }] };
+                const thinking = json.thinking || '';
+                const chunk = { choices: [{ text, thinking }] };
                 response.write(`data: ${JSON.stringify(chunk)}\n\n`);
                 partialData = '';
             }
@@ -242,7 +243,11 @@ router.post('/props', async function (request, response) {
         setAdditionalHeaders(request, args, baseUrl);
 
         const apiType = request.body.api_type;
-        const propsUrl = baseUrl + '/props';
+        let propsUrl = baseUrl + '/props';
+        if (apiType === TEXTGEN_TYPES.LLAMACPP && request.body.model) {
+            propsUrl += `?model=${encodeURIComponent(request.body.model)}`;
+            console.debug(`Querying llama-server props with model parameter: ${request.body.model}`);
+        }
         const propsReply = await fetch(propsUrl, args);
 
         if (!propsReply.ok) {
@@ -252,7 +257,7 @@ router.post('/props', async function (request, response) {
         /** @type {any} */
         const props = await propsReply.json();
         // TEMPORARY: llama.cpp's /props endpoint has a bug which replaces the last newline with a \0
-        if (apiType === TEXTGEN_TYPES.LLAMACPP && props['chat_template'].endsWith('\u0000')) {
+        if (apiType === TEXTGEN_TYPES.LLAMACPP && props['chat_template'] && props['chat_template'].endsWith('\u0000')) {
             props['chat_template'] = props['chat_template'].slice(0, -1) + '\n';
         }
         props['chat_template_hash'] = createHash('sha256').update(props['chat_template']).digest('hex');

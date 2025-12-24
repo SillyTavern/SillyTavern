@@ -10,7 +10,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
-import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
+import { debounce_timeout, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -108,7 +108,7 @@ async function wrapCaptionTemplate(caption) {
             'Review and edit the generated caption:',
             'Press "Cancel" to abort the caption sending.',
             messageText,
-            { rows: 5, okButton: 'Send' });
+            { rows: 8, okButton: 'Send' });
 
         if (!messageText) {
             throw new Error('User aborted the caption sending.');
@@ -211,6 +211,7 @@ async function sendCaptionedMessage(caption, image, mimeType) {
     context.addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, messageId);
     await context.saveChat();
+    setTimeout(() => context.scrollOnMediaLoad(), debounce_timeout.short);
 }
 
 /**
@@ -454,7 +455,7 @@ function isVideoCaptioningAvailable() {
         return false;
     }
 
-    return ['google', 'vertexai'].includes(extension_settings.caption.multimodal_api);
+    return ['google', 'vertexai', 'zai'].includes(extension_settings.caption.multimodal_api);
 }
 
 jQuery(async function () {
@@ -503,6 +504,7 @@ jQuery(async function () {
                         'aimlapi': SECRET_KEYS.AIMLAPI,
                         'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
+                        'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
                         'zai': SECRET_KEYS.ZAI,
                     };
@@ -592,7 +594,7 @@ jQuery(async function () {
             const options = Array.from(dropdown.options);
             const response = await fetch(url, {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
             if (!response.ok) {
                 return;
@@ -616,6 +618,7 @@ jQuery(async function () {
         await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
         await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
+        await processEndpoint('chutes', '/api/backends/chat-completions/multimodal-models/chutes');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
