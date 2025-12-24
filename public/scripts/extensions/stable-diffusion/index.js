@@ -1180,13 +1180,11 @@ function onHrSecondPassStepsInput() {
 }
 
 function onComfyUrlInput() {
-    // Remove trailing slashes
     extension_settings.sd.comfy_url = String($('#sd_comfy_url').val());
     saveSettingsDebounced();
 }
 
 function onComfyRunPodUrlInput() {
-    // Remove trailing slashes
     extension_settings.sd.comfy_runpod_url = String($('#sd_comfy_runpod_url').val());
     saveSettingsDebounced();
 }
