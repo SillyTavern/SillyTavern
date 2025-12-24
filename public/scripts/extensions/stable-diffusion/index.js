@@ -5342,6 +5342,7 @@ jQuery(async () => {
                 case SECRET_KEYS.FALAI:
                 case SECRET_KEYS.STABILITY:
                 case SECRET_KEYS.AIMLAPI:
+                case SECRET_KEYS.COMFY_RUNPOD:
                     await loadSettingOptions();
                     break;
             }
