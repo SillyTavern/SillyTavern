@@ -1356,27 +1356,13 @@ async function onModelChange() {
 
     switchModelSpecificControls(extension_settings.sd.model);
 
-    const cloudSources = [
-        sources.horde,
-        sources.novel,
-        sources.openai,
-        sources.aimlapi,
-        sources.togetherai,
-        sources.pollinations,
-        sources.stability,
-        sources.huggingface,
-        sources.electronhub,
-        sources.nanogpt,
-        sources.bfl,
-        sources.falai,
-        sources.xai,
-        sources.google,
-        sources.chutes,
-        sources.zai,
-        sources.openrouter,
+    const updateRemoteModelSources = [
+        sources.auto,
+        sources.vlad,
+        sources.extras,
     ];
 
-    if (cloudSources.includes(extension_settings.sd.source)) {
+    if (!updateRemoteModelSources.includes(extension_settings.sd.source)) {
         return;
     }
 
