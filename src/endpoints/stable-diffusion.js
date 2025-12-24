@@ -623,6 +623,7 @@ comfyRunPod.post('/ping', async (request, response) => {
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        /** @type {any} */
         const data = await result.json();
         if (data.workers.ready <= 0) {
             console.warn(`No workers reported as ready. ${result}`);
@@ -658,8 +659,10 @@ comfyRunPod.post('/generate', async (request, response) => {
             controller.abort();
         });
         const workflow = JSON.parse(request.body.prompt).prompt;
-        const wrappedWorkflow = { input: { workflow: workflow } };
+        const wrappedWorkflow = workflow?.input?.workflow ? workflow : ({ input: { workflow: workflow } });
         const runpodPrompt = JSON.stringify(wrappedWorkflow);
+
+        console.debug('ComfyUI RunPod request:', wrappedWorkflow);
 
         const promptResult = await fetch(url, {
             method: 'POST',
