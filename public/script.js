@@ -2563,7 +2563,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     addCopyToCodeBlocks(newMessage);
 
     // Set the swipes counter for all non-user messages.
-    if (!params.isUser) {
+    if (!params.isUser || tree.toggled()) {
         updateSwipeCounter(newMessageId);
     }
 
