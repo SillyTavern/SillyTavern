@@ -55,7 +55,7 @@ test.describe('MacroRegistry', () => {
             const registrationError = result.errors.find(e => e.text.includes('[Macro] Registration Error:'));
             expect(registrationError).toBeTruthy();
             expect(registrationError?.text).toContain('Failed to register macro ""');
-            expect(registrationError?.errorMessage).toContain('Must start with a letter, followed by word chars or hyphens.');
+            expect(registrationError?.errorMessage).toContain('Must start with a letter, followed by alphanumeric characters or hyphens.');
         });
 
         test('should reject invalid options object', async ({ page }) => {
