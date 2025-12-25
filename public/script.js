@@ -2538,7 +2538,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     });
 
     if (type === 'swipe') {
-        const swipeMessage = chatElement.find(`[mesid="${newMessageId}"]`);
+        const swipeMessage = newMessage;
         swipeMessage.attr('swipeid', params.swipeId);
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
@@ -2556,7 +2556,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             swipeMessage.find('.tokenCounterDisplay').empty();
         }
     } else {
-        chatElement.find(`[mesid="${newMessageId}"] .mes_text`).append(messageText);
+        newMessage.find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
     }
 
@@ -2564,7 +2564,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Set the swipes counter for all non-user messages.
     if (!params.isUser || tree.toggled()) {
-        updateSwipeCounter(newMessageId);
+        updateSwipeCounter(newMessageId, { messageElement: newMessage });
     }
 
     //last_mes should always be updated.
