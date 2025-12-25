@@ -10,7 +10,7 @@ import {
 import { onlyUnique, regexFromString, resetScrollHeight } from './utils.js';
 
 /**
- * @type {any[]} Instruct mode presets.
+ * @type {InstructSettings[]} Instruct mode presets.
  */
 export let instruct_presets = [];
 

@@ -348,6 +348,7 @@ export const power_user = {
 
 let themes = [];
 let movingUIPresets = [];
+/** @type {ContextSettings[]} */
 export let context_presets = [];
 
 const storage_keys = {
