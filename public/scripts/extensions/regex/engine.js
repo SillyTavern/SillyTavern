@@ -457,7 +457,7 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
 function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
-        const subTrimString = substituteParams(trimString, undefined, characterOverride);
+        const subTrimString = substituteParams(trimString, { name2Override: characterOverride });
         finalString = finalString.replaceAll(subTrimString, '');
     });
 

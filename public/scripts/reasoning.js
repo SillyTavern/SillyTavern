@@ -145,6 +145,53 @@ export function extractReasoningFromData(data, {
 }
 
 /**
+ * Extracts encrypted reasoning signature from the response data.
+ * These signatures are used to maintain reasoning context across multi-turn conversations.
+ * @param {object} data Response data
+ * @param {object} [options] Optional parameters
+ * @param {string|null} [options.mainApi] Override for main API
+ * @param {string|null} [options.chatCompletionSource] Override for chat completion source
+ * @returns {string?} Encrypted signature of the reasoning text
+ */
+export function extractReasoningSignatureFromData(data, {
+    mainApi = null,
+    chatCompletionSource = null,
+} = {}) {
+    // Only Gemini models use thought signatures (via MakerSuite/VertexAI or OpenRouter)
+    if ((mainApi ?? main_api) !== 'openai') {
+        return null;
+    }
+
+    const source = chatCompletionSource ?? oai_settings.chat_completion_source;
+    const isGemini = source === chat_completion_sources.MAKERSUITE || source === chat_completion_sources.VERTEXAI;
+    const isOpenRouter = source === chat_completion_sources.OPENROUTER;
+
+    if (!isGemini && !isOpenRouter) {
+        return null;
+    }
+
+    // OpenRouter format: reasoning_details array with type "reasoning.encrypted" (exclude tool calls)
+    if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
+        for (const detail of data.choices[0].message.reasoning_details) {
+            if (!/^tool_/.test(detail.id) && detail.type === 'reasoning.encrypted' && detail.data) {
+                return detail.data;
+            }
+        }
+    }
+
+    // Direct Gemini format: Extract from responseContent.parts if available (only text parts)
+    if (isGemini && Array.isArray(data?.responseContent?.parts)) {
+        data.responseContent.parts.forEach((part) => {
+            if (part.thoughtSignature && typeof part.text === 'string') {
+                return part.thoughtSignature;
+            }
+        });
+    }
+
+    return null;
+}
+
+/**
  * Check if the model supports reasoning, but does not send back the reasoning
  * @returns {boolean} True if the model supports reasoning
  */
@@ -1296,6 +1343,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
  * @property {string} reasoning Reasoning block
  * @property {number} reasoning_duration Duration of the reasoning block
  * @property {string} reasoning_type Type of reasoning block
+ * @property {string?} reasoning_signature Encrypted signature of the reasoning text
  */
 export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     if (!power_user.reasoning.auto_parse) {

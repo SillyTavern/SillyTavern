@@ -193,7 +193,7 @@ export function registerCoreMacros() {
             const chatIdHash = getChatIdHash();
 
             // Use the full original input string for deterministic behavior
-            const rawContentHash = getStringHash(env.content);
+            const rawContentHash = env.contentHash;
 
             const offset = typeof range?.startOffset === 'number' ? range.startOffset : 0;
 

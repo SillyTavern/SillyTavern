@@ -23,7 +23,7 @@ class MacroParser extends CstParser {
     /** @private */
     constructor() {
         super(MacroLexer.def, {
-            traceInitPerf: true,
+            traceInitPerf: false,
             nodeLocationTracking: 'full',
             recoveryEnabled: true,
         });

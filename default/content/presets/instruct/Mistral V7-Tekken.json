@@ -1,6 +1,6 @@
 {
     "input_sequence": "[INST]",
-    "output_sequence": " ",
+    "output_sequence": "",
     "last_output_sequence": "",
     "system_sequence": "[SYSTEM_PROMPT]",
     "stop_sequence": "</s>",
